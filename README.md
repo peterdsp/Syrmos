@@ -2,71 +2,48 @@
 
 **Live Athens rail times, all in one place.**
 
-Syrmos is a Kotlin Multiplatform app for Athens metro, tram and suburban railway. It provides offline timetables, next departure calculations and route planning across the entire Athens rail network.
+Syrmos is a transit companion for everyone who rides the Athens metro, tram or suburban railway. Pick a station or let GPS find the nearest one, and see exactly when the next train arrives.
 
-Built with Compose Multiplatform, targeting Android, iOS and Web from a single codebase.
+Built with Kotlin Multiplatform for Android, iOS and Web.
 
-> *Syrmos (συρμός)* is the Greek word for a train consist, the linked carriages that form a metro train.
+> *Syrmos (συρμός)* is the Greek word for a train consist, the linked carriages that make up a metro train.
+
+---
+
+## Why this exists
+
+I have been commuting on Athens rail for years. Metro Line 2 to work, Line 3 to the airport, the suburban train to visit family. Every day the same question: how long until the next one?
+
+The official apps cover buses well but rail is an afterthought. Timetables live in PDFs. Suburban railway schedules are buried on a separate website. There is no single place that answers "when does my train come" across all three networks.
+
+I am originally from Tripolis, in the Peloponnese. The train used to reach my city, and I hope one day it will again. This project is partly a small push in that direction: if we build better tools for the rail network we have, maybe it helps people appreciate and expand the one we could have.
+
+Syrmos started as a personal itch. I hope it becomes useful for anyone who rides a train in Athens.
+
+## How it works
+
+**Find your station.** Open the app and either:
+- Let GPS detect the nearest station (works above ground and near station entrances)
+- Browse by line and pick a station manually
+- Search by name
+
+**See the next trains.** The app calculates arrivals from embedded schedule data. No internet needed. It knows the day of the week, the time, and which services are running right now. You get a live countdown: "Line 3 towards Airport in 4 min".
+
+**Everything is offline.** All schedule data ships with the app. Underground with no signal? It still works. The data comes from official STASY and Hellenic Train timetables, parsed and structured into a local database on first launch.
 
 ## Features
 
-- Browse all metro lines (1, 2, 3), tram lines (T6, T7) and suburban railway routes
-- View station details with connecting lines and interchange info
-- Check next departures based on current time and day
-- Full timetable viewer with weekday, Saturday and Sunday schedules
+- Next departure countdown for any station, any line, any direction
+- GPS-based nearest station detection
+- Full timetable browser with weekday, Friday, Saturday and Sunday schedules
+- Line browser with station lists, frequencies and operating hours
+- Station detail with all connecting lines and interchange info
 - Schematic transit map
-- Offline-first: all schedule data is embedded, no internet required
+- Route planner with transfer suggestions
+- Offline-first: no internet required after install
 - Bilingual: English and Greek
 
-## Architecture
-
-The project follows a modular MVI architecture with clear separation of concerns.
-
-```
-androidApp / iosApp
-    |
-composeApp (shared UI entry point)
-    |
-feature modules (home, lines, stations, schedule, map, settings)
-    |
-core modules (domain -> data -> database, designsystem, navigation, model)
-```
-
-Each feature module depends on `core:domain` for business logic and `core:designsystem` for shared UI components. Feature modules never depend on each other.
-
-### Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| Kotlin 2.1 | Language |
-| Compose Multiplatform 1.8 | Shared UI |
-| SQLDelight | Local database |
-| Koin | Dependency injection |
-| Ktor | HTTP client (future API) |
-| Voyager | Multiplatform navigation |
-| kotlinx-datetime | Time calculations |
-| kotlinx-serialization | JSON parsing |
-
-## Module Structure
-
-| Module | Description |
-|--------|-------------|
-| `:core:model` | Domain data classes (Line, Station, Schedule, etc.) |
-| `:core:common` | Shared utilities, Result type, datetime extensions |
-| `:core:database` | SQLDelight schema, DAOs and drivers |
-| `:core:data` | Repository implementations, JSON seed data, DataSeeder |
-| `:core:domain` | Use cases (GetNextDepartures, PlanJourney, etc.) |
-| `:core:network` | Ktor client scaffold for future API integration |
-| `:core:designsystem` | Theme, colors, typography, shared components |
-| `:core:navigation` | Screen routes and navigation graph |
-| `:feature:home` | Favorites, nearby stations, next departures |
-| `:feature:lines` | Line browser and line detail |
-| `:feature:stations` | Station detail with departures |
-| `:feature:schedule` | Full timetable viewer |
-| `:feature:map` | Schematic transit map |
-| `:feature:settings` | Language, theme, about |
-
-## Transit Coverage
+## Transit coverage
 
 | Mode | Lines | Stations |
 |------|-------|----------|
@@ -76,7 +53,52 @@ Each feature module depends on `core:domain` for business logic and `core:design
 
 Schedule data sourced from official [STASY](https://www.stasy.gr) and [Hellenic Train](https://www.hellenictrain.gr) timetables.
 
-## Getting Started
+## Architecture
+
+Modular MVI architecture with unidirectional data flow. Each feature is an isolated Gradle module that depends only on shared core modules.
+
+```
+androidApp / iosApp
+    |
+composeApp (shared Compose UI entry point)
+    |
+feature modules (home, lines, stations, schedule, map, settings)
+    |
+core modules (domain -> data -> database, designsystem, navigation, model)
+```
+
+### Tech stack
+
+| Technology | Purpose |
+|------------|---------|
+| Kotlin 2.1 | Language |
+| Compose Multiplatform 1.8 | Shared UI across platforms |
+| SQLDelight | Local offline database |
+| Koin | Dependency injection |
+| Ktor | HTTP client (for future live data) |
+| Voyager | Multiplatform navigation |
+| kotlinx-datetime | Schedule and time calculations |
+
+### Modules
+
+| Module | Role |
+|--------|------|
+| `:core:model` | Domain data classes |
+| `:core:common` | Result type, time utilities, dispatcher abstraction |
+| `:core:database` | SQLDelight schema, DAOs, platform drivers |
+| `:core:data` | Repositories, JSON seed data, database seeder |
+| `:core:domain` | Use cases (next departures, route planning, search) |
+| `:core:network` | Ktor client scaffold for future API |
+| `:core:designsystem` | Theme, colors, typography, shared components |
+| `:core:navigation` | Screen routes and tab structure |
+| `:feature:home` | Nearest station, favorites, next departures |
+| `:feature:lines` | Line browser and line detail |
+| `:feature:stations` | Station detail with arrival countdowns |
+| `:feature:schedule` | Full timetable viewer |
+| `:feature:map` | Schematic transit map |
+| `:feature:settings` | Language, theme, about |
+
+## Getting started
 
 ### Prerequisites
 
@@ -84,10 +106,9 @@ Schedule data sourced from official [STASY](https://www.stasy.gr) and [Hellenic 
 - Android Studio Ladybug or later (for Android)
 - Xcode 15+ (for iOS, macOS only)
 
-### Build and Run
+### Build and run
 
 ```bash
-# Clone
 git clone https://github.com/peterdsp/Syrmos.git
 cd Syrmos
 
@@ -101,7 +122,7 @@ open iosApp/iosApp.xcodeproj
 ./gradlew :composeApp:wasmJsBrowserRun
 ```
 
-### Run Tests
+### Tests
 
 ```bash
 ./gradlew allTests
@@ -109,25 +130,27 @@ open iosApp/iosApp.xcodeproj
 
 ## Roadmap
 
-- [ ] Core domain models and data layer
-- [ ] Embedded schedule data for all lines
-- [ ] Home screen with next departures
+- [x] Project structure and core models
+- [ ] Embedded schedule data for all lines and stations
+- [ ] Next departure calculation engine
+- [ ] GPS nearest station detection
+- [ ] Home screen with live countdowns
 - [ ] Line and station detail screens
 - [ ] Schematic transit map
 - [ ] Route planner with transfers
-- [ ] Live data integration (when OASA API becomes available)
-- [ ] Push notifications for service disruptions
-- [ ] Widget support (Android, iOS)
+- [ ] Live data integration (when OASA API is available)
+- [ ] Service disruption alerts
+- [ ] Home screen widgets (Android, iOS)
 
-## Data Sources
+## Data sources
 
 All schedule data is extracted from official PDF timetables published by:
 
 - **STASY** (stasy.gr): Metro Lines 1, 2, 3 and Tram
 - **Hellenic Train** (hellenictrain.gr): Suburban Railway (Proastiakos)
 
-This app is not affiliated with STASY, Hellenic Train or OASA.
+Syrmos is not affiliated with STASY, Hellenic Train or OASA.
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE) for details.
