@@ -1,0 +1,241 @@
+-- Lines (metro, tram, suburban)
+CREATE TABLE line_entity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_el TEXT NOT NULL,
+    type TEXT NOT NULL,
+    color TEXT NOT NULL,
+    terminal_a TEXT NOT NULL,
+    terminal_b TEXT NOT NULL,
+    station_count INTEGER NOT NULL
+);
+
+-- Stations
+CREATE TABLE station_entity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_el TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    is_interchange INTEGER NOT NULL DEFAULT 0,
+    accessibility INTEGER NOT NULL DEFAULT 1,
+    zone INTEGER NOT NULL DEFAULT 1
+);
+
+-- Station-Line junction with ordering
+CREATE TABLE station_line_entity (
+    station_id TEXT NOT NULL,
+    line_id TEXT NOT NULL,
+    position_on_line INTEGER NOT NULL,
+    PRIMARY KEY (station_id, line_id),
+    FOREIGN KEY (station_id) REFERENCES station_entity(id),
+    FOREIGN KEY (line_id) REFERENCES line_entity(id)
+);
+
+-- Departure times per station per line per direction per day type
+CREATE TABLE schedule_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    line_id TEXT NOT NULL,
+    station_id TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    day_type TEXT NOT NULL,
+    departure_time TEXT NOT NULL,
+    notes TEXT,
+    FOREIGN KEY (line_id) REFERENCES line_entity(id),
+    FOREIGN KEY (station_id) REFERENCES station_entity(id)
+);
+
+-- Frequency bands per line per day type
+CREATE TABLE frequency_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    line_id TEXT NOT NULL,
+    day_type TEXT NOT NULL,
+    time_range TEXT NOT NULL,
+    frequency_minutes INTEGER NOT NULL,
+    FOREIGN KEY (line_id) REFERENCES line_entity(id)
+);
+
+-- Transfer connections between lines at interchange stations
+CREATE TABLE transfer_entity (
+    station_id TEXT NOT NULL,
+    from_line_id TEXT NOT NULL,
+    to_line_id TEXT NOT NULL,
+    walking_minutes INTEGER NOT NULL DEFAULT 3,
+    PRIMARY KEY (station_id, from_line_id, to_line_id)
+);
+
+-- User favorites
+CREATE TABLE favorite_entity (
+    id TEXT NOT NULL PRIMARY KEY,
+    type TEXT NOT NULL,
+    reference_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- App metadata (seed version, etc.)
+CREATE TABLE metadata_entity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- User settings
+CREATE TABLE settings_entity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_schedule_lookup
+    ON schedule_entity(station_id, line_id, direction, day_type);
+
+CREATE INDEX idx_station_line_position
+    ON station_line_entity(line_id, position_on_line);
+
+CREATE INDEX idx_frequency_lookup
+    ON frequency_entity(line_id, day_type);
+
+-- ===== QUERIES =====
+
+-- Lines
+getAllLines:
+SELECT * FROM line_entity ORDER BY type, name;
+
+getLineById:
+SELECT * FROM line_entity WHERE id = ?;
+
+getLinesByType:
+SELECT * FROM line_entity WHERE type = ? ORDER BY name;
+
+insertLine:
+INSERT OR REPLACE INTO line_entity(id, name, name_el, type, color, terminal_a, terminal_b, station_count)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Stations
+getAllStations:
+SELECT * FROM station_entity ORDER BY name;
+
+getStationById:
+SELECT * FROM station_entity WHERE id = ?;
+
+getInterchangeStations:
+SELECT * FROM station_entity WHERE is_interchange = 1 ORDER BY name;
+
+searchStations:
+SELECT * FROM station_entity
+WHERE name LIKE ? OR name_el LIKE ?
+ORDER BY name;
+
+insertStation:
+INSERT OR REPLACE INTO station_entity(id, name, name_el, latitude, longitude, is_interchange, accessibility, zone)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Station-Line relations
+getStationsOnLine:
+SELECT s.* FROM station_entity s
+INNER JOIN station_line_entity sl ON s.id = sl.station_id
+WHERE sl.line_id = ?
+ORDER BY sl.position_on_line ASC;
+
+getLinesAtStation:
+SELECT l.* FROM line_entity l
+INNER JOIN station_line_entity sl ON l.id = sl.line_id
+WHERE sl.station_id = ?;
+
+getStationPosition:
+SELECT position_on_line FROM station_line_entity
+WHERE station_id = ? AND line_id = ?;
+
+insertStationLine:
+INSERT OR REPLACE INTO station_line_entity(station_id, line_id, position_on_line)
+VALUES (?, ?, ?);
+
+-- Schedule
+getNextDepartures:
+SELECT departure_time, notes FROM schedule_entity
+WHERE station_id = ? AND line_id = ? AND direction = ? AND day_type = ?
+    AND departure_time >= ?
+ORDER BY departure_time ASC
+LIMIT ?;
+
+getAllDepartures:
+SELECT departure_time, notes FROM schedule_entity
+WHERE station_id = ? AND line_id = ? AND direction = ? AND day_type = ?
+ORDER BY departure_time ASC;
+
+getFirstDeparture:
+SELECT departure_time FROM schedule_entity
+WHERE station_id = ? AND line_id = ? AND direction = ? AND day_type = ?
+ORDER BY departure_time ASC
+LIMIT 1;
+
+insertSchedule:
+INSERT INTO schedule_entity(line_id, station_id, direction, day_type, departure_time, notes)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Frequency
+getFrequencies:
+SELECT * FROM frequency_entity
+WHERE line_id = ? AND day_type = ?
+ORDER BY time_range;
+
+insertFrequency:
+INSERT INTO frequency_entity(line_id, day_type, time_range, frequency_minutes)
+VALUES (?, ?, ?, ?);
+
+-- Transfers
+getTransfersAtStation:
+SELECT * FROM transfer_entity WHERE station_id = ?;
+
+insertTransfer:
+INSERT OR REPLACE INTO transfer_entity(station_id, from_line_id, to_line_id, walking_minutes)
+VALUES (?, ?, ?, ?);
+
+-- Favorites
+getAllFavorites:
+SELECT * FROM favorite_entity ORDER BY created_at DESC;
+
+getFavoritesByType:
+SELECT * FROM favorite_entity WHERE type = ? ORDER BY created_at DESC;
+
+isFavorite:
+SELECT COUNT(*) FROM favorite_entity WHERE type = ? AND reference_id = ?;
+
+insertFavorite:
+INSERT OR REPLACE INTO favorite_entity(id, type, reference_id, created_at)
+VALUES (?, ?, ?, ?);
+
+deleteFavorite:
+DELETE FROM favorite_entity WHERE type = ? AND reference_id = ?;
+
+-- Metadata
+getMetadata:
+SELECT value FROM metadata_entity WHERE key = ?;
+
+setMetadata:
+INSERT OR REPLACE INTO metadata_entity(key, value) VALUES (?, ?);
+
+-- Settings
+getSetting:
+SELECT value FROM settings_entity WHERE key = ?;
+
+setSetting:
+INSERT OR REPLACE INTO settings_entity(key, value) VALUES (?, ?);
+
+-- Cleanup
+deleteAllSchedules:
+DELETE FROM schedule_entity;
+
+deleteAllFrequencies:
+DELETE FROM frequency_entity;
+
+deleteAllStationLines:
+DELETE FROM station_line_entity;
+
+deleteAllTransfers:
+DELETE FROM transfer_entity;
+
+deleteAllStations:
+DELETE FROM station_entity;
+
+deleteAllLines:
+DELETE FROM line_entity;
