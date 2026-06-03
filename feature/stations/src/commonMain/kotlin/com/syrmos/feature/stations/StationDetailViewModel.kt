@@ -24,7 +24,6 @@ data class StationDetailUiState(
 )
 
 class StationDetailViewModel(
-    private val stationId: String,
     private val getStationDetail: GetStationDetailUseCase,
     private val getNextDepartures: GetNextDeparturesUseCase,
 ) {
@@ -32,12 +31,13 @@ class StationDetailViewModel(
     private val _uiState = MutableStateFlow(StationDetailUiState())
     val uiState: StateFlow<StationDetailUiState> = _uiState.asStateFlow()
 
-    init {
-        loadStation()
-    }
+    private var loadedStationId: String? = null
 
-    private fun loadStation() {
+    fun loadStation(stationId: String) {
+        if (stationId == loadedStationId) return
+        loadedStationId = stationId
         scope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             val detail = getStationDetail.invoke(stationId).first() ?: return@launch
 
             _uiState.update {

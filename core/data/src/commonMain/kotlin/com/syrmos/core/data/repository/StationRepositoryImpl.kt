@@ -74,6 +74,18 @@ class StationRepositoryImpl(
         emit(nearest)
     }
 
+    fun getAllStations(): Flow<List<Station>> = flow {
+        val stations = database.syrmosDatabaseQueries.getAllStations()
+            .executeAsList()
+            .map { entity ->
+                val lineIds = database.syrmosDatabaseQueries.getLinesAtStation(entity.id)
+                    .executeAsList()
+                    .map { it.id }
+                entity.toDomain(lineIds)
+            }
+        emit(stations)
+    }
+
     fun getInterchangeStations(): Flow<List<Station>> = flow {
         val stations = database.syrmosDatabaseQueries.getInterchangeStations()
             .executeAsList()

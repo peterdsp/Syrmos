@@ -8,6 +8,8 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.feature.map.MapScreen
+import com.syrmos.feature.map.MapViewModel
+import org.koin.compose.koinInject
 
 object MapTab : Tab {
     override val options: TabOptions
@@ -23,6 +25,7 @@ object MapTab : Tab {
 
     @Composable
     override fun Content() {
-        MapScreen()
+        val viewModel = koinInject<MapViewModel>()
+        MapScreen(viewModel = viewModel)
     }
 }

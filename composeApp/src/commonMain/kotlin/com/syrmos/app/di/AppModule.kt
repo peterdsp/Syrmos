@@ -5,7 +5,10 @@ import com.syrmos.core.database.di.databaseModule
 import com.syrmos.core.domain.di.domainModule
 import com.syrmos.core.network.di.networkModule
 import com.syrmos.feature.home.HomeViewModel
+import com.syrmos.feature.lines.LineDetailViewModel
 import com.syrmos.feature.lines.LinesViewModel
+import com.syrmos.feature.map.MapViewModel
+import com.syrmos.feature.stations.StationDetailViewModel
 import org.koin.dsl.module
 
 val featureModule = module {
@@ -18,6 +21,9 @@ val featureModule = module {
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
+    factory { LineDetailViewModel(getLineDetailUseCase = get()) }
+    factory { MapViewModel(stationRepository = get(), lineRepository = get()) }
+    factory { StationDetailViewModel(getStationDetail = get(), getNextDepartures = get()) }
 }
 
 val appModules = listOf(
