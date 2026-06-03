@@ -1,20 +1,40 @@
 import SwiftUI
 
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        config.delegateClass = SceneDelegate.self
+        return config
+    }
+}
+
+class SceneDelegate: NSObject, UIWindowSceneDelegate {
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+        for window in windowScene.windows {
+            window.backgroundColor = .systemGroupedBackground
+        }
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+        for window in windowScene.windows {
+            window.backgroundColor = .systemGroupedBackground
+        }
+    }
+}
+
 @main
 struct SyrmosApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
-                    // Match window background to system appearance
-                    for scene in UIApplication.shared.connectedScenes {
-                        if let windowScene = scene as? UIWindowScene {
-                            for window in windowScene.windows {
-                                window.backgroundColor = .systemGroupedBackground
-                            }
-                        }
-                    }
-                }
         }
     }
 }
