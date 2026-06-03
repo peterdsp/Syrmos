@@ -52,26 +52,26 @@ struct ServicePattern {
 enum SyrmosData {
 
     static let lines: [TransitLine] = [
-        .init(id: "M1", name: "Line 1", nameEl: "Γραμμή 1", terminalA: "Piraeus", terminalB: "Kifisia", stationCount: 24, color: .metroGreen, type: .metro),
+        .init(id: "M1", name: "Line 1", nameEl: "Γραμμή 1", terminalA: "Piraeus", terminalB: "Kifissia", stationCount: 24, color: .metroGreen, type: .metro),
         .init(id: "M2", name: "Line 2", nameEl: "Γραμμή 2", terminalA: "Anthoupoli", terminalB: "Elliniko", stationCount: 20, color: .metroRed, type: .metro),
-        .init(id: "M3", name: "Line 3", nameEl: "Γραμμή 3", terminalA: "Dimotiko Theatro", terminalB: "Douk. Plakentias", stationCount: 23, color: .metroBlue, type: .metro),
-        .init(id: "M3A", name: "Line 3 Airport", nameEl: "Γραμμή 3 Αεροδρόμιο", terminalA: "Dimotiko Theatro", terminalB: "Airport", stationCount: 27, color: .metroBlue, type: .metro),
+        .init(id: "M3", name: "Line 3", nameEl: "Γραμμή 3", terminalA: "Dimotiko Theatro", terminalB: "Airport", stationCount: 27, color: .metroBlue, type: .metro),
         .init(id: "T6", name: "Tram T6", nameEl: "Τραμ Τ6", terminalA: "Syntagma", terminalB: "Pikrodafni", stationCount: 19, color: .tramOrange, type: .tram),
-        .init(id: "T7", name: "Tram T7", nameEl: "Τραμ Τ7", terminalA: "Akti Posidonos", terminalB: "Asklipiio Voulas", stationCount: 37, color: .tramOrange, type: .tram),
-        .init(id: "P1", name: "Suburban Airport-Piraeus", nameEl: "Προαστιακός Αεροδρόμιο-Πειραιάς", terminalA: "Airport", terminalB: "Piraeus", stationCount: 12, color: .suburbanPurple, type: .suburban),
-        .init(id: "P2", name: "Suburban Piraeus-Kiato", nameEl: "Προαστιακός Πειραιάς-Κιάτο", terminalA: "Piraeus", terminalB: "Kiato", stationCount: 18, color: .suburbanPurple, type: .suburban),
+        .init(id: "T7", name: "Tram T7", nameEl: "Τραμ Τ7", terminalA: "Akti Poseidonos", terminalB: "Asklipiio Voulas", stationCount: 37, color: .tramOrange, type: .tram),
+        .init(id: "A1", name: "A1 Piraeus-Airport", nameEl: "Α1 Πειραιάς-Αεροδρόμιο", terminalA: "Piraeus", terminalB: "Airport", stationCount: 19, color: .suburbanPurple, type: .suburban),
+        .init(id: "A2", name: "A2 Ano Liosia-Airport", nameEl: "Α2 Άνω Λιόσια-Αεροδρόμιο", terminalA: "Ano Liosia", terminalB: "Airport", stationCount: 12, color: .suburbanPurple, type: .suburban),
+        .init(id: "A3", name: "A3 Athens-Chalcis", nameEl: "Α3 Αθήνα-Χαλκίδα", terminalA: "Athens", terminalB: "Chalcis", stationCount: 17, color: .suburbanPurple, type: .suburban),
+        .init(id: "A4", name: "A4 Piraeus-Kiato", nameEl: "Α4 Πειραιάς-Κιάτο", terminalA: "Piraeus", terminalB: "Kiato", stationCount: 20, color: .suburbanPurple, type: .suburban),
     ]
 
     static func line(for id: String) -> TransitLine? {
-        if id == "M3A" { return lines.first { $0.id == "M3A" } }
-        return lines.first { $0.id == id }
+        lines.first { $0.id == id }
     }
 
     static func lineColor(for id: String) -> Color {
         switch id {
         case "M1": return .metroGreen
         case "M2": return .metroRed
-        case "M3", "M3A": return .metroBlue
+        case "M3": return .metroBlue
         case "T6", "T7": return .tramOrange
         default: return .suburbanPurple
         }
@@ -83,10 +83,13 @@ enum SyrmosData {
         switch lineId {
         case "M1": return StationCoords.line1.map { makeStation($0, primaryLine: "M1") }
         case "M2": return StationCoords.line2.map { makeStation($0, primaryLine: "M2") }
-        case "M3", "M3A": return StationCoords.line3.map { makeStation($0, primaryLine: "M3") }
+        case "M3": return StationCoords.line3.map { makeStation($0, primaryLine: "M3") }
         case "T6": return StationCoords.tramT6.map { makeStation($0, primaryLine: "T6") }
         case "T7": return StationCoords.tramT7.map { makeStation($0, primaryLine: "T7") }
-        case "P1": return StationCoords.suburbanA1.map { makeStation($0, primaryLine: "P1") }
+        case "A1": return StationCoords.suburbanA1.map { makeStation($0, primaryLine: "A1") }
+        case "A2": return StationCoords.suburbanA2.map { makeStation($0, primaryLine: "A2") }
+        case "A3": return StationCoords.suburbanA3.map { makeStation($0, primaryLine: "A3") }
+        case "A4": return StationCoords.suburbanA4.map { makeStation($0, primaryLine: "A4") }
         default: return []
         }
     }
@@ -174,15 +177,25 @@ enum SyrmosData {
                 ServicePattern(lineId: "T7", direction: "Asklipiio Voulas", frequencyMinutes: 12, serviceType: "regular"),
                 ServicePattern(lineId: "T7", direction: "Akti Posidonos", frequencyMinutes: 12, serviceType: "regular"),
             ]
-        case "P1":
+        case "A1":
             return [
-                ServicePattern(lineId: "P1", direction: "Piraeus", frequencyMinutes: 30, serviceType: "suburban"),
-                ServicePattern(lineId: "P1", direction: "Airport", frequencyMinutes: 30, serviceType: "suburban"),
+                ServicePattern(lineId: "A1", direction: "Airport", frequencyMinutes: 30, serviceType: "suburban"),
+                ServicePattern(lineId: "A1", direction: "Piraeus", frequencyMinutes: 30, serviceType: "suburban"),
             ]
-        case "P2":
+        case "A2":
             return [
-                ServicePattern(lineId: "P2", direction: "Kiato", frequencyMinutes: 60, serviceType: "suburban"),
-                ServicePattern(lineId: "P2", direction: "Piraeus", frequencyMinutes: 60, serviceType: "suburban"),
+                ServicePattern(lineId: "A2", direction: "Airport", frequencyMinutes: 60, serviceType: "suburban"),
+                ServicePattern(lineId: "A2", direction: "Ano Liosia", frequencyMinutes: 60, serviceType: "suburban"),
+            ]
+        case "A3":
+            return [
+                ServicePattern(lineId: "A3", direction: "Chalcis", frequencyMinutes: 90, serviceType: "regional"),
+                ServicePattern(lineId: "A3", direction: "Athens", frequencyMinutes: 90, serviceType: "regional"),
+            ]
+        case "A4":
+            return [
+                ServicePattern(lineId: "A4", direction: "Kiato", frequencyMinutes: 60, serviceType: "regional"),
+                ServicePattern(lineId: "A4", direction: "Piraeus", frequencyMinutes: 60, serviceType: "regional"),
             ]
         default:
             return []

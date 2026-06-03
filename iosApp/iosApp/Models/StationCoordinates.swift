@@ -183,6 +183,70 @@ enum StationCoords {
         ("A1_AER", "Airport", "Αεροδρόμιο", 37.9368156, 23.9448470),
     ]
 
+    // MARK: - Suburban A2 (Ano Liosia to Airport) - OSM relation 8467443
+
+    static let suburbanA2: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        ("A2_ANL", "Ano Liosia", "Άνω Λιόσια", 38.0707953, 23.7100051),
+        ("A2_ACH", "Acharnai Center", "Σιδ. Κέντρο Αχαρνών", 38.0656438, 23.7376508),
+        ("A2_MET", "Metamorfosi", "Μεταμόρφωση", 38.0600674, 23.7562064),
+        ("A2_IRK", "Irakleio", "Ηράκλειο", 38.0567845, 23.7720928),
+        ("A2_NER", "Neratziotissa", "Νερατζιώτισσα", 38.0447682, 23.7941064),
+        ("A2_KIF", "Kifisias", "Κηφισίας", 38.0419210, 23.8040729),
+        ("A2_PEN", "Pentelis", "Πεντέλης", 38.0328796, 23.8225838),
+        ("A2_DPL", "Douk. Plakentias", "Δουκίσσης Πλακεντίας", 38.0247026, 23.8338693),
+        ("A2_PAL", "Pallini", "Παλλήνη", 38.0054925, 23.8696405),
+        ("A2_PEK", "Peania-Kantza", "Παιανία-Κάντζα", 37.9839819, 23.8698255),
+        ("A2_KRP", "Koropi", "Κορωπί", 37.9133050, 23.8955043),
+        ("A2_AER", "Airport", "Αεροδρόμιο", 37.9368156, 23.9448470),
+    ]
+
+    // MARK: - Suburban A3 (Athens to Chalcis) - OSM relation 8467442
+
+    static let suburbanA3: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        ("A3_ATH", "Athens", "Αθήνα", 37.9931275, 23.7202839),
+        ("A3_AAN", "Ag. Anargyroi", "Άγιοι Ανάργυροι", 38.0224583, 23.7186452),
+        ("A3_ACH", "Acharnai Center", "Σιδ. Κέντρο Αχαρνών", 38.0686445, 23.7378210),
+        ("A3_AXN", "Acharnes", "Αχαρνές", 38.0802534, 23.7440766),
+        ("A3_DEK", "Dekeleia", "Δεκέλεια", 38.0997540, 23.7801125),
+        ("A3_AST", "Ag. Stefanos", "Άγιος Στέφανος", 38.1403696, 23.8591873),
+        ("A3_AFI", "Afidnes", "Αφίδνες", 38.1883264, 23.8444658),
+        ("A3_SFE", "Sfendali", "Σφενδάλη", 38.2354158, 23.7844141),
+        ("A3_AVL", "Avlonas", "Αυλώνας", 38.2504724, 23.6955986),
+        ("A3_ATH2", "Ag. Thomas", "Άγιος Θωμάς", 38.2816770, 23.6672270),
+        ("A3_OIN", "Oinofyta", "Οινόφυτα", 38.3069654, 23.6338955),
+        ("A3_OIN2", "Oinoi", "Οινόη", 38.3230172, 23.6090770),
+        ("A3_DIL", "Dilesi", "Δήλεσι", 38.3376364, 23.6094499),
+        ("A3_AGE", "Ag. Georgios", "Άγιος Γεώργιος", 38.3548928, 23.6074074),
+        ("A3_KAL", "Kalochori-Panteichi", "Καλοχώρι-Παντείχι", 38.3893073, 23.5931559),
+        ("A3_AUL", "Avlida", "Αυλίδα", 38.4044464, 23.6033835),
+        ("A3_CHA", "Chalkida", "Χαλκίδα", 38.4625271, 23.5861659),
+    ]
+
+    // MARK: - Suburban A4 (Piraeus to Kiato) - OSM relation 8467515
+
+    static let suburbanA4: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        ("A4_PIR", "Piraeus", "Πειραιάς", 37.9490666, 23.6434156),
+        ("A4_LEF", "Lefka", "Λεύκα", 37.9555849, 23.6541235),
+        ("A4_REN", "Rentis", "Ρέντης", 37.9622619, 23.6683076),
+        ("A4_TAV", "Tavros", "Ταύρος", 37.9689397, 23.6942248),
+        ("A4_ROU", "Rouf", "Ρουφ", 37.9736019, 23.7040087),
+        ("A4_ATH", "Athens", "Αθήνα", 37.9931275, 23.7202839),
+        ("A4_AAN", "Ag. Anargyroi", "Άγιοι Ανάργυροι", 38.0224583, 23.7186452),
+        ("A4_PYR", "Pyrgos Vasilissis", "Πύργος Βασιλίσσης", 38.0400365, 23.7276759),
+        ("A4_KAC", "Kato Acharnai", "Κάτω Αχαρναί", 38.0547251, 23.7328066),
+        ("A4_ZEF", "Zefyri", "Ζεφύρι", 38.0699579, 23.7163427),
+        ("A4_ANL", "Ano Liosia", "Άνω Λιόσια", 38.0707953, 23.7100051),
+        ("A4_ASP", "Aspropyrgos", "Ασπρόπυργος", 38.0810388, 23.6042595),
+        ("A4_MAG", "Magoula", "Μαγούλα", 38.0730827, 23.5291665),
+        ("A4_NPE", "Nea Peramos", "Νέα Πέραμος", 38.0127986, 23.4132616),
+        ("A4_MEG", "Megara", "Μέγαρα", 37.9910006, 23.3610190),
+        ("A4_KIN", "Kineta", "Κινέτα", 37.9654426, 23.2010371),
+        ("A4_ATH3", "Ag. Theodoroi", "Άγιοι Θεόδωροι", 37.9332405, 23.1369832),
+        ("A4_COR", "Corinth", "Κόρινθος", 37.9209680, 22.9323960),
+        ("A4_ZEV", "Zevgolatio", "Ζευγολατιό", 37.9263503, 22.8046326),
+        ("A4_KIA", "Kiato", "Κιάτο", 38.0139838, 22.7348102),
+    ]
+
     // MARK: - Line associations
 
     static let lineAssociations: [String: [String]] = [
@@ -194,8 +258,11 @@ enum StationCoords {
         "M3_DPL": ["M3", "P1"], "M3_AER": ["M3", "P1"],
         "T6_SYN": ["T6", "M2", "M3"], "T6_EDE": ["T6", "T7"], "T6_PIK": ["T6", "T7"],
         "T7_EDE": ["T7", "T6"], "T7_PIK": ["T7", "T6"],
-        "A1_PIR": ["P1", "M1"], "A1_ATH": ["P1", "M2"], "A1_NER": ["P1", "M1"],
-        "A1_DPL": ["P1", "M3"], "A1_AER": ["P1", "M3"],
+        "A1_PIR": ["A1", "M1"], "A1_ATH": ["A1", "M2"], "A1_NER": ["A1", "M1"],
+        "A1_DPL": ["A1", "M3"], "A1_AER": ["A1", "M3"],
+        "A2_NER": ["A2", "M1"], "A2_DPL": ["A2", "M3"], "A2_AER": ["A2", "M3"],
+        "A3_ATH": ["A3", "M2"], "A3_AAN": ["A3"],
+        "A4_PIR": ["A4", "M1"], "A4_ATH": ["A4", "M2"],
     ]
 
     static var allStations: [TransitStation] {
@@ -218,7 +285,10 @@ enum StationCoords {
         add(line3, defaultLine: "M3")
         add(tramT6, defaultLine: "T6")
         add(tramT7, defaultLine: "T7")
-        add(suburbanA1, defaultLine: "P1")
+        add(suburbanA1, defaultLine: "A1")
+        add(suburbanA2, defaultLine: "A2")
+        add(suburbanA3, defaultLine: "A3")
+        add(suburbanA4, defaultLine: "A4")
 
         return Array(stationMap.values).sorted { $0.name < $1.name }
     }
