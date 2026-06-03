@@ -19,13 +19,13 @@ class ScheduleRepositoryImpl(
         currentTime: String,
         limit: Int = 5,
     ): Flow<List<Departure>> = flow {
-        val departures = database.syrmosQueries.getNextDepartures(
+        val departures = database.syrmosDatabaseQueries.getNextDepartures(
             station_id = stationId,
             line_id = lineId,
             direction = direction.name.lowercase(),
             day_type = dayType.name.lowercase(),
             departure_time = currentTime,
-            limit = limit.toLong(),
+            value_ = limit.toLong(),
         ).executeAsList().map { row ->
             Departure(time = row.departure_time, notes = row.notes)
         }
@@ -38,7 +38,7 @@ class ScheduleRepositoryImpl(
         direction: Direction,
         dayType: DayType,
     ): Flow<List<Departure>> = flow {
-        val departures = database.syrmosQueries.getAllDepartures(
+        val departures = database.syrmosDatabaseQueries.getAllDepartures(
             station_id = stationId,
             line_id = lineId,
             direction = direction.name.lowercase(),
@@ -53,7 +53,7 @@ class ScheduleRepositoryImpl(
         lineId: String,
         dayType: DayType,
     ): Flow<List<Frequency>> = flow {
-        val frequencies = database.syrmosQueries.getFrequencies(
+        val frequencies = database.syrmosDatabaseQueries.getFrequencies(
             line_id = lineId,
             day_type = dayType.name.lowercase(),
         ).executeAsList().map { entity ->

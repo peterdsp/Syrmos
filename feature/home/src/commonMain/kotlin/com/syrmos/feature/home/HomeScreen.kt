@@ -124,5 +124,8 @@ private fun lineIdToColor(lineId: String): LineColor? = when {
 
 private fun formatDistance(meters: Int): String = when {
     meters < 1000 -> "${meters}m"
-    else -> "${"%.1f".format(meters / 1000.0)}km"
+    else -> {
+        val km = meters / 100
+        "${km / 10}.${km % 10}km"
+    }
 }

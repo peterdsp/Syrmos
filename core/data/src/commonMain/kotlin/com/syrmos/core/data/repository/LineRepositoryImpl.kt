@@ -11,19 +11,19 @@ class LineRepositoryImpl(
     private val database: SyrmosDatabase,
 ) {
     fun getAllLines(): Flow<List<Line>> = flow {
-        val lines = database.syrmosQueries.getAllLines().executeAsList()
+        val lines = database.syrmosDatabaseQueries.getAllLines().executeAsList()
             .map { it.toDomain() }
         emit(lines)
     }
 
     fun getLineById(id: String): Flow<Line?> = flow {
-        val line = database.syrmosQueries.getLineById(id).executeAsOneOrNull()
+        val line = database.syrmosDatabaseQueries.getLineById(id).executeAsOneOrNull()
             ?.toDomain()
         emit(line)
     }
 
     fun getLinesByType(type: LineType): Flow<List<Line>> = flow {
-        val lines = database.syrmosQueries.getLinesByType(type.name.lowercase())
+        val lines = database.syrmosDatabaseQueries.getLinesByType(type.name.lowercase())
             .executeAsList()
             .map { it.toDomain() }
         emit(lines)

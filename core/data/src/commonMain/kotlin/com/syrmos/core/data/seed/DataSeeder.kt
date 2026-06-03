@@ -10,7 +10,7 @@ class DataSeeder(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun seedIfNeeded() {
-        val currentVersion = database.syrmosQueries.getMetadata("seed_version")
+        val currentVersion = database.syrmosDatabaseQueries.getMetadata("seed_version")
             .executeAsOneOrNull()
         if (currentVersion != null && currentVersion >= SEED_VERSION) return
 
@@ -32,15 +32,15 @@ class DataSeeder(
         )
 
         database.transaction {
-            database.syrmosQueries.deleteAllSchedules()
-            database.syrmosQueries.deleteAllFrequencies()
-            database.syrmosQueries.deleteAllTransfers()
-            database.syrmosQueries.deleteAllStationLines()
-            database.syrmosQueries.deleteAllStations()
-            database.syrmosQueries.deleteAllLines()
+            database.syrmosDatabaseQueries.deleteAllSchedules()
+            database.syrmosDatabaseQueries.deleteAllFrequencies()
+            database.syrmosDatabaseQueries.deleteAllTransfers()
+            database.syrmosDatabaseQueries.deleteAllStationLines()
+            database.syrmosDatabaseQueries.deleteAllStations()
+            database.syrmosDatabaseQueries.deleteAllLines()
 
             lines.forEach { line ->
-                database.syrmosQueries.insertLine(
+                database.syrmosDatabaseQueries.insertLine(
                     id = line.id,
                     name = line.name,
                     name_el = line.nameEl,
@@ -54,7 +54,7 @@ class DataSeeder(
 
             val stationPositions = mutableMapOf<String, MutableMap<String, Int>>()
             stations.forEach { station ->
-                database.syrmosQueries.insertStation(
+                database.syrmosDatabaseQueries.insertStation(
                     id = station.id,
                     name = station.name,
                     name_el = station.nameEl,
@@ -68,7 +68,7 @@ class DataSeeder(
                     val linePositions = stationPositions.getOrPut(lineId) { mutableMapOf() }
                     val position = linePositions.size
                     linePositions[station.id] = position
-                    database.syrmosQueries.insertStationLine(
+                    database.syrmosDatabaseQueries.insertStationLine(
                         station_id = station.id,
                         line_id = lineId,
                         position_on_line = position.toLong(),
@@ -77,7 +77,7 @@ class DataSeeder(
             }
 
             transfers.forEach { transfer ->
-                database.syrmosQueries.insertTransfer(
+                database.syrmosDatabaseQueries.insertTransfer(
                     station_id = transfer.stationId,
                     from_line_id = transfer.fromLineId,
                     to_line_id = transfer.toLineId,
@@ -86,7 +86,7 @@ class DataSeeder(
             }
 
             frequencies.forEach { freq ->
-                database.syrmosQueries.insertFrequency(
+                database.syrmosDatabaseQueries.insertFrequency(
                     line_id = freq.lineId,
                     day_type = freq.dayType,
                     time_range = freq.timeRange,
@@ -94,7 +94,7 @@ class DataSeeder(
                 )
             }
 
-            database.syrmosQueries.setMetadata("seed_version", SEED_VERSION)
+            database.syrmosDatabaseQueries.setMetadata("seed_version", SEED_VERSION)
         }
     }
 
