@@ -8,40 +8,165 @@ struct TransitMapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
         )
     )
-    @State private var selectedMapItem: MKMapItem?
+    @State private var selectedId: String?
+    @State private var tappedStation: TransitStation?
+    @State private var showSheet = false
+
+    private let stations = StationCoords.allStations
 
     var body: some View {
         NavigationStack {
-            Map(position: $position, selection: $selectedMapItem) {
+            Map(position: $position, selection: $selectedId) {
                 UserAnnotation()
+
+                ForEach(stations) { station in
+                    Marker(
+                        station.name,
+                        systemImage: station.isInterchange ? "arrow.triangle.2.circlepath" : "tram.fill",
+                        coordinate: station.coordinate
+                    )
+                    .tint(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
+                    .tag(station.id)
+                }
             }
-            .mapStyle(.standard(
-                elevation: .flat,
-                pointsOfInterest: .including([.publicTransport]),
-                showsTraffic: false
-            ))
+            .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll, showsTraffic: false))
             .mapControls {
                 MapUserLocationButton()
                 MapCompass()
                 MapScaleView()
             }
-            .mapFeatureSelectionAccessory_compat()
+            .onChange(of: selectedId) { _, newId in
+                guard let id = newId,
+                      let station = stations.first(where: { $0.id == id }) else { return }
+                tappedStation = station
+                showSheet = true
+            }
             .navigationTitle("Transit Map")
-            .onChange(of: selectedMapItem) { _, item in
-                // Apple Maps handles the detail card natively
-                // for transit stations with departures and directions
+            .sheet(isPresented: $showSheet, onDismiss: { selectedId = nil }) {
+                if let station = tappedStation {
+                    StationSheetView(station: station)
+                        .presentationDetents([.medium])
+                        .presentationDragIndicator(.visible)
+                }
             }
         }
     }
 }
 
-extension View {
-    @ViewBuilder
-    func mapFeatureSelectionAccessory_compat() -> some View {
-        if #available(iOS 18.0, *) {
-            self.mapFeatureSelectionAccessory(.automatic)
-        } else {
-            self
+// MARK: - Station Sheet
+
+struct StationSheetView: View {
+    let station: TransitStation
+    @Environment(\.dismiss) private var dismiss
+    @State private var departures: [Departure] = []
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                lineBadges
+                if !departures.isEmpty { departuresList }
+                directionsButton
+            }
+            .padding()
         }
+        .onAppear {
+            if !station.lineIds.isEmpty {
+                departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(station.name)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                if !station.nameEl.isEmpty {
+                    Text(station.nameEl)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Button("Done") { dismiss() }
+        }
+    }
+
+    private var lineBadges: some View {
+        HStack(spacing: 6) {
+            ForEach(station.lineIds, id: \.self) { lineId in
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(SyrmosData.lineColor(for: lineId))
+                        .frame(width: 8, height: 8)
+                    Text(SyrmosData.line(for: lineId)?.name ?? lineId)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                .clipShape(Capsule())
+            }
+        }
+    }
+
+    private var departuresList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Next Departures")
+                .font(.headline)
+            ForEach(departures.prefix(6)) { dep in
+                DepartureRowView(departure: dep)
+                Divider()
+            }
+        }
+    }
+
+    private var directionsButton: some View {
+        Button {
+            let dest = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
+            dest.name = station.name
+            dest.openInMaps(launchOptions: [
+                MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
+            ])
+        } label: {
+            Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+        }
+        .buttonStyle(.bordered)
+    }
+}
+
+// MARK: - Departure Row
+
+struct DepartureRowView: View {
+    let departure: Departure
+
+    var body: some View {
+        HStack {
+            Circle()
+                .fill(SyrmosData.lineColor(for: departure.lineId))
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                    .font(.subheadline)
+                Text("towards \(departure.direction)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(departure.minutesAway <= 1 ? "Now" : "\(departure.minutesAway) min")
+                .font(.headline)
+                .foregroundStyle(arrivalColor)
+        }
+    }
+
+    private var arrivalColor: Color {
+        if departure.minutesAway <= 2 { return Color.arrivalSoon }
+        if departure.minutesAway <= 5 { return Color.arrivalModerate }
+        return Color.arrivalFar
     }
 }

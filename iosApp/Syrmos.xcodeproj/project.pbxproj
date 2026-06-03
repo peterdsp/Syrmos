@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
 		090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */; };
+		2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */; };
 		59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCB57EF47F5B2293727841A /* StationDetailView.swift */; };
 		695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */; };
 		8FD7065798C557186BA57411 /* LinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D0CA28E96EEF13502C887F /* LinesView.swift */; };
@@ -23,6 +24,7 @@
 		1DF85A2E3F716D7313EC9642 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosApp.swift; sourceTree = "<group>"; };
 		28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosColors.swift; sourceTree = "<group>"; };
+		2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationCoordinates.swift; sourceTree = "<group>"; };
 		748CC40BCBDC9D468CD371B8 /* TransitData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitData.swift; sourceTree = "<group>"; };
 		7FD822CADE700A3FA325710D /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineDetailView.swift; sourceTree = "<group>"; };
@@ -125,6 +127,7 @@
 		F82A05549BFD7E1510363B16 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
 			);
 			path = Models;
@@ -190,6 +193,7 @@
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
 				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
+				2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */,
 				59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */,
 				B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */,
 				695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */,
