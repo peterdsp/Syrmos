@@ -15,6 +15,9 @@ targets:
         type: group
     info:
       path: iosApp/Info.plist
+      properties:
+        UILaunchScreen:
+          UIColorName: systemGroupedBackground
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.syrmos.ios

@@ -50,9 +50,20 @@ struct StationDetailView: View {
                                 .frame(width: 10, height: 10)
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
+                                HStack(spacing: 4) {
+                                    Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    if departure.serviceType == "airport" {
+                                        Text("Airport")
+                                            .font(.caption2)
+                                            .fontWeight(.semibold)
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 1)
+                                            .background(Color.metroBlue.opacity(0.15))
+                                            .clipShape(Capsule())
+                                    }
+                                }
                                 Text("towards \(departure.direction)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)

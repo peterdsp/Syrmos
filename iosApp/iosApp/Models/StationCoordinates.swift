@@ -90,49 +90,121 @@ enum StationCoords {
         ("M3_AER", "Airport", "Αεροδρόμιο", 37.9364, 23.9475),
     ]
 
+    // MARK: - Tram T6 (Syntagma - Pikrodafni)
+
+    static let tramT6: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        ("T6_SYN", "Syntagma", "Σύνταγμα", 37.9750, 23.7350),
+        ("T6_ZAP", "Zappeio", "Ζάππειο", 37.9717, 23.7356),
+        ("T6_VOU", "L. Vouliagmenis", "Λ. Βουλιαγμένης", 37.9667, 23.7303),
+        ("T6_FIX", "Fix", "Φιξ", 37.9633, 23.7275),
+        ("T6_KAS", "Kasomouli", "Κασομούλη", 37.9597, 23.7258),
+        ("T6_NEK", "Neos Kosmos", "Νέος Κόσμος", 37.9556, 23.7242),
+        ("T6_BAK", "Baknana", "Μπακνανά", 37.9525, 23.7219),
+        ("T6_AIG", "Aegeou", "Αιγαίου", 37.9492, 23.7203),
+        ("T6_AFP", "Agia Fotini", "Αγία Φωτεινή", 37.9458, 23.7186),
+        ("T6_MAL", "Meg. Alexandrou", "Μεγ. Αλεξάνδρου", 37.9425, 23.7172),
+        ("T6_APK", "Agia Paraskevi", "Αγία Παρασκευή", 37.9389, 23.7153),
+        ("T6_MED", "Medeas-Mykalis", "Μηδείας-Μυκάλης", 37.9375, 23.7147),
+        ("T6_EVS", "Evangeliki Scholi", "Ευαγγελική Σχολή", 37.9358, 23.7128),
+        ("T6_ACH", "Achilleos", "Αχιλλέως", 37.9339, 23.7108),
+        ("T6_AMF", "Amfitheas", "Αμφιθέας", 37.9314, 23.7081),
+        ("T6_PAN", "Panaghitsa", "Παναγίτσα", 37.9289, 23.7056),
+        ("T6_MOU", "Mousson", "Μουσών", 37.9261, 23.7028),
+        ("T6_EDE", "Edem", "Εδέμ", 37.9222, 23.6989),
+        ("T6_PIK", "Pikrodafni", "Πικροδάφνη", 37.9194, 23.6964),
+    ]
+
+    // MARK: - Tram T7 (Akti Posidonos - Asklipiio Voulas) key stops
+
+    static let tramT7: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        ("T7_AKT", "Akti Posidonos", "Ακτή Ποσειδώνος", 37.9420, 23.6610),
+        ("T7_SEF", "S.E.F.", "Σ.Ε.Φ.", 37.9440, 23.6690),
+        ("T7_NEF", "Neo Faliro", "Νέο Φάληρο", 37.9460, 23.6730),
+        ("T7_MOS", "Moschato", "Μοσχάτο", 37.9480, 23.6760),
+        ("T7_KAL", "Kallithea", "Καλλιθέα", 37.9500, 23.6830),
+        ("T7_TZI", "Tzitzifies", "Τζιτζιφιές", 37.9430, 23.6900),
+        ("T7_DEL", "Delta Falirou", "Δέλτα Φαλήρου", 37.9380, 23.6930),
+        ("T7_TRO", "Trocadero", "Τροκαντερό", 37.9350, 23.6940),
+        ("T7_FLI", "Flisvos", "Φλοίσβος", 37.9320, 23.6950),
+        ("T7_BAT", "Batis", "Μπάτις", 37.9280, 23.6960),
+        ("T7_EDE", "Edem", "Εδέμ", 37.9222, 23.6989),
+        ("T7_PIK", "Pikrodafni", "Πικροδάφνη", 37.9194, 23.6964),
+        ("T7_MAR", "Marina Alimou", "Μαρίνα Αλίμου", 37.9150, 23.7050),
+        ("T7_KAM", "Kalamaki", "Καλαμάκι", 37.9120, 23.7100),
+        ("T7_ELL", "Elliniko", "Ελληνικό", 37.8980, 23.7310),
+        ("T7_AKO", "Ag. Kosmas", "Αγ. Κοσμάς", 37.8880, 23.7220),
+        ("T7_GLY", "Glyfada", "Γλυφάδα", 37.8700, 23.7470),
+        ("T7_VOL", "Asklipiio Voulas", "Ασκληπίειο Βούλας", 37.8440, 23.7700),
+    ]
+
+    // MARK: - Suburban Railway P1 (Airport - Piraeus) key stops
+
+    static let suburbanP1: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        ("P1_AER", "Airport", "Αεροδρόμιο", 37.9364, 23.9475),
+        ("P1_DPL", "Douk. Plakentias", "Δουκ. Πλακεντίας", 38.0130, 23.8380),
+        ("P1_PEN", "Pendeli", "Πεντέλη", 38.0300, 23.8200),
+        ("P1_KIF", "Kifisia", "Κηφισιά", 38.0732, 23.8082),
+        ("P1_NER", "Neratziotissa", "Νερατζιώτισσα", 38.0451, 23.7929),
+        ("P1_IRN", "Irinida", "Ειρηνίδα", 38.0417, 23.7856),
+        ("P1_SKA", "SKA", "ΣΚΑ", 38.0350, 23.7700),
+        ("P1_LAR", "Larissa Station", "Σταθμός Λαρίσης", 37.9914, 23.7217),
+        ("P1_PIR", "Piraeus", "Πειραιάς", 37.9481, 23.6423),
+    ]
+
+    // MARK: - Line associations (which lines serve each station)
+
+    static let lineAssociations: [String: [String]] = [
+        // Metro interchanges
+        "M1_PIR": ["M1", "M3", "P1"],
+        "M1_MON": ["M1", "M3"],
+        "M1_OMO": ["M1", "M2"],
+        "M1_ATT": ["M1", "M2"],
+        "M1_NER": ["M1", "P1"],
+        "M2_SYN": ["M2", "M3"],
+        "M2_LAR": ["M2", "P1"],
+        "M3_PIR": ["M3", "M1", "P1"],
+        "M3_MON": ["M3", "M1"],
+        "M3_SYN": ["M3", "M2"],
+        "M3_DPL": ["M3", "P1"],
+        "M3_AER": ["M3", "P1"],
+        // Tram interchanges
+        "T6_SYN": ["T6", "M2", "M3"],
+        "T6_EDE": ["T6", "T7"],
+        "T6_PIK": ["T6", "T7"],
+        "T7_EDE": ["T7", "T6"],
+        "T7_PIK": ["T7", "T6"],
+        // Suburban
+        "P1_AER": ["P1", "M3"],
+        "P1_DPL": ["P1", "M3"],
+        "P1_NER": ["P1", "M1"],
+        "P1_LAR": ["P1", "M2"],
+        "P1_PIR": ["P1", "M1"],
+    ]
+
     static var allStations: [TransitStation] {
-        let interchangeIds: Set<String> = [
-            "M1_PIR", "M1_MON", "M1_OMO", "M1_ATT", "M1_NER",
-            "M2_ATT", "M2_OMO", "M2_SYN", "M2_LAR",
-            "M3_PIR", "M3_MON", "M3_SYN", "M3_DPL", "M3_AER",
-        ]
-
-        func makeStation(_ s: (id: String, name: String, nameEl: String, lat: Double, lon: Double), lines: [String]) -> TransitStation {
-            TransitStation(
-                id: s.id,
-                name: s.name,
-                nameEl: s.nameEl,
-                coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon),
-                lineIds: lines,
-                isInterchange: interchangeIds.contains(s.id)
-            )
-        }
-
         var stationMap: [String: TransitStation] = [:]
 
-        for s in line1 {
-            var lines = ["M1"]
-            if s.id == "M1_MON" { lines.append("M3") }
-            if s.id == "M1_OMO" { lines.append("M2") }
-            if s.id == "M1_ATT" { lines.append("M2") }
-            if s.id == "M1_PIR" { lines.append(contentsOf: ["M3", "P1"]) }
-            if s.id == "M1_NER" { lines.append("P1") }
-            stationMap[s.id] = makeStation(s, lines: lines)
+        func add(_ list: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)], defaultLine: String) {
+            for s in list {
+                if stationMap[s.id] != nil { continue }
+                let lines = lineAssociations[s.id] ?? [defaultLine]
+                stationMap[s.id] = TransitStation(
+                    id: s.id,
+                    name: s.name,
+                    nameEl: s.nameEl,
+                    coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon),
+                    lineIds: lines,
+                    isInterchange: lines.count > 1
+                )
+            }
         }
-        for s in line2 {
-            if stationMap[s.id] != nil { continue }
-            var lines = ["M2"]
-            if s.id == "M2_SYN" { lines.append("M3") }
-            if s.id == "M2_LAR" { lines.append("P1") }
-            stationMap[s.id] = makeStation(s, lines: lines)
-        }
-        for s in line3 {
-            if stationMap[s.id] != nil { continue }
-            var lines = ["M3"]
-            if s.id == "M3_DPL" { lines.append("P1") }
-            if s.id == "M3_AER" { lines.append("P1") }
-            stationMap[s.id] = makeStation(s, lines: lines)
-        }
+
+        add(line1, defaultLine: "M1")
+        add(line2, defaultLine: "M2")
+        add(line3, defaultLine: "M3")
+        add(tramT6, defaultLine: "T6")
+        add(tramT7, defaultLine: "T7")
+        add(suburbanP1, defaultLine: "P1")
 
         return Array(stationMap.values).sorted { $0.name < $1.name }
     }

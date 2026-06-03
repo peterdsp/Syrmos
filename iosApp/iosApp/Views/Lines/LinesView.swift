@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LinesView: View {
-    let lines = SyrmosData.lines
+    let lines = SyrmosData.lines.filter { $0.id != "M3A" }
 
     var body: some View {
         NavigationStack {
