@@ -9,10 +9,9 @@ A Kotlin Multiplatform transit companion for the Athens metro, tram and suburban
 <p align="center">
   <img src="docs/screenshots/home_iphone17.png" width="180" alt="Home (iOS 26)" />
   <img src="docs/screenshots/home_android.png" width="180" alt="Home (Android)" />
-  <img src="docs/screenshots/map_light.png" width="180" alt="Transit Map" />
-  <img src="docs/screenshots/settings_light.png" width="180" alt="Settings" />
+  <img src="docs/screenshots/home_light.png" width="720" alt="Home (Web)" />
 </p>
-<p align="center"><sub>iPhone 17 (iOS 26, liquid glass) · Pixel 8 (Android 15) · iPhone 14 (iOS 18.6)</sub></p>
+<p align="center"><sub>iPhone 17 (iOS 26, liquid glass) · Pixel 8 (Android 15) · Web (Wasm)</sub></p>
 
 ---
 
@@ -140,6 +139,14 @@ The `simulator.sh` script auto-detects the Xcode project, picks the latest iPhon
 ```bash
 ./gradlew :composeApp:wasmJsBrowserRun
 ```
+
+For a production web deploy, stage the complete site bundle first:
+
+```bash
+./gradlew :composeApp:stageWebRelease
+```
+
+Deploy everything from `composeApp/build/web-release/`, not just `index.html` and `composeApp.js`. The wasm build emits hashed `.wasm` files that must be published alongside the HTML, JS and favicon.
 
 ### Tests
 

@@ -34,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -107,7 +106,6 @@ fun MapScreen(
     val textMeasurer = rememberTextMeasurer()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    var showBottomSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -165,7 +163,6 @@ fun MapScreen(
 
                                 if (closestStation != null) {
                                     viewModel.selectStation(closestStation.id)
-                                    showBottomSheet = true
                                 }
                             }
                         },
@@ -223,13 +220,11 @@ fun MapScreen(
         }
 
         // Bottom sheet for selected station
-        if (showBottomSheet && uiState.selectedStation != null) {
-            val station = uiState.selectedStation!!
+        uiState.selectedStation?.let { station ->
             val stationLines = uiState.selectedStationLines
 
             ModalBottomSheet(
                 onDismissRequest = {
-                    showBottomSheet = false
                     viewModel.clearSelection()
                 },
                 sheetState = sheetState,

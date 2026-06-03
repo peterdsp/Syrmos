@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -20,10 +21,16 @@ import com.syrmos.app.tab.HomeTab
 import com.syrmos.app.tab.LinesTab
 import com.syrmos.app.tab.MapTab
 import com.syrmos.app.tab.SettingsTab
+import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.designsystem.theme.SyrmosTheme
+import org.koin.compose.koinInject
 
 @Composable
 fun SyrmosApp() {
+    val dataSeeder = koinInject<DataSeeder>()
+    LaunchedEffect(Unit) {
+        try { dataSeeder.seedIfNeeded() } catch (_: Exception) {}
+    }
     SyrmosTheme {
         TabNavigator(HomeTab) {
             Scaffold(

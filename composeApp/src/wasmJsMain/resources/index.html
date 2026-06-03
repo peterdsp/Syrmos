@@ -48,6 +48,14 @@
             animation: spin 0.8s linear infinite;
             margin-top: 24px;
         }
+        .loading.error .spinner {
+            display: none;
+        }
+        .loading.error p {
+            max-width: 360px;
+            text-align: center;
+            line-height: 1.5;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
@@ -59,20 +67,34 @@
 </div>
 <canvas id="ComposeTarget"></canvas>
 <script>
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    function showBootError(message) {
+        if (!loadingIndicator) return;
+        loadingIndicator.classList.add('error');
+        loadingIndicator.innerHTML = `
+            <h1>Syrmos</h1>
+            <p>${message}</p>
+        `;
+    }
+
     // Hide loading indicator once WASM canvas renders
     const observer = new MutationObserver(() => {
         const canvas = document.getElementById('ComposeTarget');
         if (canvas && canvas.width > 0) {
-            document.getElementById('loadingIndicator').style.display = 'none';
+            loadingIndicator.style.display = 'none';
             observer.disconnect();
         }
     });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-    // Fallback: hide after 10s regardless
-    setTimeout(() => {
-        const el = document.getElementById('loadingIndicator');
-        if (el) el.style.display = 'none';
-    }, 10000);
+
+    window.addEventListener('error', () => {
+        showBootError('The web app failed to start. Please reload. If it still fails, the deploy is missing required web assets.');
+    });
+
+    window.addEventListener('unhandledrejection', () => {
+        showBootError('The web app failed to load its runtime files. Please reload. If it still fails, the deploy is incomplete.');
+    });
 </script>
 <script src="composeApp.js"></script>
 </body>

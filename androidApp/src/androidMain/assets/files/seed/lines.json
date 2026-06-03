@@ -1,0 +1,82 @@
+[
+  {
+    "id": "M1",
+    "name": "Line 1",
+    "name_el": "Γραμμή 1",
+    "type": "metro",
+    "color": "#00843D",
+    "terminal_a": "Piraeus",
+    "terminal_b": "Kifisia",
+    "station_count": 24
+  },
+  {
+    "id": "M2",
+    "name": "Line 2",
+    "name_el": "Γραμμή 2",
+    "type": "metro",
+    "color": "#DA291C",
+    "terminal_a": "Anthoupoli",
+    "terminal_b": "Elliniko",
+    "station_count": 20
+  },
+  {
+    "id": "M3",
+    "name": "Line 3",
+    "name_el": "Γραμμή 3",
+    "type": "metro",
+    "color": "#0072CE",
+    "terminal_a": "Dimotiko Theatro",
+    "terminal_b": "Airport",
+    "station_count": 27
+  },
+  {
+    "id": "T6",
+    "name": "Tram T6",
+    "name_el": "Τραμ Τ6",
+    "type": "tram",
+    "color": "#E87722",
+    "terminal_a": "Syntagma",
+    "terminal_b": "Pikrodafni",
+    "station_count": 19
+  },
+  {
+    "id": "T7",
+    "name": "Tram T7",
+    "name_el": "Τραμ Τ7",
+    "type": "tram",
+    "color": "#E87722",
+    "terminal_a": "Akti Posidonos",
+    "terminal_b": "Asklipiio Voulas",
+    "station_count": 37
+  },
+  {
+    "id": "P1",
+    "name": "Suburban Airport-Piraeus",
+    "name_el": "Προαστιακός Αεροδρόμιο-Πειραιάς",
+    "type": "suburban",
+    "color": "#6F2DA8",
+    "terminal_a": "Airport",
+    "terminal_b": "Piraeus",
+    "station_count": 12
+  },
+  {
+    "id": "P2",
+    "name": "Suburban Piraeus-Kiato",
+    "name_el": "Προαστιακός Πειραιάς-Κιάτο",
+    "type": "suburban",
+    "color": "#6F2DA8",
+    "terminal_a": "Piraeus",
+    "terminal_b": "Kiato",
+    "station_count": 18
+  },
+  {
+    "id": "P3",
+    "name": "Suburban Kiato-Aigio",
+    "name_el": "Προαστιακός Κιάτο-Αίγιο",
+    "type": "suburban",
+    "color": "#6F2DA8",
+    "terminal_a": "Kiato",
+    "terminal_b": "Aigio",
+    "station_count": 8
+  }
+]

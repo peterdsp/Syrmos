@@ -20,7 +20,6 @@ struct TransitMapView: View {
     )
     @State private var selectedId: String?
     @State private var tappedStation: TransitStation?
-    @State private var showSheet = false
 
     private let stations = PreloadedData.stations
 
@@ -50,7 +49,6 @@ struct TransitMapView: View {
                     guard let id = newId,
                           let station = stations.first(where: { $0.id == id }) else { return }
                     tappedStation = station
-                    showSheet = true
                 }
 
                 // Zoom controls
@@ -83,12 +81,10 @@ struct TransitMapView: View {
                 .padding(.top, 130)
             }
             .navigationTitle(loc[.map])
-            .sheet(isPresented: $showSheet, onDismiss: { selectedId = nil }) {
-                if let station = tappedStation {
-                    StationSheetView(station: station)
-                        .presentationDetents([.medium])
-                        .presentationDragIndicator(.visible)
-                }
+            .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
+                StationSheetView(station: station)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
             }
         }
     }

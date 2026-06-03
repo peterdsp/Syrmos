@@ -1,5 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.gradle.api.tasks.Sync
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -85,4 +86,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+tasks.register<Sync>("stageWebRelease") {
+    dependsOn("wasmJsBrowserDistribution")
+    from(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+    into(layout.buildDirectory.dir("web-release"))
 }
