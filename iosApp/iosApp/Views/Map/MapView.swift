@@ -154,79 +154,75 @@ struct StationMapSheet: View {
     @State private var departures: [Departure] = []
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    stationInfo
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(station.name)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        if !station.nameEl.isEmpty {
+                            Text(station.nameEl)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Button("Done") { dismiss() }
                 }
 
-                if !departures.isEmpty {
-                    Section("Next Departures") {
-                        ForEach(departures.prefix(6)) { dep in
-                            DepartureRow(departure: dep)
+                // Line badges
+                if !station.lineIds.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(station.lineIds, id: \.self) { lineId in
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(SyrmosData.lineColor(for: lineId))
+                                    .frame(width: 8, height: 8)
+                                Text(SyrmosData.line(for: lineId)?.name ?? lineId)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                            .clipShape(Capsule())
                         }
                     }
                 }
 
-                Section {
-                    directionsButton
-                }
-            }
-            .navigationTitle(station.name)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .onAppear {
-                if !station.lineIds.isEmpty {
-                    departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
-                }
-            }
-        }
-    }
+                // Departures
+                if !departures.isEmpty {
+                    Text("Next Departures")
+                        .font(.headline)
 
-    private var stationInfo: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if !station.nameEl.isEmpty {
-                Text(station.nameEl)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            if !station.lineIds.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(station.lineIds, id: \.self) { lineId in
-                        lineBadge(lineId)
+                    ForEach(departures.prefix(6)) { dep in
+                        DepartureRow(departure: dep)
+                        Divider()
                     }
                 }
+
+                // Directions button
+                Button {
+                    let dest = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
+                    dest.name = station.name
+                    dest.openInMaps(launchOptions: [
+                        MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
+                    ])
+                } label: {
+                    Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.bordered)
             }
+            .padding()
         }
-    }
-
-    private func lineBadge(_ lineId: String) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(SyrmosData.lineColor(for: lineId))
-                .frame(width: 8, height: 8)
-            Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                .font(.caption)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .clipShape(Capsule())
-    }
-
-    private var directionsButton: some View {
-        Button {
-            let dest = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
-            dest.name = station.name
-            dest.openInMaps(launchOptions: [
-                MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
-            ])
-        } label: {
-            Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
+        .onAppear {
+            if !station.lineIds.isEmpty {
+                departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+            }
         }
     }
 }
