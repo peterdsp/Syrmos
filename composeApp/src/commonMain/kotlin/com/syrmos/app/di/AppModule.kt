@@ -9,7 +9,14 @@ import com.syrmos.feature.lines.LinesViewModel
 import org.koin.dsl.module
 
 val featureModule = module {
-    factory { HomeViewModel(findNearestStation = get(), getNextDepartures = get()) }
+    factory {
+        HomeViewModel(
+            findNearestStation = get(),
+            getNextDepartures = get(),
+            getLinesUseCase = get(),
+            stasyService = get(),
+        )
+    }
     factory { LinesViewModel(getLinesUseCase = get()) }
 }
 

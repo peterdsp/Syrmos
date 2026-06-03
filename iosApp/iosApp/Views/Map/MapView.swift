@@ -30,12 +30,12 @@ struct TransitMapView: View {
                     UserAnnotation()
 
                     ForEach(stations) { station in
-                        Marker(
-                            station.name,
-                            systemImage: station.isInterchange ? "arrow.triangle.2.circlepath" : "tram.fill",
-                            coordinate: station.coordinate
-                        )
-                        .tint(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
+                        Annotation(station.name, coordinate: station.coordinate) {
+                            StationDot(station: station, isSelected: selectedId == station.id)
+                                .onTapGesture {
+                                    selectedId = station.id
+                                }
+                        }
                         .tag(station.id)
                     }
                 }
@@ -210,6 +210,42 @@ struct StationSheetView: View {
                 .padding(.vertical, 12)
         }
         .buttonStyle(.bordered)
+    }
+}
+
+// MARK: - Station Dot (map annotation)
+
+struct StationDot: View {
+    let station: TransitStation
+    let isSelected: Bool
+
+    var body: some View {
+        if station.isInterchange {
+            ZStack {
+                ForEach(Array(station.lineIds.enumerated()), id: \.element) { index, lineId in
+                    Circle()
+                        .fill(SyrmosData.lineColor(for: lineId))
+                        .frame(width: 18, height: 18)
+                        .offset(x: CGFloat(index - station.lineIds.count / 2) * 6)
+                }
+                Circle()
+                    .fill(.white)
+                    .frame(width: 8, height: 8)
+            }
+            .scaleEffect(isSelected ? 1.3 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
+        } else {
+            ZStack {
+                Circle()
+                    .fill(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
+                    .frame(width: 16, height: 16)
+                Circle()
+                    .fill(.white)
+                    .frame(width: 6, height: 6)
+            }
+            .scaleEffect(isSelected ? 1.3 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
+        }
     }
 }
 

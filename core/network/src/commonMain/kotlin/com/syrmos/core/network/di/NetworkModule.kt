@@ -1,5 +1,6 @@
 package com.syrmos.core.network.di
 
+import com.syrmos.core.network.STASYAnnouncementService
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
@@ -19,4 +20,5 @@ val networkModule = module {
             }
         }
     }
+    single { STASYAnnouncementService(httpClient = get()) }
 }

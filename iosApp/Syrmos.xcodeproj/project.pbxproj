@@ -17,6 +17,8 @@
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
 		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
+		A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6071829304142 /* STASYService.swift */; };
+		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,9 @@
 		D19BB18628D05A667A4BD6B8 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DDCB57EF47F5B2293727841A /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6071829304142 /* STASYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STASYService.swift; sourceTree = "<group>"; };
+		E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C3D4E5F60718293A4B5C6D7E /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -74,6 +79,7 @@
 		71CEE17732FDEEE09CD923DC /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
+				E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */,
 				1DF85A2E3F716D7313EC9642 /* Info.plist */,
 				287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */,
 				F82A05549BFD7E1510363B16 /* Models */,
@@ -127,7 +133,9 @@
 		F82A05549BFD7E1510363B16 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
 				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
+				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
 			);
 			path = Models;
@@ -197,6 +205,8 @@
 				59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */,
 				B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */,
 				695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */,
+				B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */,
+				A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */,
 				980A534651EFC2013B8ED38F /* TransitData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

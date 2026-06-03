@@ -21,7 +21,8 @@ kotlin {
         }
         val wasmJsMain by getting {
             dependencies {
-                implementation(libs.sqldelight.web.worker.driver)
+                // WebWorkerDriver requires org.w3c.dom.Worker which is unavailable
+                // in Kotlin/WASM. Using stub driver until SQLDelight adds wasmJs support.
             }
         }
     }

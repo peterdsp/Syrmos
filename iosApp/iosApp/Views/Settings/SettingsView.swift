@@ -1,27 +1,33 @@
 import SwiftUI
 
 struct SyrmosSettingsView: View {
+    @ObservedObject private var loc = LocalizationManager.shared
+
     var body: some View {
         NavigationStack {
             List {
-                Section("Preferences") {
-                    LabeledContent("Language", value: "English")
-                    LabeledContent("Theme", value: "System")
+                Section(loc[.preferences]) {
+                    Picker(loc[.language], selection: $loc.language) {
+                        ForEach(AppLanguage.allCases, id: \.self) { lang in
+                            Text(lang.displayName).tag(lang)
+                        }
+                    }
+                    LabeledContent(loc[.theme], value: loc[.systemDefault])
                 }
 
-                Section("Data") {
-                    LabeledContent("Schedule version", value: "3.0")
-                    LabeledContent("Stations", value: "90+")
-                    LabeledContent("Lines", value: "8")
+                Section(loc[.data]) {
+                    LabeledContent(loc[.scheduleVersion], value: "3.0")
+                    LabeledContent(loc[.stations], value: "90+")
+                    LabeledContent(loc[.lines], value: "9")
                 }
 
-                Section("About") {
-                    Text("Schedule data from STASY and Hellenic Train official timetables. This app is not affiliated with STASY, Hellenic Train or OASA.")
+                Section(loc[.about]) {
+                    Text(loc[.aboutText])
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(loc[.settings])
         }
     }
 }

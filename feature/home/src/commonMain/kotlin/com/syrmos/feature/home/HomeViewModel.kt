@@ -1,17 +1,22 @@
 package com.syrmos.feature.home
 
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
+import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.location.NearestStationResult
 import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.model.transit.Direction
+import com.syrmos.core.model.transit.Line
+import com.syrmos.core.network.STASYAnnouncement
+import com.syrmos.core.network.STASYAnnouncementService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -20,6 +25,8 @@ data class HomeUiState(
     val nearestStations: List<NearestStationResult> = emptyList(),
     val upcomingDepartures: List<UpcomingDeparture> = emptyList(),
     val selectedStationId: String? = null,
+    val lines: List<Line> = emptyList(),
+    val announcements: List<STASYAnnouncement> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
 )
@@ -27,10 +34,41 @@ data class HomeUiState(
 class HomeViewModel(
     private val findNearestStation: FindNearestStationUseCase,
     private val getNextDepartures: GetNextDeparturesUseCase,
+    private val getLinesUseCase: GetLinesUseCase,
+    private val stasyService: STASYAnnouncementService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    init {
+        loadLines()
+        loadAnnouncements()
+    }
+
+    private fun loadLines() {
+        scope.launch {
+            getLinesUseCase.getAllLines()
+                .catch { /* ignore */ }
+                .collect { lines ->
+                    _uiState.update { it.copy(lines = lines) }
+                }
+        }
+    }
+
+    private fun loadAnnouncements() {
+        scope.launch {
+            stasyService.fetchAnnouncements()
+                .catch { /* ignore */ }
+                .collect { announcements ->
+                    _uiState.update { it.copy(announcements = announcements) }
+                }
+        }
+    }
+
+    fun refreshAnnouncements() {
+        loadAnnouncements()
+    }
 
     fun onLocationUpdate(latitude: Double, longitude: Double) {
         scope.launch {

@@ -41,30 +41,31 @@ struct SyrmosApp: App {
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Label("Home", systemImage: "house")
+                    Label(loc[.home], systemImage: "house")
                 }
                 .tag(SyrmosTab.home)
 
             LinesView()
                 .tabItem {
-                    Label("Lines", systemImage: "tram")
+                    Label(loc[.lines], systemImage: "tram")
                 }
                 .tag(SyrmosTab.lines)
 
             TransitMapView()
                 .tabItem {
-                    Label("Map", systemImage: "map")
+                    Label(loc[.map], systemImage: "map")
                 }
                 .tag(SyrmosTab.map)
 
             SyrmosSettingsView()
                 .tabItem {
-                    Label("Settings", systemImage: "gearshape")
+                    Label(loc[.settings], systemImage: "gearshape")
                 }
                 .tag(SyrmosTab.settings)
         }
