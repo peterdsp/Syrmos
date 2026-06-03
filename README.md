@@ -184,7 +184,9 @@ Syrmos is not affiliated with STASY, Hellenic Train or OASA.
 - [x] Unit tests for core utilities (datetime, geo distance, Result type)
 - [x] GitHub Actions CI (macOS, JDK 17, iOS simulator build + tests)
 - [x] iOS Xcode project with SwiftUI wrapper and GPS location permission
-- [ ] Populate full departure timetables from PDF extraction
+- [x] Departure timetables for Line 3 airport trains and Tram T6
+- [x] Xcode project generation via XcodeGen
+- [ ] Remaining timetables (Lines 1, 2, T7, Suburban)
 - [ ] Live data integration when OASA API becomes available
 - [ ] Service disruption alerts
 - [ ] Home screen widgets (Android Glance, iOS WidgetKit)
