@@ -212,6 +212,7 @@
 					"$(inherited)",
 					"-framework",
 					composeApp,
+					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmos.ios;
 				PRODUCT_NAME = Syrmos;
@@ -242,6 +243,7 @@
 					"$(inherited)",
 					"-framework",
 					composeApp,
+					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmos.ios;
 				PRODUCT_NAME = Syrmos;

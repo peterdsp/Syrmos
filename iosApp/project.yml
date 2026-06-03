@@ -34,6 +34,7 @@ targets:
           - "$(inherited)"
           - "-framework"
           - "composeApp"
+          - "-lsqlite3"
         SWIFT_VERSION: "5.0"
     preBuildScripts:
       - name: "Build Kotlin Framework"

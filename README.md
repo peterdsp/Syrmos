@@ -6,10 +6,11 @@ A Kotlin Multiplatform transit companion for the Athens metro, tram and suburban
 
 > *Syrmos (συρμός)* is the Greek word for a train consist, the carriages that form a metro train.
 
-<!--
-Screenshots will be added once the first build runs on iOS Simulator.
-See docs/screenshots/ for the latest captures.
--->
+<p align="center">
+  <img src="docs/screenshots/home_light.png" width="200" alt="Home" />
+  <img src="docs/screenshots/map_light.png" width="200" alt="Transit Map" />
+  <img src="docs/screenshots/settings_light.png" width="200" alt="Settings" />
+</p>
 
 ---
 
