@@ -8,46 +8,46 @@ struct TransitMapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.12, longitudeDelta: 0.12)
         )
     )
-    @State private var selectedResult: MKMapItem?
-    @State private var showStationDetail = false
+    @State private var selectedStationId: String?
     @State private var tappedStation: TransitStation?
+    @State private var showSheet = false
+
+    private var allStations: [TransitStation] {
+        SyrmosData.stationsByLine.values.flatMap { $0 }
+            .reduce(into: [String: TransitStation]()) { dict, s in dict[s.id] = s }
+            .values.sorted { $0.name < $1.name }
+    }
 
     var body: some View {
         NavigationStack {
-            Map(position: $position, selection: $selectedResult) {
+            Map(position: $position, selection: $selectedStationId) {
                 UserAnnotation()
+
+                ForEach(allStations) { station in
+                    Marker(
+                        station.name,
+                        systemImage: station.isInterchange ? "arrow.triangle.2.circlepath" : "tram.fill",
+                        coordinate: station.coordinate
+                    )
+                    .tint(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
+                    .tag(station.id)
+                }
             }
-            .mapStyle(.standard(emphasis: .automatic, pointsOfInterest: .including([.publicTransport]), showsTraffic: false))
+            .mapStyle(.standard(pointsOfInterest: .excludingAll, showsTraffic: false))
             .mapControls {
                 MapUserLocationButton()
                 MapCompass()
                 MapScaleView()
             }
-            .onChange(of: selectedResult) { _, newValue in
-                guard let item = newValue else { return }
-                let coord = item.placemark.coordinate
-                let name = item.name ?? "Station"
-
-                // Match to known station or create temporary
-                let allStations = SyrmosData.stationsByLine.values.flatMap { $0 }
-                let match = allStations.first { station in
-                    let dist = abs(station.coordinate.latitude - coord.latitude) + abs(station.coordinate.longitude - coord.longitude)
-                    return dist < 0.003
+            .onChange(of: selectedStationId) { _, newId in
+                guard let id = newId else { return }
+                tappedStation = allStations.first { $0.id == id }
+                if tappedStation != nil {
+                    showSheet = true
                 }
-
-                tappedStation = match ?? TransitStation(
-                    id: "MAP_\(name.hashValue)",
-                    name: name,
-                    nameEl: "",
-                    coordinate: coord,
-                    lineIds: [],
-                    isInterchange: false
-                )
-                showStationDetail = true
-                selectedResult = nil
             }
             .navigationTitle("Transit Map")
-            .sheet(isPresented: $showStationDetail) {
+            .sheet(isPresented: $showSheet, onDismiss: { selectedStationId = nil }) {
                 if let station = tappedStation {
                     StationMapSheet(station: station)
                         .presentationDetents([.medium])
@@ -68,35 +68,10 @@ struct StationMapSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                // Station info
                 Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        if !station.nameEl.isEmpty {
-                            Text(station.nameEl)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        if !station.lineIds.isEmpty {
-                            HStack(spacing: 6) {
-                                ForEach(station.lineIds, id: \.self) { lineId in
-                                    HStack(spacing: 4) {
-                                        Circle()
-                                            .fill(SyrmosData.lineColor(for: lineId))
-                                            .frame(width: 8, height: 8)
-                                        Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                                            .font(.caption)
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
-                                    .clipShape(Capsule())
-                                }
-                            }
-                        }
-                    }
+                    stationInfo
                 }
 
-                // Departures
                 if !departures.isEmpty {
                     Section("Next Departures") {
                         ForEach(departures.prefix(6)) { dep in
@@ -105,17 +80,8 @@ struct StationMapSheet: View {
                     }
                 }
 
-                // Actions
                 Section {
-                    Button {
-                        let destination = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
-                        destination.name = station.name
-                        destination.openInMaps(launchOptions: [
-                            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
-                        ])
-                    } label: {
-                        Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
-                    }
+                    directionsButton
                 }
             }
             .navigationTitle(station.name)
@@ -132,6 +98,49 @@ struct StationMapSheet: View {
             }
         }
     }
+
+    private var stationInfo: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !station.nameEl.isEmpty {
+                Text(station.nameEl)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            if !station.lineIds.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(station.lineIds, id: \.self) { lineId in
+                        lineBadge(lineId)
+                    }
+                }
+            }
+        }
+    }
+
+    private func lineBadge(_ lineId: String) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(SyrmosData.lineColor(for: lineId))
+                .frame(width: 8, height: 8)
+            Text(SyrmosData.line(for: lineId)?.name ?? lineId)
+                .font(.caption)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .clipShape(Capsule())
+    }
+
+    private var directionsButton: some View {
+        Button {
+            let dest = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
+            dest.name = station.name
+            dest.openInMaps(launchOptions: [
+                MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
+            ])
+        } label: {
+            Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
+        }
+    }
 }
 
 // MARK: - Departure Row
@@ -145,7 +154,7 @@ struct DepartureRow: View {
                 .fill(SyrmosData.lineColor(for: departure.lineId))
                 .frame(width: 8, height: 8)
             VStack(alignment: .leading, spacing: 1) {
-                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                Text(lineName)
                     .font(.subheadline)
                 Text("towards \(departure.direction)")
                     .font(.caption)
@@ -156,6 +165,10 @@ struct DepartureRow: View {
                 .font(.headline)
                 .foregroundStyle(arrivalColor)
         }
+    }
+
+    private var lineName: String {
+        SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId
     }
 
     private var arrivalText: String {
