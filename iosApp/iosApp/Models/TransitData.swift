@@ -86,7 +86,7 @@ enum SyrmosData {
         case "M3", "M3A": return StationCoords.line3.map { makeStation($0, primaryLine: "M3") }
         case "T6": return StationCoords.tramT6.map { makeStation($0, primaryLine: "T6") }
         case "T7": return StationCoords.tramT7.map { makeStation($0, primaryLine: "T7") }
-        case "P1": return StationCoords.suburbanP1.map { makeStation($0, primaryLine: "P1") }
+        case "P1": return StationCoords.suburbanA1.map { makeStation($0, primaryLine: "P1") }
         default: return []
         }
     }
