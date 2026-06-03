@@ -1,5 +1,7 @@
 package com.syrmos.app
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +12,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -18,7 +21,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.CurrentTab
@@ -36,33 +44,63 @@ import org.koin.compose.koinInject
 @Composable
 fun SyrmosApp() {
     val dataSeeder = koinInject<DataSeeder>()
+    var isSeeded by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
-        try { dataSeeder.seedIfNeeded() } catch (_: Exception) {}
+        try {
+            dataSeeder.seedIfNeeded()
+        } catch (_: Exception) {
+        } finally {
+            isSeeded = true
+        }
     }
+
     SyrmosTheme {
-        TabNavigator(HomeTab) {
-            Scaffold(
-                bottomBar = {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 0.dp,
-                    ) {
-                        TabNavItem(HomeTab, Icons.Filled.Home)
-                        TabNavItem(LinesTab, Icons.Filled.DirectionsTransit)
-                        TabNavItem(MapTab, Icons.Filled.Map)
-                        TabNavItem(SettingsTab, Icons.Filled.Settings)
+        if (!isSeeded) {
+            BootSplash()
+        } else {
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                if (isWebPlatform && maxWidth >= 900.dp) {
+                    DesktopWebApp()
+                } else {
+                    TabNavigator(HomeTab) {
+                        Scaffold(
+                            bottomBar = {
+                                NavigationBar(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    tonalElevation = 0.dp,
+                                ) {
+                                    TabNavItem(HomeTab, Icons.Filled.Home)
+                                    TabNavItem(LinesTab, Icons.Filled.DirectionsTransit)
+                                    TabNavItem(MapTab, Icons.Filled.Map)
+                                    TabNavItem(SettingsTab, Icons.Filled.Settings)
+                                }
+                            },
+                        ) { padding ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(padding),
+                            ) {
+                                CurrentTab()
+                            }
+                        }
                     }
-                },
-            ) { padding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                ) {
-                    CurrentTab()
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BootSplash() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
