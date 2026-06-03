@@ -57,6 +57,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
 
@@ -91,5 +92,8 @@ android {
 tasks.register<Sync>("stageWebRelease") {
     dependsOn("wasmJsBrowserDistribution")
     from(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+    from(project(":core:data").file("src/commonMain/composeResources/files")) {
+        into("files")
+    }
     into(layout.buildDirectory.dir("web-release"))
 }

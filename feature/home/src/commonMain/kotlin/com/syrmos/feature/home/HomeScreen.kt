@@ -20,11 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.toComposeColor
@@ -48,7 +46,6 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.network.STASYAnnouncement
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -59,75 +56,67 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Syrmos",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = L.APP_SUBTITLE.text(lang),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        item {
+            ScreenHeader(
+                title = "Syrmos",
+                subtitle = L.APP_SUBTITLE.text(lang),
             )
-        },
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        }
+
+        item {
+            NetworkOverview(lines = uiState.lines, lang = lang)
+        }
+
+        val alerts = uiState.announcements.filter { it.isServiceAlert }
+        if (alerts.isNotEmpty()) {
             item {
-                NetworkOverview(lines = uiState.lines, lang = lang)
+                AlertsSection(
+                    alerts = alerts,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        } else if (uiState.announcements.isNotEmpty()) {
+            item {
+                LatestNewsSection(
+                    announcement = uiState.announcements.first(),
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+
+        if (uiState.error != null) {
+            item {
+                Text(
+                    text = L.COULD_NOT_REACH.text(lang),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (uiState.lines.isNotEmpty()) {
+            item {
+                SectionTitle(text = L.LINES.text(lang))
             }
 
-            val alerts = uiState.announcements.filter { it.isServiceAlert }
-            if (alerts.isNotEmpty()) {
-                item {
-                    AlertsSection(
-                        alerts = alerts,
+            val grouped = uiState.lines.groupBy { it.type }
+            listOf(LineType.METRO, LineType.TRAM, LineType.SUBURBAN).forEach { type ->
+                val linesForType = grouped[type] ?: return@forEach
+                items(linesForType) { line ->
+                    LineCard(
+                        line = line,
                         lang = lang,
-                        onOpenUrl = onOpenUrl,
+                        onClick = { onLineClick(line.id) },
                     )
-                }
-            } else if (uiState.announcements.isNotEmpty()) {
-                item {
-                    LatestNewsSection(
-                        announcement = uiState.announcements.first(),
-                        lang = lang,
-                        onOpenUrl = onOpenUrl,
-                    )
-                }
-            }
-
-            if (uiState.lines.isNotEmpty()) {
-                item {
-                    Text(
-                        text = L.LINES.text(lang),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-
-                val grouped = uiState.lines.groupBy { it.type }
-                val orderedTypes = listOf(LineType.METRO, LineType.TRAM, LineType.SUBURBAN)
-                for (type in orderedTypes) {
-                    val linesForType = grouped[type] ?: continue
-                    items(linesForType) { line ->
-                        LineCard(
-                            line = line,
-                            onClick = { onLineClick(line.id) },
-                        )
-                    }
                 }
             }
         }
@@ -135,9 +124,40 @@ fun HomeScreen(
 }
 
 @Composable
+private fun ScreenHeader(
+    title: String,
+    subtitle: String,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
 private fun NetworkOverview(
     lines: List<Line>,
-    lang: com.syrmos.core.common.AppLanguage,
+    lang: AppLanguage,
 ) {
     val metroCount = lines.count { it.type == LineType.METRO }
     val tramCount = lines.count { it.type == LineType.TRAM }
@@ -178,8 +198,9 @@ private fun StatCard(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
             modifier = Modifier
@@ -205,23 +226,24 @@ private fun StatCard(
 @Composable
 private fun AlertsSection(
     alerts: List<STASYAnnouncement>,
-    lang: com.syrmos.core.common.AppLanguage,
+    lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(text = "⚠", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = L.SERVICE_ALERTS.text(lang),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
+            SectionTitle(text = L.SERVICE_ALERTS.text(lang))
         }
         alerts.take(3).forEach { alert ->
-            AlertCard(announcement = alert, isAlert = true, lang = lang, onOpenUrl = onOpenUrl)
+            AlertCard(
+                announcement = alert,
+                isAlert = true,
+                lang = lang,
+                onOpenUrl = onOpenUrl,
+            )
         }
     }
 }
@@ -229,22 +251,23 @@ private fun AlertsSection(
 @Composable
 private fun LatestNewsSection(
     announcement: STASYAnnouncement,
-    lang: com.syrmos.core.common.AppLanguage,
+    lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(text = "ℹ", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = L.LATEST_FROM_STASY.text(lang),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Text(text = "i", style = MaterialTheme.typography.titleMedium)
+            SectionTitle(text = L.LATEST_FROM_STASY.text(lang))
         }
-        AlertCard(announcement = announcement, isAlert = false, lang = lang, onOpenUrl = onOpenUrl)
+        AlertCard(
+            announcement = announcement,
+            isAlert = false,
+            lang = lang,
+            onOpenUrl = onOpenUrl,
+        )
     }
 }
 
@@ -252,24 +275,25 @@ private fun LatestNewsSection(
 private fun AlertCard(
     announcement: STASYAnnouncement,
     isAlert: Boolean,
-    lang: com.syrmos.core.common.AppLanguage,
+    lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
-    val bgColor = if (isAlert) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.surfaceContainerLow
-    val borderColor = if (isAlert) Color(0xFFFFCC80) else Color.Transparent
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        border = if (isAlert) BorderStroke(1.dp, borderColor) else null,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isAlert) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.surface,
+        ),
+        border = if (isAlert) BorderStroke(1.dp, Color(0x33E87722)) else null,
+        shape = RoundedCornerShape(10.dp),
     ) {
         Column(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(12.dp)
                 .animateContentSize(),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = announcement.title,
@@ -308,6 +332,7 @@ private fun AlertCard(
 @Composable
 private fun LineCard(
     line: Line,
+    lang: AppLanguage,
     onClick: () -> Unit,
 ) {
     Card(
@@ -315,8 +340,9 @@ private fun LineCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
+        shape = RoundedCornerShape(12.dp),
     ) {
         Row(
             modifier = Modifier
@@ -328,13 +354,13 @@ private fun LineCard(
                 modifier = Modifier
                     .width(4.dp)
                     .height(44.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(RoundedCornerShape(6.dp))
                     .background(line.color.toComposeColor()),
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = line.name,
+                    text = line.localizedName(lang),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -345,7 +371,7 @@ private fun LineCard(
                 )
             }
             Text(
-                text = "${line.stationCount}",
+                text = line.stationCount.toString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -353,8 +379,12 @@ private fun LineCard(
             Text(
                 text = "›",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
             )
         }
     }
+}
+
+private fun Line.localizedName(lang: AppLanguage): String {
+    return if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) nameEl else name
 }

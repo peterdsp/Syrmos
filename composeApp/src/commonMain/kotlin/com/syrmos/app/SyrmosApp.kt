@@ -4,15 +4,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsTransit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -37,11 +45,12 @@ fun SyrmosApp() {
                 bottomBar = {
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp,
                     ) {
-                        TabNavItem(HomeTab)
-                        TabNavItem(LinesTab)
-                        TabNavItem(MapTab)
-                        TabNavItem(SettingsTab)
+                        TabNavItem(HomeTab, Icons.Filled.Home)
+                        TabNavItem(LinesTab, Icons.Filled.DirectionsTransit)
+                        TabNavItem(MapTab, Icons.Filled.Map)
+                        TabNavItem(SettingsTab, Icons.Filled.Settings)
                     }
                 },
             ) { padding ->
@@ -58,17 +67,25 @@ fun SyrmosApp() {
 }
 
 @Composable
-private fun RowScope.TabNavItem(tab: Tab) {
+private fun RowScope.TabNavItem(
+    tab: Tab,
+    icon: ImageVector,
+) {
     val tabNavigator = LocalTabNavigator.current
 
     NavigationBarItem(
         selected = tabNavigator.current == tab,
         onClick = { tabNavigator.current = tab },
         label = { Text(tab.options.title) },
+        colors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            selectedTextColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
         icon = {
-            tab.options.icon?.let { painter ->
-                Icon(painter = painter, contentDescription = tab.options.title)
-            }
+            Icon(imageVector = icon, contentDescription = tab.options.title)
         },
     )
 }
