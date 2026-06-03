@@ -232,6 +232,7 @@ struct AlertCard: View {
 
 struct LineCard: View {
     let line: TransitLine
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -240,7 +241,7 @@ struct LineCard: View {
                 .frame(width: 4, height: 44)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(line.name)
+                Text(line.localizedName(loc.language))
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)

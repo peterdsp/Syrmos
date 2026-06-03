@@ -38,6 +38,12 @@ final class LocalizationManager: ObservableObject {
     }
 }
 
+extension TransitLine {
+    func localizedName(_ lang: AppLanguage) -> String {
+        lang == .greek ? nameEl : name
+    }
+}
+
 enum LocalizedKey {
     case appSubtitle
     case metro

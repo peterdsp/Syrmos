@@ -2,13 +2,14 @@ import SwiftUI
 
 struct StationDetailView: View {
     let station: TransitStation
+    @ObservedObject private var loc = LocalizationManager.shared
     @State private var departures: [Departure] = []
 
     var body: some View {
         List {
-            Section("Station") {
+            Section(loc[.stations]) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(station.nameEl)
+                    Text(loc.language == .greek ? station.name : station.nameEl)
                         .font(.title3)
                         .foregroundStyle(.secondary)
 
@@ -31,16 +32,19 @@ struct StationDetailView: View {
             }
 
             if station.isInterchange {
-                Section("Interchange") {
-                    Label("Transfer station", systemImage: "arrow.triangle.2.circlepath")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                Section(loc.language == .greek ? "Ανταπόκριση" : "Interchange") {
+                    Label(
+                        loc.language == .greek ? "Σταθμός ανταπόκρισης" : "Transfer station",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 }
             }
 
-            Section("Next Departures") {
+            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next Departures") {
                 if departures.isEmpty {
-                    Text("Loading departures...")
+                    Text(loc.language == .greek ? "Φόρτωση δρομολογίων..." : "Loading departures...")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(departures.prefix(10)) { departure in
@@ -55,7 +59,7 @@ struct StationDetailView: View {
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     if departure.serviceType == "airport" {
-                                        Text("Airport")
+                                        Text(loc.language == .greek ? "Αεροδρόμιο" : "Airport")
                                             .font(.caption2)
                                             .fontWeight(.semibold)
                                             .padding(.horizontal, 5)
@@ -64,7 +68,9 @@ struct StationDetailView: View {
                                             .clipShape(Capsule())
                                     }
                                 }
-                                Text("towards \(departure.direction)")
+                                Text(loc.language == .greek
+                                    ? "προς \(departure.direction)"
+                                    : "towards \(departure.direction)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -72,7 +78,9 @@ struct StationDetailView: View {
                             Spacer()
 
                             VStack(alignment: .trailing, spacing: 2) {
-                                Text(departure.minutesAway <= 1 ? "Now" : "\(departure.minutesAway) min")
+                                Text(departure.minutesAway <= 1
+                                    ? (loc.language == .greek ? "Τώρα" : "Now")
+                                    : "\(departure.minutesAway) min")
                                     .font(.headline)
                                     .foregroundStyle(arrivalColor(departure.minutesAway))
                                 Text(departure.time)
@@ -85,7 +93,7 @@ struct StationDetailView: View {
                 }
             }
         }
-        .navigationTitle(station.name)
+        .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
             departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
         }

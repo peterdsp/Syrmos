@@ -3,6 +3,7 @@ import SwiftUI
 struct LineDetailView: View {
     let line: TransitLine
     let stations: [TransitStation]
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         List {
@@ -15,20 +16,21 @@ struct LineDetailView: View {
                         Text("\(line.terminalA) - \(line.terminalB)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        Text("\(stations.count) stations")
+                        Text(loc.language == .greek
+                            ? "\(stations.count) σταθμοί"
+                            : "\(stations.count) stations")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                 }
             }
 
-            Section("Stations") {
+            Section(loc[.stations]) {
                 ForEach(Array(stations.enumerated()), id: \.element.id) { index, station in
                     NavigationLink {
                         StationDetailView(station: station)
                     } label: {
                         HStack(spacing: 12) {
-                            // Line indicator with dots
                             VStack(spacing: 0) {
                                 Rectangle()
                                     .fill(index == 0 ? .clear : line.color)
@@ -46,9 +48,9 @@ struct LineDetailView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(station.name)
+                                Text(loc.language == .greek ? station.nameEl : station.name)
                                     .font(.body)
-                                Text(station.nameEl)
+                                Text(loc.language == .greek ? station.name : station.nameEl)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -70,6 +72,6 @@ struct LineDetailView: View {
                 }
             }
         }
-        .navigationTitle(line.name)
+        .navigationTitle(line.localizedName(loc.language))
     }
 }

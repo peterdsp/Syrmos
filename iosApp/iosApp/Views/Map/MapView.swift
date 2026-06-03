@@ -11,6 +11,7 @@ enum PreloadedData {
 }
 
 struct TransitMapView: View {
+    @ObservedObject private var loc = LocalizationManager.shared
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
@@ -81,7 +82,7 @@ struct TransitMapView: View {
                 .padding(.trailing, 12)
                 .padding(.top, 130)
             }
-            .navigationTitle("Transit Map")
+            .navigationTitle(loc[.map])
             .sheet(isPresented: $showSheet, onDismiss: { selectedId = nil }) {
                 if let station = tappedStation {
                     StationSheetView(station: station)
@@ -130,6 +131,7 @@ struct TransitMapView: View {
 
 struct StationSheetView: View {
     let station: TransitStation
+    @ObservedObject private var loc = LocalizationManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var departures: [Departure] = []
 
@@ -153,17 +155,15 @@ struct StationSheetView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(station.name)
+                Text(loc.language == .greek ? station.nameEl : station.name)
                     .font(.title2)
                     .fontWeight(.bold)
-                if !station.nameEl.isEmpty {
-                    Text(station.nameEl)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+                Text(loc.language == .greek ? station.name : station.nameEl)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Done") { dismiss() }
+            Button(loc.language == .greek ? "Κλείσιμο" : "Done") { dismiss() }
         }
     }
 
@@ -188,7 +188,7 @@ struct StationSheetView: View {
 
     private var departuresList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Next Departures")
+            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next Departures")
                 .font(.headline)
             ForEach(departures.prefix(6)) { dep in
                 DepartureRowView(departure: dep)
@@ -205,9 +205,12 @@ struct StationSheetView: View {
                 MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
             ])
         } label: {
-            Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+            Label(
+                loc.language == .greek ? "Οδηγίες" : "Get Directions",
+                systemImage: "arrow.triangle.turn.up.right.diamond"
+            )
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
         }
         .buttonStyle(.bordered)
     }

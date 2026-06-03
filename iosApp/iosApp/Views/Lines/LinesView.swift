@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LinesView: View {
     let lines = SyrmosData.lines
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         NavigationStack {
@@ -9,7 +10,7 @@ struct LinesView: View {
                 ForEach(TransitType.allCases, id: \.self) { type in
                     let filtered = lines.filter { $0.type == type }
                     if !filtered.isEmpty {
-                        Section(type.rawValue) {
+                        Section(type.localizedName(loc.language)) {
                             ForEach(filtered) { line in
                                 NavigationLink {
                                     LineDetailView(
@@ -24,13 +25,27 @@ struct LinesView: View {
                     }
                 }
             }
-            .navigationTitle("Lines")
+            .navigationTitle(loc[.lines])
+        }
+    }
+}
+
+extension TransitType {
+    func localizedName(_ lang: AppLanguage) -> String {
+        switch (self, lang) {
+        case (.metro, .greek): return "Μετρό"
+        case (.metro, .english): return "Metro"
+        case (.tram, .greek): return "Τραμ"
+        case (.tram, .english): return "Tram"
+        case (.suburban, .greek): return "Προαστιακός Σιδηρόδρομος"
+        case (.suburban, .english): return "Suburban Railway"
         }
     }
 }
 
 struct LineRow: View {
     let line: TransitLine
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -39,7 +54,7 @@ struct LineRow: View {
                 .frame(width: 12, height: 12)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(line.name)
+                Text(line.localizedName(loc.language))
                     .font(.headline)
                 Text("\(line.terminalA) - \(line.terminalB)")
                     .font(.subheadline)
@@ -48,7 +63,9 @@ struct LineRow: View {
 
             Spacer()
 
-            Text("\(line.stationCount) stations")
+            Text(loc.language == .greek
+                ? "\(line.stationCount) σταθμοί"
+                : "\(line.stationCount) stations")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
