@@ -102,9 +102,14 @@ class DataSeeder(
 
     private suspend fun seedSchedules() {
         val scheduleFiles = listOf(
+            "files/seed/schedules/metro_line1_outbound.json",
+            "files/seed/schedules/metro_line1_inbound.json",
+            "files/seed/schedules/metro_line2_outbound.json",
             "files/seed/schedules/metro_line3_airport_outbound.json",
             "files/seed/schedules/metro_line3_airport_inbound.json",
             "files/seed/schedules/tram_t6_outbound.json",
+            "files/seed/schedules/suburban_p1_outbound.json",
+            "files/seed/schedules/suburban_p1_inbound.json",
         )
 
         // Read all schedule files first (suspend), then batch insert
@@ -135,6 +140,6 @@ class DataSeeder(
     }
 
     companion object {
-        const val SEED_VERSION = "2"
+        const val SEED_VERSION = "3"
     }
 }
