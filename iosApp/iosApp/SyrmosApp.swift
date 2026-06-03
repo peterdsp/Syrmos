@@ -5,6 +5,16 @@ struct SyrmosApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    // Match window background to system appearance
+                    for scene in UIApplication.shared.connectedScenes {
+                        if let windowScene = scene as? UIWindowScene {
+                            for window in windowScene.windows {
+                                window.backgroundColor = .systemGroupedBackground
+                            }
+                        }
+                    }
+                }
         }
     }
 }
