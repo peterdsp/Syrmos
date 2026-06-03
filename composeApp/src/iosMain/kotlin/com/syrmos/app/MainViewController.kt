@@ -1,8 +1,9 @@
 package com.syrmos.app
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
 import com.syrmos.app.di.appModules
@@ -35,9 +36,17 @@ fun doInitKoin() {
     }
 }
 
-fun makeTabViewController(tab: String) = ComposeUIViewController {
+fun makeTabViewController(tab: String) = ComposeUIViewController(
+    configure = {
+        enforceStrictPlistSanityCheck = false
+    }
+) {
     SyrmosTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
             when (tab) {
                 "home" -> {
                     val viewModel = koinInject<HomeViewModel>()
