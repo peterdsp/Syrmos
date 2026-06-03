@@ -8,46 +8,53 @@ struct TransitMapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.12, longitudeDelta: 0.12)
         )
     )
-    @State private var selectedStationId: String?
-    @State private var tappedStation: TransitStation?
+    @State private var resolvedStations: [ResolvedStation] = []
+    @State private var selectedId: String?
+    @State private var tappedStation: ResolvedStation?
     @State private var showSheet = false
-
-    private var allStations: [TransitStation] {
-        SyrmosData.stationsByLine.values.flatMap { $0 }
-            .reduce(into: [String: TransitStation]()) { dict, s in dict[s.id] = s }
-            .values.sorted { $0.name < $1.name }
-    }
+    @State private var isLoading = true
 
     var body: some View {
         NavigationStack {
-            Map(position: $position, selection: $selectedStationId) {
-                UserAnnotation()
+            ZStack {
+                Map(position: $position, selection: $selectedId) {
+                    UserAnnotation()
 
-                ForEach(allStations) { station in
-                    Marker(
-                        station.name,
-                        systemImage: station.isInterchange ? "arrow.triangle.2.circlepath" : "tram.fill",
-                        coordinate: station.coordinate
-                    )
-                    .tint(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
-                    .tag(station.id)
+                    ForEach(resolvedStations) { station in
+                        Marker(
+                            station.name,
+                            systemImage: station.isInterchange ? "arrow.triangle.2.circlepath" : "tram.fill",
+                            coordinate: station.coordinate
+                        )
+                        .tint(station.color)
+                        .tag(station.id)
+                    }
                 }
-            }
-            .mapStyle(.standard(pointsOfInterest: .excludingAll, showsTraffic: false))
-            .mapControls {
-                MapUserLocationButton()
-                MapCompass()
-                MapScaleView()
-            }
-            .onChange(of: selectedStationId) { _, newId in
-                guard let id = newId else { return }
-                tappedStation = allStations.first { $0.id == id }
-                if tappedStation != nil {
+                .mapStyle(.standard(pointsOfInterest: .excludingAll, showsTraffic: false))
+                .mapControls {
+                    MapUserLocationButton()
+                    MapCompass()
+                    MapScaleView()
+                }
+                .onChange(of: selectedId) { _, newId in
+                    guard let id = newId,
+                          let station = resolvedStations.first(where: { $0.id == id }) else { return }
+                    tappedStation = station
                     showSheet = true
+                }
+
+                if isLoading {
+                    ProgressView("Loading stations...")
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .navigationTitle("Transit Map")
-            .sheet(isPresented: $showSheet, onDismiss: { selectedStationId = nil }) {
+            .task {
+                await resolveAllStations()
+            }
+            .sheet(isPresented: $showSheet, onDismiss: { selectedId = nil }) {
                 if let station = tappedStation {
                     StationMapSheet(station: station)
                         .presentationDetents([.medium])
@@ -56,12 +63,93 @@ struct TransitMapView: View {
             }
         }
     }
+
+    // MARK: - Resolve stations via MapKit search
+
+    private func resolveAllStations() async {
+        let stationNames = SyrmosData.stationsByLine.values
+            .flatMap { $0 }
+            .reduce(into: [String: TransitStation]()) { $0[$1.id] = $1 }
+            .values.sorted { $0.name < $1.name }
+
+        let athensRegion = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
+            span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)
+        )
+
+        var results: [ResolvedStation] = []
+
+        for station in stationNames {
+            let searchQuery = "\(station.name) station Athens metro"
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = searchQuery
+            request.region = athensRegion
+            request.resultTypes = .pointOfInterest
+
+            do {
+                let search = MKLocalSearch(request: request)
+                let response = try await search.start()
+                if let item = response.mapItems.first {
+                    results.append(ResolvedStation(
+                        id: station.id,
+                        name: station.name,
+                        nameEl: station.nameEl,
+                        coordinate: item.placemark.coordinate,
+                        lineIds: station.lineIds,
+                        isInterchange: station.isInterchange,
+                        color: SyrmosData.lineColor(for: station.lineIds.first ?? "M3")
+                    ))
+                } else {
+                    // Fallback to our stored coordinate
+                    results.append(ResolvedStation(
+                        id: station.id,
+                        name: station.name,
+                        nameEl: station.nameEl,
+                        coordinate: station.coordinate,
+                        lineIds: station.lineIds,
+                        isInterchange: station.isInterchange,
+                        color: SyrmosData.lineColor(for: station.lineIds.first ?? "M3")
+                    ))
+                }
+            } catch {
+                results.append(ResolvedStation(
+                    id: station.id,
+                    name: station.name,
+                    nameEl: station.nameEl,
+                    coordinate: station.coordinate,
+                    lineIds: station.lineIds,
+                    isInterchange: station.isInterchange,
+                    color: SyrmosData.lineColor(for: station.lineIds.first ?? "M3")
+                ))
+            }
+
+            // Small delay to avoid rate limiting
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        await MainActor.run {
+            resolvedStations = results
+            isLoading = false
+        }
+    }
+}
+
+// MARK: - Resolved Station
+
+struct ResolvedStation: Identifiable {
+    let id: String
+    let name: String
+    let nameEl: String
+    let coordinate: CLLocationCoordinate2D
+    let lineIds: [String]
+    let isInterchange: Bool
+    let color: Color
 }
 
 // MARK: - Station Map Sheet
 
 struct StationMapSheet: View {
-    let station: TransitStation
+    let station: ResolvedStation
     @Environment(\.dismiss) private var dismiss
     @State private var departures: [Departure] = []
 
