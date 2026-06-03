@@ -8,7 +8,7 @@ import org.koin.dsl.module
 
 val dataModule = module {
     single { DataSeeder(database = get(), resourceReader = get()) }
-    single { LineRepositoryImpl(database = get()) }
-    single { StationRepositoryImpl(database = get()) }
+    single { LineRepositoryImpl(database = get(), resourceReader = get()) }
+    single { StationRepositoryImpl(database = get(), resourceReader = get()) }
     single { ScheduleRepositoryImpl(database = get()) }
 }

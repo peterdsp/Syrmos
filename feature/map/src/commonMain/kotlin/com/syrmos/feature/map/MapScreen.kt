@@ -19,10 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -95,11 +98,13 @@ private fun latLonToScreen(
 @Composable
 fun MapScreen(
     viewModel: MapViewModel,
+    showTopBar: Boolean = true,
+    initialScale: Float = 1f,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
 
-    var scale by remember { mutableFloatStateOf(1f) }
+    var scale by remember { mutableFloatStateOf(initialScale) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
@@ -108,8 +113,10 @@ fun MapScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(L.MAP.text(lang)) })
+        topBar = if (showTopBar) {
+            { TopAppBar(title = { Text(L.MAP.text(lang)) }) }
+        } else {
+            {}
         },
     ) { padding ->
         Box(
@@ -192,7 +199,7 @@ fun MapScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     ) {
-                        Text("+", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Icon(Icons.Filled.Add, contentDescription = "Zoom in")
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -201,19 +208,19 @@ fun MapScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     ) {
-                        Text("-", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Icon(Icons.Filled.Remove, contentDescription = "Zoom out")
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     SmallFloatingActionButton(
                         onClick = {
-                            scale = 1f
+                            scale = initialScale
                             offsetX = 0f
                             offsetY = 0f
                         },
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ) {
-                        Text("⌂", fontSize = 16.sp) // house/home symbol
+                        Icon(Icons.Filled.MyLocation, contentDescription = "Reset map")
                     }
                 }
             }

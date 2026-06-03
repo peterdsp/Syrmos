@@ -20,3 +20,5 @@ xcuserdata/
 *.log
 
 kotlin-js-store/
+.kotlin/sessions/
+output/playwright/
