@@ -8,156 +8,163 @@ struct TransitMapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.12, longitudeDelta: 0.12)
         )
     )
-    @State private var selectedStation: TransitStation?
-    @State private var showStationSheet = false
-    @State private var navigateToStation = false
+    @State private var selectedResult: MKMapItem?
+    @State private var showStationDetail = false
+    @State private var tappedStation: TransitStation?
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Map(position: $position, selection: Binding<MKMapItem?>(
-                    get: { nil },
-                    set: { item in
-                        if let item {
-                            handleMapItemSelection(item)
-                        }
-                    }
-                )) {
-                    UserAnnotation()
+            Map(position: $position, selection: $selectedResult) {
+                UserAnnotation()
+            }
+            .mapStyle(.standard(emphasis: .automatic, pointsOfInterest: .including([.publicTransport]), showsTraffic: false))
+            .mapControls {
+                MapUserLocationButton()
+                MapCompass()
+                MapScaleView()
+            }
+            .onChange(of: selectedResult) { _, newValue in
+                guard let item = newValue else { return }
+                let coord = item.placemark.coordinate
+                let name = item.name ?? "Station"
+
+                // Match to known station or create temporary
+                let allStations = SyrmosData.stationsByLine.values.flatMap { $0 }
+                let match = allStations.first { station in
+                    let dist = abs(station.coordinate.latitude - coord.latitude) + abs(station.coordinate.longitude - coord.longitude)
+                    return dist < 0.003
                 }
-                .mapStyle(.standard(emphasis: .automatic, pointsOfInterest: .including([.publicTransport]), showsTraffic: false))
-                .mapControls {
-                    MapUserLocationButton()
-                    MapCompass()
-                    MapScaleView()
-                }
+
+                tappedStation = match ?? TransitStation(
+                    id: "MAP_\(name.hashValue)",
+                    name: name,
+                    nameEl: "",
+                    coordinate: coord,
+                    lineIds: [],
+                    isInterchange: false
+                )
+                showStationDetail = true
+                selectedResult = nil
             }
             .navigationTitle("Transit Map")
-            .sheet(isPresented: $showStationSheet) {
-                if let station = selectedStation {
-                    StationQuickSheet(
-                        station: station,
-                        onViewDepartures: {
-                            showStationSheet = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                navigateToStation = true
-                            }
-                        },
-                        onGetDirections: {
-                            showStationSheet = false
-                            openDirections(to: station)
-                        }
-                    )
-                    .presentationDetents([.height(280)])
-                    .presentationDragIndicator(.visible)
-                }
-            }
-            .navigationDestination(isPresented: $navigateToStation) {
-                if let station = selectedStation {
-                    StationDetailView(station: station)
+            .sheet(isPresented: $showStationDetail) {
+                if let station = tappedStation {
+                    StationMapSheet(station: station)
+                        .presentationDetents([.medium])
+                        .presentationDragIndicator(.visible)
                 }
             }
         }
-    }
-
-    private func handleMapItemSelection(_ item: MKMapItem) {
-        let name = item.name ?? ""
-        let coord = item.placemark.coordinate
-
-        // Try to match to a known station
-        let allStations = SyrmosData.stationsByLine.values.flatMap { $0 }
-        if let match = allStations.first(where: { station in
-            let dist = abs(station.coordinate.latitude - coord.latitude) + abs(station.coordinate.longitude - coord.longitude)
-            return dist < 0.005 || station.name.lowercased().contains(name.lowercased().prefix(5))
-        }) {
-            selectedStation = match
-            showStationSheet = true
-        } else {
-            // Unknown station, create a temporary one from the map item
-            selectedStation = TransitStation(
-                id: "MAP_\(name.hashValue)",
-                name: name,
-                nameEl: "",
-                coordinate: coord,
-                lineIds: [],
-                isInterchange: false
-            )
-            showStationSheet = true
-        }
-    }
-
-    private func openDirections(to station: TransitStation) {
-        let destination = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
-        destination.name = station.name
-        destination.openInMaps(launchOptions: [
-            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
-        ])
     }
 }
 
-// MARK: - Station Quick Sheet
+// MARK: - Station Map Sheet
 
-struct StationQuickSheet: View {
+struct StationMapSheet: View {
     let station: TransitStation
-    let onViewDepartures: () -> Void
-    let onGetDirections: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var departures: [Departure] = []
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Station name
-            VStack(spacing: 4) {
-                Text(station.name)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                if !station.nameEl.isEmpty {
-                    Text(station.nameEl)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.top, 8)
-
-            // Line badges
-            if !station.lineIds.isEmpty {
-                HStack(spacing: 8) {
-                    ForEach(station.lineIds, id: \.self) { lineId in
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(SyrmosData.lineColor(for: lineId))
-                                .frame(width: 10, height: 10)
-                            Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                                .font(.caption)
-                                .fontWeight(.medium)
+        NavigationStack {
+            List {
+                // Station info
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        if !station.nameEl.isEmpty {
+                            Text(station.nameEl)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(uiColor: .tertiarySystemGroupedBackground))
-                        .clipShape(Capsule())
+                        if !station.lineIds.isEmpty {
+                            HStack(spacing: 6) {
+                                ForEach(station.lineIds, id: \.self) { lineId in
+                                    HStack(spacing: 4) {
+                                        Circle()
+                                            .fill(SyrmosData.lineColor(for: lineId))
+                                            .frame(width: 8, height: 8)
+                                        Text(SyrmosData.line(for: lineId)?.name ?? lineId)
+                                            .font(.caption)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                                    .clipShape(Capsule())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Departures
+                if !departures.isEmpty {
+                    Section("Next Departures") {
+                        ForEach(departures.prefix(6)) { dep in
+                            DepartureRow(departure: dep)
+                        }
+                    }
+                }
+
+                // Actions
+                Section {
+                    Button {
+                        let destination = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
+                        destination.name = station.name
+                        destination.openInMaps(launchOptions: [
+                            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
+                        ])
+                    } label: {
+                        Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
                     }
                 }
             }
-
-            Spacer()
-
-            // Action buttons
-            VStack(spacing: 12) {
-                Button(action: onViewDepartures) {
-                    Label("View Departures", systemImage: "clock")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
+            .navigationTitle(station.name)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.syrmosPrimary)
-
-                Button(action: onGetDirections) {
-                    Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                }
-                .buttonStyle(.bordered)
             }
-            .padding(.bottom, 8)
+            .onAppear {
+                if !station.lineIds.isEmpty {
+                    departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+                }
+            }
         }
-        .padding(.horizontal)
+    }
+}
+
+// MARK: - Departure Row
+
+struct DepartureRow: View {
+    let departure: Departure
+
+    var body: some View {
+        HStack {
+            Circle()
+                .fill(SyrmosData.lineColor(for: departure.lineId))
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                    .font(.subheadline)
+                Text("towards \(departure.direction)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(arrivalText)
+                .font(.headline)
+                .foregroundStyle(arrivalColor)
+        }
+    }
+
+    private var arrivalText: String {
+        departure.minutesAway <= 1 ? "Now" : "\(departure.minutesAway) min"
+    }
+
+    private var arrivalColor: Color {
+        if departure.minutesAway <= 2 { return .arrivalSoon }
+        if departure.minutesAway <= 5 { return .arrivalModerate }
+        return .arrivalFar
     }
 }
