@@ -63,6 +63,7 @@ class GetNextDeparturesUseCase(
             DayOfWeek.FRIDAY -> DayType.FRIDAY
             DayOfWeek.SATURDAY -> DayType.SATURDAY
             DayOfWeek.SUNDAY -> DayType.SUNDAY
+            else -> DayType.WEEKDAY
         }
     }
 }
