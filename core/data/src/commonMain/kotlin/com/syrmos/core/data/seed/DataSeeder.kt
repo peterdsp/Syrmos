@@ -96,9 +96,45 @@ class DataSeeder(
 
             database.syrmosDatabaseQueries.setMetadata("seed_version", SEED_VERSION)
         }
+
+        seedSchedules()
+    }
+
+    private suspend fun seedSchedules() {
+        val scheduleFiles = listOf(
+            "files/seed/schedules/metro_line3_airport_outbound.json",
+            "files/seed/schedules/metro_line3_airport_inbound.json",
+            "files/seed/schedules/tram_t6_outbound.json",
+        )
+
+        // Read all schedule files first (suspend), then batch insert
+        val schedules = scheduleFiles.mapNotNull { path ->
+            try {
+                json.decodeFromString<SeedScheduleFile>(resourceReader.readText(path))
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        database.transaction {
+            schedules.forEach { schedule ->
+                schedule.stationDepartures.forEach { (stationId, times) ->
+                    times.forEach { time ->
+                        database.syrmosDatabaseQueries.insertSchedule(
+                            line_id = schedule.lineId,
+                            station_id = stationId,
+                            direction = schedule.direction,
+                            day_type = schedule.dayType,
+                            departure_time = time,
+                            notes = null,
+                        )
+                    }
+                }
+            }
+        }
     }
 
     companion object {
-        const val SEED_VERSION = "1"
+        const val SEED_VERSION = "2"
     }
 }
