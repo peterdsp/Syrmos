@@ -2,13 +2,9 @@ name: Syrmos
 options:
   bundleIdPrefix: com.syrmos
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   xcodeVersion: "15.0"
   generateEmptyDirectories: true
-
-settings:
-  base:
-    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
 
 targets:
   iosApp:
@@ -26,20 +22,4 @@ targets:
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: iosApp/Info.plist
-        FRAMEWORK_SEARCH_PATHS:
-          - "$(SRCROOT)/../composeApp/build/bin/iosSimulatorArm64/debugFramework"
-          - "$(SRCROOT)/../composeApp/build/bin/iosArm64/releaseFramework"
-          - "$(inherited)"
-        OTHER_LDFLAGS:
-          - "$(inherited)"
-          - "-framework"
-          - "composeApp"
-          - "-lsqlite3"
-        SWIFT_VERSION: "5.0"
-    preBuildScripts:
-      - name: "Build Kotlin Framework"
-        shell: /bin/sh
-        script: |
-          cd "$SRCROOT/.."
-          ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
-        basedOnDependencyAnalysis: false
+        SWIFT_VERSION: "6.0"

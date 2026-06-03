@@ -7,13 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
+		695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */; };
+		8FD7065798C557186BA57411 /* LinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D0CA28E96EEF13502C887F /* LinesView.swift */; };
+		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
 		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
+		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		18D0CA28E96EEF13502C887F /* LinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinesView.swift; sourceTree = "<group>"; };
 		1DF85A2E3F716D7313EC9642 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosApp.swift; sourceTree = "<group>"; };
+		28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosColors.swift; sourceTree = "<group>"; };
+		7FD822CADE700A3FA325710D /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
+		836DE84E99C06ABA19E71805 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D19BB18628D05A667A4BD6B8 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -25,13 +35,42 @@
 			);
 			sourceTree = "<group>";
 		};
+		40A679F330FF3148AC14E1B1 /* Map */ = {
+			isa = PBXGroup;
+			children = (
+				7FD822CADE700A3FA325710D /* MapView.swift */,
+			);
+			path = Map;
+			sourceTree = "<group>";
+		};
+		47615221B72C5C4C581C11A5 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DDCABDB1DD7B61F362465058 /* Home */,
+				D86A94D82859CC3CC2167D28 /* Lines */,
+				40A679F330FF3148AC14E1B1 /* Map */,
+				7B19ADD08DF2697525E49E13 /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		71CEE17732FDEEE09CD923DC /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
 				1DF85A2E3F716D7313EC9642 /* Info.plist */,
 				287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */,
+				D66678BB1DDA820943CE5EAB /* Theme */,
+				47615221B72C5C4C581C11A5 /* Views */,
 			);
 			path = iosApp;
+			sourceTree = "<group>";
+		};
+		7B19ADD08DF2697525E49E13 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				836DE84E99C06ABA19E71805 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		BB06A92CF039223743BFB2C2 /* Products */ = {
@@ -42,6 +81,30 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D66678BB1DDA820943CE5EAB /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		D86A94D82859CC3CC2167D28 /* Lines */ = {
+			isa = PBXGroup;
+			children = (
+				18D0CA28E96EEF13502C887F /* LinesView.swift */,
+			);
+			path = Lines;
+			sourceTree = "<group>";
+		};
+		DDCABDB1DD7B61F362465058 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				F9632839850F8DA49BA56324 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -49,7 +112,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = B6DBA074881EBA32CC2F5013 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
-				F603F3F265EBB5EBF2DE26DC /* Build Kotlin Framework */,
 				123D21FB8A24EE726D99E5D7 /* Sources */,
 			);
 			buildRules = (
@@ -93,34 +155,17 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		F603F3F265EBB5EBF2DE26DC /* Build Kotlin Framework */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Build Kotlin Framework";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		123D21FB8A24EE726D99E5D7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */,
+				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
+				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
+				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
 				B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */,
+				695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -164,7 +209,6 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -179,7 +223,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -197,27 +241,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(SRCROOT)/../composeApp/build/bin/iosSimulatorArm64/debugFramework",
-					"$(SRCROOT)/../composeApp/build/bin/iosArm64/releaseFramework",
-					"$(inherited)",
-				);
 				INFOPLIST_FILE = iosApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-framework",
-					composeApp,
-					"-lsqlite3",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmos.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -228,27 +261,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(SRCROOT)/../composeApp/build/bin/iosSimulatorArm64/debugFramework",
-					"$(SRCROOT)/../composeApp/build/bin/iosArm64/releaseFramework",
-					"$(inherited)",
-				);
 				INFOPLIST_FILE = iosApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-framework",
-					composeApp,
-					"-lsqlite3",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmos.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -290,7 +312,6 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -299,7 +320,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

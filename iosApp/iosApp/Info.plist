@@ -18,9 +18,5 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Syrmos uses your location to find the nearest transit station.</string>
 </dict>
 </plist>
