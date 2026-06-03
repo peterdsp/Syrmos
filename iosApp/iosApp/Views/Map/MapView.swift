@@ -1,45 +1,130 @@
 import SwiftUI
+import MapKit
+
+struct TransitStation: Identifiable {
+    let id: String
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+    let color: Color
+    let lineType: String
+}
 
 struct TransitMapView: View {
+    @State private var position: MapCameraPosition = .region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 37.975, longitude: 23.735),
+            span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+        )
+    )
+
     var body: some View {
         NavigationStack {
-            Canvas { context, size in
-                let w = size.width
-                let h = size.height
-
-                // Line 1 (Green): vertical
-                var line1 = Path()
-                line1.move(to: CGPoint(x: w * 0.3, y: h * 0.08))
-                line1.addLine(to: CGPoint(x: w * 0.3, y: h * 0.92))
-                context.stroke(line1, with: .color(.metroGreen), lineWidth: 4)
-
-                // Line 2 (Red): horizontal
-                var line2 = Path()
-                line2.move(to: CGPoint(x: w * 0.08, y: h * 0.45))
-                line2.addLine(to: CGPoint(x: w * 0.92, y: h * 0.45))
-                context.stroke(line2, with: .color(.metroRed), lineWidth: 4)
-
-                // Line 3 (Blue): diagonal
-                var line3 = Path()
-                line3.move(to: CGPoint(x: w * 0.08, y: h * 0.78))
-                line3.addLine(to: CGPoint(x: w * 0.92, y: h * 0.15))
-                context.stroke(line3, with: .color(.metroBlue), lineWidth: 4)
-
-                // Interchange dots
-                let interchanges: [(CGFloat, CGFloat, String)] = [
-                    (0.30, 0.45, "Omonia"),
-                    (0.38, 0.45, "Syntagma"),
-                    (0.30, 0.52, "Monastiraki"),
-                ]
-
-                for (x, y, _) in interchanges {
-                    let center = CGPoint(x: w * x, y: h * y)
-                    context.fill(Circle().path(in: CGRect(x: center.x - 6, y: center.y - 6, width: 12, height: 12)), with: .color(.white))
-                    context.stroke(Circle().path(in: CGRect(x: center.x - 6, y: center.y - 6, width: 12, height: 12)), with: .color(.primary), lineWidth: 1.5)
+            Map(position: $position) {
+                // Metro Line 1 (Green)
+                ForEach(Self.metroLine1) { station in
+                    Annotation(station.name, coordinate: station.coordinate) {
+                        StationPin(color: station.color, isInterchange: Self.interchangeIds.contains(station.id))
+                    }
                 }
+                MapPolyline(coordinates: Self.metroLine1.map(\.coordinate))
+                    .stroke(Color.metroGreen, lineWidth: 3)
+
+                // Metro Line 2 (Red)
+                ForEach(Self.metroLine2) { station in
+                    Annotation(station.name, coordinate: station.coordinate) {
+                        StationPin(color: station.color, isInterchange: Self.interchangeIds.contains(station.id))
+                    }
+                }
+                MapPolyline(coordinates: Self.metroLine2.map(\.coordinate))
+                    .stroke(Color.metroRed, lineWidth: 3)
+
+                // Metro Line 3 (Blue)
+                ForEach(Self.metroLine3) { station in
+                    Annotation(station.name, coordinate: station.coordinate) {
+                        StationPin(color: station.color, isInterchange: Self.interchangeIds.contains(station.id))
+                    }
+                }
+                MapPolyline(coordinates: Self.metroLine3.map(\.coordinate))
+                    .stroke(Color.metroBlue, lineWidth: 3)
             }
-            .background(Color.syrmosBackground)
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
             .navigationTitle("Transit Map")
+        }
+    }
+
+    // MARK: - Station Data
+
+    static let interchangeIds: Set<String> = [
+        "M1_MON", "M1_OMO", "M1_ATT", "M1_PIR", "M1_NER",
+        "M2_SYN", "M3_SYN", "M3_MON", "M3_DPL", "M3_AER"
+    ]
+
+    static let metroLine1: [TransitStation] = [
+        .init(id: "M1_PIR", name: "Piraeus", coordinate: .init(latitude: 37.9475, longitude: 23.6431), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_FAL", name: "Faliro", coordinate: .init(latitude: 37.9426, longitude: 23.6633), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_MOS", name: "Moschato", coordinate: .init(latitude: 37.9486, longitude: 23.6756), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_KAL", name: "Kallithea", coordinate: .init(latitude: 37.9562, longitude: 23.6965), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_TAV", name: "Tavros", coordinate: .init(latitude: 37.9644, longitude: 23.7069), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_PET", name: "Petralona", coordinate: .init(latitude: 37.9683, longitude: 23.7107), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_THE", name: "Thissio", coordinate: .init(latitude: 37.9764, longitude: 23.7210), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_MON", name: "Monastiraki", coordinate: .init(latitude: 37.9763, longitude: 23.7256), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_OMO", name: "Omonia", coordinate: .init(latitude: 37.9844, longitude: 23.7282), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_VIC", name: "Victoria", coordinate: .init(latitude: 37.9933, longitude: 23.7294), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_ATT", name: "Attiki", coordinate: .init(latitude: 37.9998, longitude: 23.7221), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_NER", name: "Neratziotissa", coordinate: .init(latitude: 38.0583, longitude: 23.7672), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_MAR", name: "Maroussi", coordinate: .init(latitude: 38.0678, longitude: 23.7878), color: .metroGreen, lineType: "metro"),
+        .init(id: "M1_KHE", name: "Kifisia", coordinate: .init(latitude: 38.0856, longitude: 23.8011), color: .metroGreen, lineType: "metro"),
+    ]
+
+    static let metroLine2: [TransitStation] = [
+        .init(id: "M2_ANT", name: "Anthoupoli", coordinate: .init(latitude: 38.0139, longitude: 23.7056), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_SEP", name: "Sepolia", coordinate: .init(latitude: 37.9978, longitude: 23.7139), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_ATT", name: "Attiki", coordinate: .init(latitude: 37.9998, longitude: 23.7221), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_LAR", name: "Larissa Station", coordinate: .init(latitude: 37.9914, longitude: 23.7217), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_OMO", name: "Omonia", coordinate: .init(latitude: 37.9844, longitude: 23.7282), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_PAN", name: "Panepistimio", coordinate: .init(latitude: 37.9807, longitude: 23.7334), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_SYN", name: "Syntagma", coordinate: .init(latitude: 37.9755, longitude: 23.7353), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_AKR", name: "Akropoli", coordinate: .init(latitude: 37.9694, longitude: 23.7288), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_SYG", name: "Syngrou-Fix", coordinate: .init(latitude: 37.9640, longitude: 23.7266), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_NEK", name: "Neos Kosmos", coordinate: .init(latitude: 37.9559, longitude: 23.7311), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_DAF", name: "Dafni", coordinate: .init(latitude: 37.9422, longitude: 23.7378), color: .metroRed, lineType: "metro"),
+        .init(id: "M2_ELL", name: "Elliniko", coordinate: .init(latitude: 37.8919, longitude: 23.7472), color: .metroRed, lineType: "metro"),
+    ]
+
+    static let metroLine3: [TransitStation] = [
+        .init(id: "M3_DIM", name: "Dim. Theatro", coordinate: .init(latitude: 37.9483, longitude: 23.6444), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_NIK", name: "Nikaia", coordinate: .init(latitude: 37.9633, longitude: 23.6586), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_KOR", name: "Korydallos", coordinate: .init(latitude: 37.9756, longitude: 23.6581), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_AMA", name: "Agia Marina", coordinate: .init(latitude: 37.9892, longitude: 23.6736), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_EGA", name: "Egaleo", coordinate: .init(latitude: 37.9919, longitude: 23.6844), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_KER", name: "Kerameikos", coordinate: .init(latitude: 37.9789, longitude: 23.7139), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_MON", name: "Monastiraki", coordinate: .init(latitude: 37.9763, longitude: 23.7256), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_SYN", name: "Syntagma", coordinate: .init(latitude: 37.9755, longitude: 23.7353), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_EVA", name: "Evangelismos", coordinate: .init(latitude: 37.9758, longitude: 23.7444), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_ETH", name: "Ethniki Amyna", coordinate: .init(latitude: 38.0008, longitude: 23.7819), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_DPL", name: "Douk. Plakentias", coordinate: .init(latitude: 38.0072, longitude: 23.8394), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_PAL", name: "Pallini", coordinate: .init(latitude: 38.0022, longitude: 23.8750), color: .metroBlue, lineType: "metro"),
+        .init(id: "M3_AER", name: "Airport", coordinate: .init(latitude: 37.9364, longitude: 23.9475), color: .metroBlue, lineType: "metro"),
+    ]
+}
+
+struct StationPin: View {
+    let color: Color
+    let isInterchange: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(.white)
+                .frame(width: isInterchange ? 14 : 10, height: isInterchange ? 14 : 10)
+            Circle()
+                .fill(color)
+                .frame(width: isInterchange ? 10 : 6, height: isInterchange ? 10 : 6)
+            if isInterchange {
+                Circle()
+                    .stroke(.white, lineWidth: 1.5)
+                    .frame(width: 14, height: 14)
+            }
         }
     }
 }
