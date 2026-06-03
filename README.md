@@ -182,8 +182,11 @@ Syrmos is not affiliated with STASY, Hellenic Train or OASA.
 - [x] Design system with transit line colors
 - [x] Tab navigation with Voyager
 - [x] Feature screens: Home, Lines, Stations, Schedule, Map, Settings
+- [x] Route planner with Dijkstra pathfinding across interchange graph
+- [x] Unit tests for core utilities (datetime, geo distance, Result type)
+- [x] GitHub Actions CI (macOS, JDK 17, iOS simulator build + tests)
+- [x] iOS Xcode project with SwiftUI wrapper and GPS location permission
 - [ ] Populate full departure timetables from PDF extraction
-- [ ] Route planner with BFS/Dijkstra across interchange graph
 - [ ] Live data integration when OASA API becomes available
 - [ ] Service disruption alerts
 - [ ] Home screen widgets (Android Glance, iOS WidgetKit)
