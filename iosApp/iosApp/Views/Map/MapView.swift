@@ -5,7 +5,7 @@ struct TransitMapView: View {
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
-            span: MKCoordinateSpan(latitudeDelta: 0.12, longitudeDelta: 0.12)
+            span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
         )
     )
     @State private var selectedMapItem: MKMapItem?
@@ -16,7 +16,7 @@ struct TransitMapView: View {
                 UserAnnotation()
             }
             .mapStyle(.standard(
-                emphasis: .automatic,
+                elevation: .flat,
                 pointsOfInterest: .including([.publicTransport]),
                 showsTraffic: false
             ))
