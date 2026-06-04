@@ -3,6 +3,7 @@ import WebKit
 
 struct HomeView: View {
     @StateObject private var stasyService = STASYService()
+    @StateObject private var liveTrainService = LiveTrainService()
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var webViewURL: URL?
 
@@ -12,6 +13,7 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     welcomeSection
                     networkOverview
+                    liveTrainsSection
                     alertsSection
                     linesSection
                 }
@@ -47,6 +49,42 @@ struct HomeView: View {
             StatCard(value: "3", label: loc[.metro], color: .metroBlue)
             StatCard(value: "2", label: loc[.tram], color: .tramOrange)
             StatCard(value: "4", label: loc[.suburban], color: .suburbanPurple)
+        }
+    }
+
+    @ViewBuilder
+    private var liveTrainsSection: some View {
+        if liveTrainService.trains.isEmpty {
+            EmptyView()
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Live trains")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+
+                ForEach(liveTrainService.trains.prefix(3)) { train in
+                    HStack {
+                        Circle()
+                            .fill(Color.suburbanPurple)
+                            .frame(width: 8, height: 8)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(train.trainNumber)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Text("\(train.origin) to \(train.destination)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(train.nextStation.isEmpty ? "Live" : train.nextStation)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(12)
+                    .background(Color.syrmosSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
         }
     }
 

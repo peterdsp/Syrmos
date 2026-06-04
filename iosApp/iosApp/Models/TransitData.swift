@@ -202,3 +202,205 @@ enum SyrmosData {
         }
     }
 }
+
+extension SyrmosData {
+    static var mapStations: [MapStationNode] {
+        let grouped = Dictionary(grouping: StationCoords.allStations) { station in
+            station.displayKey
+        }
+
+        return grouped.map { key, group in
+            let primary = group.first!
+            let lineIds = Array(Set(group.flatMap { $0.lineIds })).sorted()
+            var stationIdByLineId: [String: String] = [:]
+
+            for station in group {
+                for lineId in station.lineIds where stationIdByLineId[lineId] == nil {
+                    stationIdByLineId[lineId] = station.id
+                }
+            }
+
+            return MapStationNode(
+                id: key,
+                stationIds: group.map { $0.id },
+                stationIdByLineId: stationIdByLineId,
+                name: primary.name,
+                nameEl: primary.nameEl,
+                coordinate: CLLocationCoordinate2D(
+                    latitude: group.map(\.coordinate.latitude).reduce(0, +) / Double(group.count),
+                    longitude: group.map(\.coordinate.longitude).reduce(0, +) / Double(group.count)
+                ),
+                lineIds: lineIds,
+                isInterchange: lineIds.count > 1 || group.contains(where: { $0.isInterchange })
+            )
+        }
+        .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+    }
+}
+
+@MainActor
+final class LiveTrainService: ObservableObject {
+    @Published var trains: [LiveTrain] = []
+
+    private var task: Task<Void, Never>?
+
+    init() {
+        task = Task { [weak self] in
+            await self?.run()
+        }
+    }
+
+    deinit {
+        task?.cancel()
+    }
+
+    private func run() async {
+        while !Task.isCancelled {
+            do {
+                try await observeStream()
+            } catch {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
+        }
+    }
+
+    private func observeStream() async throws {
+        let url = URL(string: "https://railway.gov.gr/api/train-stream")!
+        let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 45)
+        let (bytes, _) = try await URLSession.shared.bytes(for: request)
+
+        var currentEvent: String?
+        var dataLines: [String] = []
+
+        for try await rawLine in bytes.lines {
+            let line = String(rawLine)
+            if line.isEmpty {
+                if currentEvent == "trainPositionsUx" {
+                    await updateTrains(from: dataLines.joined(separator: "\n"))
+                }
+                currentEvent = nil
+                dataLines = []
+                continue
+            }
+
+            if line.hasPrefix("event:") {
+                currentEvent = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+            } else if line.hasPrefix("data:") {
+                dataLines.append(String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces))
+            }
+        }
+    }
+
+    @MainActor
+    private func updateTrains(from payload: String) {
+        guard let data = payload.data(using: .utf8) else {
+            trains = []
+            return
+        }
+
+        do {
+            let decoded = try JSONDecoder().decode(TrainPositionsPayload.self, from: data)
+            trains = decoded.positions.compactMap { position in
+                guard let lineId = inferLineId(position: position),
+                      let lat = position.lat,
+                      let lng = position.lng else { return nil }
+
+                return LiveTrain(
+                    id: position.id ?? position.trainId ?? position.locomotiveId ?? position.name ?? UUID().uuidString,
+                    lineId: lineId,
+                    trainNumber: position.trainNumber ?? position.name ?? position.locomotiveNumber ?? "Train",
+                    origin: position.origin ?? "",
+                    destination: position.destination ?? "",
+                    nextStation: position.nextStation ?? "",
+                    delayMinutes: position.delay ?? 0,
+                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                )
+            }
+        } catch {
+            trains = []
+        }
+    }
+
+    private func inferLineId(position: TrainPositionPayload) -> String? {
+        let text = [
+            position.origin,
+            position.destination,
+            position.nextStation,
+            position.corridor,
+        ]
+        .compactMap { $0?.lowercased() }
+        .joined(separator: " ")
+
+        if text.contains("pirair") || (text.contains("πειραι") && text.contains("αεροδρομ")) {
+            return "A1"
+        }
+        if text.contains("ανω λιοσια") && text.contains("αεροδρομ") {
+            return "A2"
+        }
+        if text.contains("αθην") && text.contains("χαλκιδ") {
+            return "A3"
+        }
+        if text.contains("πειραι") && text.contains("κιατ") {
+            return "A4"
+        }
+        return nil
+    }
+}
+
+struct LiveTrain: Identifiable {
+    let id: String
+    let lineId: String
+    let trainNumber: String
+    let origin: String
+    let destination: String
+    let nextStation: String
+    let delayMinutes: Int
+    let coordinate: CLLocationCoordinate2D
+}
+
+struct MapStationNode: Identifiable {
+    let id: String
+    let stationIds: [String]
+    let stationIdByLineId: [String: String]
+    let name: String
+    let nameEl: String
+    let coordinate: CLLocationCoordinate2D
+    let lineIds: [String]
+    let isInterchange: Bool
+
+    var displayName: String {
+        name.isEmpty ? nameEl : name
+    }
+}
+
+private extension TransitStation {
+    var displayKey: String {
+        let source = name.isEmpty ? nameEl : name
+        return source
+            .lowercased()
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: ".", with: "")
+    }
+}
+
+private struct TrainPositionsPayload: Decodable {
+    let positions: [TrainPositionPayload]
+}
+
+private struct TrainPositionPayload: Decodable {
+    let id: String?
+    let trainId: String?
+    let name: String?
+    let trainNumber: String?
+    let origin: String?
+    let destination: String?
+    let nextStation: String?
+    let delay: Int?
+    let lat: Double?
+    let lng: Double?
+    let locomotiveNumber: String?
+    let locomotiveId: String?
+    let corridor: String?
+}

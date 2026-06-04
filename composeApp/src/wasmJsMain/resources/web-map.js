@@ -444,9 +444,8 @@
 
     function updateLiveTrains(positions) {
         const trains = positions
-            .filter((position) => String(position.serviceType || "").toLowerCase() === "suburban")
             .map((position) => {
-                const inferred = inferLineId(position.origin || "", position.destination || "");
+                const inferred = inferLineId(position);
                 if (!inferred || position.lat == null || position.lng == null) return null;
                 return {
                     id: position.id || position.trainId || position.trainNumber || position.name,
@@ -477,7 +476,7 @@
                 return `
                     <div class="panel-item">
                         <div class="panel-item__title">${line ? line.name : train.lineId} ${train.trainNumber}</div>
-                        <div class="panel-item__meta">${train.origin} to ${train.destination}${train.nextStation ? `, next ${train.nextStation}` : ""}</div>
+                        <div class="panel-item__meta">${train.origin || "Live"} to ${train.destination || "unknown"}${train.nextStation ? `, next ${train.nextStation}` : ""}</div>
                     </div>
                 `;
             }).join("")
@@ -489,18 +488,19 @@
                 icon: L.divIcon({
                     className: "train-marker",
                     html: `<span class="train-marker__ring" style="background:${line ? line.color : "#0072CE"}"></span>`,
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8],
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11],
                 }),
                 keyboard: false,
+                zIndexOffset: 1000,
             }).addTo(map);
             liveTrainMarkers.set(train.id, marker);
         }
     }
 
-    function inferLineId(origin, destination) {
-        const text = `${origin} ${destination}`.toLowerCase();
-        if (text.includes("πειραι") && text.includes("αεροδρομ")) return "A1";
+    function inferLineId(position) {
+        const text = `${position.origin || ""} ${position.destination || ""} ${position.nextStation || ""} ${position.corridor || ""}`.toLowerCase();
+        if (text.includes("pirair") || (text.includes("πειραι") && text.includes("αεροδρομ"))) return "A1";
         if (text.includes("ανω λιοσια") && text.includes("αεροδρομ")) return "A2";
         if (text.includes("αθην") && text.includes("χαλκιδ")) return "A3";
         if (text.includes("πειραι") && text.includes("κιατ")) return "A4";
@@ -521,7 +521,7 @@
         const groups = new Map();
 
         for (const station of rawStations) {
-            const key = `${roundKey(station.latitude)}|${roundKey(station.longitude)}`;
+            const key = normalizeStationKey(station.name || station.name_el || "");
             if (!groups.has(key)) {
                 groups.set(key, []);
             }
@@ -546,8 +546,8 @@
                     stationIdByLineId,
                     name: primary.name,
                     nameEl: primary.name_el,
-                    latitude: primary.latitude,
-                    longitude: primary.longitude,
+                    latitude: group.reduce((sum, station) => sum + station.latitude, 0) / group.length,
+                    longitude: group.reduce((sum, station) => sum + station.longitude, 0) / group.length,
                     lineIds,
                     isInterchange: lineIds.length > 1 || group.some((station) => station.is_interchange),
                     accessibility: group.some((station) => station.accessibility),
@@ -559,5 +559,13 @@
 
     function roundKey(value) {
         return Math.round(value * 1000000);
+    }
+
+    function normalizeStationKey(value) {
+        return String(value)
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
     }
 })();

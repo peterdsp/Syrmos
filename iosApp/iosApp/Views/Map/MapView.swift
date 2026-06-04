@@ -4,14 +4,15 @@ import MapKit
 // MARK: - Preloaded station data (computed once at app start)
 
 enum PreloadedData {
-    static let stations: [TransitStation] = StationCoords.allStations
-    static let stationsById: [String: TransitStation] = Dictionary(
+    static let stations: [MapStationNode] = SyrmosData.mapStations
+    static let stationsById: [String: MapStationNode] = Dictionary(
         uniqueKeysWithValues: stations.map { ($0.id, $0) }
     )
 }
 
 struct TransitMapView: View {
     @ObservedObject private var loc = LocalizationManager.shared
+    @StateObject private var liveTrainService = LiveTrainService()
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
@@ -19,7 +20,7 @@ struct TransitMapView: View {
         )
     )
     @State private var selectedId: String?
-    @State private var tappedStation: TransitStation?
+    @State private var tappedStation: MapStationNode?
 
     private let stations = PreloadedData.stations
 
@@ -30,13 +31,19 @@ struct TransitMapView: View {
                     UserAnnotation()
 
                     ForEach(stations) { station in
-                        Annotation(station.name, coordinate: station.coordinate) {
+                        Annotation(station.displayName, coordinate: station.coordinate) {
                             StationDot(station: station, isSelected: selectedId == station.id)
                                 .onTapGesture {
                                     selectedId = station.id
                                 }
                         }
                         .tag(station.id)
+                    }
+
+                    ForEach(liveTrainService.trains) { train in
+                        Annotation(train.trainNumber, coordinate: train.coordinate) {
+                            TrainDot()
+                        }
                     }
                 }
                 .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll, showsTraffic: false))
@@ -126,7 +133,7 @@ struct TransitMapView: View {
 // MARK: - Station Sheet
 
 struct StationSheetView: View {
-    let station: TransitStation
+    let station: MapStationNode
     @ObservedObject private var loc = LocalizationManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var departures: [Departure] = []
@@ -142,8 +149,13 @@ struct StationSheetView: View {
             .padding()
         }
         .onAppear {
-            if !station.lineIds.isEmpty {
-                departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+            departures = station.lineIds.flatMap { lineId in
+                let stationId = station.stationIdByLineId[lineId] ?? station.stationIds.first ?? station.id
+                return SyrmosData.sampleDepartures(for: stationId, lineIds: [lineId])
+            }
+            .sorted { $0.minutesAway < $1.minutesAway }
+            if departures.count > 6 {
+                departures = Array(departures.prefix(6))
             }
         }
     }
@@ -151,10 +163,10 @@ struct StationSheetView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(loc.language == .greek ? station.nameEl : station.name)
+                Text(loc.language == .greek ? station.nameEl : station.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
-                Text(loc.language == .greek ? station.name : station.nameEl)
+                Text(loc.language == .greek ? station.displayName : station.nameEl)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -196,7 +208,7 @@ struct StationSheetView: View {
     private var directionsButton: some View {
         Button {
             let dest = MKMapItem(placemark: MKPlacemark(coordinate: station.coordinate))
-            dest.name = station.name
+            dest.name = station.displayName
             dest.openInMaps(launchOptions: [
                 MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
             ])
@@ -215,7 +227,7 @@ struct StationSheetView: View {
 // MARK: - Station Dot (map annotation)
 
 struct StationDot: View {
-    let station: TransitStation
+    let station: MapStationNode
     let isSelected: Bool
 
     var body: some View {
@@ -245,6 +257,23 @@ struct StationDot: View {
             .scaleEffect(isSelected ? 1.3 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
+    }
+}
+
+struct TrainDot: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.suburbanPurple.opacity(0.22))
+                .frame(width: 30, height: 30)
+            Circle()
+                .fill(Color.suburbanPurple)
+                .frame(width: 16, height: 16)
+            Circle()
+                .fill(.white)
+                .frame(width: 6, height: 6)
+        }
+        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
     }
 }
 

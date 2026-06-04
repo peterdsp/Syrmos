@@ -101,40 +101,38 @@ class RailwayGovLiveTrackerService(
     }
 
     private fun TrainPositionPayload.matchesSuburbanLine(lineIds: Set<String>?): Boolean {
-        if (serviceType != SUBURBAN_SERVICE_TYPE) return false
-
-        val originText = origin.orEmpty().normalizedRouteText()
-        val destinationText = destination.orEmpty().normalizedRouteText()
-        val inferredLineId = inferSuburbanLineId(originText, destinationText) ?: return false
+        val inferredLineId = inferSuburbanLineId() ?: return false
 
         return lineIds.isNullOrEmpty() || inferredLineId in lineIds
     }
 
-    private fun TrainPositionPayload.inferSuburbanLineId(
-        originText: String,
-        destinationText: String,
-    ): String? {
+    private fun TrainPositionPayload.inferSuburbanLineId(): String? {
+        val originText = origin.orEmpty().normalizedRouteText()
+        val destinationText = destination.orEmpty().normalizedRouteText()
+        val nextStationText = nextStation.orEmpty().normalizedRouteText()
+        val corridorText = corridor.orEmpty().normalizedRouteText()
+        val routeText = listOf(originText, destinationText, nextStationText, corridorText).joinToString(" ")
+
         return when {
-            routeMatches(originText, destinationText, "πειραι", "piraeus") &&
-                routeMatches(originText, destinationText, "αεροδρομ", "airport") -> "A1"
+            routeText.contains("pirair") ||
+                routeMatches(routeText, "πειραι", "piraeus") &&
+                routeMatches(routeText, "αεροδρομ", "airport") -> "A1"
 
-            routeMatches(originText, destinationText, "ανω λιοσια", "ano liosia") &&
-                routeMatches(originText, destinationText, "αεροδρομ", "airport") -> "A2"
+            routeMatches(routeText, "ανω λιοσια", "ano liosia") &&
+                routeMatches(routeText, "αεροδρομ", "airport") -> "A2"
 
-            routeMatches(originText, destinationText, "αθην", "athens") &&
-                routeMatches(originText, destinationText, "χαλκιδ", "chalcis") -> "A3"
+            routeMatches(routeText, "αθην", "athens") &&
+                routeMatches(routeText, "χαλκιδ", "chalcis") -> "A3"
 
-            routeMatches(originText, destinationText, "πειραι", "piraeus") &&
-                routeMatches(originText, destinationText, "κιατ", "kiato") -> "A4"
+            routeMatches(routeText, "πειραι", "piraeus") &&
+                routeMatches(routeText, "κιατ", "kiato") -> "A4"
 
             else -> null
         }
     }
 
     private fun TrainPositionPayload.toDomain(): LiveSuburbanTrain? {
-        val originText = origin.orEmpty().normalizedRouteText()
-        val destinationText = destination.orEmpty().normalizedRouteText()
-        val inferredLineId = inferSuburbanLineId(originText, destinationText) ?: return null
+        val inferredLineId = inferSuburbanLineId() ?: return null
         val trainId = id ?: trainId ?: return null
         val trainLabel = trainNumber ?: name ?: locomotiveNumber ?: return null
         val latitudeValue = lat ?: return null
@@ -157,15 +155,12 @@ class RailwayGovLiveTrackerService(
     }
 
     private fun routeMatches(
-        originText: String,
-        destinationText: String,
+        routeText: String,
         greekToken: String,
         latinToken: String,
     ): Boolean {
-        return originText.contains(greekToken) ||
-            destinationText.contains(greekToken) ||
-            originText.contains(latinToken) ||
-            destinationText.contains(latinToken)
+        return routeText.contains(greekToken) ||
+            routeText.contains(latinToken)
     }
 
     private fun String.normalizedRouteText(): String {
@@ -210,10 +205,11 @@ private data class TrainPositionPayload(
     @SerialName("trainNumber") val trainNumber: String? = null,
     @SerialName("serviceType") val serviceType: String? = null,
     val origin: String? = null,
-    val destination: String? = null,
-    @SerialName("nextStation") val nextStation: String? = null,
-    val delay: Int? = null,
-    val progress: Double? = null,
+        val destination: String? = null,
+        @SerialName("nextStation") val nextStation: String? = null,
+        val corridor: String? = null,
+        val delay: Int? = null,
+        val progress: Double? = null,
     val lat: Double? = null,
     val lng: Double? = null,
     val speed: Double? = null,
