@@ -518,42 +518,47 @@
     }
 
     function buildStationNodes(rawStations) {
-        const groups = new Map();
+        const grouped = new Map();
+        const sortedStations = rawStations
+            .slice()
+            .sort((a, b) => a.latitude - b.latitude || a.longitude - b.longitude || String(a.id).localeCompare(String(b.id)));
 
-        for (const station of rawStations) {
-            const key = normalizeStationKey(station.name || station.name_el || "");
-            if (!groups.has(key)) {
-                groups.set(key, []);
+        for (const station of sortedStations) {
+            const key = stationClusterKey(station);
+            if (!grouped.has(key)) {
+                grouped.set(key, []);
             }
-            groups.get(key).push(station);
+            grouped.get(key).push(station);
         }
 
-        return [...groups.entries()]
-            .map(([key, group]) => {
-                const primary = group[0];
-                const lineIds = [...new Set(group.flatMap((station) => station.line_ids))];
+        return [...grouped.values()]
+            .flatMap((group) => clusterByProximity(group).map((cluster, index) => {
+                const primary = cluster[0];
+                const lineIds = [...new Set(cluster.flatMap((station) => station.line_ids))];
                 const stationIdByLineId = {};
-                for (const station of group) {
+                for (const station of cluster) {
                     for (const lineId of station.line_ids) {
                         if (!stationIdByLineId[lineId]) {
                             stationIdByLineId[lineId] = station.id;
                         }
                     }
                 }
+                const latitude = cluster.reduce((sum, station) => sum + station.latitude, 0) / cluster.length;
+                const longitude = cluster.reduce((sum, station) => sum + station.longitude, 0) / cluster.length;
                 return {
-                    id: key,
-                    stationIds: group.map((station) => station.id),
+                    id: `${stationClusterKey(primary)}_${index}_${roundKey(latitude)}_${roundKey(longitude)}`,
+                    stationIds: cluster.map((station) => station.id),
                     stationIdByLineId,
                     name: primary.name,
                     nameEl: primary.name_el,
-                    latitude: group.reduce((sum, station) => sum + station.latitude, 0) / group.length,
-                    longitude: group.reduce((sum, station) => sum + station.longitude, 0) / group.length,
+                    latitude,
+                    longitude,
                     lineIds,
-                    isInterchange: lineIds.length > 1 || group.some((station) => station.is_interchange),
-                    accessibility: group.some((station) => station.accessibility),
-                    zone: Math.min(...group.map((station) => station.zone || 1)),
+                    isInterchange: lineIds.length > 1 || cluster.some((station) => station.is_interchange),
+                    accessibility: cluster.some((station) => station.accessibility),
+                    zone: Math.min(...cluster.map((station) => station.zone || 1)),
                 };
-            })
+            }))
             .sort((a, b) => a.name.localeCompare(b.name));
     }
 
@@ -561,11 +566,50 @@
         return Math.round(value * 1000000);
     }
 
+    function stationClusterKey(station) {
+        const nameKey = normalizeStationKey(station.name || "");
+        const nameElKey = normalizeStationKey(station.name_el || "");
+        return [nameKey, nameElKey]
+            .filter(Boolean)
+            .sort()
+            .join("|");
+    }
+
+    function clusterByProximity(stations, radiusMeters = 300) {
+        const clusters = [];
+        for (const station of stations) {
+            const match = clusters.find((cluster) =>
+                cluster.some((other) =>
+                    distanceMeters(other.latitude, other.longitude, station.latitude, station.longitude) <= radiusMeters,
+                ),
+            );
+            if (match) {
+                match.push(station);
+            } else {
+                clusters.push([station]);
+            }
+        }
+        return clusters;
+    }
+
     function normalizeStationKey(value) {
         return String(value)
             .toLowerCase()
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[άέήίϊΐόύϋΰώ]/g, (match) => ({
+                ά: "α",
+                έ: "ε",
+                ή: "η",
+                ί: "ι",
+                ϊ: "ι",
+                ΐ: "ι",
+                ό: "ο",
+                ύ: "υ",
+                ϋ: "υ",
+                ΰ: "υ",
+                ώ: "ω",
+            }[match]))
             .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
     }
 })();

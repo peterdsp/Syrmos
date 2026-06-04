@@ -205,34 +205,42 @@ enum SyrmosData {
 
 extension SyrmosData {
     static var mapStations: [MapStationNode] {
-        let grouped = Dictionary(grouping: StationCoords.allStations) { station in
-            station.displayKey
-        }
-
-        return grouped.map { key, group in
-            let primary = group.first!
-            let lineIds = Array(Set(group.flatMap { $0.lineIds })).sorted()
-            var stationIdByLineId: [String: String] = [:]
-
-            for station in group {
-                for lineId in station.lineIds where stationIdByLineId[lineId] == nil {
-                    stationIdByLineId[lineId] = station.id
-                }
+        let grouped = Dictionary(grouping: StationCoords.allStations.sorted {
+            if $0.coordinate.latitude != $1.coordinate.latitude {
+                return $0.coordinate.latitude < $1.coordinate.latitude
             }
+            if $0.coordinate.longitude != $1.coordinate.longitude {
+                return $0.coordinate.longitude < $1.coordinate.longitude
+            }
+            return $0.id < $1.id
+        }, by: { $0.clusterKey })
 
-            return MapStationNode(
-                id: key,
-                stationIds: group.map { $0.id },
-                stationIdByLineId: stationIdByLineId,
-                name: primary.name,
-                nameEl: primary.nameEl,
-                coordinate: CLLocationCoordinate2D(
-                    latitude: group.map(\.coordinate.latitude).reduce(0, +) / Double(group.count),
-                    longitude: group.map(\.coordinate.longitude).reduce(0, +) / Double(group.count)
-                ),
-                lineIds: lineIds,
-                isInterchange: lineIds.count > 1 || group.contains(where: { $0.isInterchange })
-            )
+        return grouped.flatMap { _, group in
+            group.clusterByProximity().enumerated().map { index, cluster in
+                let primary = cluster.first!
+                let lineIds = Array(Set(cluster.flatMap { $0.lineIds })).sorted()
+                var stationIdByLineId: [String: String] = [:]
+
+                for station in cluster {
+                    for lineId in station.lineIds where stationIdByLineId[lineId] == nil {
+                        stationIdByLineId[lineId] = station.id
+                    }
+                }
+
+                return MapStationNode(
+                    id: "\(primary.clusterKey)_\(index)_\(cluster.latitudeBucket)_\(cluster.longitudeBucket)",
+                    stationIds: cluster.map { $0.id },
+                    stationIdByLineId: stationIdByLineId,
+                    name: primary.name,
+                    nameEl: primary.nameEl,
+                    coordinate: CLLocationCoordinate2D(
+                        latitude: cluster.map(\.coordinate.latitude).reduce(0, +) / Double(cluster.count),
+                        longitude: cluster.map(\.coordinate.longitude).reduce(0, +) / Double(cluster.count)
+                    ),
+                    lineIds: lineIds,
+                    isInterchange: lineIds.count > 1 || cluster.contains(where: { $0.isInterchange })
+                )
+            }
         }
         .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
     }
@@ -374,15 +382,65 @@ struct MapStationNode: Identifiable {
 }
 
 private extension TransitStation {
-    var displayKey: String {
-        let source = name.isEmpty ? nameEl : name
-        return source
-            .lowercased()
+    var clusterKey: String {
+        [name.normalizeStationText(), nameEl.normalizeStationText()]
+            .filter { !$0.isEmpty }
+            .sorted()
+            .joined(separator: "|")
+    }
+
+    var displayKey: String { clusterKey }
+}
+
+private extension Array where Element == TransitStation {
+    func clusterByProximity(radiusMeters: Double = 300.0) -> [[TransitStation]] {
+        var clusters: [[TransitStation]] = []
+        for station in self {
+            if let index = clusters.firstIndex(where: { cluster in
+                cluster.contains(where: {
+                    distanceMeters(
+                        $0.coordinate.latitude,
+                        $0.coordinate.longitude,
+                        station.coordinate.latitude,
+                        station.coordinate.longitude
+                    ) <= radiusMeters
+                })
+            }) {
+                clusters[index].append(station)
+            } else {
+                clusters.append([station])
+            }
+        }
+        return clusters
+    }
+
+    var latitudeBucket: Int {
+        Int((map(\.coordinate.latitude).reduce(0, +) / Double(count)) * 10000)
+    }
+
+    var longitudeBucket: Int {
+        Int((map(\.coordinate.longitude).reduce(0, +) / Double(count)) * 10000)
+    }
+}
+
+private extension String {
+    func normalizeStationText() -> String {
+        lowercased()
             .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "-", with: "")
             .replacingOccurrences(of: ".", with: "")
     }
+}
+
+private func distanceMeters(_ lat1: Double, _ lon1: Double, _ lat2: Double, _ lon2: Double) -> Double {
+    let earthRadius = 6_371_000.0
+    let dLat = (lat2 - lat1) * .pi / 180
+    let dLon = (lon2 - lon1) * .pi / 180
+    let a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) *
+        sin(dLon / 2) * sin(dLon / 2)
+    return 2 * earthRadius * atan2(sqrt(a), sqrt(1 - a))
 }
 
 private struct TrainPositionsPayload: Decodable {
