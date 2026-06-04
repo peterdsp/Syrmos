@@ -32,37 +32,37 @@ body {
     z-index: 1000;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
+    gap: 16px;
+    padding: 12px 14px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(22px);
+    box-shadow: 0 8px 24px rgba(16, 20, 24, 0.1);
 }
 
 .brand-block {
     min-width: 0;
-    flex: 0 1 260px;
+    flex: 0 1 240px;
 }
 
 .brand {
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 750;
     letter-spacing: -0.03em;
     white-space: nowrap;
 }
 
 .subtitle {
-    margin-top: 2px;
+    margin-top: 1px;
     color: #5f6b76;
-    font-size: 14px;
+    font-size: 13px;
     white-space: nowrap;
 }
 
 .map-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex: none;
 }
 
@@ -73,17 +73,17 @@ body {
 }
 
 .control-button {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: 0;
-    border-radius: 14px;
-    background: rgba(15, 23, 42, 0.9);
+    border-radius: 13px;
+    background: #1f2937;
     color: #f8fafc;
-    font-size: 28px;
+    font-size: 24px;
     line-height: 1;
     cursor: pointer;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+    box-shadow: none;
 }
 
 .control-button:hover {
@@ -100,7 +100,6 @@ body {
     min-width: 260px;
 }
 
-.search-label,
 .sheet-label {
     display: block;
     margin-bottom: 8px;
@@ -111,19 +110,39 @@ body {
     letter-spacing: 0.06em;
 }
 
+.search-input-shell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border: 1px solid rgba(16, 20, 24, 0.1);
+    border-radius: 16px;
+    background: rgba(246, 248, 251, 0.92);
+}
+
+.search-icon {
+    flex: none;
+    color: #6b7280;
+    font-size: 17px;
+}
+
 .search-input {
     width: 100%;
     box-sizing: border-box;
-    padding: 14px 16px;
-    border: 1px solid rgba(16, 20, 24, 0.12);
-    border-radius: 14px;
-    background: #f7fafc;
+    padding: 14px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     font-size: 16px;
 }
 
 .search-input:focus {
-    outline: 2px solid rgba(0, 114, 206, 0.18);
-    border-color: #0072CE;
+    outline: none;
+}
+
+.search-input-shell:focus-within {
+    border-color: rgba(0, 114, 206, 0.3);
+    box-shadow: 0 0 0 4px rgba(0, 114, 206, 0.08);
 }
 
 .search-results {
@@ -136,11 +155,11 @@ body {
     flex-direction: column;
     gap: 8px;
     max-height: 280px;
-    padding: 10px;
-    border-radius: 18px;
+    padding: 8px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(18px);
-    box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
+    box-shadow: 0 12px 32px rgba(16, 20, 24, 0.12);
     overflow: auto;
 }
 
@@ -149,7 +168,7 @@ body {
 }
 
 .search-result {
-    padding: 12px 14px;
+    padding: 11px 12px;
     border-radius: 12px;
     background: #f7fafc;
     cursor: pointer;
@@ -349,7 +368,8 @@ body {
 }
 
 .ghost-button {
-    padding: 10px 14px;
+    padding: 0 18px;
+    height: 44px;
     background: #eef4f9;
     color: #18324a;
 }
@@ -430,7 +450,7 @@ body {
         left: 12px;
         right: 12px;
         top: 12px;
-        padding: 12px 14px;
+        padding: 12px;
         align-items: flex-start;
         flex-wrap: wrap;
     }

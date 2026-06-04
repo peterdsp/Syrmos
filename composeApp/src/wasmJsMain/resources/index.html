@@ -25,8 +25,10 @@
             <div class="subtitle">Athens rail map</div>
         </div>
         <section class="search-card">
-            <label class="search-label" for="stationSearch">Search station</label>
-            <input id="stationSearch" class="search-input" type="search" placeholder="Syntagma, Piraeus, Airport">
+            <div class="search-input-shell">
+                <span class="search-icon" aria-hidden="true">⌕</span>
+                <input id="stationSearch" class="search-input" type="search" placeholder="Search station, Syntagma, Piraeus, Airport" aria-label="Search station">
+            </div>
             <div id="searchResults" class="search-results"></div>
         </section>
         <div class="map-controls">
