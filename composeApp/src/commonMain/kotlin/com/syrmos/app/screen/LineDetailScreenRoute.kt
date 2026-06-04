@@ -1,6 +1,7 @@
 package com.syrmos.app.screen
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -13,7 +14,9 @@ data class LineDetailScreenRoute(val lineId: String) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = koinInject<LineDetailViewModel>()
-        viewModel.loadLine(lineId)
+        LaunchedEffect(lineId) {
+            viewModel.loadLine(lineId)
+        }
         LineDetailScreen(
             viewModel = viewModel,
             onStationClick = { stationId ->

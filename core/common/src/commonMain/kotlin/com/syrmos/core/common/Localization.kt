@@ -34,7 +34,9 @@ enum class L {
     PREFERENCES, DATA,
     SCHEDULE_VERSION, STATIONS,
     ABOUT, ABOUT_TEXT,
-    COULD_NOT_REACH;
+    COULD_NOT_REACH,
+    LIVE_TRACKER, ACTIVE_TRAINS, NO_LIVE_TRAINS,
+    NEXT_STOP, UPDATED, SPEED, ON_TIME, DELAYED;
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> if (lang == AppLanguage.GREEK) "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας" else "Live Athens rail times"
@@ -64,5 +66,17 @@ enum class L {
             "Schedule data from STASY and Hellenic Train official timetables. This app is not affiliated with STASY, Hellenic Train or OASA."
         }
         COULD_NOT_REACH -> if (lang == AppLanguage.GREEK) "Δεν ήταν δυνατή η σύνδεση με stasy.gr" else "Could not reach stasy.gr"
+        LIVE_TRACKER -> if (lang == AppLanguage.GREEK) "Ζωντανός εντοπισμός" else "Live tracker"
+        ACTIVE_TRAINS -> if (lang == AppLanguage.GREEK) "ενεργά τρένα" else "active trains"
+        NO_LIVE_TRAINS -> if (lang == AppLanguage.GREEK) {
+            "Δεν υπάρχουν ζωντανές θέσεις για αυτή τη γραμμή αυτή τη στιγμή"
+        } else {
+            "No live train positions are available for this line right now"
+        }
+        NEXT_STOP -> if (lang == AppLanguage.GREEK) "Επόμενη στάση" else "Next stop"
+        UPDATED -> if (lang == AppLanguage.GREEK) "Ενημερώθηκε" else "Updated"
+        SPEED -> if (lang == AppLanguage.GREEK) "Ταχύτητα" else "Speed"
+        ON_TIME -> if (lang == AppLanguage.GREEK) "Στην ώρα του" else "On time"
+        DELAYED -> if (lang == AppLanguage.GREEK) "Καθυστέρηση" else "Delayed"
     }
 }
