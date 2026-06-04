@@ -12,31 +12,8 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 cd "$ROOT_DIR"
 
 ./gradlew :composeApp:stageWebRelease
-
-cp -R "$STAGE_DIR"/. "$TMP_DIR"/
+bash "$ROOT_DIR/scripts/prepare-pages-web-release.sh" "$STAGE_DIR" "$TMP_DIR"
 cp "$ROOT_DIR/ops/syrmos-web/nginx.conf" "$TMP_DIR/nginx.conf"
-
-version_asset() {
-    local basename="$1"
-    local path="$TMP_DIR/$basename"
-
-    if [[ ! -f "$path" ]]; then
-        return
-    fi
-
-    local extension="${basename##*.}"
-    local stem="${basename%.*}"
-    local hash
-    hash="$(shasum -a 256 "$path" | awk '{print substr($1,1,12)}')"
-    local versioned="${stem}.${hash}.${extension}"
-
-    mv "$path" "$TMP_DIR/$versioned"
-    perl -0pi -e "s/\Q$basename\E(?:\\?v=[^\"']+)?/$versioned/g" "$TMP_DIR/index.html"
-}
-
-version_asset "composeApp.js"
-version_asset "web-map.js"
-version_asset "web-map.css"
 
 scp -r "$TMP_DIR" "$REMOTE_HOST:${REMOTE_DIR}.next"
 
