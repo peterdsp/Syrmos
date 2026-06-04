@@ -385,8 +385,8 @@
   },
   {
     "id": "M2_LAR",
-    "name": "Larissa Station",
-    "name_el": "Σταθμός Λαρίσης",
+    "name": "Athens",
+    "name_el": "Αθήνα",
     "latitude": 37.9922861,
     "longitude": 23.7207006,
     "line_ids": [

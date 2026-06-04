@@ -26,7 +26,7 @@ body {
 
 .insight-panel {
     position: absolute;
-    top: 92px;
+    top: 78px;
     right: 16px;
     bottom: 16px;
     z-index: 1000;
@@ -590,6 +590,11 @@ body {
         order: 3;
         flex-basis: 100%;
         min-width: 0;
+    }
+
+    .insight-panel {
+        top: 140px;
+        right: 12px;
     }
 
     .station-sheet {
