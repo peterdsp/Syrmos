@@ -32,7 +32,6 @@ body {
     z-index: 1000;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 14px 16px;
     border-radius: 18px;
@@ -41,16 +40,59 @@ body {
     box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
 }
 
+.brand-block {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
 .brand {
     font-size: 28px;
     font-weight: 700;
     letter-spacing: -0.03em;
+    white-space: nowrap;
 }
 
 .subtitle {
     margin-top: 2px;
     color: #5f6b76;
     font-size: 14px;
+    white-space: nowrap;
+}
+
+.map-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex: none;
+}
+
+.zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-button {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.9);
+    color: #f8fafc;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.control-button:hover {
+    background: #111827;
+}
+
+.control-button:active {
+    transform: translateY(1px);
 }
 
 .search-card {
@@ -128,14 +170,19 @@ body {
     right: 16px;
     bottom: 16px;
     z-index: 1000;
+    display: flex;
+    flex-direction: column;
     max-width: 520px;
+    max-height: min(760px, calc(100vh - 32px));
     margin-left: auto;
     margin-right: auto;
     padding: 12px 16px 18px;
+    box-sizing: border-box;
     border-radius: 24px;
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(20px);
     box-shadow: 0 18px 40px rgba(16, 20, 24, 0.18);
+    overflow: hidden;
 }
 
 .station-sheet--hidden {
@@ -166,6 +213,13 @@ body {
 .station-alt {
     margin: 6px 0 0;
     color: #5f6b76;
+}
+
+.sheet-content {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
 }
 
 .sheet-block {
@@ -304,6 +358,11 @@ body {
     text-align: center;
 }
 
+.sheet-footer-action {
+    flex: none;
+    margin-top: 16px;
+}
+
 .station-marker,
 .station-marker--interchange {
     display: flex;
@@ -356,17 +415,6 @@ body {
     background: white;
 }
 
-.leaflet-control-zoom {
-    border: 0;
-    box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
-}
-
-.leaflet-control-zoom a {
-    width: 38px;
-    height: 38px;
-    line-height: 38px;
-}
-
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
     display: none;
@@ -378,10 +426,21 @@ body {
         right: 12px;
         top: 12px;
         padding: 12px 14px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .brand-block {
+        flex-basis: 100%;
     }
 
     .brand {
         font-size: 24px;
+    }
+
+    .map-controls {
+        width: 100%;
+        justify-content: space-between;
     }
 
     .search-card {
@@ -394,5 +453,6 @@ body {
         left: 12px;
         right: 12px;
         bottom: 12px;
+        max-height: min(720px, calc(100vh - 24px));
     }
 }

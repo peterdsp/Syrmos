@@ -15,6 +15,8 @@
     const stationSearch = document.getElementById("stationSearch");
     const searchResults = document.getElementById("searchResults");
     const locateButton = document.getElementById("locateButton");
+    const zoomInButton = document.getElementById("zoomInButton");
+    const zoomOutButton = document.getElementById("zoomOutButton");
 
     const [stations, lines, routes, servicePatterns] = await Promise.all([
         fetch("files/seed/stations.json").then((r) => r.json()),
@@ -34,7 +36,7 @@
     );
 
     const map = L.map("map", {
-        zoomControl: true,
+        zoomControl: false,
         attributionControl: true,
     }).setView(ATHENS_CENTER, INITIAL_ZOOM);
 
@@ -340,6 +342,14 @@
             },
             { enableHighAccuracy: true, timeout: 10000 },
         );
+    });
+
+    zoomInButton.addEventListener("click", () => {
+        map.zoomIn();
+    });
+
+    zoomOutButton.addEventListener("click", () => {
+        map.zoomOut();
     });
 
     map.on("click", () => {

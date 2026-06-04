@@ -20,11 +20,17 @@
     <div id="map"></div>
 
     <header class="top-bar">
-        <div>
+        <div class="brand-block">
             <div class="brand">Syrmos</div>
             <div class="subtitle">Athens rail map</div>
         </div>
-        <button id="locateButton" class="ghost-button" type="button">Locate me</button>
+        <div class="map-controls">
+            <div class="zoom-controls" aria-label="Map zoom controls">
+                <button id="zoomOutButton" class="control-button" type="button" aria-label="Zoom out">−</button>
+                <button id="zoomInButton" class="control-button" type="button" aria-label="Zoom in">+</button>
+            </div>
+            <button id="locateButton" class="ghost-button" type="button">Locate me</button>
+        </div>
     </header>
 
     <section class="search-card">
@@ -43,22 +49,24 @@
             <button id="sheetClose" class="ghost-button" type="button">Done</button>
         </div>
 
-        <div class="sheet-block">
-            <div class="sheet-label">Lines at this station</div>
-            <div id="lineBadges" class="badge-row"></div>
+        <div class="sheet-content">
+            <div class="sheet-block">
+                <div class="sheet-label">Lines at this station</div>
+                <div id="lineBadges" class="badge-row"></div>
+            </div>
+
+            <div class="sheet-block">
+                <div class="sheet-label">Station details</div>
+                <div id="stationMeta" class="meta-list"></div>
+            </div>
+
+            <div class="sheet-block">
+                <div class="sheet-label">Next departures</div>
+                <div id="stationDepartures" class="departure-list"></div>
+            </div>
         </div>
 
-        <div class="sheet-block">
-            <div class="sheet-label">Station details</div>
-            <div id="stationMeta" class="meta-list"></div>
-        </div>
-
-        <div class="sheet-block">
-            <div class="sheet-label">Next departures</div>
-            <div id="stationDepartures" class="departure-list"></div>
-        </div>
-
-        <a id="directionsLink" class="primary-button" href="#" target="_blank" rel="noreferrer">
+        <a id="directionsLink" class="primary-button sheet-footer-action" href="#" target="_blank" rel="noreferrer">
             Get directions
         </a>
     </section>
