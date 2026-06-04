@@ -3,99 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syrmos — Live Athens Rail Times</title>
-    <meta name="description" content="Live departure times for Athens Metro, Tram, and Suburban Railway">
+    <title>Syrmos, Athens Rail Map</title>
+    <meta name="description" content="Live Athens rail times and station map for metro, tram, and suburban rail">
     <meta name="theme-color" content="#0072CE">
     <link rel="icon" type="image/png" href="favicon.png">
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #f8f9fa;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        #ComposeTarget {
-            width: 100%;
-            height: 100%;
-        }
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            color: #44474e;
-        }
-        .loading h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1a1c1e;
-            margin-bottom: 4px;
-        }
-        .loading p {
-            font-size: 14px;
-            color: #74777f;
-        }
-        .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #e2e2e6;
-            border-top-color: #0072CE;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-top: 24px;
-        }
-        .loading.error .spinner {
-            display: none;
-        }
-        .loading.error p {
-            max-width: 360px;
-            text-align: center;
-            line-height: 1.5;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
+    <link rel="stylesheet" href="web-map.css">
 </head>
 <body>
-<div class="loading" id="loadingIndicator">
-    <h1>Syrmos</h1>
-    <p>Live Athens rail times</p>
-    <div class="spinner"></div>
+<div class="app-shell">
+    <div id="map"></div>
+
+    <header class="top-bar">
+        <div>
+            <div class="brand">Syrmos</div>
+            <div class="subtitle">Athens rail map</div>
+        </div>
+        <button id="locateButton" class="ghost-button" type="button">Locate me</button>
+    </header>
+
+    <section class="search-card">
+        <label class="search-label" for="stationSearch">Search station</label>
+        <input id="stationSearch" class="search-input" type="search" placeholder="Syntagma, Piraeus, Airport">
+        <div id="searchResults" class="search-results"></div>
+    </section>
+
+    <section id="stationSheet" class="station-sheet station-sheet--hidden" aria-live="polite">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div>
+                <h2 id="stationName">Select a station</h2>
+                <p id="stationNameEl" class="station-alt"></p>
+            </div>
+            <button id="sheetClose" class="ghost-button" type="button">Done</button>
+        </div>
+
+        <div class="sheet-block">
+            <div class="sheet-label">Lines at this station</div>
+            <div id="lineBadges" class="badge-row"></div>
+        </div>
+
+        <div class="sheet-block">
+            <div class="sheet-label">Station details</div>
+            <div id="stationMeta" class="meta-list"></div>
+        </div>
+
+        <div class="sheet-block">
+            <div class="sheet-label">Next departures</div>
+            <div id="stationDepartures" class="departure-list"></div>
+        </div>
+
+        <a id="directionsLink" class="primary-button" href="#" target="_blank" rel="noreferrer">
+            Get directions
+        </a>
+    </section>
 </div>
-<canvas id="ComposeTarget"></canvas>
-<script>
-    const loadingIndicator = document.getElementById('loadingIndicator');
 
-    function showBootError(message) {
-        if (!loadingIndicator) return;
-        loadingIndicator.classList.add('error');
-        loadingIndicator.innerHTML = `
-            <h1>Syrmos</h1>
-            <p>${message}</p>
-        `;
-    }
-
-    // Hide loading indicator once WASM canvas renders
-    const observer = new MutationObserver(() => {
-        const canvas = document.getElementById('ComposeTarget');
-        if (canvas && canvas.width > 0) {
-            loadingIndicator.style.display = 'none';
-            observer.disconnect();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-
-    window.addEventListener('error', () => {
-        showBootError('The web app failed to start. Please reload. If it still fails, the deploy is missing required web assets.');
-    });
-
-    window.addEventListener('unhandledrejection', () => {
-        showBootError('The web app failed to load its runtime files. Please reload. If it still fails, the deploy is incomplete.');
-    });
-</script>
-<script src="composeApp.js?v=20260603b"></script>
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+></script>
+<script src="web-map.js"></script>
 </body>
 </html>

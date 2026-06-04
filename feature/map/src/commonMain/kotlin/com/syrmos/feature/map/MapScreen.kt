@@ -1,302 +1,229 @@
 package com.syrmos.feature.map
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.NearMe
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.syrmos.core.common.L
-import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.designsystem.component.DepartureCard
+import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
-import com.syrmos.core.model.transit.Station
-import kotlin.math.PI
-import kotlin.math.ln
-import kotlin.math.tan
+import org.koin.compose.koinInject
 
-// Athens center coordinates
-private const val CENTER_LAT = 37.98
-private const val CENTER_LON = 23.73
-
-// Mercator projection helper
-private fun latToMercatorY(lat: Double): Double {
-    val latRad = lat * PI / 180.0
-    return ln(tan(PI / 4.0 + latRad / 2.0))
-}
-
-private fun latLonToScreen(
-    lat: Double,
-    lon: Double,
-    canvasWidth: Float,
-    canvasHeight: Float,
-    offsetX: Float,
-    offsetY: Float,
-    scale: Float,
-): Offset {
-    val baseFactor = minOf(canvasWidth, canvasHeight) * 2.5f
-
-    val x = ((lon - CENTER_LON).toFloat() * baseFactor * scale) + canvasWidth / 2f + offsetX
-    val centerMercY = latToMercatorY(CENTER_LAT)
-    val mercY = latToMercatorY(lat)
-    val y = ((centerMercY - mercY) * baseFactor * scale * (180.0 / PI)).toFloat() +
-        canvasHeight / 2f + offsetY
-
-    return Offset(x, y)
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
-    viewModel: MapViewModel,
+    viewModel: MapViewModel = koinInject(),
     showTopBar: Boolean = true,
     initialScale: Float = 1f,
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val lang by LocalizationManager.language.collectAsState()
-
-    var scale by remember { mutableFloatStateOf(initialScale) }
-    var offsetX by remember { mutableFloatStateOf(0f) }
-    var offsetY by remember { mutableFloatStateOf(0f) }
-
-    val textMeasurer = rememberTextMeasurer()
-
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
-        topBar = if (showTopBar) {
-            { TopAppBar(title = { Text(L.MAP.text(lang)) }) }
-        } else {
-            {}
+        topBar = {
+            if (showTopBar) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "Transit map",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    },
+                )
+            }
         },
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background),
         ) {
             if (uiState.isLoading) {
-                Text(
-                    text = "Loading map...",
+                CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             } else {
-                // Map Canvas with gesture handling
-                Canvas(
+                PlatformMapView(
+                    uiState = uiState,
+                    onStationSelected = viewModel::selectStation,
+                    modifier = Modifier.fillMaxSize(),
+                    initialScale = initialScale,
+                )
+            }
+
+            uiState.selectedStation?.let { station ->
+                StationSheetCard(
+                    uiState = uiState,
+                    onClose = viewModel::clearSelection,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                scale = (scale * zoom).coerceIn(0.3f, 8f)
-                                offsetX += pan.x
-                                offsetY += pan.y
-                            }
-                        }
-                        .pointerInput(uiState.stations) {
-                            detectTapGestures { tapOffset ->
-                                val canvasW = size.width.toFloat()
-                                val canvasH = size.height.toFloat()
-                                val hitRadius = 24f / scale.coerceAtLeast(0.5f)
-                                val hitRadiusSq = (hitRadius * hitRadius).coerceAtLeast(400f)
-
-                                var closestStation: Station? = null
-                                var closestDistSq = Float.MAX_VALUE
-
-                                for (station in uiState.stations) {
-                                    val pos = latLonToScreen(
-                                        station.latitude, station.longitude,
-                                        canvasW, canvasH,
-                                        offsetX, offsetY, scale,
-                                    )
-                                    val dx = tapOffset.x - pos.x
-                                    val dy = tapOffset.y - pos.y
-                                    val distSq = dx * dx + dy * dy
-                                    if (distSq < hitRadiusSq && distSq < closestDistSq) {
-                                        closestDistSq = distSq
-                                        closestStation = station
-                                    }
-                                }
-
-                                if (closestStation != null) {
-                                    viewModel.selectStation(closestStation.id)
-                                }
-                            }
-                        },
-                ) {
-                    drawMap(
-                        uiState = uiState,
-                        canvasWidth = size.width,
-                        canvasHeight = size.height,
-                        offsetX = offsetX,
-                        offsetY = offsetY,
-                        scale = scale,
-                        textMeasurer = textMeasurer,
-                    )
-                }
-
-                // Zoom controls
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    SmallFloatingActionButton(
-                        onClick = {
-                            scale = (scale * 1.4f).coerceAtMost(8f)
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = "Zoom in")
-                    }
-                    SmallFloatingActionButton(
-                        onClick = {
-                            scale = (scale / 1.4f).coerceAtLeast(0.3f)
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Icon(Icons.Filled.Remove, contentDescription = "Zoom out")
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SmallFloatingActionButton(
-                        onClick = {
-                            scale = initialScale
-                            offsetX = 0f
-                            offsetY = 0f
-                        },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ) {
-                        Icon(Icons.Filled.MyLocation, contentDescription = "Reset map")
-                    }
-                }
+                )
             }
         }
+    }
+}
 
-        // Bottom sheet for selected station
-        uiState.selectedStation?.let { station ->
-            val stationLines = uiState.selectedStationLines
+@Composable
+private fun StationSheetCard(
+    uiState: MapUiState,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val station = uiState.selectedStation ?: return
+    val uriHandler = LocalUriHandler.current
 
-            ModalBottomSheet(
-                onDismissRequest = {
-                    viewModel.clearSelection()
-                },
-                sheetState = sheetState,
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 32.dp),
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    // Station name
                     Text(
                         text = station.name,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
-                    if (station.nameEl.isNotEmpty() && station.nameEl != station.name) {
+                    if (station.nameEl.isNotBlank() && station.nameEl != station.name) {
                         Text(
                             text = station.nameEl,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(16.dp))
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close station details")
+                }
+            }
 
-                    // Line badges
+            if (uiState.selectedStationLines.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = if (lang == com.syrmos.core.common.AppLanguage.GREEK) {
-                            "Γραμμές στον σταθμό"
-                        } else {
-                            "Lines at this station"
-                        },
-                        style = MaterialTheme.typography.titleSmall,
+                        text = "Lines at this station",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        stationLines.forEach { line ->
+                        uiState.selectedStationLines.forEach { line ->
                             LineBadge(line = line)
                         }
                     }
+                }
+            }
 
-                    if (station.isInterchange) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = if (lang == com.syrmos.core.common.AppLanguage.GREEK) {
-                                "Σταθμός ανταπόκρισης"
-                            } else {
-                                "Interchange station"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                StationFact(
+                    title = "Accessibility",
+                    value = if (station.accessibility) "Accessible" else "Unknown",
+                    modifier = Modifier.weight(1f),
+                )
+                StationFact(
+                    title = "Interchange",
+                    value = if (station.isInterchange) "Yes" else "No",
+                    modifier = Modifier.weight(1f),
+                )
+                StationFact(
+                    title = "Zone",
+                    value = station.zone.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            if (uiState.selectedStationDepartures.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Next departures",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    uiState.selectedStationDepartures.forEach { departure ->
+                        DepartureCard(
+                            lineName = departure.line.name,
+                            lineColor = departure.line.color,
+                            direction = departure.destinationLabel,
+                            minutesAway = departure.minutesAway,
+                            departureTime = departure.time,
                         )
                     }
                 }
+            }
+
+            TextButton(
+                onClick = {
+                    uriHandler.openUri(
+                        "https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}&travelmode=transit"
+                    )
+                },
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.NearMe,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("Get directions")
             }
         }
     }
@@ -304,152 +231,50 @@ fun MapScreen(
 
 @Composable
 private fun LineBadge(line: Line) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(line.color.toComposeColor().copy(alpha = 0.15f))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = line.color.toComposeColor().copy(alpha = 0.12f),
     ) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(line.color.toComposeColor()),
-        )
-        Text(
-            text = line.name,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = line.color.toComposeColor(),
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LineColorIndicator(lineColor = line.color, size = 10.dp)
+            Text(
+                text = line.name,
+                style = MaterialTheme.typography.labelLarge,
+                color = line.color.toComposeColor(),
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
     }
 }
 
-private fun DrawScope.drawMap(
-    uiState: MapUiState,
-    canvasWidth: Float,
-    canvasHeight: Float,
-    offsetX: Float,
-    offsetY: Float,
-    scale: Float,
-    textMeasurer: TextMeasurer,
+@Composable
+private fun StationFact(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier,
 ) {
-    // Draw line connections
-    for (line in uiState.lines) {
-        val stations = uiState.lineStations[line.id] ?: continue
-        val lineColor = line.color.toComposeColor()
-        val strokeWidth = (4f * scale).coerceIn(1.5f, 12f)
-
-        for (i in 0 until stations.size - 1) {
-            val from = stations[i]
-            val to = stations[i + 1]
-            val fromPos = latLonToScreen(
-                from.latitude, from.longitude,
-                canvasWidth, canvasHeight,
-                offsetX, offsetY, scale,
-            )
-            val toPos = latLonToScreen(
-                to.latitude, to.longitude,
-                canvasWidth, canvasHeight,
-                offsetX, offsetY, scale,
-            )
-            drawLine(
-                color = lineColor,
-                start = fromPos,
-                end = toPos,
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
-            )
-        }
-    }
-
-    // Draw station dots
-    val dotRadius = (5f * scale).coerceIn(2.5f, 16f)
-    val interchangeRadius = (8f * scale).coerceIn(4f, 24f)
-    val selectedStation = uiState.selectedStation
-    val showLabels = scale >= 0.7f
-
-    for (station in uiState.stations) {
-        val pos = latLonToScreen(
-            station.latitude, station.longitude,
-            canvasWidth, canvasHeight,
-            offsetX, offsetY, scale,
-        )
-
-        // Skip stations way off screen
-        if (pos.x < -100 || pos.x > canvasWidth + 100 ||
-            pos.y < -100 || pos.y > canvasHeight + 100
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            continue
-        }
-
-        val isSelected = selectedStation?.id == station.id
-
-        if (station.isInterchange) {
-            // Interchange: larger circle with white fill and black outline
-            val r = if (isSelected) interchangeRadius * 1.5f else interchangeRadius
-            drawCircle(
-                color = Color.White,
-                radius = r,
-                center = pos,
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            drawCircle(
-                color = Color.Black,
-                radius = r,
-                center = pos,
-                style = Stroke(width = (2f * scale).coerceIn(1f, 5f)),
-            )
-            if (isSelected) {
-                drawCircle(
-                    color = Color(0xFF0072CE).copy(alpha = 0.3f),
-                    radius = r * 1.6f,
-                    center = pos,
-                )
-            }
-        } else {
-            // Regular station: solid colored dot
-            val stationColor = station.lineIds.firstOrNull()?.let { lineId ->
-                uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
-            } ?: Color.Gray
-
-            val r = if (isSelected) dotRadius * 1.6f else dotRadius
-            if (isSelected) {
-                drawCircle(
-                    color = stationColor.copy(alpha = 0.3f),
-                    radius = r * 1.8f,
-                    center = pos,
-                )
-            }
-            drawCircle(
-                color = stationColor,
-                radius = r,
-                center = pos,
-            )
-            // White inner dot for visibility
-            drawCircle(
-                color = Color.White,
-                radius = r * 0.35f,
-                center = pos,
-            )
-        }
-
-        // Draw station labels when zoomed in enough
-        if (showLabels && scale >= 1.2f) {
-            val labelStyle = TextStyle(
-                fontSize = (9f * (scale * 0.6f).coerceIn(0.6f, 1.4f)).sp,
-                color = Color.DarkGray,
-                fontWeight = if (station.isInterchange) FontWeight.SemiBold else FontWeight.Normal,
-            )
-            val labelOffset = if (station.isInterchange) interchangeRadius + 4f else dotRadius + 3f
-            val textLayoutResult = textMeasurer.measure(station.name, labelStyle)
-            drawText(
-                textLayoutResult = textLayoutResult,
-                topLeft = Offset(
-                    pos.x + labelOffset,
-                    pos.y - textLayoutResult.size.height / 2f,
-                ),
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }

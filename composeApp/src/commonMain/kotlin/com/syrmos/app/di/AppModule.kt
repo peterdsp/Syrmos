@@ -22,7 +22,14 @@ val featureModule = module {
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
     factory { LineDetailViewModel(getLineDetailUseCase = get()) }
-    factory { MapViewModel(stationRepository = get(), lineRepository = get()) }
+    factory {
+        MapViewModel(
+            stationRepository = get(),
+            lineRepository = get(),
+            scheduleRepository = get(),
+            getNextDepartures = get(),
+        )
+    }
     factory { StationDetailViewModel(getStationDetail = get(), getNextDepartures = get()) }
 }
 

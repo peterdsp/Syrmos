@@ -16,19 +16,27 @@ cd "$ROOT_DIR"
 cp -R "$STAGE_DIR"/. "$TMP_DIR"/
 cp "$ROOT_DIR/ops/syrmos-web/nginx.conf" "$TMP_DIR/nginx.conf"
 
-JS_BASENAME="composeApp.js"
-JS_PATH="$TMP_DIR/$JS_BASENAME"
+version_asset() {
+    local basename="$1"
+    local path="$TMP_DIR/$basename"
 
-if [[ ! -f "$JS_PATH" ]]; then
-    echo "Missing $JS_BASENAME in staged web release" >&2
-    exit 1
-fi
+    if [[ ! -f "$path" ]]; then
+        return
+    fi
 
-JS_HASH="$(shasum -a 256 "$JS_PATH" | awk '{print substr($1,1,12)}')"
-JS_VERSIONED="composeApp.$JS_HASH.js"
-mv "$JS_PATH" "$TMP_DIR/$JS_VERSIONED"
+    local extension="${basename##*.}"
+    local stem="${basename%.*}"
+    local hash
+    hash="$(shasum -a 256 "$path" | awk '{print substr($1,1,12)}')"
+    local versioned="${stem}.${hash}.${extension}"
 
-perl -0pi -e "s/composeApp\\.js(?:\\?v=[^\"']+)?/$JS_VERSIONED/g" "$TMP_DIR/index.html"
+    mv "$path" "$TMP_DIR/$versioned"
+    perl -0pi -e "s/\Q$basename\E(?:\\?v=[^\"']+)?/$versioned/g" "$TMP_DIR/index.html"
+}
+
+version_asset "composeApp.js"
+version_asset "web-map.js"
+version_asset "web-map.css"
 
 scp -r "$TMP_DIR" "$REMOTE_HOST:${REMOTE_DIR}.next"
 

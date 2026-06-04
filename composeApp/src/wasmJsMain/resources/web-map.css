@@ -1,0 +1,398 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    background: #eef3f8;
+    color: #101418;
+}
+
+body {
+    overflow: hidden;
+}
+
+.app-shell {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    background: #dfe9f3;
+}
+
+.top-bar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
+}
+
+.brand {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.subtitle {
+    margin-top: 2px;
+    color: #5f6b76;
+    font-size: 14px;
+}
+
+.search-card {
+    position: absolute;
+    top: 96px;
+    left: 16px;
+    z-index: 1000;
+    width: min(380px, calc(100vw - 32px));
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
+}
+
+.search-label,
+.sheet-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #5f6b76;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    border: 1px solid rgba(16, 20, 24, 0.12);
+    border-radius: 14px;
+    background: #f7fafc;
+    font-size: 16px;
+}
+
+.search-input:focus {
+    outline: 2px solid rgba(0, 114, 206, 0.18);
+    border-color: #0072CE;
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 280px;
+    margin-top: 12px;
+    overflow: auto;
+}
+
+.search-result {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f7fafc;
+    cursor: pointer;
+}
+
+.search-result:hover {
+    background: #e9f2fb;
+}
+
+.search-result-name {
+    font-weight: 600;
+}
+
+.search-result-meta {
+    margin-top: 4px;
+    color: #5f6b76;
+    font-size: 13px;
+}
+
+.station-sheet {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 12px 16px 18px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 18px 40px rgba(16, 20, 24, 0.18);
+}
+
+.station-sheet--hidden {
+    display: none;
+}
+
+.sheet-handle {
+    width: 48px;
+    height: 5px;
+    margin: 0 auto 12px;
+    border-radius: 999px;
+    background: rgba(95, 107, 118, 0.28);
+}
+
+.sheet-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#stationName {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.1;
+}
+
+.station-alt {
+    margin: 6px 0 0;
+    color: #5f6b76;
+}
+
+.sheet-block {
+    margin-top: 18px;
+}
+
+.badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.line-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.line-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: none;
+}
+
+.meta-list {
+    display: grid;
+    gap: 8px;
+}
+
+.departure-list {
+    display: grid;
+    gap: 10px;
+}
+
+.departure-card {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: #f7fafc;
+}
+
+.departure-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.departure-card__line {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.departure-card__destination {
+    color: #5f6b76;
+    font-size: 13px;
+}
+
+.departure-card__eta {
+    text-align: right;
+}
+
+.departure-card__minutes {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0072ce;
+}
+
+.departure-card__time {
+    color: #5f6b76;
+    font-size: 13px;
+}
+
+.departure-empty {
+    padding: 14px;
+    border-radius: 16px;
+    background: #f7fafc;
+    color: #5f6b76;
+    font-size: 14px;
+}
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(16, 20, 24, 0.08);
+    font-size: 14px;
+}
+
+.meta-item:first-child {
+    border-top: 0;
+}
+
+.meta-key {
+    color: #5f6b76;
+}
+
+.meta-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+.ghost-button,
+.primary-button {
+    appearance: none;
+    border: 0;
+    border-radius: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.ghost-button {
+    padding: 10px 14px;
+    background: #eef4f9;
+    color: #18324a;
+}
+
+.primary-button {
+    display: block;
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: #0072CE;
+    color: white;
+    text-align: center;
+}
+
+.station-marker,
+.station-marker--interchange {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+}
+
+.station-marker__core {
+    width: 16px;
+    height: 16px;
+    border: 4px solid white;
+    border-radius: 50%;
+    box-shadow: 0 3px 10px rgba(16, 20, 24, 0.24);
+}
+
+.station-marker--selected .station-marker__core {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 7px rgba(0, 114, 206, 0.18);
+}
+
+.station-marker--interchange .station-marker__group {
+    position: relative;
+    width: 28px;
+    height: 28px;
+}
+
+.station-marker__ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    margin-top: -9px;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 3px 10px rgba(16, 20, 24, 0.22);
+}
+
+.station-marker__center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    margin-top: -4px;
+    border-radius: 50%;
+    background: white;
+}
+
+.leaflet-control-zoom {
+    border: 0;
+    box-shadow: 0 10px 30px rgba(16, 20, 24, 0.12);
+}
+
+.leaflet-control-zoom a {
+    width: 38px;
+    height: 38px;
+    line-height: 38px;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .top-bar {
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        padding: 12px 14px;
+    }
+
+    .brand {
+        font-size: 24px;
+    }
+
+    .search-card {
+        top: 86px;
+        left: 12px;
+        width: calc(100vw - 24px);
+    }
+
+    .station-sheet {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+    }
+}
