@@ -27,13 +27,20 @@
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
     const stationMap = new Map(stations.map((station) => [station.id, station]));
+    const stationNodes = buildStationNodes(stations);
+    const stationNodeMap = new Map(stationNodes.map((station) => [station.id, station]));
     const markers = new Map();
+    const liveTrainMarkers = new Map();
     const lineStations = new Map(
         routes.map((route) => [
             route.line_id,
             route.station_ids.map((stationId) => stationMap.get(stationId)).filter(Boolean),
         ])
     );
+
+    const liveTrainList = document.getElementById("liveTrainList");
+    const nearbyStationList = document.getElementById("nearbyStationList");
+    const popularStationList = document.getElementById("popularStationList");
 
     const map = L.map("map", {
         zoomControl: false,
@@ -58,8 +65,9 @@
     }
 
     let selectedStationId = null;
+    let userLocation = null;
 
-    for (const station of stations) {
+    for (const station of stationNodes) {
         const marker = L.marker([station.latitude, station.longitude], {
             icon: buildStationIcon(station, false),
             keyboard: false,
@@ -73,11 +81,11 @@
     }
 
     function buildStationIcon(station, selected) {
-        const stationLines = station.line_ids
+        const stationLines = station.lineIds
             .map((lineId) => lineMap.get(lineId))
             .filter(Boolean);
 
-        if (station.is_interchange) {
+        if (station.isInterchange) {
             const rings = stationLines
                 .slice(0, 3)
                 .map((line, index) => {
@@ -107,20 +115,20 @@
 
     function updateMarkerSelection(nextId) {
         if (selectedStationId && markers.has(selectedStationId)) {
-            const previous = stations.find((station) => station.id === selectedStationId);
+            const previous = stationNodeMap.get(selectedStationId);
             markers.get(selectedStationId).setIcon(buildStationIcon(previous, false));
         }
 
         selectedStationId = nextId;
 
         if (nextId && markers.has(nextId)) {
-            const selected = stations.find((station) => station.id === nextId);
+            const selected = stationNodeMap.get(nextId);
             markers.get(nextId).setIcon(buildStationIcon(selected, true));
         }
     }
 
     function lineLabel(station) {
-        return station.line_ids
+        return station.lineIds
             .map((lineId) => lineMap.get(lineId)?.name || lineId)
             .join(", ");
     }
@@ -158,13 +166,14 @@
     function buildStationDepartures(station) {
         const result = [];
 
-        for (const lineId of station.line_ids) {
+        for (const lineId of station.lineIds) {
             const line = lineMap.get(lineId);
             if (!line) continue;
+            const stationId = station.stationIdByLineId[lineId] || station.stationIds[0];
             const patterns = servicePatterns.filter((pattern) => {
                 if (pattern.line_id !== lineId) return false;
-                if (pattern.station_ids && !pattern.station_ids.includes(station.id)) return false;
-                if (pattern.excluded_station_ids && pattern.excluded_station_ids.includes(station.id)) return false;
+                if (pattern.station_ids && !pattern.station_ids.includes(stationId)) return false;
+                if (pattern.excluded_station_ids && pattern.excluded_station_ids.includes(stationId)) return false;
                 return true;
             });
 
@@ -227,7 +236,7 @@
     }
 
     function selectStation(stationId, panToMarker) {
-        const station = stationMap.get(stationId);
+        const station = stationNodeMap.get(stationId);
         if (!station) return;
 
         updateMarkerSelection(stationId);
@@ -239,10 +248,10 @@
         }
 
         stationName.textContent = station.name;
-        stationNameEl.textContent = station.name_el && station.name_el !== station.name ? station.name_el : "";
+        stationNameEl.textContent = station.nameEl && station.nameEl !== station.name ? station.nameEl : "";
 
         lineBadges.innerHTML = "";
-        for (const lineId of station.line_ids) {
+        for (const lineId of station.lineIds) {
             const line = lineMap.get(lineId);
             if (!line) continue;
 
@@ -257,8 +266,9 @@
         const metaItems = [
             ["Accessibility", station.accessibility ? "Accessible" : "Unknown"],
             ["Zone", `Zone ${station.zone}`],
-            ["Interchange", station.is_interchange ? "Yes" : "No"],
-            ["Lines", `${station.line_ids.length}`],
+            ["Interchange", station.isInterchange ? "Yes" : "No"],
+            ["Lines", `${station.lineIds.length}`],
+            ["Merged", `${station.stationIds.length} records`],
         ];
 
         stationMeta.innerHTML = metaItems
@@ -307,8 +317,8 @@
             return;
         }
 
-        const filtered = stations.filter((station) => {
-            return station.name.toLowerCase().includes(query) || station.name_el.toLowerCase().includes(query);
+        const filtered = stationNodes.filter((station) => {
+            return station.name.toLowerCase().includes(query) || station.nameEl.toLowerCase().includes(query);
         });
 
         renderSearchResults(filtered);
@@ -325,6 +335,7 @@
             (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
+                userLocation = { lat, lon };
                 map.flyTo([lat, lon], 14, { duration: 0.5 });
                 L.circleMarker([lat, lon], {
                     radius: 9,
@@ -333,6 +344,7 @@
                     fillColor: "#73B9FF",
                     fillOpacity: 0.9,
                 }).addTo(map);
+                updateNearbyPanel();
             },
             () => {
                 locateButton.textContent = "Location unavailable";
@@ -356,6 +368,196 @@
         clearSelection();
     });
 
-    const bounds = L.latLngBounds(stations.map((station) => [station.latitude, station.longitude]));
+    const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
     map.fitBounds(bounds.pad(0.12));
+
+    renderPopularPanel();
+    updateNearbyPanel();
+    connectLiveTrainStream();
+
+    function updateNearbyPanel() {
+        if (userLocation) {
+            const nearby = stationNodes
+                .map((station) => ({
+                    station,
+                    distance: distanceMeters(
+                        userLocation.lat,
+                        userLocation.lon,
+                        station.latitude,
+                        station.longitude,
+                    ),
+                }))
+                .sort((a, b) => a.distance - b.distance)
+                .slice(0, 6);
+            renderStationPanel(nearbyStationList, nearby.map((entry) => entry.station), true, nearby);
+        } else {
+            renderStationPanel(nearbyStationList, stationNodes
+                .slice()
+                .sort((a, b) => b.lineIds.length - a.lineIds.length)
+                .slice(0, 6), false, []);
+        }
+    }
+
+    function renderPopularPanel() {
+        const popular = stationNodes
+            .slice()
+            .sort((a, b) => {
+                const scoreA = (a.isInterchange ? 10 : 0) + a.lineIds.length;
+                const scoreB = (b.isInterchange ? 10 : 0) + b.lineIds.length;
+                return scoreB - scoreA;
+            })
+            .slice(0, 6);
+        renderStationPanel(popularStationList, popular, false, []);
+    }
+
+    function renderStationPanel(container, stationsToRender, showDistance, distanceEntries) {
+        container.innerHTML = stationsToRender.map((station, index) => {
+            const distanceLabel = showDistance ? `${Math.round(distanceEntries[index].distance)} m away` : `${station.lineIds.length} lines`;
+            return `
+                <div class="panel-item" data-station-id="${station.id}">
+                    <div class="panel-item__title">${station.name}</div>
+                    <div class="panel-item__meta">${distanceLabel}</div>
+                </div>
+            `;
+        }).join("");
+
+        container.querySelectorAll("[data-station-id]").forEach((element) => {
+            element.addEventListener("click", () => {
+                selectStation(element.getAttribute("data-station-id"), true);
+            });
+        });
+    }
+
+    function connectLiveTrainStream() {
+        const source = new EventSource("https://railway.gov.gr/api/train-stream");
+        source.addEventListener("trainPositionsUx", (event) => {
+            try {
+                const payload = JSON.parse(event.data);
+                updateLiveTrains(payload.positions || []);
+            } catch (_error) {
+            }
+        });
+        source.onerror = () => {
+            renderLiveTrains([]);
+        };
+    }
+
+    function updateLiveTrains(positions) {
+        const trains = positions
+            .filter((position) => String(position.serviceType || "").toLowerCase() === "suburban")
+            .map((position) => {
+                const inferred = inferLineId(position.origin || "", position.destination || "");
+                if (!inferred || position.lat == null || position.lng == null) return null;
+                return {
+                    id: position.id || position.trainId || position.trainNumber || position.name,
+                    lineId: inferred,
+                    trainNumber: position.trainNumber || position.name || position.locomotiveNumber || "Train",
+                    origin: position.origin || "",
+                    destination: position.destination || "",
+                    nextStation: position.nextStation || "",
+                    delay: position.delay || 0,
+                    speed: position.speed || null,
+                    lat: position.lat,
+                    lng: position.lng,
+                    timestamp: position.timestamp || position.receivedAt || "",
+                };
+            })
+            .filter(Boolean);
+
+        renderLiveTrains(trains);
+    }
+
+    function renderLiveTrains(trains) {
+        liveTrainMarkers.forEach((marker) => marker.remove());
+        liveTrainMarkers.clear();
+
+        liveTrainList.innerHTML = trains.length
+            ? trains.slice(0, 5).map((train) => {
+                const line = lineMap.get(train.lineId);
+                return `
+                    <div class="panel-item">
+                        <div class="panel-item__title">${line ? line.name : train.lineId} ${train.trainNumber}</div>
+                        <div class="panel-item__meta">${train.origin} to ${train.destination}${train.nextStation ? `, next ${train.nextStation}` : ""}</div>
+                    </div>
+                `;
+            }).join("")
+            : '<div class="panel-item"><div class="panel-item__meta">No live trains available right now.</div></div>';
+
+        for (const train of trains) {
+            const line = lineMap.get(train.lineId);
+            const marker = L.marker([train.lat, train.lng], {
+                icon: L.divIcon({
+                    className: "train-marker",
+                    html: `<span class="train-marker__ring" style="background:${line ? line.color : "#0072CE"}"></span>`,
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8],
+                }),
+                keyboard: false,
+            }).addTo(map);
+            liveTrainMarkers.set(train.id, marker);
+        }
+    }
+
+    function inferLineId(origin, destination) {
+        const text = `${origin} ${destination}`.toLowerCase();
+        if (text.includes("πειραι") && text.includes("αεροδρομ")) return "A1";
+        if (text.includes("ανω λιοσια") && text.includes("αεροδρομ")) return "A2";
+        if (text.includes("αθην") && text.includes("χαλκιδ")) return "A3";
+        if (text.includes("πειραι") && text.includes("κιατ")) return "A4";
+        return null;
+    }
+
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+        const r = 6371000;
+        const toRad = (value) => (value * Math.PI) / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        return 2 * r * Math.asin(Math.sqrt(a));
+    }
+
+    function buildStationNodes(rawStations) {
+        const groups = new Map();
+
+        for (const station of rawStations) {
+            const key = `${roundKey(station.latitude)}|${roundKey(station.longitude)}`;
+            if (!groups.has(key)) {
+                groups.set(key, []);
+            }
+            groups.get(key).push(station);
+        }
+
+        return [...groups.entries()]
+            .map(([key, group]) => {
+                const primary = group[0];
+                const lineIds = [...new Set(group.flatMap((station) => station.line_ids))];
+                const stationIdByLineId = {};
+                for (const station of group) {
+                    for (const lineId of station.line_ids) {
+                        if (!stationIdByLineId[lineId]) {
+                            stationIdByLineId[lineId] = station.id;
+                        }
+                    }
+                }
+                return {
+                    id: key,
+                    stationIds: group.map((station) => station.id),
+                    stationIdByLineId,
+                    name: primary.name,
+                    nameEl: primary.name_el,
+                    latitude: primary.latitude,
+                    longitude: primary.longitude,
+                    lineIds,
+                    isInterchange: lineIds.length > 1 || group.some((station) => station.is_interchange),
+                    accessibility: group.some((station) => station.accessibility),
+                    zone: Math.min(...group.map((station) => station.zone || 1)),
+                };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function roundKey(value) {
+        return Math.round(value * 1000000);
+    }
 })();

@@ -59,9 +59,11 @@ import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
-import com.syrmos.core.model.transit.Station
+import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.feature.home.HomeViewModel
 import com.syrmos.feature.lines.LinesViewModel
 import com.syrmos.feature.map.MapScreen
+import com.syrmos.feature.map.MapStationNode
 import com.syrmos.feature.map.MapViewModel
 import org.koin.compose.koinInject
 
@@ -78,8 +80,10 @@ private enum class DesktopSection(
 @Composable
 fun DesktopWebApp() {
     val mapViewModel = koinInject<MapViewModel>()
+    val homeViewModel = koinInject<HomeViewModel>()
     val linesViewModel = koinInject<LinesViewModel>()
     val mapState by mapViewModel.uiState.collectAsState()
+    val homeState by homeViewModel.uiState.collectAsState()
     val linesState by linesViewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     var selectedSection by remember { mutableStateOf(DesktopSection.Planner) }
@@ -127,12 +131,21 @@ fun DesktopWebApp() {
                 }
 
                 item {
+                    OperationsCard(
+                        liveTrains = mapState.liveTrains,
+                        nearestStations = homeState.nearestStations,
+                        mapStations = mapState.mapStations,
+                        lines = mapState.lines,
+                    )
+                }
+
+                item {
                     PlannerCard(
                         search = search,
                         onSearchChange = { search = it },
                         selectedStation = mapState.selectedStation,
                         selectedStationLines = mapState.selectedStationLines,
-                        stations = mapState.stations,
+                        stations = mapState.mapStations,
                     )
                 }
 
@@ -273,9 +286,9 @@ private fun DesktopHeader(lang: AppLanguage) {
 private fun PlannerCard(
     search: String,
     onSearchChange: (String) -> Unit,
-    selectedStation: Station?,
+    selectedStation: MapStationNode?,
     selectedStationLines: List<Line>,
-    stations: List<Station>,
+    stations: List<MapStationNode>,
 ) {
     DashboardCard(title = "Trip planning") {
         OutlinedTextField(
@@ -314,20 +327,22 @@ private fun PlannerCard(
 
 @Composable
 private fun StationSummary(
-    station: Station,
+    station: MapStationNode,
     lines: List<Line>,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            text = station.name,
+            text = station.displayName(),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
-        Text(
-            text = station.nameEl,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (station.nameEl.isNotBlank() && station.nameEl != station.name) {
+            Text(
+                text = station.nameEl,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -341,7 +356,106 @@ private fun StationSummary(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            text = "${station.stationIds.size} merged records",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
+}
+
+@Composable
+private fun OperationsCard(
+    liveTrains: List<LiveSuburbanTrain>,
+    nearestStations: List<com.syrmos.core.model.location.NearestStationResult>,
+    mapStations: List<MapStationNode>,
+    lines: List<Line>,
+) {
+    DashboardCard(title = "Live and nearby") {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            SectionLabel("Live suburban trains")
+            if (liveTrains.isEmpty()) {
+                Text(
+                    text = "No live train positions right now.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                liveTrains.take(3).forEach { train ->
+                    val line = lines.firstOrNull { it.id == train.lineId }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = line?.name ?: train.lineId,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = train.destination.orEmpty(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = train.trainNumber,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            SectionLabel("Nearby or popular stations")
+            val stationRows = if (nearestStations.isNotEmpty()) {
+                nearestStations.mapNotNull { result ->
+                    mapStations.firstOrNull { node -> node.stationIds.contains(result.stationId) }
+                }
+            } else {
+                mapStations
+                    .sortedWith(compareByDescending<MapStationNode> { it.lineIds.size }.thenByDescending { it.isInterchange })
+                    .take(5)
+            }
+
+            stationRows.take(5).forEach { station ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = station.displayName(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = if (station.isInterchange) "Popular interchange" else "Popular stop",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = "${station.lineIds.size} lines",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold,
+    )
 }
 
 @Composable

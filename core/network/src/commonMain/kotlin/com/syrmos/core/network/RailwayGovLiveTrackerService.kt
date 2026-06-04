@@ -26,7 +26,11 @@ class RailwayGovLiveTrackerService(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun observeSuburbanTrains(lineId: String): Flow<List<LiveSuburbanTrain>> = flow {
+    fun observeSuburbanTrains(lineId: String): Flow<List<LiveSuburbanTrain>> {
+        return observeSuburbanTrains(setOf(lineId))
+    }
+
+    fun observeSuburbanTrains(lineIds: Set<String>? = null): Flow<List<LiveSuburbanTrain>> = flow {
         while (currentCoroutineContext().isActive) {
             try {
                 httpClient.prepareGet(TRAIN_STREAM_URL) {
@@ -47,7 +51,7 @@ class RailwayGovLiveTrackerService(
 
                         if (line.isEmpty()) {
                             if (currentEventName == TRAIN_POSITIONS_EVENT && currentData.isNotEmpty()) {
-                                emit(parseSuburbanTrains(lineId, currentData.toString()))
+                                emit(parseSuburbanTrains(lineIds, currentData.toString()))
                             }
                             currentEventName = null
                             currentData.clear()
@@ -79,15 +83,15 @@ class RailwayGovLiveTrackerService(
     }
 
     private fun parseSuburbanTrains(
-        lineId: String,
+        lineIds: Set<String>?,
         payload: String,
     ): List<LiveSuburbanTrain> {
         return runCatching {
             json.decodeFromString<TrainPositionsPayload>(payload)
                 .positions
                 .asSequence()
-                .filter { it.matchesSuburbanLine(lineId) }
-                .mapNotNull { it.toDomain(lineId) }
+                .filter { it.matchesSuburbanLine(lineIds) }
+                .mapNotNull { it.toDomain() }
                 .sortedWith(
                     compareBy<LiveSuburbanTrain> { it.delayMinutes }
                         .thenBy { it.trainNumber },
@@ -96,38 +100,41 @@ class RailwayGovLiveTrackerService(
         }.getOrDefault(emptyList())
     }
 
-    private fun TrainPositionPayload.matchesSuburbanLine(lineId: String): Boolean {
+    private fun TrainPositionPayload.matchesSuburbanLine(lineIds: Set<String>?): Boolean {
         if (serviceType != SUBURBAN_SERVICE_TYPE) return false
 
         val originText = origin.orEmpty().normalizedRouteText()
         val destinationText = destination.orEmpty().normalizedRouteText()
+        val inferredLineId = inferSuburbanLineId(originText, destinationText) ?: return false
 
-        return when (lineId) {
-            "A1" -> {
-                routeMatches(originText, destinationText, "πειραι", "piraeus") &&
-                    routeMatches(originText, destinationText, "αεροδρομ", "airport")
-            }
+        return lineIds.isNullOrEmpty() || inferredLineId in lineIds
+    }
 
-            "A2" -> {
-                routeMatches(originText, destinationText, "ανω λιοσια", "ano liosia") &&
-                    routeMatches(originText, destinationText, "αεροδρομ", "airport")
-            }
+    private fun TrainPositionPayload.inferSuburbanLineId(
+        originText: String,
+        destinationText: String,
+    ): String? {
+        return when {
+            routeMatches(originText, destinationText, "πειραι", "piraeus") &&
+                routeMatches(originText, destinationText, "αεροδρομ", "airport") -> "A1"
 
-            "A3" -> {
-                routeMatches(originText, destinationText, "αθην", "athens") &&
-                    routeMatches(originText, destinationText, "χαλκιδ", "chalcis")
-            }
+            routeMatches(originText, destinationText, "ανω λιοσια", "ano liosia") &&
+                routeMatches(originText, destinationText, "αεροδρομ", "airport") -> "A2"
 
-            "A4" -> {
-                routeMatches(originText, destinationText, "πειραι", "piraeus") &&
-                    routeMatches(originText, destinationText, "κιατ", "kiato")
-            }
+            routeMatches(originText, destinationText, "αθην", "athens") &&
+                routeMatches(originText, destinationText, "χαλκιδ", "chalcis") -> "A3"
 
-            else -> false
+            routeMatches(originText, destinationText, "πειραι", "piraeus") &&
+                routeMatches(originText, destinationText, "κιατ", "kiato") -> "A4"
+
+            else -> null
         }
     }
 
-    private fun TrainPositionPayload.toDomain(lineId: String): LiveSuburbanTrain? {
+    private fun TrainPositionPayload.toDomain(): LiveSuburbanTrain? {
+        val originText = origin.orEmpty().normalizedRouteText()
+        val destinationText = destination.orEmpty().normalizedRouteText()
+        val inferredLineId = inferSuburbanLineId(originText, destinationText) ?: return null
         val trainId = id ?: trainId ?: return null
         val trainLabel = trainNumber ?: name ?: locomotiveNumber ?: return null
         val latitudeValue = lat ?: return null
@@ -135,7 +142,7 @@ class RailwayGovLiveTrackerService(
 
         return LiveSuburbanTrain(
             id = trainId,
-            lineId = lineId,
+            lineId = inferredLineId,
             trainNumber = trainLabel.trim(),
             origin = origin,
             destination = destination,

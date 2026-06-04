@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.syrmos.core.designsystem.component.toComposeColor
-import com.syrmos.core.model.transit.Station
+import com.syrmos.core.model.transit.LiveSuburbanTrain
 import kotlin.math.PI
 import kotlin.math.ln
 import kotlin.math.tan
@@ -74,17 +74,17 @@ internal fun FallbackPlatformMapView(
                     offsetY += pan.y
                 }
             }
-            .pointerInput(uiState.stations) {
+            .pointerInput(uiState.mapStations) {
                 detectTapGestures { tapOffset ->
                     val canvasW = size.width.toFloat()
                     val canvasH = size.height.toFloat()
                     val hitRadius = 24f / scale.coerceAtLeast(0.5f)
                     val hitRadiusSq = (hitRadius * hitRadius).coerceAtLeast(400f)
 
-                    var closestStation: Station? = null
+                    var closestStation: MapStationNode? = null
                     var closestDistSq = Float.MAX_VALUE
 
-                    for (station in uiState.stations) {
+                    for (station in uiState.mapStations) {
                         val pos = latLonToScreen(
                             station.latitude,
                             station.longitude,
@@ -153,7 +153,7 @@ private fun DrawScope.drawFallbackMap(
     val selectedStation = uiState.selectedStation
     val showLabels = scale >= 1.2f
 
-    for (station in uiState.stations) {
+    for (station in uiState.mapStations) {
         val pos = latLonToScreen(station.latitude, station.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
 
         if (pos.x < -100 || pos.x > canvasWidth + 100 || pos.y < -100 || pos.y > canvasHeight + 100) {
@@ -163,8 +163,23 @@ private fun DrawScope.drawFallbackMap(
         val isSelected = selectedStation?.id == station.id
         if (station.isInterchange) {
             val r = if (isSelected) interchangeRadius * 1.5f else interchangeRadius
-            drawCircle(color = Color.White, radius = r, center = pos)
-            drawCircle(color = Color.Black, radius = r, center = pos, style = Stroke(width = (2f * scale).coerceIn(1f, 5f)))
+            val ringColors = station.lineIds.take(3).mapNotNull { lineId ->
+                uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
+            }
+            if (ringColors.size > 1) {
+                ringColors.forEachIndexed { index, color ->
+                    drawCircle(
+                        color = color,
+                        radius = r - (index * 2f),
+                        center = pos,
+                        style = Stroke(width = (2f * scale).coerceIn(1f, 5f)),
+                    )
+                }
+                drawCircle(color = Color.White, radius = r * 0.42f, center = pos)
+            } else {
+                drawCircle(color = Color.White, radius = r, center = pos)
+                drawCircle(color = Color.Black, radius = r, center = pos, style = Stroke(width = (2f * scale).coerceIn(1f, 5f)))
+            }
             if (isSelected) {
                 drawCircle(color = Color(0xFF0072CE).copy(alpha = 0.3f), radius = r * 1.6f, center = pos)
             }
@@ -191,6 +206,55 @@ private fun DrawScope.drawFallbackMap(
             drawText(
                 textLayoutResult = textLayoutResult,
                 topLeft = Offset(pos.x + labelOffset, pos.y - textLayoutResult.size.height / 2f),
+            )
+        }
+    }
+
+    drawLiveTrains(
+        trains = uiState.liveTrains,
+        canvasWidth = canvasWidth,
+        canvasHeight = canvasHeight,
+        offsetX = offsetX,
+        offsetY = offsetY,
+        scale = scale,
+        textMeasurer = textMeasurer,
+    )
+}
+
+private fun DrawScope.drawLiveTrains(
+    trains: List<LiveSuburbanTrain>,
+    canvasWidth: Float,
+    canvasHeight: Float,
+    offsetX: Float,
+    offsetY: Float,
+    scale: Float,
+    textMeasurer: TextMeasurer,
+) {
+    val trainRadius = (6f * scale).coerceIn(3f, 14f)
+    for (train in trains) {
+        val pos = latLonToScreen(train.latitude, train.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+        if (pos.x < -100 || pos.x > canvasWidth + 100 || pos.y < -100 || pos.y > canvasHeight + 100) continue
+
+        val lineColor = when (train.lineId) {
+            "A1", "A2", "A3", "A4" -> Color(0xFF6D4C41)
+            else -> Color(0xFF0072CE)
+        }
+        drawCircle(color = lineColor.copy(alpha = 0.22f), radius = trainRadius * 1.9f, center = pos)
+        drawCircle(color = lineColor, radius = trainRadius, center = pos)
+        drawCircle(color = Color.White, radius = trainRadius * 0.35f, center = pos)
+
+        if (scale >= 1.2f) {
+            val textLayoutResult = textMeasurer.measure(
+                train.trainNumber,
+                TextStyle(
+                    fontSize = (8f * (scale * 0.6f).coerceIn(0.6f, 1.2f)).sp,
+                    color = Color.Black,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+            )
+            drawText(
+                textLayoutResult = textLayoutResult,
+                topLeft = Offset(pos.x + trainRadius + 4f, pos.y - textLayoutResult.size.height / 2f),
             )
         }
     }

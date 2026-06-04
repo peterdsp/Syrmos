@@ -17,6 +17,7 @@ kotlin {
             implementation(libs.voyager.koin)
             implementation(projects.core.common)
             implementation(projects.core.data)
+            implementation(projects.core.network)
         }
         androidMain.dependencies {
             implementation(libs.osmdroid.android)

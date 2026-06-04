@@ -65,7 +65,7 @@ internal actual fun PlatformMapView(
                 mapView.overlays.add(polyline)
             }
 
-            uiState.stations.forEach { station ->
+            uiState.mapStations.forEach { station ->
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(station.latitude, station.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
@@ -84,9 +84,21 @@ internal actual fun PlatformMapView(
                 mapView.overlays.add(marker)
             }
 
-            if (!hasFittedBounds && uiState.stations.isNotEmpty()) {
+            uiState.liveTrains.forEach { train ->
+                val marker = Marker(mapView).apply {
+                    position = GeoPoint(train.latitude, train.longitude)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    icon = buildTrainMarkerBitmap(
+                        color = uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
+                            ?: 0xFF0072CE.toInt(),
+                    )
+                }
+                mapView.overlays.add(marker)
+            }
+
+            if (!hasFittedBounds && uiState.mapStations.isNotEmpty()) {
                 hasFittedBounds = true
-                val points = uiState.stations.map { GeoPoint(it.latitude, it.longitude) }
+                val points = uiState.mapStations.map { GeoPoint(it.latitude, it.longitude) }
                 mapView.post {
                     mapView.zoomToBoundingBox(BoundingBox.fromGeoPointsSafe(points), true, 96)
                 }
@@ -127,5 +139,21 @@ private fun buildMarkerBitmap(color: Int, interchange: Boolean, selected: Boolea
         canvas.drawCircle(cx, cy, 4f, white)
     }
 
+    return android.graphics.drawable.BitmapDrawable(null, bitmap)
+}
+
+private fun buildTrainMarkerBitmap(color: Int): android.graphics.drawable.Drawable {
+    val size = 40
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val cx = size / 2f
+    val cy = size / 2f
+    val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0x330072CE }
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+    val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+
+    canvas.drawCircle(cx, cy, 15f, halo)
+    canvas.drawCircle(cx, cy, 9f, fill)
+    canvas.drawCircle(cx, cy, 3f, white)
     return android.graphics.drawable.BitmapDrawable(null, bitmap)
 }

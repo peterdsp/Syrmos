@@ -44,6 +44,7 @@ import com.syrmos.core.designsystem.theme.SuburbanPurple
 import com.syrmos.core.designsystem.theme.TramOrange
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
+import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.network.STASYAnnouncement
 
 @Composable
@@ -74,6 +75,17 @@ fun HomeScreen(
             NetworkOverview(lines = uiState.lines, lang = lang)
         }
 
+        if (uiState.nearestStations.isNotEmpty()) {
+            item {
+                NearbyStationsSection(
+                    stations = uiState.nearestStations,
+                    lines = uiState.lines,
+                    lang = lang,
+                    onStationClick = onStationClick,
+                )
+            }
+        }
+
         val alerts = uiState.announcements.filter { it.isServiceAlert }
         if (alerts.isNotEmpty()) {
             item {
@@ -89,6 +101,16 @@ fun HomeScreen(
                     announcement = uiState.announcements.first(),
                     lang = lang,
                     onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+
+        if (uiState.liveTrains.isNotEmpty()) {
+            item {
+                LiveTrainsSection(
+                    trains = uiState.liveTrains,
+                    lines = uiState.lines,
+                    lang = lang,
                 )
             }
         }
@@ -244,6 +266,147 @@ private fun AlertsSection(
                 lang = lang,
                 onOpenUrl = onOpenUrl,
             )
+        }
+    }
+}
+
+@Composable
+private fun NearbyStationsSection(
+    stations: List<com.syrmos.core.model.location.NearestStationResult>,
+    lines: List<Line>,
+    lang: AppLanguage,
+    onStationClick: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionTitle(text = "Nearby stations")
+        stations.take(4).forEach { station ->
+            val stationLines = station.lineIds.mapNotNull { lineId -> lines.firstOrNull { it.id == lineId } }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onStationClick(station.stationId) },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = station.stationName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "${station.distanceMeters} m away",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = "›",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        stationLines.take(3).forEach { line ->
+                            Text(
+                                text = line.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = line.color.toComposeColor(),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LiveTrainsSection(
+    trains: List<LiveSuburbanTrain>,
+    lines: List<Line>,
+    lang: AppLanguage,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(text = "●", style = MaterialTheme.typography.titleMedium, color = Color(0xFFE14B4B))
+            SectionTitle(text = L.LIVE_TRACKER.text(lang))
+        }
+
+        trains.take(4).forEach { train ->
+            val line = lines.firstOrNull { it.id == train.lineId }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = line?.name ?: train.lineId,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "${train.origin.orEmpty()} to ${train.destination.orEmpty()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = if (train.delayMinutes > 0) "+${train.delayMinutes} min" else L.ON_TIME.text(lang),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (train.delayMinutes > 0) Color(0xFFC46A12) else Color(0xFF1E8E3E),
+                            )
+                            Text(
+                                text = train.trainNumber,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (!train.nextStation.isNullOrBlank()) {
+                            Text(
+                                text = "${L.NEXT_STOP.text(lang)}: ${train.nextStation}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (train.speedKph != null) {
+                            Text(
+                                text = "${L.SPEED.text(lang)}: ${train.speedKph?.toInt() ?: 0} km/h",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

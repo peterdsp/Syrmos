@@ -13,7 +13,9 @@ import com.syrmos.core.model.schedule.DayType
 import com.syrmos.core.model.schedule.Frequency
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.network.RailwayGovLiveTrackerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,11 +36,13 @@ data class StationDepartureUi(
 
 data class MapUiState(
     val stations: List<Station> = emptyList(),
+    val mapStations: List<MapStationNode> = emptyList(),
     val lines: List<Line> = emptyList(),
     val lineStations: Map<String, List<Station>> = emptyMap(),
-    val selectedStation: Station? = null,
+    val selectedStation: MapStationNode? = null,
     val selectedStationLines: List<Line> = emptyList(),
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
+    val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val isLoading: Boolean = true,
 )
 
@@ -48,6 +52,7 @@ class MapViewModel(
     private val scheduleRepository: ScheduleRepositoryImpl,
     private val getNextDepartures: GetNextDeparturesUseCase,
     private val transitPatternRepository: TransitPatternRepositoryImpl,
+    private val liveTrackerService: RailwayGovLiveTrackerService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
@@ -55,12 +60,14 @@ class MapViewModel(
 
     init {
         loadMapData()
+        observeLiveTrains()
     }
 
     private fun loadMapData() {
         scope.launch {
             val lines = lineRepository.getAllLines().first()
             val stations = stationRepository.getAllStations().first()
+            val mapStations = MapStationNode.fromStations(stations)
 
             val lineStations = mutableMapOf<String, List<Station>>()
             for (line in lines) {
@@ -71,6 +78,7 @@ class MapViewModel(
             _uiState.update {
                 it.copy(
                     stations = stations,
+                    mapStations = mapStations,
                     lines = lines,
                     lineStations = lineStations,
                     isLoading = false,
@@ -81,7 +89,7 @@ class MapViewModel(
 
     fun selectStation(stationId: String) {
         val state = _uiState.value
-        val station = state.stations.find { it.id == stationId } ?: return
+        val station = state.mapStations.find { it.id == stationId } ?: return
         val stationLines = state.lines.filter { it.id in station.lineIds }
         _uiState.update {
             it.copy(
@@ -92,7 +100,11 @@ class MapViewModel(
         }
 
         scope.launch {
-            val departures = buildDeparturesForStation(station, stationLines, state.lineStations)
+            val departures = buildDeparturesForStation(
+                station = station,
+                stationLines = stationLines,
+                lineStations = state.lineStations,
+            )
             _uiState.update { current ->
                 if (current.selectedStation?.id != stationId) current else current.copy(
                     selectedStationDepartures = departures,
@@ -111,8 +123,16 @@ class MapViewModel(
         }
     }
 
+    private fun observeLiveTrains() {
+        scope.launch {
+            liveTrackerService.observeSuburbanTrains(setOf("A1", "A2", "A3", "A4")).collect { trains ->
+                _uiState.update { it.copy(liveTrains = trains) }
+            }
+        }
+    }
+
     private suspend fun buildDeparturesForStation(
-        station: Station,
+        station: MapStationNode,
         stationLines: List<Line>,
         lineStations: Map<String, List<Station>>,
     ): List<StationDepartureUi> {
@@ -120,7 +140,8 @@ class MapViewModel(
 
         stationLines.forEach { line ->
             val orderedStations = lineStations[line.id].orEmpty()
-            val servicePatterns = transitPatternRepository.getPatternsFor(line.id, station.id)
+            val stationId = station.stationIdByLineId[line.id] ?: station.stationIds.firstOrNull() ?: return@forEach
+            val servicePatterns = transitPatternRepository.getPatternsFor(line.id, stationId)
 
             if (servicePatterns.isNotEmpty()) {
                 departures += patternDepartures(line, servicePatterns)
@@ -129,7 +150,7 @@ class MapViewModel(
 
             Direction.entries.forEach { direction ->
                 val liveDepartures = getNextDepartures.invoke(
-                    stationId = station.id,
+                    stationId = stationId,
                     lineId = line.id,
                     direction = direction,
                     limit = 3,
@@ -145,7 +166,7 @@ class MapViewModel(
                         )
                     }
                 } else {
-                    departures += fallbackDepartures(station.id, line, direction, orderedStations)
+                    departures += fallbackDepartures(stationId, line, direction, orderedStations)
                 }
             }
         }

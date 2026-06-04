@@ -87,7 +87,7 @@ fun MapScreen(
                 )
             }
 
-            uiState.selectedStation?.let { station ->
+            uiState.selectedStation?.let {
                 StationSheetCard(
                     uiState = uiState,
                     onClose = viewModel::clearSelection,
@@ -133,7 +133,7 @@ private fun StationSheetCard(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
-                        text = station.name,
+                        text = station.displayName(),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
@@ -187,6 +187,14 @@ private fun StationSheetCard(
                     title = "Zone",
                     value = station.zone.toString(),
                     modifier = Modifier.weight(1f),
+                )
+            }
+
+            if (station.stationIds.size > 1) {
+                Text(
+                    text = "${station.stationIds.size} station records merged at this stop",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

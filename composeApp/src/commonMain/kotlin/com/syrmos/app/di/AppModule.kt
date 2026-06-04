@@ -18,6 +18,7 @@ val featureModule = module {
             getNextDepartures = get(),
             getLinesUseCase = get(),
             stasyService = get(),
+            liveTrackerService = get(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
@@ -34,6 +35,7 @@ val featureModule = module {
             scheduleRepository = get(),
             getNextDepartures = get(),
             transitPatternRepository = get(),
+            liveTrackerService = get(),
         )
     }
     factory { StationDetailViewModel(getStationDetail = get(), getNextDepartures = get()) }

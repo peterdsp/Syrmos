@@ -8,8 +8,10 @@ import com.syrmos.core.model.location.NearestStationResult
 import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYAnnouncementService
+import com.syrmos.core.network.RailwayGovLiveTrackerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,6 +26,7 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val nearestStations: List<NearestStationResult> = emptyList(),
     val upcomingDepartures: List<UpcomingDeparture> = emptyList(),
+    val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val selectedStationId: String? = null,
     val lines: List<Line> = emptyList(),
     val announcements: List<STASYAnnouncement> = emptyList(),
@@ -36,6 +39,7 @@ class HomeViewModel(
     private val getNextDepartures: GetNextDeparturesUseCase,
     private val getLinesUseCase: GetLinesUseCase,
     private val stasyService: STASYAnnouncementService,
+    private val liveTrackerService: RailwayGovLiveTrackerService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -44,6 +48,7 @@ class HomeViewModel(
     init {
         loadLines()
         loadAnnouncements()
+        observeLiveTrains()
     }
 
     private fun loadLines() {
@@ -62,6 +67,16 @@ class HomeViewModel(
                 .catch { /* ignore */ }
                 .collect { announcements ->
                     _uiState.update { it.copy(announcements = announcements) }
+                }
+        }
+    }
+
+    private fun observeLiveTrains() {
+        scope.launch {
+            liveTrackerService.observeSuburbanTrains(setOf("A1", "A2", "A3", "A4"))
+                .catch { /* ignore */ }
+                .collect { trains ->
+                    _uiState.update { it.copy(liveTrains = trains) }
                 }
         }
     }
