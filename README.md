@@ -160,6 +160,14 @@ For a production web deploy, stage the complete site bundle first:
 
 Deploy everything from `composeApp/build/web-release/`, not just `index.html` and `composeApp.js`. The wasm build emits hashed `.wasm` files that must be published alongside the HTML, JS and favicon.
 
+For the Raspberry Pi deployment used by `syrmos.peterdsp.dev`, use:
+
+```bash
+./scripts/deploy-web-to-pi.sh
+```
+
+That script stages the web bundle, gives `composeApp.js` a content-hash filename, installs the production Nginx config from `ops/syrmos-web/nginx.conf`, and swaps the deployed directory atomically so browsers fetch the new build on every deploy.
+
 ### Tests
 
 ```bash
