@@ -45,11 +45,13 @@ import com.syrmos.core.designsystem.theme.TramOrange
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.network.STASYAnnouncement
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    simulatedTrains: List<SimulatedTrain> = emptyList(),
     onStationClick: (String) -> Unit = {},
     onLineClick: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
@@ -105,10 +107,11 @@ fun HomeScreen(
             }
         }
 
-        if (uiState.liveTrains.isNotEmpty()) {
+        if (simulatedTrains.isNotEmpty() || uiState.liveTrains.isNotEmpty()) {
             item {
                 LiveTrainsSection(
                     trains = uiState.liveTrains,
+                    simulatedTrains = simulatedTrains,
                     lines = uiState.lines,
                     lang = lang,
                 )
@@ -334,6 +337,7 @@ private fun NearbyStationsSection(
 @Composable
 private fun LiveTrainsSection(
     trains: List<LiveSuburbanTrain>,
+    simulatedTrains: List<SimulatedTrain>,
     lines: List<Line>,
     lang: AppLanguage,
 ) {
@@ -344,6 +348,59 @@ private fun LiveTrainsSection(
         ) {
             Text(text = "●", style = MaterialTheme.typography.titleMedium, color = Color(0xFFE14B4B))
             SectionTitle(text = L.LIVE_TRACKER.text(lang))
+        }
+
+        val displayTrains = simulatedTrains
+            .groupBy { "${it.lineId}_${it.direction}" }
+            .flatMap { (_, group) -> group.take(1) }
+            .take(8)
+        displayTrains.forEach { train ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = train.lineName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = train.lineColor.toComposeColor(),
+                            )
+                            Text(
+                                text = "${train.originName} to ${train.destinationName}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = L.ON_TIME.text(lang),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF1E8E3E),
+                            )
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "${L.NEXT_STOP.text(lang)}: ${train.nextStationName}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
 
         trains.take(4).forEach { train ->

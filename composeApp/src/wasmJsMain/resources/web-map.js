@@ -371,9 +371,12 @@
     const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
     map.fitBounds(bounds.pad(0.12));
 
+    const simulatedTrainMarkers = new Map();
+
     renderPopularPanel();
     updateNearbyPanel();
     connectLiveTrainStream();
+    startTrainSimulation();
 
     function updateNearbyPanel() {
         if (userLocation) {
@@ -470,17 +473,21 @@
         liveTrainMarkers.forEach((marker) => marker.remove());
         liveTrainMarkers.clear();
 
-        liveTrainList.innerHTML = trains.length
-            ? trains.slice(0, 5).map((train) => {
+        if (trains.length) {
+            const suburbanHtml = trains.slice(0, 5).map((train) => {
                 const line = lineMap.get(train.lineId);
                 return `
-                    <div class="panel-item">
-                        <div class="panel-item__title">${line ? line.name : train.lineId} ${train.trainNumber}</div>
+                    <div class="panel-item" data-live-suburban>
+                        <div class="panel-item__title">🚆 ${line ? line.name : train.lineId} ${train.trainNumber}</div>
                         <div class="panel-item__meta">${train.origin || "Live"} to ${train.destination || "unknown"}${train.nextStation ? `, next ${train.nextStation}` : ""}</div>
                     </div>
                 `;
-            }).join("")
-            : '<div class="panel-item"><div class="panel-item__meta">No live trains available right now.</div></div>';
+            }).join("");
+            const existing = liveTrainList.innerHTML;
+            if (!existing.includes('data-live-suburban')) {
+                liveTrainList.innerHTML = existing + suburbanHtml;
+            }
+        }
 
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
@@ -611,5 +618,155 @@
                 ώ: "ω",
             }[match]))
             .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
+    }
+    function startTrainSimulation() {
+        updateSimulatedTrains();
+        setInterval(updateSimulatedTrains, 10000);
+    }
+
+    function updateSimulatedTrains() {
+        const trains = simulateAllTrains();
+        renderSimulatedTrainsOnMap(trains);
+        renderSimulatedTrainsInPanel(trains);
+    }
+
+    function simulateAllTrains() {
+        const now = currentAthensParts();
+        let nowMins = now.hour * 60 + now.minute;
+        if (nowMins < 300) nowMins += 1440;
+        if (nowMins < 300 || nowMins > 1500) return [];
+
+        const MPS = { metro: 1.8, tram: 2.2 };
+        const FREQ = { M1: 5, M2: 4, M3: 5, T6: 9, T7: 12 };
+        const result = [];
+
+        for (const line of lines) {
+            if (line.type === "suburban") continue;
+            const orderedStations = lineStations.get(line.id) || [];
+            if (orderedStations.length < 2) continue;
+
+            const mps = MPS[line.type] || 2;
+            const freq = FREQ[line.id] || 7;
+            const tripDuration = (orderedStations.length - 1) * mps;
+
+            for (const direction of ["outbound", "inbound"]) {
+                const stns = direction === "outbound" ? orderedStations : [...orderedStations].reverse();
+                const offset = direction === "inbound" ? freq / 2 : 0;
+                let departureTime = 300 + offset;
+                let trainIdx = 0;
+
+                while (departureTime <= 1500) {
+                    const elapsed = nowMins - departureTime;
+                    if (elapsed >= 0 && elapsed <= tripDuration) {
+                        const segIdx = Math.min(Math.floor(elapsed / mps), stns.length - 2);
+                        const frac = Math.min((elapsed / mps) - segIdx, 1);
+                        const from = stns[segIdx];
+                        const to = stns[Math.min(segIdx + 1, stns.length - 1)];
+                        const lat = from.latitude + (to.latitude - from.latitude) * frac;
+                        const lng = from.longitude + (to.longitude - from.longitude) * frac;
+
+                        const isAirport = line.id === "M3" && segIdx >= stns.length - 6;
+                        const dest = direction === "outbound" ? line.terminal_b : line.terminal_a;
+
+                        result.push({
+                            id: `${line.id}_${direction}_${trainIdx}`,
+                            line,
+                            direction,
+                            destination: dest,
+                            fromStation: from.name,
+                            toStation: to.name,
+                            lat,
+                            lng,
+                            isAirport,
+                            progress: elapsed / tripDuration,
+                        });
+                    }
+                    departureTime += freq;
+                    trainIdx++;
+                }
+            }
+        }
+        return result;
+    }
+
+    function trainMarkerIcon(train) {
+        const color = train.line.color;
+        if (train.isAirport) {
+            return L.divIcon({
+                className: "sim-train-marker sim-train-marker--airport",
+                html: `<span class="sim-train__dot sim-train__dot--airport" style="background:#0072CE;">&#9992;</span>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13],
+            });
+        }
+        if (train.line.type === "tram") {
+            return L.divIcon({
+                className: "sim-train-marker sim-train-marker--tram",
+                html: `<span class="sim-train__pill" style="background:${color};"></span>`,
+                iconSize: [24, 14],
+                iconAnchor: [12, 7],
+            });
+        }
+        return L.divIcon({
+            className: "sim-train-marker sim-train-marker--metro",
+            html: `<span class="sim-train__dot" style="background:${color};">M</span>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+        });
+    }
+
+    function renderSimulatedTrainsOnMap(trains) {
+        const activeIds = new Set(trains.map((t) => t.id));
+
+        simulatedTrainMarkers.forEach((marker, id) => {
+            if (!activeIds.has(id)) {
+                marker.remove();
+                simulatedTrainMarkers.delete(id);
+            }
+        });
+
+        for (const train of trains) {
+            if (simulatedTrainMarkers.has(train.id)) {
+                simulatedTrainMarkers.get(train.id).setLatLng([train.lat, train.lng]);
+            } else {
+                const marker = L.marker([train.lat, train.lng], {
+                    icon: trainMarkerIcon(train),
+                    keyboard: false,
+                    zIndexOffset: 900,
+                }).addTo(map);
+
+                marker.bindTooltip(
+                    `${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`,
+                    { direction: "top", offset: [0, -10] }
+                );
+
+                simulatedTrainMarkers.set(train.id, marker);
+            }
+        }
+    }
+
+    function renderSimulatedTrainsInPanel(trains) {
+        if (!trains.length) return;
+
+        const perLine = new Map();
+        for (const train of trains) {
+            const key = `${train.line.id}_${train.direction}`;
+            if (!perLine.has(key)) perLine.set(key, train);
+        }
+        const display = [...perLine.values()].slice(0, 10);
+
+        const panelHtml =
+            `<div class="panel-item"><div class="panel-item__meta" style="font-weight:600;color:#1a1a2e;">${trains.length} trains active</div></div>` +
+            display.map((train) => {
+                const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
+                return `
+                    <div class="panel-item">
+                        <div class="panel-item__title">${icon} ${train.line.name} → ${train.destination}</div>
+                        <div class="panel-item__meta">Near ${train.fromStation} · Next: ${train.toStation}</div>
+                    </div>
+                `;
+            }).join("");
+
+        liveTrainList.innerHTML = panelHtml;
     }
 })();

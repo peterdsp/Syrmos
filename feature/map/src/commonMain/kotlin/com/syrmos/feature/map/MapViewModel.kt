@@ -14,16 +14,19 @@ import com.syrmos.core.model.schedule.Frequency
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
 
@@ -43,6 +46,7 @@ data class MapUiState(
     val selectedStationLines: List<Line> = emptyList(),
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
+    val simulatedTrains: List<SimulatedTrain> = emptyList(),
     val isLoading: Boolean = true,
 )
 
@@ -61,6 +65,7 @@ class MapViewModel(
     init {
         loadMapData()
         observeLiveTrains()
+        runTrainSimulation()
     }
 
     private fun loadMapData() {
@@ -127,6 +132,19 @@ class MapViewModel(
         scope.launch {
             liveTrackerService.observeSuburbanTrains(setOf("A1", "A2", "A3", "A4")).collect { trains ->
                 _uiState.update { it.copy(liveTrains = trains) }
+            }
+        }
+    }
+
+    private fun runTrainSimulation() {
+        scope.launch {
+            while (isActive) {
+                val state = _uiState.value
+                if (state.lines.isNotEmpty() && state.lineStations.isNotEmpty()) {
+                    val simulated = simulateTrains(state.lines, state.lineStations)
+                    _uiState.update { it.copy(simulatedTrains = simulated) }
+                }
+                delay(10_000)
             }
         }
     }

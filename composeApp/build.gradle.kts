@@ -97,3 +97,14 @@ tasks.register<Sync>("stageWebRelease") {
     }
     into(layout.buildDirectory.dir("web-release"))
 }
+
+tasks.register<Copy>("copySeedForDev") {
+    from(project(":core:data").file("src/commonMain/composeResources/files")) {
+        into("files")
+    }
+    into(layout.buildDirectory.dir("processedResources/wasmJs/main"))
+}
+
+tasks.matching { it.name == "wasmJsBrowserDevelopmentRun" }.configureEach {
+    dependsOn("copySeedForDev")
+}

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -60,6 +61,7 @@ import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.feature.home.HomeViewModel
 import com.syrmos.feature.lines.LinesViewModel
 import com.syrmos.feature.map.MapScreen
@@ -125,6 +127,7 @@ fun DesktopWebApp() {
                     .weight(0.42f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(top = 12.dp),
             ) {
                 item {
                     DesktopHeader(lang = lang)
@@ -133,6 +136,7 @@ fun DesktopWebApp() {
                 item {
                     OperationsCard(
                         liveTrains = mapState.liveTrains,
+                        simulatedTrains = mapState.simulatedTrains,
                         nearestStations = homeState.nearestStations,
                         mapStations = mapState.mapStations,
                         lines = mapState.lines,
@@ -367,20 +371,56 @@ private fun StationSummary(
 @Composable
 private fun OperationsCard(
     liveTrains: List<LiveSuburbanTrain>,
+    simulatedTrains: List<SimulatedTrain>,
     nearestStations: List<com.syrmos.core.model.location.NearestStationResult>,
     mapStations: List<MapStationNode>,
     lines: List<Line>,
 ) {
-    DashboardCard(title = "Live and nearby") {
+    DashboardCard(title = "Live trains") {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            SectionLabel("Live suburban trains")
-            if (liveTrains.isEmpty()) {
-                Text(
-                    text = "No live train positions right now.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
+            if (simulatedTrains.isNotEmpty()) {
+                SectionLabel("Metro & Tram (${simulatedTrains.size} active)")
+                val displayTrains = simulatedTrains
+                    .groupBy { "${it.lineId}_${it.direction}" }
+                    .flatMap { (_, group) -> group.take(1) }
+                    .take(8)
+                displayTrains.forEach { train ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = train.lineName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = train.lineColor.toComposeColor(),
+                            )
+                            Text(
+                                text = train.destinationName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Near ${train.currentStationName}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = "Next: ${train.nextStationName}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (liveTrains.isNotEmpty()) {
+                SectionLabel("Suburban railway")
                 liveTrains.take(3).forEach { train ->
                     val line = lines.firstOrNull { it.id == train.lineId }
                     Row(
@@ -407,6 +447,14 @@ private fun OperationsCard(
                         )
                     }
                 }
+            }
+
+            if (simulatedTrains.isEmpty() && liveTrains.isEmpty()) {
+                Text(
+                    text = "No live trains available right now.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             SectionLabel("Nearby or popular stations")

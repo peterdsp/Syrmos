@@ -22,7 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.core.model.transit.SimulatedTrain
 import kotlin.math.PI
 import kotlin.math.ln
 import kotlin.math.tan
@@ -148,8 +150,8 @@ private fun DrawScope.drawFallbackMap(
         }
     }
 
-    val dotRadius = (5f * scale).coerceIn(2.5f, 16f)
-    val interchangeRadius = (8f * scale).coerceIn(4f, 24f)
+    val dotRadius = (6f * scale).coerceIn(3f, 18f)
+    val interchangeRadius = (9f * scale).coerceIn(5f, 26f)
     val selectedStation = uiState.selectedStation
     val showLabels = scale >= 1.2f
 
@@ -162,53 +164,82 @@ private fun DrawScope.drawFallbackMap(
 
         val isSelected = selectedStation?.id == station.id
         if (station.isInterchange) {
-            val r = if (isSelected) interchangeRadius * 1.5f else interchangeRadius
+            val r = if (isSelected) interchangeRadius * 1.4f else interchangeRadius
             val ringColors = station.lineIds.take(3).mapNotNull { lineId ->
                 uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
             }
+            if (isSelected) {
+                drawCircle(color = Color(0xFF0072CE).copy(alpha = 0.25f), radius = r * 2f, center = pos)
+            }
+            drawCircle(color = Color.White, radius = r + (2f * scale).coerceIn(1f, 4f), center = pos)
+            drawCircle(
+                color = Color(0xFF333333),
+                radius = r + (1.5f * scale).coerceIn(0.5f, 3f),
+                center = pos,
+                style = Stroke(width = (2.5f * scale).coerceIn(1.2f, 6f)),
+            )
+            drawCircle(color = Color.White, radius = r * 0.65f, center = pos)
             if (ringColors.size > 1) {
+                val segmentAngle = 360f / ringColors.size
                 ringColors.forEachIndexed { index, color ->
-                    drawCircle(
+                    drawArc(
                         color = color,
-                        radius = r - (index * 2f),
-                        center = pos,
-                        style = Stroke(width = (2f * scale).coerceIn(1f, 5f)),
+                        startAngle = -90f + index * segmentAngle,
+                        sweepAngle = segmentAngle,
+                        useCenter = false,
+                        topLeft = Offset(pos.x - r, pos.y - r),
+                        size = androidx.compose.ui.geometry.Size(r * 2, r * 2),
+                        style = Stroke(width = (3f * scale).coerceIn(1.5f, 7f)),
                     )
                 }
-                drawCircle(color = Color.White, radius = r * 0.42f, center = pos)
-            } else {
-                drawCircle(color = Color.White, radius = r, center = pos)
-                drawCircle(color = Color.Black, radius = r, center = pos, style = Stroke(width = (2f * scale).coerceIn(1f, 5f)))
-            }
-            if (isSelected) {
-                drawCircle(color = Color(0xFF0072CE).copy(alpha = 0.3f), radius = r * 1.6f, center = pos)
             }
         } else {
             val stationColor = station.lineIds.firstOrNull()
                 ?.let { lineId -> uiState.lines.find { it.id == lineId }?.color?.toComposeColor() }
                 ?: Color.Gray
-            val r = if (isSelected) dotRadius * 1.6f else dotRadius
+            val r = if (isSelected) dotRadius * 1.4f else dotRadius
             if (isSelected) {
-                drawCircle(color = stationColor.copy(alpha = 0.3f), radius = r * 1.8f, center = pos)
+                drawCircle(color = stationColor.copy(alpha = 0.25f), radius = r * 2f, center = pos)
             }
+            drawCircle(color = Color.White, radius = r + (1.5f * scale).coerceIn(0.5f, 3f), center = pos)
             drawCircle(color = stationColor, radius = r, center = pos)
-            drawCircle(color = Color.White, radius = r * 0.35f, center = pos)
+            drawCircle(color = Color.White, radius = r * 0.4f, center = pos)
         }
 
         if (showLabels) {
             val labelStyle = TextStyle(
                 fontSize = (9f * (scale * 0.6f).coerceIn(0.6f, 1.4f)).sp,
-                color = Color.DarkGray,
+                color = Color(0xFF2D2D2D),
                 fontWeight = if (station.isInterchange) FontWeight.SemiBold else FontWeight.Normal,
             )
-            val labelOffset = if (station.isInterchange) interchangeRadius + 4f else dotRadius + 3f
+            val labelOffset = if (station.isInterchange) interchangeRadius + 6f else dotRadius + 5f
             val textLayoutResult = textMeasurer.measure(station.name, labelStyle)
+            val bgPadding = 2f
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.85f),
+                topLeft = Offset(pos.x + labelOffset - bgPadding, pos.y - textLayoutResult.size.height / 2f - bgPadding),
+                size = androidx.compose.ui.geometry.Size(
+                    textLayoutResult.size.width.toFloat() + bgPadding * 2,
+                    textLayoutResult.size.height.toFloat() + bgPadding * 2,
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
+            )
             drawText(
                 textLayoutResult = textLayoutResult,
                 topLeft = Offset(pos.x + labelOffset, pos.y - textLayoutResult.size.height / 2f),
             )
         }
     }
+
+    drawSimulatedTrains(
+        trains = uiState.simulatedTrains,
+        canvasWidth = canvasWidth,
+        canvasHeight = canvasHeight,
+        offsetX = offsetX,
+        offsetY = offsetY,
+        scale = scale,
+        textMeasurer = textMeasurer,
+    )
 
     drawLiveTrains(
         trains = uiState.liveTrains,
@@ -218,6 +249,140 @@ private fun DrawScope.drawFallbackMap(
         offsetY = offsetY,
         scale = scale,
         textMeasurer = textMeasurer,
+    )
+}
+
+private fun DrawScope.drawSimulatedTrains(
+    trains: List<SimulatedTrain>,
+    canvasWidth: Float,
+    canvasHeight: Float,
+    offsetX: Float,
+    offsetY: Float,
+    scale: Float,
+    textMeasurer: TextMeasurer,
+) {
+    for (train in trains) {
+        val pos = latLonToScreen(train.latitude, train.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+        if (pos.x < -100 || pos.x > canvasWidth + 100 || pos.y < -100 || pos.y > canvasHeight + 100) continue
+
+        val lineColor = train.lineColor.toComposeColor()
+
+        if (train.isAirportService) {
+            drawAirportTrain(pos, lineColor, scale)
+        } else when (train.lineType) {
+            LineType.METRO -> drawMetroTrain(pos, lineColor, scale)
+            LineType.TRAM -> drawTramTrain(pos, lineColor, scale)
+            else -> drawMetroTrain(pos, lineColor, scale)
+        }
+
+        if (scale >= 1.4f) {
+            val label = if (train.isAirportService) {
+                "✈ ${train.lineName}"
+            } else {
+                "${train.lineName} → ${train.destinationName}"
+            }
+            val textLayoutResult = textMeasurer.measure(
+                label,
+                TextStyle(
+                    fontSize = (7f * (scale * 0.55f).coerceIn(0.5f, 1.1f)).sp,
+                    color = lineColor,
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+            val trainR = when {
+                train.isAirportService -> (8f * scale).coerceIn(4f, 18f)
+                train.lineType == LineType.TRAM -> (5f * scale).coerceIn(3f, 12f)
+                else -> (6.5f * scale).coerceIn(3.5f, 15f)
+            }
+            val bgPadding = 2f
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.92f),
+                topLeft = Offset(
+                    pos.x + trainR + 3f - bgPadding,
+                    pos.y - textLayoutResult.size.height / 2f - bgPadding,
+                ),
+                size = androidx.compose.ui.geometry.Size(
+                    textLayoutResult.size.width.toFloat() + bgPadding * 2,
+                    textLayoutResult.size.height.toFloat() + bgPadding * 2,
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
+            )
+            drawText(
+                textLayoutResult = textLayoutResult,
+                topLeft = Offset(pos.x + trainR + 3f, pos.y - textLayoutResult.size.height / 2f),
+            )
+        }
+    }
+}
+
+private fun DrawScope.drawMetroTrain(pos: Offset, color: Color, scale: Float) {
+    val r = (6.5f * scale).coerceIn(3.5f, 15f)
+    val stroke = (2f * scale).coerceIn(1f, 4f)
+    drawCircle(color = color.copy(alpha = 0.15f), radius = r * 2f, center = pos)
+    drawCircle(color = Color.White, radius = r + stroke / 2, center = pos)
+    drawCircle(color = color, radius = r, center = pos)
+    val s = r * 0.38f
+    drawRoundRect(
+        color = Color.White,
+        topLeft = Offset(pos.x - s, pos.y - s * 1.3f),
+        size = androidx.compose.ui.geometry.Size(s * 2, s * 2.6f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(s * 0.4f, s * 0.4f),
+    )
+}
+
+private fun DrawScope.drawTramTrain(pos: Offset, color: Color, scale: Float) {
+    val w = (9f * scale).coerceIn(4.5f, 20f)
+    val h = (5f * scale).coerceIn(3f, 12f)
+    val stroke = (1.5f * scale).coerceIn(0.8f, 3f)
+    drawCircle(color = color.copy(alpha = 0.12f), radius = w * 1.3f, center = pos)
+    drawRoundRect(
+        color = Color.White,
+        topLeft = Offset(pos.x - w / 2 - stroke, pos.y - h / 2 - stroke),
+        size = androidx.compose.ui.geometry.Size(w + stroke * 2, h + stroke * 2),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(h * 0.4f, h * 0.4f),
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(pos.x - w / 2, pos.y - h / 2),
+        size = androidx.compose.ui.geometry.Size(w, h),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(h * 0.35f, h * 0.35f),
+    )
+    drawLine(
+        color = Color.White,
+        start = Offset(pos.x - w * 0.22f, pos.y),
+        end = Offset(pos.x + w * 0.22f, pos.y),
+        strokeWidth = stroke * 0.8f,
+        cap = StrokeCap.Round,
+    )
+}
+
+private fun DrawScope.drawAirportTrain(pos: Offset, color: Color, scale: Float) {
+    val r = (8f * scale).coerceIn(4f, 18f)
+    val stroke = (2.5f * scale).coerceIn(1.2f, 5f)
+    drawCircle(color = Color(0xFF0072CE).copy(alpha = 0.15f), radius = r * 2.2f, center = pos)
+    drawCircle(color = Color.White, radius = r + stroke / 2, center = pos)
+    drawCircle(color = Color(0xFF0072CE), radius = r, center = pos)
+    val s = r * 0.45f
+    drawLine(
+        color = Color.White,
+        start = Offset(pos.x - s, pos.y + s * 0.2f),
+        end = Offset(pos.x + s, pos.y + s * 0.2f),
+        strokeWidth = stroke * 0.7f,
+        cap = StrokeCap.Round,
+    )
+    drawLine(
+        color = Color.White,
+        start = Offset(pos.x, pos.y - s * 0.6f),
+        end = Offset(pos.x, pos.y + s * 0.6f),
+        strokeWidth = stroke * 0.5f,
+        cap = StrokeCap.Round,
+    )
+    drawLine(
+        color = Color.White,
+        start = Offset(pos.x - s * 0.6f, pos.y - s * 0.3f),
+        end = Offset(pos.x + s * 0.6f, pos.y - s * 0.3f),
+        strokeWidth = stroke * 0.5f,
+        cap = StrokeCap.Round,
     )
 }
 

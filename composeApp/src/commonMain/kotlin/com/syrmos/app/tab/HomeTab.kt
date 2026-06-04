@@ -13,6 +13,7 @@ import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.feature.home.HomeScreen
 import com.syrmos.feature.home.HomeViewModel
+import com.syrmos.feature.map.MapViewModel
 import org.koin.compose.koinInject
 
 object HomeTab : Tab {
@@ -38,8 +39,11 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = koinInject<HomeViewModel>()
+        val mapViewModel = koinInject<MapViewModel>()
+        val mapState by mapViewModel.uiState.collectAsState()
         HomeScreen(
             viewModel = viewModel,
+            simulatedTrains = mapState.simulatedTrains,
             onLineClick = { lineId ->
                 navigator.push(LineDetailScreenRoute(lineId))
             },
