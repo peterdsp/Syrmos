@@ -28,6 +28,7 @@ val featureModule = module {
             lineRepository = get(),
             scheduleRepository = get(),
             getNextDepartures = get(),
+            transitPatternRepository = get(),
         )
     }
     factory { StationDetailViewModel(getStationDetail = get(), getNextDepartures = get()) }

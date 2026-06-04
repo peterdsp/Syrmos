@@ -27,6 +27,9 @@ class DataSeeder(
         val transfers = json.decodeFromString<List<SeedTransfer>>(
             resourceReader.readText("files/seed/transfers.json")
         )
+        val routes = json.decodeFromString<List<SeedRoute>>(
+            resourceReader.readText("files/seed/routes.json")
+        )
         val frequencies = json.decodeFromString<List<SeedFrequency>>(
             resourceReader.readText("files/seed/frequencies.json")
         )
@@ -52,7 +55,6 @@ class DataSeeder(
                 )
             }
 
-            val stationPositions = mutableMapOf<String, MutableMap<String, Int>>()
             stations.forEach { station ->
                 database.syrmosDatabaseQueries.insertStation(
                     id = station.id,
@@ -64,13 +66,13 @@ class DataSeeder(
                     accessibility = if (station.accessibility) 1L else 0L,
                     zone = station.zone.toLong(),
                 )
-                station.lineIds.forEach { lineId ->
-                    val linePositions = stationPositions.getOrPut(lineId) { mutableMapOf() }
-                    val position = linePositions.size
-                    linePositions[station.id] = position
+            }
+
+            routes.forEach { route ->
+                route.stationIds.forEachIndexed { position, stationId ->
                     database.syrmosDatabaseQueries.insertStationLine(
-                        station_id = station.id,
-                        line_id = lineId,
+                        station_id = stationId,
+                        line_id = route.lineId,
                         position_on_line = position.toLong(),
                     )
                 }
@@ -108,8 +110,6 @@ class DataSeeder(
             "files/seed/schedules/metro_line3_airport_outbound.json",
             "files/seed/schedules/metro_line3_airport_inbound.json",
             "files/seed/schedules/tram_t6_outbound.json",
-            "files/seed/schedules/suburban_p1_outbound.json",
-            "files/seed/schedules/suburban_p1_inbound.json",
         )
 
         // Read all schedule files first (suspend), then batch insert
@@ -140,6 +140,6 @@ class DataSeeder(
     }
 
     companion object {
-        const val SEED_VERSION = "3"
+        const val SEED_VERSION = "4"
     }
 }

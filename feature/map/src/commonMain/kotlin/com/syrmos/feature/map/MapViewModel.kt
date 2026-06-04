@@ -3,6 +3,8 @@ package com.syrmos.feature.map
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.ScheduleRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
+import com.syrmos.core.data.repository.TransitPatternRepositoryImpl
+import com.syrmos.core.data.seed.SeedServicePattern
 import com.syrmos.core.common.extensions.currentAthensDayOfWeek
 import com.syrmos.core.common.extensions.currentAthensTime
 import com.syrmos.core.common.extensions.parseTime
@@ -45,6 +47,7 @@ class MapViewModel(
     private val lineRepository: LineRepositoryImpl,
     private val scheduleRepository: ScheduleRepositoryImpl,
     private val getNextDepartures: GetNextDeparturesUseCase,
+    private val transitPatternRepository: TransitPatternRepositoryImpl,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
@@ -117,6 +120,13 @@ class MapViewModel(
 
         stationLines.forEach { line ->
             val orderedStations = lineStations[line.id].orEmpty()
+            val servicePatterns = transitPatternRepository.getPatternsFor(line.id, station.id)
+
+            if (servicePatterns.isNotEmpty()) {
+                departures += patternDepartures(line, servicePatterns)
+                return@forEach
+            }
+
             Direction.entries.forEach { direction ->
                 val liveDepartures = getNextDepartures.invoke(
                     stationId = station.id,
@@ -144,6 +154,24 @@ class MapViewModel(
             .distinctBy { "${it.line.id}-${it.destinationLabel}-${it.time}" }
             .sortedBy { it.minutesAway }
             .take(8)
+    }
+
+    private fun patternDepartures(
+        line: Line,
+        patterns: List<SeedServicePattern>,
+    ): List<StationDepartureUi> {
+        val now = currentAthensTime()
+        return patterns.flatMap { pattern ->
+            (1..4).map { multiplier ->
+                val minutesAway = pattern.frequencyMinutes * multiplier
+                StationDepartureUi(
+                    line = line,
+                    destinationLabel = pattern.direction,
+                    time = addMinutes(now.hour, now.minute, minutesAway),
+                    minutesAway = minutesAway,
+                )
+            }
+        }
     }
 
     private suspend fun fallbackDepartures(

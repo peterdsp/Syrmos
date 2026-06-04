@@ -1,32 +1,434 @@
 [
-  {"station_id":"M1_MON","from_line_id":"M1","to_line_id":"M3","walking_minutes":2},
-  {"station_id":"M1_MON","from_line_id":"M3","to_line_id":"M1","walking_minutes":2},
-  {"station_id":"M1_OMO","from_line_id":"M1","to_line_id":"M2","walking_minutes":3},
-  {"station_id":"M1_OMO","from_line_id":"M2","to_line_id":"M1","walking_minutes":3},
-  {"station_id":"M1_ATT","from_line_id":"M1","to_line_id":"M2","walking_minutes":4},
-  {"station_id":"M1_ATT","from_line_id":"M2","to_line_id":"M1","walking_minutes":4},
-  {"station_id":"M2_SYN","from_line_id":"M2","to_line_id":"M3","walking_minutes":3},
-  {"station_id":"M2_SYN","from_line_id":"M3","to_line_id":"M2","walking_minutes":3},
-  {"station_id":"M2_SYN","from_line_id":"M2","to_line_id":"T6","walking_minutes":5},
-  {"station_id":"M2_SYN","from_line_id":"T6","to_line_id":"M2","walking_minutes":5},
-  {"station_id":"M3_SYN","from_line_id":"M3","to_line_id":"T6","walking_minutes":5},
-  {"station_id":"M3_SYN","from_line_id":"T6","to_line_id":"M3","walking_minutes":5},
-  {"station_id":"M1_PIR","from_line_id":"M1","to_line_id":"P1","walking_minutes":5},
-  {"station_id":"M1_PIR","from_line_id":"P1","to_line_id":"M1","walking_minutes":5},
-  {"station_id":"M1_PIR","from_line_id":"M1","to_line_id":"P2","walking_minutes":5},
-  {"station_id":"M1_PIR","from_line_id":"P2","to_line_id":"M1","walking_minutes":5},
-  {"station_id":"M1_NER","from_line_id":"M1","to_line_id":"P1","walking_minutes":3},
-  {"station_id":"M1_NER","from_line_id":"P1","to_line_id":"M1","walking_minutes":3},
-  {"station_id":"M3_DPL","from_line_id":"M3","to_line_id":"P1","walking_minutes":2},
-  {"station_id":"M3_DPL","from_line_id":"P1","to_line_id":"M3","walking_minutes":2},
-  {"station_id":"M2_LAR","from_line_id":"M2","to_line_id":"P1","walking_minutes":4},
-  {"station_id":"M2_LAR","from_line_id":"P1","to_line_id":"M2","walking_minutes":4},
-  {"station_id":"M2_LAR","from_line_id":"M2","to_line_id":"P2","walking_minutes":4},
-  {"station_id":"M2_LAR","from_line_id":"P2","to_line_id":"M2","walking_minutes":4},
-  {"station_id":"M3_AER","from_line_id":"M3","to_line_id":"P1","walking_minutes":2},
-  {"station_id":"M3_AER","from_line_id":"P1","to_line_id":"M3","walking_minutes":2},
-  {"station_id":"T6_EDE","from_line_id":"T6","to_line_id":"T7","walking_minutes":1},
-  {"station_id":"T6_EDE","from_line_id":"T7","to_line_id":"T6","walking_minutes":1},
-  {"station_id":"T6_PIK","from_line_id":"T6","to_line_id":"T7","walking_minutes":1},
-  {"station_id":"T6_PIK","from_line_id":"T7","to_line_id":"T6","walking_minutes":1}
+  {
+    "station_id": "M1_PIR",
+    "from_line_id": "M1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_PIR",
+    "from_line_id": "M1",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_PIR",
+    "from_line_id": "M3",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_PIR",
+    "from_line_id": "M3",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_PIR",
+    "from_line_id": "A1",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_PIR",
+    "from_line_id": "A1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_MON",
+    "from_line_id": "M1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_MON",
+    "from_line_id": "M3",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_OMO",
+    "from_line_id": "M1",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_OMO",
+    "from_line_id": "M2",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_ATT",
+    "from_line_id": "M1",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_ATT",
+    "from_line_id": "M2",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_NER",
+    "from_line_id": "M1",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M1_NER",
+    "from_line_id": "A1",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_ATT",
+    "from_line_id": "M2",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_ATT",
+    "from_line_id": "M1",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_LAR",
+    "from_line_id": "M2",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_LAR",
+    "from_line_id": "A1",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_OMO",
+    "from_line_id": "M2",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_OMO",
+    "from_line_id": "M1",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_SYN",
+    "from_line_id": "M2",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M2_SYN",
+    "from_line_id": "M3",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_PIR",
+    "from_line_id": "M3",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_PIR",
+    "from_line_id": "M3",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_PIR",
+    "from_line_id": "M1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_PIR",
+    "from_line_id": "M1",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_PIR",
+    "from_line_id": "A1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_PIR",
+    "from_line_id": "A1",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_MON",
+    "from_line_id": "M3",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_MON",
+    "from_line_id": "M1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_SYN",
+    "from_line_id": "M3",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_SYN",
+    "from_line_id": "M2",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_DPL",
+    "from_line_id": "M3",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_DPL",
+    "from_line_id": "A1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_AER",
+    "from_line_id": "M3",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "M3_AER",
+    "from_line_id": "A1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_SYN",
+    "from_line_id": "T6",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_SYN",
+    "from_line_id": "T6",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_SYN",
+    "from_line_id": "M2",
+    "to_line_id": "T6",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_SYN",
+    "from_line_id": "M2",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_SYN",
+    "from_line_id": "M3",
+    "to_line_id": "T6",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_SYN",
+    "from_line_id": "M3",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_EDE",
+    "from_line_id": "T6",
+    "to_line_id": "T7",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_EDE",
+    "from_line_id": "T7",
+    "to_line_id": "T6",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_PIK",
+    "from_line_id": "T6",
+    "to_line_id": "T7",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T6_PIK",
+    "from_line_id": "T7",
+    "to_line_id": "T6",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T7_EDE",
+    "from_line_id": "T7",
+    "to_line_id": "T6",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T7_EDE",
+    "from_line_id": "T6",
+    "to_line_id": "T7",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T7_PIK",
+    "from_line_id": "T7",
+    "to_line_id": "T6",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "T7_PIK",
+    "from_line_id": "T6",
+    "to_line_id": "T7",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_PIR",
+    "from_line_id": "A1",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_PIR",
+    "from_line_id": "M1",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_ATH",
+    "from_line_id": "A1",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_ATH",
+    "from_line_id": "M2",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_NER",
+    "from_line_id": "A1",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_NER",
+    "from_line_id": "M1",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_DPL",
+    "from_line_id": "A1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_DPL",
+    "from_line_id": "M3",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_AER",
+    "from_line_id": "A1",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A1_AER",
+    "from_line_id": "M3",
+    "to_line_id": "A1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A2_NER",
+    "from_line_id": "A2",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A2_NER",
+    "from_line_id": "M1",
+    "to_line_id": "A2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A2_DPL",
+    "from_line_id": "A2",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A2_DPL",
+    "from_line_id": "M3",
+    "to_line_id": "A2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A2_AER",
+    "from_line_id": "A2",
+    "to_line_id": "M3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A2_AER",
+    "from_line_id": "M3",
+    "to_line_id": "A2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A3_ATH",
+    "from_line_id": "A3",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A3_ATH",
+    "from_line_id": "M2",
+    "to_line_id": "A3",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A4_PIR",
+    "from_line_id": "A4",
+    "to_line_id": "M1",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A4_PIR",
+    "from_line_id": "M1",
+    "to_line_id": "A4",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A4_ATH",
+    "from_line_id": "A4",
+    "to_line_id": "M2",
+    "walking_minutes": 3
+  },
+  {
+    "station_id": "A4_ATH",
+    "from_line_id": "M2",
+    "to_line_id": "A4",
+    "walking_minutes": 3
+  }
 ]

@@ -6,7 +6,7 @@
     "type": "metro",
     "color": "#00843D",
     "terminal_a": "Piraeus",
-    "terminal_b": "Kifisia",
+    "terminal_b": "Kifissia",
     "station_count": 24
   },
   {
@@ -45,38 +45,48 @@
     "name_el": "Τραμ Τ7",
     "type": "tram",
     "color": "#E87722",
-    "terminal_a": "Akti Posidonos",
+    "terminal_a": "Akti Poseidonos",
     "terminal_b": "Asklipiio Voulas",
     "station_count": 37
   },
   {
-    "id": "P1",
-    "name": "Suburban Airport-Piraeus",
-    "name_el": "Προαστιακός Αεροδρόμιο-Πειραιάς",
+    "id": "A1",
+    "name": "A1 Piraeus-Airport",
+    "name_el": "Α1 Πειραιάς-Αεροδρόμιο",
     "type": "suburban",
     "color": "#6F2DA8",
-    "terminal_a": "Airport",
-    "terminal_b": "Piraeus",
+    "terminal_a": "Piraeus",
+    "terminal_b": "Airport",
+    "station_count": 19
+  },
+  {
+    "id": "A2",
+    "name": "A2 Ano Liosia-Airport",
+    "name_el": "Α2 Άνω Λιόσια-Αεροδρόμιο",
+    "type": "suburban",
+    "color": "#6F2DA8",
+    "terminal_a": "Ano Liosia",
+    "terminal_b": "Airport",
     "station_count": 12
   },
   {
-    "id": "P2",
-    "name": "Suburban Piraeus-Kiato",
-    "name_el": "Προαστιακός Πειραιάς-Κιάτο",
+    "id": "A3",
+    "name": "A3 Athens-Chalcis",
+    "name_el": "Α3 Αθήνα-Χαλκίδα",
+    "type": "suburban",
+    "color": "#6F2DA8",
+    "terminal_a": "Athens",
+    "terminal_b": "Chalcis",
+    "station_count": 17
+  },
+  {
+    "id": "A4",
+    "name": "A4 Piraeus-Kiato",
+    "name_el": "Α4 Πειραιάς-Κιάτο",
     "type": "suburban",
     "color": "#6F2DA8",
     "terminal_a": "Piraeus",
     "terminal_b": "Kiato",
-    "station_count": 18
-  },
-  {
-    "id": "P3",
-    "name": "Suburban Kiato-Aigio",
-    "name_el": "Προαστιακός Κιάτο-Αίγιο",
-    "type": "suburban",
-    "color": "#6F2DA8",
-    "terminal_a": "Kiato",
-    "terminal_b": "Aigio",
-    "station_count": 8
+    "station_count": 20
   }
 ]

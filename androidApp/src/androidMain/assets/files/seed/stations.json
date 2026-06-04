@@ -1,103 +1,2570 @@
 [
-  {"id":"M1_PIR","name":"Piraeus","name_el":"Πειραιάς","latitude":37.9475,"longitude":23.6431,"line_ids":["M1","P1","P2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M1_FAL","name":"Faliro","name_el":"Φάληρο","latitude":37.9426,"longitude":23.6633,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_MOS","name":"Moschato","name_el":"Μοσχάτο","latitude":37.9486,"longitude":23.6756,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_KAL","name":"Kallithea","name_el":"Καλλιθέα","latitude":37.9562,"longitude":23.6965,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_TAV","name":"Tavros","name_el":"Ταύρος","latitude":37.9644,"longitude":23.7069,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_PET","name":"Petralona","name_el":"Πετράλωνα","latitude":37.9683,"longitude":23.7107,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_THE","name":"Thissio","name_el":"Θησείο","latitude":37.9764,"longitude":23.7210,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_MON","name":"Monastiraki","name_el":"Μοναστηράκι","latitude":37.9763,"longitude":23.7256,"line_ids":["M1","M3"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M1_OMO","name":"Omonia","name_el":"Ομόνοια","latitude":37.9844,"longitude":23.7282,"line_ids":["M1","M2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M1_VIC","name":"Victoria","name_el":"Βικτώρια","latitude":37.9933,"longitude":23.7294,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_ATT","name":"Attiki","name_el":"Αττική","latitude":37.9998,"longitude":23.7221,"line_ids":["M1","M2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M1_AGN","name":"Agios Nikolaos","name_el":"Άγιος Νικόλαος","latitude":38.0042,"longitude":23.7198,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_KAT","name":"Kato Patissia","name_el":"Κάτω Πατήσια","latitude":38.0106,"longitude":23.7280,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_AGE","name":"Agios Eleftherios","name_el":"Άγιος Ελευθέριος","latitude":38.0189,"longitude":23.7306,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_ANP","name":"Ano Patissia","name_el":"Άνω Πατήσια","latitude":38.0231,"longitude":23.7322,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_PER","name":"Perissos","name_el":"Περισσός","latitude":38.0322,"longitude":23.7394,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_PEF","name":"Pefkakia","name_el":"Πευκάκια","latitude":38.0378,"longitude":23.7439,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_NIO","name":"Nea Ionia","name_el":"Νέα Ιωνία","latitude":38.0422,"longitude":23.7506,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_IRK","name":"Iraklio","name_el":"Ηράκλειο","latitude":38.0489,"longitude":23.7522,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M1_NER","name":"Neratziotissa","name_el":"Νερατζιώτισσα","latitude":38.0583,"longitude":23.7672,"line_ids":["M1","P1"],"is_interchange":true,"accessibility":true,"zone":2},
-  {"id":"M1_MAR","name":"Maroussi","name_el":"Μαρούσι","latitude":38.0678,"longitude":23.7878,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M1_KAM","name":"KAT","name_el":"ΚΑΤ","latitude":38.0789,"longitude":23.7933,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M1_KHE","name":"Kifisia","name_el":"Κηφισιά","latitude":38.0856,"longitude":23.8011,"line_ids":["M1"],"is_interchange":false,"accessibility":true,"zone":2},
-
-  {"id":"M2_ANT","name":"Anthoupoli","name_el":"Ανθούπολη","latitude":38.0139,"longitude":23.7056,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M2_PEE","name":"Peristeri","name_el":"Περιστέρι","latitude":38.0103,"longitude":23.6969,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M2_AGA","name":"Agioi Anargyroi","name_el":"Άγιοι Ανάργυροι","latitude":38.0047,"longitude":23.7128,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M2_SEP","name":"Sepolia","name_el":"Σεπόλια","latitude":37.9978,"longitude":23.7139,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_ATT","name":"Attiki","name_el":"Αττική","latitude":37.9998,"longitude":23.7221,"line_ids":["M1","M2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M2_LAR","name":"Larissa Station","name_el":"Σταθμός Λαρίσης","latitude":37.9914,"longitude":23.7217,"line_ids":["M2","P1","P2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M2_MET","name":"Metaxourghio","name_el":"Μεταξουργείο","latitude":37.9859,"longitude":23.7217,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_OMO","name":"Omonia","name_el":"Ομόνοια","latitude":37.9844,"longitude":23.7282,"line_ids":["M1","M2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M2_PAN","name":"Panepistimio","name_el":"Πανεπιστήμιο","latitude":37.9807,"longitude":23.7334,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_SYN","name":"Syntagma","name_el":"Σύνταγμα","latitude":37.9755,"longitude":23.7353,"line_ids":["M2","M3"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M2_AKR","name":"Akropoli","name_el":"Ακρόπολη","latitude":37.9694,"longitude":23.7288,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_SYG","name":"Syngrou-Fix","name_el":"Συγγρού-Φιξ","latitude":37.9640,"longitude":23.7266,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_NEK","name":"Neos Kosmos","name_el":"Νέος Κόσμος","latitude":37.9559,"longitude":23.7311,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_AGI","name":"Agios Ioannis","name_el":"Άγιος Ιωάννης","latitude":37.9497,"longitude":23.7316,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_DAF","name":"Dafni","name_el":"Δάφνη","latitude":37.9422,"longitude":23.7378,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_ALD","name":"Agios Dimitrios","name_el":"Άγιος Δημήτριος","latitude":37.9356,"longitude":23.7403,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_ILI","name":"Ilioupoli","name_el":"Ηλιούπολη","latitude":37.9278,"longitude":23.7468,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_ALM","name":"Alimos","name_el":"Άλιμος","latitude":37.9158,"longitude":23.7258,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_ARG","name":"Argyroupoli","name_el":"Αργυρούπολη","latitude":37.9061,"longitude":23.7488,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M2_ELL","name":"Elliniko","name_el":"Ελληνικό","latitude":37.8919,"longitude":23.7472,"line_ids":["M2"],"is_interchange":false,"accessibility":true,"zone":2},
-
-  {"id":"M3_DIM","name":"Dimotiko Theatro","name_el":"Δημοτικό Θέατρο","latitude":37.9483,"longitude":23.6444,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_PIR","name":"Piraeus","name_el":"Πειραιάς","latitude":37.9475,"longitude":23.6431,"line_ids":["M1","M3","P1","P2"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M3_MAN","name":"Maniatika","name_el":"Μανιάτικα","latitude":37.9497,"longitude":23.6519,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_NIK","name":"Nikaia","name_el":"Νίκαια","latitude":37.9633,"longitude":23.6586,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_KOR","name":"Korydallos","name_el":"Κορυδαλλός","latitude":37.9756,"longitude":23.6581,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_ABA","name":"Agia Varvara","name_el":"Αγία Βαρβάρα","latitude":37.9844,"longitude":23.6614,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_AMA","name":"Agia Marina","name_el":"Αγία Μαρίνα","latitude":37.9892,"longitude":23.6736,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_EGA","name":"Egaleo","name_el":"Αιγάλεω","latitude":37.9919,"longitude":23.6844,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_ELE","name":"Eleonas","name_el":"Ελαιώνας","latitude":37.9878,"longitude":23.7039,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_KER","name":"Kerameikos","name_el":"Κεραμεικός","latitude":37.9789,"longitude":23.7139,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_MON","name":"Monastiraki","name_el":"Μοναστηράκι","latitude":37.9763,"longitude":23.7256,"line_ids":["M1","M3"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M3_SYN","name":"Syntagma","name_el":"Σύνταγμα","latitude":37.9755,"longitude":23.7353,"line_ids":["M2","M3"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"M3_EVA","name":"Evangelismos","name_el":"Ευαγγελισμός","latitude":37.9758,"longitude":23.7444,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_MEG","name":"Megaro Moussikis","name_el":"Μέγαρο Μουσικής","latitude":37.9783,"longitude":23.7508,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_AMP","name":"Ambelokipoi","name_el":"Αμπελόκηποι","latitude":37.9847,"longitude":23.7569,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_PNR","name":"Panormou","name_el":"Πανόρμου","latitude":37.9919,"longitude":23.7628,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_KTC","name":"Katechaki","name_el":"Κατεχάκη","latitude":37.9989,"longitude":23.7706,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_ETH","name":"Ethniki Amyna","name_el":"Εθνική Άμυνα","latitude":38.0008,"longitude":23.7819,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"M3_HOL","name":"Holargos","name_el":"Χολαργός","latitude":37.9986,"longitude":23.7944,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M3_NOM","name":"Nomismatokopeio","name_el":"Νομισματοκοπείο","latitude":37.9961,"longitude":23.8058,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M3_APR","name":"Agia Paraskevi","name_el":"Αγία Παρασκευή","latitude":37.9953,"longitude":23.8183,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M3_HAL","name":"Halandri","name_el":"Χαλάνδρι","latitude":38.0033,"longitude":23.8256,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"M3_DPL","name":"Douk. Plakentias","name_el":"Δουκ. Πλακεντίας","latitude":38.0072,"longitude":23.8394,"line_ids":["M3","P1"],"is_interchange":true,"accessibility":true,"zone":2},
-  {"id":"M3_PAL","name":"Pallini","name_el":"Παλλήνη","latitude":38.0022,"longitude":23.8750,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":3},
-  {"id":"M3_PEK","name":"Peania-Kantza","name_el":"Παιανία-Κάντζα","latitude":37.9656,"longitude":23.8908,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":3},
-  {"id":"M3_KRP","name":"Koropi","name_el":"Κορωπί","latitude":37.9044,"longitude":23.8717,"line_ids":["M3"],"is_interchange":false,"accessibility":true,"zone":3},
-  {"id":"M3_AER","name":"Airport","name_el":"Αεροδρόμιο","latitude":37.9364,"longitude":23.9475,"line_ids":["M3","P1"],"is_interchange":true,"accessibility":true,"zone":4},
-
-  {"id":"T6_SYN","name":"Syntagma","name_el":"Σύνταγμα","latitude":37.9750,"longitude":23.7350,"line_ids":["T6","M2","M3"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"T6_ZAP","name":"Zappeio","name_el":"Ζάππειο","latitude":37.9717,"longitude":23.7356,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_VOU","name":"L. Vouliagmenis","name_el":"Λ. Βουλιαγμένης","latitude":37.9667,"longitude":23.7303,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_FIX","name":"Fix","name_el":"Φιξ","latitude":37.9633,"longitude":23.7275,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_KAS","name":"Kasomouli","name_el":"Κασομούλη","latitude":37.9597,"longitude":23.7258,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_NEK","name":"Neos Kosmos","name_el":"Νέος Κόσμος","latitude":37.9556,"longitude":23.7242,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_BAK","name":"Baknana","name_el":"Μπακνανά","latitude":37.9525,"longitude":23.7219,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_AIG","name":"Aegeou","name_el":"Αιγαίου","latitude":37.9492,"longitude":23.7203,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_AFP","name":"Agia Fotini","name_el":"Αγία Φωτεινή","latitude":37.9458,"longitude":23.7186,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_MAL","name":"Megalou Alexandrou","name_el":"Μεγάλου Αλεξάνδρου","latitude":37.9425,"longitude":23.7172,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_APK","name":"Agia Paraskevi","name_el":"Αγία Παρασκευή","latitude":37.9389,"longitude":23.7153,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_MED","name":"Medeas-Mykalis","name_el":"Μηδείας-Μυκάλης","latitude":37.9375,"longitude":23.7147,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_EVS","name":"Evangeliki Scholi","name_el":"Ευαγγελική Σχολή","latitude":37.9358,"longitude":23.7128,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_ACH","name":"Achilleos","name_el":"Αχιλλέως","latitude":37.9339,"longitude":23.7108,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_AMF","name":"Amfitheas","name_el":"Αμφιθέας","latitude":37.9314,"longitude":23.7081,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_PAN","name":"Panaghitsa","name_el":"Παναγίτσα","latitude":37.9289,"longitude":23.7056,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_MOU","name":"Mousson","name_el":"Μουσών","latitude":37.9261,"longitude":23.7028,"line_ids":["T6"],"is_interchange":false,"accessibility":true,"zone":1},
-  {"id":"T6_EDE","name":"Edem","name_el":"Εδέμ","latitude":37.9222,"longitude":23.6989,"line_ids":["T6","T7"],"is_interchange":true,"accessibility":true,"zone":1},
-  {"id":"T6_PIK","name":"Pikrodafni","name_el":"Πικροδάφνη","latitude":37.9194,"longitude":23.6964,"line_ids":["T6","T7"],"is_interchange":true,"accessibility":true,"zone":1},
-
-  {"id":"P1_SKA","name":"SKA","name_el":"ΣΚΑ","latitude":38.0778,"longitude":23.7361,"line_ids":["P1"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"P1_NER","name":"Neratziotissa","name_el":"Νερατζιώτισσα","latitude":38.0583,"longitude":23.7672,"line_ids":["M1","P1"],"is_interchange":true,"accessibility":true,"zone":2},
-  {"id":"P1_IRN","name":"Irinida","name_el":"Ειρηνίδα","latitude":38.0417,"longitude":23.7856,"line_ids":["P1"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"P1_PLK","name":"Plakentias","name_el":"Πλακεντίας","latitude":38.0128,"longitude":23.8339,"line_ids":["P1"],"is_interchange":false,"accessibility":true,"zone":2},
-  {"id":"P1_DPL","name":"Douk. Plakentias","name_el":"Δουκ. Πλακεντίας","latitude":38.0072,"longitude":23.8394,"line_ids":["M3","P1"],"is_interchange":true,"accessibility":true,"zone":2},
-  {"id":"P1_KAN","name":"Kantza","name_el":"Κάντζα","latitude":37.9744,"longitude":23.8833,"line_ids":["P1"],"is_interchange":false,"accessibility":true,"zone":3},
-  {"id":"P1_KOR","name":"Koropi","name_el":"Κορωπί","latitude":37.9044,"longitude":23.8717,"line_ids":["P1"],"is_interchange":false,"accessibility":true,"zone":3},
-  {"id":"P1_PAI","name":"Paiania","name_el":"Παιανία","latitude":37.9656,"longitude":23.8908,"line_ids":["P1"],"is_interchange":false,"accessibility":true,"zone":3}
+  {
+    "id": "M1_PIR",
+    "name": "Piraeus",
+    "name_el": "Πειραιάς",
+    "latitude": 37.948023,
+    "longitude": 23.6432467,
+    "line_ids": [
+      "M1",
+      "M3",
+      "A1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_FAL",
+    "name": "Faliro",
+    "name_el": "Φάληρο",
+    "latitude": 37.9450255,
+    "longitude": 23.6652902,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_MOS",
+    "name": "Moschato",
+    "name_el": "Μοσχάτο",
+    "latitude": 37.9552687,
+    "longitude": 23.6804874,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_KAL",
+    "name": "Kallithea",
+    "name_el": "Καλλιθέα",
+    "latitude": 37.9605389,
+    "longitude": 23.6974102,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_TAV",
+    "name": "Tavros",
+    "name_el": "Ταύρος",
+    "latitude": 37.9625102,
+    "longitude": 23.7037122,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_PET",
+    "name": "Petralona",
+    "name_el": "Πετράλωνα",
+    "latitude": 37.9689559,
+    "longitude": 23.709409,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_THE",
+    "name": "Thiseio",
+    "name_el": "Θησείο",
+    "latitude": 37.9766852,
+    "longitude": 23.7205356,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_MON",
+    "name": "Monastiraki",
+    "name_el": "Μοναστηράκι",
+    "latitude": 37.976336,
+    "longitude": 23.7258259,
+    "line_ids": [
+      "M1",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_OMO",
+    "name": "Omonia",
+    "name_el": "Ομόνοια",
+    "latitude": 37.9844999,
+    "longitude": 23.7281773,
+    "line_ids": [
+      "M1",
+      "M2"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_VIC",
+    "name": "Victoria",
+    "name_el": "Βικτώρια",
+    "latitude": 37.9934877,
+    "longitude": 23.730395,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_ATT",
+    "name": "Attiki",
+    "name_el": "Αττική",
+    "latitude": 37.9995276,
+    "longitude": 23.7228526,
+    "line_ids": [
+      "M1",
+      "M2"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_AGN",
+    "name": "Agios Nikolaos",
+    "name_el": "Άγιος Νικόλαος",
+    "latitude": 38.0069859,
+    "longitude": 23.7277292,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_KAT",
+    "name": "Kato Patisia",
+    "name_el": "Κάτω Πατήσια",
+    "latitude": 38.0119208,
+    "longitude": 23.728663,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_AGE",
+    "name": "Agios Eleftherios",
+    "name_el": "Άγιος Ελευθέριος",
+    "latitude": 38.0203392,
+    "longitude": 23.7319353,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_ANP",
+    "name": "Ano Patisia",
+    "name_el": "Άνω Πατήσια",
+    "latitude": 38.0241359,
+    "longitude": 23.7365181,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_PER",
+    "name": "Perissos",
+    "name_el": "Περισσός",
+    "latitude": 38.0332002,
+    "longitude": 23.745068,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_PEF",
+    "name": "Pefkakia",
+    "name_el": "Πευκάκια",
+    "latitude": 38.0374108,
+    "longitude": 23.7505057,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_NIO",
+    "name": "Nea Ionia",
+    "name_el": "Νέα Ιωνία",
+    "latitude": 38.0416198,
+    "longitude": 23.7554095,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_IRK",
+    "name": "Irakleio",
+    "name_el": "Ηράκλειο",
+    "latitude": 38.0460142,
+    "longitude": 23.7665601,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_EIR",
+    "name": "Eirini",
+    "name_el": "Ειρήνη",
+    "latitude": 38.0429902,
+    "longitude": 23.7837888,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M1_NER",
+    "name": "Neratziotissa",
+    "name_el": "Νεραντζιώτισσα",
+    "latitude": 38.0455338,
+    "longitude": 23.793425,
+    "line_ids": [
+      "M1",
+      "A1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M1_MAR",
+    "name": "Marousi",
+    "name_el": "Μαρούσι",
+    "latitude": 38.0565273,
+    "longitude": 23.8055114,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M1_KAM",
+    "name": "KAT",
+    "name_el": "ΚΑΤ",
+    "latitude": 38.0663647,
+    "longitude": 23.8042356,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M1_KHE",
+    "name": "Kifissia",
+    "name_el": "Κηφισιά",
+    "latitude": 38.0733951,
+    "longitude": 23.8082198,
+    "line_ids": [
+      "M1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M2_ANT",
+    "name": "Anthoupoli",
+    "name_el": "Ανθούπολη",
+    "latitude": 38.0171089,
+    "longitude": 23.6908755,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M2_PEE",
+    "name": "Peristeri",
+    "name_el": "Περιστέρι",
+    "latitude": 38.0128856,
+    "longitude": 23.6957605,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M2_AGA",
+    "name": "Agios Antonios",
+    "name_el": "Άγιος Αντώνιος",
+    "latitude": 38.0060932,
+    "longitude": 23.6997156,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M2_SEP",
+    "name": "Sepolia",
+    "name_el": "Σεπόλια",
+    "latitude": 38.0025946,
+    "longitude": 23.7140361,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_ATT",
+    "name": "Attiki",
+    "name_el": "Αττική",
+    "latitude": 37.9995336,
+    "longitude": 23.7226918,
+    "line_ids": [
+      "M2",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_LAR",
+    "name": "Larissa Station",
+    "name_el": "Σταθμός Λαρίσης",
+    "latitude": 37.9922861,
+    "longitude": 23.7207006,
+    "line_ids": [
+      "M2",
+      "A1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_MET",
+    "name": "Metaxourgeio",
+    "name_el": "Μεταξουργείο",
+    "latitude": 37.985845,
+    "longitude": 23.7213621,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_OMO",
+    "name": "Omonia",
+    "name_el": "Ομόνοια",
+    "latitude": 37.9840538,
+    "longitude": 23.727983,
+    "line_ids": [
+      "M2",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_PAN",
+    "name": "Panepistimio",
+    "name_el": "Πανεπιστήμιο",
+    "latitude": 37.9803461,
+    "longitude": 23.7330038,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_SYN",
+    "name": "Syntagma",
+    "name_el": "Σύνταγμα",
+    "latitude": 37.9755009,
+    "longitude": 23.7356474,
+    "line_ids": [
+      "M2",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_AKR",
+    "name": "Akropoli",
+    "name_el": "Ακρόπολη",
+    "latitude": 37.968859,
+    "longitude": 23.7295551,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_SYG",
+    "name": "Syngrou-Fix",
+    "name_el": "Συγγρού-Φίξ",
+    "latitude": 37.9646366,
+    "longitude": 23.7268038,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_NEK",
+    "name": "Neos Kosmos",
+    "name_el": "Νέος Κόσμος",
+    "latitude": 37.9576551,
+    "longitude": 23.7283685,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_AGI",
+    "name": "Agios Ioannis",
+    "name_el": "Άγιος Ιωάννης",
+    "latitude": 37.9564161,
+    "longitude": 23.7346772,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_DAF",
+    "name": "Dafni",
+    "name_el": "Δάφνη",
+    "latitude": 37.9495529,
+    "longitude": 23.737211,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_ALD",
+    "name": "Agios Dimitrios",
+    "name_el": "Άγιος Δημήτριος",
+    "latitude": 37.9398434,
+    "longitude": 23.7407267,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_ILI",
+    "name": "Ilioupoli",
+    "name_el": "Ηλιούπολη",
+    "latitude": 37.9290637,
+    "longitude": 23.7447546,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_ALM",
+    "name": "Alimos",
+    "name_el": "Άλιμος",
+    "latitude": 37.9178695,
+    "longitude": 23.7440625,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_ARG",
+    "name": "Argyroupoli",
+    "name_el": "Αργυρούπολη",
+    "latitude": 37.9020569,
+    "longitude": 23.7456163,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M2_ELL",
+    "name": "Elliniko",
+    "name_el": "Ελληνικό",
+    "latitude": 37.8925855,
+    "longitude": 23.7470953,
+    "line_ids": [
+      "M2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M3_DIM",
+    "name": "Dimotiko Theatro",
+    "name_el": "Δημοτικό Θέατρο",
+    "latitude": 37.9429173,
+    "longitude": 23.6475926,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_PIR",
+    "name": "Piraeus",
+    "name_el": "Πειραιάς",
+    "latitude": 37.948616,
+    "longitude": 23.6423273,
+    "line_ids": [
+      "M3",
+      "M1",
+      "A1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_MAN",
+    "name": "Maniatika",
+    "name_el": "Μανιάτικα",
+    "latitude": 37.9600579,
+    "longitude": 23.6397874,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_NIK",
+    "name": "Nikaia",
+    "name_el": "Νίκαια",
+    "latitude": 37.9660813,
+    "longitude": 23.6478426,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_KOR",
+    "name": "Korydallos",
+    "name_el": "Κορυδαλλός",
+    "latitude": 37.9770388,
+    "longitude": 23.6504221,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_ABA",
+    "name": "Agia Varvara",
+    "name_el": "Αγία Βαρβάρα",
+    "latitude": 37.9899646,
+    "longitude": 23.659353,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_AMA",
+    "name": "Agia Marina",
+    "name_el": "Αγία Μαρίνα",
+    "latitude": 37.9968128,
+    "longitude": 23.6677666,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_EGA",
+    "name": "Egaleo",
+    "name_el": "Αιγάλεω",
+    "latitude": 37.9913832,
+    "longitude": 23.6818003,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_ELE",
+    "name": "Eleonas",
+    "name_el": "Ελαιώνας",
+    "latitude": 37.9877488,
+    "longitude": 23.6933605,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_KER",
+    "name": "Kerameikos",
+    "name_el": "Κεραμεικός",
+    "latitude": 37.9785236,
+    "longitude": 23.7115309,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_MON",
+    "name": "Monastiraki",
+    "name_el": "Μοναστηράκι",
+    "latitude": 37.9766579,
+    "longitude": 23.7263158,
+    "line_ids": [
+      "M3",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_SYN",
+    "name": "Syntagma",
+    "name_el": "Σύνταγμα",
+    "latitude": 37.9748526,
+    "longitude": 23.7357062,
+    "line_ids": [
+      "M3",
+      "M2"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_EVA",
+    "name": "Evangelismos",
+    "name_el": "Ευαγγελισμός",
+    "latitude": 37.9761107,
+    "longitude": 23.7471092,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_MEG",
+    "name": "Megaro Moussikis",
+    "name_el": "Μέγαρο Μουσικής",
+    "latitude": 37.9790211,
+    "longitude": 23.7530234,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_AMP",
+    "name": "Ambelokipoi",
+    "name_el": "Αμπελόκηποι",
+    "latitude": 37.9871894,
+    "longitude": 23.7576995,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_PNR",
+    "name": "Panormou",
+    "name_el": "Πανόρμου",
+    "latitude": 37.9931964,
+    "longitude": 23.7635814,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_KTC",
+    "name": "Katechaki",
+    "name_el": "Κατεχάκη",
+    "latitude": 37.9937402,
+    "longitude": 23.7767641,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_ETH",
+    "name": "Ethniki Amyna",
+    "name_el": "Εθνική Άμυνα",
+    "latitude": 37.9991725,
+    "longitude": 23.7844882,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "M3_HOL",
+    "name": "Cholargos",
+    "name_el": "Χολαργός",
+    "latitude": 38.0048986,
+    "longitude": 23.7947223,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M3_NOM",
+    "name": "Nomismatokopio",
+    "name_el": "Νομισματοκοπείο",
+    "latitude": 38.0090857,
+    "longitude": 23.8057861,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M3_APR",
+    "name": "Agia Paraskevi",
+    "name_el": "Αγία Παρασκευή",
+    "latitude": 38.0171203,
+    "longitude": 23.8125006,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M3_HAL",
+    "name": "Chalandri",
+    "name_el": "Χαλάνδρι",
+    "latitude": 38.0216963,
+    "longitude": 23.8207595,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M3_DPL",
+    "name": "Douk. Plakentias",
+    "name_el": "Δουκίσσης Πλακεντίας",
+    "latitude": 38.0239773,
+    "longitude": 23.8325569,
+    "line_ids": [
+      "M3",
+      "A1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "M3_PAL",
+    "name": "Pallini",
+    "name_el": "Παλλήνη",
+    "latitude": 38.0045807,
+    "longitude": 23.86995,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 3
+  },
+  {
+    "id": "M3_PEK",
+    "name": "Peania-Kantza",
+    "name_el": "Παιανία-Κάντζα",
+    "latitude": 37.9849428,
+    "longitude": 23.8700731,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 3
+  },
+  {
+    "id": "M3_KRP",
+    "name": "Koropi",
+    "name_el": "Κορωπί",
+    "latitude": 37.912537,
+    "longitude": 23.8960768,
+    "line_ids": [
+      "M3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 3
+  },
+  {
+    "id": "M3_AER",
+    "name": "Airport",
+    "name_el": "Αεροδρόμιο",
+    "latitude": 37.9368813,
+    "longitude": 23.9447336,
+    "line_ids": [
+      "M3",
+      "A1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "T6_SYN",
+    "name": "Syntagma",
+    "name_el": "Σύνταγμα",
+    "latitude": 37.9744347,
+    "longitude": 23.7353381,
+    "line_ids": [
+      "T6",
+      "M2",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_ZAP",
+    "name": "Zappeion",
+    "name_el": "Ζάππειο",
+    "latitude": 37.9693069,
+    "longitude": 23.7364183,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_VOU",
+    "name": "Vouliagmenis",
+    "name_el": "Βουλιαγμένης",
+    "latitude": 37.9667197,
+    "longitude": 23.7317325,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_FIX",
+    "name": "Fix",
+    "name_el": "Φίξ",
+    "latitude": 37.9648164,
+    "longitude": 23.7276122,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_KAS",
+    "name": "Kasomouli",
+    "name_el": "Κασομούλη",
+    "latitude": 37.9604298,
+    "longitude": 23.7234816,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_NEK",
+    "name": "Neos Kosmos",
+    "name_el": "Νέος Κόσμος",
+    "latitude": 37.9569955,
+    "longitude": 23.7270853,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_BAK",
+    "name": "Baknana",
+    "name_el": "Μπακνανά",
+    "latitude": 37.9546714,
+    "longitude": 23.7238777,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_AIG",
+    "name": "Aegeou",
+    "name_el": "Αιγαίου",
+    "latitude": 37.9501464,
+    "longitude": 23.7189049,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_AFP",
+    "name": "Ag. Fotinis",
+    "name_el": "Αγίας Φωτεινής",
+    "latitude": 37.9467388,
+    "longitude": 23.7150445,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_MAL",
+    "name": "Meg. Alexandrou",
+    "name_el": "Μεγ. Αλεξάνδρου",
+    "latitude": 37.9427014,
+    "longitude": 23.7137932,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_APK",
+    "name": "Ag. Paraskevi",
+    "name_el": "Αγία Παρασκευή",
+    "latitude": 37.9402146,
+    "longitude": 23.713026,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_MED",
+    "name": "Medeas-Mykalis",
+    "name_el": "Μηδείας-Μυκάλης",
+    "latitude": 37.9371506,
+    "longitude": 23.7120552,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_EVS",
+    "name": "Evangeliki Scholi",
+    "name_el": "Ευαγγελική Σχολή",
+    "latitude": 37.9333042,
+    "longitude": 23.7108485,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_ACH",
+    "name": "Achilleos",
+    "name_el": "Αχιλλέως",
+    "latitude": 37.9301057,
+    "longitude": 23.7098664,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_AMF",
+    "name": "Amfitheas",
+    "name_el": "Αμφιθέας",
+    "latitude": 37.92814,
+    "longitude": 23.7050355,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_PAN",
+    "name": "Panaghitsa",
+    "name_el": "Παναγίτσα",
+    "latitude": 37.9252678,
+    "longitude": 23.7018664,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_MOU",
+    "name": "Mousson",
+    "name_el": "Μουσών",
+    "latitude": 37.9220022,
+    "longitude": 23.6997361,
+    "line_ids": [
+      "T6"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_EDE",
+    "name": "Edem",
+    "name_el": "Έδεμ",
+    "latitude": 37.9187302,
+    "longitude": 23.7006817,
+    "line_ids": [
+      "T6",
+      "T7"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T6_PIK",
+    "name": "Pikrodafni",
+    "name_el": "Πικροδάφνη",
+    "latitude": 37.9159342,
+    "longitude": 23.7054737,
+    "line_ids": [
+      "T6",
+      "T7"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_AKT",
+    "name": "Akti Poseidonos",
+    "name_el": "Ακτή Ποσειδώνος",
+    "latitude": 37.9449134,
+    "longitude": 23.6430209,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_ATR",
+    "name": "Agia Triada",
+    "name_el": "Αγία Τριάδα",
+    "latitude": 37.9449403,
+    "longitude": 23.6451956,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_IPP",
+    "name": "Pl. Ippodameias",
+    "name_el": "Πλ. Ιπποδαμείας",
+    "latitude": 37.9474688,
+    "longitude": 23.6475793,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_34S",
+    "name": "34 Synt. Pezikou",
+    "name_el": "34ου Συντ. Πεζικού",
+    "latitude": 37.9485363,
+    "longitude": 23.6522544,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_AND",
+    "name": "Androutsou",
+    "name_el": "Ανδρούτσου",
+    "latitude": 37.9478346,
+    "longitude": 23.6560463,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_SKY",
+    "name": "Om. Skylitsi",
+    "name_el": "Ομ. Σκυλίτση",
+    "latitude": 37.9450359,
+    "longitude": 23.6609189,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_SEF",
+    "name": "SEF",
+    "name_el": "ΣΕΦ",
+    "latitude": 37.9438634,
+    "longitude": 23.663807,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_NEF",
+    "name": "Neo Faliro",
+    "name_el": "Νέο Φάληρο",
+    "latitude": 37.9445726,
+    "longitude": 23.6685528,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_MOS",
+    "name": "Moschato",
+    "name_el": "Μοσχάτο",
+    "latitude": 37.9442591,
+    "longitude": 23.6779634,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_KAL",
+    "name": "Kallithea",
+    "name_el": "Καλλιθέα",
+    "latitude": 37.9427133,
+    "longitude": 23.6840167,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_TZI",
+    "name": "Tzitzifies",
+    "name_el": "Τζιτζιφιές",
+    "latitude": 37.9407062,
+    "longitude": 23.6880185,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_DEL",
+    "name": "Delta Falirou",
+    "name_el": "Δέλτα Φαλήρου",
+    "latitude": 37.9374095,
+    "longitude": 23.6922895,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_SKE",
+    "name": "Ag. Skepi",
+    "name_el": "Αγία Σκέπη",
+    "latitude": 37.9340166,
+    "longitude": 23.6939305,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_TRO",
+    "name": "Trocadero",
+    "name_el": "Τροκαντερό",
+    "latitude": 37.9313941,
+    "longitude": 23.6872264,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_PFL",
+    "name": "Parko Flisvou",
+    "name_el": "Πάρκο Φλοίσβου",
+    "latitude": 37.9278472,
+    "longitude": 23.6884354,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_FLI",
+    "name": "Flisvos",
+    "name_el": "Φλοίσβος",
+    "latitude": 37.9235633,
+    "longitude": 23.6927091,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_BAT",
+    "name": "Batis",
+    "name_el": "Μπάτης",
+    "latitude": 37.9215266,
+    "longitude": 23.6964201,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_EDE",
+    "name": "Edem",
+    "name_el": "Έδεμ",
+    "latitude": 37.9187302,
+    "longitude": 23.7006817,
+    "line_ids": [
+      "T7",
+      "T6"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_PIK",
+    "name": "Pikrodafni",
+    "name_el": "Πικροδάφνη",
+    "latitude": 37.915892,
+    "longitude": 23.7054124,
+    "line_ids": [
+      "T7",
+      "T6"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_MAR",
+    "name": "Marina Alimou",
+    "name_el": "Μαρίνα Αλίμου",
+    "latitude": 37.9129907,
+    "longitude": 23.7087188,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_KAM",
+    "name": "Kalamaki",
+    "name_el": "Καλαμάκι",
+    "latitude": 37.9096776,
+    "longitude": 23.7128631,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_ZEF",
+    "name": "Zefyros",
+    "name_el": "Ζέφυρος",
+    "latitude": 37.9063769,
+    "longitude": 23.7170206,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_LOU",
+    "name": "Loutra Alimou",
+    "name_el": "Λουτρά Αλίμου",
+    "latitude": 37.9022284,
+    "longitude": 23.7195316,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_ELL",
+    "name": "Elliniko",
+    "name_el": "Ελληνικό",
+    "latitude": 37.8975873,
+    "longitude": 23.7201746,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_AK1",
+    "name": "1st Ag. Kosma",
+    "name_el": "1η Αγ. Κοσμά",
+    "latitude": 37.8942956,
+    "longitude": 23.7211661,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_AK2",
+    "name": "2nd Ag. Kosma",
+    "name_el": "2η Αγ. Κοσμά",
+    "latitude": 37.8907821,
+    "longitude": 23.7231968,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_AGA",
+    "name": "Ag. Alexandros",
+    "name_el": "Άγ. Αλέξανδρος",
+    "latitude": 37.885049,
+    "longitude": 23.7269291,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_EOL",
+    "name": "Ellinon Olympionikon",
+    "name_el": "Ελλ. Ολυμπιονικών",
+    "latitude": 37.8811588,
+    "longitude": 23.7294629,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_KIS",
+    "name": "Kentro Istioploias",
+    "name_el": "Κέντρο Ιστιοπλοΐας",
+    "latitude": 37.8758816,
+    "longitude": 23.7318572,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_VER",
+    "name": "Pl. Vergoti",
+    "name_el": "Πλ. Βεργωτή",
+    "latitude": 37.8714672,
+    "longitude": 23.7351894,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_GLY",
+    "name": "Paralia Glyfadas",
+    "name_el": "Παραλία Γλυφάδας",
+    "latitude": 37.8677342,
+    "longitude": 23.7383803,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_PDM",
+    "name": "Paleo Demarhio",
+    "name_el": "Παλαιό Δημαρχείο",
+    "latitude": 37.8646553,
+    "longitude": 23.7431856,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_KAT",
+    "name": "Pl. Vaso Katraki",
+    "name_el": "Πλ. Βάσω Κατράκη",
+    "latitude": 37.8634672,
+    "longitude": 23.747509,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_MET",
+    "name": "Ag. Metaxa",
+    "name_el": "Αγγ. Μεταξά",
+    "latitude": 37.8627144,
+    "longitude": 23.7514044,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_ESP",
+    "name": "Pl. Esperidon",
+    "name_el": "Πλ. Εσπερίδων",
+    "latitude": 37.8601549,
+    "longitude": 23.7541971,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_KOL",
+    "name": "Kolymvitirio",
+    "name_el": "Κολυμβητήριο",
+    "latitude": 37.8560908,
+    "longitude": 23.7542381,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "T7_VOL",
+    "name": "Asklipiio Voulas",
+    "name_el": "Ασκληπιείο Βούλας",
+    "latitude": 37.8496644,
+    "longitude": 23.75259,
+    "line_ids": [
+      "T7"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 1
+  },
+  {
+    "id": "A1_PIR",
+    "name": "Piraeus",
+    "name_el": "Πειραιάς",
+    "latitude": 37.9490666,
+    "longitude": 23.6434156,
+    "line_ids": [
+      "A1",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_LEF",
+    "name": "Lefka",
+    "name_el": "Λεύκα",
+    "latitude": 37.9555849,
+    "longitude": 23.6541235,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_REN",
+    "name": "Rentis",
+    "name_el": "Ρέντης",
+    "latitude": 37.9622619,
+    "longitude": 23.6683076,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_TAV",
+    "name": "Tavros",
+    "name_el": "Ταύρος",
+    "latitude": 37.9689397,
+    "longitude": 23.6942248,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_ROU",
+    "name": "Rouf",
+    "name_el": "Ρουφ",
+    "latitude": 37.9736019,
+    "longitude": 23.7040087,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_ATH",
+    "name": "Athens",
+    "name_el": "Αθήνα",
+    "latitude": 37.9931275,
+    "longitude": 23.7202839,
+    "line_ids": [
+      "A1",
+      "M2"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_AAN",
+    "name": "Ag. Anargyroi",
+    "name_el": "Άγιοι Ανάργυροι",
+    "latitude": 38.0224583,
+    "longitude": 23.7186452,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_PYR",
+    "name": "Pyrgos Vasilissis",
+    "name_el": "Πύργος Βασιλίσσης",
+    "latitude": 38.0400365,
+    "longitude": 23.7276759,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_KAC",
+    "name": "Kato Acharnai",
+    "name_el": "Κάτω Αχαρναί",
+    "latitude": 38.0547251,
+    "longitude": 23.7328066,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_MET",
+    "name": "Metamorfosi",
+    "name_el": "Μεταμόρφωση",
+    "latitude": 38.0600674,
+    "longitude": 23.7562064,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_IRK",
+    "name": "Irakleio",
+    "name_el": "Ηράκλειο",
+    "latitude": 38.0567845,
+    "longitude": 23.7720928,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_NER",
+    "name": "Neratziotissa",
+    "name_el": "Νερατζιώτισσα",
+    "latitude": 38.0447682,
+    "longitude": 23.7941064,
+    "line_ids": [
+      "A1",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_KIF",
+    "name": "Kifisias",
+    "name_el": "Κηφισίας",
+    "latitude": 38.041921,
+    "longitude": 23.8040729,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_PEN",
+    "name": "Pentelis",
+    "name_el": "Πεντέλης",
+    "latitude": 38.0328796,
+    "longitude": 23.8225838,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_DPL",
+    "name": "Douk. Plakentias",
+    "name_el": "Δουκίσσης Πλακεντίας",
+    "latitude": 38.0247026,
+    "longitude": 23.8338693,
+    "line_ids": [
+      "A1",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_PAL",
+    "name": "Pallini",
+    "name_el": "Παλλήνη",
+    "latitude": 38.0054925,
+    "longitude": 23.8696405,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_PEK",
+    "name": "Peania-Kantza",
+    "name_el": "Παιανία-Κάντζα",
+    "latitude": 37.9839819,
+    "longitude": 23.8698255,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_KRP",
+    "name": "Koropi",
+    "name_el": "Κορωπί",
+    "latitude": 37.913305,
+    "longitude": 23.8955043,
+    "line_ids": [
+      "A1"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A1_AER",
+    "name": "Airport",
+    "name_el": "Αεροδρόμιο",
+    "latitude": 37.9368156,
+    "longitude": 23.944847,
+    "line_ids": [
+      "A1",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A2_ANL",
+    "name": "Ano Liosia",
+    "name_el": "Άνω Λιόσια",
+    "latitude": 38.0707953,
+    "longitude": 23.7100051,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_ACH",
+    "name": "Acharnai Center",
+    "name_el": "Σιδ. Κέντρο Αχαρνών",
+    "latitude": 38.0656438,
+    "longitude": 23.7376508,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_MET",
+    "name": "Metamorfosi",
+    "name_el": "Μεταμόρφωση",
+    "latitude": 38.0600674,
+    "longitude": 23.7562064,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_IRK",
+    "name": "Irakleio",
+    "name_el": "Ηράκλειο",
+    "latitude": 38.0567845,
+    "longitude": 23.7720928,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_NER",
+    "name": "Neratziotissa",
+    "name_el": "Νερατζιώτισσα",
+    "latitude": 38.0447682,
+    "longitude": 23.7941064,
+    "line_ids": [
+      "A2",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_KIF",
+    "name": "Kifisias",
+    "name_el": "Κηφισίας",
+    "latitude": 38.041921,
+    "longitude": 23.8040729,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_PEN",
+    "name": "Pentelis",
+    "name_el": "Πεντέλης",
+    "latitude": 38.0328796,
+    "longitude": 23.8225838,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_DPL",
+    "name": "Douk. Plakentias",
+    "name_el": "Δουκίσσης Πλακεντίας",
+    "latitude": 38.0247026,
+    "longitude": 23.8338693,
+    "line_ids": [
+      "A2",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_PAL",
+    "name": "Pallini",
+    "name_el": "Παλλήνη",
+    "latitude": 38.0054925,
+    "longitude": 23.8696405,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_PEK",
+    "name": "Peania-Kantza",
+    "name_el": "Παιανία-Κάντζα",
+    "latitude": 37.9839819,
+    "longitude": 23.8698255,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_KRP",
+    "name": "Koropi",
+    "name_el": "Κορωπί",
+    "latitude": 37.913305,
+    "longitude": 23.8955043,
+    "line_ids": [
+      "A2"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 2
+  },
+  {
+    "id": "A2_AER",
+    "name": "Airport",
+    "name_el": "Αεροδρόμιο",
+    "latitude": 37.9368156,
+    "longitude": 23.944847,
+    "line_ids": [
+      "A2",
+      "M3"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_ATH",
+    "name": "Athens",
+    "name_el": "Αθήνα",
+    "latitude": 37.9931275,
+    "longitude": 23.7202839,
+    "line_ids": [
+      "A3",
+      "M2"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AAN",
+    "name": "Ag. Anargyroi",
+    "name_el": "Άγιοι Ανάργυροι",
+    "latitude": 38.0224583,
+    "longitude": 23.7186452,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_ACH",
+    "name": "Acharnai Center",
+    "name_el": "Σιδ. Κέντρο Αχαρνών",
+    "latitude": 38.0686445,
+    "longitude": 23.737821,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AXN",
+    "name": "Acharnes",
+    "name_el": "Αχαρνές",
+    "latitude": 38.0802534,
+    "longitude": 23.7440766,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_DEK",
+    "name": "Dekeleia",
+    "name_el": "Δεκέλεια",
+    "latitude": 38.099754,
+    "longitude": 23.7801125,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AST",
+    "name": "Ag. Stefanos",
+    "name_el": "Άγιος Στέφανος",
+    "latitude": 38.1403696,
+    "longitude": 23.8591873,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AFI",
+    "name": "Afidnes",
+    "name_el": "Αφίδνες",
+    "latitude": 38.1883264,
+    "longitude": 23.8444658,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_SFE",
+    "name": "Sfendali",
+    "name_el": "Σφενδάλη",
+    "latitude": 38.2354158,
+    "longitude": 23.7844141,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AVL",
+    "name": "Avlonas",
+    "name_el": "Αυλώνας",
+    "latitude": 38.2504724,
+    "longitude": 23.6955986,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_ATH2",
+    "name": "Ag. Thomas",
+    "name_el": "Άγιος Θωμάς",
+    "latitude": 38.281677,
+    "longitude": 23.667227,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_OIN",
+    "name": "Oinofyta",
+    "name_el": "Οινόφυτα",
+    "latitude": 38.3069654,
+    "longitude": 23.6338955,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_OIN2",
+    "name": "Oinoi",
+    "name_el": "Οινόη",
+    "latitude": 38.3230172,
+    "longitude": 23.609077,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_DIL",
+    "name": "Dilesi",
+    "name_el": "Δήλεσι",
+    "latitude": 38.3376364,
+    "longitude": 23.6094499,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AGE",
+    "name": "Ag. Georgios",
+    "name_el": "Άγιος Γεώργιος",
+    "latitude": 38.3548928,
+    "longitude": 23.6074074,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_KAL",
+    "name": "Kalochori-Panteichi",
+    "name_el": "Καλοχώρι-Παντείχι",
+    "latitude": 38.3893073,
+    "longitude": 23.5931559,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_AUL",
+    "name": "Avlida",
+    "name_el": "Αυλίδα",
+    "latitude": 38.4044464,
+    "longitude": 23.6033835,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A3_CHA",
+    "name": "Chalkida",
+    "name_el": "Χαλκίδα",
+    "latitude": 38.4625271,
+    "longitude": 23.5861659,
+    "line_ids": [
+      "A3"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_PIR",
+    "name": "Piraeus",
+    "name_el": "Πειραιάς",
+    "latitude": 37.9490666,
+    "longitude": 23.6434156,
+    "line_ids": [
+      "A4",
+      "M1"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_LEF",
+    "name": "Lefka",
+    "name_el": "Λεύκα",
+    "latitude": 37.9555849,
+    "longitude": 23.6541235,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_REN",
+    "name": "Rentis",
+    "name_el": "Ρέντης",
+    "latitude": 37.9622619,
+    "longitude": 23.6683076,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_TAV",
+    "name": "Tavros",
+    "name_el": "Ταύρος",
+    "latitude": 37.9689397,
+    "longitude": 23.6942248,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ROU",
+    "name": "Rouf",
+    "name_el": "Ρουφ",
+    "latitude": 37.9736019,
+    "longitude": 23.7040087,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ATH",
+    "name": "Athens",
+    "name_el": "Αθήνα",
+    "latitude": 37.9931275,
+    "longitude": 23.7202839,
+    "line_ids": [
+      "A4",
+      "M2"
+    ],
+    "is_interchange": true,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_AAN",
+    "name": "Ag. Anargyroi",
+    "name_el": "Άγιοι Ανάργυροι",
+    "latitude": 38.0224583,
+    "longitude": 23.7186452,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_PYR",
+    "name": "Pyrgos Vasilissis",
+    "name_el": "Πύργος Βασιλίσσης",
+    "latitude": 38.0400365,
+    "longitude": 23.7276759,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_KAC",
+    "name": "Kato Acharnai",
+    "name_el": "Κάτω Αχαρναί",
+    "latitude": 38.0547251,
+    "longitude": 23.7328066,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ZEF",
+    "name": "Zefyri",
+    "name_el": "Ζεφύρι",
+    "latitude": 38.0699579,
+    "longitude": 23.7163427,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ANL",
+    "name": "Ano Liosia",
+    "name_el": "Άνω Λιόσια",
+    "latitude": 38.0707953,
+    "longitude": 23.7100051,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ASP",
+    "name": "Aspropyrgos",
+    "name_el": "Ασπρόπυργος",
+    "latitude": 38.0810388,
+    "longitude": 23.6042595,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_MAG",
+    "name": "Magoula",
+    "name_el": "Μαγούλα",
+    "latitude": 38.0730827,
+    "longitude": 23.5291665,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_NPE",
+    "name": "Nea Peramos",
+    "name_el": "Νέα Πέραμος",
+    "latitude": 38.0127986,
+    "longitude": 23.4132616,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_MEG",
+    "name": "Megara",
+    "name_el": "Μέγαρα",
+    "latitude": 37.9910006,
+    "longitude": 23.361019,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_KIN",
+    "name": "Kineta",
+    "name_el": "Κινέτα",
+    "latitude": 37.9654426,
+    "longitude": 23.2010371,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ATH3",
+    "name": "Ag. Theodoroi",
+    "name_el": "Άγιοι Θεόδωροι",
+    "latitude": 37.9332405,
+    "longitude": 23.1369832,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_COR",
+    "name": "Corinth",
+    "name_el": "Κόρινθος",
+    "latitude": 37.920968,
+    "longitude": 22.932396,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_ZEV",
+    "name": "Zevgolatio",
+    "name_el": "Ζευγολατιό",
+    "latitude": 37.9263503,
+    "longitude": 22.8046326,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  },
+  {
+    "id": "A4_KIA",
+    "name": "Kiato",
+    "name_el": "Κιάτο",
+    "latitude": 38.0139838,
+    "longitude": 22.7348102,
+    "line_ids": [
+      "A4"
+    ],
+    "is_interchange": false,
+    "accessibility": true,
+    "zone": 4
+  }
 ]

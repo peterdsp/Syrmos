@@ -16,42 +16,20 @@
     const searchResults = document.getElementById("searchResults");
     const locateButton = document.getElementById("locateButton");
 
-    const scheduleFiles = [
-        "metro_line1_inbound.json",
-        "metro_line1_outbound.json",
-        "metro_line2_outbound.json",
-        "metro_line3_airport_inbound.json",
-        "metro_line3_airport_outbound.json",
-        "suburban_p1_inbound.json",
-        "suburban_p1_outbound.json",
-        "tram_t6_outbound.json",
-    ];
-
-    const [stations, lines, frequencies, scheduleEntries] = await Promise.all([
+    const [stations, lines, routes, servicePatterns] = await Promise.all([
         fetch("files/seed/stations.json").then((r) => r.json()),
         fetch("files/seed/lines.json").then((r) => r.json()),
-        fetch("files/seed/frequencies.json").then((r) => r.json()),
-        Promise.all(
-            scheduleFiles.map((name) =>
-                fetch(`files/seed/schedules/${name}`)
-                    .then((r) => (r.ok ? r.json() : null))
-                    .catch(() => null)
-            )
-        ),
+        fetch("files/seed/routes.json").then((r) => r.json()),
+        fetch("files/seed/service_patterns.json").then((r) => r.json()),
     ]);
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
     const stationMap = new Map(stations.map((station) => [station.id, station]));
     const markers = new Map();
-    const schedules = new Map(
-        scheduleEntries
-            .filter(Boolean)
-            .map((schedule) => [`${schedule.line_id}:${schedule.direction}:${schedule.day_type}`, schedule])
-    );
     const lineStations = new Map(
-        lines.map((line) => [
-            line.id,
-            stations.filter((station) => station.id.startsWith(`${line.id}_`)),
+        routes.map((route) => [
+            route.line_id,
+            route.station_ids.map((stationId) => stationMap.get(stationId)).filter(Boolean),
         ])
     );
 
@@ -162,23 +140,9 @@
         };
     }
 
-    function resolveDayType() {
-        const weekday = currentAthensParts().weekday;
-        if (weekday === "Fri") return "friday";
-        if (weekday === "Sat") return "saturday";
-        if (weekday === "Sun") return "sunday";
-        return "weekday";
-    }
-
     function nowMinutes() {
         const now = currentAthensParts();
         return now.hour * 60 + now.minute;
-    }
-
-    function parseTimeToMinutes(time) {
-        const [rawHour, rawMinute] = time.split(":").map(Number);
-        const normalizedHour = rawHour >= 24 ? rawHour - 24 : rawHour;
-        return normalizedHour * 60 + rawMinute;
     }
 
     function formatTimeFromNow(minutesAway) {
@@ -189,86 +153,27 @@
         return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
     }
 
-    function minutesAwayFromTime(time) {
-        const target = parseTimeToMinutes(time);
-        const now = nowMinutes();
-        return target >= now ? target - now : target + 24 * 60 - now;
-    }
-
-    function currentFrequency(lineId) {
-        const dayType = resolveDayType();
-        const current = nowMinutes();
-        const candidates = frequencies.filter(
-            (item) => item.line_id === lineId && item.day_type === dayType
-        );
-        return candidates.find((item) => {
-            const [start, end] = item.time_range.split("-");
-            const startMinutes = parseTimeToMinutes(start);
-            let endMinutes = parseTimeToMinutes(end);
-            let normalizedNow = current;
-            if (end.startsWith("00:") || endMinutes < startMinutes) {
-                endMinutes += 24 * 60;
-                if (normalizedNow < startMinutes) {
-                    normalizedNow += 24 * 60;
-                }
-            }
-            return normalizedNow >= startMinutes && normalizedNow <= endMinutes;
-        }) || candidates[0] || null;
-    }
-
-    function directionLabel(direction, orderedStations, line) {
-        if (!orderedStations.length) {
-            return direction === DIRECTION_OUTBOUND ? line.terminal_b : line.terminal_a;
-        }
-        const station = direction === DIRECTION_OUTBOUND
-            ? orderedStations[orderedStations.length - 1]
-            : orderedStations[0];
-        return station?.name || (direction === DIRECTION_OUTBOUND ? line.terminal_b : line.terminal_a);
-    }
-
-    function departuresFromSchedule(stationId, lineId, direction, limit) {
-        const schedule = schedules.get(`${lineId}:${direction}:${resolveDayType()}`);
-        const stationTimes = schedule?.station_departures?.[stationId] || [];
-        return stationTimes
-            .map((time) => ({
-                time,
-                minutesAway: minutesAwayFromTime(time),
-            }))
-            .filter((item) => item.minutesAway >= 0)
-            .sort((a, b) => a.minutesAway - b.minutesAway)
-            .slice(0, limit);
-    }
-
-    function fallbackDepartures(lineId, limit) {
-        const active = currentFrequency(lineId);
-        if (!active) return [];
-        return Array.from({ length: limit }, (_, index) => {
-            const minutesAway = active.frequency_minutes * (index + 1);
-            return {
-                time: formatTimeFromNow(minutesAway),
-                minutesAway,
-            };
-        });
-    }
-
     function buildStationDepartures(station) {
         const result = [];
 
         for (const lineId of station.line_ids) {
             const line = lineMap.get(lineId);
             if (!line) continue;
-            const orderedStations = lineStations.get(lineId) || [];
+            const patterns = servicePatterns.filter((pattern) => {
+                if (pattern.line_id !== lineId) return false;
+                if (pattern.station_ids && !pattern.station_ids.includes(station.id)) return false;
+                if (pattern.excluded_station_ids && pattern.excluded_station_ids.includes(station.id)) return false;
+                return true;
+            });
 
-            for (const direction of [DIRECTION_OUTBOUND, DIRECTION_INBOUND]) {
-                const exactDepartures = departuresFromSchedule(station.id, lineId, direction, 3);
-                const departures = exactDepartures.length ? exactDepartures : fallbackDepartures(lineId, 2);
-
-                for (const departure of departures) {
+            for (const pattern of patterns) {
+                for (let index = 1; index <= 4; index += 1) {
+                    const minutesAway = pattern.frequency_minutes * index;
                     result.push({
                         line,
-                        destination: directionLabel(direction, orderedStations, line),
-                        time: departure.time,
-                        minutesAway: departure.minutesAway,
+                        destination: pattern.direction,
+                        time: formatTimeFromNow(minutesAway),
+                        minutesAway,
                     });
                 }
             }

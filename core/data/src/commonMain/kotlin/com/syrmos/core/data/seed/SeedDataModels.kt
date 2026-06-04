@@ -37,9 +37,25 @@ data class SeedTransfer(
 )
 
 @Serializable
+data class SeedRoute(
+    @SerialName("line_id") val lineId: String,
+    @SerialName("station_ids") val stationIds: List<String>,
+)
+
+@Serializable
 data class SeedFrequency(
     @SerialName("line_id") val lineId: String,
     @SerialName("day_type") val dayType: String,
     @SerialName("time_range") val timeRange: String,
     @SerialName("frequency_minutes") val frequencyMinutes: Int,
+)
+
+@Serializable
+data class SeedServicePattern(
+    @SerialName("line_id") val lineId: String,
+    val direction: String,
+    @SerialName("frequency_minutes") val frequencyMinutes: Int,
+    @SerialName("service_type") val serviceType: String,
+    @SerialName("station_ids") val stationIds: List<String>? = null,
+    @SerialName("excluded_station_ids") val excludedStationIds: List<String>? = null,
 )
