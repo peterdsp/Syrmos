@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Train">
+  <title>Train</title>
+  <rect width="128" height="128" rx="28" fill="#FFFFFF"/>
+  <rect x="5" y="5" width="118" height="118" rx="24" fill="#F8FAFC" stroke="#D1D5DB" stroke-width="2"/>
+  <g transform="translate(0 14)">
+    
+  <g aria-hidden="true">
+    <path d="M40 35h48c7 0 12 5 12 12v26c0 7-5 12-12 12H40c-7 0-12-5-12-12V47c0-7 5-12 12-12z" fill="#FFFFFF" stroke="#4B5563" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M43 50h42" stroke="#4B5563" stroke-width="6" stroke-linecap="round" opacity="0.25"/>
+    <circle cx="48" cy="71" r="4.8" fill="#4B5563"/>
+    <circle cx="80" cy="71" r="4.8" fill="#4B5563"/>
+    <path d="M47 89h34" stroke="#111827" stroke-width="4" stroke-linecap="round" opacity="0.82"/>
+  </g>
+  </g>
+</svg>

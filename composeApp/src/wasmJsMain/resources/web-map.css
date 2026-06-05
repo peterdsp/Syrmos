@@ -32,9 +32,23 @@ body {
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    gap: 12px;
     width: min(320px, calc(100vw - 32px));
     pointer-events: none;
+    overflow: hidden;
+}
+
+.panel-peek {
+    display: none;
+    pointer-events: auto;
+}
+
+.panel-cards-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 }
 
 .panel-card {
@@ -44,6 +58,7 @@ body {
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(18px);
     box-shadow: 0 12px 32px rgba(16, 20, 24, 0.12);
+    flex-shrink: 0;
 }
 
 .panel-card__title {
@@ -95,6 +110,20 @@ body {
     height: 100%;
     border-radius: 999px;
     background: inherit;
+}
+
+.leaflet-marker-icon.sim-train-marker {
+    transition: transform 1.8s linear !important;
+}
+
+.station-svg-icon {
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.station-svg-icon--selected {
+    border-radius: 6px;
+    box-shadow: 0 0 0 3px rgba(0, 114, 206, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .sim-train-marker {
@@ -593,8 +622,74 @@ body {
     }
 
     .insight-panel {
-        top: 140px;
-        right: 12px;
+        top: auto;
+        right: 0;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 54px;
+        border-radius: 18px 18px 0 0;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 -4px 24px rgba(16, 20, 24, 0.12);
+        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: auto;
+        overflow: hidden;
+    }
+
+    .insight-panel--expanded {
+        max-height: 65vh;
+        overflow-y: auto;
+    }
+
+    .panel-peek {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 20px;
+        cursor: pointer;
+        user-select: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .panel-peek__icon {
+        color: #e14b4b;
+        font-size: 10px;
+        animation: pulse-dot 2s infinite;
+    }
+
+    .panel-peek__text {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 650;
+        color: #1a1a2e;
+    }
+
+    .panel-peek__chevron {
+        font-size: 10px;
+        color: #8896a4;
+        transition: transform 0.3s ease;
+    }
+
+    .insight-panel--expanded .panel-peek__chevron {
+        transform: rotate(180deg);
+    }
+
+    .panel-cards-wrap {
+        padding: 8px 12px 20px;
+        max-height: calc(65vh - 54px);
+        overflow-y: auto;
+    }
+
+    .panel-card {
+        box-shadow: none;
+        background: #f7fafc;
+        backdrop-filter: none;
+    }
+
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
     }
 
     .station-sheet {

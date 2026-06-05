@@ -21,6 +21,8 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
@@ -134,18 +136,29 @@ private fun DrawScope.drawFallbackMap(
         val stations = uiState.lineStations[line.id] ?: continue
         val lineColor = line.color.toComposeColor()
         val strokeWidth = (4f * scale).coerceIn(1.5f, 12f)
-
-        for (i in 0 until stations.size - 1) {
-            val from = stations[i]
-            val to = stations[i + 1]
-            val fromPos = latLonToScreen(from.latitude, from.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
-            val toPos = latLonToScreen(to.latitude, to.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
-            drawLine(
+        val points = stations.map { s ->
+            latLonToScreen(s.latitude, s.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+        }
+        if (points.size >= 2) {
+            val path = Path().apply {
+                moveTo(points[0].x, points[0].y)
+                if (points.size == 2) {
+                    lineTo(points[1].x, points[1].y)
+                } else {
+                    for (i in 1 until points.size) {
+                        val prev = points[i - 1]
+                        val curr = points[i]
+                        val mx = (prev.x + curr.x) / 2f
+                        val my = (prev.y + curr.y) / 2f
+                        quadraticTo(prev.x, prev.y, mx, my)
+                    }
+                    lineTo(points.last().x, points.last().y)
+                }
+            }
+            drawPath(
+                path = path,
                 color = lineColor,
-                start = fromPos,
-                end = toPos,
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
         }
     }

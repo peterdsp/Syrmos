@@ -102,9 +102,13 @@ tasks.register<Copy>("copySeedForDev") {
     from(project(":core:data").file("src/commonMain/composeResources/files")) {
         into("files")
     }
+    from(file("src/wasmJsMain/resources/icons")) {
+        into("icons")
+    }
     into(layout.buildDirectory.dir("processedResources/wasmJs/main"))
+    mustRunAfter("wasmJsProcessResources")
 }
 
-tasks.matching { it.name == "wasmJsBrowserDevelopmentRun" }.configureEach {
+tasks.matching { it.name == "wasmJsDevelopmentExecutableCompileSync" }.configureEach {
     dependsOn("copySeedForDev")
 }

@@ -18,14 +18,25 @@
     const zoomInButton = document.getElementById("zoomInButton");
     const zoomOutButton = document.getElementById("zoomOutButton");
 
-    const [stations, lines, routes, servicePatterns] = await Promise.all([
+    const [stations, lines, routes, servicePatterns, vehicleManifest] = await Promise.all([
         fetch("files/seed/stations.json").then((r) => r.json()),
         fetch("files/seed/lines.json").then((r) => r.json()),
         fetch("files/seed/routes.json").then((r) => r.json()),
         fetch("files/seed/service_patterns.json").then((r) => r.json()),
+        fetch("icons/vehicles/manifest.json").then((r) => r.json()).catch(() => ({ directional_icons: [] })),
     ]);
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
+
+    const vehicleIconMap = new Map();
+    const lineIdToManifestLine = { M1: "M1", M2: "M2", M3: "M3", T6: "T6", T7: "T7", T6T7: "T6T7", A1: "P1", A2: "P1A", A3: "P3", A4: "P2" };
+    for (const icon of vehicleManifest.directional_icons) {
+        const dir = icon.arrow === "←" ? "inbound" : "outbound";
+        vehicleIconMap.set(`${icon.line}_${dir}`, `icons/vehicles/${icon.file}`);
+        if (icon.destination === "Airport") {
+            vehicleIconMap.set(`${icon.line}_airport`, `icons/vehicles/${icon.file}`);
+        }
+    }
     const stationMap = new Map(stations.map((station) => [station.id, station]));
     const stationNodes = buildStationNodes(stations);
     const stationNodeMap = new Map(stationNodes.map((station) => [station.id, station]));
@@ -37,6 +48,20 @@
             route.station_ids.map((stationId) => stationMap.get(stationId)).filter(Boolean),
         ])
     );
+
+    const stationIconManifest = await fetch("icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
+    const stationIconBySid = new Map();
+    const lineToManifestDir = { M1: "metro/M1", M2: "metro/M2", M3: "metro/M3", T6: "tram/T6", T7: "tram/T7", A1: "train/P1", A2: "train/P1", A3: "train/P3", A4: "train/P2" };
+    for (const route of routes) {
+        const mDir = lineToManifestDir[route.line_id];
+        if (!mDir) continue;
+        route.station_ids.forEach((stationId, index) => {
+            const key = `${mDir}/${String(index + 1).padStart(2, "0")}`;
+            if (stationIconManifest[key]) {
+                stationIconBySid.set(stationId, stationIconManifest[key]);
+            }
+        });
+    }
 
     const liveTrainList = document.getElementById("liveTrainList");
     const nearbyStationList = document.getElementById("nearbyStationList");
@@ -56,12 +81,38 @@
         const orderedStations = lineStations.get(line.id) || [];
         const latLngs = orderedStations.map((station) => [station.latitude, station.longitude]);
         if (latLngs.length > 1) {
-            L.polyline(latLngs, {
+            const smoothed = catmullRomSpline(latLngs, 5);
+            L.polyline(smoothed, {
                 color: line.color,
                 weight: line.type === "suburban" ? 4 : 5,
                 opacity: 0.9,
+                lineCap: "round",
+                lineJoin: "round",
             }).addTo(map);
         }
+    }
+
+    function catmullRomSpline(points, numInterpolated) {
+        if (points.length < 3) return points;
+        const result = [points[0]];
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[Math.max(i - 1, 0)];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = points[Math.min(i + 2, points.length - 1)];
+            for (let t = 1; t <= numInterpolated; t++) {
+                const f = t / (numInterpolated + 1);
+                const lat = cr(p0[0], p1[0], p2[0], p3[0], f);
+                const lng = cr(p0[1], p1[1], p2[1], p3[1], f);
+                result.push([lat, lng]);
+            }
+            result.push(p2);
+        }
+        return result;
+    }
+
+    function cr(a, b, c, d, t) {
+        return 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
     }
 
     let selectedStationId = null;
@@ -81,9 +132,24 @@
     }
 
     function buildStationIcon(station, selected) {
+        const currentZoom = map.getZoom();
         const stationLines = station.lineIds
             .map((lineId) => lineMap.get(lineId))
             .filter(Boolean);
+
+        if (currentZoom >= 14) {
+            const primarySid = station.stationIds[0];
+            const svgUrl = stationIconBySid.get(primarySid);
+            if (svgUrl) {
+                const size = selected ? 36 : 28;
+                return L.icon({
+                    iconUrl: svgUrl,
+                    iconSize: [size, size],
+                    iconAnchor: [size / 2, size / 2],
+                    className: `station-svg-icon${selected ? " station-svg-icon--selected" : ""}`,
+                });
+            }
+        }
 
         if (station.isInterchange) {
             const rings = stationLines
@@ -368,6 +434,18 @@
         clearSelection();
     });
 
+    let lastZoomThreshold = INITIAL_ZOOM >= 14;
+    map.on("zoomend", () => {
+        const nowAbove = map.getZoom() >= 14;
+        if (nowAbove !== lastZoomThreshold) {
+            lastZoomThreshold = nowAbove;
+            for (const [id, marker] of markers) {
+                const station = stationNodeMap.get(id);
+                if (station) marker.setIcon(buildStationIcon(station, id === selectedStationId));
+            }
+        }
+    });
+
     const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
     map.fitBounds(bounds.pad(0.12));
 
@@ -377,6 +455,7 @@
     updateNearbyPanel();
     connectLiveTrainStream();
     startTrainSimulation();
+    setupPanelBehavior();
 
     function updateNearbyPanel() {
         if (userLocation) {
@@ -619,9 +698,38 @@
             }[match]))
             .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
     }
+    function setupPanelBehavior() {
+        const panel = document.getElementById("insightPanel");
+        const peek = document.getElementById("panelPeek");
+        const peekText = document.getElementById("panelPeekText");
+        if (!panel || !peek) return;
+
+        peek.addEventListener("click", () => {
+            panel.classList.toggle("insight-panel--expanded");
+        });
+
+        map.on("click", () => {
+            panel.classList.remove("insight-panel--expanded");
+        });
+
+        const topBar = document.querySelector(".top-bar");
+        if (topBar && window.matchMedia("(min-width: 721px)").matches) {
+            const observer = new ResizeObserver(() => {
+                panel.style.top = (topBar.offsetHeight + topBar.offsetTop + 12) + "px";
+            });
+            observer.observe(topBar);
+        }
+
+        window._updatePeekText = function (count) {
+            if (peekText) {
+                peekText.textContent = count > 0 ? `${count} trains active` : "Live trains";
+            }
+        };
+    }
+
     function startTrainSimulation() {
         updateSimulatedTrains();
-        setInterval(updateSimulatedTrains, 10000);
+        setInterval(updateSimulatedTrains, 2000);
     }
 
     function updateSimulatedTrains() {
@@ -690,28 +798,27 @@
     }
 
     function trainMarkerIcon(train) {
-        const color = train.line.color;
+        const manifestLine = lineIdToManifestLine[train.line.id] || train.line.id;
+        let svgKey;
         if (train.isAirport) {
-            return L.divIcon({
-                className: "sim-train-marker sim-train-marker--airport",
-                html: `<span class="sim-train__dot sim-train__dot--airport" style="background:#0072CE;">&#9992;</span>`,
-                iconSize: [26, 26],
-                iconAnchor: [13, 13],
+            svgKey = vehicleIconMap.get(`${manifestLine}_airport`) || vehicleIconMap.get(`${manifestLine}_outbound`);
+        } else {
+            svgKey = vehicleIconMap.get(`${manifestLine}_${train.direction}`);
+        }
+        if (svgKey) {
+            return L.icon({
+                iconUrl: svgKey,
+                iconSize: [38, 38],
+                iconAnchor: [19, 19],
+                className: "sim-train-marker",
             });
         }
-        if (train.line.type === "tram") {
-            return L.divIcon({
-                className: "sim-train-marker sim-train-marker--tram",
-                html: `<span class="sim-train__pill" style="background:${color};"></span>`,
-                iconSize: [24, 14],
-                iconAnchor: [12, 7],
-            });
-        }
-        return L.divIcon({
-            className: "sim-train-marker sim-train-marker--metro",
-            html: `<span class="sim-train__dot" style="background:${color};">M</span>`,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
+        const genericType = train.line.type === "tram" ? "tram" : train.line.type === "suburban" ? "train" : "metro";
+        return L.icon({
+            iconUrl: `icons/vehicles/generic_vehicle/vehicle_${genericType}.svg`,
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+            className: "sim-train-marker",
         });
     }
 
@@ -746,6 +853,7 @@
     }
 
     function renderSimulatedTrainsInPanel(trains) {
+        if (window._updatePeekText) window._updatePeekText(trains.length);
         if (!trains.length) return;
 
         const perLine = new Map();

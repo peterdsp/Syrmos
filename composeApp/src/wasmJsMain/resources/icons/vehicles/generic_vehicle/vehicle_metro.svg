@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Metro">
+  <title>Metro</title>
+  <rect width="128" height="128" rx="28" fill="#FFFFFF"/>
+  <rect x="5" y="5" width="118" height="118" rx="24" fill="#F8FAFC" stroke="#D1D5DB" stroke-width="2"/>
+  <g transform="translate(0 14)">
+    
+  <g aria-hidden="true">
+    <rect x="36" y="36" width="56" height="48" rx="14" fill="#FFFFFF" stroke="#0057B8" stroke-width="6"/>
+    <path d="M47 50h34" stroke="#0057B8" stroke-width="6" stroke-linecap="round" opacity="0.25"/>
+    <circle cx="50" cy="70" r="4.8" fill="#0057B8"/>
+    <circle cx="78" cy="70" r="4.8" fill="#0057B8"/>
+    <path d="M48 88h32" stroke="#111827" stroke-width="4" stroke-linecap="round" opacity="0.82"/>
+  </g>
+  </g>
+</svg>

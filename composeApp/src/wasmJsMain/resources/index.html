@@ -40,20 +40,28 @@
         </div>
     </header>
 
-    <aside class="insight-panel">
-        <div class="panel-card">
-            <div class="panel-card__title">Live trains</div>
-            <div id="liveTrainList" class="panel-list"></div>
+    <aside class="insight-panel" id="insightPanel">
+        <div class="panel-peek" id="panelPeek">
+            <span class="panel-peek__icon">●</span>
+            <span id="panelPeekText" class="panel-peek__text">Live trains</span>
+            <span class="panel-peek__chevron">▲</span>
         </div>
 
-        <div class="panel-card">
-            <div class="panel-card__title">Nearby stations</div>
-            <div id="nearbyStationList" class="panel-list"></div>
-        </div>
+        <div class="panel-cards-wrap">
+            <div class="panel-card">
+                <div class="panel-card__title">Live trains</div>
+                <div id="liveTrainList" class="panel-list"></div>
+            </div>
 
-        <div class="panel-card">
-            <div class="panel-card__title">Popular stations</div>
-            <div id="popularStationList" class="panel-list"></div>
+            <div class="panel-card">
+                <div class="panel-card__title">Nearby stations</div>
+                <div id="nearbyStationList" class="panel-list"></div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-card__title">Popular stations</div>
+                <div id="popularStationList" class="panel-list"></div>
+            </div>
         </div>
     </aside>
 
