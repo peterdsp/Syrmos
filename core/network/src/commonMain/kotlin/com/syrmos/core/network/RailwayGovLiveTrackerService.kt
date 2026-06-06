@@ -113,22 +113,22 @@ class RailwayGovLiveTrackerService(
         val corridorText = corridor.orEmpty().normalizedRouteText()
         val routeText = listOf(originText, destinationText, nextStationText, corridorText).joinToString(" ")
 
-        return when {
-            routeText.contains("pirair") ||
-                routeMatches(routeText, "πειραι", "piraeus") &&
-                routeMatches(routeText, "αεροδρομ", "airport") -> "A1"
+        if (routeMatches(routeText, "ανω λιοσια", "ano liosia") &&
+            routeMatches(routeText, "αεροδρομ", "airport")) return "A2"
 
-            routeMatches(routeText, "ανω λιοσια", "ano liosia") &&
-                routeMatches(routeText, "αεροδρομ", "airport") -> "A2"
+        if (routeMatches(routeText, "αθην", "athens") &&
+            routeMatches(routeText, "χαλκιδ", "chalcis")) return "A3"
 
-            routeMatches(routeText, "αθην", "athens") &&
-                routeMatches(routeText, "χαλκιδ", "chalcis") -> "A3"
+        if (routeMatches(routeText, "πειραι", "piraeus") &&
+            routeMatches(routeText, "κιατ", "kiato")) return "A4"
 
+        if (corridorText == "pirair" ||
             routeMatches(routeText, "πειραι", "piraeus") &&
-                routeMatches(routeText, "κιατ", "kiato") -> "A4"
+            routeMatches(routeText, "αεροδρομ", "airport")) return "A1"
 
-            else -> null
-        }
+        if (corridorText == "e85") return "A3"
+
+        return null
     }
 
     private fun TrainPositionPayload.toDomain(): LiveSuburbanTrain? {

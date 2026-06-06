@@ -339,9 +339,8 @@ final class LiveTrainService: ObservableObject {
         .compactMap { $0?.lowercased() }
         .joined(separator: " ")
 
-        if text.contains("pirair") || (text.contains("πειραι") && text.contains("αεροδρομ")) {
-            return "A1"
-        }
+        let corridor = (position.corridor ?? "").lowercased()
+
         if text.contains("ανω λιοσια") && text.contains("αεροδρομ") {
             return "A2"
         }
@@ -350,6 +349,12 @@ final class LiveTrainService: ObservableObject {
         }
         if text.contains("πειραι") && text.contains("κιατ") {
             return "A4"
+        }
+        if corridor == "pirair" || (text.contains("πειραι") && text.contains("αεροδρομ")) {
+            return "A1"
+        }
+        if corridor == "e85" {
+            return "A3"
         }
         return nil
     }

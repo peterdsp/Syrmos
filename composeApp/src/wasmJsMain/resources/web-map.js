@@ -511,7 +511,7 @@
     }
 
     function connectLiveTrainStream() {
-        const source = new EventSource("https://railway.gov.gr/api/train-stream");
+        const source = new EventSource("https://api-syrmos.peterdsp.dev/api/train-stream");
         source.addEventListener("trainPositionsUx", (event) => {
             try {
                 const payload = JSON.parse(event.data);
@@ -586,10 +586,12 @@
 
     function inferLineId(position) {
         const text = `${position.origin || ""} ${position.destination || ""} ${position.nextStation || ""} ${position.corridor || ""}`.toLowerCase();
-        if (text.includes("pirair") || (text.includes("πειραι") && text.includes("αεροδρομ"))) return "A1";
         if (text.includes("ανω λιοσια") && text.includes("αεροδρομ")) return "A2";
         if (text.includes("αθην") && text.includes("χαλκιδ")) return "A3";
         if (text.includes("πειραι") && text.includes("κιατ")) return "A4";
+        const corridor = (position.corridor || "").toLowerCase();
+        if (corridor === "pirair" || (text.includes("πειραι") && text.includes("αεροδρομ"))) return "A1";
+        if (corridor === "e85") return "A3";
         return null;
     }
 
@@ -923,4 +925,17 @@
 
         liveTrainList.innerHTML = panelHtml;
     }
+
+    const panelStyle = document.createElement("style");
+    panelStyle.textContent = `
+        @media (min-width: 721px) {
+            .insight-panel { left: 16px !important; right: auto !important; width: min(280px, calc(100vw - 32px)) !important; }
+            .panel-card { padding: 12px !important; border-radius: 16px !important; }
+            .panel-list { max-height: 22vh !important; }
+            .panel-item { padding: 8px 10px !important; border-radius: 12px !important; }
+            .panel-item__title { font-size: 13px !important; }
+            .panel-item__meta { font-size: 11px !important; }
+        }
+    `;
+    document.head.appendChild(panelStyle);
 })();
