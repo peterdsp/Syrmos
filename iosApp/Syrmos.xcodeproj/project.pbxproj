@@ -19,6 +19,7 @@
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
 		A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6071829304142 /* STASYService.swift */; };
+		BB22CC33DD44EE55FF660011 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* LocationService.swift */; };
 		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +38,7 @@
 		DDCB57EF47F5B2293727841A /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		D1E2F3A4B5C6071829304142 /* STASYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STASYService.swift; sourceTree = "<group>"; };
+		BB22CC33DD44EE55FF660012 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -139,6 +141,7 @@
 				C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
 				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
 				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
+				BB22CC33DD44EE55FF660012 /* LocationService.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
 			);
 			path = Models;
@@ -211,6 +214,7 @@
 				695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */,
 				B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */,
 				A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */,
+				BB22CC33DD44EE55FF660011 /* LocationService.swift in Sources */,
 				980A534651EFC2013B8ED38F /* TransitData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

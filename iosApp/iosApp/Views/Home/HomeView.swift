@@ -4,6 +4,7 @@ import WebKit
 struct HomeView: View {
     @StateObject private var stasyService = STASYService()
     @StateObject private var liveTrainService = LiveTrainService()
+    @StateObject private var locationService = LocationService()
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var webViewURL: URL?
 
@@ -13,6 +14,7 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     welcomeSection
                     networkOverview
+                    nearMeSection
                     liveTrainsSection
                     alertsSection
                     linesSection
@@ -49,6 +51,79 @@ struct HomeView: View {
             StatCard(value: "3", label: loc[.metro], color: .metroBlue)
             StatCard(value: "2", label: loc[.tram], color: .tramOrange)
             StatCard(value: "4", label: loc[.suburban], color: .suburbanPurple)
+        }
+    }
+
+    @ViewBuilder
+    private var nearMeSection: some View {
+        if locationService.hasPermission && !locationService.nearbyStations.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: "location.fill")
+                        .foregroundStyle(.blue)
+                    Text(loc.language == .greek ? "Κοντά μου" : "Near me")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
+
+                ForEach(locationService.nearbyStations) { nearby in
+                    NavigationLink {
+                        if let firstStationId = nearby.station.stationIds.first,
+                           let lineId = nearby.station.lineIds.first {
+                            let stations = SyrmosData.stations(for: lineId)
+                            if let transitStation = stations.first(where: { $0.id == firstStationId }) {
+                                StationDetailView(station: transitStation)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            HStack(spacing: 4) {
+                                ForEach(nearby.station.lineIds.prefix(3), id: \.self) { lineId in
+                                    Circle()
+                                        .fill(SyrmosData.lineColor(for: lineId))
+                                        .frame(width: 8, height: 8)
+                                }
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(loc.language == .greek ? nearby.station.nameEl : nearby.station.displayName)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.primary)
+                                Text(nearby.station.lineIds.compactMap { SyrmosData.line(for: $0)?.name }.joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Text(formatDistance(nearby.distanceMeters))
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.syrmosSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        } else if !locationService.hasPermission {
+            EmptyView()
+        }
+    }
+
+    private func formatDistance(_ meters: Double) -> String {
+        if meters < 1000 {
+            return "\(Int(meters)) m"
+        } else {
+            return String(format: "%.1f km", meters / 1000)
         }
     }
 
