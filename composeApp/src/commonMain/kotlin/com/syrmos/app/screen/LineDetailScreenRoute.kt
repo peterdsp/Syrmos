@@ -22,6 +22,7 @@ data class LineDetailScreenRoute(val lineId: String) : Screen {
             onStationClick = { stationId ->
                 navigator.push(StationDetailScreenRoute(stationId))
             },
+            onBack = { navigator.pop() },
         )
     }
 }

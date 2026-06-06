@@ -21,7 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -126,6 +130,7 @@ class LineDetailViewModel(
 fun LineDetailScreen(
     viewModel: LineDetailViewModel,
     onStationClick: (String) -> Unit = {},
+    onBack: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val line = uiState.line
@@ -133,7 +138,17 @@ fun LineDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(line?.name ?: "") })
+            TopAppBar(
+                title = { Text(line?.name ?: "") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                        )
+                    }
+                },
+            )
         },
     ) { padding ->
         if (uiState.isLoading) {
