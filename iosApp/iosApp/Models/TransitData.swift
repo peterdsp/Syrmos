@@ -510,6 +510,15 @@ final class TrainSimulatorService: ObservableObject {
     private static let dwellTram = 0.4
     private static let dwellTerminal = 1.0
 
+    private static func haversine(_ lat1: Double, _ lon1: Double, _ lat2: Double, _ lon2: Double) -> Double {
+        let r = 6_371_000.0
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLon = (lon2 - lon1) * .pi / 180
+        let a = sin(dLat / 2) * sin(dLat / 2) +
+            cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) * sin(dLon / 2) * sin(dLon / 2)
+        return 2 * r * asin(sqrt(a))
+    }
+
     private static func smoothEase(_ t: Double) -> Double {
         if t < 0.15 {
             let x = t / 0.15
@@ -576,6 +585,16 @@ final class TrainSimulatorService: ObservableObject {
                     let departure: Double
                 }
 
+                var segDists: [Double] = []
+                var totalDist = 0.0
+                for i in 0..<(stns.count - 1) {
+                    let d = Self.haversine(stns[i].lat, stns[i].lon, stns[i+1].lat, stns[i+1].lon)
+                    segDists.append(d)
+                    totalDist += d
+                }
+                if totalDist < 1 { totalDist = 1 }
+                let totalTravelMins = config.travelMinutes * Double(stns.count - 1)
+
                 var timings: [Timing] = []
                 var cumulative = 0.0
                 for (i, stn) in stns.enumerated() {
@@ -583,7 +602,8 @@ final class TrainSimulatorService: ObservableObject {
                     let dwell = (i == 0 || i == stns.count - 1) ? dwellTerminal : config.dwellMinutes
                     timings.append(Timing(station: stn, arrival: arrival, departure: arrival + dwell))
                     if i < stns.count - 1 {
-                        cumulative = arrival + dwell + config.travelMinutes
+                        let segTravel = totalTravelMins * (segDists[i] / totalDist)
+                        cumulative = arrival + dwell + segTravel
                     }
                 }
 

@@ -5,6 +5,11 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
+import kotlin.math.PI
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -14,6 +19,15 @@ private data class StationTiming(
     val arrivalMinutes: Double,
     val departureMinutes: Double,
 )
+
+private fun haversineMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val r = 6_371_000.0
+    val dLat = (lat2 - lat1) * PI / 180.0
+    val dLon = (lon2 - lon1) * PI / 180.0
+    val a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * PI / 180.0) * cos(lat2 * PI / 180.0) * sin(dLon / 2) * sin(dLon / 2)
+    return 2 * r * asin(sqrt(a))
+}
 
 private const val DWELL_MINUTES_METRO = 0.5
 private const val DWELL_MINUTES_TRAM = 0.4
@@ -76,6 +90,14 @@ fun simulateTrains(
                 Direction.INBOUND -> stations.reversed()
             }
 
+            val segDistances = (0 until orderedStations.size - 1).map { i ->
+                val a = orderedStations[i]
+                val b = orderedStations[i + 1]
+                haversineMeters(a.latitude, a.longitude, b.latitude, b.longitude)
+            }
+            val totalDist = segDistances.sum().coerceAtLeast(1.0)
+            val totalTravelMins = travelMinutes * (orderedStations.size - 1)
+
             val timings = mutableListOf<StationTiming>()
             var cumulativeTime = 0.0
             orderedStations.forEachIndexed { index, station ->
@@ -86,7 +108,8 @@ fun simulateTrains(
                 }
                 timings += StationTiming(station, arrival, arrival + dwell)
                 if (index < orderedStations.size - 1) {
-                    cumulativeTime = arrival + dwell + travelMinutes
+                    val segTravel = totalTravelMins * (segDistances[index] / totalDist)
+                    cumulativeTime = arrival + dwell + segTravel
                 }
             }
 

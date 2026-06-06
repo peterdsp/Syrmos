@@ -799,13 +799,26 @@
             for (const direction of ["outbound", "inbound"]) {
                 const stns = direction === "outbound" ? orderedStations : [...orderedStations].reverse();
 
+                let totalDist = 0;
+                const segDists = [];
+                for (let i = 0; i < stns.length - 1; i++) {
+                    const d = distanceMeters(stns[i].latitude, stns[i].longitude, stns[i + 1].latitude, stns[i + 1].longitude);
+                    segDists.push(d);
+                    totalDist += d;
+                }
+                const avgDist = totalDist / Math.max(segDists.length, 1);
+                const totalTravelMins = travelMins * (stns.length - 1);
+
                 const timings = [];
                 let cumulative = 0;
                 for (let i = 0; i < stns.length; i++) {
                     const arrival = cumulative;
                     const dwell = (i === 0 || i === stns.length - 1) ? DWELL_TERMINAL : dwellMins;
                     timings.push({ station: stns[i], arrival, departure: arrival + dwell });
-                    if (i < stns.length - 1) cumulative = arrival + dwell + travelMins;
+                    if (i < stns.length - 1) {
+                        const segTravel = totalTravelMins * (segDists[i] / totalDist);
+                        cumulative = arrival + dwell + segTravel;
+                    }
                 }
 
                 const tripDuration = timings[timings.length - 1].arrival;
