@@ -1,6 +1,7 @@
 package com.syrmos.app.tab
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -11,6 +12,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.syrmos.app.screen.LineDetailScreenRoute
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.app.platform.requestUserLocation
 import com.syrmos.feature.home.HomeScreen
 import com.syrmos.feature.home.HomeViewModel
 import com.syrmos.feature.map.MapViewModel
@@ -41,6 +43,14 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
         val viewModel = koinInject<HomeViewModel>()
         val mapViewModel = koinInject<MapViewModel>()
         val mapState by mapViewModel.uiState.collectAsState()
+
+        LaunchedEffect(Unit) {
+            val location = requestUserLocation()
+            if (location != null) {
+                viewModel.onLocationUpdate(location.latitude, location.longitude)
+            }
+        }
+
         HomeScreen(
             viewModel = viewModel,
             simulatedTrains = mapState.simulatedTrains,
