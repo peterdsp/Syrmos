@@ -949,7 +949,7 @@
             display.map((train) => {
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 return `
-                    <div class="panel-item">
+                    <div class="panel-item" data-train-id="${train.id}" data-train-lat="${train.lat}" data-train-lng="${train.lng}">
                         <div class="panel-item__title">${icon} ${train.line.name} → ${train.destination}</div>
                         <div class="panel-item__meta">Near ${train.fromStation} · Next: ${train.toStation}</div>
                     </div>
@@ -957,6 +957,16 @@
             }).join("");
 
         liveTrainList.innerHTML = panelHtml;
+
+        liveTrainList.querySelectorAll("[data-train-id]").forEach((el) => {
+            el.addEventListener("click", () => {
+                const lat = parseFloat(el.getAttribute("data-train-lat"));
+                const lng = parseFloat(el.getAttribute("data-train-lng"));
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.45 });
+                }
+            });
+        });
     }
 
     const panelStyle = document.createElement("style");
