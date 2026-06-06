@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40">
+  <rect width="120" height="40" rx="5" fill="#0072CE"/>
+  <text x="60" y="14" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="8">OPEN</text>
+  <text x="60" y="28" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="14" font-weight="bold">Web App</text>
+</svg>

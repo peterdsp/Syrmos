@@ -3,16 +3,69 @@ import MapKit
 
 // MARK: - Preloaded station data (computed once at app start)
 
+struct RouteLine: Identifiable {
+    let id: String
+    let color: Color
+    let coordinates: [CLLocationCoordinate2D]
+    let lineWeight: CGFloat
+}
+
 enum PreloadedData {
     static let stations: [MapStationNode] = SyrmosData.mapStations
     static let stationsById: [String: MapStationNode] = Dictionary(
         uniqueKeysWithValues: stations.map { ($0.id, $0) }
     )
+    static let routeLines: [RouteLine] = SyrmosData.lines.compactMap { line in
+        let stations = SyrmosData.stations(for: line.id)
+        guard stations.count >= 2 else { return nil }
+        return RouteLine(
+            id: line.id,
+            color: line.color,
+            coordinates: stations.map { $0.coordinate },
+            lineWeight: line.type == .suburban ? 3 : 4
+        )
+    }
+    static let stationIconMap: [String: String] = {
+        var map: [String: String] = [:]
+        let lineImageNames: [(stations: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)], images: [String])] = [
+            (StationCoords.line1, StationIconNames.m1),
+            (StationCoords.line2, StationIconNames.m2),
+            (StationCoords.line3, StationIconNames.m3),
+            (StationCoords.tramT6, StationIconNames.t6),
+            (StationCoords.tramT7, StationIconNames.t7),
+        ]
+        for config in lineImageNames {
+            for (index, station) in config.stations.enumerated() {
+                if map[station.id] != nil { continue }
+                if index < config.images.count {
+                    map[station.id] = config.images[index]
+                }
+            }
+        }
+        return map
+    }()
+}
+
+enum VehicleIcons {
+    static func imageName(for train: SimulatedTrain) -> String? {
+        let isInbound = train.direction == "inbound"
+        switch train.lineId {
+        case "M1": return isInbound ? "metro_m1_left_to_piraeus" : "metro_m1_right_to_kifissia"
+        case "M2": return isInbound ? "metro_m2_left_to_anthoupoli" : "metro_m2_right_to_elliniko"
+        case "M3":
+            if train.isAirportService { return "metro_m3_right_to_airport" }
+            return isInbound ? "metro_m3_left_to_dimotiko_theatro" : "metro_m3_right_to_doukissis_plakentias"
+        case "T6": return isInbound ? "tram_t6_left_to_syntagma" : "tram_t6_right_to_pikrodafni"
+        case "T7": return isInbound ? "tram_t7_left_to_akti_posidonos" : "tram_t7_right_to_asklipiio_voulas"
+        default: return nil
+        }
+    }
 }
 
 struct TransitMapView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @StateObject private var liveTrainService = LiveTrainService()
+    @StateObject private var trainSimulator = TrainSimulatorService()
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
@@ -23,12 +76,18 @@ struct TransitMapView: View {
     @State private var tappedStation: MapStationNode?
 
     private let stations = PreloadedData.stations
+    private let routeLines = PreloadedData.routeLines
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .trailing) {
                 Map(position: $position, selection: $selectedId) {
                     UserAnnotation()
+
+                    ForEach(routeLines) { route in
+                        MapPolyline(coordinates: route.coordinates)
+                            .stroke(route.color, lineWidth: route.lineWeight)
+                    }
 
                     ForEach(stations) { station in
                         Annotation(station.displayName, coordinate: station.coordinate) {
@@ -38,6 +97,15 @@ struct TransitMapView: View {
                                 }
                         }
                         .tag(station.id)
+                    }
+
+                    ForEach(trainSimulator.trains) { train in
+                        Annotation(
+                            "\(train.lineName) → \(train.destinationName)",
+                            coordinate: train.coordinate
+                        ) {
+                            SimulatedTrainDot(train: train)
+                        }
                     }
 
                     ForEach(liveTrainService.trains) { train in
@@ -231,32 +299,111 @@ struct StationDot: View {
     let isSelected: Bool
 
     var body: some View {
-        if station.isInterchange {
-            ZStack {
-                ForEach(Array(station.lineIds.enumerated()), id: \.element) { index, lineId in
+        Group {
+            if let iconName = stationIconName,
+               let uiImage = UIImage(named: iconName) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .frame(width: isSelected ? 36 : 28, height: isSelected ? 36 : 28)
+                    .shadow(color: .black.opacity(isSelected ? 0.3 : 0.15), radius: isSelected ? 4 : 2, y: 1)
+            } else if station.isInterchange {
+                ZStack {
+                    ForEach(Array(station.lineIds.enumerated()), id: \.element) { index, lineId in
+                        Circle()
+                            .fill(SyrmosData.lineColor(for: lineId))
+                            .frame(width: 18, height: 18)
+                            .offset(x: CGFloat(index - station.lineIds.count / 2) * 6)
+                    }
                     Circle()
-                        .fill(SyrmosData.lineColor(for: lineId))
-                        .frame(width: 18, height: 18)
-                        .offset(x: CGFloat(index - station.lineIds.count / 2) * 6)
+                        .fill(.white)
+                        .frame(width: 8, height: 8)
                 }
-                Circle()
-                    .fill(.white)
-                    .frame(width: 8, height: 8)
+                .scaleEffect(isSelected ? 1.3 : 1.0)
+            } else {
+                ZStack {
+                    Circle()
+                        .fill(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
+                        .frame(width: 16, height: 16)
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 6, height: 6)
+                }
+                .scaleEffect(isSelected ? 1.3 : 1.0)
             }
-            .scaleEffect(isSelected ? 1.3 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: isSelected)
-        } else {
-            ZStack {
-                Circle()
-                    .fill(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
-                    .frame(width: 16, height: 16)
-                Circle()
-                    .fill(.white)
-                    .frame(width: 6, height: 6)
-            }
-            .scaleEffect(isSelected ? 1.3 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+
+    private var stationIconName: String? {
+        let primaryId = station.stationIds.first ?? station.id
+        return PreloadedData.stationIconMap[primaryId]
+    }
+}
+
+struct SimulatedTrainDot: View {
+    let train: SimulatedTrain
+
+    var body: some View {
+        if let iconName = VehicleIcons.imageName(for: train),
+           let uiImage = UIImage(named: iconName) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .frame(width: 38, height: 38)
+                .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
+        } else {
+            fallbackDot
+        }
+    }
+
+    @ViewBuilder
+    private var fallbackDot: some View {
+        VStack(spacing: 2) {
+            Text(train.lineId)
+                .font(.system(size: 8, weight: .heavy))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(trainColor, in: Capsule())
+
+            ZStack {
+                if train.isAirportService {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(.white)
+                        .frame(width: 28, height: 24)
+                        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.metroBlue)
+                        .frame(width: 24, height: 20)
+                    Image(systemName: "airplane")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                } else if train.lineType == .tram {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(.white)
+                        .frame(width: 26, height: 18)
+                        .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(trainColor)
+                        .frame(width: 22, height: 14)
+                } else {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(.white)
+                        .frame(width: 26, height: 22)
+                        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(trainColor)
+                        .frame(width: 22, height: 18)
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(.white.opacity(0.7))
+                        .frame(width: 12, height: 3)
+                        .offset(y: -2)
+                }
+            }
+        }
+    }
+
+    private var trainColor: Color {
+        SyrmosData.lineColor(for: train.lineId)
     }
 }
 

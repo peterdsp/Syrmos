@@ -288,12 +288,34 @@ private fun DrawScope.drawSimulatedTrains(
             else -> drawMetroTrain(pos, lineColor, scale)
         }
 
+        val badgeResult = textMeasurer.measure(
+            train.lineId,
+            TextStyle(
+                fontSize = (6f * (scale * 0.6f).coerceIn(0.5f, 1.2f)).sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+            ),
+        )
+        val badgeW = badgeResult.size.width + 6f
+        val badgeH = badgeResult.size.height + 2f
+        val trainR = when {
+            train.isAirportService -> (8f * scale).coerceIn(4f, 18f)
+            train.lineType == LineType.TRAM -> (5f * scale).coerceIn(3f, 12f)
+            else -> (6.5f * scale).coerceIn(3.5f, 15f)
+        }
+        drawRoundRect(
+            color = lineColor,
+            topLeft = Offset(pos.x - badgeW / 2, pos.y - trainR - badgeH - 2f),
+            size = androidx.compose.ui.geometry.Size(badgeW, badgeH),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(badgeH / 2, badgeH / 2),
+        )
+        drawText(
+            textLayoutResult = badgeResult,
+            topLeft = Offset(pos.x - badgeResult.size.width / 2f, pos.y - trainR - badgeH - 1f),
+        )
+
         if (scale >= 1.4f) {
-            val label = if (train.isAirportService) {
-                "✈ ${train.lineName}"
-            } else {
-                "${train.lineName} → ${train.destinationName}"
-            }
+            val label = "${train.lineName} → ${train.destinationName}"
             val textLayoutResult = textMeasurer.measure(
                 label,
                 TextStyle(
@@ -302,11 +324,6 @@ private fun DrawScope.drawSimulatedTrains(
                     fontWeight = FontWeight.Bold,
                 ),
             )
-            val trainR = when {
-                train.isAirportService -> (8f * scale).coerceIn(4f, 18f)
-                train.lineType == LineType.TRAM -> (5f * scale).coerceIn(3f, 12f)
-                else -> (6.5f * scale).coerceIn(3.5f, 15f)
-            }
             val bgPadding = 2f
             drawRoundRect(
                 color = Color.White.copy(alpha = 0.92f),

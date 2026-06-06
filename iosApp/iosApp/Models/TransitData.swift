@@ -462,3 +462,181 @@ private struct TrainPositionPayload: Decodable {
     let locomotiveId: String?
     let corridor: String?
 }
+
+// MARK: - Simulated Train
+
+struct SimulatedTrain: Identifiable {
+    let id: String
+    let lineId: String
+    let lineName: String
+    let lineType: TransitType
+    let direction: String
+    let destinationName: String
+    let currentStationName: String
+    let nextStationName: String
+    let coordinate: CLLocationCoordinate2D
+    let isAirportService: Bool
+}
+
+// MARK: - Train Simulator Service
+
+@MainActor
+final class TrainSimulatorService: ObservableObject {
+    @Published var trains: [SimulatedTrain] = []
+
+    private var task: Task<Void, Never>?
+
+    init() {
+        update()
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                self?.update()
+            }
+        }
+    }
+
+    deinit {
+        task?.cancel()
+    }
+
+    private func update() {
+        trains = Self.simulateTrains()
+    }
+
+    private static let dwellMetro = 0.5
+    private static let dwellTram = 0.4
+    private static let dwellTerminal = 1.0
+
+    private static func smoothEase(_ t: Double) -> Double {
+        if t < 0.15 {
+            let x = t / 0.15
+            return x * x * 0.15
+        } else if t > 0.85 {
+            let x = (t - 0.85) / 0.15
+            return 0.85 + (1 - (1 - x) * (1 - x)) * 0.15
+        }
+        return t
+    }
+
+    private static func simulateTrains() -> [SimulatedTrain] {
+        let calendar = Calendar.current
+        let tz = TimeZone(identifier: "Europe/Athens")!
+        let now = Date()
+        let components = calendar.dateComponents(in: tz, from: now)
+        let hour = components.hour ?? 0
+        let minute = components.minute ?? 0
+        let second = components.second ?? 0
+        let nanosecond = components.nanosecond ?? 0
+        let nowMinutes = Double(hour) * 60 + Double(minute) + Double(second) / 60.0 + (Double(nanosecond) / 1_000_000_000) / 60.0
+
+        let serviceStart = 5.0 * 60
+        let serviceEnd = 25.0 * 60
+        let adjustedNow = nowMinutes < serviceStart ? nowMinutes + 24 * 60 : nowMinutes
+        guard adjustedNow >= serviceStart && adjustedNow <= serviceEnd else { return [] }
+
+        struct LineConfig {
+            let id: String
+            let name: String
+            let type: TransitType
+            let terminalA: String
+            let terminalB: String
+            let stations: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)]
+            let travelMinutes: Double
+            let dwellMinutes: Double
+            let frequency: Double
+        }
+
+        let configs: [LineConfig] = [
+            LineConfig(id: "M1", name: "Line 1", type: .metro, terminalA: "Piraeus", terminalB: "Kifissia",
+                       stations: StationCoords.line1, travelMinutes: 1.8, dwellMinutes: dwellMetro, frequency: 5),
+            LineConfig(id: "M2", name: "Line 2", type: .metro, terminalA: "Anthoupoli", terminalB: "Elliniko",
+                       stations: StationCoords.line2, travelMinutes: 1.8, dwellMinutes: dwellMetro, frequency: 4),
+            LineConfig(id: "M3", name: "Line 3", type: .metro, terminalA: "Dimotiko Theatro", terminalB: "Airport",
+                       stations: StationCoords.line3, travelMinutes: 1.8, dwellMinutes: dwellMetro, frequency: 5),
+            LineConfig(id: "T6", name: "Tram T6", type: .tram, terminalA: "Syntagma", terminalB: "Pikrodafni",
+                       stations: StationCoords.tramT6, travelMinutes: 2.2, dwellMinutes: dwellTram, frequency: 9),
+            LineConfig(id: "T7", name: "Tram T7", type: .tram, terminalA: "Akti Poseidonos", terminalB: "Asklipiio Voulas",
+                       stations: StationCoords.tramT7, travelMinutes: 2.2, dwellMinutes: dwellTram, frequency: 12),
+        ]
+
+        var result: [SimulatedTrain] = []
+
+        for config in configs {
+            guard config.stations.count >= 2 else { continue }
+
+            for direction in ["outbound", "inbound"] {
+                let stns = direction == "outbound" ? config.stations : config.stations.reversed()
+
+                struct Timing {
+                    let station: (id: String, name: String, nameEl: String, lat: Double, lon: Double)
+                    let arrival: Double
+                    let departure: Double
+                }
+
+                var timings: [Timing] = []
+                var cumulative = 0.0
+                for (i, stn) in stns.enumerated() {
+                    let arrival = cumulative
+                    let dwell = (i == 0 || i == stns.count - 1) ? dwellTerminal : config.dwellMinutes
+                    timings.append(Timing(station: stn, arrival: arrival, departure: arrival + dwell))
+                    if i < stns.count - 1 {
+                        cumulative = arrival + dwell + config.travelMinutes
+                    }
+                }
+
+                let tripDuration = timings.last!.arrival
+                let offset = direction == "inbound" ? config.frequency / 2 : 0
+                var departureTime = serviceStart + offset
+                var trainIdx = 0
+
+                while departureTime <= serviceEnd {
+                    let elapsed = adjustedNow - departureTime
+                    if elapsed >= 0 && elapsed <= tripDuration {
+                        var segIdx = 0
+                        for i in stride(from: timings.count - 1, through: 0, by: -1) {
+                            if timings[i].departure <= elapsed { segIdx = i; break }
+                        }
+                        segIdx = min(segIdx, timings.count - 2)
+                        let from = timings[segIdx]
+                        let to = timings[segIdx + 1]
+
+                        let lat: Double
+                        let lon: Double
+                        if elapsed < from.departure {
+                            lat = from.station.lat
+                            lon = from.station.lon
+                        } else {
+                            let travelStart = from.departure
+                            let travelEnd = to.arrival
+                            let travelDuration = travelEnd - travelStart
+                            let rawFrac = travelDuration > 0 ? min(max((elapsed - travelStart) / travelDuration, 0), 1) : 0
+                            let frac = smoothEase(rawFrac)
+                            lat = from.station.lat + (to.station.lat - from.station.lat) * frac
+                            lon = from.station.lon + (to.station.lon - from.station.lon) * frac
+                        }
+
+                        let isAirport = config.id == "M3" && segIdx >= stns.count - 6
+                        let dest = direction == "outbound" ? config.terminalB : config.terminalA
+
+                        result.append(SimulatedTrain(
+                            id: "\(config.id)_\(direction)_\(trainIdx)",
+                            lineId: config.id,
+                            lineName: config.name,
+                            lineType: config.type,
+                            direction: direction,
+                            destinationName: dest,
+                            currentStationName: from.station.name,
+                            nextStationName: to.station.name,
+                            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+                            isAirportService: isAirport
+                        ))
+                    }
+                    departureTime += config.frequency
+                    trainIdx += 1
+                }
+            }
+        }
+        return result
+    }
+}

@@ -144,7 +144,7 @@ class MapViewModel(
                     val simulated = simulateTrains(state.lines, state.lineStations)
                     _uiState.update { it.copy(simulatedTrains = simulated) }
                 }
-                delay(2_000)
+                delay(1_000)
             }
         }
     }
