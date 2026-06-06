@@ -189,6 +189,8 @@ Syrmos is not affiliated with STASY, Hellenic Train, or OASA.
 
 Planned for upcoming releases:
 
+- **Plan your trip** -- route planning with transfers, walking directions, and estimated arrival times across metro, tram, and suburban lines
+- **AI chat helper** -- ask questions about the Athens transit network, get route suggestions, and receive real-time travel advice
 - **Accessibility features** -- VoiceOver and TalkBack support, dynamic type, high contrast mode
 - **National rail coverage** -- intercity trains (Athens-Thessaloniki, Athens-Patras) with live tracking
 - **Suburban rail in other cities** -- Thessaloniki and Patras suburban networks
