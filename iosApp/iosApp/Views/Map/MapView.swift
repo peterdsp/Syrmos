@@ -116,7 +116,6 @@ struct TransitMapView: View {
                 }
                 .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll, showsTraffic: false))
                 .mapControls {
-                    MapUserLocationButton()
                     MapCompass()
                     MapScaleView()
                 }
@@ -125,35 +124,6 @@ struct TransitMapView: View {
                           let station = stations.first(where: { $0.id == id }) else { return }
                     tappedStation = station
                 }
-
-                // Zoom controls
-                VStack(spacing: 0) {
-                    Button {
-                        zoomIn()
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                    Divider().frame(width: 44)
-
-                    Button {
-                        zoomOut()
-                    } label: {
-                        Image(systemName: "minus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-                .padding(.trailing, 12)
-                .padding(.top, 130)
             }
             .navigationTitle(loc[.map])
             .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
@@ -164,38 +134,6 @@ struct TransitMapView: View {
         }
     }
 
-    private func zoomIn() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            let r = currentRegion()
-            position = .region(MKCoordinateRegion(
-                center: r.center,
-                span: MKCoordinateSpan(
-                    latitudeDelta: max(r.span.latitudeDelta * 0.5, 0.001),
-                    longitudeDelta: max(r.span.longitudeDelta * 0.5, 0.001)
-                )
-            ))
-        }
-    }
-
-    private func zoomOut() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            let r = currentRegion()
-            position = .region(MKCoordinateRegion(
-                center: r.center,
-                span: MKCoordinateSpan(
-                    latitudeDelta: min(r.span.latitudeDelta * 2.0, 180),
-                    longitudeDelta: min(r.span.longitudeDelta * 2.0, 360)
-                )
-            ))
-        }
-    }
-
-    private func currentRegion() -> MKCoordinateRegion {
-        position.region ?? MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
-            span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
-        )
-    }
 }
 
 // MARK: - Station Sheet

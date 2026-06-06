@@ -120,7 +120,7 @@ internal actual fun PlatformMapView(
                 controller.setZoom(12.0)
                 controller.setCenter(GeoPoint(37.98, 23.73))
                 zoomController.setVisibility(
-                    org.osmdroid.views.CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT
+                    org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER
                 )
                 minZoomLevel = 9.0
                 maxZoomLevel = 18.0
