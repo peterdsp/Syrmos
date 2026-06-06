@@ -157,15 +157,15 @@ struct TransitMapView: View {
                             position = .userLocation(followsHeading: false, fallback: .automatic)
                         } label: {
                             Image(systemName: "location.fill")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.blue)
-                                .frame(width: 44, height: 44)
-                                .background(.regularMaterial)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 50, height: 50)
+                                .background(Color.accentColor)
                                 .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                                .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                         }
                         .padding(.trailing, 16)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 20)
                     }
                 }
             }
