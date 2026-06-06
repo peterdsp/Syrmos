@@ -702,3 +702,103 @@ body {
         max-height: min(720px, calc(100vh - 24px));
     }
 }
+
+/* Dark mode */
+.dark-mode {
+    background: #0f1117;
+    color: #e2e8f0;
+}
+
+.dark-mode .top-bar {
+    background: rgba(20, 24, 33, 0.92);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .brand { color: #f1f5f9; }
+.dark-mode .subtitle { color: #8896a4; }
+
+.dark-mode .search-input-shell {
+    background: rgba(30, 35, 48, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-mode .search-input {
+    color: #e2e8f0;
+}
+
+.dark-mode .search-results {
+    background: rgba(20, 24, 33, 0.96);
+}
+
+.dark-mode .search-result {
+    background: #1e2330;
+}
+
+.dark-mode .search-result:hover {
+    background: #263040;
+}
+
+.dark-mode .control-button {
+    background: #2a3040;
+    color: #e2e8f0;
+}
+
+.dark-mode .control-button:hover {
+    background: #354055;
+}
+
+.dark-mode .ghost-button {
+    background: #1e2330;
+    color: #cbd5e1;
+}
+
+.dark-mode .panel-card {
+    background: rgba(20, 24, 33, 0.94);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.dark-mode .panel-card__title {
+    color: #8896a4;
+}
+
+.dark-mode .panel-item {
+    background: #1a1f2e;
+}
+
+.dark-mode .panel-item__title {
+    color: #e2e8f0;
+}
+
+.dark-mode .panel-item__meta {
+    color: #8896a4;
+}
+
+.dark-mode .station-sheet {
+    background: rgba(20, 24, 33, 0.97);
+}
+
+.dark-mode #stationName { color: #f1f5f9; }
+.dark-mode .station-alt { color: #8896a4; }
+.dark-mode .meta-item { border-top-color: rgba(255, 255, 255, 0.06); }
+.dark-mode .meta-key { color: #8896a4; }
+.dark-mode .meta-value { color: #e2e8f0; }
+.dark-mode .departure-card { background: #1a1f2e; }
+.dark-mode .departure-empty { background: #1a1f2e; color: #8896a4; }
+
+.dark-mode .leaflet-tile-pane { filter: brightness(0.7) contrast(1.1) saturate(0.8); }
+
+@media (max-width: 720px) {
+    .dark-mode .insight-panel {
+        background: rgba(20, 24, 33, 0.97);
+    }
+
+    .dark-mode .panel-card {
+        background: #1a1f2e;
+    }
+
+    .dark-mode .panel-peek {
+        border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .dark-mode .panel-peek__text { color: #e2e8f0; }
+}

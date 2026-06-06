@@ -981,4 +981,19 @@
         }
     `;
     document.head.appendChild(panelStyle);
+
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+        const saved = localStorage.getItem("syrmos-theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (saved === "dark" || (!saved && prefersDark)) {
+            document.body.classList.add("dark-mode");
+            themeToggle.textContent = "☀";
+        }
+        themeToggle.addEventListener("click", () => {
+            const isDark = document.body.classList.toggle("dark-mode");
+            themeToggle.textContent = isDark ? "☀" : "☾";
+            localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
+        });
+    }
 })();

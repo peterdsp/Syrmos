@@ -17,6 +17,7 @@
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
 		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
+		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
 		A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6071829304142 /* STASYService.swift */; };
 		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
 /* End PBXBuildFile section */
@@ -29,6 +30,7 @@
 		2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationCoordinates.swift; sourceTree = "<group>"; };
 		748CC40BCBDC9D468CD371B8 /* TransitData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitData.swift; sourceTree = "<group>"; };
 		7FD822CADE700A3FA325710D /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
 		830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineDetailView.swift; sourceTree = "<group>"; };
 		836DE84E99C06ABA19E71805 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D19BB18628D05A667A4BD6B8 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -60,6 +62,7 @@
 			isa = PBXGroup;
 			children = (
 				7FD822CADE700A3FA325710D /* MapView.swift */,
+				AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */,
 			);
 			path = Map;
 			sourceTree = "<group>";
@@ -200,6 +203,7 @@
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
+				AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */,
 				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
 				2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */,
 				59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */,
