@@ -434,14 +434,19 @@
         clearSelection();
     });
 
-    let lastZoomThreshold = INITIAL_ZOOM >= 14;
+    let lastZoomBucket = INITIAL_ZOOM >= 14 ? 2 : INITIAL_ZOOM >= 12 ? 1 : 0;
     map.on("zoomend", () => {
-        const nowAbove = map.getZoom() >= 14;
-        if (nowAbove !== lastZoomThreshold) {
-            lastZoomThreshold = nowAbove;
+        const z = map.getZoom();
+        const bucket = z >= 14 ? 2 : z >= 12 ? 1 : 0;
+        if (bucket !== lastZoomBucket) {
+            lastZoomBucket = bucket;
             for (const [id, marker] of markers) {
                 const station = stationNodeMap.get(id);
                 if (station) marker.setIcon(buildStationIcon(station, id === selectedStationId));
+            }
+            for (const [id, marker] of simulatedTrainMarkers) {
+                const train = lastSimulatedTrains.find((t) => t.id === id);
+                if (train) marker.setIcon(trainMarkerIcon(train));
             }
         }
     });
@@ -450,6 +455,7 @@
     map.fitBounds(bounds.pad(0.12));
 
     const simulatedTrainMarkers = new Map();
+    let lastSimulatedTrains = [];
 
     renderPopularPanel();
     updateNearbyPanel();
@@ -570,16 +576,26 @@
 
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
-            const marker = L.marker([train.lat, train.lng], {
-                icon: L.divIcon({
+            const manifestLine = lineIdToManifestLine[train.lineId] || train.lineId;
+            const dir = train.destination && /αεροδρομ|airport/i.test(train.destination) ? "outbound" : "inbound";
+            const svgKey = vehicleIconMap.get(`${manifestLine}_${dir}`) || vehicleIconMap.get(`${manifestLine}_outbound`);
+            const icon = svgKey
+                ? L.icon({ iconUrl: svgKey, iconSize: [38, 38], iconAnchor: [19, 19], className: "sim-train-marker" })
+                : L.divIcon({
                     className: "train-marker",
                     html: `<span class="train-marker__ring" style="background:${line ? line.color : "#0072CE"}"></span>`,
                     iconSize: [22, 22],
                     iconAnchor: [11, 11],
-                }),
+                });
+            const marker = L.marker([train.lat, train.lng], {
+                icon,
                 keyboard: false,
                 zIndexOffset: 1000,
             }).addTo(map);
+            marker.bindTooltip(
+                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
+                { direction: "top", offset: [0, -10] }
+            );
             liveTrainMarkers.set(train.id, marker);
         }
     }
@@ -591,7 +607,6 @@
         if (text.includes("πειραι") && text.includes("κιατ")) return "A4";
         const corridor = (position.corridor || "").toLowerCase();
         if (corridor === "pirair" || (text.includes("πειραι") && text.includes("αεροδρομ"))) return "A1";
-        if (corridor === "e85") return "A3";
         return null;
     }
 
@@ -731,12 +746,16 @@
 
     function startTrainSimulation() {
         let lastPanelUpdate = 0;
+        let lastMapUpdate = 0;
         function animateTrains(timestamp) {
-            const trains = simulateAllTrains();
-            renderSimulatedTrainsOnMap(trains);
-            if (timestamp - lastPanelUpdate > 2000) {
-                renderSimulatedTrainsInPanel(trains);
-                lastPanelUpdate = timestamp;
+            if (timestamp - lastMapUpdate > 250) {
+                const trains = simulateAllTrains();
+                renderSimulatedTrainsOnMap(trains);
+                lastMapUpdate = timestamp;
+                if (timestamp - lastPanelUpdate > 2000) {
+                    renderSimulatedTrainsInPanel(trains);
+                    lastPanelUpdate = timestamp;
+                }
             }
             requestAnimationFrame(animateTrains);
         }
@@ -846,31 +865,45 @@
     }
 
     function trainMarkerIcon(train) {
+        const zoom = map.getZoom();
         const manifestLine = lineIdToManifestLine[train.line.id] || train.line.id;
+
+        if (zoom < 12) {
+            const color = train.line.color || "#0072CE";
+            return L.divIcon({
+                className: "train-marker",
+                html: `<span class="train-marker__ring" style="background:${color}"></span>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7],
+            });
+        }
+
         let svgKey;
         if (train.isAirport) {
             svgKey = vehicleIconMap.get(`${manifestLine}_airport`) || vehicleIconMap.get(`${manifestLine}_outbound`);
         } else {
             svgKey = vehicleIconMap.get(`${manifestLine}_${train.direction}`);
         }
+        const size = zoom >= 14 ? 38 : 28;
         if (svgKey) {
             return L.icon({
                 iconUrl: svgKey,
-                iconSize: [38, 38],
-                iconAnchor: [19, 19],
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
                 className: "sim-train-marker",
             });
         }
         const genericType = train.line.type === "tram" ? "tram" : train.line.type === "suburban" ? "train" : "metro";
         return L.icon({
             iconUrl: `icons/vehicles/generic_vehicle/vehicle_${genericType}.svg`,
-            iconSize: [34, 34],
-            iconAnchor: [17, 17],
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
             className: "sim-train-marker",
         });
     }
 
     function renderSimulatedTrainsOnMap(trains) {
+        lastSimulatedTrains = trains;
         const activeIds = new Set(trains.map((t) => t.id));
 
         simulatedTrainMarkers.forEach((marker, id) => {

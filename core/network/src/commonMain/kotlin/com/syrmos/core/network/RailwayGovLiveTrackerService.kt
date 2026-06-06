@@ -126,8 +126,6 @@ class RailwayGovLiveTrackerService(
             routeMatches(routeText, "πειραι", "piraeus") &&
             routeMatches(routeText, "αεροδρομ", "airport")) return "A1"
 
-        if (corridorText == "e85") return "A3"
-
         return null
     }
 

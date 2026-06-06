@@ -116,7 +116,7 @@ body {
 }
 
 .leaflet-marker-icon.sim-train-marker {
-    transition: transform 1.8s linear !important;
+    transition: transform 0.25s linear !important;
 }
 
 .station-svg-icon {

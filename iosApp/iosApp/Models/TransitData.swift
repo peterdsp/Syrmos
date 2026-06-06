@@ -353,9 +353,6 @@ final class LiveTrainService: ObservableObject {
         if corridor == "pirair" || (text.contains("πειραι") && text.contains("αεροδρομ")) {
             return "A1"
         }
-        if corridor == "e85" {
-            return "A3"
-        }
         return nil
     }
 }
