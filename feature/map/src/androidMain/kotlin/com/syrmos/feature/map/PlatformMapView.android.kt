@@ -139,10 +139,14 @@ internal actual fun PlatformMapView(
             val lineStations = uiState.lineStations[line.id].orEmpty()
             if (lineStations.size < 2) return@forEach
 
+            val rawPoints = lineStations.map { GeoPoint(it.latitude, it.longitude) }
+            val smoothed = catmullRomSpline(rawPoints)
             val polyline = Polyline().apply {
                 outlinePaint.color = line.color.toComposeColor().toArgb()
                 outlinePaint.strokeWidth = if (line.type == LineType.SUBURBAN) 7f else 10f
-                setPoints(lineStations.map { GeoPoint(it.latitude, it.longitude) })
+                outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                setPoints(smoothed)
             }
             lineOverlays.add(polyline)
             mapView.overlays.add(0, polyline)
@@ -271,6 +275,29 @@ internal actual fun PlatformMapView(
             )
         }
     }
+}
+
+private fun catmullRomSpline(points: List<GeoPoint>, segments: Int = 5): List<GeoPoint> {
+    if (points.size < 3) return points
+    val result = mutableListOf(points[0])
+    for (i in 0 until points.size - 1) {
+        val p0 = points[maxOf(i - 1, 0)]
+        val p1 = points[i]
+        val p2 = points[i + 1]
+        val p3 = points[minOf(i + 2, points.size - 1)]
+        for (t in 1..segments) {
+            val f = t.toDouble() / (segments + 1)
+            val lat = cr(p0.latitude, p1.latitude, p2.latitude, p3.latitude, f)
+            val lon = cr(p0.longitude, p1.longitude, p2.longitude, p3.longitude, f)
+            result.add(GeoPoint(lat, lon))
+        }
+        result.add(p2)
+    }
+    return result
+}
+
+private fun cr(a: Double, b: Double, c: Double, d: Double, t: Double): Double {
+    return 0.5 * (2*b + (-a+c)*t + (2*a - 5*b + 4*c - d)*t*t + (-a + 3*b - 3*c + d)*t*t*t)
 }
 
 // Fallback bitmap builders for when PNG drawables are not found

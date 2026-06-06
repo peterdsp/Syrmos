@@ -10,6 +10,29 @@ struct RouteLine: Identifiable {
     let lineWeight: CGFloat
 }
 
+private func catmullRomSpline(_ points: [CLLocationCoordinate2D], segments: Int = 5) -> [CLLocationCoordinate2D] {
+    guard points.count >= 3 else { return points }
+    var result = [points[0]]
+    for i in 0..<(points.count - 1) {
+        let p0 = points[max(i - 1, 0)]
+        let p1 = points[i]
+        let p2 = points[i + 1]
+        let p3 = points[min(i + 2, points.count - 1)]
+        for t in 1...segments {
+            let f = Double(t) / Double(segments + 1)
+            let lat = cr(p0.latitude, p1.latitude, p2.latitude, p3.latitude, f)
+            let lon = cr(p0.longitude, p1.longitude, p2.longitude, p3.longitude, f)
+            result.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
+        }
+        result.append(p2)
+    }
+    return result
+}
+
+private func cr(_ a: Double, _ b: Double, _ c: Double, _ d: Double, _ t: Double) -> Double {
+    0.5 * (2*b + (-a+c)*t + (2*a - 5*b + 4*c - d)*t*t + (-a + 3*b - 3*c + d)*t*t*t)
+}
+
 enum PreloadedData {
     static let stations: [MapStationNode] = SyrmosData.mapStations
     static let stationsById: [String: MapStationNode] = Dictionary(
@@ -18,10 +41,11 @@ enum PreloadedData {
     static let routeLines: [RouteLine] = SyrmosData.lines.compactMap { line in
         let stations = SyrmosData.stations(for: line.id)
         guard stations.count >= 2 else { return nil }
+        let raw = stations.map { $0.coordinate }
         return RouteLine(
             id: line.id,
             color: line.color,
-            coordinates: stations.map { $0.coordinate },
+            coordinates: catmullRomSpline(raw),
             lineWeight: line.type == .suburban ? 3 : 4
         )
     }
@@ -80,7 +104,7 @@ struct TransitMapView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .trailing) {
+            ZStack {
                 Map(position: $position, selection: $selectedId) {
                     UserAnnotation()
 
@@ -123,6 +147,26 @@ struct TransitMapView: View {
                     guard let id = newId,
                           let station = stations.first(where: { $0.id == id }) else { return }
                     tappedStation = station
+                }
+
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button {
+                            position = .userLocation(followsHeading: false, fallback: .automatic)
+                        } label: {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.blue)
+                                .frame(width: 44, height: 44)
+                                .background(.regularMaterial)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
+                    }
                 }
             }
             .navigationTitle(loc[.map])
