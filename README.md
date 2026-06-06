@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Compose_Multiplatform-1.8-4285F4?logo=jetpackcompose&logoColor=white" alt="Compose" />
   <img src="https://img.shields.io/badge/SwiftUI-5-FA7343?logo=swift&logoColor=white" alt="SwiftUI" />
   <img src="https://img.shields.io/badge/Platform-iOS_|_Android_|_Web-333?logo=apple&logoColor=white" alt="Platform" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/License-BSD_3--Clause-green" alt="License" />
 </p>
 
 <p align="center">
@@ -191,4 +191,6 @@ Syrmos does not collect, store, or transmit personal data. Location is processed
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+BSD 3-Clause. See [LICENSE](LICENSE).
+
+Schedule data is derived from publicly available timetables by STASY and Hellenic Train. Live positions from the Hellenic Train API. Syrmos is not affiliated with any Greek transport authority.

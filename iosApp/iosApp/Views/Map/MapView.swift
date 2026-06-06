@@ -161,7 +161,7 @@ struct TransitMapView: View {
                         .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                 }
                 .padding(.trailing, 16)
-                .padding(.bottom, 16)
+                .padding(.bottom, 80)
             }
             .navigationTitle(loc[.map])
             .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
