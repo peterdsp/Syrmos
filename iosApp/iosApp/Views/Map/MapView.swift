@@ -104,7 +104,7 @@ struct TransitMapView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottomTrailing) {
                 Map(position: $position, selection: $selectedId) {
                     UserAnnotation()
 
@@ -149,25 +149,19 @@ struct TransitMapView: View {
                     tappedStation = station
                 }
 
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button {
-                            position = .userLocation(followsHeading: false, fallback: .automatic)
-                        } label: {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 50, height: 50)
-                                .background(Color.accentColor)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
-                        }
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 20)
-                    }
+                Button {
+                    position = .userLocation(followsHeading: false, fallback: .automatic)
+                } label: {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Color.accentColor)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                 }
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
             }
             .navigationTitle(loc[.map])
             .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
