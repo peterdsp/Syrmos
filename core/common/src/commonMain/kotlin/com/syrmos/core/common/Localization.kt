@@ -9,19 +9,20 @@ enum class AppLanguage(val code: String, val displayName: String) {
     GREEK("el", "Ελληνικά"),
 }
 
+expect fun detectSystemLanguage(): AppLanguage
+expect fun persistLanguage(lang: AppLanguage)
+expect fun loadPersistedLanguage(): AppLanguage?
+
 object LocalizationManager {
-    private val _language = MutableStateFlow(detectSystemLanguage())
+    private val _language = MutableStateFlow(loadPersistedLanguage() ?: detectSystemLanguage())
     val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
     fun setLanguage(lang: AppLanguage) {
         _language.value = lang
+        persistLanguage(lang)
     }
 
     operator fun get(key: L): String = key.text(language.value)
-
-    private fun detectSystemLanguage(): AppLanguage {
-        return AppLanguage.ENGLISH
-    }
 }
 
 enum class L {
