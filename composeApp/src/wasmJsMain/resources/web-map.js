@@ -821,7 +821,7 @@
                             lng = from.station.longitude + (to.station.longitude - from.station.longitude) * frac;
                         }
 
-                        const isAirport = line.id === "M3" && segIdx >= stns.length - 6;
+                        const isAirport = line.id === "M3" && direction === "outbound" && segIdx >= orderedStations.length - 6;
                         const dest = direction === "outbound" ? line.terminal_b : line.terminal_a;
 
                         result.push({

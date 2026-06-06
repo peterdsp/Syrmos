@@ -621,7 +621,7 @@ final class TrainSimulatorService: ObservableObject {
                             lon = from.station.lon + (to.station.lon - from.station.lon) * frac
                         }
 
-                        let isAirport = config.id == "M3" && segIdx >= stns.count - 6
+                        let isAirport = config.id == "M3" && direction == "outbound" && segIdx >= config.stations.count - 6
                         let dest = direction == "outbound" ? config.terminalB : config.terminalA
 
                         result.append(SimulatedTrain(

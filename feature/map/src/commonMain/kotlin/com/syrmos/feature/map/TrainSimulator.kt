@@ -131,7 +131,7 @@ fun simulateTrains(
                         lon = from.station.longitude + (to.station.longitude - from.station.longitude) * fraction
                     }
 
-                    val isAirportService = line.id == "M3" && segmentIndex >= orderedStations.size - 6
+                    val isAirportService = line.id == "M3" && direction == Direction.OUTBOUND && segmentIndex >= stations.size - 6
 
                     trains += SimulatedTrain(
                         id = "${line.id}_${direction.name}_$trainIndex",
