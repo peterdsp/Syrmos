@@ -124,6 +124,11 @@ internal actual fun PlatformMapView(
                 )
                 minZoomLevel = 9.0
                 maxZoomLevel = 18.0
+                val locationOverlay = org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay(
+                    org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider(ctx), this
+                )
+                locationOverlay.enableMyLocation()
+                overlays.add(locationOverlay)
                 mapViewRef.value = this
             }
         },
@@ -273,6 +278,17 @@ internal actual fun PlatformMapView(
             mapView.controller.animateTo(
                 GeoPoint(uiState.selectedStation.latitude, uiState.selectedStation.longitude)
             )
+        }
+    }
+
+    LaunchedEffect(uiState.locateUserRequest) {
+        if (uiState.locateUserRequest > 0) {
+            val myLocation = mapView.overlays
+                .filterIsInstance<org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay>()
+                .firstOrNull()?.myLocation
+            if (myLocation != null) {
+                mapView.controller.animateTo(myLocation, 15.0, 500L)
+            }
         }
     }
 }
