@@ -280,8 +280,26 @@ private fun NearbyStationsSection(
     lang: AppLanguage,
     onStationClick: (String) -> Unit,
 ) {
+    var expanded by remember { mutableStateOf(true) }
+
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle(text = "Nearby stations")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = "📍", style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.width(8.dp))
+            SectionTitle(text = if (lang == AppLanguage.GREEK) "Κοντά μου" else "Near me")
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = if (expanded) "▲" else "▼",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (expanded) {
         stations.take(4).forEach { station ->
             val stationLines = station.lineIds.mapNotNull { lineId -> lines.firstOrNull { it.id == lineId } }
             Card(
@@ -330,6 +348,7 @@ private fun NearbyStationsSection(
                     }
                 }
             }
+        }
         }
     }
 }

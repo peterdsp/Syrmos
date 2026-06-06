@@ -7,6 +7,7 @@ struct HomeView: View {
     @StateObject private var locationService = LocationService()
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var webViewURL: URL?
+    @State private var isNearMeExpanded = true
 
     var body: some View {
         NavigationStack {
@@ -58,14 +59,27 @@ struct HomeView: View {
     private var nearMeSection: some View {
         if locationService.hasPermission && !locationService.nearbyStations.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Image(systemName: "location.fill")
-                        .foregroundStyle(.blue)
-                    Text(loc.language == .greek ? "Κοντά μου" : "Near me")
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        isNearMeExpanded.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .foregroundStyle(.blue)
+                        Text(loc.language == .greek ? "Κοντά μου" : "Near me")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: isNearMeExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .buttonStyle(.plain)
 
+                if isNearMeExpanded {
                 ForEach(locationService.nearbyStations) { nearby in
                     NavigationLink {
                         if let firstStationId = nearby.station.stationIds.first,
@@ -112,6 +126,7 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                }
                 }
             }
         } else if !locationService.hasPermission {

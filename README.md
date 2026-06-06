@@ -185,6 +185,16 @@ Live train positions from the [Hellenic Train API](https://railway.gov.gr).
 
 Syrmos is not affiliated with STASY, Hellenic Train, or OASA.
 
+## Roadmap
+
+Planned for upcoming releases:
+
+- **Accessibility features** -- VoiceOver and TalkBack support, dynamic type, high contrast mode
+- **National rail coverage** -- intercity trains (Athens-Thessaloniki, Athens-Patras) with live tracking
+- **Suburban rail in other cities** -- Thessaloniki and Patras suburban networks
+- **Push notifications** -- alerts for service disruptions on your saved lines
+- **Widget support** -- home screen widgets for next departure at your favorite station
+
 ## Privacy
 
 Syrmos does not collect, store, or transmit personal data. Location is processed on-device only. No analytics, no ads, no tracking. See [Privacy Policy](docs/PRIVACY_POLICY.md).
