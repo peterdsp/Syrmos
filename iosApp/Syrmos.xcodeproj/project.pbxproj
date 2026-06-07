@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */; };
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
 		090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */; };
 		2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */; };
@@ -154,6 +155,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = B6DBA074881EBA32CC2F5013 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
+				0A42AFD8C41125D573DC1B3C /* Resources */,
 				123D21FB8A24EE726D99E5D7 /* Sources */,
 			);
 			buildRules = (
@@ -174,7 +176,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 			};
 			buildConfigurationList = 8058A39F61358BF5CBCE543C /* Build configuration list for PBXProject "Syrmos" */;
 			developmentRegion = en;
@@ -194,6 +196,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0A42AFD8C41125D573DC1B3C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		123D21FB8A24EE726D99E5D7 /* Sources */ = {
@@ -255,8 +268,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -277,6 +292,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -290,7 +306,6 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -314,7 +329,6 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -366,8 +380,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -381,6 +397,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
