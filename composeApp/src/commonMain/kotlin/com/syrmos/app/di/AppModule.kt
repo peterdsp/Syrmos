@@ -38,7 +38,8 @@ val featureModule = module {
             liveTrackerService = get(),
         )
     }
-    factory { StationDetailViewModel(getStationDetail = get(), getNextDepartures = get()) }
+    factory { com.syrmos.core.domain.usecase.GetStationDeparturesUseCase(getNextDepartures = get(), transitPatternRepository = get()) }
+    factory { StationDetailViewModel(getStationDetail = get(), getStationDepartures = get()) }
 }
 
 val appModules = listOf(

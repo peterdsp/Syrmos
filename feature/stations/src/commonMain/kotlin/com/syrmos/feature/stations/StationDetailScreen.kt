@@ -96,7 +96,7 @@ fun StationDetailScreen(
                     DepartureCard(
                         lineName = departure.lineId,
                         lineColor = lineIdToColor(departure.lineId),
-                        direction = departure.direction.name.lowercase()
+                        direction = departure.notes ?: departure.direction.name.lowercase()
                             .replaceFirstChar { it.uppercase() },
                         minutesAway = departure.minutesAway,
                         departureTime = departure.time,
