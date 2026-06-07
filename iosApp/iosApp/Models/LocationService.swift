@@ -39,21 +39,22 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
         let granted = status == .authorizedWhenInUse || status == .authorizedAlways
-        Task { @MainActor in
-            hasPermission = granted
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.hasPermission = granted
             if granted {
-                manager.startUpdatingLocation()
+                self.manager.startUpdatingLocation()
             } else {
-                nearbyStations = []
+                self.nearbyStations = []
             }
         }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        Task { @MainActor in
-            lastLocation = location
-            updateNearby(from: location)
+        Task { @MainActor [weak self] in
+            self?.lastLocation = location
+            self?.updateNearby(from: location)
         }
     }
 
