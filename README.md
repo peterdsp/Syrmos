@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/256.png" width="128" height="128" alt="Syrmos" />
+ <img width="1024" height="500" alt="1" src="https://github.com/user-attachments/assets/6c8c2518-1920-4746-a4a4-8f826ef26a8e" />
 </p>
 
 <h1 align="center">Syrmos</h1>
