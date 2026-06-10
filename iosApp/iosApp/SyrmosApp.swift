@@ -53,7 +53,6 @@ struct SyrmosApp: App {
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
     @ObservedObject private var loc = LocalizationManager.shared
-    @StateObject private var linesService = SyrmosLinesService()
 
     var body: some View {
         ZStack {
@@ -85,9 +84,14 @@ struct ContentView: View {
             }
             .tint(.syrmosPrimary)
         }
-        .environmentObject(linesService)
+        // Fire-and-forget refresh of the offline-first lines cache. Doesn't
+        // block UI; failure is silent. We do not propagate the service via
+        // EnvironmentObject because a missing object on a presented sheet/
+        // navigation destination silently freezes SwiftUI to a black screen
+        // on iOS 18.
         .task {
-            await linesService.refresh()
+            let svc = SyrmosLinesService()
+            await svc.refresh()
         }
     }
 }

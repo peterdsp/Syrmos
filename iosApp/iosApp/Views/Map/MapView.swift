@@ -140,10 +140,13 @@ enum VehicleIcons {
 
 struct TransitMapView: View {
     @ObservedObject private var loc = LocalizationManager.shared
-    @StateObject private var liveTrainService = LiveTrainService()
-    @StateObject private var trainSimulator = TrainSimulatorService()
+    // Use the shared singleton instances so we don't run two polling loops
+    // and two simulator timers in parallel with HomeView. Reduces background
+    // work by ~50% and avoids the multi-view re-render storms that were
+    // freezing the UI on iOS.
+    @ObservedObject private var liveTrainService = LiveTrainService.shared
+    @ObservedObject private var trainSimulator = TrainSimulatorService.shared
     @StateObject private var locationManager = MapLocationManager()
-    @EnvironmentObject private var linesService: SyrmosLinesService
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
@@ -177,23 +180,6 @@ struct TransitMapView: View {
                                 }
                         }
                         .tag(station.id)
-                    }
-
-                    // Stations the Pi API has added since this app was built
-                    // (e.g. 2022 Piraeus tram extension). Bundled data is the
-                    // offline-first source; these are an online overlay only.
-                    ForEach(linesService.extraStations.flatMap { (lineId, sts) in
-                        sts.map { (lineId: lineId, station: $0) }
-                    }, id: \.station.id) { entry in
-                        Annotation(
-                            loc.language == .greek ? entry.station.nameEl : entry.station.name,
-                            coordinate: entry.station.coordinate
-                        ) {
-                            Circle()
-                                .fill(SyrmosData.lineColor(for: entry.lineId))
-                                .frame(width: 12, height: 12)
-                                .overlay(Circle().stroke(.white, lineWidth: 2))
-                        }
                     }
 
                     ForEach(trainSimulator.trains) { train in
@@ -288,6 +274,7 @@ struct StationSheetView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 lineBadges
+                stationFactsChips
                 if !departures.isEmpty { departuresList }
                 directionsButton
             }
@@ -308,8 +295,8 @@ struct StationSheetView: View {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(loc.language == .greek ? station.nameEl : station.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
@@ -318,36 +305,63 @@ struct StationSheetView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button(loc.language == .greek ? "Κλείσιμο" : "Done") { dismiss() }
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .font(.system(size: 28, weight: .regular))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(loc.language == .greek ? "Κλείσιμο" : "Close")
         }
     }
 
     private var lineBadges: some View {
-        HStack(spacing: 6) {
+        // Wrap badges so 4+ line stations like Piraeus don't overflow.
+        FlowLayout(spacing: 6) {
             ForEach(station.lineIds, id: \.self) { lineId in
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Circle()
                         .fill(SyrmosData.lineColor(for: lineId))
                         .frame(width: 8, height: 8)
                     Text(SyrmosData.line(for: lineId)?.name ?? lineId)
                         .font(.caption)
-                        .fontWeight(.medium)
+                        .fontWeight(.semibold)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                .background(SyrmosData.lineColor(for: lineId).opacity(0.12))
                 .clipShape(Capsule())
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var stationFactsChips: some View {
+        // Only show the chips that are actually useful. Skip "Lines: N" (the
+        // badges already say that) and the internal "merged records" detail.
+        if station.isInterchange {
+            HStack(spacing: 6) {
+                FactChip(icon: "arrow.left.arrow.right",
+                         label: loc.language == .greek ? "Ανταπόκριση" : "Interchange")
             }
         }
     }
 
     private var departuresList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next Departures")
-                .font(.headline)
+            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next departures")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
             ForEach(departures.prefix(6)) { dep in
                 DepartureRowView(departure: dep)
-                Divider()
+                if dep.id != departures.prefix(6).last?.id {
+                    Divider().padding(.leading, 28)
+                }
             }
         }
     }
@@ -360,14 +374,84 @@ struct StationSheetView: View {
                 MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeTransit,
             ])
         } label: {
-            Label(
-                loc.language == .greek ? "Οδηγίες" : "Get Directions",
-                systemImage: "arrow.triangle.turn.up.right.diamond"
-            )
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                Text(loc.language == .greek ? "Οδηγίες" : "Get directions")
+                    .fontWeight(.semibold)
+            }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
+            .background(Color.syrmosPrimary)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Helpers
+
+/// Compact pill that surfaces a single useful station fact (Interchange, etc).
+private struct FactChip: View {
+    let icon: String
+    let label: String
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(label)
+                .font(.caption)
+                .fontWeight(.medium)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color(uiColor: .secondarySystemBackground))
+        .clipShape(Capsule())
+    }
+}
+
+/// Simple wrapping layout for line badges so a 4-line station like Piraeus
+/// doesn't have to scroll horizontally.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        var totalHeight: CGFloat = 0
+        var rowWidth: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if rowWidth + size.width > width {
+                totalHeight += rowHeight + spacing
+                rowWidth = size.width + spacing
+                rowHeight = size.height
+            } else {
+                rowWidth += size.width + spacing
+                rowHeight = max(rowHeight, size.height)
+            }
+        }
+        totalHeight += rowHeight
+        return CGSize(width: width, height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let width = bounds.width
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x + size.width > bounds.minX + width {
+                y += rowHeight + spacing
+                x = bounds.minX
+                rowHeight = 0
+            }
+            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(width: size.width, height: size.height))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }
 
@@ -507,24 +591,54 @@ struct TrainDot: View {
 
 struct DepartureRowView: View {
     let departure: Departure
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
-        HStack {
-            Circle()
+        HStack(spacing: 12) {
+            // Bigger color indicator that ties the row to its line
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
                 .fill(SyrmosData.lineColor(for: departure.lineId))
-                .frame(width: 8, height: 8)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
-                    .font(.subheadline)
-                Text("towards \(departure.direction)")
+                .frame(width: 4, height: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    if departure.serviceType == "airport" {
+                        Text(loc.language == .greek ? "Αεροδρόμιο" : "Airport")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Color.metroBlue.opacity(0.15))
+                            .foregroundStyle(Color.metroBlue)
+                            .clipShape(Capsule())
+                    }
+                }
+                Text(loc.language == .greek
+                    ? "προς \(departure.direction)"
+                    : "to \(departure.direction)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            Spacer()
-            Text(departure.minutesAway <= 1 ? "Now" : "\(departure.minutesAway) min")
-                .font(.headline)
-                .foregroundStyle(arrivalColor)
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(departure.minutesAway <= 1
+                    ? (loc.language == .greek ? "Τώρα" : "Now")
+                    : "\(departure.minutesAway) min")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(arrivalColor)
+                    .contentTransition(.numericText())
+                Text(departure.time)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
+            }
         }
+        .padding(.vertical, 4)
     }
 
     private var arrivalColor: Color {
