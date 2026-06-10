@@ -7,6 +7,7 @@ on:
       - ".github/workflows/pages.yml"
       - "composeApp/**"
       - "core/**"
+      - "feature/**"
       - "scripts/prepare-pages-web-release.sh"
       - "gradle/**"
       - "gradle.properties"
