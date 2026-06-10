@@ -30,18 +30,38 @@ final class STASYService: ObservableObject {
     @Published var lastUpdated: Date?
     @Published var error: String?
 
-    private let stasyURL = URL(string: "https://www.stasy.gr")!
+    private let apiURL = URL(string: "https://api-syrmos.peterdsp.dev/api/announcements")!
     private let cacheKey = "stasy_announcements_cache"
     private let cacheTimeKey = "stasy_announcements_cache_time"
 
+    init() {
+        loadCachedAnnouncements()
+    }
+
+    private struct APIPayload: Decodable {
+        let updatedAt: String?
+        let count: Int
+        let announcements: [APIAnnouncement]
+    }
+
+    private struct APIAnnouncement: Decodable {
+        let id: String
+        let title: String
+        let date: String
+        let summary: String
+        let url: String
+        let category: String
+    }
+
     func fetchAnnouncements() async {
-        isLoading = true
+        // Don't flip isLoading if we already have cached content — refresh silently
+        if announcements.isEmpty { isLoading = true }
         error = nil
 
         do {
-            var request = URLRequest(url: stasyURL)
-            request.timeoutInterval = 15
-            request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)", forHTTPHeaderField: "User-Agent")
+            var request = URLRequest(url: apiURL)
+            request.timeoutInterval = 10
+            request.cachePolicy = .reloadIgnoringLocalCacheData
 
             let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -50,18 +70,26 @@ final class STASYService: ObservableObject {
                 throw URLError(.badServerResponse)
             }
 
-            guard let html = String(data: data, encoding: .utf8) else {
-                throw URLError(.cannotDecodeContentData)
+            let payload = try JSONDecoder().decode(APIPayload.self, from: data)
+            let parsed: [STASYAnnouncement] = payload.announcements.map { item in
+                STASYAnnouncement(
+                    id: item.id,
+                    title: item.title,
+                    date: item.date,
+                    summary: item.summary,
+                    url: URL(string: item.url),
+                    category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general
+                )
             }
-
-            let parsed = parseAnnouncements(from: html)
             announcements = parsed
             lastUpdated = Date()
-
             cacheAnnouncements(parsed)
         } catch {
-            self.error = "Could not reach stasy.gr"
-            loadCachedAnnouncements()
+            self.error = "Could not reach Syrmos API"
+            // keep showing cached content silently — don't flip back to empty
+            if announcements.isEmpty {
+                loadCachedAnnouncements()
+            }
         }
 
         isLoading = false

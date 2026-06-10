@@ -151,9 +151,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		66F1C02D0159EDB3DE71E2EF /* iosApp */ = {
+		66F1C02D0159EDB3DE71E2EF /* Syrmos - Athens Rail Times */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B6DBA074881EBA32CC2F5013 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildConfigurationList = B6DBA074881EBA32CC2F5013 /* Build configuration list for PBXNativeTarget "Syrmos - Athens Rail Times" */;
 			buildPhases = (
 				0A42AFD8C41125D573DC1B3C /* Resources */,
 				123D21FB8A24EE726D99E5D7 /* Sources */,
@@ -162,7 +162,7 @@
 			);
 			dependencies = (
 			);
-			name = iosApp;
+			name = "Syrmos - Athens Rail Times";
 			packageProductDependencies = (
 			);
 			productName = iosApp;
@@ -192,7 +192,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				66F1C02D0159EDB3DE71E2EF /* iosApp */,
+				66F1C02D0159EDB3DE71E2EF /* Syrmos - Athens Rail Times */,
 			);
 		};
 /* End PBXProject section */
@@ -305,7 +305,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -314,7 +314,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.syrmos.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
@@ -328,7 +328,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -337,7 +337,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.syrmos.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
@@ -416,7 +416,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		B6DBA074881EBA32CC2F5013 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+		B6DBA074881EBA32CC2F5013 /* Build configuration list for PBXNativeTarget "Syrmos - Athens Rail Times" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				91D7D353F320A7C5B0F3FDAC /* Debug */,

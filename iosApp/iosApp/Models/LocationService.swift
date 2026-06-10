@@ -1,13 +1,21 @@
 import CoreLocation
 import SwiftUI
+import UIKit
 
 @MainActor
 final class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var nearbyStations: [NearbyStation] = []
     @Published var hasPermission = false
+    @Published var isDenied = false
 
     private let manager = CLLocationManager()
     private var lastLocation: CLLocation?
+
+    func openSystemSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
 
     struct NearbyStation: Identifiable {
         let id: String
@@ -22,6 +30,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         manager.distanceFilter = 50
         let status = manager.authorizationStatus
         hasPermission = status == .authorizedWhenInUse || status == .authorizedAlways
+        isDenied = status == .denied || status == .restricted
         if hasPermission {
             manager.startUpdatingLocation()
         }
@@ -42,6 +51,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.hasPermission = granted
+            self.isDenied = status == .denied || status == .restricted
             if granted {
                 self.manager.startUpdatingLocation()
             } else {

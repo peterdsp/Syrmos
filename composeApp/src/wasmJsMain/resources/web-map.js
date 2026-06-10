@@ -517,39 +517,46 @@
     }
 
     function connectLiveTrainStream() {
-        const source = new EventSource("https://api-syrmos.peterdsp.dev/api/train-stream");
-        source.addEventListener("trainPositionsUx", (event) => {
+        // Poll the Syrmos API cached JSON every 10 seconds. The Pi handles the
+        // upstream SSE connection and pre-filters the data so each browser
+        // downloads only ~1.5 KB per poll instead of holding an SSE stream
+        // that emits 10+ KB of schedule cards per second.
+        const TRAINS_URL = "https://api-syrmos.peterdsp.dev/api/trains";
+        const POLL_INTERVAL_MS = 10_000;
+
+        async function pollOnce() {
             try {
-                const payload = JSON.parse(event.data);
-                updateLiveTrains(payload.positions || []);
+                const res = await fetch(TRAINS_URL, { cache: "no-store" });
+                if (!res.ok) {
+                    return;
+                }
+                const payload = await res.json();
+                updateLiveTrains(payload.trains || []);
             } catch (_error) {
+                // Keep showing the last successful frame on transient errors.
             }
-        });
-        source.onerror = () => {
-            renderLiveTrains([]);
-        };
+        }
+
+        pollOnce();
+        setInterval(pollOnce, POLL_INTERVAL_MS);
     }
 
-    function updateLiveTrains(positions) {
-        const trains = positions
-            .map((position) => {
-                const inferred = inferLineId(position);
-                if (!inferred || position.lat == null || position.lng == null) return null;
-                return {
-                    id: position.id || position.trainId || position.trainNumber || position.name,
-                    lineId: inferred,
-                    trainNumber: position.trainNumber || position.name || position.locomotiveNumber || "Train",
-                    origin: position.origin || "",
-                    destination: position.destination || "",
-                    nextStation: position.nextStation || "",
-                    delay: position.delay || 0,
-                    speed: position.speed || null,
-                    lat: position.lat,
-                    lng: position.lng,
-                    timestamp: position.timestamp || position.receivedAt || "",
-                };
-            })
-            .filter(Boolean);
+    function updateLiveTrains(trainsFromApi) {
+        const trains = trainsFromApi
+            .filter((t) => t && t.lat != null && t.lng != null && t.lineId)
+            .map((t) => ({
+                id: t.id || t.trainNumber,
+                lineId: t.lineId,
+                trainNumber: t.trainNumber || "Train",
+                origin: t.origin || "",
+                destination: t.destination || "",
+                nextStation: t.nextStation || "",
+                delay: t.delayMinutes || 0,
+                speed: null,
+                lat: t.lat,
+                lng: t.lng,
+                timestamp: "",
+            }));
 
         renderLiveTrains(trains);
     }

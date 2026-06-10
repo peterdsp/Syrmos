@@ -27,6 +27,8 @@ struct SyrmosSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.syrmosBackground)
             .navigationTitle(loc[.settings])
         }
     }

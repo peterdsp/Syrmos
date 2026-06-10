@@ -72,6 +72,8 @@ struct LineDetailView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.syrmosBackground)
         .navigationTitle(line.localizedName(loc.language))
     }
 }

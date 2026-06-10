@@ -25,6 +25,8 @@ struct LinesView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.syrmosBackground)
             .navigationTitle(loc[.lines])
         }
     }

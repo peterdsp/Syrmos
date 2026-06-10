@@ -8,6 +8,7 @@ struct HomeView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
+    @State private var showLocationDeniedAlert = false
 
     var body: some View {
         NavigationStack {
@@ -28,12 +29,26 @@ struct HomeView: View {
                 await stasyService.fetchAnnouncements()
             }
             .task {
+                locationService.requestIfNeeded()
                 await stasyService.fetchAnnouncements()
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
                     .presentationDetents([.large, .medium])
                     .presentationDragIndicator(.visible)
+            }
+            .alert(
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
+                isPresented: $showLocationDeniedAlert
+            ) {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : "Open Settings") {
+                    locationService.openSystemSettings()
+                }
+                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {}
+            } message: {
+                Text(loc.language == .greek
+                    ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
+                    : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
         }
     }
@@ -57,7 +72,39 @@ struct HomeView: View {
 
     @ViewBuilder
     private var nearMeSection: some View {
-        if locationService.hasPermission && !locationService.nearbyStations.isEmpty {
+        if !locationService.hasPermission {
+            Button {
+                if locationService.isDenied {
+                    showLocationDeniedAlert = true
+                } else {
+                    locationService.requestIfNeeded()
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "location.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(loc.language == .greek ? "Κοντά μου" : "Near me")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Text(loc.language == .greek ? "Ενεργοποιήστε την τοποθεσία για να δείτε κοντινούς σταθμούς" : "Enable location to see nearby stations")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(Color.syrmosSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        } else if locationService.hasPermission && !locationService.nearbyStations.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Button {
                     withAnimation(.easeInOut(duration: 0.25)) {
@@ -129,8 +176,6 @@ struct HomeView: View {
                 }
                 }
             }
-        } else if !locationService.hasPermission {
-            EmptyView()
         }
     }
 
@@ -144,31 +189,51 @@ struct HomeView: View {
 
     @ViewBuilder
     private var liveTrainsSection: some View {
-        if liveTrainService.trains.isEmpty {
+        let realTrains = liveTrainService.trains.filter { !$0.origin.isEmpty && !$0.destination.isEmpty }
+        if realTrains.isEmpty {
             EmptyView()
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Live trains")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                HStack(spacing: 6) {
+                    Image(systemName: "tram.fill")
+                        .foregroundStyle(Color.suburbanPurple)
+                    Text(loc.language == .greek ? "Ζωντανά τρένα" : "Live trains")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
 
-                ForEach(liveTrainService.trains.prefix(3)) { train in
-                    HStack {
-                        Circle()
-                            .fill(Color.suburbanPurple)
-                            .frame(width: 8, height: 8)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(train.trainNumber)
+                ForEach(realTrains.prefix(4)) { train in
+                    HStack(spacing: 10) {
+                        VStack(spacing: 2) {
+                            Text(train.lineId)
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(SyrmosData.lineColor(for: train.lineId))
+                                .clipShape(Capsule())
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(train.origin) → \(train.destination)")
                                 .font(.subheadline)
-                                .fontWeight(.semibold)
-                            Text("\(train.origin) to \(train.destination)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .fontWeight(.medium)
+                                .lineLimit(1)
+                            HStack(spacing: 6) {
+                                Text("#\(train.trainNumber)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                if train.delayMinutes > 0 {
+                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : "+\(train.delayMinutes)′ delay")
+                                        .font(.caption2)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
                         }
                         Spacer()
-                        Text(train.nextStation.isEmpty ? "Live" : train.nextStation)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 8, height: 8)
                     }
                     .padding(12)
                     .background(Color.syrmosSurface)
@@ -182,10 +247,7 @@ struct HomeView: View {
     private var alertsSection: some View {
         let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
 
-        if stasyService.isLoading && stasyService.announcements.isEmpty {
-            ProgressView()
-                .frame(maxWidth: .infinity, minHeight: 60)
-        } else if !alerts.isEmpty {
+        if !alerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")

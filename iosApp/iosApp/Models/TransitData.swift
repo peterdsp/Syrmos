@@ -246,15 +246,32 @@ extension SyrmosData {
     }
 }
 
-@MainActor
-final class LiveTrainService: ObservableObject {
-    @Published var trains: [LiveTrain] = []
+final class LiveTrainService: ObservableObject, @unchecked Sendable {
+    @MainActor @Published var trains: [LiveTrain] = []
 
     private var task: Task<Void, Never>?
 
+    private struct TrainsPayload: Decodable {
+        let updatedAt: String?
+        let count: Int
+        let trains: [TrainItem]
+    }
+
+    private struct TrainItem: Decodable {
+        let id: String
+        let lineId: String
+        let trainNumber: String
+        let origin: String
+        let destination: String
+        let nextStation: String
+        let delayMinutes: Int
+        let lat: Double
+        let lng: Double
+    }
+
     init() {
-        task = Task { [weak self] in
-            await self?.run()
+        task = Task.detached(priority: .utility) { @Sendable [weak self] in
+            await LiveTrainService.pollLoop(self)
         }
     }
 
@@ -262,98 +279,36 @@ final class LiveTrainService: ObservableObject {
         task?.cancel()
     }
 
-    private func run() async {
+    private static func pollLoop(_ instance: LiveTrainService?) async {
+        let url = URL(string: "https://api-syrmos.peterdsp.dev/api/trains")!
         while !Task.isCancelled {
             do {
-                try await observeStream()
-            } catch {
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-            }
-        }
-    }
-
-    private func observeStream() async throws {
-        let url = URL(string: "https://railway.gov.gr/api/train-stream")!
-        let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 45)
-        let (bytes, _) = try await URLSession.shared.bytes(for: request)
-
-        var currentEvent: String?
-        var dataLines: [String] = []
-
-        for try await rawLine in bytes.lines {
-            let line = String(rawLine)
-            if line.isEmpty {
-                if currentEvent == "trainPositionsUx" {
-                    await updateTrains(from: dataLines.joined(separator: "\n"))
+                var req = URLRequest(url: url)
+                req.timeoutInterval = 10
+                req.cachePolicy = .reloadIgnoringLocalCacheData
+                let (data, response) = try await URLSession.shared.data(for: req)
+                guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
                 }
-                currentEvent = nil
-                dataLines = []
-                continue
+                let payload = try JSONDecoder().decode(TrainsPayload.self, from: data)
+                let parsed: [LiveTrain] = payload.trains.map { t in
+                    LiveTrain(
+                        id: t.id,
+                        lineId: t.lineId,
+                        trainNumber: t.trainNumber,
+                        origin: t.origin,
+                        destination: t.destination,
+                        nextStation: t.nextStation,
+                        delayMinutes: t.delayMinutes,
+                        coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng)
+                    )
+                }
+                await MainActor.run { instance?.trains = parsed }
+            } catch {
+                // ignore — keep showing previous trains until next poll succeeds
             }
-
-            if line.hasPrefix("event:") {
-                currentEvent = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-            } else if line.hasPrefix("data:") {
-                dataLines.append(String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces))
-            }
+            try? await Task.sleep(nanoseconds: 10_000_000_000)  // 10s
         }
-    }
-
-    @MainActor
-    private func updateTrains(from payload: String) {
-        guard let data = payload.data(using: .utf8) else {
-            trains = []
-            return
-        }
-
-        do {
-            let decoded = try JSONDecoder().decode(TrainPositionsPayload.self, from: data)
-            trains = decoded.positions.compactMap { position in
-                guard let lineId = inferLineId(position: position),
-                      let lat = position.lat,
-                      let lng = position.lng else { return nil }
-
-                return LiveTrain(
-                    id: position.id ?? position.trainId ?? position.locomotiveId ?? position.name ?? UUID().uuidString,
-                    lineId: lineId,
-                    trainNumber: position.trainNumber ?? position.name ?? position.locomotiveNumber ?? "Train",
-                    origin: position.origin ?? "",
-                    destination: position.destination ?? "",
-                    nextStation: position.nextStation ?? "",
-                    delayMinutes: position.delay ?? 0,
-                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)
-                )
-            }
-        } catch {
-            trains = []
-        }
-    }
-
-    private func inferLineId(position: TrainPositionPayload) -> String? {
-        let text = [
-            position.origin,
-            position.destination,
-            position.nextStation,
-            position.corridor,
-        ]
-        .compactMap { $0?.lowercased() }
-        .joined(separator: " ")
-
-        let corridor = (position.corridor ?? "").lowercased()
-
-        if text.contains("ανω λιοσια") && text.contains("αεροδρομ") {
-            return "A2"
-        }
-        if text.contains("αθην") && text.contains("χαλκιδ") {
-            return "A3"
-        }
-        if text.contains("πειραι") && text.contains("κιατ") {
-            return "A4"
-        }
-        if corridor == "pirair" || (text.contains("πειραι") && text.contains("αεροδρομ")) {
-            return "A1"
-        }
-        return nil
     }
 }
 
@@ -482,19 +437,14 @@ struct SimulatedTrain: Identifiable {
 
 // MARK: - Train Simulator Service
 
-@MainActor
-final class TrainSimulatorService: ObservableObject {
-    @Published var trains: [SimulatedTrain] = []
+final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
+    @MainActor @Published var trains: [SimulatedTrain] = []
 
     private var task: Task<Void, Never>?
 
     init() {
-        update()
-        task = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                self?.update()
-            }
+        task = Task.detached(priority: .utility) { @Sendable [weak self] in
+            await TrainSimulatorService.runLoop(self)
         }
     }
 
@@ -502,8 +452,15 @@ final class TrainSimulatorService: ObservableObject {
         task?.cancel()
     }
 
-    private func update() {
-        trains = Self.simulateTrains()
+    private static func runLoop(_ instance: TrainSimulatorService?) async {
+        let first = simulateTrains()
+        await MainActor.run { instance?.trains = first }
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if Task.isCancelled { return }
+            let next = simulateTrains()
+            await MainActor.run { instance?.trains = next }
+        }
     }
 
     private static let dwellMetro = 0.5

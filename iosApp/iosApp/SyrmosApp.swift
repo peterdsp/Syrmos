@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
@@ -15,16 +16,26 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 class SceneDelegate: NSObject, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
-        for window in windowScene.windows {
-            window.backgroundColor = .systemGroupedBackground
-        }
+        configureWindows(windowScene)
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
         guard let windowScene = scene as? UIWindowScene else { return }
+        configureWindows(windowScene)
+    }
+
+    private func configureWindows(_ windowScene: UIWindowScene) {
         for window in windowScene.windows {
             window.backgroundColor = .systemGroupedBackground
         }
+        // Stop UITabBarController and UINavigationController from flashing black during transitions
+        UITabBar.appearance().isTranslucent = true
+        UINavigationBar.appearance().isTranslucent = true
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = UIColor.systemBackground
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }
 
@@ -44,32 +55,35 @@ struct ContentView: View {
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView()
-                .tabItem {
-                    Label(loc[.home], systemImage: "house")
-                }
-                .tag(SyrmosTab.home)
+        ZStack {
+            Color(.systemBackground).ignoresSafeArea()
+            TabView(selection: $selectedTab) {
+                HomeView()
+                    .tabItem {
+                        Label(loc[.home], systemImage: "house")
+                    }
+                    .tag(SyrmosTab.home)
 
-            LinesView()
-                .tabItem {
-                    Label(loc[.lines], systemImage: "tram")
-                }
-                .tag(SyrmosTab.lines)
+                LinesView()
+                    .tabItem {
+                        Label(loc[.lines], systemImage: "tram")
+                    }
+                    .tag(SyrmosTab.lines)
 
-            TransitMapView()
-                .tabItem {
-                    Label(loc[.map], systemImage: "map")
-                }
-                .tag(SyrmosTab.map)
+                TransitMapView()
+                    .tabItem {
+                        Label(loc[.map], systemImage: "map")
+                    }
+                    .tag(SyrmosTab.map)
 
-            SyrmosSettingsView()
-                .tabItem {
-                    Label(loc[.settings], systemImage: "gearshape")
-                }
-                .tag(SyrmosTab.settings)
+                SyrmosSettingsView()
+                    .tabItem {
+                        Label(loc[.settings], systemImage: "gearshape")
+                    }
+                    .tag(SyrmosTab.settings)
+            }
+            .tint(.syrmosPrimary)
         }
-        .tint(.syrmosPrimary)
     }
 }
 

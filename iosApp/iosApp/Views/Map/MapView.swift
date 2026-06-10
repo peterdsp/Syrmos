@@ -1,5 +1,57 @@
 import SwiftUI
 import MapKit
+import UIKit
+
+// MARK: - Location manager for map locate button
+
+@MainActor
+final class MapLocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    private let manager = CLLocationManager()
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        authorizationStatus = manager.authorizationStatus
+    }
+
+    /// Returns true if the caller should follow up by recentering the map.
+    /// Returns false if it should show the "denied" alert instead.
+    @discardableResult
+    func requestOrPrompt() -> LocationRequestResult {
+        let status = manager.authorizationStatus
+        switch status {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+            return .promptShown
+        case .denied, .restricted:
+            return .denied
+        case .authorizedAlways, .authorizedWhenInUse:
+            return .authorized
+        @unknown default:
+            return .denied
+        }
+    }
+
+    func openSystemSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor [weak self] in
+            self?.authorizationStatus = status
+        }
+    }
+}
+
+enum LocationRequestResult {
+    case authorized
+    case promptShown
+    case denied
+}
 
 // MARK: - Preloaded station data (computed once at app start)
 
@@ -90,6 +142,7 @@ struct TransitMapView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @StateObject private var liveTrainService = LiveTrainService()
     @StateObject private var trainSimulator = TrainSimulatorService()
+    @StateObject private var locationManager = MapLocationManager()
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
@@ -98,6 +151,8 @@ struct TransitMapView: View {
     )
     @State private var selectedId: String?
     @State private var tappedStation: MapStationNode?
+    @State private var mapLoaded = false
+    @State private var showLocationDeniedAlert = false
 
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
@@ -143,14 +198,26 @@ struct TransitMapView: View {
                     MapCompass()
                     MapScaleView()
                 }
+                .onAppear { mapLoaded = true }
                 .onChange(of: selectedId) { _, newId in
                     guard let id = newId,
                           let station = stations.first(where: { $0.id == id }) else { return }
                     tappedStation = station
                 }
 
+                if !mapLoaded {
+                    Color(.systemBackground)
+                        .ignoresSafeArea()
+                }
+
                 Button {
-                    position = .userLocation(followsHeading: false, fallback: .automatic)
+                    let result = locationManager.requestOrPrompt()
+                    switch result {
+                    case .authorized, .promptShown:
+                        position = .userLocation(followsHeading: false, fallback: .automatic)
+                    case .denied:
+                        showLocationDeniedAlert = true
+                    }
                 } label: {
                     Image(systemName: "location.fill")
                         .font(.system(size: 18, weight: .bold))
@@ -168,6 +235,19 @@ struct TransitMapView: View {
                 StationSheetView(station: station)
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
+            }
+            .alert(
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
+                isPresented: $showLocationDeniedAlert
+            ) {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : "Open Settings") {
+                    locationManager.openSystemSettings()
+                }
+                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {}
+            } message: {
+                Text(loc.language == .greek
+                    ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
+                    : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
         }
     }
