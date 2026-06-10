@@ -131,13 +131,12 @@ struct HomeView: View {
                 if isNearMeExpanded {
                 ForEach(locationService.nearbyStations) { nearby in
                     NavigationLink {
-                        if let firstStationId = nearby.station.stationIds.first,
-                           let lineId = nearby.station.lineIds.first {
-                            let stations = SyrmosData.stations(for: lineId)
-                            if let transitStation = stations.first(where: { $0.id == firstStationId }) {
-                                StationDetailView(station: transitStation)
-                            }
-                        }
+                        // ALWAYS return a non-empty destination view.
+                        // Previously this fell through to an empty View for
+                        // interchange stations like Piraeus (4 lines, stationIds
+                        // and lineIds in different orders), which renders as a
+                        // black screen with only the back chevron visible.
+                        NearbyStationDestination(node: nearby.station)
                     } label: {
                         HStack(spacing: 12) {
                             HStack(spacing: 4) {
@@ -323,6 +322,73 @@ struct HomeView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Nearby Station Destination
+//
+// Bulletproof destination for the "Near me" NavigationLink. Tries each
+// (lineId, stationId) pair until it finds a matching TransitStation and
+// pushes StationDetailView. If nothing matches (this happens at interchange
+// stops like Piraeus where the merged MapStationNode's stationIds and
+// lineIds arrays don't line up), it falls back to a minimal screen rather
+// than rendering an empty View — which was showing up as a black screen.
+
+struct NearbyStationDestination: View {
+    let node: MapStationNode
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        if let station = resolveTransitStation() {
+            StationDetailView(station: station)
+        } else {
+            // Defensive fallback. Should be unreachable now that we walk
+            // every (line, station) pair, but if data is ever malformed we
+            // want a real view to show, not a black NavigationStack push.
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(loc.language == .greek ? node.nameEl : node.displayName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text(loc.language == .greek
+                         ? "Ο σταθμός δεν είναι ακόμη διαθέσιμος"
+                         : "This station isn't available yet.")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+            }
+            .background(Color.syrmosBackground)
+            .navigationTitle(loc.language == .greek ? node.nameEl : node.displayName)
+        }
+    }
+
+    private func resolveTransitStation() -> TransitStation? {
+        // 1. Best path: stationIdByLineId is correctly paired.
+        for lineId in node.lineIds {
+            if let stationId = node.stationIdByLineId[lineId],
+               let match = SyrmosData.stations(for: lineId).first(where: { $0.id == stationId }) {
+                return match
+            }
+        }
+        // 2. Fallback: try every (lineId, stationId) cross product.
+        for lineId in node.lineIds {
+            let stationsOnLine = SyrmosData.stations(for: lineId)
+            for sid in node.stationIds {
+                if let match = stationsOnLine.first(where: { $0.id == sid }) {
+                    return match
+                }
+            }
+        }
+        // 3. Last resort: any station whose id matches anything we know.
+        for sid in node.stationIds {
+            for lineId in SyrmosData.lines.map(\.id) {
+                if let match = SyrmosData.stations(for: lineId).first(where: { $0.id == sid }) {
+                    return match
+                }
+            }
+        }
+        return nil
     }
 }
 
