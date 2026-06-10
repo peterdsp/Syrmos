@@ -42,6 +42,7 @@
     const stationNodeMap = new Map(stationNodes.map((station) => [station.id, station]));
     const markers = new Map();
     const liveTrainMarkers = new Map();
+    let departureRefreshTimer = null;
     const lineStations = new Map(
         routes.map((route) => [
             route.line_id,
@@ -205,6 +206,7 @@
             weekday: "short",
             hour: "2-digit",
             minute: "2-digit",
+            second: "2-digit",
             hour12: false,
         });
         const parts = formatter.formatToParts(new Date());
@@ -213,6 +215,7 @@
             weekday: values.weekday,
             hour: Number(values.hour),
             minute: Number(values.minute),
+            second: Number(values.second || 0),
         };
     }
 
@@ -230,7 +233,15 @@
     }
 
     function buildStationDepartures(station) {
+        // Clock-aligned slots: at 14:31 on a 5-min frequency the next
+        // departure is 14:35 (4 min away), then 14:40 (9 min), etc.
+        // Previously we returned "now + freq * i" which gave a constant
+        // 5/10/15/20 no matter when the user opened the screen, so the
+        // countdown never ticked down. Matches the iOS + KMP fix.
         const result = [];
+        const now = currentAthensParts();
+        const nowMinutes = now.hour * 60 + now.minute;
+        const secondOffset = now.second >= 30 ? 1 : 0;
 
         for (const lineId of station.lineIds) {
             const line = lineMap.get(lineId);
@@ -244,14 +255,21 @@
             });
 
             for (const pattern of patterns) {
-                for (let index = 1; index <= 4; index += 1) {
-                    const minutesAway = pattern.frequency_minutes * index;
+                const freq = Math.max(pattern.frequency_minutes, 1);
+                let nextSlot = (Math.floor(nowMinutes / freq) + 1) * freq;
+                for (let index = 0; index < 4; index += 1) {
+                    const minutesAway = Math.max(nextSlot - nowMinutes - secondOffset, 0);
+                    const slotMinutes = nextSlot % (24 * 60);
+                    const hour = Math.floor(slotMinutes / 60);
+                    const minute = slotMinutes % 60;
+                    const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
                     result.push({
                         line,
                         destination: pattern.direction,
-                        time: formatTimeFromNow(minutesAway),
+                        time,
                         minutesAway,
                     });
+                    nextSlot += freq;
                 }
             }
         }
@@ -364,12 +382,28 @@
         directionsLink.href = `https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}&travelmode=transit`;
 
         stationSheet.classList.remove("station-sheet--hidden");
+
+        // Live countdown tick: re-render departures every 15 seconds so the
+        // minutes-away number actually counts down (5 → 4 → 3 …) instead of
+        // freezing at whatever was on screen when the sheet opened.
+        if (departureRefreshTimer) {
+            clearInterval(departureRefreshTimer);
+        }
+        departureRefreshTimer = setInterval(() => {
+            const current = stationNodeMap.get(stationId);
+            if (!current) return;
+            renderDepartures(current);
+        }, 15_000);
     }
 
     function clearSelection() {
         updateMarkerSelection(null);
         stationDepartures.innerHTML = "";
         stationSheet.classList.add("station-sheet--hidden");
+        if (departureRefreshTimer) {
+            clearInterval(departureRefreshTimer);
+            departureRefreshTimer = null;
+        }
     }
 
     function renderSearchResults(results) {
@@ -979,7 +1013,7 @@
         const display = [...perLine.values()].slice(0, 10);
 
         const panelHtml =
-            `<div class="panel-item"><div class="panel-item__meta" style="font-weight:600;color:#1a1a2e;">${trains.length} trains active</div></div>` +
+            `<div class="panel-item"><div class="panel-item__count">${trains.length} trains active</div></div>` +
             display.map((train) => {
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 return `
