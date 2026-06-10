@@ -100,6 +100,16 @@ body {
     color: #5f6b76;
 }
 
+.panel-item__count {
+    font-size: 13px;
+    font-weight: 650;
+    color: #1a1a2e;
+}
+
+.dark-mode .panel-item__count {
+    color: #f1f5f9;
+}
+
 .train-marker {
     width: 16px;
     height: 16px;
@@ -534,8 +544,9 @@ body {
 }
 
 .dark-mode .meta-chip {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
     color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ghost-button,
@@ -735,23 +746,25 @@ body {
     }
 }
 
-/* Dark mode */
+/* Dark mode — OLED pure-black scheme so the AMOLED pixels stay off
+   wherever there isn't content, saving real battery on phones and
+   giving us the deep black look users expect from a modern dark UI. */
 .dark-mode {
-    background: #0f1117;
+    background: #000000;
     color: #e2e8f0;
 }
 
 .dark-mode .top-bar {
-    background: rgba(20, 24, 33, 0.92);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.92);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .dark-mode .brand { color: #f1f5f9; }
-.dark-mode .subtitle { color: #8896a4; }
+.dark-mode .subtitle { color: #94a3b8; }
 
 .dark-mode .search-input-shell {
-    background: rgba(30, 35, 48, 0.9);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: #0a0a0a;
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark-mode .search-input {
@@ -759,73 +772,79 @@ body {
 }
 
 .dark-mode .search-results {
-    background: rgba(20, 24, 33, 0.96);
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark-mode .search-result {
-    background: #1e2330;
+    background: #000000;
 }
 
 .dark-mode .search-result:hover {
-    background: #263040;
+    background: #0f0f0f;
 }
 
 .dark-mode .control-button {
-    background: #2a3040;
+    background: #0a0a0a;
     color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark-mode .control-button:hover {
-    background: #354055;
+    background: #141414;
 }
 
 .dark-mode .ghost-button {
-    background: #1e2330;
+    background: #0a0a0a;
     color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark-mode .panel-card {
-    background: rgba(20, 24, 33, 0.94);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.94);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dark-mode .panel-card__title {
-    color: #8896a4;
+    color: #94a3b8;
 }
 
 .dark-mode .panel-item {
-    background: #1a1f2e;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dark-mode .panel-item__title {
-    color: #e2e8f0;
+    color: #f1f5f9;
 }
 
 .dark-mode .panel-item__meta {
-    color: #8896a4;
+    color: #94a3b8;
 }
 
 .dark-mode .station-sheet {
-    background: rgba(20, 24, 33, 0.97);
+    background: rgba(0, 0, 0, 0.98);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dark-mode #stationName { color: #f1f5f9; }
-.dark-mode .station-alt { color: #8896a4; }
+.dark-mode .station-alt { color: #94a3b8; }
 .dark-mode .meta-item { border-top-color: rgba(255, 255, 255, 0.06); }
-.dark-mode .meta-key { color: #8896a4; }
+.dark-mode .meta-key { color: #94a3b8; }
 .dark-mode .meta-value { color: #e2e8f0; }
-.dark-mode .departure-card { background: #1a1f2e; }
-.dark-mode .departure-empty { background: #1a1f2e; color: #8896a4; }
+.dark-mode .departure-card { background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.05); }
+.dark-mode .departure-empty { background: #0a0a0a; color: #94a3b8; }
 
-.dark-mode .leaflet-tile-pane { filter: brightness(0.7) contrast(1.1) saturate(0.8); }
+.dark-mode .leaflet-tile-pane { filter: brightness(0.6) contrast(1.15) saturate(0.75); }
 
 @media (max-width: 720px) {
     .dark-mode .insight-panel {
-        background: rgba(20, 24, 33, 0.97);
+        background: rgba(0, 0, 0, 0.98);
     }
 
     .dark-mode .panel-card {
-        background: #1a1f2e;
+        background: #0a0a0a;
     }
 
     .dark-mode .panel-peek {
