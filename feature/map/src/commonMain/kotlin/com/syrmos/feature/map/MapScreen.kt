@@ -16,9 +16,13 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Accessible
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NearMe
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -171,50 +175,39 @@ private fun StationSheetCard(
             }
 
             if (uiState.selectedStationLines.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Lines at this station",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        uiState.selectedStationLines.forEach { line ->
-                            LineBadge(line = line)
-                        }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    uiState.selectedStationLines.forEach { line ->
+                        LineBadge(line = line)
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                StationFact(
-                    title = "Accessibility",
-                    value = if (station.accessibility) "Accessible" else "Unknown",
-                    modifier = Modifier.weight(1f),
-                )
-                StationFact(
-                    title = "Interchange",
-                    value = if (station.isInterchange) "Yes" else "No",
-                    modifier = Modifier.weight(1f),
-                )
-                StationFact(
-                    title = "Zone",
-                    value = station.zone.toString(),
-                    modifier = Modifier.weight(1f),
-                )
+            // Compact pill chips for the few useful facts. Hide noisy/internal
+            // info ("merged records", "Zone 1" which is the default everywhere,
+            // "Lines: N" which is redundant with the badges above).
+            val chips = buildList {
+                if (station.isInterchange) {
+                    add("interchange" to "Interchange")
+                }
+                if (station.accessibility) {
+                    add("accessibility" to "Accessible")
+                }
+                if (station.zone > 1) {
+                    add("zone" to "Zone ${station.zone}")
+                }
             }
-
-            if (station.stationIds.size > 1) {
-                Text(
-                    text = "${station.stationIds.size} station records merged at this stop",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (chips.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    chips.forEach { (icon, label) ->
+                        FactChip(iconKey = icon, label = label)
+                    }
+                }
             }
 
             if (uiState.selectedStationDepartures.isNotEmpty()) {
@@ -278,30 +271,43 @@ private fun LineBadge(line: Line) {
     }
 }
 
+/**
+ * Compact pill-shaped chip used to display the handful of station facts that
+ * actually matter to a traveller (accessible, interchange, off-zone). Hidden
+ * for default values to keep the sheet uncluttered.
+ */
 @Composable
-private fun StationFact(
-    title: String,
-    value: String,
+private fun FactChip(
+    iconKey: String,
+    label: String,
     modifier: Modifier = Modifier,
 ) {
+    val icon = when (iconKey) {
+        "interchange" -> Icons.Filled.SwapHoriz
+        "accessibility" -> Icons.Filled.Accessible
+        "zone" -> Icons.Filled.Place
+        else -> Icons.Filled.Info
+    }
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = value,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
             )
         }
     }

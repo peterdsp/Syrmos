@@ -261,6 +261,10 @@ extension SyrmosData {
 }
 
 final class LiveTrainService: ObservableObject, @unchecked Sendable {
+    /// Shared instance so the whole app uses a single polling task — avoids
+    /// duplicate work that was contributing to UI freezes on iOS.
+    static let shared = LiveTrainService()
+
     @MainActor @Published var trains: [LiveTrain] = []
 
     private var task: Task<Void, Never>?
@@ -452,6 +456,9 @@ struct SimulatedTrain: Identifiable {
 // MARK: - Train Simulator Service
 
 final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
+    /// Shared instance — single timer powers both Map and any other view.
+    static let shared = TrainSimulatorService()
+
     @MainActor @Published var trains: [SimulatedTrain] = []
 
     private var task: Task<Void, Never>?
@@ -470,7 +477,10 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
         let first = simulateTrains()
         await MainActor.run { instance?.trains = first }
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            // 5s cadence — fast enough for a believable live feel, slow
+            // enough that we don't thrash SwiftUI Map annotations with
+            // dozens of @Published updates per second across all tabs.
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
             if Task.isCancelled { return }
             let next = simulateTrains()
             await MainActor.run { instance?.trains = next }

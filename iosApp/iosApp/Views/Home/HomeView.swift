@@ -3,7 +3,9 @@ import WebKit
 
 struct HomeView: View {
     @StateObject private var stasyService = STASYService()
-    @StateObject private var liveTrainService = LiveTrainService()
+    // Shared instance so HomeView and MapView don't each poll the live trains
+    // endpoint in parallel.
+    @ObservedObject private var liveTrainService = LiveTrainService.shared
     @StateObject private var locationService = LocationService()
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var webViewURL: URL?
