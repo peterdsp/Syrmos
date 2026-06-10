@@ -1,0 +1,369 @@
+# Syrmos — A Case Study in Building a Civic Transit App from a Childhood Obsession
+
+**Version 1.0 · Last updated June 10, 2026**
+
+> A living document. Every shipped feature, every store milestone, every meaningful user-growth datapoint earns a new entry in the Revision Log at the bottom. The body of the case is rewritten when the situation analysis materially changes.
+
+---
+
+## Table of Contents
+
+1. [Time Context](#1-time-context)
+2. [Point of View](#2-point-of-view)
+3. [Central Problem](#3-central-problem)
+4. [Objectives](#4-objectives)
+5. [Situation Analysis](#5-situation-analysis)
+6. [Alternatives Considered](#6-alternatives-considered)
+7. [Evaluation Criteria](#7-evaluation-criteria)
+8. [Recommendation](#8-recommendation)
+9. [Implementation Plan](#9-implementation-plan)
+10. [Marketing and Go-to-Market](#10-marketing-and-go-to-market)
+11. [User Growth Projection](#11-user-growth-projection)
+12. [Risks and Mitigation](#12-risks-and-mitigation)
+13. [Appendix A — Architecture Decisions](#appendix-a--architecture-decisions)
+14. [Appendix B — Product Roadmap](#appendix-b--product-roadmap)
+15. [Revision Log](#revision-log)
+
+---
+
+## 1. Time Context
+
+The case takes place in **June 2026**, the month Syrmos goes from a personal project into a published consumer transit app. The first iOS build was submitted to App Store Review on June 7, 2026 and rejected for incomplete review notes. By June 10 a sixth build (1.0.6, soon to be superseded by 1.0.8) has been uploaded with the rejection issues addressed, the Android Internal Testing track is live with build 5, the Closed Testing - Alpha track has been sent to Google for review, and the wasm web client is live at **syrmos.peterdsp.dev**.
+
+Three forces converge to make this the right moment.
+
+First, **Greek public transit data has finally become reliably accessible**. The Hellenic Train Train Tracker (`railway.gov.gr`) publishes a public SSE feed of live suburban train positions. STASY (Athens Urban Rail Transport S.A.) publishes its full schedule and service announcements on `stasy.gr`. Until 2024 this data either didn't exist in any structured form or was locked behind agency intranets.
+
+Second, **Athens public transit ridership has bounced back** to pre-pandemic levels. STASY reports ~1.5M daily metro trips in the Attica region across the three metro lines, with strong year-over-year growth on the Tram T7 extension that opened to Piraeus in 2022.
+
+Third, the founder's personal situation aligns. After several years as an iOS engineer in fintech (currently at Plum), the technical depth needed to build Syrmos end-to-end without a team or seed funding has accumulated. The marginal cost of shipping is now a weekend.
+
+The decision the founder must make this month is not whether to build Syrmos. Syrmos is built. The decision is **what to do next, and how fast**.
+
+## 2. Point of View
+
+This analysis is written from the point of view of **Petros Dhespollari, the founder, sole engineer, and product manager of Syrmos**. He is responsible for:
+
+- Every line of code on iOS (native Swift), Android (Compose Multiplatform), and Web (Kotlin/Wasm + vanilla JS)
+- The Pi-hosted API at `api-syrmos.peterdsp.dev`
+- The product roadmap and feature prioritization
+- The marketing strategy, the App Store and Play Console submissions, and direct correspondence with Apple and Google review teams
+- The relationship with the data sources (STASY, Hellenic Train, OpenStreetMap)
+- Customer support, eventually
+
+He has no co-founder, no investors, and no external deadlines other than the App Store review timeline he chose to enter. He has a day job. He has finite weekends.
+
+His tradeoffs are not the ones a venture-backed startup faces. He optimizes for **shipping quality without burning out**, not for growth at all costs.
+
+## 3. Central Problem
+
+The central problem is this:
+
+> **How does a one-person, no-budget, civic transit app go from a personal side project to a daily-use utility for a meaningful share of Athens commuters, without a single advertising spend, without compromising the offline-first promise that makes it different, and without burning the founder out?**
+
+Three sub-problems sit under that umbrella:
+
+1. **Distribution.** App Stores reward apps that already have users. Greek commuters don't search "Athens metro times" in English. They use Google Maps for routes and squint at faded paper timetables on the platform. How does a new app cut through that?
+
+2. **Trust.** STASY and Hellenic Train are state operators. Their data is public, but their official apps don't exist or are unmaintained. Will users trust a third-party app over a hand-typed paper schedule? What signals legitimacy?
+
+3. **Sustainability.** A solo project that depends on one developer's free weekends has a half-life. The current architecture (Raspberry Pi at home, GitHub Pages for web, BSD-licensed source on GitHub) was chosen to minimize ongoing cost. But there is no monetization plan, no donations link, and no realistic path to hiring help. If Syrmos succeeds, it has to keep succeeding without growing the team.
+
+## 4. Objectives
+
+The June 2026 decision needs to produce a plan that:
+
+1. **Gets the iOS app and Android app approved and published** by the end of Q3 2026 (September 30, 2026)
+2. **Reaches 10,000 monthly active users (MAU) within 6 months of public launch** on either store. This is roughly 0.7% of daily Athens metro riders, an achievable beachhead
+3. **Achieves a 30-day retention rate of at least 25%**, which would put Syrmos in the top quartile of utility apps in its category
+4. **Keeps maintenance under 4 hours per week** of founder time in steady state, freeing weekends for feature development not firefighting
+5. **Preserves the offline-first contract**: the app must always work without network, even if every API on the Pi goes dark for a week
+6. **Stays free, ad-free, and tracking-free** for as long as the maintenance budget allows. If donations or a one-time tip jar become necessary, they appear inside the Settings tab, never in the main UI flow
+
+## 5. Situation Analysis
+
+### 5.1 Origin and history — a personal note woven into the strategy
+
+Syrmos did not start as a product. It started as a **boyhood obsession with the Athens Metro**.
+
+In the early 2000s, when Athens Line 2 (red) and Line 3 (blue) had just opened in time for the 2004 Olympics, an eight-year-old version of the founder rode the metro repeatedly for the sake of riding it. He carried a small notebook. He wrote down the times trains arrived. He compared them to the printed timetables at Syntagma station and tried to find the pattern. He noticed that **the timetables were rounded**, that real arrivals had variance, and that the variance itself was a pattern: rush hour was 3 to 5 minutes between trains, midday was 7 to 10, and very late evening drifted toward 12.
+
+The fascination outlasted childhood. As a teenager he sketched what he called "Live Athens times" on graph paper, with no understanding that he was inventing a UI mockup. The page had a station name at the top, a list of upcoming departures with minute countdowns, and arrow icons pointing toward the terminal stations. The notebook still exists in a drawer in the family home in Greece.
+
+In 2018, as an undergraduate computer science student, the founder built a first attempt: a Python script that scraped `stasy.gr` once an hour and emailed him a digest. It worked for two weeks before STASY changed their site layout and silently broke it. The script was abandoned.
+
+In 2022, the **opening of the Piraeus extension of the Tram T7** brought the obsession back. The founder rode the new line on its first weekend, noticed that no app showed the new stops, and started a second attempt. This one was a SwiftUI prototype with hardcoded schedule data for Line 3 only. He used it himself on commutes for six months. The codebase was thrown away after he realized that he had built it for the iPhone only and his Android-using friends had no way to test it.
+
+In late 2025, with two years of Kotlin Multiplatform experience accumulated at his day job, the founder restarted the project for the third and final time. This iteration is what shipped as Syrmos 1.0 in June 2026. The name "Syrmos" (συρμός) is the Greek word for the connected carriages that form a metro train, and it carries the connotation of "the next train is coming." It was chosen over alternatives like "Tachys" (fast) and "Athina Metro" because it is short, evokes movement, and is not already taken on any app store.
+
+This origin story matters strategically for two reasons:
+
+- **The product was used personally by the founder for a year before it had any users**, which is a much better dogfooding regime than most startups can claim. Every flow that survives in the production app is one a real commuter (the founder) found indispensable.
+- **The founder's personal connection to Athens transit is marketable**. The "made by a kid who grew up writing down train times" narrative is genuine, distinctive, and translatable into press and TikTok content. It is the opposite of the generic "we built a transit app" pitch.
+
+### 5.2 Current state of the product (June 2026)
+
+Syrmos ships across three platforms from a single source repository:
+
+| Platform | Technology | Status |
+|---|---|---|
+| iOS | Native Swift, SwiftUI, MapKit | Build 1.0 (8) in App Store Review, June 10, 2026 |
+| Android | Kotlin Multiplatform, Compose Multiplatform | Build 5 live on Play Console Internal Testing, build 5 in Closed Testing - Alpha review |
+| Web | Kotlin/Wasm + vanilla JS overlay, Leaflet maps | Live at syrmos.peterdsp.dev, auto-deployed from main branch via GitHub Pages |
+
+The shared business logic lives in `core/domain`, `core/data`, and `core/network` Kotlin modules. The iOS app is native to give Apple Maps and SwiftUI a clean home, with a thin bridge to the shared models. The Pi (`192.168.10.10`, exposed via Cloudflare Tunnel at `api-syrmos.peterdsp.dev`) hosts three live endpoints:
+
+- `/api/announcements` — STASY scrape, refreshed every 5 minutes via cron
+- `/api/trains` — Hellenic Train SSE relay, serving cached JSON every 10 seconds
+- `/api/lines` — canonical line and station data so future fixes don't require app releases
+
+Feature coverage today:
+
+- 71 metro stations across 3 lines
+- 56 tram stations across 2 lines (T6, T7)
+- 68 suburban railway stations across 4 lines (A1, A2, A3, A4)
+- Live train positions for suburban trains (A1-A4 only at this writing)
+- Clock-aligned departure countdowns that tick down in real time
+- Offline-first contract: all schedule data is embedded; live trains and announcements degrade gracefully
+- English and Greek bilingual interface with auto-detect
+- Light and dark themes, with dark mode using OLED pure black on web
+- GPS "Near me" section that surfaces the five closest stations
+- Live map view with simulated train animations and real suburban positions
+
+### 5.3 Market analysis
+
+**Total addressable market.** Athens metropolitan area has ~3.8M residents. STASY reports ~1.5M daily metro and tram trips. Hellenic Train reports ~50K daily suburban rail trips on the Athens corridors. The realistic target is anyone who uses the metro, tram, or suburban at least once a week.
+
+**Competition.** Three categories:
+
+1. **Google Maps**. The default. Strong at routing, weak at real-time timetables, weak at offline behavior, weak at "what does the next departure look like at this station." Maps users will not abandon Google Maps for routing. Syrmos has to win the "I'm already at the station and I want to know when the next train is" moment, which Google Maps does not own.
+
+2. **STASY official channels**. STASY does not have a live timetable app. Their website has a static PDF schedule, and a marquee announcing service alerts. There is no real-time tracking. This is a gift to Syrmos.
+
+3. **Hellenic Train Train Tracker**. The state operator's live web tracker is excellent for desktops but is not designed for phones. It requires login as of June 2026. The publicly accessible SSE feed (used by Syrmos behind the scenes) is undocumented and could change.
+
+**Differentiation.** Syrmos wins on:
+
+- **Speed**. The app responds instantly because the data lives on the device.
+- **Offline reliability**. Subway platforms have no signal. Google Maps does not work underground. Syrmos does.
+- **Civic respect**. Free, no ads, no tracking, BSD-licensed source. This positioning is rare and resonates with Greek users who are skeptical of foreign tech.
+- **Made for Athens**. The visual identity uses the official line colors (metro green, red, blue; tram orange; suburban purple). The fonts and tone are Greek-first.
+
+### 5.4 Constraints
+
+- **One developer**. Hard ceiling on output. Every feature competes with every other feature for weekend hours.
+- **No budget**. App Store fees and a $10 domain are the entire annual external spend. Hosting is on a Raspberry Pi at home behind a residential ISP.
+- **No legal entity**. The app is published under the founder's personal Apple ID and Google Play developer account. This limits liability protection and complicates any future monetization.
+- **Greek language burden**. Every UI string and announcement parse must work in both English and Greek. This doubles the QA matrix.
+- **Apple App Review and Google's 14-day closed testing rule**. Both are gating factors out of the founder's control.
+
+## 6. Alternatives Considered
+
+Three realistic paths emerged in the strategy review at the end of Q2 2026.
+
+### Alternative 1: Ship narrow, expand carefully
+
+Launch with the current scope (Athens metro, tram, and suburban A1–A4 only). Spend the first 90 days post-launch on **polish, marketing, and user feedback loops**. Do not expand to InterCity national rail, Thessaloniki suburban, or accessibility features until 10,000 MAU is reached.
+
+- **Pros**: low risk of overpromising, focused QA matrix, marketing message stays simple ("Athens metro times, instantly"), founder energy preserved for maintenance.
+- **Cons**: the larger Greek diaspora (Patras, Thessaloniki, Crete) doesn't see itself in the product, slower TAM growth, harder to argue for press coverage as "just an Athens app."
+
+### Alternative 2: Ship wide, take on national rail immediately
+
+Launch with InterCity and Thessaloniki suburban in scope from day one, even though the data quality is lower. Position Syrmos as "the Greek rail app" rather than "the Athens metro app."
+
+- **Pros**: 3x larger TAM (Greek rail riders nationally), better PR angle ("first nationwide Greek transit app"), defensible against future Athens-only entrants.
+- **Cons**: triples the data integration burden, introduces operational risks (THESLAR corridor schedule changes, Hellenic Train data quality), much larger surface area for bugs at launch, founder burnout risk significantly higher.
+
+### Alternative 3: Open-source the entire stack and recruit contributors
+
+Stop trying to ship a product and instead **publish Syrmos as a community-maintained open source civic-tech project**, modeled on Citymapper's data tooling or San Francisco's Transbase. Invite the Athens dev community to contribute station data, language strings, and bug fixes.
+
+- **Pros**: scales beyond one developer, builds local technical community, creates a long-term institution rather than a one-person side project, aligns with the existing BSD license.
+- **Cons**: open source projects without a maintainer paid for the role have a high mortality rate, governance overhead (PR review, issue triage) competes with the same weekend hours as feature work, the founder's day-job employer might have IP concerns about a contributor-style project that overlaps with mobile engineering.
+
+## 7. Evaluation Criteria
+
+The three alternatives are evaluated on:
+
+| Criterion | Weight | Why it matters |
+|---|---|---|
+| Strategic fit with founder's stated objectives | 30% | Section 4 lists six objectives. Whichever option meets the most of them wins. |
+| Financial feasibility | 10% | Low weight because the budget is effectively zero. The relevant cost is founder time, captured separately. |
+| Implementation difficulty | 20% | A solo developer can't carry compound complexity. The simpler option wins ties. |
+| Stakeholder impact | 15% | Users, STASY/Hellenic Train as data sources, future contributors, the founder's personal life. |
+| Long-term risk | 25% | Burnout, project death, data-source revocation. Heavily weighted because they are existential. |
+
+## 8. Recommendation
+
+**Adopt Alternative 1 (Ship narrow, expand carefully).** This is the option that:
+
+- Scores highest on strategic fit, particularly on the "keeps maintenance under 4 hours per week" objective
+- Has the lowest implementation difficulty, since the entire current product was scoped for Athens-only and shipping it as-is is essentially free
+- Lowers long-term risk by reserving founder energy for maintenance and selective expansion, not for a chronic scope-creep crisis
+
+Alternative 2 (Ship wide) is rejected because it triples the data-integration surface area at the worst possible moment (immediately post-launch, when bug discovery is highest and the founder has the least slack). It is **deferred, not killed**. National rail and Thessaloniki suburban remain on the roadmap as v1.2 and v1.3 features, contingent on Athens-only adoption metrics hitting their targets first.
+
+Alternative 3 (Open-source first) is rejected as the primary strategy, but **partially adopted**: the source code remains public on GitHub under BSD 3-Clause, contributions are accepted, and the canonical schedule data on the Pi is structured so external contributors can submit PRs against the JSON file rather than the app binary. This captures the upside of community participation without depending on it.
+
+## 9. Implementation Plan
+
+The plan is structured in three phases. Phase 0 is **already done by the time this case is written**.
+
+### Phase 0: Build and submit (October 2025 — June 10, 2026) — COMPLETE
+
+- Kotlin Multiplatform skeleton, Compose Multiplatform Android, native Swift iOS
+- Embedded schedule data for 195 stations across 9 lines
+- Pi-hosted API for live data and announcements
+- Web build deployed via GitHub Actions to syrmos.peterdsp.dev
+- iOS build 1.0 (8) submitted to App Store Review
+- Android build 5 published to Internal Testing, build 5 in Closed Testing review
+
+### Phase 1: Public launch (June 11 — September 30, 2026)
+
+- Pass App Store Review on iOS (target: build 8 approved by June 17, 2026)
+- Complete Google's mandatory 14-day Closed Testing with 12 testers (target: Closed Testing complete by July 5, 2026)
+- Launch on Google Play production track on July 8, 2026
+- Launch on Apple App Store production immediately after Apple approval
+- Issue a v1.0 announcement on syrmos.peterdsp.dev, the founder's personal social channels, and one Greek tech outlet
+- Monitor MetricKit and the in-app Diagnostics export for the first cluster of user-reported bugs and ship a v1.0.1 hotfix within 14 days of launch
+- Set up the GitHub Issues template so user feedback flows back to a single inbox
+
+### Phase 2: First 6 months post-launch (October 2026 — March 2027)
+
+- Reach 10,000 MAU on at least one platform
+- Reach 25% 30-day retention
+- Ship v1.1 with widget support (iOS Home Screen widget showing next departures at a saved station)
+- Ship v1.2 with accessibility audit fixes (full VoiceOver and TalkBack coverage)
+- Add Greek translation polish based on user feedback
+- Consider a one-time donation tip jar in Settings if hosting costs cross 50 EUR per month
+
+### Phase 3: Expansion (April 2027 onward)
+
+- Trip planner ("how do I get from X to Y by metro and tram") if v1.0 retention is healthy
+- National InterCity rail and Thessaloniki suburban rail, contingent on Hellenic Train cooperation
+- Optional AI chat helper for natural-language queries ("when is the next airport train after 10pm?")
+- Apple Watch and Wear OS companion apps if iOS engagement justifies the engineering cost
+
+## 10. Marketing and Go-to-Market
+
+The marketing strategy assumes a zero-budget reality. Every channel listed must produce installs without paid acquisition.
+
+### 10.1 Channels in priority order
+
+| Channel | Why it works for Syrmos | Effort cost | Expected installs in first 90 days |
+|---|---|---|---|
+| **Apple App Store and Google Play organic search** | Greek "metro" and "τραίνο" queries have low competition. ASO with the right keywords ranks fast. | 4 hours of metadata writing | 1,500 - 3,000 |
+| **Word of mouth on r/athens, r/greece, r/Athens, r/HellenicTrain** | Subreddits skew tech-literate and respond well to civic projects from Greek developers | 1 hour per post, 1 post per subreddit at launch | 500 - 1,500 |
+| **TikTok and Instagram Reels — origin-story content** | The "kid who wrote down metro times" backstory is genuinely interesting. Short-form video can hit Greek transit influencers organically. | 4 hours per video, 4 videos in launch month | 2,000 - 5,000 potential reach, 200 - 500 installs |
+| **Greek tech press (Tovima.gr, In.gr Tech, Kathimerini)** | A solo-developer civic app with a backstory is a publishable feature. Cold-pitch with a clean press kit. | 6 hours to write the kit, 4 hours to email 10 journalists | 1 article = 500 - 2,000 installs |
+| **University partnerships (NTUA, AUEB, University of Piraeus)** | Computer science and architecture students ride the metro daily. Posters in CS department lounges. Talk at a student association event. | 8 hours for a 30-minute talk, free | 200 - 500 installs per event |
+| **Posters at metro stations** | High-traffic, low-cost, requires permission from STASY (which may or may not grant it) | 4 hours of design, ~30 EUR printing, 4 hours hanging | Hard to attribute, but a strong signal of legitimacy |
+| **GitHub stars and the open source community** | A polished BSD-licensed Kotlin Multiplatform civic project is a portfolio piece. Hacker News submission is plausible. | 1 hour to write the HN post | 1,000 - 5,000 if HN front page, 100 - 300 otherwise |
+| **Direct outreach to STASY and Hellenic Train communications** | Long-shot partnership. Free press if either agency officially recommends the app on their channels. | 8 hours of email diplomacy | Unknown, potentially game-changing |
+
+Paid channels (Apple Search Ads, Google App Campaigns, Meta Ads) are **explicitly excluded from the v1.0 plan**. They become available only if the donation tip jar generates a meaningful budget.
+
+### 10.2 ASO keyword strategy
+
+Primary keywords (target rank: top 5 in Greek App Store):
+
+- "μετρό Αθήνα" (Athens metro)
+- "τραίνο Αθήνα" (Athens train)
+- "δρομολόγια μετρό" (metro schedule)
+- "πότε έρχεται το τραίνο" (when is the train coming)
+- "ΣΤΑΣΥ" (the operator name, high-intent searches)
+
+Secondary keywords (target rank: top 20):
+
+- "Αθήνα συγκοινωνίες" (Athens transit)
+- "προαστιακός" (suburban)
+- "τραμ Αθήνα" (Athens tram)
+
+Title format used in the stores: **"Syrmos — Athens Rail Times"**. The dash and English subtitle help with both Greek-language and English-language search.
+
+### 10.3 Press kit contents
+
+A `press/` directory in the repository will contain:
+
+- 1 paragraph elevator pitch in English and Greek
+- High-resolution app icon and product screenshots
+- The founder's biography
+- The "kid who wrote down train times" origin photo (the actual childhood notebook page, scanned)
+- A one-pager PDF with the same content for journalists who prefer email attachments
+
+## 11. User Growth Projection
+
+These are projections, not guarantees. They assume Alternative 1 is executed cleanly and at least 4 of the 8 marketing channels listed in section 10.1 produce installs.
+
+| Milestone | Date | iOS MAU | Android MAU | Web MAU | Total |
+|---|---|---|---|---|---|
+| Public launch | July 2026 | 0 | 0 | 100 | 100 |
+| 30 days post-launch | August 2026 | 800 | 600 | 400 | 1,800 |
+| 90 days post-launch | October 2026 | 3,000 | 2,500 | 1,500 | 7,000 |
+| 6 months post-launch | January 2027 | 5,500 | 4,500 | 2,000 | **12,000** |
+| 12 months post-launch | July 2027 | 12,000 | 10,000 | 3,000 | 25,000 |
+| End of Phase 3 | December 2027 | 25,000 | 22,000 | 5,000 | 52,000 |
+
+The 12,000 MAU at 6 months exceeds the 10,000 objective in section 4. The 25,000 MAU at 12 months represents roughly 1.6% of daily Athens metro riders, a defensible market share.
+
+Retention projection (30-day cohort retention):
+
+- Month 1: 35% (high curiosity, launch press)
+- Month 3: 28% (settles to utility usage pattern)
+- Month 6: 26% (steady state)
+- Month 12: 24% (mild long-tail decay)
+
+The 25% objective is hit in months 3 through 12.
+
+## 12. Risks and Mitigation
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Apple App Store rejects build 8 again | Medium | High | The build 8 review notes were rewritten based on Apple's specific Guideline 2.1 feedback. A pre-recorded screen recording is attached. If rejected, the founder has 7 days to respond before the submission ages out. |
+| Google's 14-day closed testing rule blocks production launch | High | Medium | Already accepted. 12 testers will be recruited from the Athens iOS Developers Slack and CS friends. Worst case, launch slips to August. |
+| Hellenic Train changes their SSE feed or revokes access | Medium | Medium | The Pi daemon is decoupled from the app. If the feed breaks, live trains degrade gracefully to "no live data" and the app stays useful. A short notice on Settings can explain the situation. |
+| STASY changes their website layout, breaking the announcement scrape | High | Low | The scrape failure is invisible to users (cached announcements continue showing). The Pi log will alert the founder, who can fix the parser without an app release. |
+| Founder burnout | Medium | Critical | Hard 4-hour weekly maintenance ceiling. Anything above the ceiling for 3 weeks in a row triggers a hiatus. The BSD license means the project can be picked up by a community contributor in the founder's absence. |
+| A larger competitor enters the market | Low | High | Google Maps has chosen not to do this for 15 years. STASY has not done it. A bigger competitor entering would validate the market but force Syrmos to differentiate harder on civic-respect positioning. |
+| Raspberry Pi failure or residential ISP outage | Medium | Low | The Pi hosts only live data. The app keeps working with embedded data. Acceptable downtime: 48 hours. Mitigation beyond that: move the API to a $5/month VPS, which the donation tip jar must fund. |
+| Personal data privacy complaint from a Greek user | Low | High | The app collects nothing. The privacy policy at `docs/PRIVACY_POLICY.md` is short and accurate. The Diagnostics export is opt-in and user-controlled. |
+| The founder takes a different job, moves, or otherwise loses time | Medium | Critical | Documented architecture, comprehensive test coverage as it ships, clear ROADMAP and CASE_STUDY files. Anyone reading the repo should be able to take over within a week. |
+
+## Appendix A — Architecture Decisions
+
+This appendix records the key technical choices and their justifications. They are intentionally summarized; the full reasoning lives in the commit history and the README.
+
+| Decision | Choice | Why |
+|---|---|---|
+| Native iOS vs cross-platform iOS | **Native Swift** | SwiftUI + MapKit produce a noticeably better feel for navigation, sheets, and live map than Compose Multiplatform's iOS target as of June 2026. The shared business logic is small enough to bridge cleanly. |
+| Android stack | **Kotlin Multiplatform + Compose Multiplatform** | Free reuse of the Android Compose code on Web. The single source of truth for use cases lives in `core/domain`. |
+| Web stack | **Compose Multiplatform Wasm + vanilla JS overlay** | Compose handles the app shell; a vanilla JS popup handles the Leaflet map view because Compose's web map integration is immature. |
+| Live data layer | **Polling-based JSON, not SSE** | An earlier SSE implementation locked up the iOS main thread when the upstream feed sent large payloads. Polling a small cached JSON file every 10 seconds is dramatically lighter. |
+| Schedule data location | **Embedded in app, optionally overlaid by `/api/lines`** | The offline-first promise demands embedded data. The API overlay lets us patch wrong coordinates server-side without a release. |
+| Hosting | **Raspberry Pi at the founder's home + Cloudflare Tunnel** | Zero monthly cost. Acceptable for a free civic app at this scale. |
+| License | **BSD 3-Clause** | Permissive, allows derivative works (e.g. a Thessaloniki fork), keeps the option to relicense open. |
+| Crash and hang reporting | **Apple MetricKit + custom watchdog** | No third-party SDK, no user data leaves the device unless the user explicitly exports the diagnostics bundle. |
+
+## Appendix B — Product Roadmap
+
+| Version | Features | Target |
+|---|---|---|
+| **1.0** | Current state. Metro, tram, Athens suburban. Live trains. STASY announcements. GPS Near me. Bilingual. | June - July 2026 |
+| **1.0.x** | Bug-fix hotfixes responding to App Review and early user feedback. | July - August 2026 |
+| **1.1** | iOS Home Screen widget. Wear OS / WatchOS companion. Improved accessibility. | Q4 2026 |
+| **1.2** | Trip planner (point-to-point routing using the embedded line topology). | Q1 2027 |
+| **1.3** | National InterCity rail (E85 corridor). Greek diaspora unlock. | Q2 2027 |
+| **1.4** | Thessaloniki suburban (THESLAR corridor). | Q3 2027 |
+| **1.5** | AI chat helper for natural-language schedule queries. | Q4 2027 |
+| **2.0** | TBD. Either a redesign or a regional expansion (Patras, Heraklion). | 2028+ |
+
+## Revision Log
+
+| Date | Author | Change |
+|---|---|---|
+| 2026-06-10 | Petros Dhespollari | Initial version. Written following the Yale SOM / University of Potsdam / IIM Bangalore frameworks. Covers state of the project as of iOS build 1.0 (8) and Android build 5. To be updated whenever a material change occurs in scope, store status, user numbers, or strategic direction. |
+
+---
+
+*This case study is part of the public Syrmos repository at https://github.com/peterdsp/Syrmos. It is licensed under the same BSD 3-Clause terms as the source code, so other Greek civic-tech projects can adapt the analysis structure to their own contexts.*
