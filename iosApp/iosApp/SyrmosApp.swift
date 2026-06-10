@@ -53,6 +53,7 @@ struct SyrmosApp: App {
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
     @ObservedObject private var loc = LocalizationManager.shared
+    @StateObject private var linesService = SyrmosLinesService()
 
     var body: some View {
         ZStack {
@@ -83,6 +84,10 @@ struct ContentView: View {
                     .tag(SyrmosTab.settings)
             }
             .tint(.syrmosPrimary)
+        }
+        .environmentObject(linesService)
+        .task {
+            await linesService.refresh()
         }
     }
 }

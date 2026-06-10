@@ -15,13 +15,22 @@ class GetStationDeparturesUseCase(
         lineIds.forEach { lineId ->
             val patterns = transitPatternRepository.getPatternsFor(lineId, stationId)
             if (patterns.isNotEmpty()) {
+                // Anchor departures to clock-aligned slots so the countdown
+                // actually ticks down each time the user looks at the screen.
+                // e.g. on a 5-minute frequency at 14:31 the next slots are
+                // 14:35, 14:40, 14:45, 14:50 — at 14:32 the first one is
+                // "3 min" not still "5 min".
                 val now = currentAthensTime()
+                val nowMinutes = now.hour * 60 + now.minute
+                val secondOffset = if (now.second >= 30) 1 else 0
                 patterns.forEach { pattern ->
-                    (1..4).forEach { multiplier ->
-                        val minutesAway = pattern.frequencyMinutes * multiplier
-                        val totalMinutes = (now.hour * 60 + now.minute + minutesAway) % (24 * 60)
-                        val hour = totalMinutes / 60
-                        val minute = totalMinutes % 60
+                    val freq = pattern.frequencyMinutes.coerceAtLeast(1)
+                    var nextSlot = ((nowMinutes / freq) + 1) * freq
+                    repeat(4) {
+                        val minutesAway = (nextSlot - nowMinutes - secondOffset).coerceAtLeast(0)
+                        val slotMinutes = nextSlot % (24 * 60)
+                        val hour = slotMinutes / 60
+                        val minute = slotMinutes % 60
                         val time = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
                         allDepartures += UpcomingDeparture(
                             time = time,
@@ -30,6 +39,7 @@ class GetStationDeparturesUseCase(
                             lineId = lineId,
                             notes = pattern.direction,
                         )
+                        nextSlot += freq
                     }
                 }
             } else {

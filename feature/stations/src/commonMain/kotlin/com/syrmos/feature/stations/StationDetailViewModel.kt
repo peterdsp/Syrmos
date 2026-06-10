@@ -7,12 +7,15 @@ import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Line
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class StationDetailUiState(
@@ -32,6 +35,7 @@ class StationDetailViewModel(
     val uiState: StateFlow<StationDetailUiState> = _uiState.asStateFlow()
 
     private var loadedStationId: String? = null
+    private var refreshJob: Job? = null
 
     fun loadStation(stationId: String) {
         if (stationId == loadedStationId) return
@@ -49,8 +53,33 @@ class StationDetailViewModel(
                 )
             }
 
-            val departures = getStationDepartures.invoke(stationId, detail.station.lineIds)
-            _uiState.update { it.copy(departures = departures) }
+            startRefreshLoop(stationId, detail.station.lineIds)
         }
+    }
+
+    /**
+     * Polls [getStationDepartures] every 15 seconds so the "5 min / 10 min"
+     * countdowns tick down live while the screen is visible. Cancelling the
+     * previous job avoids duplicate timers if a user navigates between
+     * stations quickly.
+     */
+    private fun startRefreshLoop(stationId: String, lineIds: List<String>) {
+        refreshJob?.cancel()
+        refreshJob = scope.launch {
+            while (isActive) {
+                val departures = getStationDepartures.invoke(stationId, lineIds)
+                _uiState.update { it.copy(departures = departures) }
+                delay(REFRESH_INTERVAL_MS)
+            }
+        }
+    }
+
+    fun dispose() {
+        refreshJob?.cancel()
+        refreshJob = null
+    }
+
+    private companion object {
+        private const val REFRESH_INTERVAL_MS = 15_000L
     }
 }

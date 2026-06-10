@@ -21,6 +21,7 @@
 		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
 		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
 		BB22CC33DD44EE55FF660011 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* LocationService.swift */; };
+		C5D6E7F8A9B0C1D2E3F40506 /* SyrmosLinesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +37,7 @@
 		836DE84E99C06ABA19E71805 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
 		BB22CC33DD44EE55FF660012 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
+		C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosLinesService.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		D19BB18628D05A667A4BD6B8 /* Syrmos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Syrmos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1E2F3A4B5C6071829304142 /* STASYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STASYService.swift; sourceTree = "<group>"; };
@@ -143,6 +145,7 @@
 				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
 				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
 				BB22CC33DD44EE55FF660012 /* LocationService.swift */,
+				C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
 			);
 			path = Models;
@@ -226,6 +229,7 @@
 				B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */,
 				A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */,
 				BB22CC33DD44EE55FF660011 /* LocationService.swift in Sources */,
+				C5D6E7F8A9B0C1D2E3F40506 /* SyrmosLinesService.swift in Sources */,
 				980A534651EFC2013B8ED38F /* TransitData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -305,7 +309,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 5;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -328,7 +332,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 5;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";

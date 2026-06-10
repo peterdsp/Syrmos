@@ -114,25 +114,39 @@ enum SyrmosData {
     ]
 
     static func sampleDepartures(for stationId: String, lineIds: [String]) -> [Departure] {
-        let now = Calendar.current.component(.hour, from: Date()) * 60 +
-                  Calendar.current.component(.minute, from: Date())
+        // Anchor next departures to clock-aligned slots so the countdown
+        // actually ticks down between refreshes instead of always reporting
+        // "5 min / 10 min / 15 min / 20 min" from the moment of call.
+        // e.g. on a 5-minute frequency at 14:31 the next departures are
+        // 14:35 (4 min), 14:40 (9 min), 14:45 (14 min), 14:50 (19 min);
+        // 30 seconds later they become 14:35 (3 min), and so on.
+        let date = Date()
+        let calendar = Calendar.current
+        let nowComponents = calendar.dateComponents([.hour, .minute, .second], from: date)
+        let nowMinutes = (nowComponents.hour ?? 0) * 60 + (nowComponents.minute ?? 0)
+        let secondOffset = (nowComponents.second ?? 0) >= 30 ? 1 : 0
         var departures: [Departure] = []
 
         for lineId in lineIds {
             let patterns = servicePatterns(for: lineId, stationId: stationId)
             for pattern in patterns {
-                for i in 1...4 {
-                    let mins = pattern.frequencyMinutes * i
-                    let depTime = now + mins
-                    let h = (depTime / 60) % 24
+                let freq = max(pattern.frequencyMinutes, 1)
+                // The next clock-aligned slot in the future for this line.
+                // We treat slot t such that t % freq == 0 since midnight.
+                var nextSlot = ((nowMinutes / freq) + 1) * freq
+                for _ in 0..<4 {
+                    let mins = nextSlot - nowMinutes - secondOffset
+                    let depTime = nextSlot % (24 * 60)
+                    let h = depTime / 60
                     let m = depTime % 60
                     departures.append(Departure(
                         time: String(format: "%02d:%02d", h, m),
                         lineId: pattern.lineId,
                         direction: pattern.direction,
-                        minutesAway: mins,
+                        minutesAway: max(mins, 0),
                         serviceType: pattern.serviceType
                     ))
+                    nextSlot += freq
                 }
             }
         }
