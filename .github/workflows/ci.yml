@@ -42,5 +42,15 @@ jobs:
       - name: Build app
         run: ./gradlew :composeApp:compileKotlinIosSimulatorArm64
 
-      - name: Run tests
-        run: ./gradlew :core:common:iosSimulatorArm64Test
+      - name: Run KMP unit tests (JVM + iOS sim + wasm/JS)
+        run: ./gradlew :core:common:allTests :core:domain:allTests
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          retention-days: 7
