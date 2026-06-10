@@ -93,6 +93,8 @@ struct StationDetailView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.syrmosBackground)
         .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
             departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
