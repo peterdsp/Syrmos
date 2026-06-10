@@ -4,6 +4,11 @@ struct StationDetailView: View {
     let station: TransitStation
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var departures: [Departure] = []
+    @State private var nowTick = Date()
+
+    // Recompute departures every 15 seconds so the "5 min / 10 min" countdowns
+    // tick down in real time while the user is viewing this screen.
+    private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     var body: some View {
         List {
@@ -97,6 +102,10 @@ struct StationDetailView: View {
         .background(Color.syrmosBackground)
         .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
+            departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+        }
+        .onReceive(refreshTimer) { _ in
+            nowTick = Date()
             departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
         }
     }

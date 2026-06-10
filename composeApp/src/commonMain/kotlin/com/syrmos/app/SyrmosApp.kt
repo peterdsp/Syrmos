@@ -38,12 +38,14 @@ import com.syrmos.app.tab.LinesTab
 import com.syrmos.app.tab.MapTab
 import com.syrmos.app.tab.SettingsTab
 import com.syrmos.core.data.seed.DataSeeder
+import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.designsystem.theme.SyrmosTheme
 import org.koin.compose.koinInject
 
 @Composable
 fun SyrmosApp() {
     val dataSeeder = koinInject<DataSeeder>()
+    val linesRefresher = koinInject<LinesRefresher>()
     var isSeeded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -53,6 +55,10 @@ fun SyrmosApp() {
         } finally {
             isSeeded = true
         }
+        // Best-effort online overlay. The app is fully functional even if
+        // this never succeeds; on success it picks up any new stations the
+        // server has gained since the last app release.
+        runCatching { linesRefresher.refresh() }
     }
 
     SyrmosTheme {

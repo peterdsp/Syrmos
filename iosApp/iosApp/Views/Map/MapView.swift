@@ -143,6 +143,7 @@ struct TransitMapView: View {
     @StateObject private var liveTrainService = LiveTrainService()
     @StateObject private var trainSimulator = TrainSimulatorService()
     @StateObject private var locationManager = MapLocationManager()
+    @EnvironmentObject private var linesService: SyrmosLinesService
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
@@ -176,6 +177,23 @@ struct TransitMapView: View {
                                 }
                         }
                         .tag(station.id)
+                    }
+
+                    // Stations the Pi API has added since this app was built
+                    // (e.g. 2022 Piraeus tram extension). Bundled data is the
+                    // offline-first source; these are an online overlay only.
+                    ForEach(linesService.extraStations.flatMap { (lineId, sts) in
+                        sts.map { (lineId: lineId, station: $0) }
+                    }, id: \.station.id) { entry in
+                        Annotation(
+                            loc.language == .greek ? entry.station.nameEl : entry.station.name,
+                            coordinate: entry.station.coordinate
+                        ) {
+                            Circle()
+                                .fill(SyrmosData.lineColor(for: entry.lineId))
+                                .frame(width: 12, height: 12)
+                                .overlay(Circle().stroke(.white, lineWidth: 2))
+                        }
                     }
 
                     ForEach(trainSimulator.trains) { train in
@@ -262,6 +280,9 @@ struct StationSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var departures: [Departure] = []
 
+    // Live countdown refresh
+    private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -272,16 +293,18 @@ struct StationSheetView: View {
             }
             .padding()
         }
-        .onAppear {
-            departures = station.lineIds.flatMap { lineId in
-                let stationId = station.stationIdByLineId[lineId] ?? station.stationIds.first ?? station.id
-                return SyrmosData.sampleDepartures(for: stationId, lineIds: [lineId])
-            }
-            .sorted { $0.minutesAway < $1.minutesAway }
-            if departures.count > 6 {
-                departures = Array(departures.prefix(6))
-            }
+        .onAppear(perform: reloadDepartures)
+        .onReceive(refreshTimer) { _ in reloadDepartures() }
+    }
+
+    private func reloadDepartures() {
+        var next = station.lineIds.flatMap { lineId in
+            let stationId = station.stationIdByLineId[lineId] ?? station.stationIds.first ?? station.id
+            return SyrmosData.sampleDepartures(for: stationId, lineIds: [lineId])
         }
+        .sorted { $0.minutesAway < $1.minutesAway }
+        if next.count > 6 { next = Array(next.prefix(6)) }
+        departures = next
     }
 
     private var header: some View {
