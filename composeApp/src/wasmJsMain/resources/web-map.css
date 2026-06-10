@@ -506,6 +506,38 @@ body {
     text-align: right;
 }
 
+.meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(16, 20, 24, 0.06);
+    font-size: 13px;
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.meta-chip-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.meta-chip-label {
+    line-height: 1.1;
+}
+
+.dark-mode .meta-chip {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+
 .ghost-button,
 .primary-button {
     appearance: none;

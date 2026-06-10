@@ -329,22 +329,36 @@
             lineBadges.appendChild(badge);
         }
 
-        const metaItems = [
-            ["Accessibility", station.accessibility ? "Accessible" : "Unknown"],
-            ["Zone", `Zone ${station.zone}`],
-            ["Interchange", station.isInterchange ? "Yes" : "No"],
-            ["Lines", `${station.lineIds.length}`],
-            ["Merged", `${station.stationIds.length} records`],
-        ];
+        // Compact chip row instead of the old key/value table that showed
+        // "Lines: N" (redundant with the badges above) and
+        // "Merged: N records" (internal jargon). Only render chips for
+        // information that's actually useful at this station.
+        const chips = [];
+        if (station.isInterchange) {
+            chips.push({ icon: "↔", label: "Interchange" });
+        }
+        if (station.accessibility) {
+            chips.push({ icon: "♿", label: "Accessible" });
+        }
+        if (station.zone > 1) {
+            chips.push({ icon: "📍", label: `Zone ${station.zone}` });
+        }
 
-        stationMeta.innerHTML = metaItems
-            .map(([key, value]) => `
-                <div class="meta-item">
-                    <span class="meta-key">${key}</span>
-                    <span class="meta-value">${value}</span>
-                </div>
+        stationMeta.innerHTML = chips
+            .map(({ icon, label }) => `
+                <span class="meta-chip">
+                    <span class="meta-chip-icon">${icon}</span>
+                    <span class="meta-chip-label">${label}</span>
+                </span>
             `)
             .join("");
+        // Hide the whole block when there are no meaningful chips — saves
+        // a row of empty space on the common single-line, accessible, Zone 1
+        // case (which describes most stations in the network).
+        const metaBlock = document.getElementById("stationMetaBlock");
+        if (metaBlock) {
+            metaBlock.style.display = chips.length === 0 ? "none" : "";
+        }
 
         renderDepartures(station);
         directionsLink.href = `https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}&travelmode=transit`;
