@@ -90,8 +90,17 @@ struct ContentView: View {
         // navigation destination silently freezes SwiftUI to a black screen
         // on iOS 18.
         .task {
+            // Boot the diagnostics center first so its watchdog catches
+            // even the earliest hang. Idempotent — calling .shared touches
+            // the lazy singleton.
+            _ = DiagnosticsCenter.shared
+            DiagnosticsCenter.shared.leaveBreadcrumb("app", "ContentView appeared")
+
             let svc = SyrmosLinesService()
             await svc.refresh()
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")
         }
     }
 }
