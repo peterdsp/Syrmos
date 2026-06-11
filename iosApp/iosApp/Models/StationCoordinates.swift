@@ -120,6 +120,18 @@ enum StationCoords {
     // MARK: - Tram T7 (Akti Poseidonos to Asklipiio Voulas) - OSM relation 6792078
 
     static let tramT7: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)] = [
+        // --- Piraeus inbound loop (one-way circular section into Akti Poseidonos) ---
+        // Per the athens_transit_icons_and_rules_package, the six loop stops
+        // below run as an inbound loop terminating at stop 7 (Akti Poseidonos).
+        // They are kept in package-defined order so map polyline can draw the
+        // loop arc before joining the outbound spine.
+        ("T7_DIM", "Dimotiko Theatro", "Δημοτικό Θέατρο", 37.9416350, 23.6506700),
+        ("T7_PLA", "Plateia Deligianni", "Πλατεία Δεληγιάννη", 37.9449550, 23.6535200),
+        ("T7_EVA", "Evangelistria", "Ευαγγελίστρια", 37.9480500, 23.6561550),
+        ("T7_GRI", "Grigoriou Lambraki", "Γρηγορίου Λαμπράκη", 37.9457700, 23.6601800),
+        ("T7_MIK", "Mikras Asias", "Μικράς Ασίας", 37.9444100, 23.6649650),
+        ("T7_GIP", "Gipedo Karaiskaki", "Γήπεδο Καραϊσκάκη", 37.9445650, 23.6687750),
+        // --- Outbound spine: Akti Poseidonos -> Asklipiio Voulas ---
         ("T7_AKT", "Akti Poseidonos", "Ακτή Ποσειδώνος", 37.9449134, 23.6430209),
         ("T7_ATR", "Agia Triada", "Αγία Τριάδα", 37.9449403, 23.6451956),
         ("T7_IPP", "Pl. Ippodameias", "Πλ. Ιπποδαμείας", 37.9474688, 23.6475793),
