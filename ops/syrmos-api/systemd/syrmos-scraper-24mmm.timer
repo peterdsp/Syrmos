@@ -1,0 +1,10 @@
+[Unit]
+Description=OASA 24mmm daily scrape
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 Europe/Athens
+Persistent=true
+Unit=syrmos-scraper-24mmm.service
+
+[Install]
+WantedBy=timers.target

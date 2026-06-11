@@ -39,6 +39,7 @@ import com.syrmos.app.tab.MapTab
 import com.syrmos.app.tab.SettingsTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
+import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.designsystem.theme.SyrmosTheme
 import org.koin.compose.koinInject
 
@@ -46,6 +47,7 @@ import org.koin.compose.koinInject
 fun SyrmosApp() {
     val dataSeeder = koinInject<DataSeeder>()
     val linesRefresher = koinInject<LinesRefresher>()
+    val scheduleSync = koinInject<ScheduleSyncRepository>()
     var isSeeded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -55,10 +57,11 @@ fun SyrmosApp() {
         } finally {
             isSeeded = true
         }
-        // Best-effort online overlay. The app is fully functional even if
-        // this never succeeds; on success it picks up any new stations the
-        // server has gained since the last app release.
+        // Hydrate from bundled snapshot first so projector has data immediately,
+        // even if network is down. Live refresh then overlays anything newer.
+        runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
         runCatching { linesRefresher.refresh() }
+        runCatching { scheduleSync.refresh() }
     }
 
     SyrmosTheme {
