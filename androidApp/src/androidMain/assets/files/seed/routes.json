@@ -112,6 +112,12 @@
   {
     "line_id": "T7",
     "station_ids": [
+      "T7_DIM",
+      "T7_PLA",
+      "T7_EVA",
+      "T7_GRI",
+      "T7_MIK",
+      "T7_GIP",
       "T7_AKT",
       "T7_ATR",
       "T7_IPP",

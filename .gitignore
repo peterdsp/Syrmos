@@ -25,3 +25,6 @@ output/playwright/
 # Android release keystore
 *.keystore
 *.jks
+
+# Claude Code local config
+.claude/
