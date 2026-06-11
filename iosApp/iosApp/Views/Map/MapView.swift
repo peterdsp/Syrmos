@@ -118,6 +118,26 @@ enum PreloadedData {
                 }
             }
         }
+        // Per athens_transit_icons_and_rules_package/RULES.md, at major
+        // interchanges show the combined icon with every connecting line
+        // visible (not a single-mode icon). The package ships these as
+        // station_connection_icons; we rastered the truly multi-line ones
+        // into the asset catalog.
+        let interchangeIcons: [String: String] = [
+            // Syntagma: M2 + M3 + T6
+            "M2_SYN": "station_syntagma_m2_m3_t6",
+            "M3_SYN": "station_syntagma_m2_m3_t6",
+            "T6_SYN": "station_syntagma_m2_m3_t6",
+            // Monastiraki: M1 + M3
+            "M1_MON": "station_monastiraki_m1_m3",
+            "M3_MON": "station_monastiraki_m1_m3",
+            // Dimotiko Theatro: M3 + T7
+            "M3_DIM": "station_dimotiko_theatro_m3_t7",
+            "T7_DIM": "station_dimarhio_dimotiko_theatro_m3_t7",
+        ]
+        for (stationId, iconName) in interchangeIcons {
+            map[stationId] = iconName
+        }
         return map
     }()
 }

@@ -63,6 +63,14 @@
             }
         });
     }
+    // Per RULES.md, multi-line interchanges (Syntagma, Monastiraki, Dimotiko
+    // Theatro) get the combined icon with every connecting line visible.
+    // Apply last so it overrides any per-line icon set above.
+    for (const [key, url] of Object.entries(stationIconManifest)) {
+        if (key.startsWith("interchange/")) {
+            stationIconBySid.set(key.substring("interchange/".length), url);
+        }
+    }
 
     const liveTrainList = document.getElementById("liveTrainList");
     const nearbyStationList = document.getElementById("nearbyStationList");
