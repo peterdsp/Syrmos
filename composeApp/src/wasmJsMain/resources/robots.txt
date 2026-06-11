@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://syrmos.peterdsp.dev/sitemap.xml

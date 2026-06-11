@@ -1,0 +1,34 @@
+{
+  "name": "Syrmos — Athens Metro, Tram & Suburban",
+  "short_name": "Syrmos",
+  "description": "Live Athens transit departures, GPS nearest station, and live train map for Metro, Tram, and Suburban Railway.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "en",
+  "background_color": "#000000",
+  "theme_color": "#0072CE",
+  "categories": ["travel", "navigation", "transit", "maps"],
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/id6753050019",
+      "id": "6753050019"
+    },
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.syrmos.android",
+      "id": "com.syrmos.android"
+    }
+  ],
+  "prefer_related_applications": false
+}
