@@ -2,11 +2,112 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syrmos, Athens Rail Map</title>
-    <meta name="description" content="Live Athens rail times and station map for metro, tram, and suburban rail">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- Primary -->
+    <title>Syrmos — Athens Metro, Tram & Suburban Departures</title>
+    <meta name="description" content="Syrmos is a free, offline-first companion for the Athens public transit network. Live departure countdowns, GPS nearest station, live train map, and bilingual EN/EL interface for Metro Lines 1, 2, 3, Tram T6/T7, and Suburban Railway A1–A4.">
+    <meta name="keywords" content="Syrmos, Athens metro, ΣΥΡΜΟΣ, Αθήνα μετρό, τραμ, προαστιακός, OASA, STASY, Hellenic Train, live train, departures">
+    <meta name="author" content="Petros Dhespollari">
+    <link rel="canonical" href="https://syrmos.peterdsp.dev/">
     <meta name="theme-color" content="#0072CE">
+
+    <!-- Icons + PWA -->
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="application-name" content="Syrmos">
+    <meta name="apple-mobile-web-app-title" content="Syrmos">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Smart app banners (Safari / Chrome on Android) -->
+    <meta name="apple-itunes-app" content="app-id=6753050019">
+    <meta name="google-play-app" content="app-id=com.syrmos.android">
+
+    <!-- Deep links to the native apps for search engines that follow rel="alternate" -->
+    <link rel="alternate" href="ios-app://6753050019/syrmos/syrmos.peterdsp.dev">
+    <link rel="alternate" href="android-app://com.syrmos.android/https/syrmos.peterdsp.dev">
+
+    <!-- Open Graph (LinkedIn, Facebook, Slack, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Syrmos">
+    <meta property="og:title" content="Syrmos — Athens Metro, Tram & Suburban Departures">
+    <meta property="og:description" content="Live departures, GPS nearest station, live train map. iOS, Android, and Web.">
+    <meta property="og:url" content="https://syrmos.peterdsp.dev/">
+    <meta property="og:image" content="https://syrmos.peterdsp.dev/favicon.png">
+    <meta property="og:locale" content="en_GB">
+    <meta property="og:locale:alternate" content="el_GR">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Syrmos — Athens Metro, Tram & Suburban Departures">
+    <meta name="twitter:description" content="Free, offline-first companion for OASA Metro, Tram, and Hellenic Train Suburban.">
+    <meta name="twitter:image" content="https://syrmos.peterdsp.dev/favicon.png">
+
+    <!-- Structured data — helps Google show app + organization knowledge panel -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://syrmos.peterdsp.dev/#webapp",
+          "name": "Syrmos",
+          "alternateName": ["ΣΥΡΜΟΣ", "Syrmos Athens"],
+          "url": "https://syrmos.peterdsp.dev/",
+          "description": "Live Athens transit departures, station search, and map for Metro, Tram, and Suburban Railway.",
+          "applicationCategory": "TravelApplication",
+          "operatingSystem": "Any (web)",
+          "browserRequirements": "Requires JavaScript and WebAssembly.",
+          "isAccessibleForFree": true,
+          "inLanguage": ["en", "el"],
+          "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+          "author": {"@id": "https://syrmos.peterdsp.dev/#person"}
+        },
+        {
+          "@type": "MobileApplication",
+          "@id": "https://apps.apple.com/app/id6753050019#ios",
+          "name": "Syrmos for iOS",
+          "operatingSystem": "iOS 17",
+          "applicationCategory": "TravelApplication",
+          "downloadUrl": "https://apps.apple.com/app/id6753050019",
+          "url": "https://apps.apple.com/app/id6753050019",
+          "isAccessibleForFree": true,
+          "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+          "author": {"@id": "https://syrmos.peterdsp.dev/#person"}
+        },
+        {
+          "@type": "MobileApplication",
+          "@id": "https://play.google.com/store/apps/details?id=com.syrmos.android#android",
+          "name": "Syrmos for Android",
+          "operatingSystem": "Android",
+          "applicationCategory": "TravelApplication",
+          "downloadUrl": "https://play.google.com/store/apps/details?id=com.syrmos.android",
+          "url": "https://play.google.com/store/apps/details?id=com.syrmos.android",
+          "isAccessibleForFree": true,
+          "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+          "author": {"@id": "https://syrmos.peterdsp.dev/#person"}
+        },
+        {
+          "@type": "Person",
+          "@id": "https://syrmos.peterdsp.dev/#person",
+          "name": "Petros Dhespollari",
+          "url": "https://peterdsp.dev",
+          "sameAs": ["https://github.com/peterdsp"]
+        },
+        {
+          "@type": "SoftwareSourceCode",
+          "name": "Syrmos source code",
+          "codeRepository": "https://github.com/peterdsp/Syrmos",
+          "programmingLanguage": ["Kotlin", "Swift", "JavaScript"],
+          "license": "https://opensource.org/licenses/BSD-3-Clause",
+          "author": {"@id": "https://syrmos.peterdsp.dev/#person"}
+        }
+      ]
+    }
+    </script>
+
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -23,6 +124,18 @@
         <div class="brand-block">
             <div class="brand">Syrmos</div>
             <div class="subtitle">Athens rail map</div>
+            <div class="store-badges">
+                <a href="https://apps.apple.com/app/id6753050019"
+                   target="_blank" rel="noopener"
+                   aria-label="Download Syrmos on the App Store">
+                    <img src="app-store.svg" alt="Download on the App Store" height="36" loading="lazy">
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.syrmos.android"
+                   target="_blank" rel="noopener"
+                   aria-label="Get Syrmos on Google Play">
+                    <img src="google-play.svg" alt="Get it on Google Play" height="36" loading="lazy">
+                </a>
+            </div>
         </div>
         <section class="search-card">
             <div class="search-input-shell">
