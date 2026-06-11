@@ -64,9 +64,12 @@ Syrmos is a transit companion for the Athens metro, tram and suburban railway. P
 - **Line browser** grouped by Metro, Tram, and Suburban with station counts
 - **Station detail** with connecting lines, interchange info, and next departures
 - **Full timetable viewer** with weekday, Friday, Saturday, and Sunday schedules
+- **Frequency-band projector** computes next departures from operator rules — correctly closes M3 Airport at 23:00, opens Friday's 02:00 late extension, switches to the Saturday 24/7 overnight grid, etc.
 - **Bilingual** interface in English and Greek
 - **Light and dark theme** with Metro Blue branding
-- **Fully offline** with all schedule data embedded in the app
+- **Offline-first**: every release ships a full snapshot of the live API; the app launches with correct data even on airplane mode and silently catches up when a connection appears
+- **Live schedule updates without a release** via a self-hosted API at `api-syrmos.peterdsp.dev` — fix a wrong frequency and every installed app sees the change on the next cold start
+- **External ticket purchase link** for Hellenic Train (suburban) stations — opens `newtickets.hellenictrain.gr` in the browser. Syrmos collects nothing; the purchase happens entirely on Hellenic Train's site, under their own terms
 
 ## Transit coverage
 
@@ -149,14 +152,36 @@ composeApp (KMP composition root, tab navigator, Koin wiring)
 feature/ -- home, lines, stations, schedule, map, settings
     |        each: Screen + ViewModel + UiState
     |
-core/ -- domain    (use cases)
-      -- data      (repositories, seed data, DataSeeder)
+core/ -- domain    (use cases — incl. ComputeDeparturesFromBandsUseCase)
+      -- data      (repositories, DataSeeder, ScheduleSyncRepository)
       -- database  (SQLDelight, platform drivers)
-      -- network   (Ktor, live train feeds)
+      -- network   (Ktor, SyrmosLinesService, SyrmosSchedulesService)
       -- designsystem (theme, shared components)
       -- navigation (Voyager tabs and routes)
       -- model     (domain data classes)
       -- common    (Result type, datetime, geo distance)
+```
+
+### Backend (Raspberry Pi)
+
+```
+api-syrmos.peterdsp.dev (Cloudflare Tunnel)
+    |
+    +-- /api/lines               -- canonical line + station snapshot
+    +-- /api/schedules           -- full frequency-band snapshot
+    +-- /api/schedules/manifest  -- version + per-line hashes (ETag-driven)
+    +-- /api/schedules/{lineId}  -- single-line bundle
+    +-- /api/holidays            -- holiday rules (Aug 15, Dec 24/31, etc.)
+    +-- /api/overrides           -- per-date overrides
+    +-- /api/announcements       -- STASY service alerts
+    +-- /api/trains              -- Hellenic Train SSE relay
+    +-- /admin/                  -- FastAPI UI, gated by Cloudflare Access
+
+ops/syrmos-api/
+    syrmos_admin/      FastAPI service + SQLite-backed source of truth
+    scripts/           Importer + snapshotter
+    pkg/               Athens transit reference package (rules + coords)
+    systemd/           Service + timer units (admin, 24mmm scrape, daily backup, upstream watcher)
 ```
 
 ### Tech stack
@@ -176,14 +201,19 @@ core/ -- domain    (use cases)
 
 ## Data sources
 
-Schedule data is extracted from official PDF timetables published by:
+Schedule data is encoded as operator rules (operating hours + frequency bands by daypart), not as pre-computed minute-by-minute departure lists, so it stays accurate when the user's clock disagrees with the build clock. Sources:
 
-- [STASY](https://www.stasy.gr) - Metro Lines 1, 2, 3 and Tram
-- [Hellenic Train](https://www.hellenictrain.gr) - Suburban Railway
+- [STASY](https://www.stasy.gr) — Metro Lines 1, 2, 3 and Tram T6/T7
+- [Hellenic Train](https://www.hellenictrain.gr) — Suburban Railway A1/A2/A3/A4 (timetable PDFs effective 2025-11-22 archived in [assets/hellenic-train-timetables/](assets/hellenic-train-timetables/))
+- [OASA 24mmm](https://www.oasa.gr/en/24mmm/) — Saturday 24-hour service grid, scraped daily
 
-Live train positions from the [Hellenic Train API](https://railway.gov.gr).
+Live train positions from the [Hellenic Train API](https://railway.gov.gr) and STASY announcements scraped every 5 minutes. The Pi-hosted API at `api-syrmos.peterdsp.dev` re-publishes everything with content-hash ETags so the apps can short-circuit a sync when nothing changed.
 
-Syrmos is not affiliated with STASY, Hellenic Train, or OASA.
+A daily timer on the Pi (`syrmos-watcher.timer`) hashes the upstream PDFs and pages; when any of them changes, the admin UI surfaces the diff so frequency bands can be re-verified before the next snapshot ships.
+
+Reference data — station coordinates, icon priority rules, M3 city/airport split, holiday calendar, T7 Piraeus loop — lives in [ops/syrmos-api/pkg/](ops/syrmos-api/pkg/).
+
+Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket purchase links open Hellenic Train's official site; Syrmos collects nothing from that flow (details in the privacy policy).
 
 ## Roadmap
 
