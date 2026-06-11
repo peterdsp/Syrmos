@@ -918,3 +918,33 @@ body {
     border-color: rgba(255, 255, 255, 0.8);
 }
 
+
+/* Store badges in header */
+.store-badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    align-items: center;
+}
+
+.store-badges a {
+    display: inline-flex;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.store-badges a:hover {
+    transform: translateY(-1px);
+    opacity: 0.92;
+}
+
+.store-badges img {
+    display: block;
+    height: 36px;
+    width: auto;
+}
+
+@media (max-width: 720px) {
+    .store-badges img {
+        height: 32px;
+    }
+}
