@@ -105,6 +105,8 @@ internal actual fun PlatformMapView(
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
     val trainMarkers = remember { mutableMapOf<String, Marker>() }
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
+    // 0 = country, 1 = city, 2 = district, 3 = street. Mirrors web + iOS buckets.
+    var zoomBucket by remember { mutableStateOf(2) }
 
     DisposableEffect(context) {
         Configuration.getInstance().userAgentValue = context.packageName
@@ -129,6 +131,20 @@ internal actual fun PlatformMapView(
                 )
                 locationOverlay.enableMyLocation()
                 overlays.add(locationOverlay)
+                addMapListener(object : org.osmdroid.events.MapListener {
+                    override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean = false
+                    override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
+                        val z = event?.zoomLevel ?: zoomLevelDouble
+                        val next = when {
+                            z >= 14.0 -> 3
+                            z >= 12.0 -> 2
+                            z >= 10.0 -> 1
+                            else -> 0
+                        }
+                        if (next != zoomBucket) zoomBucket = next
+                        return false
+                    }
+                })
                 mapViewRef.value = this
             }
         },
@@ -159,7 +175,7 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.mapStations, uiState.selectedStation) {
+    LaunchedEffect(uiState.mapStations, uiState.selectedStation, zoomBucket) {
         val currentIds = uiState.mapStations.map { it.id }.toSet()
         val staleIds = stationMarkers.keys - currentIds
         staleIds.forEach { id ->
@@ -171,15 +187,23 @@ internal actual fun PlatformMapView(
             val existing = stationMarkers[station.id]
             val isSelected = uiState.selectedStation?.id == station.id
             val primaryStationId = station.stationIds.firstOrNull() ?: station.id
+            val tintArgb = station.lineIds.firstNotNullOfOrNull { lineId ->
+                uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
+            }?.toArgb() ?: 0xFF64748B.toInt()
 
-            val stationDrawable = resolveStationDrawable(context, primaryStationId, uiState.lineStations)
-            val icon = stationDrawable ?: buildMarkerBitmap(
-                color = station.lineIds.firstNotNullOfOrNull { lineId ->
-                    uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
-                }?.toArgb() ?: 0xFF64748B.toInt(),
-                interchange = station.isInterchange,
-                selected = isSelected,
-            )
+            // High zoom: full station_smart_code PNG when we have one. Low/mid:
+            // colored pin so the country view doesn't look like a rice field.
+            val icon = if (zoomBucket >= 3) {
+                resolveStationDrawable(context, primaryStationId, uiState.lineStations)
+                    ?: buildMarkerBitmap(tintArgb, station.isInterchange, isSelected)
+            } else {
+                buildZoomPin(
+                    color = tintArgb,
+                    interchange = station.isInterchange,
+                    selected = isSelected,
+                    bucket = zoomBucket,
+                )
+            }
 
             if (existing != null) {
                 existing.position = GeoPoint(station.latitude, station.longitude)
@@ -317,6 +341,84 @@ private fun cr(a: Double, b: Double, c: Double, d: Double, t: Double): Double {
 }
 
 // Fallback bitmap builders for when PNG drawables are not found
+
+/**
+ * Low/mid-zoom pin. Teardrop-shape filled with the line color and a white
+ * inner cap so it reads as a pin, not a rice grain, at country/city zoom.
+ *
+ * bucket 0 (country): small solid dot, no shape detail
+ * bucket 1 (city):    teardrop, no inner cap (too small for it to matter)
+ * bucket 2 (district): teardrop + inner cap; legible station at glance
+ */
+private fun buildZoomPin(
+    color: Int,
+    interchange: Boolean,
+    selected: Boolean,
+    bucket: Int,
+): android.graphics.drawable.Drawable {
+    val baseSize = when (bucket) {
+        0 -> 20
+        1 -> 38
+        else -> 52
+    }
+    val size = if (selected) (baseSize * 1.18f).toInt() else baseSize
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val cx = size / 2f
+    val cy = size / 2f
+
+    if (bucket <= 0) {
+        val outer = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+        canvas.drawCircle(cx, cy, size / 2f, outer)
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+        canvas.drawCircle(cx, cy, size / 2f - 1.5f, fill)
+        return BitmapDrawable(null, bitmap)
+    }
+
+    // Teardrop body: circle + downward triangle. anchor center, so we draw
+    // a balanced teardrop that points "down" relative to the anchor point.
+    val pinFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+    val pinStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = 0xFFFFFFFF.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = size * 0.07f
+    }
+    val rBig = size * 0.36f
+    canvas.drawCircle(cx, cy - size * 0.06f, rBig, pinFill)
+    canvas.drawCircle(cx, cy - size * 0.06f, rBig, pinStroke)
+    // Pointer triangle
+    val path = android.graphics.Path().apply {
+        moveTo(cx - rBig * 0.55f, cy + rBig * 0.55f)
+        lineTo(cx + rBig * 0.55f, cy + rBig * 0.55f)
+        lineTo(cx, cy + size * 0.45f)
+        close()
+    }
+    canvas.drawPath(path, pinFill)
+    canvas.drawPath(path, pinStroke)
+
+    if (bucket >= 2) {
+        val cap = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+        canvas.drawCircle(cx, cy - size * 0.06f, rBig * 0.42f, cap)
+    }
+
+    if (interchange) {
+        // Tiny corner badge — two ring dots over the pin's shoulder.
+        val badgeR = size * 0.11f
+        val bx = cx + rBig * 0.78f
+        val by = cy - rBig * 0.5f
+        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+        canvas.drawCircle(bx, by, badgeR * 1.4f, white)
+        val tint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+        canvas.drawCircle(bx, by, badgeR, tint)
+    }
+
+    if (selected) {
+        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0x550072CE }
+        canvas.drawCircle(cx, cy - size * 0.06f, rBig * 1.35f, halo)
+    }
+
+    return BitmapDrawable(null, bitmap)
+}
 
 private fun buildMarkerBitmap(color: Int, interchange: Boolean, selected: Boolean): android.graphics.drawable.Drawable {
     val size = if (interchange) 64 else 48

@@ -157,6 +157,9 @@ struct TransitMapView: View {
     @State private var tappedStation: MapStationNode?
     @State private var mapLoaded = false
     @State private var showLocationDeniedAlert = false
+    /// 0 = country view (huge span), 1 = city, 2 = district, 3 = street.
+    /// Mirrors the web buckets so pins look consistent across platforms.
+    @State private var zoomBucket: Int = 2
 
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
@@ -174,7 +177,11 @@ struct TransitMapView: View {
 
                     ForEach(stations) { station in
                         Annotation(station.displayName, coordinate: station.coordinate) {
-                            StationDot(station: station, isSelected: selectedId == station.id)
+                            StationDot(
+                                station: station,
+                                isSelected: selectedId == station.id,
+                                zoomBucket: zoomBucket
+                            )
                                 .onTapGesture {
                                     selectedId = station.id
                                 }
@@ -203,6 +210,22 @@ struct TransitMapView: View {
                     MapScaleView()
                 }
                 .onAppear { mapLoaded = true }
+                .onMapCameraChange(frequency: .onEnd) { ctx in
+                    // Span thresholds match the web's zoom buckets:
+                    //   z >= 14 (street)   => bucket 3 = full SVG
+                    //   z >= 12 (district) => bucket 2 = SVG slightly smaller
+                    //   z >= 10 (city)     => bucket 1 = colored mode-pin
+                    //   else (country)     => bucket 0 = tiny colored dot
+                    let span = ctx.region.span.latitudeDelta
+                    let next: Int
+                    switch span {
+                    case ..<0.05: next = 3
+                    case ..<0.18: next = 2
+                    case ..<0.6:  next = 1
+                    default:      next = 0
+                    }
+                    if next != zoomBucket { zoomBucket = next }
+                }
                 .onChange(of: selectedId) { _, newId in
                     guard let id = newId,
                           let station = stations.first(where: { $0.id == id }) else { return }
@@ -460,41 +483,103 @@ private struct FlowLayout: Layout {
 struct StationDot: View {
     let station: MapStationNode
     let isSelected: Bool
+    /// 0=country, 1=city, 2=district, 3=street. See `TransitMapView.zoomBucket`.
+    var zoomBucket: Int = 3
 
     var body: some View {
         Group {
-            if let iconName = stationIconName,
-               let uiImage = UIImage(named: iconName) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .frame(width: isSelected ? 36 : 28, height: isSelected ? 36 : 28)
-                    .shadow(color: .black.opacity(isSelected ? 0.3 : 0.15), radius: isSelected ? 4 : 2, y: 1)
-            } else if station.isInterchange {
-                ZStack {
-                    ForEach(Array(station.lineIds.enumerated()), id: \.element) { index, lineId in
-                        Circle()
-                            .fill(SyrmosData.lineColor(for: lineId))
-                            .frame(width: 18, height: 18)
-                            .offset(x: CGFloat(index - station.lineIds.count / 2) * 6)
-                    }
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 8, height: 8)
-                }
-                .scaleEffect(isSelected ? 1.3 : 1.0)
-            } else {
-                ZStack {
-                    Circle()
-                        .fill(SyrmosData.lineColor(for: station.lineIds.first ?? "M3"))
-                        .frame(width: 16, height: 16)
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 6, height: 6)
-                }
-                .scaleEffect(isSelected ? 1.3 : 1.0)
+            switch zoomBucket {
+            case 3:
+                highZoomBody
+            case 2:
+                midZoomBody
+            default:
+                lowZoomBody
             }
         }
+        .animation(.easeInOut(duration: 0.15), value: zoomBucket)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+
+    /// Street-level: the full station_smart_code SVG when we have one.
+    @ViewBuilder
+    private var highZoomBody: some View {
+        if let iconName = stationIconName,
+           let uiImage = UIImage(named: iconName) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .frame(width: isSelected ? 36 : 28, height: isSelected ? 36 : 28)
+                .shadow(color: .black.opacity(isSelected ? 0.3 : 0.15), radius: isSelected ? 4 : 2, y: 1)
+        } else {
+            midZoomBody
+        }
+    }
+
+    /// District-level: colored teardrop pin with SF Symbol mode glyph.
+    private var midZoomBody: some View {
+        let size: CGFloat = isSelected ? 30 : 24
+        return ZStack {
+            Image(systemName: "mappin.circle.fill")
+                .resizable()
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, primaryColor)
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+            Image(systemName: primaryModeSymbol)
+                .font(.system(size: size * 0.42, weight: .bold))
+                .foregroundStyle(primaryColor)
+                .offset(y: -size * 0.04)
+            if station.isInterchange {
+                interchangeRingsBadge
+                    .offset(x: size * 0.34, y: -size * 0.34)
+            }
+        }
+        .scaleEffect(isSelected ? 1.1 : 1.0)
+    }
+
+    /// Country-level: tiny solid dot in line color, no glyph (would be unreadable).
+    private var lowZoomBody: some View {
+        let size: CGFloat = isSelected ? 12 : 9
+        return ZStack {
+            Circle()
+                .fill(primaryColor)
+                .frame(width: size, height: size)
+                .overlay(
+                    Circle()
+                        .stroke(.white, lineWidth: size * 0.18)
+                )
+                .shadow(color: .black.opacity(0.25), radius: 1, y: 0.5)
+        }
+        .scaleEffect(isSelected ? 1.3 : 1.0)
+    }
+
+    private var primaryLineId: String { station.lineIds.first ?? "M3" }
+    private var primaryColor: Color { SyrmosData.lineColor(for: primaryLineId) }
+
+    private var primaryModeSymbol: String {
+        guard let line = SyrmosData.line(for: primaryLineId) else { return "tram.fill" }
+        switch line.type {
+        case .metro: return "tram.tunnel.fill"
+        case .tram: return "tram.fill"
+        case .suburban: return "train.side.front.car"
+        }
+    }
+
+    private var interchangeRingsBadge: some View {
+        HStack(spacing: 1.5) {
+            ForEach(Array(station.lineIds.prefix(3).enumerated()), id: \.element) { _, lineId in
+                Circle()
+                    .fill(SyrmosData.lineColor(for: lineId))
+                    .frame(width: 5, height: 5)
+                    .overlay(Circle().stroke(.white, lineWidth: 0.8))
+            }
+        }
+        .padding(2)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
+        )
     }
 
     private var stationIconName: String? {
