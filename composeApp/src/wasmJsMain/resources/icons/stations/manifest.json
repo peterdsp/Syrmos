@@ -177,5 +177,12 @@
   "train/P3/14": "icons/stations/train/P3/train_p3_14_agios_georgios_ag.svg",
   "train/P3/15": "icons/stations/train/P3/train_p3_15_kalochori_panteichi_kp.svg",
   "train/P3/16": "icons/stations/train/P3/train_p3_16_avlida_av.svg",
-  "train/P3/17": "icons/stations/train/P3/train_p3_17_chalkida_ch.svg"
+  "train/P3/17": "icons/stations/train/P3/train_p3_17_chalkida_ch.svg",
+  "interchange/M2_SYN": "icons/stations/connection/station_syntagma_m2_m3_t6.svg",
+  "interchange/M3_SYN": "icons/stations/connection/station_syntagma_m2_m3_t6.svg",
+  "interchange/T6_SYN": "icons/stations/connection/station_syntagma_m2_m3_t6.svg",
+  "interchange/M1_MON": "icons/stations/connection/station_monastiraki_m1_m3.svg",
+  "interchange/M3_MON": "icons/stations/connection/station_monastiraki_m1_m3.svg",
+  "interchange/M3_DIM": "icons/stations/connection/station_dimotiko_theatro_m3_t7.svg",
+  "interchange/T7_DIM": "icons/stations/connection/station_dimarhio_dimotiko_theatro_m3_t7.svg"
 }
