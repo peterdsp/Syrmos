@@ -459,7 +459,53 @@ Plus: Apple's `apple-itunes-app` and Chrome's `google-play-app` smart banners; a
 
 Indexing depends on Search Console submission, sitemap submission, and a few authoritative backlinks — actions that only the developer can take. They're documented in the README. Realistic timeline: 2–6 weeks until "syrmos" returns the website + apps + repo in the first results.
 
-## Appendix H — Product Roadmap
+## Appendix H — Continuous Integration
+
+GitHub Actions (`.github/workflows/tests.yml`) runs five jobs on every push and pull request to `main`:
+
+| Job | Runner | What runs |
+|---|---|---|
+| KMP unit (JVM) | ubuntu-latest | `:core:common:test`, `:core:domain:test`, `:core:data:test` — pure JVM tests of the shared business logic. Covers the projector, the live-arrivals router, time-math extensions, repository wiring. Fastest job, blocks the merge. |
+| Android | ubuntu-latest | `:androidApp:testDebugUnitTest` + `:androidApp:lintDebug`. |
+| iOS | macos-15 | KMP framework link (`:composeApp:linkDebugFrameworkIosSimulatorArm64`), Xcode build (`xcodebuild ... build`), and XCTest run when the iosApp gains a test target. Today the XCTest step is `continue-on-error: true` because no XCTest target exists yet. |
+| Web | ubuntu-latest | `:composeApp:wasmJsBrowserDistribution` — a clean web bundle build, uploaded as a CI artifact so the maintainer can grab a build without re-running locally. |
+| API (Python) | ubuntu-latest | Bootstraps the SQLite DB, runs the importer, runs the JSON generator. Catches schema-migration regressions and importer parser bugs. |
+
+Each job uploads test/lint reports as artifacts on failure for 7 days, so a red CI build is debuggable without re-running locally.
+
+Test reports beyond unit coverage — UI tests, Compose snapshot tests, iOS XCUITest, web end-to-end — are tracked as a follow-up. The current view is that the projector is the highest-risk component and is the most thoroughly tested. UI bugs are caught faster by the user feedback loop on a free side-project at this scale than by an extensive UI test investment.
+
+## Appendix I — Why Icons and Pins Are Bundled, Not Served from the API
+
+A natural question: if the API can update line metadata, schedules, holidays, fares, and dated overrides without an app release, why not also the pin designs and station icons?
+
+The answer is partially yes, partially no, and the line is drawn deliberately:
+
+**What can be updated server-side, no release:**
+- Line metadata (name, color, terminals, station list, station order)
+- Frequency bands and operating hours
+- Holiday calendar and per-date overrides
+- Fare page URL, contactless methods, contactless locations, notes
+- Hellenic Train ticket link
+
+**What is bundled and requires a release:**
+- The 213 `station_smart_code` SVGs (T7 stops 1–43, M1 stops 1–24, etc.)
+- The directional vehicle icons (`metro_m1_left_to_piraeus.svg`, etc.)
+- The pin teardrop shapes, SF Symbols choices, and color application logic
+- The CSS that styles the web map pins
+
+**Why the split is intentional:**
+
+1. **Asset size**. The icon pack is ~213 SVGs at ~1.2 MB total. Serving them per-station on a cold start would add hundreds of HTTP requests on a free Cloudflare tier; bundling them keeps cold start instant and offline-from-second-zero. The schedule data is ~36 KB total, by contrast.
+2. **Cartographic correctness across native runtimes**. Apple Maps annotation views, osmdroid markers, and Leaflet `divIcon` each have different rendering models. Trying to drive all three from a single API-served design language would mean inventing a third abstraction layer. SF Symbols + emoji glyphs + per-platform CSS, all bundled, achieves consistency at the design level without the indirection.
+3. **The risk of broken art at scale**. A schedule mistake on the server costs a wrong departure time. An asset mistake on the server costs an empty map for every user until rolled back. Asset changes deserve the friction of a code review and a build pipeline.
+
+What *can* move to the API later, if the trade-off shifts:
+- A `display_overrides` table that lets the admin override the line color, the pin glyph (SF Symbol name for iOS, emoji for web, drawable ID for Android), the polyline stroke style. The client treats these as overlays on top of the bundled defaults.
+
+If/when that table ships, the maintainer can rebrand T7 without a release. The default art stays embedded so the offline-first guarantee survives the rebrand being undone too.
+
+## Appendix J — Product Roadmap
 
 | Version | Features | Target |
 |---|---|---|
@@ -479,6 +525,7 @@ Indexing depends on Search Console submission, sitemap submission, and a few aut
 | 2026-06-10 | Petros Dhespollari | Initial version. Written following the Yale SOM / University of Potsdam / IIM Bangalore frameworks. Covers state of the project as of iOS build 1.0 (8) and Android build 5. To be updated whenever a material change occurs in scope, store status, user numbers, or strategic direction. |
 | 2026-06-12 | Petros Dhespollari | Schedule correctness refactor (Appendix B). Added Pi-hosted API at `api-syrmos.peterdsp.dev` for live schedule updates, FastAPI admin behind Cloudflare Access, daily OASA 24mmm scraper, daily upstream-source watcher across STASY/OASA/Hellenic Train PDFs, build-time API snapshot bundled into every release, frequency-band projector in `core/domain` and Swift `ScheduleProjector`, suburban A1–A4 schedules from Hellenic Train PDFs effective 2025-11-22, Buy Ticket link to Hellenic Train (Appendix C) with explicit privacy disclosure. iOS bumped to 1.0.1 build 9. |
 | 2026-06-12 (later) | Petros Dhespollari | Zoom-aware map markers across web/iOS/Android (Appendix E), `LiveArrivalsProvider` infrastructure with no-op STASY/OASA/Hellenic Train providers ready for operator feeds (Appendix D), `/api/fares` endpoint with OASA price-page link + contactless tap-and-go metadata (Appendix F), and `index.html` SEO overhaul with JSON-LD, OG, Twitter Card, PWA manifest, and store badges for the "Syrmos" Google search problem (Appendix G). |
+| 2026-06-12 (final) | Petros Dhespollari | T7 Piraeus loop integrated into bundled seed across iOS/KMP (43 stops in package order). GitHub Actions CI workflow with KMP/Android/iOS/Web/API jobs (Appendix H). Decision on icons-vs-API split documented (Appendix I). Android bumped to 1.0.1 (versionCode 6), release APK + AAB built. |
 
 ---
 

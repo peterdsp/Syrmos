@@ -1,0 +1,148 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # KMP shared code: domain logic, repositories, time math, projector — anything
+  # that doesn't need a platform runtime. Fast, blocks the merge.
+  kmp-unit:
+    name: KMP unit tests (JVM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run JVM tests
+        run: ./gradlew :core:common:test :core:domain:test :core:data:test --stacktrace
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kmp-test-reports
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          retention-days: 7
+
+  # Android instrumented + unit tests + lint.
+  android:
+    name: Android unit + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests
+        run: ./gradlew :androidApp:testDebugUnitTest --stacktrace
+      - name: Lint
+        run: ./gradlew :androidApp:lintDebug
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-reports
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+          retention-days: 7
+
+  # iOS native tests (when an xcode test target exists). Today the iosApp does
+  # not yet have an XCTest target, so this job is a placeholder that builds the
+  # framework + the app to catch compile regressions on real hardware.
+  ios:
+    name: iOS build + tests
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build KMP framework
+        run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64
+      - name: Build iOS app
+        run: |
+          xcodebuild \
+            -project iosApp/Syrmos.xcodeproj \
+            -scheme Syrmos \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcbeautify --renderer github-actions
+      - name: Run XCTests (if any)
+        continue-on-error: true
+        run: |
+          xcodebuild \
+            -project iosApp/Syrmos.xcodeproj \
+            -scheme Syrmos \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            test | xcbeautify --renderer github-actions || echo "No XCTest target yet"
+
+  # Web build sanity. The release web bundle must compile from scratch.
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Web distribution
+        run: ./gradlew :composeApp:wasmJsBrowserDistribution --stacktrace
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-distribution
+          path: composeApp/build/dist/wasmJs/productionExecutable/
+          retention-days: 7
+
+  # Python API service unit tests.
+  api:
+    name: API (Python) tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install deps
+        working-directory: ops/syrmos-api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Bootstrap DB
+        working-directory: ops/syrmos-api
+        env:
+          SYRMOS_DB_PATH: /tmp/syrmos-test.db
+        run: |
+          python -m syrmos_admin.db
+          python -m scripts.import_athens_package --apply
+          python -m syrmos_admin.generator
