@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily SQLite backup for Syrmos
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+ExecStart=/bin/bash -c 'mkdir -p /home/peterdsp/syrmos-api/backups && /usr/bin/sqlite3 /home/peterdsp/syrmos-api/db/syrmos.db ".backup /home/peterdsp/syrmos-api/backups/syrmos-$(date +%%Y-%%m-%%d).db" && find /home/peterdsp/syrmos-api/backups -name "syrmos-*.db" -mtime +30 -delete'
+StandardOutput=append:/home/peterdsp/syrmos-api/backup.log
+StandardError=append:/home/peterdsp/syrmos-api/backup.log

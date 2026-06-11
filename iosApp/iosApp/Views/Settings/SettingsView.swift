@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SyrmosSettingsView: View {
     @ObservedObject private var loc = LocalizationManager.shared
+    @ObservedObject private var schedules = SyrmosSchedulesStore.shared
 
     var body: some View {
         NavigationStack {
@@ -16,9 +17,26 @@ struct SyrmosSettingsView: View {
                 }
 
                 Section(loc[.data]) {
-                    LabeledContent(loc[.scheduleVersion], value: "3.0")
+                    LabeledContent(loc[.scheduleVersion], value: scheduleVersionLabel)
                     LabeledContent(loc[.stations], value: "90+")
                     LabeledContent(loc[.lines], value: "9")
+                    LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
+                    Toggle(offlineOnlyLabel, isOn: Binding(
+                        get: { schedules.offlineOnly },
+                        set: { schedules.offlineOnly = $0 }
+                    ))
+                    Button {
+                        Task { await schedules.refresh() }
+                    } label: {
+                        HStack {
+                            Label(checkNowLabel, systemImage: "arrow.clockwise")
+                            if schedules.isRefreshing {
+                                Spacer()
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(schedules.isRefreshing || schedules.offlineOnly)
                 }
 
                 Section(loc[.about]) {
@@ -42,6 +60,33 @@ struct SyrmosSettingsView: View {
             .background(Color.syrmosBackground)
             .navigationTitle(loc[.settings])
         }
+    }
+
+    private var scheduleVersionLabel: String {
+        if let v = schedules.manifestVersion { return "v\(v)" }
+        return "3.0"
+    }
+
+    private var lastSyncLabel: String {
+        guard let date = schedules.lastSyncAt else {
+            return loc.language == .greek ? "Ποτέ" : "Never"
+        }
+        let f = DateFormatter()
+        f.dateStyle = .short
+        f.timeStyle = .short
+        return f.string(from: date)
+    }
+
+    private var lastUpdatedLabel: String {
+        loc.language == .greek ? "Τελευταία ενημέρωση" : "Last updated"
+    }
+
+    private var offlineOnlyLabel: String {
+        loc.language == .greek ? "Μόνο εκτός σύνδεσης" : "Offline-only mode"
+    }
+
+    private var checkNowLabel: String {
+        loc.language == .greek ? "Έλεγχος τώρα" : "Check now"
     }
 }
 

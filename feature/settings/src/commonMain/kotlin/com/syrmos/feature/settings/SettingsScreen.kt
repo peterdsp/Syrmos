@@ -28,14 +28,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.rememberCoroutineScope
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.sync.ScheduleSyncRepository
+import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun SettingsScreen() {
     val lang by LocalizationManager.language.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
+    val scheduleSync = koinInject<ScheduleSyncRepository>()
+    val lastSync by scheduleSync.lastSyncAt.collectAsState()
+    val offlineOnly by scheduleSync.offlineOnly.collectAsState()
+    val isRefreshing by scheduleSync.isRefreshing.collectAsState()
+    val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
+    val scope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier
@@ -87,7 +103,7 @@ fun SettingsScreen() {
             SettingsSection(title = L.DATA.text(lang)) {
                 SettingsRow(
                     title = L.SCHEDULE_VERSION.text(lang),
-                    value = "3.0",
+                    value = scheduleVersion?.let { "v$it" } ?: "3.0",
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 SettingsRow(
@@ -99,6 +115,47 @@ fun SettingsScreen() {
                     title = L.LINES.text(lang),
                     value = "9",
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                SettingsRow(
+                    title = if (lang == AppLanguage.GREEK) "Τελευταία ενημέρωση" else "Last updated",
+                    value = lastSync?.toString()?.replace("T", " ")?.substringBefore(".")
+                        ?: if (lang == AppLanguage.GREEK) "Ποτέ" else "Never",
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (lang == AppLanguage.GREEK) "Μόνο εκτός σύνδεσης" else "Offline-only mode",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Switch(
+                        checked = offlineOnly,
+                        onCheckedChange = { scheduleSync.setOfflineOnly(it) },
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Button(
+                        enabled = !isRefreshing && !offlineOnly,
+                        onClick = { scope.launch { scheduleSync.refresh() } },
+                    ) {
+                        Text(if (lang == AppLanguage.GREEK) "Έλεγχος τώρα" else "Check now")
+                    }
+                    if (isRefreshing) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                    }
+                }
             }
         }
 

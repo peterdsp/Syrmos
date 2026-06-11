@@ -1,0 +1,20 @@
+[Unit]
+Description=Syrmos schedules admin API (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
+Environment=SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
+EnvironmentFile=-/home/peterdsp/syrmos-api/admin.env
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8092
+Restart=always
+RestartSec=3
+StandardOutput=append:/home/peterdsp/syrmos-api/admin.log
+StandardError=append:/home/peterdsp/syrmos-api/admin.log
+
+[Install]
+WantedBy=multi-user.target
