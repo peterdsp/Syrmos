@@ -39,6 +39,35 @@ struct SyrmosSettingsView: View {
                     .disabled(schedules.isRefreshing || schedules.offlineOnly)
                 }
 
+                Section {
+                    Link(destination: URL(string: "https://www.oasa.gr/en/tickets/prices-of-products/")!) {
+                        Label(
+                            loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων (OASA)" : "Ticket prices (OASA)",
+                            systemImage: "eurosign.circle"
+                        )
+                    }
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(loc.language == .greek ? "Ανέπαφη πληρωμή" : "Contactless payment")
+                                .font(.body)
+                            Text(loc.language == .greek
+                                 ? "Πληρώστε στις πύλες μετρό/τραμ ή μέσα σε τραμ και τρένα με Apple Pay, Google Wallet ή ανέπαφη κάρτα."
+                                 : "Tap to pay at metro/tram gates and onboard trams and trains with Apple Pay, Google Wallet, or any contactless card.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "wave.3.right.circle")
+                    }
+                } header: {
+                    Text(loc.language == .greek ? "Εισιτήρια" : "Tickets")
+                } footer: {
+                    Text(loc.language == .greek
+                         ? "Οι τιμές και η διαθεσιμότητα διαχειρίζονται από τον ΟΑΣΑ. Το Syrmos δεν αποθηκεύει τιμές — απλώς ανοίγει την επίσημη σελίδα."
+                         : "Prices and availability are managed by OASA. Syrmos does not store prices — it just opens the official page.")
+                        .font(.caption2)
+                }
+
                 Section(loc[.about]) {
                     Text(loc[.aboutText])
                         .font(.footnote)

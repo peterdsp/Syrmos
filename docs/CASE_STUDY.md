@@ -391,7 +391,75 @@ The design rule is strict and is enforced in the privacy policy: the button is a
 
 The same rule will apply to every future external integration we ship — the OASA telematics page, the STASY service alerts page, intercity tickets, etc. Syrmos is a discovery app; ticketing is intentionally not our product.
 
-## Appendix D — Product Roadmap
+## Appendix D — Live Arrivals Infrastructure (placeholder)
+
+As of June 2026, Athens's public-transport operators do **not** publish a machine-readable real-time arrivals feed:
+
+- **STASY** (metro, tram): a public site with announcements only, no JSON API for next-train predictions
+- **OASA telematics**: an HTML page showing bus arrivals; no documented JSON; metro/tram coverage unclear
+- **Hellenic Train**: publishes live train *positions* via an SSE feed at `railway.gov.gr` (Syrmos already consumes this), but no per-stop ETA stream
+
+To avoid a multi-week refactor on the day any of those operators opens a feed, Syrmos ships a `LiveArrivalsProvider` interface in `core/domain` today with three no-op implementations (`StasyLiveArrivalsProvider`, `OasaLiveArrivalsProvider`, `HellenicTrainLiveArrivalsProvider`), routed by a `LiveArrivalsRouter` based on each provider's declared `lineIds()`. The use case prefers live data when a provider returns a non-null list and falls through to the rule-based projector when not.
+
+Every provider currently returns `null`, so the rule-based projector remains the source of truth. When STASY (or anyone) publishes:
+
+1. Fill in the body of the relevant provider — fetch, parse, return a list of `LiveArrival`
+2. Wire any new HTTP client into the Koin module
+3. Done. No other code change. The use case, the UI, the offline-first guarantee, the countdown timer, the bilingual strings — all untouched
+
+The rule is enforced in the docstring: live data must never silently degrade offline-first. Network failures inside a provider must return `null`, not throw, so the projector covers gracefully.
+
+### Why ship the infrastructure now if the feed doesn't exist
+
+Two reasons:
+
+1. **Forced-decoupling**. Whoever fills in the STASY provider in 2027 will not have access to my head. The interface — input/output, failure semantics, line-id routing — has to be unambiguous from the day it's written, not retro-fitted around a half-built implementation.
+2. **Signalling**. A `LiveArrivalsProvider` in the public source code, with no implementation body, is the clearest possible message to maintainers and any STASY engineer looking at the repo: "here is the seam, please fill it in." It also reassures users that the architecture is ready when the operators are.
+
+## Appendix E — Zoom-Aware Map Markers
+
+Early reviewer feedback flagged the country-zoom map view as "rice grains" — the per-station smart-code SVGs (designed at 28×28 pt for street-level zoom) were rendered uniformly at every zoom level. At z<12, all 200 markers became indistinguishable white shapes.
+
+The fix is the same pattern across all three platforms: pick the marker design from the current zoom level, not from a fixed image. Four buckets:
+
+| Bucket | Web (Leaflet) zoom | iOS (region span Δ°) | Android (osmdroid zoom) | Marker |
+|---|---|---|---|---|
+| 0 — country | < 10 | > 0.6 | < 10 | Tiny line-colored dot, white outline. No glyph (illegible at that scale). |
+| 1 — city | 10–11 | 0.18–0.6 | 10–11 | Colored teardrop pin with mode glyph (🚇 / 🚊 / 🚆 emoji on web, SF Symbol on iOS, painted bitmap on Android). |
+| 2 — district | 12–13 | 0.05–0.18 | 12–13 | Same teardrop with a white inner cap. |
+| 3 — street | ≥ 14 | < 0.05 | ≥ 14 | The original `station_smart_code` SVG (the design's intended use). |
+
+Interchanges show 2–3 line-color ring badges in the corner of the pin. The same threshold table lives in three places (`web-map.js`, `MapView.swift`, `PlatformMapView.android.kt`) deliberately — KMP would have meant lifting the platform-specific map code into shared code, and the map abstraction in Compose Multiplatform isn't ready to absorb that yet. The thresholds are documented inline in each file so a future refactor can collapse them.
+
+## Appendix F — Fares Endpoint and the No-Prices Rule
+
+The app shows a Settings entry "Ticket prices (OASA)" that opens `oasa.gr/en/tickets/prices-of-products/` and a paragraph explaining contactless tap-and-go: Apple Pay, Google Wallet, or any contactless card works at metro and tram gates, plus on the validators inside trams and trains.
+
+The corresponding endpoint, `/api/fares`, intentionally **does not store prices**. It stores:
+- The canonical URL of OASA's fare page (in both EN and EL)
+- The list of accepted contactless methods
+- The list of locations where tap-and-go works
+- Free-text operator notes in EN and EL
+
+Prices change without notice. Mirroring them in the app would inevitably show stale prices to a user who's about to tap their card at a gate — exactly the moment when "wrong price" is most embarrassing. Linking out to the operator's page is the only safe behavior, and the privacy/responsibility framing (Appendix C) carries over: Syrmos doesn't store the answer, it routes the user to the authority that does.
+
+The endpoint exists at all so the contactless rules can be edited without an app release. If OASA enables tap-and-go on a new vehicle type, the admin updates the `contactless_locations` JSON array and every app sees it on next cold start.
+
+## Appendix G — Web Discoverability
+
+A reviewer searched "syrmos" on Google and got a baby clothing shop instead of the website. Root cause: the page had a single `<title>` and `<meta description>`, no structured data, no PWA manifest, no JSON-LD, no canonical URL. Google had no signals beyond keyword density on a brand-new domain.
+
+The fix is in the `<head>` of `index.html` shipped on 2026-06-12. Three layers:
+
+1. **Discovery basics** — proper title with "Syrmos — Athens Metro, Tram & Suburban Departures", a 320-char description, canonical URL, `robots.txt`, `sitemap.xml`
+2. **Social preview** — Open Graph + Twitter Card tags so a paste of the URL into Slack/LinkedIn/Discord renders a card with the right title, description, and favicon
+3. **Knowledge graph** — A single JSON-LD `@graph` with five typed entities: a `WebApplication` for the website, two `MobileApplication` entries (one per store), a `Person` for the developer, and a `SoftwareSourceCode` pointing at the GitHub repo. The `MobileApplication` entries include `downloadUrl` pointing at App Store id `6753050019` and Play Store id `com.syrmos.android`. Google's Knowledge Graph builder uses exactly this shape to construct the right-hand panel that shows the app + store buttons + developer + repo
+
+Plus: Apple's `apple-itunes-app` and Chrome's `google-play-app` smart banners; a `manifest.webmanifest` with `related_applications` (which Chromium-based browsers use to prompt "install the native app instead"); and two store badges (the official SVGs) in the header brand block linking to both stores.
+
+Indexing depends on Search Console submission, sitemap submission, and a few authoritative backlinks — actions that only the developer can take. They're documented in the README. Realistic timeline: 2–6 weeks until "syrmos" returns the website + apps + repo in the first results.
+
+## Appendix H — Product Roadmap
 
 | Version | Features | Target |
 |---|---|---|
@@ -410,6 +478,7 @@ The same rule will apply to every future external integration we ship — the OA
 |---|---|---|
 | 2026-06-10 | Petros Dhespollari | Initial version. Written following the Yale SOM / University of Potsdam / IIM Bangalore frameworks. Covers state of the project as of iOS build 1.0 (8) and Android build 5. To be updated whenever a material change occurs in scope, store status, user numbers, or strategic direction. |
 | 2026-06-12 | Petros Dhespollari | Schedule correctness refactor (Appendix B). Added Pi-hosted API at `api-syrmos.peterdsp.dev` for live schedule updates, FastAPI admin behind Cloudflare Access, daily OASA 24mmm scraper, daily upstream-source watcher across STASY/OASA/Hellenic Train PDFs, build-time API snapshot bundled into every release, frequency-band projector in `core/domain` and Swift `ScheduleProjector`, suburban A1–A4 schedules from Hellenic Train PDFs effective 2025-11-22, Buy Ticket link to Hellenic Train (Appendix C) with explicit privacy disclosure. iOS bumped to 1.0.1 build 9. |
+| 2026-06-12 (later) | Petros Dhespollari | Zoom-aware map markers across web/iOS/Android (Appendix E), `LiveArrivalsProvider` infrastructure with no-op STASY/OASA/Hellenic Train providers ready for operator feeds (Appendix D), `/api/fares` endpoint with OASA price-page link + contactless tap-and-go metadata (Appendix F), and `index.html` SEO overhaul with JSON-LD, OG, Twitter Card, PWA manifest, and store badges for the "Syrmos" Google search problem (Appendix G). |
 
 ---
 

@@ -70,6 +70,9 @@ Syrmos is a transit companion for the Athens metro, tram and suburban railway. P
 - **Offline-first**: every release ships a full snapshot of the live API; the app launches with correct data even on airplane mode and silently catches up when a connection appears
 - **Live schedule updates without a release** via a self-hosted API at `api-syrmos.peterdsp.dev` — fix a wrong frequency and every installed app sees the change on the next cold start
 - **External ticket purchase link** for Hellenic Train (suburban) stations — opens `newtickets.hellenictrain.gr` in the browser. Syrmos collects nothing; the purchase happens entirely on Hellenic Train's site, under their own terms
+- **Contactless tap-and-go info** in Settings — links to OASA's official ticket-price page and explains that Apple Pay, Google Wallet, or any contactless Visa/Mastercard works at metro and tram gates, and also on the validators inside trams and trains. Syrmos doesn't store prices; it links to the operator's source of truth
+- **Zoom-aware map pins** on all three platforms — at country zoom you see colored mode-glyph pins; at street zoom you see the per-station smart-code SVG. The web uses Leaflet `divIcon` + emoji glyphs, iOS uses SF Symbols inside a teardrop, Android draws a custom bitmap. Replaces the old "white egg" look at low zoom
+- **Live-arrivals infrastructure**, ready for the day Athens operators publish real-time feeds. A `LiveArrivalsProvider` interface in `core/domain` is implemented as no-op stubs for STASY, OASA Telematics, and Hellenic Train. The use case prefers live data when available and falls back to the rule-based projector when not. Currently every stub returns `null`, so projector remains the answer — but the wiring is in place
 
 ## Transit coverage
 
@@ -173,8 +176,9 @@ api-syrmos.peterdsp.dev (Cloudflare Tunnel)
     +-- /api/schedules/{lineId}  -- single-line bundle
     +-- /api/holidays            -- holiday rules (Aug 15, Dec 24/31, etc.)
     +-- /api/overrides           -- per-date overrides
+    +-- /api/fares               -- OASA fare-page link + contactless tap-and-go metadata
     +-- /api/announcements       -- STASY service alerts
-    +-- /api/trains              -- Hellenic Train SSE relay
+    +-- /api/trains              -- Hellenic Train SSE relay (positions only, no per-stop ETAs)
     +-- /admin/                  -- FastAPI UI, gated by Cloudflare Access
 
 ops/syrmos-api/

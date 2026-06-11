@@ -100,6 +100,32 @@ def _build_holidays(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_fares(conn: sqlite3.Connection) -> dict:
+    rows = conn.execute(
+        "SELECT operator_id, region, prices_url, prices_url_el, currency,"
+        " contactless_methods, contactless_locations, notes_en, notes_el, updated_at"
+        " FROM fares ORDER BY operator_id"
+    ).fetchall()
+    return {
+        "updatedAt": _now_iso(),
+        "fares": [
+            {
+                "operatorId": r["operator_id"],
+                "region": r["region"],
+                "pricesUrl": r["prices_url"],
+                "pricesUrlEl": r["prices_url_el"] or r["prices_url"],
+                "currency": r["currency"],
+                "contactlessMethods": json.loads(r["contactless_methods"]),
+                "contactlessLocations": json.loads(r["contactless_locations"]),
+                "notesEn": r["notes_en"] or "",
+                "notesEl": r["notes_el"] or "",
+                "updatedAt": r["updated_at"],
+            }
+            for r in rows
+        ],
+    }
+
+
 def _build_overrides(conn: sqlite3.Connection) -> dict:
     rows = conn.execute(
         "SELECT override_date, line_id, source, payload_json, fetched_at"
@@ -172,6 +198,10 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
         overrides_payload = _build_overrides(conn)
         overrides_hash = _atomic_write_json(out_dir / "overrides.json", overrides_payload)
 
+        # /api/fares
+        fares_payload = _build_fares(conn)
+        fares_hash = _atomic_write_json(out_dir / "fares.json", fares_payload)
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -202,6 +232,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "linesHash": lines_hash,
             "holidaysHash": holidays_hash,
             "overridesHash": overrides_hash,
+            "faresHash": fares_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 
@@ -220,6 +251,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
                 "schedules-manifest.json",
                 "holidays.json",
                 "overrides.json",
+                "fares.json",
                 *[f"schedules/{lid}.json" for lid in line_ids],
             ],
         }
