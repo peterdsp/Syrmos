@@ -23,6 +23,7 @@ data class UpcomingDeparture(
 
 class GetNextDeparturesUseCase(
     private val scheduleRepository: ScheduleRepositoryImpl,
+    private val bandProjector: ComputeDeparturesFromBandsUseCase? = null,
 ) {
     fun invoke(
         stationId: String,
@@ -30,6 +31,17 @@ class GetNextDeparturesUseCase(
         direction: Direction,
         limit: Int = 5,
     ): Flow<List<UpcomingDeparture>> {
+        // Source of truth: live API frequency_bands. Empty when bundles
+        // haven't been fetched yet (offline cold-start) — we then fall
+        // through to the bundled seed for an offline-first first impression.
+        if (bandProjector != null) {
+            val lineIds = if (lineId == "M3") listOf("M3", "M3_AIR") else listOf(lineId)
+            val live = bandProjector.invoke(lineIds = lineIds, direction = direction, limit = limit)
+            if (live.isNotEmpty()) {
+                return kotlinx.coroutines.flow.flowOf(live)
+            }
+        }
+
         val now = currentAthensTime()
         val dayType = resolveCurrentDayType()
         val currentTimeString = now.toDisplayString()

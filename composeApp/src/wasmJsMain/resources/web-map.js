@@ -132,12 +132,26 @@
         markers.set(station.id, marker);
     }
 
+    function modeGlyph(mode) {
+        switch (mode) {
+            case "metro": return "🚇";
+            case "tram": return "🚊";
+            case "suburban":
+            case "train": return "🚆";
+            default: return "•";
+        }
+    }
+
     function buildStationIcon(station, selected) {
         const currentZoom = map.getZoom();
         const stationLines = station.lineIds
             .map((lineId) => lineMap.get(lineId))
             .filter(Boolean);
+        const primaryLine = stationLines[0];
+        const primaryColor = primaryLine ? primaryLine.color : "#64748b";
+        const primaryMode = primaryLine ? primaryLine.type : "metro";
 
+        // High zoom: per-station smart-code SVG when readable.
         if (currentZoom >= 14) {
             const primarySid = station.stationIds[0];
             const svgUrl = stationIconBySid.get(primarySid);
@@ -152,31 +166,27 @@
             }
         }
 
-        if (station.isInterchange) {
-            const rings = stationLines
-                .slice(0, 3)
-                .map((line, index) => {
-                    const angle = (Math.PI * 2 * index) / Math.max(1, Math.min(stationLines.length, 3));
-                    const x = Math.cos(angle) * 5;
-                    const y = Math.sin(angle) * 5;
-                    return `<span class="station-marker__ring" style="background:${line.color}; transform: translate(${x}px, ${y}px);"></span>`;
-                })
-                .join("");
+        // Mid/low zoom: colored pin with mode glyph. Interchange shows a ring of line colors.
+        const glyph = modeGlyph(primaryMode);
+        const pinSize = selected ? 32 : (currentZoom >= 12 ? 26 : 22);
 
+        if (station.isInterchange) {
+            const rings = stationLines.slice(0, 3).map((line, idx) =>
+                `<span class="station-pin__ring" style="background:${line.color};" data-i="${idx}"></span>`
+            ).join("");
             return L.divIcon({
-                className: `station-marker station-marker--interchange${selected ? " station-marker--selected" : ""}`,
-                html: `<span class="station-marker__group">${rings}<span class="station-marker__center"></span></span>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14],
+                className: `station-pin station-pin--interchange${selected ? " station-pin--selected" : ""}`,
+                html: `<span class="station-pin__core" style="background:${primaryColor};">${glyph}</span><span class="station-pin__rings">${rings}</span>`,
+                iconSize: [pinSize, pinSize],
+                iconAnchor: [pinSize / 2, pinSize],
             });
         }
 
-        const primaryLine = stationLines[0];
         return L.divIcon({
-            className: `station-marker${selected ? " station-marker--selected" : ""}`,
-            html: `<span class="station-marker__core" style="background:${primaryLine ? primaryLine.color : "#64748b"};"></span>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8],
+            className: `station-pin${selected ? " station-pin--selected" : ""}`,
+            html: `<span class="station-pin__core" style="background:${primaryColor};">${glyph}</span>`,
+            iconSize: [pinSize, pinSize],
+            iconAnchor: [pinSize / 2, pinSize],
         });
     }
 

@@ -102,12 +102,23 @@ struct StationDetailView: View {
         .background(Color.syrmosBackground)
         .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
-            departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+            departures = currentDepartures()
         }
         .onReceive(refreshTimer) { _ in
             nowTick = Date()
-            departures = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+            departures = currentDepartures()
         }
+    }
+
+    /// API-first source of truth, with a seed fallback when bundles aren't loaded yet.
+    private func currentDepartures() -> [Departure] {
+        let live = ScheduleProjector.nextDepartures(
+            for: station.id,
+            lineIds: station.lineIds,
+            limit: 10
+        )
+        if !live.isEmpty { return live }
+        return SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
     }
 
     private func arrivalColor(_ minutes: Int) -> Color {

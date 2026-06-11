@@ -98,6 +98,7 @@ struct ContentView: View {
 
             let svc = SyrmosLinesService()
             await svc.refresh()
+            await SyrmosSchedulesStore.shared.refresh()
         }
         .onChange(of: selectedTab) { _, newTab in
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily SQLite backup for Syrmos
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Athens
+Persistent=true
+Unit=syrmos-backup.service
+
+[Install]
+WantedBy=timers.target
