@@ -47,6 +47,22 @@ struct StationDetailView: View {
                 }
             }
 
+            if isSuburbanStation {
+                Section {
+                    Link(destination: URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")!) {
+                        Label(
+                            loc.language == .greek ? "Αγορά εισιτηρίου στην Hellenic Train" : "Buy ticket on Hellenic Train",
+                            systemImage: "ticket"
+                        )
+                    }
+                } footer: {
+                    Text(loc.language == .greek
+                         ? "Η πληρωμή και η έκδοση εισιτηρίου γίνονται 100% στον ιστότοπο της Hellenic Train. Το Syrmos απλώς παρέχει τον σύνδεσμο, δεν συλλέγει στοιχεία πληρωμής και δεν έχει καμία ευθύνη για την κράτηση."
+                         : "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking.")
+                        .font(.caption2)
+                }
+            }
+
             Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next Departures") {
                 if departures.isEmpty {
                     Text(loc.language == .greek ? "Φόρτωση δρομολογίων..." : "Loading departures...")
@@ -108,6 +124,11 @@ struct StationDetailView: View {
             nowTick = Date()
             departures = currentDepartures()
         }
+    }
+
+    /// True when this station belongs to a Hellenic Train suburban line (A1-A4).
+    private var isSuburbanStation: Bool {
+        station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
     }
 
     /// API-first source of truth, with a seed fallback when bundles aren't loaded yet.
