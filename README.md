@@ -221,15 +221,39 @@ Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket pu
 
 ## Roadmap
 
-Planned for upcoming releases:
+### Pending for the next release (1.0.2 / Android 7)
 
-- **Plan your trip** -- route planning with transfers, walking directions, and estimated arrival times across metro, tram, and suburban lines
-- **AI chat helper** -- ask questions about the Athens transit network, get route suggestions, and receive real-time travel advice
-- **Accessibility features** -- VoiceOver and TalkBack support, dynamic type, high contrast mode
-- **National rail coverage** -- intercity trains (Athens-Thessaloniki, Athens-Patras) with live tracking
-- **Suburban rail in other cities** -- Thessaloniki and Patras suburban networks
-- **Push notifications** -- alerts for service disruptions on your saved lines
-- **Widget support** -- home screen widgets for next departure at your favorite station
+These are all in-flight or sitting in a branch waiting for the same release window:
+
+- **Tap-a-station → bottom-sheet mini-map** showing only that line drawn, only that station highlighted, with a "Get Directions" button that hands off to Apple Maps / Google Maps. iOS + Android + web. Already designed; the multi-platform UI plumbing is the work.
+- **T7 polyline as a true loop** in the map rendering. The station data is correct (43 stops in package order, loop stops 1-6 followed by spine 7-43), but the polyline is drawn as a single path through all 43 points so it looks like an X across Piraeus. Fix is splitting the polyline at the Akti Poseidonos junction.
+- **Admin UI polish.** The FastAPI `/admin` page is functional but plain — sortable tables, inline editing, diff preview before save, scrape_log inline.
+- **iOS TestFlight upload automation.** Build artifact is ready; CI workflow needs Apple Developer secrets (`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, `APP_STORE_CONNECT_API_KEY`) before the upload job can run.
+
+### Solo-shippable next, no operator API needed
+
+The list below is realistic to ship without anyone at STASY, OASA, or Hellenic Train picking up the phone:
+
+- **Favorites & home shortcuts** -- tap a star on a station, it pins to a Favorites tab. Local persistence only.
+- **Home Screen widgets** -- iOS WidgetKit + Android Glance, showing the next 3 departures at the user's favorited station. Uses the projector already in `core/domain`, no server call.
+- **Local notification departure alerts** -- "alert me 10 min before my morning M3 from Syntagma." All client-side, scheduled from the projector's bands.
+- **Live Activities (iOS)** -- Dynamic Island countdown to the next train when the user explicitly starts a "Departure" activity.
+- **Trip planner** -- offline graph routing over station topology + bands. Returns next-train shortest path with transfers and walking time at interchanges.
+- **Fare estimator** -- using `/api/fares` + route segments, show "this trip costs €X" with the explicit caveat that prices are managed by OASA. Hard-disclaimer pattern matching the existing Hellenic Train ticket link.
+- **Apple Watch / Wear OS companions** -- next departure at the nearest station. Independent app, no companion-pairing dance.
+- **CarPlay / Android Auto** -- "Hey Siri, when's the next Line 3 from Syntagma?" — surfaces the projector through native voice intents.
+- **Step-free routing** -- already have `accessibility` on each station; surface "this route has 2 elevators broken" in the trip planner.
+- **Open the Syrmos API** -- documentation site for `api-syrmos.peterdsp.dev`, rate-limited public access for other transit nerds. Free CDN cache covers the load.
+- **Offline tile pre-cache** -- Athens area pre-rendered OSM tiles bundled at small zoom, larger zoom downloaded once. True zero-network UX even for the map.
+- **AI chat helper** -- on-device LLM (Apple Intelligence / Gemini Nano) answers "I'm at Piraeus, fastest way to Airport?" using the projector + topology graph as ground truth.
+- **National InterCity coverage** -- Athens-Thessaloniki, Athens-Patras. Same Hellenic Train PDFs we already parse for suburban.
+- **Thessaloniki + Patras suburban** -- same pattern, different city. Repository-template fork is feasible since the data layer is operator-agnostic.
+
+### Quality
+
+- **iOS XCUITest target** so the CI iOS job stops being build-only. Currently `continue-on-error: true` placeholder.
+- **Compose snapshot tests** for the station detail screen + station list rows. Catches the kind of visual regression that the projector's data correctness can't.
+- **End-to-end web test** with Playwright running against the live web bundle. One smoke run per push: load the page, search "Syntagma", click a result, assert departures rendered.
 
 ## Privacy
 
