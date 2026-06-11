@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: June 6, 2026**
+**Last updated: June 12, 2026**
 
 Syrmos is developed by Petros Dhespollari. This privacy policy explains how the app handles your data.
 
@@ -23,11 +23,25 @@ Syrmos connects to the Hellenic Train public API (railway.gov.gr) to display rea
 ### Network Requests
 
 The app makes network requests only to:
+- **api-syrmos.peterdsp.dev** for the latest line, station, and schedule snapshot (offline-first; the bundled snapshot is used if this request fails)
 - **railway.gov.gr** for live suburban train positions
 - **stasy.gr** for service announcements (iOS only)
-- **OpenStreetMap tile servers** for map tiles (Android only)
+- **OpenStreetMap tile servers** for map tiles (Android, web)
 
 No analytics, tracking, advertising, or telemetry services are used.
+
+### External Ticket Purchase Link (Suburban Railway)
+
+For suburban railway stations (A1, A2, A3, A4), Syrmos shows a button that opens **Hellenic Train's official ticket website** (`newtickets.hellenictrain.gr`) in your device's browser.
+
+This is **only a link**. Tapping the button leaves the Syrmos app and continues in Hellenic Train's web flow. To be explicit:
+
+- Syrmos **does not** see, intercept, store, transmit, or process any ticket purchase data — including names, payment cards, email addresses, travel dates, ticket numbers, or any other detail you enter on Hellenic Train's site.
+- Syrmos **does not** have any business, contractual, or technical relationship with Hellenic Train. We are not a reseller, agent, or affiliate.
+- Any ticket purchase, refund, cancellation, support issue, or dispute is **100% the responsibility of Hellenic Train** under their own terms of service and privacy policy.
+- Once you leave the app, Hellenic Train's own privacy practices apply. We recommend reading them at hellenictrain.gr.
+
+The button exists purely for user convenience — to save you from manually opening a browser and searching for the ticket page.
 
 ## Data Storage
 

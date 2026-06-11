@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily upstream schedule sources watcher
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 Europe/Athens
+Persistent=true
+Unit=syrmos-watcher.service
+
+[Install]
+WantedBy=timers.target

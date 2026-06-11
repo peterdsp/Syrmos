@@ -1,0 +1,13 @@
+[Unit]
+Description=Hash upstream schedule sources, log diffs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.upstream_watcher
+StandardOutput=append:/home/peterdsp/syrmos-api/watcher.log
+StandardError=append:/home/peterdsp/syrmos-api/watcher.log

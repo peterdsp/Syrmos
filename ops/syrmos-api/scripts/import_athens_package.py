@@ -95,6 +95,29 @@ WEEKLY_HOURS = [
     ("T7", "fri",     "05:00", "01:30", 0, None),
     ("T7", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
     ("T7", "sun",     "05:30", "01:00", 0, None),
+
+    # Suburban / Hellenic Train. Source PDFs in assets/hellenic-train-timetables/
+    # Effective 2025-11-22. A1, A2 share the Airport corridor; from 2025-11-22
+    # the Airport-Metamorfosi section runs every 20 min Mon-Fri (operator note).
+    ("A1", "mon_thu", "04:00", "23:00", 0, "Piraeus-Airport through trains, ~hourly"),
+    ("A1", "fri",     "04:00", "23:00", 0, None),
+    ("A1", "sat",     "05:00", "22:00", 0, "Reduced weekend service"),
+    ("A1", "sun",     "05:00", "22:00", 0, "Reduced weekend service"),
+
+    ("A2", "mon_thu", "05:30", "22:00", 0, "Ano Liosia-Airport branch, interleaved with A1"),
+    ("A2", "fri",     "05:30", "22:00", 0, None),
+    ("A2", "sat",     "06:00", "22:00", 0, "Reduced weekend service"),
+    ("A2", "sun",     "06:00", "22:00", 0, "Reduced weekend service"),
+
+    ("A3", "mon_thu", "05:00", "23:00", 0, "Athens-Chalkida regional"),
+    ("A3", "fri",     "05:00", "23:00", 0, None),
+    ("A3", "sat",     "06:00", "22:00", 0, None),
+    ("A3", "sun",     "06:00", "22:00", 0, None),
+
+    ("A4", "mon_thu", "04:30", "23:30", 0, "Piraeus-Kiato regional"),
+    ("A4", "fri",     "04:30", "23:30", 0, None),
+    ("A4", "sat",     "05:30", "22:30", 0, None),
+    ("A4", "sun",     "05:30", "22:30", 0, None),
 ]
 
 # Frequency bands. headway_minutes is a float (e.g. 4.5, 10.5).
@@ -221,6 +244,35 @@ FREQUENCY_BANDS = [
     ("M3_AIR", "dec_24_31", "05:30", "22:00", 36.0, "early_shutdown"),
     ("T6", "dec_24_31", "05:30", "22:20", 12.0, "early_shutdown"),
     ("T7", "dec_24_31", "05:30", "22:20", 12.0, "early_shutdown"),
+
+    # === Suburban (Hellenic Train). Effective 2025-11-22 ===
+    # A1 Piraeus-Athens-Airport, ~hourly through-trains. Interleaved with A2 at Airport-Metamorfosi.
+    ("A1", "mon_thu", "04:00", "06:30", 60.0, "early_morning"),
+    ("A1", "mon_thu", "06:30", "21:30", 60.0, "weekday_all_day"),
+    ("A1", "mon_thu", "21:30", "23:00", 60.0, "evening"),
+    ("A1", "fri",     "04:00", "23:00", 60.0, "weekday_all_day"),
+    ("A1", "sat",     "05:00", "22:00", 75.0, "weekend"),
+    ("A1", "sun",     "05:00", "22:00", 75.0, "weekend"),
+
+    # A2 Ano Liosia-Airport branch. Interleaved with A1 at Airport corridor for combined 20-min.
+    ("A2", "mon_thu", "05:30", "22:00", 30.0, "weekday_all_day"),
+    ("A2", "fri",     "05:30", "22:00", 30.0, "weekday_all_day"),
+    ("A2", "sat",     "06:00", "22:00", 60.0, "weekend"),
+    ("A2", "sun",     "06:00", "22:00", 60.0, "weekend"),
+
+    # A3 Athens-Chalkida regional. Roughly hourly off-peak, denser at peak.
+    ("A3", "mon_thu", "05:00", "08:00", 60.0, "early_morning"),
+    ("A3", "mon_thu", "08:00", "20:00", 60.0, "weekday_all_day"),
+    ("A3", "mon_thu", "20:00", "23:00", 90.0, "evening"),
+    ("A3", "fri",     "05:00", "23:00", 60.0, "weekday_all_day"),
+    ("A3", "sat",     "06:00", "22:00", 90.0, "weekend"),
+    ("A3", "sun",     "06:00", "22:00", 90.0, "weekend"),
+
+    # A4 Piraeus-Kiato regional. Hourly through-trains.
+    ("A4", "mon_thu", "04:30", "23:30", 60.0, "weekday_all_day"),
+    ("A4", "fri",     "04:30", "23:30", 60.0, "weekday_all_day"),
+    ("A4", "sat",     "05:30", "22:30", 90.0, "weekend"),
+    ("A4", "sun",     "05:30", "22:30", 90.0, "weekend"),
 ]
 
 # Holiday calendar. date_pattern + day_type to apply.
