@@ -44,7 +44,16 @@ def get_db() -> Iterator[Any]:
         conn.close()
 
 
-app = FastAPI(title="Syrmos Admin", docs_url="/docs", openapi_url="/openapi.json")
+# docs_url is None because we serve our own /docs page (the editable-surfaces
+# + endpoint catalogue with a Publish button). FastAPI's auto Swagger lives
+# at /admin/swagger instead so it's still reachable but doesn't shadow the
+# human-readable docs page.
+app = FastAPI(
+    title="Syrmos Admin",
+    docs_url="/swagger",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+)
 
 
 # Admin URL prefix. The service is mounted under /admin/ by nginx, so every
