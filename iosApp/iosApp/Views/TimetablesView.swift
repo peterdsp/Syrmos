@@ -7,6 +7,7 @@ import SwiftUI
 struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
+    @ObservedObject private var timestamps = SyrmosTrainTimestampsStore.shared
 
     @State private var selectedLineId: String = "M3"
     @State private var selectedDayOffset: Int = 0  // 0 = today, 1 = tomorrow, ...
@@ -210,13 +211,16 @@ struct TimetablesView: View {
         return formatter.string(from: date).uppercased()
     }
 
-    /// Project the entire day for the selected line. Walks each frequency
-    /// band for the appropriate day_type and emits every slot. For M3 also
-    /// projects the M3_AIR (airport branch) bundle and merges: only ~every
-    /// 30th train continues to the Airport, so showing them as a separate
-    /// stream is critical for accuracy. Without this, every M3 row would
-    /// say Airport even though the city terminal is Doukissis Plakentias.
+    /// Project the entire day for the selected line. For suburban A1-A4 we
+    /// have real PDF-grounded timestamps from Hellenic Train and use those
+    /// directly. For metro and tram we still use the band projector (STASY
+    /// PDFs are next on the list). M3 stays special-cased: city + airport
+    /// branches projected separately and merged.
     private func projectDay() -> [Departure] {
+        if ["A1", "A2", "A3", "A4"].contains(selectedLineId) {
+            let real = projectFromTimestamps()
+            if !real.isEmpty { return real }
+        }
         let primary = projectBundle(lineId: selectedLineId, displayLineId: selectedLineId)
         guard selectedLineId == "M3" else { return primary }
         let airport = projectBundle(lineId: "M3_AIR", displayLineId: "M3")
@@ -230,6 +234,60 @@ struct TimetablesView: View {
                 time: dep.time, lineId: dep.lineId, direction: dep.direction,
                 minutesAway: idx, serviceType: dep.serviceType
             )
+        }
+    }
+
+    /// Build departures straight from the train-timestamps API. Each train
+    /// in the store contributes one Departure per stop: the user sees the
+    /// HH:MM at every station on every real train, not synthesised slots.
+    private func projectFromTimestamps() -> [Departure] {
+        let target = Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Date()) ?? Date()
+        let dayType = athensDayType(for: target)
+        let entries = timestamps.trains(lineId: selectedLineId, dayType: dayType)
+        guard !entries.isEmpty else { return [] }
+
+        // For Timetables we surface one row per train at its FIRST station,
+        // labelled with its final destination. The user can drill into a
+        // specific station view to see when that train calls there.
+        var out: [Departure] = []
+        for (idx, train) in entries.enumerated() {
+            guard let first = train.stops.first, let last = train.stops.last else { continue }
+            let direction = loc.language == .greek ? last.stationNameEl : last.stationNameEn
+            let originLabel = loc.language == .greek ? first.stationNameEl : first.stationNameEn
+            out.append(Departure(
+                time: first.time,
+                lineId: selectedLineId,
+                direction: loc.language == .greek
+                    ? "από \(originLabel) προς \(direction)"
+                    : "from \(originLabel) to \(direction)",
+                minutesAway: idx,
+                serviceType: train.direction == "outbound" ? "outbound" : "inbound"
+            ))
+        }
+        return out.sorted { lhs, rhs in
+            if lhs.time != rhs.time { return lhs.time < rhs.time }
+            return lhs.direction < rhs.direction
+        }
+        .enumerated()
+        .map { idx, dep in
+            Departure(
+                time: dep.time, lineId: dep.lineId, direction: dep.direction,
+                minutesAway: idx, serviceType: dep.serviceType
+            )
+        }
+    }
+
+    private func athensDayType(for date: Date) -> String {
+        let athens = TimeZone(identifier: "Europe/Athens")!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = athens
+        let weekday = cal.component(.weekday, from: date)
+        switch weekday {
+        case 1: return "sun"
+        case 2, 3, 4, 5: return "mon_thu"
+        case 6: return "fri"
+        case 7: return "sat"
+        default: return "mon_thu"
         }
     }
 
