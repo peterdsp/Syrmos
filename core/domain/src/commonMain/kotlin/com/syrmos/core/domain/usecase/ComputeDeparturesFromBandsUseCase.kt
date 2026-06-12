@@ -1,6 +1,7 @@
 package com.syrmos.core.domain.usecase
 
 import com.syrmos.core.data.sync.ScheduleSyncRepository
+import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.network.SyrmosSchedulesService
 import kotlin.math.roundToInt
@@ -28,11 +29,21 @@ import kotlinx.datetime.toLocalDateTime
  */
 class ComputeDeparturesFromBandsUseCase(
     private val scheduleSync: ScheduleSyncRepository,
+    private val stationOffsets: StationOffsetsRepository? = null,
 ) {
+    /**
+     * Returns departures at the line origin. When [stationId] is provided
+     * and the station-offsets repository has data for the (line, direction,
+     * station) triple, every emitted HH:MM is shifted by the station's
+     * cumulative minutes-from-origin so the caller sees the time the train
+     * passes through THIS station, not the terminal. Without offsets, the
+     * legacy behaviour returns unchanged.
+     */
     fun invoke(
         lineIds: List<String>,
         direction: Direction,
         limit: Int = 8,
+        stationId: String? = null,
     ): List<UpcomingDeparture> {
         val bundles = scheduleSync.lineBundles.value
         if (bundles.isEmpty()) return emptyList()
@@ -46,6 +57,17 @@ class ComputeDeparturesFromBandsUseCase(
         val results = mutableListOf<UpcomingDeparture>()
         for (lineId in lineIds) {
             val bundle = bundles[lineId] ?: continue
+            // Resolve the per-station offset once per (line, direction).
+            // STASY offsets use lowercase direction strings.
+            val offsetMinutes = if (stationId != null) {
+                stationOffsets?.offsetFor(
+                    lineId = lineId,
+                    direction = direction.name.lowercase(),
+                    stationId = stationId,
+                )?.minutesFromOrigin ?: 0
+            } else {
+                0
+            }
             projectForLine(
                 bundle = bundle,
                 today = today,
@@ -54,6 +76,7 @@ class ComputeDeparturesFromBandsUseCase(
                 lineId = lineId,
                 direction = direction,
                 limit = limit,
+                offsetMinutes = offsetMinutes,
                 out = results,
             )
         }
@@ -79,6 +102,7 @@ class ComputeDeparturesFromBandsUseCase(
         lineId: String,
         direction: Direction,
         limit: Int,
+        offsetMinutes: Int,
         out: MutableList<UpcomingDeparture>,
     ) {
         val descriptors = mutableListOf<Pair<String, Int>>().apply {
@@ -114,6 +138,7 @@ class ComputeDeparturesFromBandsUseCase(
                     lineId = lineId,
                     direction = direction,
                     limit = limit - out.size,
+                    offsetMinutes = offsetMinutes,
                     out = out,
                 )
                 if (out.size >= limit) return
@@ -128,6 +153,7 @@ class ComputeDeparturesFromBandsUseCase(
         lineId: String,
         direction: Direction,
         limit: Int,
+        offsetMinutes: Int,
         out: MutableList<UpcomingDeparture>,
     ) {
         val rawStart = band.timeStart.toMinutesOfDay() ?: return
@@ -147,7 +173,11 @@ class ComputeDeparturesFromBandsUseCase(
 
         var added = 0
         while (slot <= end && added < limit) {
-            val slotMin = slot.roundToInt()
+            // The slot describes when the train LEAVES the line origin.
+            // For station-aware queries, the train passes through this
+            // station offsetMinutes later, so we shift both the display
+            // time and the countdown by that amount.
+            val slotMin = slot.roundToInt() + offsetMinutes
             val displayMinutes = ((slotMin % (24 * 60)) + 24 * 60) % (24 * 60)
             val hh = pad(displayMinutes / 60)
             val mm = pad(displayMinutes % 60)

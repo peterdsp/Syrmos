@@ -54,6 +54,20 @@ class SyrmosSchedulesService(
         emit(payload)
     }
 
+    /**
+     * Pull the per-station minutes-from-origin grid scraped from STASY's
+     * timetable pages. Apps multiply this by the band-projected origin
+     * departures to get exact HH:MM at every metro and tram stop. Returns
+     * null if the endpoint hasn't shipped yet or the network failed.
+     */
+    fun fetchStationOffsets(): Flow<StationOffsetsPayload?> = flow {
+        val payload = runCatching {
+            val response = httpClient.get(STATION_OFFSETS_URL)
+            json.decodeFromString<StationOffsetsPayload>(response.bodyAsText())
+        }.getOrNull()
+        emit(payload)
+    }
+
     sealed interface ManifestResult {
         data object NotModified : ManifestResult
         data class Fresh(val manifest: Manifest) : ManifestResult
@@ -97,9 +111,34 @@ class SyrmosSchedulesService(
         val label: String = "",
     )
 
+    @Serializable
+    data class StationOffsetsPayload(
+        @SerialName("updatedAt") val updatedAt: String = "",
+        val source: String = "",
+        val lines: List<StationOffsetGroup> = emptyList(),
+    )
+
+    @Serializable
+    data class StationOffsetGroup(
+        @SerialName("lineId") val lineId: String,
+        val direction: String,
+        val origin: String = "",
+        val destination: String = "",
+        val stops: List<StationOffsetStop> = emptyList(),
+    )
+
+    @Serializable
+    data class StationOffsetStop(
+        @SerialName("stationId") val stationId: String = "",
+        @SerialName("stationEn") val stationEn: String = "",
+        @SerialName("stopSequence") val stopSequence: Int = 0,
+        @SerialName("minutesFromOrigin") val minutesFromOrigin: Int = 0,
+    )
+
     private companion object {
         private const val BASE = "https://api-syrmos.peterdsp.dev"
         private const val MANIFEST_URL = "$BASE/api/schedules/manifest"
         private const val LINE_URL_PREFIX = "$BASE/api/schedules/"
+        private const val STATION_OFFSETS_URL = "$BASE/api/station-offsets"
     }
 }
