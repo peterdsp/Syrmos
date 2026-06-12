@@ -41,7 +41,18 @@ final class STASYService: ObservableObject {
     private struct APIPayload: Decodable {
         let updatedAt: String?
         let count: Int
+        let status: APIStatus?
         let announcements: [APIAnnouncement]
+    }
+
+    /// Mirrors the `status` object the Pi exposes: `normal` (Κανονική
+    /// Λειτουργία), `alert` (with optional `serviceUntil` HH:MM), or
+    /// `unknown` when the watcher couldn't detect a badge.
+    struct APIStatus: Decodable {
+        let status: String
+        let rawMessage: String
+        let serviceUntil: String?
+        let scrapedAt: String?
     }
 
     private struct APIAnnouncement: Decodable {
@@ -52,6 +63,9 @@ final class STASYService: ObservableObject {
         let url: String
         let category: String
     }
+
+    /// Latest STASY service-status badge, populated by `fetchAnnouncements`.
+    @Published var serviceStatus: APIStatus?
 
     func fetchAnnouncements() async {
         // Don't flip isLoading if we already have cached content — refresh silently
@@ -71,6 +85,7 @@ final class STASYService: ObservableObject {
             }
 
             let payload = try JSONDecoder().decode(APIPayload.self, from: data)
+            serviceStatus = payload.status
             let parsed: [STASYAnnouncement] = payload.announcements.map { item in
                 STASYAnnouncement(
                     id: item.id,
