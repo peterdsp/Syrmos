@@ -147,6 +147,24 @@ h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
   font-size: 12px;
   letter-spacing: 0.02em;
 }
+.vehicle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 40px;
+  border-radius: 8px;
+  background: transparent;
+  flex-shrink: 0;
+}
+.vehicle-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.train-card__title { gap: 12px; }
+.train-card__title > div:last-child { line-height: 1.2; }
 .train-card__meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; }
 .dir-pill {
   display: inline-flex; align-items: center; gap: 4px;
@@ -244,6 +262,29 @@ footer a:hover { text-decoration: underline; }
 </footer>
 
 <script>
+const ICON_BASE = '/icons/directional_vehicle_icons/directional/train';
+// Per-line vehicle icon paths. The 'p' prefix is the operator's own line
+// label set (p1 = Piraeus-Airport, p2 = Piraeus-Kiato, p3 = Athens-Chalkida,
+// p1a = Ano Liosia-Airport). We map each (line, direction) to the matching
+// directional SVG. For "both" PDFs we fall back to the outbound vehicle.
+const VEHICLE_ICON = {
+  A1: { outbound: `${ICON_BASE}/p1_piraeus_airport/train_p1_right_to_airport.svg`,
+        inbound:  `${ICON_BASE}/p1_piraeus_airport/train_p1_left_to_piraeus.svg`,
+        both:     `${ICON_BASE}/p1_piraeus_airport/train_p1_right_to_airport.svg`,
+        extension:`${ICON_BASE}/p1_piraeus_airport/train_p1_right_to_airport.svg` },
+  A2: { outbound: `${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`,
+        inbound:  `${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_left_to_ano_liosia.svg`,
+        both:     `${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`,
+        extension:`${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg` },
+  A3: { outbound: `${ICON_BASE}/p3_athens_chalkida/train_p3_right_to_chalkida.svg`,
+        inbound:  `${ICON_BASE}/p3_athens_chalkida/train_p3_left_to_athens.svg`,
+        both:     `${ICON_BASE}/p3_athens_chalkida/train_p3_right_to_chalkida.svg`,
+        extension:`${ICON_BASE}/p3_athens_chalkida/train_p3_right_to_chalkida.svg` },
+  A4: { outbound: `${ICON_BASE}/p2_piraeus_kiato/train_p2_right_to_kiato.svg`,
+        inbound:  `${ICON_BASE}/p2_piraeus_kiato/train_p2_left_to_piraeus.svg`,
+        both:     `${ICON_BASE}/p2_piraeus_kiato/train_p2_right_to_kiato.svg`,
+        extension:`${ICON_BASE}/p2_piraeus_kiato/train_p2_right_to_kiato.svg` },
+};
 const LINE_COLORS = { A1: 'var(--c-a1)', A2: 'var(--c-a2)', A3: 'var(--c-a3)', A4: 'var(--c-a4)' };
 const LINE_LABELS = {
   A1: 'A1 Piraeus ↔ Airport',
@@ -352,11 +393,17 @@ function render() {
     card.className = 'train-card';
     const first = t.stops[0];
     const last = t.stops[t.stops.length - 1];
+    const iconSrc = (VEHICLE_ICON[t.lineId] || {})[t.direction] || (VEHICLE_ICON[t.lineId] || {}).outbound;
     card.innerHTML = `
       <div class="train-card__head">
         <div class="train-card__title">
-          <span class="line-badge" style="background:${LINE_COLORS[t.lineId] || 'var(--accent)'}">${t.lineId}</span>
-          Train ${t.trainNo}
+          <span class="vehicle-icon" style="background:${LINE_COLORS[t.lineId] || 'var(--accent)'}">
+            ${iconSrc ? `<img src="${iconSrc}" alt="${t.lineId} train" loading="lazy" />` : `<span class="line-badge">${t.lineId}</span>`}
+          </span>
+          <div>
+            <div>Train ${t.trainNo}</div>
+            <div class="small" style="color: var(--text-muted); font-size:12px; font-weight: 500;">${LINE_LABELS[t.lineId] || t.lineId}</div>
+          </div>
         </div>
         <div class="train-card__meta">
           <span class="dir-pill">${DIRECTION_LABELS[t.direction] || t.direction}</span>
