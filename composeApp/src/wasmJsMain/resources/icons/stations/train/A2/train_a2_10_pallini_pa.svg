@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="A2 Pallini">
+  <title>A2 - Pallini</title>
+  <desc>train station icon for Pallini, stop 10 of 13 on A2. Visible compact label: A2 PA.</desc>
+  <rect width="96" height="96" rx="22" fill="#ffffff"/>
+  <rect x="4" y="4" width="88" height="88" rx="19" fill="#f8fafc" stroke="#d1d5db" stroke-width="2"/>
+  <circle cx="48" cy="39" r="24" fill="#fff" stroke="#4B5563" stroke-width="7"/>
+  <circle cx="48" cy="39" r="8" fill="#4B5563"/>
+  <rect x="18" y="68" width="60" height="18" rx="9" fill="#4B5563"/>
+  <text x="48" y="81" text-anchor="middle" font-family="Inter, SF Pro Display, Arial, sans-serif" font-size="13" font-weight="900" fill="#fff">A2 PA</text>
+</svg>

@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-PKG=/tmp/athens_pkg/athens_transit_icons_and_rules_package/athens_transit_t7_station_icons_updated
+PKG=${PKG:-/tmp/athens_pkg/athens_transit_icons_and_rules_package/athens_transit_t7_station_icons_updated}
 WEB_ICONS=composeApp/src/wasmJsMain/resources/icons
 IOS_STATIONS=iosApp/iosApp/Assets.xcassets/stations
 IOS_VEHICLES=iosApp/iosApp/Assets.xcassets/vehicles
@@ -86,7 +86,7 @@ with open(ROOT / "stations" / "manifest.json", "w") as f:
     json.dump(manifest, f, indent=2, ensure_ascii=False)
 print(f"  manifest entries: {len(manifest)}")
 
-# Vehicle manifest — flat list of {file, mode, line, arrow, destination}
+# Vehicle manifest: flat list of {file, mode, line, arrow, destination}
 vehicles = []
 for path in sorted((ROOT / "vehicles" / "directional").rglob("*.svg")):
     rel = path.relative_to(ROOT.parent)

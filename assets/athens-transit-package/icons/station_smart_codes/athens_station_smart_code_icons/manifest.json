@@ -1671,6 +1671,216 @@
       "index": 43,
       "file": "stations_smart_codes/tram/T7/tram_t7_43_dimarhio_dimotiko_theatro_dt.svg",
       "greek_station": "Δημαρχείο / Δημοτικό Θέατρο"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Ano Liosia",
+      "station_id": "A2_ANO",
+      "station_code": "AL",
+      "visible_label": "A2 AL",
+      "index": 1,
+      "file": "stations_smart_codes/train/A2/train_a2_01_ano_liosia_al.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Acharnai Railway Center",
+      "station_id": "A2_ACH",
+      "station_code": "AC",
+      "visible_label": "A2 AC",
+      "index": 2,
+      "file": "stations_smart_codes/train/A2/train_a2_02_acharnai_railway_center_ac.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Acharnai Railway Center",
+      "station_id": "A2_AKR",
+      "station_code": "SK",
+      "visible_label": "A2 SK",
+      "index": 3,
+      "file": "stations_smart_codes/train/A2/train_a2_03_acharnai_railway_center_sk.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Metamorfosi",
+      "station_id": "A2_MET",
+      "station_code": "ME",
+      "visible_label": "A2 ME",
+      "index": 4,
+      "file": "stations_smart_codes/train/A2/train_a2_04_metamorfosi_me.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Irakleio",
+      "station_id": "A2_IRA",
+      "station_code": "IR",
+      "visible_label": "A2 IR",
+      "index": 5,
+      "file": "stations_smart_codes/train/A2/train_a2_05_irakleio_ir.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Neratziotissa",
+      "station_id": "A2_NER",
+      "station_code": "NE",
+      "visible_label": "A2 NE",
+      "index": 6,
+      "file": "stations_smart_codes/train/A2/train_a2_06_neratziotissa_ne.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Kifisias",
+      "station_id": "A2_KIF",
+      "station_code": "KI",
+      "visible_label": "A2 KI",
+      "index": 7,
+      "file": "stations_smart_codes/train/A2/train_a2_07_kifisias_ki.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Pentelis",
+      "station_id": "A2_PEN",
+      "station_code": "PE",
+      "visible_label": "A2 PE",
+      "index": 8,
+      "file": "stations_smart_codes/train/A2/train_a2_08_pentelis_pe.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Doukissis Plakentias",
+      "station_id": "A2_DOY",
+      "station_code": "DP",
+      "visible_label": "A2 DP",
+      "index": 9,
+      "file": "stations_smart_codes/train/A2/train_a2_09_doukissis_plakentias_dp.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Pallini",
+      "station_id": "A2_PAL",
+      "station_code": "PA",
+      "visible_label": "A2 PA",
+      "index": 10,
+      "file": "stations_smart_codes/train/A2/train_a2_10_pallini_pa.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Peania-Kantza",
+      "station_id": "A2_PEA",
+      "station_code": "PK",
+      "visible_label": "A2 PK",
+      "index": 11,
+      "file": "stations_smart_codes/train/A2/train_a2_11_peania_kantza_pk.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Koropi",
+      "station_id": "A2_KOR",
+      "station_code": "KO",
+      "visible_label": "A2 KO",
+      "index": 12,
+      "file": "stations_smart_codes/train/A2/train_a2_12_koropi_ko.svg"
+    },
+    {
+      "mode": "train",
+      "line": "A2",
+      "station": "Airport",
+      "station_id": "A2_AIR",
+      "station_code": "AI",
+      "visible_label": "A2 AI",
+      "index": 13,
+      "file": "stations_smart_codes/train/A2/train_a2_13_airport_ai.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Alexander the Great",
+      "station_id": "T6_ALE",
+      "station_code": "AL",
+      "visible_label": "T6 AL",
+      "index": 14,
+      "file": "stations_smart_codes/tram/T6/tram_t6_14_alexander_the_great_al.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Aghia Paraskevi",
+      "station_id": "T6_AGH",
+      "station_code": "AP",
+      "visible_label": "T6 AP",
+      "index": 15,
+      "file": "stations_smart_codes/tram/T6/tram_t6_15_aghia_paraskevi_ap.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Medeas Mykalis",
+      "station_id": "T6_MED",
+      "station_code": "MM",
+      "visible_label": "T6 MM",
+      "index": 16,
+      "file": "stations_smart_codes/tram/T6/tram_t6_16_medeas_mykalis_mm.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Evangeliki Scholi",
+      "station_id": "T6_EVA",
+      "station_code": "ES",
+      "visible_label": "T6 ES",
+      "index": 17,
+      "file": "stations_smart_codes/tram/T6/tram_t6_17_evangeliki_scholi_es.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Achilleos",
+      "station_id": "T6_ACH",
+      "station_code": "AC",
+      "visible_label": "T6 AC",
+      "index": 18,
+      "file": "stations_smart_codes/tram/T6/tram_t6_18_achilleos_ac.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Amfitheas",
+      "station_id": "T6_AMF",
+      "station_code": "AM",
+      "visible_label": "T6 AM",
+      "index": 19,
+      "file": "stations_smart_codes/tram/T6/tram_t6_19_amfitheas_am.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Panaghitsa",
+      "station_id": "T6_PAN",
+      "station_code": "PA",
+      "visible_label": "T6 PA",
+      "index": 20,
+      "file": "stations_smart_codes/tram/T6/tram_t6_20_panaghitsa_pa.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Mousson",
+      "station_id": "T6_MOU",
+      "station_code": "MO",
+      "visible_label": "T6 MO",
+      "index": 21,
+      "file": "stations_smart_codes/tram/T6/tram_t6_21_mousson_mo.svg"
     }
   ],
   "collisions_same_line": [
