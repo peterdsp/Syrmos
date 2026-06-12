@@ -100,6 +100,61 @@ def _build_holidays(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_stations(conn: sqlite3.Connection) -> dict:
+    """Flat station list with current bilingual name, coords, and accessibility."""
+    rows = conn.execute(
+        "SELECT s.id, s.name_en, s.name_el, s.lat, s.lng,"
+        " (SELECT GROUP_CONCAT(ls.line_id) FROM line_stations ls WHERE ls.station_id = s.id) AS line_ids"
+        " FROM stations s ORDER BY s.id"
+    ).fetchall()
+    return {
+        "updatedAt": _now_iso(),
+        "stations": [
+            {
+                "id": r["id"],
+                "nameEn": r["name_en"],
+                "nameEl": r["name_el"],
+                "lat": r["lat"],
+                "lng": r["lng"],
+                "lineIds": [l for l in (r["line_ids"] or "").split(",") if l],
+            }
+            for r in rows
+        ],
+    }
+
+
+def _build_operators(conn: sqlite3.Connection) -> dict:
+    """Public list of operator feed registrations. `auth_credential` is NEVER
+    serialized — admins manage that field in the admin UI only."""
+    rows = conn.execute(
+        "SELECT operator_id, operator_name, contact_email, contact_url,"
+        " feed_kind, feed_url, auth_method, refresh_seconds, status,"
+        " notes, last_seen_at, enabled_at, updated_at"
+        " FROM operator_partners ORDER BY operator_id, feed_kind"
+    ).fetchall()
+    return {
+        "updatedAt": _now_iso(),
+        "operators": [
+            {
+                "operatorId": r["operator_id"],
+                "operatorName": r["operator_name"],
+                "contactEmail": r["contact_email"] or "",
+                "contactUrl": r["contact_url"] or "",
+                "feedKind": r["feed_kind"],
+                "feedUrl": r["feed_url"] or "",
+                "authMethod": r["auth_method"],
+                "refreshSeconds": r["refresh_seconds"],
+                "status": r["status"],
+                "notes": r["notes"] or "",
+                "lastSeenAt": r["last_seen_at"] or "",
+                "enabledAt": r["enabled_at"] or "",
+                "updatedAt": r["updated_at"],
+            }
+            for r in rows
+        ],
+    }
+
+
 def _build_icons(conn: sqlite3.Connection) -> dict:
     """Effective icon manifest: station-id -> SVG url, plus vehicle direction map.
     Override URL wins over default; consumers use this as the source of truth."""
@@ -264,6 +319,14 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
         ld_payload = _build_line_display(conn)
         ld_hash = _atomic_write_json(out_dir / "line-display.json", ld_payload)
 
+        # /api/stations
+        stations_payload = _build_stations(conn)
+        stations_hash = _atomic_write_json(out_dir / "stations.json", stations_payload)
+
+        # /api/operators
+        operators_payload = _build_operators(conn)
+        operators_hash = _atomic_write_json(out_dir / "operators.json", operators_payload)
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -297,6 +360,8 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "faresHash": fares_hash,
             "iconsHash": icons_hash,
             "lineDisplayHash": ld_hash,
+            "stationsHash": stations_hash,
+            "operatorsHash": operators_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 

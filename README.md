@@ -261,6 +261,20 @@ Syrmos does not collect, store, or transmit personal data. Location is processed
 
 ## License
 
-BSD 3-Clause. See [LICENSE](LICENSE).
+Dual-licensed to make reuse unambiguous for both code and content.
 
-Schedule data is derived from publicly available timetables by STASY and Hellenic Train. Live positions from the Hellenic Train API. Syrmos is not affiliated with any Greek transport authority.
+| What | License | File |
+|---|---|---|
+| Source code (Kotlin, Swift, Python, JS, all gradle/build config) | **BSD 3-Clause** | [LICENSE](LICENSE) |
+| Documentation (`docs/`, `README.md`, `NOTICE`, this file), case study, screenshots, icon pack at `assets/athens-transit-package/` | **CC BY-SA 4.0** | [LICENSE-docs](LICENSE-docs) |
+
+The non-code materials may **also** be used under BSD 3-Clause if that suits you better.
+
+A short legal summary lives in [NOTICE](NOTICE). For contributors, [CONTRIBUTING.md](CONTRIBUTING.md) makes the dual-license arrangement clear up front. For security issues, see [SECURITY.md](SECURITY.md). For interpersonal expectations, see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+The repository has been registered on:
+- **FSF Free Software Directory** (pending review) — for the BSD 3-Clause code path
+- **Creative Commons Licensed Works** (registered via the CC chooser) — for the CC BY-SA 4.0 content path
+- **REUSE Software** specification — every file carries an SPDX header where practical, see `REUSE.toml` (next release)
+
+Schedule data is derived from publicly available timetables by STASY, OASA, and Hellenic Train. Live positions from the Hellenic Train SSE feed at `railway.gov.gr`. Trademarks of the named operators remain their own property. Syrmos is not affiliated with any Greek transport authority and does not resell, broker, or process tickets — suburban ticket purchase links open Hellenic Train's official site, which is solely responsible for that flow (privacy details in `docs/PRIVACY_POLICY.md`).

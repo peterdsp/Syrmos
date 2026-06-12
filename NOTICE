@@ -1,0 +1,41 @@
+Syrmos — Athens Public Transit Companion
+Copyright (c) 2026 Petros Dhespollari
+
+This product includes software developed by Petros Dhespollari
+(https://peterdsp.dev / https://github.com/peterdsp).
+
+Source code is licensed under the BSD 3-Clause License (see LICENSE).
+
+Documentation, case study, screenshots, design notes, and the
+Athens transit reference package included in this repository
+(under assets/athens-transit-package/ and docs/) are dual-licensed
+under:
+
+  1. The BSD 3-Clause License (matching the source code), and
+  2. The Creative Commons Attribution-ShareAlike 4.0 International License
+     (CC BY-SA 4.0), https://creativecommons.org/licenses/by-sa/4.0/
+
+You may choose either license when reusing those materials.
+
+Schedule data is derived from publicly published timetables and rules
+released by:
+- STASY (https://www.stasy.gr) — metro and tram
+- OASA (https://www.oasa.gr) — Saturday 24-hour service, fare prices
+- Hellenic Train (https://www.hellenictrain.gr) — suburban railway
+
+These sources are the authoritative answer. Syrmos is not affiliated
+with STASY, OASA, Hellenic Train, or any Greek transport authority.
+Re-publishing schedule data here is done in good faith as a derived
+factual compilation; trademarks of the named operators remain their
+own property.
+
+Live train positions are obtained from Hellenic Train's public SSE
+feed at railway.gov.gr. The feed is consumed in good faith for
+non-commercial display under Hellenic Train's published terms.
+
+The icon pack distributed in assets/athens-transit-package/ was
+designed for this project. Re-use is granted under CC BY-SA 4.0;
+attribution to "Athens Transit Icon Pack — Petros Dhespollari" is
+expected when used outside Syrmos.
+
+No personal data is collected by Syrmos. See docs/PRIVACY_POLICY.md.
