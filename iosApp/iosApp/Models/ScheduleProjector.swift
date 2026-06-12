@@ -131,19 +131,47 @@ enum ScheduleProjector {
                     let bm = minutesOfDay(b.timeStart) ?? 0
                     return am < bm
                 }
+            // Project both directions per band so T6/T7 inbound (35/59 min)
+            // and outbound (33/54 min) asymmetric runtimes resolve correctly,
+            // and so passengers see both upcoming destinations at every stop
+            // instead of just the line's outbound terminal.
+            let directions = directionStreams(for: lineId)
             for band in bands {
-                projectBand(
-                    band: band,
-                    shift: shift,
-                    nowMinutes: nowMinutes,
-                    lineId: lineId,
-                    stationId: stationId,
-                    limit: limit - out.count,
-                    into: &out
-                )
-                if out.count >= limit { return }
+                for stream in directions {
+                    projectBand(
+                        band: band,
+                        shift: shift,
+                        nowMinutes: nowMinutes,
+                        lineId: lineId,
+                        stationId: stationId,
+                        directionKey: stream.key,
+                        directionLabel: stream.label,
+                        limit: limit - out.count,
+                        into: &out
+                    )
+                    if out.count >= limit { return }
+                }
             }
         }
+    }
+
+    private struct DirectionStream {
+        let key: String       // "outbound" / "inbound" / "airport"
+        let label: String     // "Kifissia" / "Piraeus" / "Airport"
+    }
+
+    private static func directionStreams(for lineId: String) -> [DirectionStream] {
+        if lineId == "M3_AIR" {
+            return [DirectionStream(key: "outbound", label: "Airport")]
+        }
+        let display = lineId.hasPrefix("M3") ? "M3" : lineId
+        guard let line = SyrmosData.line(for: display) else {
+            return [DirectionStream(key: "outbound", label: "")]
+        }
+        return [
+            DirectionStream(key: "outbound", label: line.terminalB),
+            DirectionStream(key: "inbound",  label: line.terminalA),
+        ]
     }
 
     private static func projectBand(
@@ -152,6 +180,8 @@ enum ScheduleProjector {
         nowMinutes: Int,
         lineId: String,
         stationId: String,
+        directionKey: String,
+        directionLabel: String,
         limit: Int,
         into out: inout [Departure]
     ) {
@@ -164,11 +194,12 @@ enum ScheduleProjector {
         guard end >= start else { return }
 
         // Shift every projected slot by the station's cumulative minutes
-        // from the line origin. Without this the projector emits the time
-        // the train LEAVES the terminal, not the time it passes through
-        // THIS station. Source: STASY's /api/station-offsets.
-        let offsetMin = SyrmosStationOffsetsStore.shared.bestOffsetMinutes(
-            lineId: lineId, stationId: stationId
+        // from the line origin for THIS direction. For T6/T7 the inbound
+        // and outbound offsets differ (33/35 min, 54/59 min), so picking
+        // by direction not "best effort" is what makes the asymmetry land
+        // accurately. Source: STASY's /api/station-offsets.
+        let offsetMin = SyrmosStationOffsetsStore.shared.offsetMinutes(
+            lineId: lineId, direction: directionKey, stationId: stationId
         )
 
         var slot = Double(start)
@@ -184,11 +215,10 @@ enum ScheduleProjector {
             let h = display / 60
             let m = display % 60
             let mins = max(0, slotMin - nowMinutes)
-            let direction = displayDirection(for: lineId, stationId: stationId)
             out.append(Departure(
                 time: String(format: "%02d:%02d", h, m),
                 lineId: displayLineId(for: lineId),
-                direction: direction,
+                direction: directionLabel,
                 minutesAway: mins,
                 serviceType: serviceTypeLabel(for: lineId, label: band.label)
             ))
@@ -221,17 +251,6 @@ enum ScheduleProjector {
         // M3 and M3_AIR share the "Line 3" UI label.
         if storedLineId.hasPrefix("M3") { return "M3" }
         return storedLineId
-    }
-
-    private static func displayDirection(for lineId: String, stationId: String) -> String {
-        if lineId == "M3_AIR" { return "Airport" }
-        // Fall back to a neutral label; the existing TransitLine.terminalA/B
-        // is the right place to resolve per-station-per-direction labels.
-        // For now we surface "→ terminalB" since most station rows show outbound.
-        if let line = SyrmosData.line(for: lineId.hasPrefix("M3") ? "M3" : lineId) {
-            return line.terminalB
-        }
-        return ""
     }
 
     private static func serviceTypeLabel(for lineId: String, label: String) -> String {

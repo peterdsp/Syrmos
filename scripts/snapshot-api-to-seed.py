@@ -55,6 +55,15 @@ def main() -> None:
     icons = fetch("/api/icons")
     line_display = fetch("/api/line-display")
     fares = fetch("/api/fares")
+    # Per-station minutes-from-origin scraped from STASY HTML. Apps need
+    # this on cold start so M1/M2/M3/T6/T7 station detail screens render
+    # the right HH:MM for every stop, not just the line origin. Optional:
+    # if the endpoint is missing (older Pi build), we skip silently.
+    station_offsets: dict | None = None
+    try:
+        station_offsets = fetch("/api/station-offsets")
+    except Exception as e:  # noqa: BLE001
+        print(f"  WARN: /api/station-offsets fetch failed: {e}")
 
     line_ids = list(manifest.get("perLineHashes", {}).keys())
     if not line_ids:
@@ -77,9 +86,12 @@ def main() -> None:
         total += write(dest / "icons.json", icons)
         total += write(dest / "line-display.json", line_display)
         total += write(dest / "fares.json", fares)
+        if station_offsets is not None:
+            total += write(dest / "station-offsets.json", station_offsets)
         for lid, payload in bundles.items():
             total += write(dest / f"{lid}.json", payload)
-        print(f"wrote {len(bundles) + 3} files ({total} bytes) -> {dest.relative_to(ROOT)}")
+        n_files = len(bundles) + 6 + (1 if station_offsets is not None else 0)
+        print(f"wrote {n_files} files ({total} bytes) -> {dest.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
