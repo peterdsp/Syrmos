@@ -21,6 +21,7 @@ FILES_TO_ADD = [
     ("Models/SyrmosVisualOverridesStore.swift", "Models"),
     ("Views/Timetables/TimetablesView.swift", "Views"),
     ("Views/Stations/StationMapSheet.swift", "Views"),
+    ("Views/SafariSheet.swift", "Views"),
 ]
 
 
