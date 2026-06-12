@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 data class StationDetailUiState(
     val stationName: String = "",
     val stationNameEl: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
     val connectingLines: List<Line> = emptyList(),
     val departures: List<UpcomingDeparture> = emptyList(),
     val isLoading: Boolean = true,
@@ -48,6 +50,8 @@ class StationDetailViewModel(
                 it.copy(
                     stationName = detail.station.name,
                     stationNameEl = detail.station.nameEl,
+                    latitude = detail.station.latitude,
+                    longitude = detail.station.longitude,
                     connectingLines = detail.connectingLines,
                     isLoading = false,
                 )

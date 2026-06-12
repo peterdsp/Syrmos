@@ -180,6 +180,10 @@ struct TransitMapView: View {
     /// 0 = country view (huge span), 1 = city, 2 = district, 3 = street.
     /// Mirrors the web buckets so pins look consistent across platforms.
     @State private var zoomBucket: Int = 2
+    /// When true, hide all moving train/tram annotations so the user can see
+    /// just the lines + stations. Persists across navigation but resets on
+    /// cold launch (deliberate: it's a quick toggle, not a setting).
+    @State private var vehiclesHidden = false
 
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
@@ -209,18 +213,20 @@ struct TransitMapView: View {
                         .tag(station.id)
                     }
 
-                    ForEach(trainSimulator.trains) { train in
-                        Annotation(
-                            "\(train.lineName) → \(train.destinationName)",
-                            coordinate: train.coordinate
-                        ) {
-                            SimulatedTrainDot(train: train)
+                    if !vehiclesHidden {
+                        ForEach(trainSimulator.trains) { train in
+                            Annotation(
+                                "\(train.lineName) → \(train.destinationName)",
+                                coordinate: train.coordinate
+                            ) {
+                                SimulatedTrainDot(train: train)
+                            }
                         }
-                    }
 
-                    ForEach(liveTrainService.trains) { train in
-                        Annotation(train.trainNumber, coordinate: train.coordinate) {
-                            TrainDot()
+                        ForEach(liveTrainService.trains) { train in
+                            Annotation(train.trainNumber, coordinate: train.coordinate) {
+                                TrainDot()
+                            }
                         }
                     }
                 }
@@ -257,22 +263,47 @@ struct TransitMapView: View {
                         .ignoresSafeArea()
                 }
 
-                Button {
-                    let result = locationManager.requestOrPrompt()
-                    switch result {
-                    case .authorized, .promptShown:
-                        position = .userLocation(followsHeading: false, fallback: .automatic)
-                    case .denied:
-                        showLocationDeniedAlert = true
+                VStack(spacing: 12) {
+                    Button {
+                        vehiclesHidden.toggle()
+                    } label: {
+                        Image(systemName: vehiclesHidden ? "tram.fill" : "tram")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(vehiclesHidden ? .white : Color.accentColor)
+                            .frame(width: 50, height: 50)
+                            .background(vehiclesHidden ? Color.accentColor : Color(uiColor: .systemBackground))
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().strokeBorder(
+                                    vehiclesHidden ? .clear : Color.accentColor.opacity(0.25),
+                                    lineWidth: 1
+                                )
+                            )
+                            .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                     }
-                } label: {
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 50, height: 50)
-                        .background(Color.accentColor)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
+                    .accessibilityLabel(
+                        vehiclesHidden
+                            ? (loc.language == .greek ? "Εμφάνιση οχημάτων" : "Show vehicles")
+                            : (loc.language == .greek ? "Απόκρυψη οχημάτων" : "Hide vehicles")
+                    )
+
+                    Button {
+                        let result = locationManager.requestOrPrompt()
+                        switch result {
+                        case .authorized, .promptShown:
+                            position = .userLocation(followsHeading: false, fallback: .automatic)
+                        case .denied:
+                            showLocationDeniedAlert = true
+                        }
+                    } label: {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 50, height: 50)
+                            .background(Color.accentColor)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
+                    }
                 }
                 .padding(.trailing, 16)
                 .padding(.bottom, 80)
