@@ -32,9 +32,13 @@
     const lineIdToManifestLine = { M1: "M1", M2: "M2", M3: "M3", T6: "T6", T7: "T7", T6T7: "T6T7", A1: "P1", A2: "P1A", A3: "P3", A4: "P2" };
     for (const icon of vehicleManifest.directional_icons) {
         const dir = icon.arrow === "←" ? "inbound" : "outbound";
-        vehicleIconMap.set(`${icon.line}_${dir}`, `icons/vehicles/${icon.file}`);
+        // icon.file already starts with "icons/vehicles/..." in the bundled
+        // manifest. Prepending another "icons/vehicles/" produced a double
+        // prefix path that 404'd, which is why live + simulated trains
+        // were falling back to colored Leaflet pins instead of vehicle SVGs.
+        vehicleIconMap.set(`${icon.line}_${dir}`, icon.file);
         if (icon.destination === "Airport") {
-            vehicleIconMap.set(`${icon.line}_airport`, `icons/vehicles/${icon.file}`);
+            vehicleIconMap.set(`${icon.line}_airport`, icon.file);
         }
     }
     const stationMap = new Map(stations.map((station) => [station.id, station]));
@@ -283,7 +287,12 @@
         // High zoom: per-station smart-code SVG when readable.
         if (currentZoom >= 14) {
             const primarySid = station.stationIds[0];
-            const svgUrl = stationIconBySid.get(primarySid);
+            // A2 stations share most of their physical platforms with A1
+            // (Doukissis Plakentias, Pallini, Metamorfosi, etc.). The icon
+            // pack doesn't ship A2-prefixed SVGs, so fall back to any
+            // sibling line's icon for the same station before giving up.
+            const svgUrl = stationIconBySid.get(primarySid)
+                || station.stationIds.map((sid) => stationIconBySid.get(sid)).find(Boolean);
             if (svgUrl) {
                 const size = selected ? 36 : 28;
                 return L.icon({
