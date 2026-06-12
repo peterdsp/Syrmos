@@ -16,9 +16,16 @@ import sqlite3
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from station_resolver import ingest_aliases_from_csv, resolve_station_id  # noqa: E402
+
+ROOT = Path(os.environ.get("PIPELINE_ROOT", str(Path(__file__).resolve().parent.parent)))
 JSONL = ROOT / "assets" / "stasy-html" / "parsed" / "station-offsets.jsonl"
-MIGRATION = ROOT / "ops" / "syrmos-api" / "migrations" / "0006_station_offsets.sql"
+# On the dev repo migrations live under ops/syrmos-api/migrations/; on the Pi
+# they live at the deploy root. Try both.
+_MIG_DEV = ROOT / "ops" / "syrmos-api" / "migrations" / "0006_station_offsets.sql"
+_MIG_PI = ROOT / "migrations" / "0006_station_offsets.sql"
+MIGRATION = _MIG_DEV if _MIG_DEV.exists() else _MIG_PI
 DB_PATH = os.environ.get(
     "SYRMOS_DB_PATH",
     str(ROOT / "ops" / "syrmos-api" / "data" / "syrmos.db"),
@@ -35,12 +42,10 @@ def main() -> None:
     conn.executescript(MIGRATION.read_text())
     conn.execute("DELETE FROM station_offsets")
 
-    # Best-effort station_id lookup by exact English name. Lets the apps
-    # join offsets onto map markers without a second query.
-    stations_by_name = {
-        r[0]: r[1]
-        for r in conn.execute("SELECT name_en, id FROM stations").fetchall()
-    }
+    # Refresh aliases from CSV so any newly added rows take effect
+    # immediately. The resolver below reads from station_name_aliases.
+    n_aliases = ingest_aliases_from_csv(conn)
+    print(f"loaded {n_aliases} station aliases")
 
     total = 0
     unmatched: set[str] = set()
@@ -48,7 +53,7 @@ def main() -> None:
         for line in f:
             rec = json.loads(line)
             station_en = rec["station_en"]
-            station_id = stations_by_name.get(station_en)
+            station_id = resolve_station_id(conn, "stasy", station_en)
             if station_id is None:
                 unmatched.add(station_en)
             conn.execute(

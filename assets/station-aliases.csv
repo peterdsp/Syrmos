@@ -1,0 +1,62 @@
+source,raw_name,canonical_station_id,notes
+# STASY HTML timetable pages publish station names with assorted spellings.
+# Each row pins one operator label to our internal stations.id. Edit this
+# file to fix newly discovered drift; the resolver picks the canonical id
+# at ingest time so the on-device data never sees the raw spelling.
+#
+# For interchanges where multiple ids exist for the same passenger station
+# (Pallini, Doukissis Plakentias, Neratziotissa, Peania-Kantza), follow the
+# master document's rule: metro wins over tram and over suburban.
+stasy,1St Ag. Kosma,T7_STA,1st Aghiou Kosma
+stasy,1St Aghiou Kosma,T7_STA,
+stasy,2Nd Ag. Kosma,T7_NDA,2nd Aghiou Kosma
+stasy,2Nd Aghiou Kosma,T7_NDA,
+stasy,34ou SYNTAGMATOS,T7_SYN,34 Syntagmatos Pezikou
+stasy,Agg. Metaxa,T7_AG3,Angelou Metaxa (Greek 'Άγγελου Μεταξά')
+stasy,Angelou Metaxa,T7_AG3,
+stasy,Aghia Fotini,T6_AGI,Aghias Foteinis Plateia
+stasy,Aghia Marina,M3_AG2,Agia Marina (M3)
+stasy,Aghia Triada,T7_AGI,Agia Triada
+stasy,Aghia Varvara,M3_AGI,Agia Varvara
+stasy,Aghios Antonios,M2_AGI,Agios Antonios
+stasy,Aghios Dimitrios,M2_AG3,Agios Dimitrios
+stasy,Aghios Eleftherios,M1_AG2,Agios Eleftherios
+stasy,Aghios Ioannis,M2_AG2,Agios Ioannis
+stasy,Aghios Nikolaos,M1_AGI,Agios Nikolaos
+stasy,Akti Posidonos,T7_AKT,Akti Poseidonos
+stasy,Ano Patissia,M1_ANO,Ano Patisia
+stasy,Dimarhio,T7_DIM,Dimarhio / Dimotiko Theatro (T7)
+stasy,Dimotiko Theatro,M3_DIM,Metro wins at the M3 / T7 interchange
+stasy,Douk. Plakentias,M3_DOY,Metro wins at the M3 / A1 / A2 interchange
+stasy,Halandri,M3_CHA,Chalandri
+stasy,Helliniko,M2_ELL,Metro wins at the M2 / T7 interchange
+stasy,Hellinon Olympionikon,T7_EL2,Ellinon Olymbionikon
+stasy,Holargos,M3_CHO,Cholargos
+stasy,Iraklio,M1_IRA,Metro wins at the M1 / A1 / A2 interchange
+stasy,Irini,M1_EIR,Eirini
+stasy,Kat,M1_KA2,KAT
+stasy,Katehaki,M3_KAT,Katechaki
+stasy,Kato Patissia,M1_KAT,Kato Patisia
+stasy,L. Vouliagmenis,T6_VOU,Leoforos Vouliagmenis
+stasy,Lambraki,T7_GRI,Grigoriou Lambraki
+stasy,Larissa St.,M2_STA,Stathmos Larissis
+stasy,Maniatika,M3_MAN,
+stasy,Maroussi,M1_MAR,Marousi
+stasy,Megalou Alexandrou,T6_ALE,Alexander the Great
+stasy,Megaro Moussikis,M3_MEG,Megaro Mousikis
+stasy,Metaxourghio,M2_MET,Metaxourgeio
+stasy,Neratziotissa,M1_NER,Metro wins at the M1 / A1 / A2 interchange
+stasy,Nikea,M3_NIK,Nikaia
+stasy,Paleo Dimarhio,T7_PAL,Paleo Demarhio
+stasy,Pallini,M3_PAL,Metro wins at the M3 / A1 / A2 interchange
+stasy,Peania - Kantza,M3_PEA,Metro wins at the M3 / A1 / A2 interchange
+stasy,Platia Deligianni,T7_PLA,Plateia Deligianni
+stasy,Platia Ippodamias,T7_PL2,Plateia Ippodameias
+stasy,Platia Katraki,T7_PL4,Platia Vaso Katraki
+stasy,S.E.F.,T7_PEA,Peace and Friendship Stadium
+stasy,Skylitsi,T7_OMI,Omiridou Skylitsi
+stasy,Sygrou - Fix,M2_SY2,Syngrou-Fix
+stasy,Sygroy - Fix,M2_SY2,Syngrou-Fix (alt spelling)
+stasy,Tavros,M1_TAV,Tavros-Eleftherios Venizelos
+stasy,Thissio,M1_THI,Thiseio
+stasy,Zappio,T6_ZAP,Zappeion
