@@ -163,6 +163,14 @@ enum ScheduleProjector {
         let end = rawEnd + shift
         guard end >= start else { return }
 
+        // Shift every projected slot by the station's cumulative minutes
+        // from the line origin. Without this the projector emits the time
+        // the train LEAVES the terminal, not the time it passes through
+        // THIS station. Source: STASY's /api/station-offsets.
+        let offsetMin = SyrmosStationOffsetsStore.shared.bestOffsetMinutes(
+            lineId: lineId, stationId: stationId
+        )
+
         var slot = Double(start)
         if slot < Double(nowMinutes) {
             let skips = max(0, Int((Double(nowMinutes) - slot) / band.headwayMinutes))
@@ -171,7 +179,7 @@ enum ScheduleProjector {
         }
         var added = 0
         while slot <= Double(end) && added < limit {
-            let slotMin = Int(slot.rounded())
+            let slotMin = Int(slot.rounded()) + offsetMin
             let display = ((slotMin % (24 * 60)) + 24 * 60) % (24 * 60)
             let h = display / 60
             let m = display % 60
