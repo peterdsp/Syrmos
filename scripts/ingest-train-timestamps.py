@@ -43,19 +43,24 @@ A2_TERMINAL_STATIONS = {"Ano Liosia", "Athens"}
 A1_REQUIRED_STATIONS = {"Piraeus"}
 
 # Map PDF station label -> internal station_id. This is the bridge between
-# the operator's name and our app's id namespace.
+# the operator's name and our app's id namespace. Resolved from the master
+# reference athens_fixed_rail_station_coordinates.md so every station the
+# Hellenic Train PDFs touch has a stable internal id (and therefore a map
+# marker + station icon path in the apps).
 STATION_ID_MAP = {
+    # A1 + A4 shared southern corridor (Piraeus to Athens)
     "Piraeus":             "A1_PIR",
+    "Pireas":              "A1_PIR",
     "Lefka":               "A1_LEF",
     "Rentis":              "A1_REN",
     "Tavros":              "A1_TAV",
     "Rouf":                "A1_ROU",
     "Athens":              "A1_ATH",
+    # A1 northern Athens corridor
     "Ag. Anargyroi":       "A1_AGA",
+    "Agioi Anargyroi":     "A1_AGA",
     "Pyrgos Vasilissis":   "A1_PYR",
     "Kato Acharnai":       "A1_KAA",
-    "Ano Liosia":          "A2_LIO",
-    "SKA Airport Line":    "A1_SKA",
     "Metamorfosi":         "A1_MET",
     "Irakleio":            "A1_IRA",
     "Neratziotissa":       "A1_NER",
@@ -66,23 +71,54 @@ STATION_ID_MAP = {
     "Paiania-Kantza":      "A1_PAI",
     "Koropi":              "A1_KOR",
     "Airport":             "A1_AER",
-    # A3 corridor (Athens-Chalkida)
-    "Oinoi":               "A3_OIN",
+    "SKA Airport Line":    "A1_SKA",
+    "SKA":                 "A1_SKA",
+    # A2 (Ano Liosia branch)
+    "Ano Liosia":          "A2_LIO",
+    "A. Liosia":           "A2_LIO",
+    "Acharnai Railway Center": "A2_AKR",
+    # A3 corridor (Athens to Chalkida) -- coords from master file
+    "Acharnes":            "A3_ACH",
+    "Dekeleia":            "A3_DEK",
+    "Agios Stefanos":      "A3_AGS",
     "Afidnes":             "A3_AFI",
     "Sfendali":            "A3_SFE",
-    "Agios Stefanos":      "A3_AGS",
-    "Kifisia":             "A3_KIF",
+    "Avlonas":             "A3_AVL",
+    "Agios Thomas":        "A3_AGT",
+    "Oinofyta":            "A3_OIF",
+    "Oinoi":               "A3_OIN",
+    "Dilesi":              "A3_DIL",
+    "Agios Georgios":      "A3_AGG",
+    "Kalochori-Panteichi": "A3_KAL",
+    "Kalochori- Panteichi":"A3_KAL",  # PDF spacing variant
+    "Avlida":              "A3_AVI",
     "Chalkida":            "A3_CHA",
-    "Schimatari":          "A3_SCH",
-    "Tithorea":            "A3_TIT",
-    "Leianokladi":         "A3_LEI",
-    # A4 corridor (Piraeus-Kiato)
-    "Kiato":               "A4_KIA",
-    "Korinthos":           "A4_KOR",
-    "Megara":              "A4_MEG",
+    # A4 corridor (Piraeus to Kiato) -- coords from master file
+    "Zefiri":              "A4_ZEF",
+    "Aspropyrgos":         "A4_ASP",
     "Magoula":             "A4_MAG",
-    "Pireas":              "A4_PIR",
+    "Nea Peramos":         "A4_NEA",
+    "Megara":              "A4_MEG",
+    "Kinetta":             "A4_KIN",
+    "Kineta":              "A4_KIN",
+    "Ag. Theodoroi":       "A4_AGT",
+    "Agioi Theodoroi":     "A4_AGT",
+    "Corinth":             "A4_KOR",
+    "Korinthos":           "A4_KOR",
+    "Zevgolatio":          "A4_ZEU",
+    "Kiato":               "A4_KIA",
+    # A4 long-distance extensions on the Kiato-Aigio table
+    "Diakopto":            "A4_DIA",
     "Aigio":               "A4_AIG",
+    "Akrata":              "A4_AKR",
+    "Xylokastro":          "A4_XYL",
+    "Lygia":               "A4_LYG",
+    "Lykoporia":           "A4_LYK",
+    "Eliki":               "A4_ELI",
+    "Platanos":            "A4_PLA",
+    "Diminio":             "A4_DIM",
+    "Kiato Άφιξη":         "A4_KIA",  # arrival marker, same node
+    # Variants with footnote sequence already stripped by parser but kept here for safety
 }
 
 

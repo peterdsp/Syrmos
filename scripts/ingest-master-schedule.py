@@ -92,8 +92,12 @@ add_weekday_bands("T7", {"early": 12, "peak_am": 10, "midday": 12, "peak_pm": 10
 for day_type in ("mon_thu", "fri", "sat", "sun"):
     FREQUENCY_BANDS.append(("M3_AIR", day_type, "05:30", "23:00", 36.0, "airport_fixed"))
 
-# Saturday daytime bands (city lines): 7-10.5 min, we model as 9 min.
-for line_id, head in [("M1", 9.0), ("M2", 7.5), ("M3", 7.5), ("T6", 12.0), ("T7", 12.0)]:
+# Saturday daytime bands. The master document says "city Lines 1, 2 and 3
+# arrive every 7 to 10.5 minutes" as one shared range, so we use the same
+# value (the midpoint of the range, ~8.75 rounded to 9) for all three city
+# lines instead of inventing per-line splits the source never specified.
+# Tram T6/T7 fall slightly slower per Saturday daytime context.
+for line_id, head in [("M1", 9.0), ("M2", 9.0), ("M3", 9.0), ("T6", 12.0), ("T7", 12.0)]:
     FREQUENCY_BANDS.append((line_id, "sat", "05:00", "00:30", head, "saturday_daytime"))
 # Saturday 24/7 overnight band 00:30 - 05:30 for M2, M3, T6, T7 (NOT M1, NOT M3_AIR).
 for line_id in ("M2", "M3", "T6", "T7"):
