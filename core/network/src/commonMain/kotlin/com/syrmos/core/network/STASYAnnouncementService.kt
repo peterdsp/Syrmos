@@ -18,6 +18,23 @@ data class STASYAnnouncement(
     val isServiceAlert: Boolean,
 )
 
+/** Network-wide STASY service-status badge. `status` is `normal`, `alert`,
+ *  or `unknown`; `serviceUntil` is "HH:MM" when an alert sets a cutoff. */
+data class STASYServiceStatus(
+    val status: String,
+    val rawMessage: String,
+    val rawMessageEn: String,
+    val serviceUntil: String?,
+) {
+    val isAlert: Boolean get() = status == "alert"
+    val isNormal: Boolean get() = status == "normal"
+}
+
+data class STASYFeed(
+    val status: STASYServiceStatus?,
+    val announcements: List<STASYAnnouncement>,
+)
+
 /**
  * Fetches STASY service announcements from the Syrmos API proxy on the
  * Raspberry Pi (api-syrmos.peterdsp.dev/api/announcements). The Pi scrapes
@@ -31,24 +48,39 @@ class STASYAnnouncementService(
     private val json = Json { ignoreUnknownKeys = true }
 
     fun fetchAnnouncements(): Flow<List<STASYAnnouncement>> = flow {
-        try {
+        emit(fetchFeed().announcements)
+    }
+
+    fun fetchFeed(): Flow<STASYFeed> = flow {
+        emit(fetchFeedOnce())
+    }
+
+    private suspend fun fetchFeedOnce(): STASYFeed {
+        return try {
             val response = httpClient.get(ANNOUNCEMENTS_URL)
             val body = response.bodyAsText()
             val payload = json.decodeFromString<AnnouncementsPayload>(body)
-            emit(
-                payload.announcements.map { item ->
-                    STASYAnnouncement(
-                        id = item.id,
-                        title = item.title,
-                        titleEn = item.titleEn.ifBlank { item.title },
-                        date = item.date,
-                        url = item.url,
-                        isServiceAlert = item.category == CATEGORY_SERVICE_ALERT,
-                    )
-                },
-            )
+            val status = payload.status?.let {
+                STASYServiceStatus(
+                    status = it.status,
+                    rawMessage = it.rawMessage,
+                    rawMessageEn = it.rawMessageEn.ifBlank { it.rawMessage },
+                    serviceUntil = it.serviceUntil,
+                )
+            }
+            val items = payload.announcements.map { item ->
+                STASYAnnouncement(
+                    id = item.id,
+                    title = item.title,
+                    titleEn = item.titleEn.ifBlank { item.title },
+                    date = item.date,
+                    url = item.url,
+                    isServiceAlert = item.category == CATEGORY_SERVICE_ALERT,
+                )
+            }
+            STASYFeed(status, items)
         } catch (_: Exception) {
-            emit(emptyList())
+            STASYFeed(null, emptyList())
         }
     }
 
@@ -56,7 +88,16 @@ class STASYAnnouncementService(
     private data class AnnouncementsPayload(
         @SerialName("updatedAt") val updatedAt: String? = null,
         val count: Int = 0,
+        val status: StatusPayload? = null,
         val announcements: List<AnnouncementItem> = emptyList(),
+    )
+
+    @Serializable
+    private data class StatusPayload(
+        val status: String = "unknown",
+        val rawMessage: String = "",
+        @SerialName("rawMessageEn") val rawMessageEn: String = "",
+        val serviceUntil: String? = null,
     )
 
     @Serializable
