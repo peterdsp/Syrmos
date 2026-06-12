@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily Syrmos STASY HTML watcher
+Requires=syrmos-watcher-stasy.service
+
+[Timer]
+# Staggered against the Hellenic Train watcher (03:17) so the two don't run
+# concurrently and so a flaky DNS / upstream blip only stalls one feed.
+OnCalendar=*-*-* 03:42:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target
