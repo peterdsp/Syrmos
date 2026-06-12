@@ -52,6 +52,9 @@ def main() -> None:
     manifest = fetch("/api/schedules/manifest")
     holidays = fetch("/api/holidays")
     lines = fetch("/api/lines")
+    icons = fetch("/api/icons")
+    line_display = fetch("/api/line-display")
+    fares = fetch("/api/fares")
 
     line_ids = list(manifest.get("perLineHashes", {}).keys())
     if not line_ids:
@@ -71,6 +74,9 @@ def main() -> None:
         total += write(dest / "manifest.json", manifest)
         total += write(dest / "holidays.json", holidays)
         total += write(dest / "lines.json", lines)
+        total += write(dest / "icons.json", icons)
+        total += write(dest / "line-display.json", line_display)
+        total += write(dest / "fares.json", fares)
         for lid, payload in bundles.items():
             total += write(dest / f"{lid}.json", payload)
         print(f"wrote {len(bundles) + 3} files ({total} bytes) -> {dest.relative_to(ROOT)}")

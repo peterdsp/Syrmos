@@ -22,8 +22,26 @@ final class SyrmosVisualOverridesStore: ObservableObject {
     private let base = "https://api-syrmos.peterdsp.dev"
 
     private init() {
-        hydrateFromCache()
-        Task { await refresh() }
+        hydrateFromBundle()  // Offline-first: bundled snapshot is the floor
+        hydrateFromCache()   // Then any newer cached admin edits win
+        Task { await refresh() }  // Then live API overlays anything fresher
+    }
+
+    /// Load the snapshot bundled inside the app at release time. So even on
+    /// airplane mode at first launch the user sees admin-set visuals from
+    /// the last release, not just hardcoded defaults.
+    private func hydrateFromBundle() {
+        guard stationIconUrls.isEmpty || lineDisplay.isEmpty else { return }
+        if let url = Bundle.main.url(forResource: "icons", withExtension: "json", subdirectory: "seed-schedules-v2"),
+           let data = try? Data(contentsOf: url),
+           let payload = try? JSONDecoder().decode(IconsPayload.self, from: data) {
+            apply(icons: payload)
+        }
+        if let url = Bundle.main.url(forResource: "line-display", withExtension: "json", subdirectory: "seed-schedules-v2"),
+           let data = try? Data(contentsOf: url),
+           let payload = try? JSONDecoder().decode(LineDisplayPayload.self, from: data) {
+            apply(lineDisplay: payload)
+        }
     }
 
     func iconURL(for stationId: String) -> URL? { stationIconUrls[stationId] }
