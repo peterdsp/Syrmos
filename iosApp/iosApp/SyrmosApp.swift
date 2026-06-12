@@ -53,6 +53,7 @@ struct SyrmosApp: App {
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
     @ObservedObject private var loc = LocalizationManager.shared
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some View {
         ZStack {
@@ -91,6 +92,7 @@ struct ContentView: View {
             }
             .tint(.syrmosPrimary)
         }
+        .preferredColorScheme(themeManager.theme.colorScheme)
         // Fire-and-forget refresh of the offline-first lines cache. Doesn't
         // block UI; failure is silent. We do not propagate the service via
         // EnvironmentObject because a missing object on a presented sheet/
