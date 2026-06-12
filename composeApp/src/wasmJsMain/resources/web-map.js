@@ -67,6 +67,35 @@
             try { localStorage.setItem(cachedIconsKey, JSON.stringify(fresh)); } catch (_) {}
         }
     } catch (_) {}
+    // Source of truth for schedules: /api/schedules/{lineId}. Cached in
+    // localStorage so an offline cold start still has correct data.
+    const apiSchedules = new Map();
+    const lineIdsToFetch = ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"];
+    try {
+        const cached = localStorage.getItem("syrmos.schedules.v1");
+        if (cached) {
+            const obj = JSON.parse(cached);
+            for (const [lid, bundle] of Object.entries(obj)) apiSchedules.set(lid, bundle);
+        }
+        const bundles = await Promise.all(
+            lineIdsToFetch.map((lid) =>
+                fetch(`https://api-syrmos.peterdsp.dev/api/schedules/${lid}`)
+                    .then((r) => (r.ok ? r.json() : null))
+                    .catch(() => null)
+            )
+        );
+        const persist = {};
+        bundles.forEach((b, idx) => {
+            if (b && b.bands && b.rules) {
+                apiSchedules.set(lineIdsToFetch[idx], b);
+                persist[lineIdsToFetch[idx]] = b;
+            }
+        });
+        if (Object.keys(persist).length) {
+            try { localStorage.setItem("syrmos.schedules.v1", JSON.stringify(persist)); } catch (_) {}
+        }
+    } catch (_) {}
+
     if (apiIcons && apiIcons.stations) {
         for (const [sid, url] of Object.entries(apiIcons.stations)) stationIconBySid.set(sid, url);
         for (const [sid, url] of Object.entries(apiIcons.interchanges || {})) stationIconBySid.set(sid, url);
@@ -281,58 +310,138 @@
         return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
     }
 
-    function buildStationDepartures(station) {
-        // Clock-aligned slots: at 14:31 on a 5-min frequency the next
-        // departure is 14:35 (4 min away), then 14:40 (9 min), etc.
-        // Previously we returned "now + freq * i" which gave a constant
-        // 5/10/15/20 no matter when the user opened the screen, so the
-        // countdown never ticked down. Matches the iOS + KMP fix.
-        const result = [];
-        const now = currentAthensParts();
-        const nowMinutes = now.hour * 60 + now.minute;
-        const secondOffset = now.second >= 30 ? 1 : 0;
-
-        for (const lineId of station.lineIds) {
-            const line = lineMap.get(lineId);
-            if (!line) continue;
-            const stationId = station.stationIdByLineId[lineId] || station.stationIds[0];
-            const patterns = servicePatterns.filter((pattern) => {
-                if (pattern.line_id !== lineId) return false;
-                if (pattern.station_ids && !pattern.station_ids.includes(stationId)) return false;
-                if (pattern.excluded_station_ids && pattern.excluded_station_ids.includes(stationId)) return false;
-                return true;
+    // Band-based projector matching core/domain/ComputeDeparturesFromBandsUseCase
+    // and iosApp/ScheduleProjector.swift. Reads /api/schedules/{lineId} once at
+    // page load (cached in `apiSchedules`) and respects:
+    //   - operating hours (line is closed -> no departures)
+    //   - day_type (mon_thu / fri / sat / sun) including holiday remap
+    //   - past-midnight tail: at 01:10 Fri morning we also walk Thursday late_night
+    //   - M3 split: city stops show M3 + M3_AIR, airport-only stops show M3_AIR
+    function resolveHolidayDayType(date) {
+        const mmdd = `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        switch (mmdd) {
+            case "01-01": case "05-01": case "10-28": case "12-25": case "12-26": return "sun";
+            case "08-15": return "aug_15";
+            case "12-24": case "12-31": return "dec_24_31";
+            case "01-02": case "01-06": case "11-17": return "sat";
+            default: return null;
+        }
+    }
+    function dayTypeFor(date, holiday) {
+        if (holiday) return holiday;
+        const dow = date.getDay();  // 0=Sun, 1=Mon, ... 6=Sat
+        if (dow === 0) return "sun";
+        if (dow >= 1 && dow <= 4) return "mon_thu";
+        if (dow === 5) return "fri";
+        return "sat";
+    }
+    function minutesOfDay(hhmm) {
+        const m = /^(\d{2}):(\d{2})$/.exec(hhmm);
+        if (!m) return null;
+        return Number(m[1]) * 60 + Number(m[2]);
+    }
+    const M3_AIRPORT_ONLY = new Set(["M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"]);
+    function expandLineIds(stationId, lineIds) {
+        const out = [];
+        for (const lid of lineIds) {
+            if (lid === "M3" || lid === "M3A") {
+                if (M3_AIRPORT_ONLY.has(stationId)) out.push("M3_AIR");
+                else { out.push("M3"); out.push("M3_AIR"); }
+            } else {
+                out.push(lid);
+            }
+        }
+        return out;
+    }
+    function projectBand(band, shift, nowMinutes, lineId, direction, limit, out) {
+        const rawStart = minutesOfDay(band.timeStart);
+        const rawEnd = minutesOfDay(band.timeEnd);
+        if (rawStart == null || rawEnd == null || !(band.headwayMinutes > 0)) return;
+        const start = rawStart + shift;
+        const end = rawEnd + shift;
+        if (end < start) return;
+        let slot = start;
+        if (slot < nowMinutes) {
+            const skips = Math.max(0, Math.floor((nowMinutes - slot) / band.headwayMinutes));
+            slot = start + skips * band.headwayMinutes;
+            while (slot < nowMinutes) slot += band.headwayMinutes;
+        }
+        let added = 0;
+        while (slot <= end && added < limit) {
+            const slotMin = Math.round(slot);
+            const display = ((slotMin % (24 * 60)) + 24 * 60) % (24 * 60);
+            out.push({
+                lineId,
+                direction,
+                timeMinutes: slotMin,
+                time: `${String(Math.floor(display / 60)).padStart(2, "0")}:${String(display % 60).padStart(2, "0")}`,
+                minutesAway: Math.max(0, slotMin - nowMinutes),
             });
-
-            for (const pattern of patterns) {
-                const freq = Math.max(pattern.frequency_minutes, 1);
-                let nextSlot = (Math.floor(nowMinutes / freq) + 1) * freq;
-                for (let index = 0; index < 4; index += 1) {
-                    const minutesAway = Math.max(nextSlot - nowMinutes - secondOffset, 0);
-                    const slotMinutes = nextSlot % (24 * 60);
-                    const hour = Math.floor(slotMinutes / 60);
-                    const minute = slotMinutes % 60;
-                    const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-                    result.push({
-                        line,
-                        destination: pattern.direction,
-                        time,
-                        minutesAway,
-                    });
-                    nextSlot += freq;
+            slot += band.headwayMinutes;
+            added++;
+        }
+    }
+    function projectFromBundle(bundle, nowDate, lineIdForLabel, out, limit) {
+        if (!bundle || !bundle.bands || !bundle.rules) return;
+        const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+        const holidayToday = resolveHolidayDayType(nowDate);
+        const todayDt = dayTypeFor(nowDate, holidayToday);
+        const descriptors = [[todayDt, 0]];
+        if (nowMinutes < 4 * 60) {
+            const yesterday = new Date(nowDate);
+            yesterday.setDate(nowDate.getDate() - 1);
+            descriptors.push([dayTypeFor(yesterday, null), -24 * 60]);
+        }
+        for (const [dt, shift] of descriptors) {
+            // Verify the line is actually open on this day-type. If schedule_rules
+            // says closed (no rule for this dt), we don't project.
+            const rule = bundle.rules.find((r) => r.dayType === dt);
+            if (!rule) continue;
+            const openMin = minutesOfDay(rule.openTime);
+            const closeMin = minutesOfDay(rule.closeTime);
+            // closeTime can be 00:30, 02:00, etc. — treated as next-day if smaller than open.
+            // If we're past closeTime relative to today's window AND we're not in the
+            // late-night extension of yesterday, skip.
+            const effectiveNow = nowMinutes + shift;
+            if (closeMin != null && openMin != null) {
+                const effectiveClose = closeMin <= openMin ? closeMin + 24 * 60 : closeMin;
+                if (!rule.is247 && (effectiveNow < openMin || effectiveNow > effectiveClose)) continue;
+            }
+            const bands = bundle.bands
+                .filter((b) => b.dayType === dt)
+                .sort((a, b) => (minutesOfDay(a.timeStart) ?? 0) - (minutesOfDay(b.timeStart) ?? 0));
+            for (const band of bands) {
+                const direction = lineIdForLabel === "M3_AIR" ? "Airport" : null;
+                projectBand(band, shift, nowMinutes, lineIdForLabel, direction, limit - out.length, out);
+                if (out.length >= limit) return;
+            }
+        }
+    }
+    function buildStationDepartures(station) {
+        if (!apiSchedules || apiSchedules.size === 0) return [];
+        const nowDate = new Date();
+        const result = [];
+        const expanded = expandLineIds(station.stationIds[0] || station.id, station.lineIds);
+        for (const lineId of expanded) {
+            const bundle = apiSchedules.get(lineId);
+            if (!bundle) continue;
+            const before = result.length;
+            projectFromBundle(bundle, nowDate, lineId, result, 12);
+            // Map line label for display: M3_AIR also shows as "Line 3" with Airport pill
+            const displayLineId = lineId === "M3_AIR" ? "M3" : lineId;
+            const line = lineMap.get(displayLineId);
+            for (let i = before; i < result.length; i++) {
+                result[i].line = line || { id: displayLineId, name: displayLineId, color: "#64748b" };
+                if (!result[i].direction) {
+                    // Both-direction lines: alternate between terminalA / terminalB for the next two
+                    const slot = result[i].timeMinutes - (result[before]?.timeMinutes ?? 0);
+                    result[i].direction = (i - before) % 2 === 0 ? line?.terminal_b || "" : line?.terminal_a || "";
                 }
             }
         }
-
         return result
-            .filter((item, index, array) =>
-                array.findIndex((candidate) =>
-                    candidate.line.id === item.line.id &&
-                    candidate.destination === item.destination &&
-                    candidate.time === item.time
-                ) === index
-            )
             .sort((a, b) => a.minutesAway - b.minutesAway)
-            .slice(0, 8);
+            .slice(0, 10);
     }
 
     function renderDepartures(station) {

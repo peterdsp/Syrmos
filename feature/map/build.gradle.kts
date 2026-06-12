@@ -12,6 +12,7 @@ kotlin {
             implementation(compose.ui)
             implementation(libs.kotlinx.datetime)
             implementation(libs.koin.core)
+            implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.koin)

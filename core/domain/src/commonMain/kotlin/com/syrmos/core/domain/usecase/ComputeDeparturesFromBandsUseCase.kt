@@ -90,6 +90,20 @@ class ComputeDeparturesFromBandsUseCase(
         }
 
         for ((dayType, shiftMinutes) in descriptors) {
+            // Honor schedule_rules: skip if line is CLOSED at the current time.
+            // Without this, the projector emits departures from any band whose
+            // window contains "now", even when the line operating window doesn't.
+            val rule = bundle.rules.firstOrNull { it.dayType == dayType } ?: continue
+            if (!rule.is247) {
+                val openMin = rule.openTime.toMinutesOfDay()
+                val closeMin = rule.closeTime.toMinutesOfDay()
+                if (openMin != null && closeMin != null) {
+                    val effectiveClose = if (closeMin <= openMin) closeMin + 24 * 60 else closeMin
+                    val effectiveNow = nowMinutes + shiftMinutes
+                    if (effectiveNow < openMin || effectiveNow > effectiveClose) continue
+                }
+            }
+
             val bands = bundle.bands.filter { it.dayType == dayType }
                 .sortedBy { it.timeStart.toMinutesOfDay() ?: 0 }
             for (band in bands) {
