@@ -404,7 +404,7 @@ def lines_page(_: str = Depends(auth)) -> HTMLResponse:
         f"<td>{r['name_en']}</td><td>{r['name_el']}</td>"
         f"<td><span style='background:{r['color']};padding:2px 10px;color:#fff'>{r['color']}</span></td>"
         f"<td>{r['terminal_a']} → {r['terminal_b']}</td>"
-        f"<td><a href='/lines/{r['id']}/edit'>edit</a></td></tr>"
+        f"<td><a href='{ADMIN_PREFIX}/lines/{r['id']}/edit'>edit</a></td></tr>"
         for r in rows
     )
     return page(
@@ -782,27 +782,17 @@ def operators_page(_: str = Depends(auth)) -> HTMLResponse:
     status_opts = ("awaiting_partnership", "in_discussion", "enabled", "disabled", "broken")
     auth_opts = ("none", "bearer", "basic", "header_key")
     feed_opts = ("live_arrivals", "live_positions", "service_alerts", "gtfs_realtime")
-    tr = "".join(
-        f"<tr><form method=post action={ADMIN_PREFIX}/operators/save>"
-        f"<input type=hidden name=id value={r['id']}>"
-        f"<td><strong>{r['operator_name']}</strong><br><span class=small><code>{r['operator_id']}</code></span></td>"
-        f"<td><select name=feed_kind>{''.join(f'<option {chr(34) + chr(34) if k != r[chr(34)+chr(34) + chr(34) + chr(34) + chr(34)+chr(34)] else chr(34) + chr(34)} value={chr(34)}{k}{chr(34)} {chr(34) + chr(34) if k != r[chr(34)+chr(34) + chr(34) + chr(34) + chr(34)+chr(34)] else chr(34) + chr(34)}>{k}</option>' for k in feed_opts)}</select></td>"
-        f"<td><input name=feed_url value='{r['feed_url'] or ''}' placeholder='https://...' size=36></td>"
-        f"<td><select name=auth_method>{''.join(f'<option value={chr(34)}{a}{chr(34)} {chr(34)+chr(34) if a == r[chr(34)+chr(34)+chr(34)+chr(34)+chr(34)+chr(34)] else chr(34) + chr(34)}>{a}</option>' for a in auth_opts)}</select></td>"
-        f"<td><input name=auth_credential type=password placeholder='set to update' size=18></td>"
-        f"<td><input name=refresh_seconds type=number value={r['refresh_seconds']} min=5 max=3600 style=width:5em></td>"
-        f"<td><select name=status>{''.join(f'<option value={chr(34)}{s}{chr(34)} {chr(34) if s == r[chr(34)+chr(34)+chr(34)+chr(34)+chr(34)+chr(34)] else chr(34) + chr(34)}>{s}</option>' for s in status_opts)}</select></td>"
-        f"<td><button>save</button></form></tr>"
-        for r in rows
-    )
-    # The above f-string is ugly; rebuild simply.
+    # Build the editable rows for each operator partner. We collapsed the
+    # original messy single-f-string approach (it called r[""] which throws
+    # KeyError -> 500) into a per-row builder that's easier to read and
+    # actually works.
     parts = []
     for r in rows:
         feed_sel = "".join(f'<option value="{k}" {"selected" if k == r["feed_kind"] else ""}>{k}</option>' for k in feed_opts)
         auth_sel = "".join(f'<option value="{a}" {"selected" if a == r["auth_method"] else ""}>{a}</option>' for a in auth_opts)
         status_sel = "".join(f'<option value="{s}" {"selected" if s == r["status"] else ""}>{s}</option>' for s in status_opts)
         parts.append(
-            "<tr><form method=post action={ADMIN_PREFIX}/operators/save>"
+            f"<tr><form method=post action={ADMIN_PREFIX}/operators/save>"
             f"<input type=hidden name=id value={r['id']}>"
             f"<td><strong>{r['operator_name']}</strong><br><span class=small><code>{r['operator_id']}</code></span></td>"
             f"<td><select name=feed_kind>{feed_sel}</select></td>"
