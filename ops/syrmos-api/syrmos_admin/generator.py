@@ -317,6 +317,32 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
         " contactless_methods, contactless_locations, notes_en, notes_el, updated_at"
         " FROM fares ORDER BY operator_id"
     ).fetchall()
+    # Per-ticket catalogue scraped from OASA. Optional table; may not exist
+    # on older Pis until migration 0008 runs.
+    try:
+        product_rows = conn.execute(
+            "SELECT section, title_en, title_el, full_price_eur,"
+            " discounted_price_eur, validity, notes, tags, source_url,"
+            " sort_order, fetched_at"
+            " FROM fare_products ORDER BY section, sort_order"
+        ).fetchall()
+    except sqlite3.OperationalError:
+        product_rows = []
+    products = [
+        {
+            "section":            r["section"],
+            "titleEn":            r["title_en"],
+            "titleEl":            r["title_el"] or "",
+            "fullPriceEur":       r["full_price_eur"],
+            "discountedPriceEur": r["discounted_price_eur"],
+            "validity":           r["validity"] or "",
+            "notes":              r["notes"] or "",
+            "tags":               [t for t in (r["tags"] or "").split(",") if t],
+            "sourceUrl":          r["source_url"],
+            "fetchedAt":          r["fetched_at"],
+        }
+        for r in product_rows
+    ]
     return {
         "updatedAt": _now_iso(),
         "fares": [
@@ -334,6 +360,7 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             }
             for r in rows
         ],
+        "products": products,
     }
 
 

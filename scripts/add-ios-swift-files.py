@@ -26,6 +26,8 @@ FILES_TO_ADD = [
     ("Models/SyrmosTrainTimestampsStore.swift", "Models"),
     ("Views/TimetablesIcons.swift", "Views"),
     ("Models/SyrmosStationOffsetsStore.swift", "Models"),
+    ("Models/SyrmosFaresStore.swift", "Models"),
+    ("Views/FaresView.swift", "Views"),
 ]
 
 

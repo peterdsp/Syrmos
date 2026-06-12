@@ -68,6 +68,19 @@ class SyrmosSchedulesService(
         emit(payload)
     }
 
+    /**
+     * OASA fare catalogue scraped from oasa.gr/en/tickets/prices-of-products/.
+     * Drives the native Tickets screen on iOS / Android / Web in place of the
+     * old "open OASA website in a SafariSheet" flow.
+     */
+    fun fetchFares(): Flow<FaresPayload?> = flow {
+        val payload = runCatching {
+            val response = httpClient.get(FARES_URL)
+            json.decodeFromString<FaresPayload>(response.bodyAsText())
+        }.getOrNull()
+        emit(payload)
+    }
+
     sealed interface ManifestResult {
         data object NotModified : ManifestResult
         data class Fresh(val manifest: Manifest) : ManifestResult
@@ -135,10 +148,30 @@ class SyrmosSchedulesService(
         @SerialName("minutesFromOrigin") val minutesFromOrigin: Int = 0,
     )
 
+    @Serializable
+    data class FaresPayload(
+        @SerialName("updatedAt") val updatedAt: String = "",
+        val products: List<FareProduct> = emptyList(),
+    )
+
+    @Serializable
+    data class FareProduct(
+        val section: String,
+        @SerialName("titleEn") val titleEn: String,
+        @SerialName("titleEl") val titleEl: String = "",
+        @SerialName("fullPriceEur") val fullPriceEur: Double? = null,
+        @SerialName("discountedPriceEur") val discountedPriceEur: Double? = null,
+        val validity: String = "",
+        val notes: String = "",
+        val tags: List<String> = emptyList(),
+        @SerialName("sourceUrl") val sourceUrl: String = "",
+    )
+
     private companion object {
         private const val BASE = "https://api-syrmos.peterdsp.dev"
         private const val MANIFEST_URL = "$BASE/api/schedules/manifest"
         private const val LINE_URL_PREFIX = "$BASE/api/schedules/"
         private const val STATION_OFFSETS_URL = "$BASE/api/station-offsets"
+        private const val FARES_URL = "$BASE/api/fares"
     }
 }

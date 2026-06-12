@@ -111,6 +111,7 @@ struct ContentView: View {
             await SyrmosVisualOverridesStore.shared.refresh()
             await SyrmosTrainTimestampsStore.shared.refresh()
             await SyrmosStationOffsetsStore.shared.refresh()
+            await SyrmosFaresStore.shared.refresh()
         }
         .onChange(of: selectedTab) { _, newTab in
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")
