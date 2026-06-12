@@ -1,0 +1,47 @@
+version = 1
+SPDX-PackageName = "Syrmos"
+SPDX-PackageSupplier = "Petros Dhespollari <info@peterdsp.dev>"
+SPDX-PackageDownloadLocation = "https://github.com/peterdsp/Syrmos"
+
+# Source code — BSD 3-Clause
+[[annotations]]
+path = [
+    "**.kt",
+    "**.swift",
+    "**.py",
+    "**.js",
+    "**.ts",
+    "**.sh",
+    "**.gradle.kts",
+    "**.gradle",
+    "**.kts",
+    "**.cfg",
+    "**.toml",
+    "**.yml",
+    "**.yaml",
+    "**.json",
+    "**.xcconfig",
+    "**.entitlements",
+    "**.properties",
+    "**.plist",
+    "Dockerfile",
+    "Caddyfile",
+    "*.conf",
+    "*.sql",
+]
+SPDX-FileCopyrightText = "2026 Petros Dhespollari"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+# Documentation + screenshots + reference package — CC BY-SA 4.0
+[[annotations]]
+path = [
+    "README.md",
+    "NOTICE",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "docs/**",
+    "assets/athens-transit-package/**",
+]
+SPDX-FileCopyrightText = "2026 Petros Dhespollari"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
