@@ -17,10 +17,10 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     welcomeSection
+                    alertsSection
                     networkOverview
                     nearMeSection
                     liveTrainsSection
-                    alertsSection
                     linesSection
                 }
                 .padding()

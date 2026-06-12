@@ -47,6 +47,7 @@ import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.network.STASYAnnouncement
+import com.syrmos.core.network.STASYServiceStatus
 
 @Composable
 fun HomeScreen(
@@ -73,21 +74,9 @@ fun HomeScreen(
             )
         }
 
-        item {
-            NetworkOverview(lines = uiState.lines, lang = lang)
-        }
-
-        if (uiState.nearestStations.isNotEmpty()) {
-            item {
-                NearbyStationsSection(
-                    stations = uiState.nearestStations,
-                    lines = uiState.lines,
-                    lang = lang,
-                    onStationClick = onStationClick,
-                )
-            }
-        }
-
+        // Section order mirrors iOS: alerts/news + service status appear
+        // immediately under the welcome subtitle so users see operational
+        // state before any of the navigation tiles.
         val alerts = uiState.announcements.filter { it.isServiceAlert }
         if (alerts.isNotEmpty()) {
             item {
@@ -103,6 +92,27 @@ fun HomeScreen(
                     announcement = uiState.announcements.first(),
                     lang = lang,
                     onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+
+        if (uiState.serviceStatus != null) {
+            item {
+                ServiceStatusPill(status = uiState.serviceStatus, lang = lang)
+            }
+        }
+
+        item {
+            NetworkOverview(lines = uiState.lines, lang = lang)
+        }
+
+        if (uiState.nearestStations.isNotEmpty()) {
+            item {
+                NearbyStationsSection(
+                    stations = uiState.nearestStations,
+                    lines = uiState.lines,
+                    lang = lang,
+                    onStationClick = onStationClick,
                 )
             }
         }
@@ -245,6 +255,39 @@ private fun StatCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun ServiceStatusPill(
+    status: STASYServiceStatus,
+    lang: AppLanguage,
+) {
+    val message = if (lang == AppLanguage.GREEK) status.rawMessage else status.rawMessageEn
+    if (message.isBlank()) return
+    val bg = if (status.isAlert) Color(0x1FFF9800) else Color(0x1A4CAF50)
+    val accent = if (status.isAlert) Color(0xFFE65100) else Color(0xFF2E7D32)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(bg)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = if (status.isAlert) "⚠" else "✓",
+            style = MaterialTheme.typography.labelLarge,
+            color = accent,
+        )
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
