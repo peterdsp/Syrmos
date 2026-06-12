@@ -5,6 +5,7 @@ struct StationDetailView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var departures: [Departure] = []
     @State private var nowTick = Date()
+    @State private var showMapSheet = false
 
     // Recompute departures every 15 seconds so the "5 min / 10 min" countdowns
     // tick down in real time while the user is viewing this screen.
@@ -13,27 +14,38 @@ struct StationDetailView: View {
     var body: some View {
         List {
             Section(loc[.stations]) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(loc.language == .greek ? station.name : station.nameEl)
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
+                Button {
+                    showMapSheet = true
+                } label: {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(loc.language == .greek ? station.name : station.nameEl)
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
 
-                    HStack(spacing: 8) {
-                        ForEach(station.lineIds, id: \.self) { lineId in
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(SyrmosData.lineColor(for: lineId))
-                                    .frame(width: 10, height: 10)
-                                Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                                    .font(.caption)
+                            HStack(spacing: 8) {
+                                ForEach(station.lineIds, id: \.self) { lineId in
+                                    HStack(spacing: 4) {
+                                        Circle()
+                                            .fill(SyrmosData.lineColor(for: lineId))
+                                            .frame(width: 10, height: 10)
+                                        Text(SyrmosData.line(for: lineId)?.name ?? lineId)
+                                            .font(.caption)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                                    .clipShape(Capsule())
+                                }
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color(uiColor: .tertiarySystemGroupedBackground))
-                            .clipShape(Capsule())
                         }
+                        Spacer()
+                        Image(systemName: "map.fill")
+                            .font(.title3)
+                            .foregroundStyle(.tertiary)
                     }
                 }
+                .buttonStyle(.plain)
             }
 
             if station.isInterchange {
@@ -123,6 +135,9 @@ struct StationDetailView: View {
         .onReceive(refreshTimer) { _ in
             nowTick = Date()
             departures = currentDepartures()
+        }
+        .sheet(isPresented: $showMapSheet) {
+            StationMapSheet(station: station)
         }
     }
 
