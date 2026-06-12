@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Syrmos Timetables — Athens Suburban</title>
+<meta name="description" content="Official Hellenic Train suburban timetables (A1, A2, A3, A4). Parsed daily from PDFs.">
+<meta name="theme-color" content="#0072CE">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #f1f3f6;
+  --border: #e3e6ea;
+  --text: #0f1115;
+  --text-muted: #5b6470;
+  --accent: #0072ce;
+  --accent-soft: rgba(0, 114, 206, 0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 18px rgba(0,0,0,0.04);
+  /* Per-line colors mirror the apps. */
+  --c-a1: #7e22ce;
+  --c-a2: #a855f7;
+  --c-a3: #6366f1;
+  --c-a4: #4f46e5;
+  --c-m1: #1b9e3e;
+  --c-m2: #e11d48;
+  --c-m3: #0072ce;
+  --c-t6: #f97316;
+  --c-t7: #ea580c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0c0f;
+    --panel: #14171c;
+    --panel-2: #1c2026;
+    --border: #2a2f37;
+    --text: #f4f5f7;
+    --text-muted: #9aa0a6;
+    --accent-soft: rgba(78, 164, 255, 0.18);
+    --shadow: 0 1px 2px rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.4);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.45; }
+
+/* Header */
+.topbar { position: sticky; top: 0; z-index: 10; background: var(--panel); border-bottom: 1px solid var(--border); }
+.topbar-inner { max-width: 1180px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; text-decoration: none; color: var(--text); }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.brand-sub { font-weight: 500; color: var(--text-muted); margin-left: 6px; }
+.meta-pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--panel-2); border-radius: 999px; font-size: 12px; color: var(--text-muted); }
+.meta-pill strong { color: var(--text); font-weight: 600; }
+
+.shell { max-width: 1180px; margin: 0 auto; padding: 24px 20px 80px; }
+h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.lede { color: var(--text-muted); margin: 0 0 24px; max-width: 720px; }
+
+/* Filter bar */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  margin-bottom: 22px;
+}
+.filter-group label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 6px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .12s, border-color .12s, color .12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip:hover { background: var(--border); }
+.chip.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.chip .swatch { width: 8px; height: 8px; border-radius: 50%; }
+.search-input {
+  width: 100%;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font: inherit;
+  outline: none;
+}
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* Summary */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.stat-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+
+/* Train cards */
+.train-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+.train-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.train-card__head {
+  display: flex; align-items: center; gap: 10px; justify-content: space-between;
+}
+.train-card__title {
+  display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;
+}
+.line-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.train-card__meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; }
+.dir-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.train-card__route {
+  font-size: 13.5px;
+  color: var(--text);
+}
+.train-card__route strong { color: var(--accent); }
+.train-card__stops {
+  font-size: 12.5px;
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+.train-card.is-expanded .train-card__stops { max-height: 800px; }
+.stop-row {
+  display: flex; justify-content: space-between; gap: 12px;
+  color: var(--text);
+}
+.stop-row time { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.train-card__toggle {
+  margin-top: 4px;
+  align-self: flex-start;
+  background: transparent;
+  color: var(--accent);
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.train-card__toggle:hover { text-decoration: underline; }
+
+.empty {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-muted);
+}
+footer { color: var(--text-muted); font-size: 12px; margin-top: 40px; text-align: center; }
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="https://syrmos.peterdsp.dev"><span class="brand-dot"></span>Syrmos<span class="brand-sub">timetables</span></a>
+    <div class="meta-pill">Updated <strong id="updatedAt">…</strong></div>
+  </div>
+</header>
+<main class="shell">
+  <h1>Suburban timetables</h1>
+  <p class="lede">Every Hellenic Train suburban departure for Athens (A1, A2, A3, A4), parsed straight from the operator's official PDFs. Filter by line, day, and destination.</p>
+
+  <section class="filters">
+    <div class="filter-group">
+      <label>Line</label>
+      <div class="chip-row" id="lineFilters"></div>
+    </div>
+    <div class="filter-group">
+      <label>Day</label>
+      <div class="chip-row" id="dayFilters"></div>
+    </div>
+    <div class="filter-group">
+      <label>Direction</label>
+      <div class="chip-row" id="directionFilters"></div>
+    </div>
+    <div class="filter-group">
+      <label>Search station</label>
+      <input class="search-input" id="search" type="search" placeholder="Piraeus, Doukissis, Airport…" />
+    </div>
+  </section>
+
+  <section class="summary" id="summary"></section>
+  <section class="train-grid" id="trainGrid"></section>
+  <div class="empty" id="empty" hidden>No trains match these filters.</div>
+</main>
+<footer>
+  Data: <a href="https://www.hellenictrain.gr/en/athens-suburban-and-regional-railway" target="_blank" rel="noopener">Hellenic Train</a>
+  · Raw JSON: <a href="/api/train-timestamps">/api/train-timestamps</a>
+  · Built with Syrmos
+</footer>
+
+<script>
+const LINE_COLORS = { A1: 'var(--c-a1)', A2: 'var(--c-a2)', A3: 'var(--c-a3)', A4: 'var(--c-a4)' };
+const LINE_LABELS = {
+  A1: 'A1 Piraeus ↔ Airport',
+  A2: 'A2 Ano Liosia ↔ Airport',
+  A3: 'A3 Athens ↔ Chalkida',
+  A4: 'A4 Piraeus ↔ Kiato',
+};
+const DAY_LABELS = { mon_fri: 'Mon–Fri', weekend: 'Weekend', all: 'All days' };
+const DIRECTION_LABELS = { outbound: 'Outbound', inbound: 'Inbound', both: 'Both directions', extension: 'Extension' };
+
+const state = { trains: [], updatedAt: '', lineId: 'A1', dayType: 'mon_fri', direction: 'all', search: '' };
+
+async function load() {
+  try {
+    const r = await fetch('/api/train-timestamps', { headers: { Accept: 'application/json' } });
+    const data = await r.json();
+    state.trains = data.trains || [];
+    state.updatedAt = data.updatedAt || '';
+    document.getElementById('updatedAt').textContent = state.updatedAt ? new Date(state.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    buildFilters();
+    render();
+  } catch (e) {
+    document.getElementById('trainGrid').innerHTML = `<div class="empty">Could not load timetables. ${e}</div>`;
+  }
+}
+
+function buildFilters() {
+  const linesPresent = Array.from(new Set(state.trains.map(t => t.lineId))).sort();
+  const lineRow = document.getElementById('lineFilters');
+  lineRow.innerHTML = '';
+  for (const lid of linesPresent) {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (state.lineId === lid ? ' is-active' : '');
+    chip.dataset.value = lid;
+    chip.innerHTML = `<span class="swatch" style="background:${LINE_COLORS[lid] || 'var(--accent)'}"></span>${LINE_LABELS[lid] || lid}`;
+    chip.onclick = () => { state.lineId = lid; updateChips(lineRow, lid); render(); };
+    lineRow.appendChild(chip);
+  }
+
+  const dayRow = document.getElementById('dayFilters');
+  dayRow.innerHTML = '';
+  for (const dt of ['mon_fri', 'weekend', 'all']) {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (state.dayType === dt ? ' is-active' : '');
+    chip.dataset.value = dt;
+    chip.textContent = DAY_LABELS[dt];
+    chip.onclick = () => { state.dayType = dt; updateChips(dayRow, dt); render(); };
+    dayRow.appendChild(chip);
+  }
+
+  const dirRow = document.getElementById('directionFilters');
+  dirRow.innerHTML = '';
+  for (const dir of ['all', 'outbound', 'inbound', 'both']) {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (state.direction === dir ? ' is-active' : '');
+    chip.dataset.value = dir;
+    chip.textContent = dir === 'all' ? 'All' : DIRECTION_LABELS[dir];
+    chip.onclick = () => { state.direction = dir; updateChips(dirRow, dir); render(); };
+    dirRow.appendChild(chip);
+  }
+
+  document.getElementById('search').oninput = (e) => { state.search = e.target.value.trim().toLowerCase(); render(); };
+}
+
+function updateChips(row, active) {
+  for (const c of row.querySelectorAll('.chip')) {
+    c.classList.toggle('is-active', c.dataset.value === active);
+  }
+}
+
+function filtered() {
+  return state.trains.filter(t => {
+    if (state.lineId && t.lineId !== state.lineId) return false;
+    if (state.dayType && t.dayType !== state.dayType && t.dayType !== 'all') return false;
+    if (state.direction !== 'all' && t.direction !== state.direction) return false;
+    if (state.search) {
+      const hit = t.stops.some(s => (s.stationNameEn || '').toLowerCase().includes(state.search) || (s.stationNameEl || '').toLowerCase().includes(state.search));
+      if (!hit) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  const trains = filtered();
+  const summary = document.getElementById('summary');
+  summary.innerHTML = '';
+  const stats = [
+    { label: 'Trains shown', value: trains.length },
+    { label: 'Stations served', value: new Set(trains.flatMap(t => t.stops.map(s => s.stationNameEn))).size },
+    { label: 'First departure', value: trains[0]?.firstTime || '—' },
+    { label: 'Last departure', value: trains[trains.length - 1]?.firstTime || '—' },
+  ];
+  for (const s of stats) {
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.innerHTML = `<div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div>`;
+    summary.appendChild(card);
+  }
+
+  const grid = document.getElementById('trainGrid');
+  grid.innerHTML = '';
+  document.getElementById('empty').hidden = trains.length > 0;
+  for (const t of trains) {
+    const card = document.createElement('article');
+    card.className = 'train-card';
+    const first = t.stops[0];
+    const last = t.stops[t.stops.length - 1];
+    card.innerHTML = `
+      <div class="train-card__head">
+        <div class="train-card__title">
+          <span class="line-badge" style="background:${LINE_COLORS[t.lineId] || 'var(--accent)'}">${t.lineId}</span>
+          Train ${t.trainNo}
+        </div>
+        <div class="train-card__meta">
+          <span class="dir-pill">${DIRECTION_LABELS[t.direction] || t.direction}</span>
+          <span>${DAY_LABELS[t.dayType] || t.dayType}</span>
+        </div>
+      </div>
+      <div class="train-card__route">
+        <strong>${first.time}</strong> ${escapeHtml(first.stationNameEn)} → <strong>${last.time}</strong> ${escapeHtml(last.stationNameEn)}
+        <div class="small" style="color: var(--text-muted); font-size:12px;">${t.stops.length} stops</div>
+      </div>
+      <div class="train-card__stops">${t.stops.map(s => `<div class="stop-row"><span>${escapeHtml(s.stationNameEn)}</span><time>${s.time}</time></div>`).join('')}</div>
+      <button class="train-card__toggle">Show all stops</button>
+    `;
+    const toggle = card.querySelector('.train-card__toggle');
+    toggle.onclick = () => {
+      const expanded = card.classList.toggle('is-expanded');
+      toggle.textContent = expanded ? 'Hide stops' : 'Show all stops';
+    };
+    grid.appendChild(card);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+load();
+</script>
+</body>
+</html>
