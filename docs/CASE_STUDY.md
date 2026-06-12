@@ -453,7 +453,7 @@ The fix is in the `<head>` of `index.html` shipped on 2026-06-12. Three layers:
 
 1. **Discovery basics** — proper title with "Syrmos — Athens Metro, Tram & Suburban Departures", a 320-char description, canonical URL, `robots.txt`, `sitemap.xml`
 2. **Social preview** — Open Graph + Twitter Card tags so a paste of the URL into Slack/LinkedIn/Discord renders a card with the right title, description, and favicon
-3. **Knowledge graph** — A single JSON-LD `@graph` with five typed entities: a `WebApplication` for the website, two `MobileApplication` entries (one per store), a `Person` for the developer, and a `SoftwareSourceCode` pointing at the GitHub repo. The `MobileApplication` entries include `downloadUrl` pointing at App Store id `6753050019` and Play Store id `com.syrmos.android`. Google's Knowledge Graph builder uses exactly this shape to construct the right-hand panel that shows the app + store buttons + developer + repo
+3. **Knowledge graph** — A single JSON-LD `@graph` with five typed entities: a `WebApplication` for the website, two `MobileApplication` entries (one per store), a `Person` for the developer, and a `SoftwareSourceCode` pointing at the GitHub repo. The `MobileApplication` entries include `downloadUrl` pointing at App Store id `6777650671` and Play Store id `com.syrmos.android`. Google's Knowledge Graph builder uses exactly this shape to construct the right-hand panel that shows the app + store buttons + developer + repo
 
 Plus: Apple's `apple-itunes-app` and Chrome's `google-play-app` smart banners; a `manifest.webmanifest` with `related_applications` (which Chromium-based browsers use to prompt "install the native app instead"); and two store badges (the official SVGs) in the header brand block linking to both stores.
 
