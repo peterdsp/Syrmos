@@ -41,6 +41,7 @@ import com.syrmos.app.tab.SettingsTab
 import com.syrmos.app.tab.TimetablesTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
+import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
@@ -53,6 +54,7 @@ fun SyrmosApp() {
     val linesRefresher = koinInject<LinesRefresher>()
     val scheduleSync = koinInject<ScheduleSyncRepository>()
     val stationOffsets = koinInject<StationOffsetsRepository>()
+    val fares = koinInject<FaresRepository>()
     val visualOverrides = koinInject<VisualOverridesRepository>()
     var isSeeded by remember { mutableStateOf(false) }
 
@@ -68,10 +70,12 @@ fun SyrmosApp() {
         // overlays anything newer when the network is available.
         runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
         runCatching { stationOffsets.hydrateFromBundleIfNeeded() }
+        runCatching { fares.hydrateFromBundleIfNeeded() }
         runCatching { visualOverrides.hydrateFromBundleIfNeeded() }
         runCatching { linesRefresher.refresh() }
         runCatching { scheduleSync.refresh() }
         runCatching { stationOffsets.refresh() }
+        runCatching { fares.refresh() }
         runCatching { visualOverrides.refresh() }
     }
 

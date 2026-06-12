@@ -46,12 +46,19 @@ import org.koin.compose.koinInject
 fun SettingsScreen() {
     val lang by LocalizationManager.language.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
+    var showFares by remember { mutableStateOf(false) }
     val scheduleSync = koinInject<ScheduleSyncRepository>()
     val lastSync by scheduleSync.lastSyncAt.collectAsState()
     val offlineOnly by scheduleSync.offlineOnly.collectAsState()
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
     val scope = rememberCoroutineScope()
+
+    // Native OASA tickets catalogue takes over the whole tab when shown.
+    if (showFares) {
+        FaresScreen(onBack = { showFares = false })
+        return
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -156,6 +163,16 @@ fun SettingsScreen() {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp))
                     }
                 }
+            }
+        }
+
+        item {
+            SettingsSection(title = if (lang == AppLanguage.GREEK) "Εισιτήρια" else "Tickets") {
+                SettingsRow(
+                    title = if (lang == AppLanguage.GREEK) "Τιμοκατάλογος OASA" else "Ticket prices (OASA)",
+                    value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
+                    onClick = { showFares = true },
+                )
             }
         }
 

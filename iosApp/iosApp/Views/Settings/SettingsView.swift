@@ -53,8 +53,8 @@ struct SyrmosSettingsView: View {
                 }
 
                 Section {
-                    Button {
-                        safariURL = URL(string: "https://www.oasa.gr/en/tickets/prices-of-products/")
+                    NavigationLink {
+                        FaresView()
                     } label: {
                         Label(
                             loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων (OASA)" : "Ticket prices (OASA)",
