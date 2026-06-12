@@ -6,21 +6,17 @@ import MapKit
 /// lines that serve this station, only this station's marker (no neighbouring
 /// stations from the line), and a Get directions button that hands off to
 /// Apple Maps.
+///
+/// Implementation note: we wrap MKMapView directly via UIViewRepresentable
+/// rather than SwiftUI's `Map` because the SwiftUI variant combined with
+/// `presentationDetents` had a lifecycle bug where the underlying CAMetalLayer
+/// stopped rendering after a screenshot or sheet dismiss/re-present cycle,
+/// turning the whole app's window black until cold launch. UIViewRepresentable
+/// gives us deterministic teardown.
 struct StationMapSheet: View {
     let station: TransitStation
     @ObservedObject private var loc = LocalizationManager.shared
     @Environment(\.dismiss) private var dismiss
-
-    @State private var position: MapCameraPosition
-
-    init(station: TransitStation) {
-        self.station = station
-        let region = MKCoordinateRegion(
-            center: station.coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.012, longitudeDelta: 0.012)
-        )
-        _position = State(initialValue: .region(region))
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,17 +42,9 @@ struct StationMapSheet: View {
             .padding(.top, 8)
             .padding(.bottom, 12)
 
-            Map(position: $position) {
-                ForEach(routePolylines, id: \.id) { route in
-                    MapPolyline(coordinates: route.coordinates)
-                        .stroke(route.color, lineWidth: route.lineWeight)
-                }
-                Annotation(station.name, coordinate: station.coordinate) {
-                    StationMarker(station: station)
-                }
-            }
-            .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
-            .frame(maxWidth: .infinity)
+            StationFocusedMap(station: station, routes: routePolylines)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 240)
 
             VStack(spacing: 10) {
                 HStack(spacing: 8) {
@@ -92,13 +80,10 @@ struct StationMapSheet: View {
             .padding()
         }
         .background(Color.syrmosBackground.ignoresSafeArea())
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 
-    /// Polylines for every line that serves this station, restricted to the
-    /// segment that passes through here. Using the same Catmull-Rom path the
-    /// main MapView uses, filtered by line id.
     private var routePolylines: [RouteLine] {
         station.lineIds.compactMap { lineId in
             PreloadedData.routeLines.first { $0.id == lineId }
@@ -115,21 +100,80 @@ struct StationMapSheet: View {
     }
 }
 
-private struct StationMarker: View {
+/// Stable MKMapView wrapper. Single marker for the focused station, plus
+/// thin polylines for every line that calls here. We deliberately rebuild
+/// overlays on every update (cheap for our scale, avoids stale state).
+private struct StationFocusedMap: UIViewRepresentable {
     let station: TransitStation
+    let routes: [RouteLine]
 
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.white)
-                .frame(width: 28, height: 28)
-                .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
-            Circle()
-                .stroke(SyrmosData.lineColor(for: station.lineIds.first ?? ""), lineWidth: 4)
-                .frame(width: 22, height: 22)
-            Image(systemName: "tram.fill")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(SyrmosData.lineColor(for: station.lineIds.first ?? ""))
+    func makeUIView(context: Context) -> MKMapView {
+        let mv = MKMapView()
+        mv.isPitchEnabled = false
+        mv.isRotateEnabled = false
+        mv.showsCompass = false
+        mv.showsScale = false
+        mv.pointOfInterestFilter = .excludingAll
+        mv.delegate = context.coordinator
+        return mv
+    }
+
+    func updateUIView(_ mv: MKMapView, context: Context) {
+        mv.removeOverlays(mv.overlays)
+        mv.removeAnnotations(mv.annotations)
+
+        for route in routes {
+            let poly = ColoredPolyline(coordinates: route.coordinates, count: route.coordinates.count)
+            poly.color = UIColor(route.color)
+            poly.weight = route.lineWeight
+            mv.addOverlay(poly)
+        }
+
+        let pin = MKPointAnnotation()
+        pin.coordinate = station.coordinate
+        pin.title = station.name
+        mv.addAnnotation(pin)
+
+        let region = MKCoordinateRegion(
+            center: station.coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.012, longitudeDelta: 0.012)
+        )
+        mv.setRegion(region, animated: false)
+    }
+
+    static func dismantleUIView(_ mv: MKMapView, coordinator: Coordinator) {
+        mv.removeOverlays(mv.overlays)
+        mv.removeAnnotations(mv.annotations)
+        mv.delegate = nil
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let p = overlay as? ColoredPolyline {
+                let r = MKPolylineRenderer(polyline: p)
+                r.strokeColor = p.color
+                r.lineWidth = p.weight
+                return r
+            }
+            return MKOverlayRenderer(overlay: overlay)
+        }
+
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            let id = "stationFocused"
+            let v = mapView.dequeueReusableAnnotationView(withIdentifier: id)
+                ?? MKAnnotationView(annotation: annotation, reuseIdentifier: id)
+            v.annotation = annotation
+            v.image = UIImage(systemName: "circle.fill")?
+                .withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
+            v.frame.size = CGSize(width: 18, height: 18)
+            return v
         }
     }
+}
+
+private final class ColoredPolyline: MKPolyline {
+    var color: UIColor = .systemBlue
+    var weight: CGFloat = 4
 }

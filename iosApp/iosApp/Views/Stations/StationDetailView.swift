@@ -6,6 +6,7 @@ struct StationDetailView: View {
     @State private var departures: [Departure] = []
     @State private var nowTick = Date()
     @State private var showMapSheet = false
+    @State private var safariURL: URL?
 
     // Recompute departures every 15 seconds so the "5 min / 10 min" countdowns
     // tick down in real time while the user is viewing this screen.
@@ -61,7 +62,9 @@ struct StationDetailView: View {
 
             if isSuburbanStation {
                 Section {
-                    Link(destination: URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")!) {
+                    Button {
+                        safariURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")
+                    } label: {
                         Label(
                             loc.language == .greek ? "Αγορά εισιτηρίου στην Hellenic Train" : "Buy ticket on Hellenic Train",
                             systemImage: "ticket"
@@ -139,6 +142,7 @@ struct StationDetailView: View {
         .sheet(isPresented: $showMapSheet) {
             StationMapSheet(station: station)
         }
+        .inAppSafari(url: $safariURL)
     }
 
     /// True when this station belongs to a Hellenic Train suburban line (A1-A4).
