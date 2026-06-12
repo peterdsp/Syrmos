@@ -535,7 +535,7 @@ private fun AlertCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = announcement.title,
+                text = if (lang == AppLanguage.GREEK) announcement.title else announcement.titleEn,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 maxLines = if (isExpanded) Int.MAX_VALUE else 3,

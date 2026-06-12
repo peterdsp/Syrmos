@@ -159,35 +159,50 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     """STASY homepage status + announcement feed. Tables are optional
     (migration 0009 may not have run yet on an older Pi); return a sane
     empty payload in that case so the apps still get a clean 200 response."""
-    try:
-        status_row = conn.execute(
-            "SELECT status, raw_message, service_until, scraped_at FROM stasy_status WHERE id = 1"
-        ).fetchone()
-    except sqlite3.OperationalError:
-        status_row = None
-    try:
-        rows = conn.execute(
-            "SELECT id, title, summary, url, date, category"
-            " FROM announcements ORDER BY sort_order"
-        ).fetchall()
-    except sqlite3.OperationalError:
-        rows = []
+    # Pull EN columns if migration 0010 ran; older Pis may still have the
+    # bare schema, in which case we fall back to GR text in *_en fields.
+    def _safe_select(sql_with_en: str, sql_legacy: str):
+        try:
+            return conn.execute(sql_with_en).fetchall(), True
+        except sqlite3.OperationalError:
+            try:
+                return conn.execute(sql_legacy).fetchall(), False
+            except sqlite3.OperationalError:
+                return [], False
 
-    status_payload = (
-        {
+    status_rows, _ = _safe_select(
+        "SELECT status, raw_message, raw_message_en, service_until, scraped_at"
+        " FROM stasy_status WHERE id = 1",
+        "SELECT status, raw_message, service_until, scraped_at"
+        " FROM stasy_status WHERE id = 1",
+    )
+    status_row = status_rows[0] if status_rows else None
+    rows, has_en = _safe_select(
+        "SELECT id, title, title_en, summary, summary_en, url, date, category"
+        " FROM announcements ORDER BY sort_order",
+        "SELECT id, title, summary, url, date, category"
+        " FROM announcements ORDER BY sort_order",
+    )
+
+    if status_row:
+        cols = status_row.keys()
+        status_payload = {
             "status": status_row["status"],
             "rawMessage": status_row["raw_message"],
+            "rawMessageEn": status_row["raw_message_en"] if "raw_message_en" in cols else status_row["raw_message"],
             "serviceUntil": status_row["service_until"],
             "scrapedAt": status_row["scraped_at"],
         }
-        if status_row
-        else {"status": "unknown", "rawMessage": "", "serviceUntil": None, "scrapedAt": ""}
-    )
+    else:
+        status_payload = {"status": "unknown", "rawMessage": "", "rawMessageEn": "", "serviceUntil": None, "scrapedAt": ""}
+
     announcements = [
         {
             "id": r["id"],
             "title": r["title"],
+            "titleEn": r["title_en"] if has_en else r["title"],
             "summary": r["summary"],
+            "summaryEn": r["summary_en"] if has_en else r["summary"],
             "url": r["url"],
             "date": r["date"],
             "category": r["category"],
