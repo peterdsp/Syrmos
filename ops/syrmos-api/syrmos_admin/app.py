@@ -307,6 +307,7 @@ img.icon-preview {{
       <a href="{prefix}/stations" class="{c_stations}">Stations</a>
       <a href="{prefix}/operators" class="{c_operators}">Operators</a>
       <a href="{prefix}/sync" class="{c_sync}">Sync</a>
+      <a href="{prefix}/docs" class="{c_docs}">Docs</a>
     </nav>
   </div>
 </header>
@@ -327,6 +328,7 @@ _TAB_KEYS = {
     "stations": "c_stations",
     "operators": "c_operators",
     "sync": "c_sync",
+    "docs": "c_docs",
 }
 
 
@@ -875,6 +877,146 @@ def scrape_run(_: str = Depends(auth)) -> RedirectResponse:
     run_once()
     generator.generate()
     return RedirectResponse(f"{ADMIN_PREFIX}/overrides", status_code=303)
+
+
+# Docs + Publish
+
+@app.get("/docs", response_class=HTMLResponse)
+def docs_page(_: str = Depends(auth)) -> HTMLResponse:
+    """One-page reference for every editable surface and every public API.
+
+    Top action is the Publish button: it runs the JSON generator and the
+    rebuilt snapshots are immediately served by nginx. Apps see the new
+    data on their next /api/schedules/manifest poll without an app
+    release or a git push."""
+    with get_db() as conn:
+        meta = {r["key"]: r["value"] for r in conn.execute("SELECT key,value FROM meta")}
+        counts = {
+            "lines":        conn.execute("SELECT COUNT(*) c FROM lines").fetchone()["c"],
+            "stations":     conn.execute("SELECT COUNT(*) c FROM stations").fetchone()["c"],
+            "rules":        conn.execute("SELECT COUNT(*) c FROM schedule_rules").fetchone()["c"],
+            "bands":        conn.execute("SELECT COUNT(*) c FROM frequency_bands").fetchone()["c"],
+            "holidays":     conn.execute("SELECT COUNT(*) c FROM holiday_rules").fetchone()["c"],
+            "overrides":    conn.execute("SELECT COUNT(*) c FROM date_overrides").fetchone()["c"],
+        }
+        # train_timestamps may not exist on older DBs; guard.
+        try:
+            counts["timestamps"] = conn.execute(
+                "SELECT COUNT(*) c FROM train_timestamps"
+            ).fetchone()["c"]
+        except Exception:
+            counts["timestamps"] = 0
+
+    endpoints = [
+        ("/api/schedules/manifest",
+         "Manifest of every line, with per-line ETag. Apps poll this on cold start and use If-None-Match for 304.",
+         "Sync (Publish), Lines, Frequency bands, Holidays, Overrides"),
+        ("/api/schedules",
+         "Full per-line schedule bundles in one payload. Used by the web client for offline cold-start hydration.",
+         "Sync (Publish), Lines, Frequency bands"),
+        ("/api/schedules/{lineId}",
+         "One line's schedule bundle: rules (open / close) + frequency bands by day_type. lineId is M1, M2, M3, M3_AIR, T6, T7, A1, A2, A3, A4.",
+         "Lines, Frequency bands, Holidays"),
+        ("/api/lines",
+         "Public line catalogue: id, mode, color, terminals, English and Greek names.",
+         "Lines"),
+        ("/api/stations",
+         "Every station the apps render, with WGS84 lat/lng and bilingual names.",
+         "Stations"),
+        ("/api/holidays",
+         "Public holiday calendar with date patterns and the day_type each maps to.",
+         "Holidays"),
+        ("/api/overrides",
+         "Per-date schedule overrides emitted by the 24mmm scraper.",
+         "Overrides"),
+        ("/api/fares",
+         "Contactless payment info + a link to the OASA prices page. Syrmos deliberately stores no prices itself.",
+         "Operators (Fares panel coming)"),
+        ("/api/icons",
+         "Per-station and per-vehicle SVG URLs, with override_url winning over default_url.",
+         "Icons"),
+        ("/api/line-display",
+         "Line stroke color, weight, dash pattern and glow used when the apps render polylines on the map.",
+         "Line drawing"),
+        ("/api/operators",
+         "Operator partner registry: STASY, Hellenic Train, OASA. Includes contact, feed registration status, but never auth credentials.",
+         "Operators"),
+        ("/api/train-timestamps",
+         "Per-train per-station HH:MM timestamps parsed from Hellenic Train PDFs. Apps prefer these over band projection where they exist.",
+         "(Re-ingested by scripts/ingest-train-timestamps.py)"),
+    ]
+    rows = "".join(
+        f"<tr><td><a href='{e[0]}' target='_blank'><code class=small>{e[0]}</code></a></td>"
+        f"<td>{e[1]}</td><td class=small>{e[2]}</td></tr>"
+        for e in endpoints
+    )
+
+    body = f"""
+<div class="card" style="background: linear-gradient(135deg, var(--accent-soft), transparent); border: 1px solid var(--accent);">
+  <h2 style="margin-top:0;">Publish</h2>
+  <p class="small" style="margin: 4px 0 16px;">
+    Regenerates every /api/*.json snapshot from the current DB state and writes
+    them atomically to <code class=small>~/syrmos-api/out</code>. Apps see the
+    change on their next manifest poll, no app release needed.
+  </p>
+  <form method="post" action="{ADMIN_PREFIX}/publish">
+    <button type="submit">Publish changes now</button>
+    <span class="small" style="margin-left: 12px;">
+      Current manifest version: <strong>v{meta.get('version', '?')}</strong>
+      &middot; ETag <code class=small>{meta.get('etag', '')[:12]}…</code>
+      &middot; updated {meta.get('updated_at', '?')}
+    </span>
+  </form>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">What you can edit, where</h3>
+  <table>
+    <tr><th>Surface</th><th>Edit in admin</th><th>Lives at</th><th>Rows</th></tr>
+    <tr><td>Lines + terminals + colors</td><td><a href="{ADMIN_PREFIX}/lines">Lines</a></td><td><code class=small>lines</code></td><td>{counts['lines']}</td></tr>
+    <tr><td>Stations + coordinates</td><td><a href="{ADMIN_PREFIX}/stations">Stations</a></td><td><code class=small>stations</code></td><td>{counts['stations']}</td></tr>
+    <tr><td>Operating hours per day type</td><td><a href="{ADMIN_PREFIX}/frequency-bands">Frequency bands</a></td><td><code class=small>schedule_rules</code></td><td>{counts['rules']}</td></tr>
+    <tr><td>Frequency bands by daypart</td><td><a href="{ADMIN_PREFIX}/frequency-bands">Frequency bands</a></td><td><code class=small>frequency_bands</code></td><td>{counts['bands']}</td></tr>
+    <tr><td>Public holiday rules</td><td><a href="{ADMIN_PREFIX}/holidays">Holidays</a></td><td><code class=small>holiday_rules</code></td><td>{counts['holidays']}</td></tr>
+    <tr><td>Per-date overrides</td><td><a href="{ADMIN_PREFIX}/overrides">Overrides</a></td><td><code class=small>date_overrides</code></td><td>{counts['overrides']}</td></tr>
+    <tr><td>Station + vehicle icons</td><td><a href="{ADMIN_PREFIX}/icons">Icons</a></td><td><code class=small>icons</code></td><td>(file-served)</td></tr>
+    <tr><td>Polyline stroke for the map</td><td><a href="{ADMIN_PREFIX}/line-display">Line drawing</a></td><td><code class=small>line_display</code></td><td>(per line)</td></tr>
+    <tr><td>Operator partner registry</td><td><a href="{ADMIN_PREFIX}/operators">Operators</a></td><td><code class=small>operator_partners</code></td><td>(per feed)</td></tr>
+    <tr><td>Per-train PDF timestamps</td><td>scripts/ingest-train-timestamps.py</td><td><code class=small>train_timestamps</code></td><td>{counts['timestamps']}</td></tr>
+  </table>
+  <p class="small">Editing any of the above and pressing <strong>Publish changes now</strong> at the top of this page is the whole workflow. The phone apps never see uncommitted database state.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Public API endpoints</h3>
+  <table>
+    <tr><th>Endpoint</th><th>What it returns</th><th>Edit surface</th></tr>
+    {rows}
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Workflow</h3>
+  <ol>
+    <li>Open the surface you want to edit from the nav above (Lines, Frequency bands, Stations, etc.).</li>
+    <li>Save your changes inline. Each save writes to the SQLite DB on the Pi.</li>
+    <li>Come back here and press <strong>Publish changes now</strong>. The generator rewrites every <code class=small>~/syrmos-api/out/*.json</code> snapshot atomically and bumps the manifest version + ETag.</li>
+    <li>Apps poll <code class=small>/api/schedules/manifest</code> on cold start, see the bumped version, and pull only the per-line bundles whose hash changed.</li>
+    <li>Iconography, line strokes, fares, operator info propagate the same way.</li>
+  </ol>
+  <p class="small">For PDF-driven suburban schedules, re-run <code class=small>scripts/parse-hellenic-train-pdfs.py</code> and <code class=small>scripts/ingest-train-timestamps.py</code> locally, then come back here and Publish.</p>
+</div>
+"""
+    return page("Docs", body, active="docs")
+
+
+@app.post("/publish")
+def publish(_: str = Depends(auth)) -> RedirectResponse:
+    """Trigger a full snapshot regeneration. Same as Sync > Regenerate JSON,
+    but invoked from the Docs page so a non-engineer admin has one obvious
+    button to push after any edit."""
+    generator.generate()
+    return RedirectResponse(f"{ADMIN_PREFIX}/docs", status_code=303)
 
 
 # Health (unauthenticated)
