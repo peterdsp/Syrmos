@@ -855,7 +855,7 @@ def operators_save(
 
 @app.get("/sync", response_class=HTMLResponse)
 def sync_page(_: str = Depends(auth)) -> HTMLResponse:
-    body = """
+    body = f"""
 <h2>Sync</h2>
 <form method=post action={ADMIN_PREFIX}/sync/regen><button>Regenerate JSON snapshots</button></form>
 <p class=small>Reads the DB and writes lines.json, schedules.json, manifest, holidays, overrides.</p>
