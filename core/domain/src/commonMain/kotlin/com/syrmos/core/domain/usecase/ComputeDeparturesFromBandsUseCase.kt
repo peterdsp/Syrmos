@@ -57,8 +57,10 @@ class ComputeDeparturesFromBandsUseCase(
         val results = mutableListOf<UpcomingDeparture>()
         for (lineId in lineIds) {
             val bundle = bundles[lineId] ?: continue
-            // Resolve the per-station offset once per (line, direction).
-            // STASY offsets use lowercase direction strings.
+            // Resolve the per-station offset for the requested direction
+            // explicitly. Outbound and inbound differ on T6 (33 vs 35 min)
+            // and T7 (54 vs 59 min); using the wrong direction's offset
+            // pushes the displayed countdown off by 2-5 minutes.
             val offsetMinutes = if (stationId != null) {
                 stationOffsets?.offsetFor(
                     lineId = lineId,
