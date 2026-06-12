@@ -1,0 +1,1876 @@
+{
+  "station_icon_label_rule": "Visible label is '<line> <smart station code>'. Generic prefixes like Aghia/Aghios/Agios/Agia/Ag, Neos/Nea, Ano/Kato, Platia, Paleo are skipped where useful. Example: Aghia Varvara -> AV.",
+  "station_icons": [
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Piraeus",
+      "station_code": "PI",
+      "visible_label": "M1 PI",
+      "index": 1,
+      "file": "stations_smart_codes/metro/M1/metro_m1_01_piraeus_pi.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Faliro",
+      "station_code": "FA",
+      "visible_label": "M1 FA",
+      "index": 2,
+      "file": "stations_smart_codes/metro/M1/metro_m1_02_faliro_fa.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Moschato",
+      "station_code": "MO",
+      "visible_label": "M1 MO",
+      "index": 3,
+      "file": "stations_smart_codes/metro/M1/metro_m1_03_moschato_mo.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Kallithea",
+      "station_code": "KA",
+      "visible_label": "M1 KA",
+      "index": 4,
+      "file": "stations_smart_codes/metro/M1/metro_m1_04_kallithea_ka.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Tavros",
+      "station_code": "TA",
+      "visible_label": "M1 TA",
+      "index": 5,
+      "file": "stations_smart_codes/metro/M1/metro_m1_05_tavros_ta.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Petralona",
+      "station_code": "PE",
+      "visible_label": "M1 PE",
+      "index": 6,
+      "file": "stations_smart_codes/metro/M1/metro_m1_06_petralona_pe.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Thissio",
+      "station_code": "TH",
+      "visible_label": "M1 TH",
+      "index": 7,
+      "file": "stations_smart_codes/metro/M1/metro_m1_07_thissio_th.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Monastiraki",
+      "station_code": "MO",
+      "visible_label": "M1 MO",
+      "index": 8,
+      "file": "stations_smart_codes/metro/M1/metro_m1_08_monastiraki_mo.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Omonia",
+      "station_code": "OM",
+      "visible_label": "M1 OM",
+      "index": 9,
+      "file": "stations_smart_codes/metro/M1/metro_m1_09_omonia_om.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Victoria",
+      "station_code": "VI",
+      "visible_label": "M1 VI",
+      "index": 10,
+      "file": "stations_smart_codes/metro/M1/metro_m1_10_victoria_vi.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Attiki",
+      "station_code": "AT",
+      "visible_label": "M1 AT",
+      "index": 11,
+      "file": "stations_smart_codes/metro/M1/metro_m1_11_attiki_at.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Aghios Nikolaos",
+      "station_code": "AN",
+      "visible_label": "M1 AN",
+      "index": 12,
+      "file": "stations_smart_codes/metro/M1/metro_m1_12_aghios_nikolaos_an.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Kato Patissia",
+      "station_code": "KP",
+      "visible_label": "M1 KP",
+      "index": 13,
+      "file": "stations_smart_codes/metro/M1/metro_m1_13_kato_patissia_kp.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Aghios Eleftherios",
+      "station_code": "AE",
+      "visible_label": "M1 AE",
+      "index": 14,
+      "file": "stations_smart_codes/metro/M1/metro_m1_14_aghios_eleftherios_ae.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Ano Patissia",
+      "station_code": "AP",
+      "visible_label": "M1 AP",
+      "index": 15,
+      "file": "stations_smart_codes/metro/M1/metro_m1_15_ano_patissia_ap.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Perissos",
+      "station_code": "PE",
+      "visible_label": "M1 PE",
+      "index": 16,
+      "file": "stations_smart_codes/metro/M1/metro_m1_16_perissos_pe.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Pefkakia",
+      "station_code": "PE",
+      "visible_label": "M1 PE",
+      "index": 17,
+      "file": "stations_smart_codes/metro/M1/metro_m1_17_pefkakia_pe.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Nea Ionia",
+      "station_code": "NI",
+      "visible_label": "M1 NI",
+      "index": 18,
+      "file": "stations_smart_codes/metro/M1/metro_m1_18_nea_ionia_ni.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Iraklio",
+      "station_code": "IR",
+      "visible_label": "M1 IR",
+      "index": 19,
+      "file": "stations_smart_codes/metro/M1/metro_m1_19_iraklio_ir.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Irini",
+      "station_code": "IR",
+      "visible_label": "M1 IR",
+      "index": 20,
+      "file": "stations_smart_codes/metro/M1/metro_m1_20_irini_ir.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Neratziotissa",
+      "station_code": "NE",
+      "visible_label": "M1 NE",
+      "index": 21,
+      "file": "stations_smart_codes/metro/M1/metro_m1_21_neratziotissa_ne.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Maroussi",
+      "station_code": "MA",
+      "visible_label": "M1 MA",
+      "index": 22,
+      "file": "stations_smart_codes/metro/M1/metro_m1_22_maroussi_ma.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "KAT",
+      "station_code": "KA",
+      "visible_label": "M1 KA",
+      "index": 23,
+      "file": "stations_smart_codes/metro/M1/metro_m1_23_kat_ka.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station": "Kifissia",
+      "station_code": "KI",
+      "visible_label": "M1 KI",
+      "index": 24,
+      "file": "stations_smart_codes/metro/M1/metro_m1_24_kifissia_ki.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Anthoupoli",
+      "station_code": "AN",
+      "visible_label": "M2 AN",
+      "index": 1,
+      "file": "stations_smart_codes/metro/M2/metro_m2_01_anthoupoli_an.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Peristeri",
+      "station_code": "PE",
+      "visible_label": "M2 PE",
+      "index": 2,
+      "file": "stations_smart_codes/metro/M2/metro_m2_02_peristeri_pe.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Aghios Antonios",
+      "station_code": "AA",
+      "visible_label": "M2 AA",
+      "index": 3,
+      "file": "stations_smart_codes/metro/M2/metro_m2_03_aghios_antonios_aa.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Sepolia",
+      "station_code": "SE",
+      "visible_label": "M2 SE",
+      "index": 4,
+      "file": "stations_smart_codes/metro/M2/metro_m2_04_sepolia_se.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Attiki",
+      "station_code": "AT",
+      "visible_label": "M2 AT",
+      "index": 5,
+      "file": "stations_smart_codes/metro/M2/metro_m2_05_attiki_at.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Larissa Station",
+      "station_code": "LS",
+      "visible_label": "M2 LS",
+      "index": 6,
+      "file": "stations_smart_codes/metro/M2/metro_m2_06_larissa_station_ls.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Metaxourghio",
+      "station_code": "ME",
+      "visible_label": "M2 ME",
+      "index": 7,
+      "file": "stations_smart_codes/metro/M2/metro_m2_07_metaxourghio_me.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Omonia",
+      "station_code": "OM",
+      "visible_label": "M2 OM",
+      "index": 8,
+      "file": "stations_smart_codes/metro/M2/metro_m2_08_omonia_om.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Panepistimio",
+      "station_code": "PA",
+      "visible_label": "M2 PA",
+      "index": 9,
+      "file": "stations_smart_codes/metro/M2/metro_m2_09_panepistimio_pa.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Syntagma",
+      "station_code": "SY",
+      "visible_label": "M2 SY",
+      "index": 10,
+      "file": "stations_smart_codes/metro/M2/metro_m2_10_syntagma_sy.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Akropoli",
+      "station_code": "AK",
+      "visible_label": "M2 AK",
+      "index": 11,
+      "file": "stations_smart_codes/metro/M2/metro_m2_11_akropoli_ak.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Sygrou-Fix",
+      "station_code": "SF",
+      "visible_label": "M2 SF",
+      "index": 12,
+      "file": "stations_smart_codes/metro/M2/metro_m2_12_sygrou_fix_sf.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Neos Kosmos",
+      "station_code": "NK",
+      "visible_label": "M2 NK",
+      "index": 13,
+      "file": "stations_smart_codes/metro/M2/metro_m2_13_neos_kosmos_nk.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Aghios Ioannis",
+      "station_code": "AI",
+      "visible_label": "M2 AI",
+      "index": 14,
+      "file": "stations_smart_codes/metro/M2/metro_m2_14_aghios_ioannis_ai.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Dafni",
+      "station_code": "DA",
+      "visible_label": "M2 DA",
+      "index": 15,
+      "file": "stations_smart_codes/metro/M2/metro_m2_15_dafni_da.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Aghios Dimitrios",
+      "station_code": "AD",
+      "visible_label": "M2 AD",
+      "index": 16,
+      "file": "stations_smart_codes/metro/M2/metro_m2_16_aghios_dimitrios_ad.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Ilioupoli",
+      "station_code": "IL",
+      "visible_label": "M2 IL",
+      "index": 17,
+      "file": "stations_smart_codes/metro/M2/metro_m2_17_ilioupoli_il.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Alimos",
+      "station_code": "AL",
+      "visible_label": "M2 AL",
+      "index": 18,
+      "file": "stations_smart_codes/metro/M2/metro_m2_18_alimos_al.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Argyroupoli",
+      "station_code": "AR",
+      "visible_label": "M2 AR",
+      "index": 19,
+      "file": "stations_smart_codes/metro/M2/metro_m2_19_argyroupoli_ar.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "station": "Elliniko",
+      "station_code": "EL",
+      "visible_label": "M2 EL",
+      "index": 20,
+      "file": "stations_smart_codes/metro/M2/metro_m2_20_elliniko_el.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Dimotiko Theatro",
+      "station_code": "DT",
+      "visible_label": "M3 DT",
+      "index": 1,
+      "file": "stations_smart_codes/metro/M3/metro_m3_01_dimotiko_theatro_dt.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Piraeus",
+      "station_code": "PI",
+      "visible_label": "M3 PI",
+      "index": 2,
+      "file": "stations_smart_codes/metro/M3/metro_m3_02_piraeus_pi.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Maniatika",
+      "station_code": "MA",
+      "visible_label": "M3 MA",
+      "index": 3,
+      "file": "stations_smart_codes/metro/M3/metro_m3_03_maniatika_ma.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Nikea",
+      "station_code": "NI",
+      "visible_label": "M3 NI",
+      "index": 4,
+      "file": "stations_smart_codes/metro/M3/metro_m3_04_nikea_ni.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Korydallos",
+      "station_code": "KO",
+      "visible_label": "M3 KO",
+      "index": 5,
+      "file": "stations_smart_codes/metro/M3/metro_m3_05_korydallos_ko.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Aghia Varvara",
+      "station_code": "AV",
+      "visible_label": "M3 AV",
+      "index": 6,
+      "file": "stations_smart_codes/metro/M3/metro_m3_06_aghia_varvara_av.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Aghia Marina",
+      "station_code": "AM",
+      "visible_label": "M3 AM",
+      "index": 7,
+      "file": "stations_smart_codes/metro/M3/metro_m3_07_aghia_marina_am.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Egaleo",
+      "station_code": "EG",
+      "visible_label": "M3 EG",
+      "index": 8,
+      "file": "stations_smart_codes/metro/M3/metro_m3_08_egaleo_eg.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Eleonas",
+      "station_code": "EL",
+      "visible_label": "M3 EL",
+      "index": 9,
+      "file": "stations_smart_codes/metro/M3/metro_m3_09_eleonas_el.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Kerameikos",
+      "station_code": "KE",
+      "visible_label": "M3 KE",
+      "index": 10,
+      "file": "stations_smart_codes/metro/M3/metro_m3_10_kerameikos_ke.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Monastiraki",
+      "station_code": "MO",
+      "visible_label": "M3 MO",
+      "index": 11,
+      "file": "stations_smart_codes/metro/M3/metro_m3_11_monastiraki_mo.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Syntagma",
+      "station_code": "SY",
+      "visible_label": "M3 SY",
+      "index": 12,
+      "file": "stations_smart_codes/metro/M3/metro_m3_12_syntagma_sy.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Evangelismos",
+      "station_code": "EV",
+      "visible_label": "M3 EV",
+      "index": 13,
+      "file": "stations_smart_codes/metro/M3/metro_m3_13_evangelismos_ev.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Megaro Mousikis",
+      "station_code": "MM",
+      "visible_label": "M3 MM",
+      "index": 14,
+      "file": "stations_smart_codes/metro/M3/metro_m3_14_megaro_mousikis_mm.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Ambelokipi",
+      "station_code": "AM",
+      "visible_label": "M3 AM",
+      "index": 15,
+      "file": "stations_smart_codes/metro/M3/metro_m3_15_ambelokipi_am.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Panormou",
+      "station_code": "PA",
+      "visible_label": "M3 PA",
+      "index": 16,
+      "file": "stations_smart_codes/metro/M3/metro_m3_16_panormou_pa.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Katehaki",
+      "station_code": "KA",
+      "visible_label": "M3 KA",
+      "index": 17,
+      "file": "stations_smart_codes/metro/M3/metro_m3_17_katehaki_ka.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Ethniki Amyna",
+      "station_code": "EA",
+      "visible_label": "M3 EA",
+      "index": 18,
+      "file": "stations_smart_codes/metro/M3/metro_m3_18_ethniki_amyna_ea.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Holargos",
+      "station_code": "HO",
+      "visible_label": "M3 HO",
+      "index": 19,
+      "file": "stations_smart_codes/metro/M3/metro_m3_19_holargos_ho.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Nomismatokopio",
+      "station_code": "NO",
+      "visible_label": "M3 NO",
+      "index": 20,
+      "file": "stations_smart_codes/metro/M3/metro_m3_20_nomismatokopio_no.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Aghia Paraskevi",
+      "station_code": "AP",
+      "visible_label": "M3 AP",
+      "index": 21,
+      "file": "stations_smart_codes/metro/M3/metro_m3_21_aghia_paraskevi_ap.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Halandri",
+      "station_code": "HA",
+      "visible_label": "M3 HA",
+      "index": 22,
+      "file": "stations_smart_codes/metro/M3/metro_m3_22_halandri_ha.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Doukissis Plakentias",
+      "station_code": "DP",
+      "visible_label": "M3 DP",
+      "index": 23,
+      "file": "stations_smart_codes/metro/M3/metro_m3_23_doukissis_plakentias_dp.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Pallini",
+      "station_code": "PA",
+      "visible_label": "M3 PA",
+      "index": 24,
+      "file": "stations_smart_codes/metro/M3/metro_m3_24_pallini_pa.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Peania-Kantza",
+      "station_code": "PK",
+      "visible_label": "M3 PK",
+      "index": 25,
+      "file": "stations_smart_codes/metro/M3/metro_m3_25_peania_kantza_pk.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Koropi",
+      "station_code": "KO",
+      "visible_label": "M3 KO",
+      "index": 26,
+      "file": "stations_smart_codes/metro/M3/metro_m3_26_koropi_ko.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station": "Airport",
+      "station_code": "AI",
+      "visible_label": "M3 AI",
+      "index": 27,
+      "file": "stations_smart_codes/metro/M3/metro_m3_27_airport_ai.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Syntagma",
+      "station_code": "SY",
+      "visible_label": "T6 SY",
+      "index": 1,
+      "file": "stations_smart_codes/tram/T6/tram_t6_01_syntagma_sy.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Zappio",
+      "station_code": "ZA",
+      "visible_label": "T6 ZA",
+      "index": 2,
+      "file": "stations_smart_codes/tram/T6/tram_t6_02_zappio_za.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Leof. Vouliagmenis",
+      "station_code": "LV",
+      "visible_label": "T6 LV",
+      "index": 3,
+      "file": "stations_smart_codes/tram/T6/tram_t6_03_leof_vouliagmenis_lv.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Fix",
+      "station_code": "FI",
+      "visible_label": "T6 FI",
+      "index": 4,
+      "file": "stations_smart_codes/tram/T6/tram_t6_04_fix_fi.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Kasomouli",
+      "station_code": "KA",
+      "visible_label": "T6 KA",
+      "index": 5,
+      "file": "stations_smart_codes/tram/T6/tram_t6_05_kasomouli_ka.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Neos Kosmos",
+      "station_code": "NK",
+      "visible_label": "T6 NK",
+      "index": 6,
+      "file": "stations_smart_codes/tram/T6/tram_t6_06_neos_kosmos_nk.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "M. Mousourou",
+      "station_code": "MM",
+      "visible_label": "T6 MM",
+      "index": 7,
+      "file": "stations_smart_codes/tram/T6/tram_t6_07_m_mousourou_mm.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Aghios Sostis",
+      "station_code": "AS",
+      "visible_label": "T6 AS",
+      "index": 8,
+      "file": "stations_smart_codes/tram/T6/tram_t6_08_aghios_sostis_as.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Aghia Fotini",
+      "station_code": "AF",
+      "visible_label": "T6 AF",
+      "index": 9,
+      "file": "stations_smart_codes/tram/T6/tram_t6_09_aghia_fotini_af.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Baknana",
+      "station_code": "BA",
+      "visible_label": "T6 BA",
+      "index": 10,
+      "file": "stations_smart_codes/tram/T6/tram_t6_10_baknana_ba.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Aegeou",
+      "station_code": "AE",
+      "visible_label": "T6 AE",
+      "index": 11,
+      "file": "stations_smart_codes/tram/T6/tram_t6_11_aegeou_ae.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Edem",
+      "station_code": "ED",
+      "visible_label": "T6 ED",
+      "index": 12,
+      "file": "stations_smart_codes/tram/T6/tram_t6_12_edem_ed.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "station": "Pikrodafni",
+      "station_code": "PI",
+      "visible_label": "T6 PI",
+      "index": 13,
+      "file": "stations_smart_codes/tram/T6/tram_t6_13_pikrodafni_pi.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Akti Posidonos",
+      "station_code": "AP",
+      "visible_label": "T7 AP",
+      "index": 1,
+      "file": "stations_smart_codes/tram/T7/tram_t7_01_akti_posidonos_ap.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Aghia Triada",
+      "station_code": "AT",
+      "visible_label": "T7 AT",
+      "index": 2,
+      "file": "stations_smart_codes/tram/T7/tram_t7_02_aghia_triada_at.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Platia Ippodamias",
+      "station_code": "PI",
+      "visible_label": "T7 PI",
+      "index": 3,
+      "file": "stations_smart_codes/tram/T7/tram_t7_03_platia_ippodamias_pi.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "34ou Syntagmatos",
+      "station_code": "34",
+      "visible_label": "T7 34",
+      "index": 4,
+      "file": "stations_smart_codes/tram/T7/tram_t7_04_34ou_syntagmatos_34.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Androutsou",
+      "station_code": "AN",
+      "visible_label": "T7 AN",
+      "index": 5,
+      "file": "stations_smart_codes/tram/T7/tram_t7_05_androutsou_an.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Skylitsi",
+      "station_code": "SK",
+      "visible_label": "T7 SK",
+      "index": 6,
+      "file": "stations_smart_codes/tram/T7/tram_t7_06_skylitsi_sk.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "S.E.F.",
+      "station_code": "SE",
+      "visible_label": "T7 SE",
+      "index": 7,
+      "file": "stations_smart_codes/tram/T7/tram_t7_07_s_e_f_se.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Neo Faliro",
+      "station_code": "FA",
+      "visible_label": "T7 FA",
+      "index": 8,
+      "file": "stations_smart_codes/tram/T7/tram_t7_08_neo_faliro_fa.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Moschato",
+      "station_code": "MO",
+      "visible_label": "T7 MO",
+      "index": 9,
+      "file": "stations_smart_codes/tram/T7/tram_t7_09_moschato_mo.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Kallithea",
+      "station_code": "KA",
+      "visible_label": "T7 KA",
+      "index": 10,
+      "file": "stations_smart_codes/tram/T7/tram_t7_10_kallithea_ka.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Tzitzifies",
+      "station_code": "TZ",
+      "visible_label": "T7 TZ",
+      "index": 11,
+      "file": "stations_smart_codes/tram/T7/tram_t7_11_tzitzifies_tz.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Delta Falirou",
+      "station_code": "DF",
+      "visible_label": "T7 DF",
+      "index": 12,
+      "file": "stations_smart_codes/tram/T7/tram_t7_12_delta_falirou_df.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Aghia Skepi",
+      "station_code": "AS",
+      "visible_label": "T7 AS",
+      "index": 13,
+      "file": "stations_smart_codes/tram/T7/tram_t7_13_aghia_skepi_as.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Trocadero",
+      "station_code": "TR",
+      "visible_label": "T7 TR",
+      "index": 14,
+      "file": "stations_smart_codes/tram/T7/tram_t7_14_trocadero_tr.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Parko Flisvou",
+      "station_code": "PF",
+      "visible_label": "T7 PF",
+      "index": 15,
+      "file": "stations_smart_codes/tram/T7/tram_t7_15_parko_flisvou_pf.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Flisvos",
+      "station_code": "FL",
+      "visible_label": "T7 FL",
+      "index": 16,
+      "file": "stations_smart_codes/tram/T7/tram_t7_16_flisvos_fl.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Batis",
+      "station_code": "BA",
+      "visible_label": "T7 BA",
+      "index": 17,
+      "file": "stations_smart_codes/tram/T7/tram_t7_17_batis_ba.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Edem",
+      "station_code": "ED",
+      "visible_label": "T7 ED",
+      "index": 18,
+      "file": "stations_smart_codes/tram/T7/tram_t7_18_edem_ed.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Pikrodafni",
+      "station_code": "PI",
+      "visible_label": "T7 PI",
+      "index": 19,
+      "file": "stations_smart_codes/tram/T7/tram_t7_19_pikrodafni_pi.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Marina Alimou",
+      "station_code": "MA",
+      "visible_label": "T7 MA",
+      "index": 20,
+      "file": "stations_smart_codes/tram/T7/tram_t7_20_marina_alimou_ma.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Kalamaki",
+      "station_code": "KA",
+      "visible_label": "T7 KA",
+      "index": 21,
+      "file": "stations_smart_codes/tram/T7/tram_t7_21_kalamaki_ka.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Zefyros",
+      "station_code": "ZE",
+      "visible_label": "T7 ZE",
+      "index": 22,
+      "file": "stations_smart_codes/tram/T7/tram_t7_22_zefyros_ze.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Loutra Alimou",
+      "station_code": "LA",
+      "visible_label": "T7 LA",
+      "index": 23,
+      "file": "stations_smart_codes/tram/T7/tram_t7_23_loutra_alimou_la.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Elliniko",
+      "station_code": "EL",
+      "visible_label": "T7 EL",
+      "index": 24,
+      "file": "stations_smart_codes/tram/T7/tram_t7_24_elliniko_el.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "1st Ag. Kosma",
+      "station_code": "K1",
+      "visible_label": "T7 K1",
+      "index": 25,
+      "file": "stations_smart_codes/tram/T7/tram_t7_25_1st_ag_kosma_k1.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "2nd Ag. Kosma",
+      "station_code": "K2",
+      "visible_label": "T7 K2",
+      "index": 26,
+      "file": "stations_smart_codes/tram/T7/tram_t7_26_2nd_ag_kosma_k2.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Aghios Alexandros",
+      "station_code": "AA",
+      "visible_label": "T7 AA",
+      "index": 27,
+      "file": "stations_smart_codes/tram/T7/tram_t7_27_aghios_alexandros_aa.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Hellinon Olympionikon",
+      "station_code": "HO",
+      "visible_label": "T7 HO",
+      "index": 28,
+      "file": "stations_smart_codes/tram/T7/tram_t7_28_hellinon_olympionikon_ho.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Kentro Istioploias",
+      "station_code": "KI",
+      "visible_label": "T7 KI",
+      "index": 29,
+      "file": "stations_smart_codes/tram/T7/tram_t7_29_kentro_istioploias_ki.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Platia Vergoti",
+      "station_code": "PV",
+      "visible_label": "T7 PV",
+      "index": 30,
+      "file": "stations_smart_codes/tram/T7/tram_t7_30_platia_vergoti_pv.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Paralia Glyfadas",
+      "station_code": "PG",
+      "visible_label": "T7 PG",
+      "index": 31,
+      "file": "stations_smart_codes/tram/T7/tram_t7_31_paralia_glyfadas_pg.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Paleo Dimarhio",
+      "station_code": "PD",
+      "visible_label": "T7 PD",
+      "index": 32,
+      "file": "stations_smart_codes/tram/T7/tram_t7_32_paleo_dimarhio_pd.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Platia Katraki",
+      "station_code": "PK",
+      "visible_label": "T7 PK",
+      "index": 33,
+      "file": "stations_smart_codes/tram/T7/tram_t7_33_platia_katraki_pk.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Angelou Metaxa",
+      "station_code": "AM",
+      "visible_label": "T7 AM",
+      "index": 34,
+      "file": "stations_smart_codes/tram/T7/tram_t7_34_angelou_metaxa_am.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Platia Esperidon",
+      "station_code": "PE",
+      "visible_label": "T7 PE",
+      "index": 35,
+      "file": "stations_smart_codes/tram/T7/tram_t7_35_platia_esperidon_pe.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Kolymvitirio",
+      "station_code": "KO",
+      "visible_label": "T7 KO",
+      "index": 36,
+      "file": "stations_smart_codes/tram/T7/tram_t7_36_kolymvitirio_ko.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Asklipiio Voulas",
+      "station_code": "AV",
+      "visible_label": "T7 AV",
+      "index": 37,
+      "file": "stations_smart_codes/tram/T7/tram_t7_37_asklipiio_voulas_av.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Piraeus",
+      "station_code": "PI",
+      "visible_label": "P1 PI",
+      "index": 1,
+      "file": "stations_smart_codes/train/P1/train_p1_01_piraeus_pi.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Lefka",
+      "station_code": "LE",
+      "visible_label": "P1 LE",
+      "index": 2,
+      "file": "stations_smart_codes/train/P1/train_p1_02_lefka_le.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Rentis",
+      "station_code": "RE",
+      "visible_label": "P1 RE",
+      "index": 3,
+      "file": "stations_smart_codes/train/P1/train_p1_03_rentis_re.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Tavros",
+      "station_code": "TA",
+      "visible_label": "P1 TA",
+      "index": 4,
+      "file": "stations_smart_codes/train/P1/train_p1_04_tavros_ta.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Rouf",
+      "station_code": "RO",
+      "visible_label": "P1 RO",
+      "index": 5,
+      "file": "stations_smart_codes/train/P1/train_p1_05_rouf_ro.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Athens",
+      "station_code": "AT",
+      "visible_label": "P1 AT",
+      "index": 6,
+      "file": "stations_smart_codes/train/P1/train_p1_06_athens_at.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Ag. Anargyroi",
+      "station_code": "AA",
+      "visible_label": "P1 AA",
+      "index": 7,
+      "file": "stations_smart_codes/train/P1/train_p1_07_ag_anargyroi_aa.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Pyrgos Vasilissis",
+      "station_code": "PV",
+      "visible_label": "P1 PV",
+      "index": 8,
+      "file": "stations_smart_codes/train/P1/train_p1_08_pyrgos_vasilissis_pv.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Kato Acharnai",
+      "station_code": "KA",
+      "visible_label": "P1 KA",
+      "index": 9,
+      "file": "stations_smart_codes/train/P1/train_p1_09_kato_acharnai_ka.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Ano Liosia",
+      "station_code": "AL",
+      "visible_label": "P1 AL",
+      "index": 10,
+      "file": "stations_smart_codes/train/P1/train_p1_10_ano_liosia_al.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "SKA",
+      "station_code": "SK",
+      "visible_label": "P1 SK",
+      "index": 11,
+      "file": "stations_smart_codes/train/P1/train_p1_11_ska_sk.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Metamorfosi",
+      "station_code": "ME",
+      "visible_label": "P1 ME",
+      "index": 12,
+      "file": "stations_smart_codes/train/P1/train_p1_12_metamorfosi_me.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Irakleio",
+      "station_code": "IR",
+      "visible_label": "P1 IR",
+      "index": 13,
+      "file": "stations_smart_codes/train/P1/train_p1_13_irakleio_ir.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Neratziotissa",
+      "station_code": "NE",
+      "visible_label": "P1 NE",
+      "index": 14,
+      "file": "stations_smart_codes/train/P1/train_p1_14_neratziotissa_ne.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Kifisias",
+      "station_code": "KI",
+      "visible_label": "P1 KI",
+      "index": 15,
+      "file": "stations_smart_codes/train/P1/train_p1_15_kifisias_ki.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Pentelis",
+      "station_code": "PE",
+      "visible_label": "P1 PE",
+      "index": 16,
+      "file": "stations_smart_codes/train/P1/train_p1_16_pentelis_pe.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Doukissis Plakentias",
+      "station_code": "DP",
+      "visible_label": "P1 DP",
+      "index": 17,
+      "file": "stations_smart_codes/train/P1/train_p1_17_doukissis_plakentias_dp.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Pallini",
+      "station_code": "PA",
+      "visible_label": "P1 PA",
+      "index": 18,
+      "file": "stations_smart_codes/train/P1/train_p1_18_pallini_pa.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Paiania-Kantza",
+      "station_code": "PK",
+      "visible_label": "P1 PK",
+      "index": 19,
+      "file": "stations_smart_codes/train/P1/train_p1_19_paiania_kantza_pk.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Koropi",
+      "station_code": "KO",
+      "visible_label": "P1 KO",
+      "index": 20,
+      "file": "stations_smart_codes/train/P1/train_p1_20_koropi_ko.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "station": "Airport",
+      "station_code": "AI",
+      "visible_label": "P1 AI",
+      "index": 21,
+      "file": "stations_smart_codes/train/P1/train_p1_21_airport_ai.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Piraeus",
+      "station_code": "PI",
+      "visible_label": "P2 PI",
+      "index": 1,
+      "file": "stations_smart_codes/train/P2/train_p2_01_piraeus_pi.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Lefka",
+      "station_code": "LE",
+      "visible_label": "P2 LE",
+      "index": 2,
+      "file": "stations_smart_codes/train/P2/train_p2_02_lefka_le.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Rentis",
+      "station_code": "RE",
+      "visible_label": "P2 RE",
+      "index": 3,
+      "file": "stations_smart_codes/train/P2/train_p2_03_rentis_re.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Tavros",
+      "station_code": "TA",
+      "visible_label": "P2 TA",
+      "index": 4,
+      "file": "stations_smart_codes/train/P2/train_p2_04_tavros_ta.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Rouf",
+      "station_code": "RO",
+      "visible_label": "P2 RO",
+      "index": 5,
+      "file": "stations_smart_codes/train/P2/train_p2_05_rouf_ro.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Athens",
+      "station_code": "AT",
+      "visible_label": "P2 AT",
+      "index": 6,
+      "file": "stations_smart_codes/train/P2/train_p2_06_athens_at.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Ag. Anargyroi",
+      "station_code": "AA",
+      "visible_label": "P2 AA",
+      "index": 7,
+      "file": "stations_smart_codes/train/P2/train_p2_07_ag_anargyroi_aa.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Pyrgos Vasilissis",
+      "station_code": "PV",
+      "visible_label": "P2 PV",
+      "index": 8,
+      "file": "stations_smart_codes/train/P2/train_p2_08_pyrgos_vasilissis_pv.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Kato Acharnai",
+      "station_code": "KA",
+      "visible_label": "P2 KA",
+      "index": 9,
+      "file": "stations_smart_codes/train/P2/train_p2_09_kato_acharnai_ka.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Zefyri",
+      "station_code": "ZE",
+      "visible_label": "P2 ZE",
+      "index": 10,
+      "file": "stations_smart_codes/train/P2/train_p2_10_zefyri_ze.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Ano Liosia",
+      "station_code": "AL",
+      "visible_label": "P2 AL",
+      "index": 11,
+      "file": "stations_smart_codes/train/P2/train_p2_11_ano_liosia_al.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Aspropyrgos",
+      "station_code": "AS",
+      "visible_label": "P2 AS",
+      "index": 12,
+      "file": "stations_smart_codes/train/P2/train_p2_12_aspropyrgos_as.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Magoula",
+      "station_code": "MA",
+      "visible_label": "P2 MA",
+      "index": 13,
+      "file": "stations_smart_codes/train/P2/train_p2_13_magoula_ma.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Nea Peramos",
+      "station_code": "NP",
+      "visible_label": "P2 NP",
+      "index": 14,
+      "file": "stations_smart_codes/train/P2/train_p2_14_nea_peramos_np.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Megara",
+      "station_code": "ME",
+      "visible_label": "P2 ME",
+      "index": 15,
+      "file": "stations_smart_codes/train/P2/train_p2_15_megara_me.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Kineta",
+      "station_code": "KI",
+      "visible_label": "P2 KI",
+      "index": 16,
+      "file": "stations_smart_codes/train/P2/train_p2_16_kineta_ki.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Ag. Theodoroi",
+      "station_code": "TH",
+      "visible_label": "P2 TH",
+      "index": 17,
+      "file": "stations_smart_codes/train/P2/train_p2_17_ag_theodoroi_th.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Korinthos",
+      "station_code": "KO",
+      "visible_label": "P2 KO",
+      "index": 18,
+      "file": "stations_smart_codes/train/P2/train_p2_18_korinthos_ko.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Zevgolatio",
+      "station_code": "ZE",
+      "visible_label": "P2 ZE",
+      "index": 19,
+      "file": "stations_smart_codes/train/P2/train_p2_19_zevgolatio_ze.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station": "Kiato",
+      "station_code": "KI",
+      "visible_label": "P2 KI",
+      "index": 20,
+      "file": "stations_smart_codes/train/P2/train_p2_20_kiato_ki.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Athens",
+      "station_code": "AT",
+      "visible_label": "P3 AT",
+      "index": 1,
+      "file": "stations_smart_codes/train/P3/train_p3_01_athens_at.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Ag. Anargyroi",
+      "station_code": "AA",
+      "visible_label": "P3 AA",
+      "index": 2,
+      "file": "stations_smart_codes/train/P3/train_p3_02_ag_anargyroi_aa.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "SKA",
+      "station_code": "SK",
+      "visible_label": "P3 SK",
+      "index": 3,
+      "file": "stations_smart_codes/train/P3/train_p3_03_ska_sk.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Acharnes",
+      "station_code": "AC",
+      "visible_label": "P3 AC",
+      "index": 4,
+      "file": "stations_smart_codes/train/P3/train_p3_04_acharnes_ac.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Dekeleia",
+      "station_code": "DE",
+      "visible_label": "P3 DE",
+      "index": 5,
+      "file": "stations_smart_codes/train/P3/train_p3_05_dekeleia_de.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Agios Stefanos",
+      "station_code": "AS",
+      "visible_label": "P3 AS",
+      "index": 6,
+      "file": "stations_smart_codes/train/P3/train_p3_06_agios_stefanos_as.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Afidnes",
+      "station_code": "AF",
+      "visible_label": "P3 AF",
+      "index": 7,
+      "file": "stations_smart_codes/train/P3/train_p3_07_afidnes_af.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Sfendali",
+      "station_code": "SF",
+      "visible_label": "P3 SF",
+      "index": 8,
+      "file": "stations_smart_codes/train/P3/train_p3_08_sfendali_sf.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Avlonas",
+      "station_code": "AV",
+      "visible_label": "P3 AV",
+      "index": 9,
+      "file": "stations_smart_codes/train/P3/train_p3_09_avlonas_av.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Agios Thomas",
+      "station_code": "AT",
+      "visible_label": "P3 AT",
+      "index": 10,
+      "file": "stations_smart_codes/train/P3/train_p3_10_agios_thomas_at.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Oinofyta",
+      "station_code": "OI",
+      "visible_label": "P3 OI",
+      "index": 11,
+      "file": "stations_smart_codes/train/P3/train_p3_11_oinofyta_oi.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Oinoi",
+      "station_code": "OI",
+      "visible_label": "P3 OI",
+      "index": 12,
+      "file": "stations_smart_codes/train/P3/train_p3_12_oinoi_oi.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Dilesi",
+      "station_code": "DI",
+      "visible_label": "P3 DI",
+      "index": 13,
+      "file": "stations_smart_codes/train/P3/train_p3_13_dilesi_di.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Agios Georgios",
+      "station_code": "AG",
+      "visible_label": "P3 AG",
+      "index": 14,
+      "file": "stations_smart_codes/train/P3/train_p3_14_agios_georgios_ag.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Kalochori-Panteichi",
+      "station_code": "KP",
+      "visible_label": "P3 KP",
+      "index": 15,
+      "file": "stations_smart_codes/train/P3/train_p3_15_kalochori_panteichi_kp.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Avlida",
+      "station_code": "AV",
+      "visible_label": "P3 AV",
+      "index": 16,
+      "file": "stations_smart_codes/train/P3/train_p3_16_avlida_av.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station": "Chalkida",
+      "station_code": "CH",
+      "visible_label": "P3 CH",
+      "index": 17,
+      "file": "stations_smart_codes/train/P3/train_p3_17_chalkida_ch.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Gipedo Karaiskaki",
+      "station_code": "GK",
+      "visible_label": "T7 GK",
+      "index": 38,
+      "file": "stations_smart_codes/tram/T7/tram_t7_38_gipedo_karaiskaki_gk.svg",
+      "greek_station": "Γήπεδο Καραϊσκάκη"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Mikras Asias",
+      "station_code": "MA",
+      "visible_label": "T7 MA",
+      "index": 39,
+      "file": "stations_smart_codes/tram/T7/tram_t7_39_mikras_asias_ma.svg",
+      "greek_station": "Μικράς Ασίας"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Grigoriou Lambraki",
+      "station_code": "GL",
+      "visible_label": "T7 GL",
+      "index": 40,
+      "file": "stations_smart_codes/tram/T7/tram_t7_40_grigoriou_lambraki_gl.svg",
+      "greek_station": "Γρηγορίου Λαμπράκη"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Evangelistria",
+      "station_code": "EV",
+      "visible_label": "T7 EV",
+      "index": 41,
+      "file": "stations_smart_codes/tram/T7/tram_t7_41_evangelistria_ev.svg",
+      "greek_station": "Ευαγγελίστρια"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Plateia Deligianni",
+      "station_code": "DG",
+      "visible_label": "T7 DG",
+      "index": 42,
+      "file": "stations_smart_codes/tram/T7/tram_t7_42_plateia_deligianni_dg.svg",
+      "greek_station": "Πλατεία Δεληγιάννη"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station": "Dimarhio / Dimotiko Theatro",
+      "station_code": "DT",
+      "visible_label": "T7 DT",
+      "index": 43,
+      "file": "stations_smart_codes/tram/T7/tram_t7_43_dimarhio_dimotiko_theatro_dt.svg",
+      "greek_station": "Δημαρχείο / Δημοτικό Θέατρο"
+    }
+  ],
+  "collisions_same_line": [
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station_code": "IR",
+      "stations": [
+        "Iraklio",
+        "Irini"
+      ]
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station_code": "KA",
+      "stations": [
+        "Kallithea",
+        "KAT"
+      ]
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station_code": "MO",
+      "stations": [
+        "Moschato",
+        "Monastiraki"
+      ]
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "station_code": "PE",
+      "stations": [
+        "Petralona",
+        "Perissos",
+        "Pefkakia"
+      ]
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station_code": "AM",
+      "stations": [
+        "Aghia Marina",
+        "Ambelokipi"
+      ]
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station_code": "KO",
+      "stations": [
+        "Korydallos",
+        "Koropi"
+      ]
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "station_code": "PA",
+      "stations": [
+        "Panormou",
+        "Pallini"
+      ]
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station_code": "KI",
+      "stations": [
+        "Kineta",
+        "Kiato"
+      ]
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "station_code": "ZE",
+      "stations": [
+        "Zefyri",
+        "Zevgolatio"
+      ]
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station_code": "AT",
+      "stations": [
+        "Athens",
+        "Agios Thomas"
+      ]
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station_code": "AV",
+      "stations": [
+        "Avlonas",
+        "Avlida"
+      ]
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "station_code": "OI",
+      "stations": [
+        "Oinofyta",
+        "Oinoi"
+      ]
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station_code": "KA",
+      "stations": [
+        "Kallithea",
+        "Kalamaki"
+      ]
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "station_code": "PI",
+      "stations": [
+        "Platia Ippodamias",
+        "Pikrodafni"
+      ]
+    }
+  ],
+  "station_connections_rule": "Use station_connection_icons when a station is served by multiple lines; display one station-level icon instead of duplicate line-specific icons.",
+  "station_connection_icons": [
+    {
+      "station": "Monastiraki",
+      "lines": [
+        "M1",
+        "M3"
+      ],
+      "file": "station_connection_icons/station_monastiraki_m1_m3.svg"
+    },
+    {
+      "station": "Syntagma",
+      "lines": [
+        "M2",
+        "M3",
+        "T6"
+      ],
+      "file": "station_connection_icons/station_syntagma_m2_m3_t6.svg"
+    },
+    {
+      "station": "Dimotiko Theatro",
+      "lines": [
+        "M3",
+        "T7"
+      ],
+      "file": "station_connection_icons/station_dimotiko_theatro_m3_t7.svg"
+    },
+    {
+      "station": "Dimarhio / Dimotiko Theatro",
+      "lines": [
+        "M3",
+        "T7"
+      ],
+      "file": "station_connection_icons/station_dimarhio_dimotiko_theatro_m3_t7.svg"
+    },
+    {
+      "station": "Gipedo Karaiskaki",
+      "lines": [
+        "T7"
+      ],
+      "file": "station_connection_icons/station_gipedo_karaiskaki_t7.svg"
+    },
+    {
+      "station": "Mikras Asias",
+      "lines": [
+        "T7"
+      ],
+      "file": "station_connection_icons/station_mikras_asias_t7.svg"
+    },
+    {
+      "station": "Grigoriou Lambraki",
+      "lines": [
+        "T7"
+      ],
+      "file": "station_connection_icons/station_grigoriou_lambraki_t7.svg"
+    },
+    {
+      "station": "Evangelistria",
+      "lines": [
+        "T7"
+      ],
+      "file": "station_connection_icons/station_evangelistria_t7.svg"
+    },
+    {
+      "station": "Plateia Deligianni",
+      "lines": [
+        "T7"
+      ],
+      "file": "station_connection_icons/station_plateia_deligianni_t7.svg"
+    }
+  ]
+}
