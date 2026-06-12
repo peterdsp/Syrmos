@@ -682,9 +682,11 @@ body {
         top: auto;
         right: 0;
         left: 0;
-        bottom: 0;
+        /* env(safe-area-inset-bottom) keeps the peek above Safari's URL bar
+           on iOS so the panel is actually tappable when the bar is shown. */
+        bottom: env(safe-area-inset-bottom, 0px);
         width: 100%;
-        max-height: 54px;
+        max-height: calc(64px + env(safe-area-inset-bottom, 0px));
         border-radius: 18px 18px 0 0;
         background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(20px);
@@ -695,7 +697,7 @@ body {
     }
 
     .insight-panel--expanded {
-        max-height: 65vh;
+        max-height: calc(65vh + env(safe-area-inset-bottom, 0px));
         overflow-y: auto;
     }
 
@@ -704,6 +706,9 @@ body {
         align-items: center;
         gap: 8px;
         padding: 16px 20px;
+        /* Extra tap target so the peek bar stays comfortably finger-sized
+           even when iOS Safari hides/shows its URL bar mid-scroll. */
+        min-height: 56px;
         cursor: pointer;
         user-select: none;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06);
