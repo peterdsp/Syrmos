@@ -14,7 +14,7 @@ val dataModule = module {
     single { DataSeeder(database = get(), resourceReader = get()) }
     single { LinesRefresher(database = get(), linesService = get()) }
     single { ScheduleSyncRepository(schedulesService = get(), resourceReader = get()) }
-    single { VisualOverridesRepository(service = get()) }
+    single { VisualOverridesRepository(service = get(), resourceReader = get()) }
     single { LineRepositoryImpl(database = get(), resourceReader = get()) }
     single { StationRepositoryImpl(database = get(), resourceReader = get()) }
     single { ScheduleRepositoryImpl(database = get()) }
