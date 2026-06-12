@@ -300,8 +300,9 @@ struct HomeView: View {
         let status = stasyService.serviceStatus
         let isAlert = status?.status == "alert"
         let message: String? = {
-            if let s = status, !s.rawMessage.isEmpty {
-                return s.rawMessage
+            if let s = status {
+                let localized = s.displayMessage(language: loc.language)
+                if !localized.isEmpty { return localized }
             }
             return fallbackServiceHours()
         }()
@@ -493,7 +494,7 @@ struct AlertCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(announcement.title)
+            Text(announcement.displayTitle(language: loc.language))
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .lineLimit(isExpanded ? nil : 3)
