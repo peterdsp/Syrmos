@@ -51,20 +51,26 @@ app = FastAPI(title="Syrmos Admin", docs_url="/docs", openapi_url="/openapi.json
 
 BASE = """<!doctype html><html><head><meta charset="utf-8"><title>{title}</title>
 <style>
- body{{font-family:-apple-system,Segoe UI,sans-serif;max-width:980px;margin:24px auto;padding:0 16px;color:#111}}
+ body{{font-family:-apple-system,Segoe UI,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;color:#111}}
  nav a{{margin-right:14px;text-decoration:none;color:#0066c8}}
  table{{border-collapse:collapse;width:100%;margin:8px 0 24px}}
- th,td{{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;font-size:14px}}
+ th,td{{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;font-size:14px;vertical-align:middle}}
+ th{{position:sticky;top:0;background:#fff;z-index:1}}
  input,select{{padding:4px 6px;font-size:14px}}
  button{{padding:6px 12px;background:#0066c8;color:#fff;border:0;border-radius:4px;cursor:pointer}}
  .small{{font-size:12px;color:#666}}
  form.inline{{display:inline}}
+ img.icon-preview{{height:32px;width:auto;background:#f3f4f6;border-radius:4px;padding:2px}}
+ .color-swatch{{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,0.1);vertical-align:middle;margin-right:4px}}
+ .filter-bar{{margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:13px}}
 </style></head><body>
 <nav><strong>Syrmos Admin</strong> &middot;
  <a href="/lines">Lines</a>
  <a href="/frequency-bands">Frequency bands</a>
  <a href="/holidays">Holidays</a>
  <a href="/overrides">Overrides</a>
+ <a href="/icons">Icons</a>
+ <a href="/line-display">Line drawing</a>
  <a href="/sync">Sync</a>
 </nav><hr>{body}</body></html>"""
 
@@ -307,6 +313,110 @@ def delete_override(id: int = Form(...), _: str = Depends(auth)) -> RedirectResp
         conn.execute("DELETE FROM date_overrides WHERE id=?", (id,))
     generator.generate()
     return RedirectResponse("/overrides", status_code=303)
+
+
+# Icons — table of every station icon with preview + override field
+
+@app.get("/icons", response_class=HTMLResponse)
+def icons_page(scope: str = "station", _: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, scope, station_id, line_id, direction, default_url, override_url, description"
+            " FROM icons WHERE scope=? ORDER BY station_id, line_id, direction",
+            (scope,),
+        ).fetchall()
+    tabs = "".join(
+        f"<a href='/icons?scope={s}' style='margin-right:14px;font-weight:{600 if s == scope else 400}'>{s.title()}</a>"
+        for s in ("station", "interchange", "vehicle")
+    )
+    tr = "".join(
+        f"<tr><td><img class=icon-preview src='{r['override_url'] or r['default_url']}' loading=lazy></td>"
+        f"<td><code>{r['station_id'] or ''}</code></td>"
+        f"<td>{r['line_id'] or ''}</td><td>{r['direction'] or ''}</td>"
+        f"<td class=small>{r['description'] or ''}</td>"
+        f"<td><form method=post action=/icons/save>"
+        f"<input type=hidden name=id value={r['id']}>"
+        f"<input name=override_url value='{r['override_url'] or ''}' placeholder='paste alt URL' size=44>"
+        f"<input type=hidden name=scope value={scope}>"
+        f"<button>save</button></form></td></tr>"
+        for r in rows
+    )
+    body = f"""
+<h2>Icons</h2>
+<p class=small>Each row is an SVG served from the Pi. Paste a URL into "override" to replace it everywhere without an app release. Cleared overrides fall back to the package default.</p>
+<div class=filter-bar>Scope: {tabs}</div>
+<table>
+ <tr><th>Preview</th><th>Station</th><th>Line</th><th>Direction</th><th>Description</th><th>Override URL</th></tr>
+ {tr}
+</table>"""
+    return page("Icons", body)
+
+
+@app.post("/icons/save")
+def icons_save(id: int = Form(...), override_url: str = Form(""), scope: str = Form("station"),
+               _: str = Depends(auth)) -> RedirectResponse:
+    value = override_url.strip() or None
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE icons SET override_url=?, updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id=?",
+            (value, id),
+        )
+    generator.generate()
+    return RedirectResponse(f"/icons?scope={scope}", status_code=303)
+
+
+# Line drawing — editable polyline parameters
+
+@app.get("/line-display", response_class=HTMLResponse)
+def line_display_page(_: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes"
+            " FROM line_display ORDER BY line_id"
+        ).fetchall()
+    tr = "".join(
+        f"<tr><form method=post action=/line-display/save>"
+        f"<td><code>{r['line_id']}</code></td>"
+        f"<td><span class=color-swatch style='background:{r['stroke_color']}'></span>"
+        f"<input type=hidden name=line_id value={r['line_id']}>"
+        f"<input name=stroke_color value='{r['stroke_color']}' size=8></td>"
+        f"<td><input name=stroke_weight type=number min=1 max=12 value={r['stroke_weight']} style=width:4em></td>"
+        f"<td><input name=stroke_dash value='{r['stroke_dash'] or ''}' size=8 placeholder='6 4'></td>"
+        f"<td><input name=label_color value='{r['label_color'] or ''}' size=8></td>"
+        f"<td><input name=glow type=checkbox {'checked' if r['glow'] else ''}></td>"
+        f"<td class=small>{r['notes'] or ''}</td>"
+        f"<td><button>save</button></td></form></tr>"
+        for r in rows
+    )
+    return page(
+        "Line drawing",
+        f"<h2>Line drawing</h2>"
+        f"<p class=small>Polyline rendering. Apps fetch <code>/api/line-display</code> on cold start and apply these to the map line strokes.</p>"
+        f"<table><tr><th>Line</th><th>Stroke</th><th>Weight</th><th>Dash</th><th>Label</th><th>Glow</th><th>Notes</th><th></th></tr>{tr}</table>",
+    )
+
+
+@app.post("/line-display/save")
+def line_display_save(
+    line_id: str = Form(...), stroke_color: str = Form(...), stroke_weight: int = Form(...),
+    stroke_dash: str = Form(""), label_color: str = Form(""), glow: str = Form(""),
+    _: str = Depends(auth)
+) -> RedirectResponse:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE line_display SET stroke_color=?, stroke_weight=?, stroke_dash=?,"
+            " label_color=?, glow=?, updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now')"
+            " WHERE line_id=?",
+            (
+                stroke_color, stroke_weight,
+                stroke_dash.strip() or None,
+                label_color.strip() or None,
+                1 if glow else 0,
+                line_id,
+            ),
+        )
+    generator.generate()
+    return RedirectResponse("/line-display", status_code=303)
 
 
 # Sync / scrape

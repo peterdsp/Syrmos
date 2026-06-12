@@ -50,25 +50,40 @@
         ])
     );
 
-    const stationIconManifest = await fetch("icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
+    // Source of truth: api-syrmos.peterdsp.dev/api/icons. Cached locally; if the
+    // network is down at cold start we fall back to the bundled manifest which
+    // shipped with the build.
     const stationIconBySid = new Map();
-    const lineToManifestDir = { M1: "metro/M1", M2: "metro/M2", M3: "metro/M3", T6: "tram/T6", T7: "tram/T7", A1: "train/P1", A2: "train/P1", A3: "train/P3", A4: "train/P2" };
-    for (const route of routes) {
-        const mDir = lineToManifestDir[route.line_id];
-        if (!mDir) continue;
-        route.station_ids.forEach((stationId, index) => {
-            const key = `${mDir}/${String(index + 1).padStart(2, "0")}`;
-            if (stationIconManifest[key]) {
-                stationIconBySid.set(stationId, stationIconManifest[key]);
-            }
-        });
-    }
-    // Per RULES.md, multi-line interchanges (Syntagma, Monastiraki, Dimotiko
-    // Theatro) get the combined icon with every connecting line visible.
-    // Apply last so it overrides any per-line icon set above.
-    for (const [key, url] of Object.entries(stationIconManifest)) {
-        if (key.startsWith("interchange/")) {
-            stationIconBySid.set(key.substring("interchange/".length), url);
+    const cachedIconsKey = "syrmos.icons.v1";
+    let apiIcons = null;
+    try {
+        const cached = localStorage.getItem(cachedIconsKey);
+        if (cached) apiIcons = JSON.parse(cached);
+    } catch (_) {}
+    try {
+        const fresh = await fetch("https://api-syrmos.peterdsp.dev/api/icons").then((r) => r.json());
+        if (fresh && (fresh.stations || fresh.interchanges)) {
+            apiIcons = fresh;
+            try { localStorage.setItem(cachedIconsKey, JSON.stringify(fresh)); } catch (_) {}
+        }
+    } catch (_) {}
+    if (apiIcons && apiIcons.stations) {
+        for (const [sid, url] of Object.entries(apiIcons.stations)) stationIconBySid.set(sid, url);
+        for (const [sid, url] of Object.entries(apiIcons.interchanges || {})) stationIconBySid.set(sid, url);
+    } else {
+        // Bundled fallback (legacy manifest layout, still ships in the build).
+        const stationIconManifest = await fetch("icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
+        const lineToManifestDir = { M1: "metro/M1", M2: "metro/M2", M3: "metro/M3", T6: "tram/T6", T7: "tram/T7", A1: "train/P1", A2: "train/P1", A3: "train/P3", A4: "train/P2" };
+        for (const route of routes) {
+            const mDir = lineToManifestDir[route.line_id];
+            if (!mDir) continue;
+            route.station_ids.forEach((stationId, index) => {
+                const key = `${mDir}/${String(index + 1).padStart(2, "0")}`;
+                if (stationIconManifest[key]) stationIconBySid.set(stationId, stationIconManifest[key]);
+            });
+        }
+        for (const [key, url] of Object.entries(stationIconManifest)) {
+            if (key.startsWith("interchange/")) stationIconBySid.set(key.substring("interchange/".length), url);
         }
     }
 
@@ -86,17 +101,33 @@
         attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
 
+    // Pull live line-drawing settings (color, weight, dash) from the API so
+    // a maintainer can rebrand a line from the admin without an app release.
+    let lineDisplayById = new Map();
+    try {
+        const cached = localStorage.getItem("syrmos.line_display.v1");
+        if (cached) for (const ld of JSON.parse(cached).lines || []) lineDisplayById.set(ld.lineId, ld);
+        const fresh = await fetch("https://api-syrmos.peterdsp.dev/api/line-display").then((r) => r.json());
+        if (fresh && fresh.lines) {
+            lineDisplayById = new Map();
+            for (const ld of fresh.lines) lineDisplayById.set(ld.lineId, ld);
+            try { localStorage.setItem("syrmos.line_display.v1", JSON.stringify(fresh)); } catch (_) {}
+        }
+    } catch (_) {}
+
     for (const line of lines) {
+        const ld = lineDisplayById.get(line.id);
         const orderedStations = lineStations.get(line.id) || [];
         const latLngs = orderedStations.map((station) => [station.latitude, station.longitude]);
         if (latLngs.length > 1) {
             const smoothed = catmullRomSpline(latLngs, 5);
             L.polyline(smoothed, {
-                color: line.color,
-                weight: line.type === "suburban" ? 4 : 5,
+                color: ld?.strokeColor || line.color,
+                weight: ld?.strokeWeight ?? (line.type === "suburban" ? 4 : 5),
                 opacity: 0.9,
                 lineCap: "round",
                 lineJoin: "round",
+                dashArray: ld?.strokeDash || null,
             }).addTo(map);
         }
     }
