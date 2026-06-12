@@ -111,6 +111,19 @@ enum ScheduleProjector {
         }
 
         for (dt, shift) in descriptors {
+            // Honor schedule_rules. If the line has no rule for this day type
+            // OR the current time falls outside [open, close], skip — the line
+            // is closed and shouldn't emit any departure (this is the bug that
+            // showed T7 every 12 min at 03:00 on a weekday).
+            guard let rule = bundle.rules.first(where: { $0.dayType == dt }) else { continue }
+            let openMin = minutesOfDay(rule.openTime)
+            let closeMin = minutesOfDay(rule.closeTime)
+            if !rule.is247, let openM = openMin, let closeM = closeMin {
+                let effectiveClose = closeM <= openM ? closeM + 24 * 60 : closeM
+                let effectiveNow = nowMinutes + shift
+                if effectiveNow < openM || effectiveNow > effectiveClose { continue }
+            }
+
             let bands = bundle.bands
                 .filter { $0.dayType == dt }
                 .sorted { (a, b) in

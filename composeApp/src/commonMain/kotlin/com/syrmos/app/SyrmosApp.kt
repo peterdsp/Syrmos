@@ -40,6 +40,7 @@ import com.syrmos.app.tab.SettingsTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.data.sync.ScheduleSyncRepository
+import com.syrmos.core.data.sync.VisualOverridesRepository
 import com.syrmos.core.designsystem.theme.SyrmosTheme
 import org.koin.compose.koinInject
 
@@ -48,6 +49,7 @@ fun SyrmosApp() {
     val dataSeeder = koinInject<DataSeeder>()
     val linesRefresher = koinInject<LinesRefresher>()
     val scheduleSync = koinInject<ScheduleSyncRepository>()
+    val visualOverrides = koinInject<VisualOverridesRepository>()
     var isSeeded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -62,6 +64,7 @@ fun SyrmosApp() {
         runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
         runCatching { linesRefresher.refresh() }
         runCatching { scheduleSync.refresh() }
+        runCatching { visualOverrides.refresh() }
     }
 
     SyrmosTheme {
