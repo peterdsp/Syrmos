@@ -164,15 +164,18 @@ struct StationDetailView: View {
         station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
     }
 
-    /// API-first source of truth, with a seed fallback when bundles aren't loaded yet.
+    /// API + synced-bundle source of truth. Empty result means the bundles
+    /// haven't loaded yet (offline cold start before the first manifest
+    /// poll); the UI shows the "Loading departures..." state in that case.
+    /// The sampleDepartures seed fallback was removed per the spec because
+    /// it didn't honor /api/station-offsets and made the apps show
+    /// origin-terminal times at every stop.
     private func currentDepartures() -> [Departure] {
-        let live = ScheduleProjector.nextDepartures(
+        return ScheduleProjector.nextDepartures(
             for: station.id,
             lineIds: station.lineIds,
             limit: 10
         )
-        if !live.isEmpty { return live }
-        return SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
     }
 
     private func arrivalColor(_ minutes: Int) -> Color {

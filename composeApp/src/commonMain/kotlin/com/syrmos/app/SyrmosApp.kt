@@ -42,6 +42,7 @@ import com.syrmos.app.tab.TimetablesTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.data.sync.ScheduleSyncRepository
+import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
 import com.syrmos.core.designsystem.theme.SyrmosTheme
 import org.koin.compose.koinInject
@@ -51,6 +52,7 @@ fun SyrmosApp() {
     val dataSeeder = koinInject<DataSeeder>()
     val linesRefresher = koinInject<LinesRefresher>()
     val scheduleSync = koinInject<ScheduleSyncRepository>()
+    val stationOffsets = koinInject<StationOffsetsRepository>()
     val visualOverrides = koinInject<VisualOverridesRepository>()
     var isSeeded by remember { mutableStateOf(false) }
 
@@ -61,15 +63,15 @@ fun SyrmosApp() {
         } finally {
             isSeeded = true
         }
-        // Hydrate from bundled snapshot first so projector has data immediately,
-        // even if network is down. Live refresh then overlays anything newer.
         // Hydrate from bundled snapshot first so the projector + visuals have
         // correct data immediately, even on airplane mode. Live refresh then
         // overlays anything newer when the network is available.
         runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
+        runCatching { stationOffsets.hydrateFromBundleIfNeeded() }
         runCatching { visualOverrides.hydrateFromBundleIfNeeded() }
         runCatching { linesRefresher.refresh() }
         runCatching { scheduleSync.refresh() }
+        runCatching { stationOffsets.refresh() }
         runCatching { visualOverrides.refresh() }
     }
 

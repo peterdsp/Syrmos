@@ -36,7 +36,12 @@ class GetNextDeparturesUseCase(
         // through to the bundled seed for an offline-first first impression.
         if (bandProjector != null) {
             val lineIds = if (lineId == "M3") listOf("M3", "M3_AIR") else listOf(lineId)
-            val live = bandProjector.invoke(lineIds = lineIds, direction = direction, limit = limit)
+            val live = bandProjector.invoke(
+                lineIds = lineIds,
+                direction = direction,
+                limit = limit,
+                stationId = stationId,
+            )
             if (live.isNotEmpty()) {
                 return kotlinx.coroutines.flow.flowOf(live)
             }
