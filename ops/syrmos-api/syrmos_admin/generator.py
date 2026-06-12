@@ -100,6 +100,60 @@ def _build_holidays(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_icons(conn: sqlite3.Connection) -> dict:
+    """Effective icon manifest: station-id -> SVG url, plus vehicle direction map.
+    Override URL wins over default; consumers use this as the source of truth."""
+    rows = conn.execute(
+        "SELECT scope, station_id, line_id, direction, default_url, override_url"
+        " FROM icons ORDER BY scope, station_id, line_id"
+    ).fetchall()
+    stations: dict[str, str] = {}
+    interchanges: dict[str, str] = {}
+    vehicles: dict[str, dict] = {}
+    for r in rows:
+        url = r["override_url"] or r["default_url"]
+        if r["scope"] == "station" and r["station_id"]:
+            stations[r["station_id"]] = url
+        elif r["scope"] == "interchange" and r["station_id"]:
+            interchanges[r["station_id"]] = url
+        elif r["scope"] == "vehicle":
+            key = f"{r['line_id'] or 'generic'}:{r['direction'] or '_'}"
+            vehicles[key] = {
+                "url": url,
+                "lineId": r["line_id"],
+                "direction": r["direction"],
+            }
+    return {
+        "updatedAt": _now_iso(),
+        "stations": stations,
+        "interchanges": interchanges,
+        "vehicles": vehicles,
+    }
+
+
+def _build_line_display(conn: sqlite3.Connection) -> dict:
+    rows = conn.execute(
+        "SELECT line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes, updated_at"
+        " FROM line_display ORDER BY line_id"
+    ).fetchall()
+    return {
+        "updatedAt": _now_iso(),
+        "lines": [
+            {
+                "lineId": r["line_id"],
+                "strokeColor": r["stroke_color"],
+                "strokeWeight": r["stroke_weight"],
+                "strokeDash": r["stroke_dash"],
+                "labelColor": r["label_color"],
+                "glow": bool(r["glow"]),
+                "notes": r["notes"] or "",
+                "updatedAt": r["updated_at"],
+            }
+            for r in rows
+        ],
+    }
+
+
 def _build_fares(conn: sqlite3.Connection) -> dict:
     rows = conn.execute(
         "SELECT operator_id, region, prices_url, prices_url_el, currency,"
@@ -202,6 +256,14 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
         fares_payload = _build_fares(conn)
         fares_hash = _atomic_write_json(out_dir / "fares.json", fares_payload)
 
+        # /api/icons
+        icons_payload = _build_icons(conn)
+        icons_hash = _atomic_write_json(out_dir / "icons.json", icons_payload)
+
+        # /api/line-display
+        ld_payload = _build_line_display(conn)
+        ld_hash = _atomic_write_json(out_dir / "line-display.json", ld_payload)
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -233,6 +295,8 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "holidaysHash": holidays_hash,
             "overridesHash": overrides_hash,
             "faresHash": fares_hash,
+            "iconsHash": icons_hash,
+            "lineDisplayHash": ld_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 

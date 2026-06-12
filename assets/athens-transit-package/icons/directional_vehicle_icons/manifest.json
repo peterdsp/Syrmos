@@ -1,0 +1,232 @@
+{
+  "pack": "athens_transit_no_overlap_directionals",
+  "directional_rule": "Left terminal / return direction uses ←. Right terminal / outbound direction uses →.",
+  "design_rule": "No text inside vehicle pictograms. No rail geometry near the destination label. Destination sits inside a dedicated pill at the bottom.",
+  "directional_icons": [
+    {
+      "mode": "metro",
+      "line": "M1",
+      "route": "Piraeus ↔ Kifissia",
+      "destination": "Piraeus",
+      "display_destination": "Piraeus",
+      "arrow": "←",
+      "file": "directional/metro/m1_piraeus_kifissia/metro_m1_left_to_piraeus.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M1",
+      "route": "Piraeus ↔ Kifissia",
+      "destination": "Kifissia",
+      "display_destination": "Kifissia",
+      "arrow": "→",
+      "file": "directional/metro/m1_piraeus_kifissia/metro_m1_right_to_kifissia.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "route": "Anthoupoli ↔ Elliniko",
+      "destination": "Anthoupoli",
+      "display_destination": "Anthoupoli",
+      "arrow": "←",
+      "file": "directional/metro/m2_anthoupoli_elliniko/metro_m2_left_to_anthoupoli.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M2",
+      "route": "Anthoupoli ↔ Elliniko",
+      "destination": "Elliniko",
+      "display_destination": "Elliniko",
+      "arrow": "→",
+      "file": "directional/metro/m2_anthoupoli_elliniko/metro_m2_right_to_elliniko.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "route": "Dimotiko Theatro ↔ Doukissis Plakentias / Airport",
+      "destination": "Dimotiko Theatro",
+      "display_destination": "Dim. Theatro",
+      "arrow": "←",
+      "file": "directional/metro/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_left_to_dimotiko_theatro.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "route": "Dimotiko Theatro ↔ Doukissis Plakentias / Airport",
+      "destination": "Doukissis Plakentias",
+      "display_destination": "D. Plak.",
+      "arrow": "→",
+      "file": "directional/metro/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_doukissis_plakentias.svg"
+    },
+    {
+      "mode": "metro",
+      "line": "M3",
+      "route": "Dimotiko Theatro ↔ Doukissis Plakentias / Airport",
+      "destination": "Airport",
+      "display_destination": "Airport",
+      "arrow": "→",
+      "file": "directional/metro/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_airport.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "route": "Syntagma ↔ Pikrodafni",
+      "destination": "Syntagma",
+      "display_destination": "Syntagma",
+      "arrow": "←",
+      "file": "directional/tram/t6_syntagma_pikrodafni/tram_t6_left_to_syntagma.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6",
+      "route": "Syntagma ↔ Pikrodafni",
+      "destination": "Pikrodafni",
+      "display_destination": "Pikrodafni",
+      "arrow": "→",
+      "file": "directional/tram/t6_syntagma_pikrodafni/tram_t6_right_to_pikrodafni.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "route": "Akti Posidonos ↔ Asklipiio Voulas",
+      "destination": "Akti Posidonos",
+      "display_destination": "Akti Pos.",
+      "arrow": "←",
+      "file": "directional/tram/t7_akti_posidonos_asklipiio_voulas/tram_t7_left_to_akti_posidonos.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T7",
+      "route": "Akti Posidonos ↔ Asklipiio Voulas",
+      "destination": "Asklipiio Voulas",
+      "display_destination": "Voula",
+      "arrow": "→",
+      "file": "directional/tram/t7_akti_posidonos_asklipiio_voulas/tram_t7_right_to_asklipiio_voulas.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6T7",
+      "route": "Syntagma ↔ Asklipiio Voulas via Pikrodafni",
+      "destination": "Syntagma",
+      "display_destination": "Syntagma",
+      "arrow": "←",
+      "file": "directional/tram/t6t7_syntagma_asklipiio_voulas_via_pikrodafni/tram_t6t7_left_to_syntagma.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6T7",
+      "route": "Syntagma ↔ Asklipiio Voulas via Pikrodafni",
+      "destination": "Asklipiio Voulas",
+      "display_destination": "Voula",
+      "arrow": "→",
+      "file": "directional/tram/t6t7_syntagma_asklipiio_voulas_via_pikrodafni/tram_t6t7_right_to_asklipiio_voulas.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6T7",
+      "route": "Syntagma ↔ Akti Posidonos via Pikrodafni",
+      "destination": "Syntagma",
+      "display_destination": "Syntagma",
+      "arrow": "←",
+      "file": "directional/tram/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_left_to_syntagma.svg"
+    },
+    {
+      "mode": "tram",
+      "line": "T6T7",
+      "route": "Syntagma ↔ Akti Posidonos via Pikrodafni",
+      "destination": "Akti Posidonos",
+      "display_destination": "Akti Pos.",
+      "arrow": "→",
+      "file": "directional/tram/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_right_to_akti_posidonos.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "route": "Piraeus ↔ Airport",
+      "destination": "Piraeus",
+      "display_destination": "Piraeus",
+      "arrow": "←",
+      "file": "directional/train/p1_piraeus_airport/train_p1_left_to_piraeus.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1",
+      "route": "Piraeus ↔ Airport",
+      "destination": "Airport",
+      "display_destination": "Airport",
+      "arrow": "→",
+      "file": "directional/train/p1_piraeus_airport/train_p1_right_to_airport.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1A",
+      "route": "Ano Liosia ↔ Airport",
+      "destination": "Ano Liosia",
+      "display_destination": "A. Liosia",
+      "arrow": "←",
+      "file": "directional/train/p1a_ano_liosia_airport/train_p1a_left_to_ano_liosia.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1A",
+      "route": "Ano Liosia ↔ Airport",
+      "destination": "Airport",
+      "display_destination": "Airport",
+      "arrow": "→",
+      "file": "directional/train/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1M",
+      "route": "Metamorfosi ↔ Airport",
+      "destination": "Metamorfosi",
+      "display_destination": "Metam.",
+      "arrow": "←",
+      "file": "directional/train/p1m_metamorfosi_airport/train_p1m_left_to_metamorfosi.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P1M",
+      "route": "Metamorfosi ↔ Airport",
+      "destination": "Airport",
+      "display_destination": "Airport",
+      "arrow": "→",
+      "file": "directional/train/p1m_metamorfosi_airport/train_p1m_right_to_airport.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "route": "Piraeus ↔ Kiato",
+      "destination": "Piraeus",
+      "display_destination": "Piraeus",
+      "arrow": "←",
+      "file": "directional/train/p2_piraeus_kiato/train_p2_left_to_piraeus.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P2",
+      "route": "Piraeus ↔ Kiato",
+      "destination": "Kiato",
+      "display_destination": "Kiato",
+      "arrow": "→",
+      "file": "directional/train/p2_piraeus_kiato/train_p2_right_to_kiato.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "route": "Athens ↔ Chalkida",
+      "destination": "Athens",
+      "display_destination": "Athens",
+      "arrow": "←",
+      "file": "directional/train/p3_athens_chalkida/train_p3_left_to_athens.svg"
+    },
+    {
+      "mode": "train",
+      "line": "P3",
+      "route": "Athens ↔ Chalkida",
+      "destination": "Chalkida",
+      "display_destination": "Chalkida",
+      "arrow": "→",
+      "file": "directional/train/p3_athens_chalkida/train_p3_right_to_chalkida.svg"
+    }
+  ]
+}

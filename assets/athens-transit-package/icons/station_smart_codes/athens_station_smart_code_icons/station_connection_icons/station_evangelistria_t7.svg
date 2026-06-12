@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Evangelistria station connections T7">
+  <title>Evangelistria · T7</title>
+  <desc>One station-level interchange icon for Evangelistria. Use this single icon when a station is served by multiple metro/tram/train lines.</desc>
+  <rect width="96" height="96" rx="22" fill="#ffffff"/>
+  <rect x="4" y="4" width="88" height="88" rx="19" fill="#f8fafc" stroke="#d1d5db" stroke-width="2"/>
+  <circle cx="48" cy="39" r="25" fill="#fff" stroke="#111827" stroke-width="4"/>
+  <rect x="37.0" y="31" width="22" height="16" rx="8" fill="#00A3E0"/>
+  <text x="48.0" y="42.5" text-anchor="middle" font-family="Inter, SF Pro Display, Arial, sans-serif" font-size="8" font-weight="900" fill="#fff">T7</text>
+  <rect x="17" y="68" width="62" height="18" rx="9" fill="#111827"/>
+  <text x="48" y="81" text-anchor="middle" font-family="Inter, SF Pro Display, Arial, sans-serif" font-size="12" font-weight="900" fill="#fff">E</text>
+</svg>
