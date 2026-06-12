@@ -538,6 +538,58 @@
             .slice(0, 10);
     }
 
+    function vehicleIconFor(lineId, direction) {
+        // Maps (lineId, destination text) to the operator directional SVG
+        // served at /icons/directional_vehicle_icons/. Mirrors the iOS
+        // TimetablesIcons helper so all three platforms pick the same artwork.
+        const d = (direction || "").toLowerCase();
+        const base = "/icons/directional_vehicle_icons/directional";
+        switch (lineId) {
+            case "M1":
+                return d.includes("piraeus")
+                    ? `${base}/metro/m1_piraeus_kifissia/metro_m1_left_to_piraeus.svg`
+                    : `${base}/metro/m1_piraeus_kifissia/metro_m1_right_to_kifissia.svg`;
+            case "M2":
+                return d.includes("anthoupoli")
+                    ? `${base}/metro/m2_anthoupoli_elliniko/metro_m2_left_to_anthoupoli.svg`
+                    : `${base}/metro/m2_anthoupoli_elliniko/metro_m2_right_to_elliniko.svg`;
+            case "M3":
+                if (d.includes("airport") || d.includes("αεροδρ")) {
+                    return `${base}/metro/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_airport.svg`;
+                }
+                if (d.includes("dimotiko") || d.includes("dimarheio") || d.includes("piraeus")) {
+                    return `${base}/metro/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_left_to_dimotiko_theatro.svg`;
+                }
+                return `${base}/metro/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_doukissis_plakentias.svg`;
+            case "T6":
+                return d.includes("syntagma")
+                    ? `${base}/tram/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_left_to_syntagma.svg`
+                    : `${base}/tram/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_right_to_akti_posidonos.svg`;
+            case "T7":
+                return d.includes("akti") || d.includes("posidonos") || d.includes("piraeus")
+                    ? `${base}/tram/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_left_to_syntagma.svg`
+                    : `${base}/tram/t6t7_syntagma_asklipiio_voulas_via_pikrodafni/tram_t6t7_right_to_asklipiio_voulas.svg`;
+            case "A1":
+                return d.includes("piraeus")
+                    ? `${base}/train/p1_piraeus_airport/train_p1_left_to_piraeus.svg`
+                    : `${base}/train/p1_piraeus_airport/train_p1_right_to_airport.svg`;
+            case "A2":
+                return d.includes("liosia")
+                    ? `${base}/train/p1a_ano_liosia_airport/train_p1a_left_to_ano_liosia.svg`
+                    : `${base}/train/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`;
+            case "A3":
+                return d.includes("athens") || d.includes("αθήνα")
+                    ? `${base}/train/p3_athens_chalkida/train_p3_left_to_athens.svg`
+                    : `${base}/train/p3_athens_chalkida/train_p3_right_to_chalkida.svg`;
+            case "A4":
+                return d.includes("piraeus")
+                    ? `${base}/train/p2_piraeus_kiato/train_p2_left_to_piraeus.svg`
+                    : `${base}/train/p2_piraeus_kiato/train_p2_right_to_kiato.svg`;
+            default:
+                return null;
+        }
+    }
+
     function renderDepartures(station) {
         const departures = buildStationDepartures(station);
         if (!departures.length) {
@@ -551,19 +603,25 @@
                 : departure.minutesAway === 1
                     ? "1 min"
                     : `${departure.minutesAway} min`;
+            const lineId = departure.line?.id || "";
+            const destination = departure.destination || departure.direction || "";
+            const iconSrc = vehicleIconFor(lineId, destination);
+            const iconHtml = iconSrc
+                ? `<img class="departure-card__icon" src="https://api-syrmos.peterdsp.dev${iconSrc}" alt="${lineId}" loading="lazy" />`
+                : `<span class="line-dot" style="background:${departure.line?.color || 'var(--accent)'};"></span>`;
             return `
                 <div class="departure-card">
                     <div class="departure-card__header">
+                        ${iconHtml}
                         <div>
                             <div class="departure-card__line">
-                                <span class="line-dot" style="background:${departure.line.color};"></span>
-                                <span>${departure.line.name}</span>
+                                <span>${departure.line?.name || lineId}</span>
                             </div>
-                            <div class="departure-card__destination">${departure.destination}</div>
+                            <div class="departure-card__destination">${destination}</div>
                         </div>
                         <div class="departure-card__eta">
                             <div class="departure-card__minutes">${minutesLabel}</div>
-                            <div class="departure-card__time">${departure.time}</div>
+                            <div class="departure-card__time">${departure.time || ""}</div>
                         </div>
                     </div>
                 </div>

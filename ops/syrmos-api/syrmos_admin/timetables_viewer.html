@@ -196,8 +196,12 @@ h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
 .stop-row {
   display: flex; justify-content: space-between; gap: 12px;
   color: var(--text);
+  align-items: center;
 }
 .stop-row time { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.stop-row__name { display: inline-flex; align-items: center; gap: 8px; }
+.stop-row__icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+.stop-row__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .train-card__toggle {
   margin-top: 4px;
   align-self: flex-start;
@@ -295,14 +299,21 @@ const LINE_LABELS = {
 const DAY_LABELS = { mon_fri: 'Mon–Fri', weekend: 'Weekend', all: 'All days' };
 const DIRECTION_LABELS = { outbound: 'Outbound', inbound: 'Inbound', both: 'Both directions', extension: 'Extension' };
 
-const state = { trains: [], updatedAt: '', lineId: 'A1', dayType: 'mon_fri', direction: 'all', search: '' };
+const state = { trains: [], updatedAt: '', lineId: 'A1', dayType: 'mon_fri', direction: 'all', search: '', stationIcons: {} };
 
 async function load() {
   try {
-    const r = await fetch('/api/train-timestamps', { headers: { Accept: 'application/json' } });
-    const data = await r.json();
+    const [ttRes, iconsRes] = await Promise.all([
+      fetch('/api/train-timestamps', { headers: { Accept: 'application/json' } }),
+      fetch('/api/icons', { headers: { Accept: 'application/json' } }).catch(() => null),
+    ]);
+    const data = await ttRes.json();
     state.trains = data.trains || [];
     state.updatedAt = data.updatedAt || '';
+    if (iconsRes && iconsRes.ok) {
+      const icons = await iconsRes.json();
+      state.stationIcons = icons.stations || {};
+    }
     document.getElementById('updatedAt').textContent = state.updatedAt ? new Date(state.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
     buildFilters();
     render();
@@ -414,7 +425,16 @@ function render() {
         <strong>${first.time}</strong> ${escapeHtml(first.stationNameEn)} → <strong>${last.time}</strong> ${escapeHtml(last.stationNameEn)}
         <div class="small" style="color: var(--text-muted); font-size:12px;">${t.stops.length} stops</div>
       </div>
-      <div class="train-card__stops">${t.stops.map(s => `<div class="stop-row"><span>${escapeHtml(s.stationNameEn)}</span><time>${s.time}</time></div>`).join('')}</div>
+      <div class="train-card__stops">${t.stops.map(s => {
+        const iconUrl = s.stationId ? state.stationIcons[s.stationId] : null;
+        const icon = iconUrl
+          ? `<img class="stop-row__icon" src="${iconUrl}" alt="" loading="lazy" />`
+          : `<span class="stop-row__dot" style="background:${LINE_COLORS[t.lineId] || 'var(--accent)'}"></span>`;
+        return `<div class="stop-row">
+          <span class="stop-row__name">${icon}${escapeHtml(s.stationNameEn)}</span>
+          <time>${s.time}</time>
+        </div>`;
+      }).join('')}</div>
       <button class="train-card__toggle">Show all stops</button>
     `;
     const toggle = card.querySelector('.train-card__toggle');

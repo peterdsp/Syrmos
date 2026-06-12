@@ -431,6 +431,12 @@ body {
     font-weight: 600;
 }
 
+.departure-card__icon {
+    width: 44px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
 .line-dot {
     width: 10px;
     height: 10px;
