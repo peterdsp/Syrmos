@@ -35,11 +35,25 @@ struct TimetablesView: View {
             HStack(spacing: 8) {
                 ForEach(lineIds, id: \.self) { lineId in
                     let color = SyrmosData.lineColor(for: lineId)
+                    // Outbound icon as the chip's mode glyph so the chip
+                    // matches the row artwork the user sees below.
+                    let iconName = TimetablesIcons.vehicleImageName(
+                        lineId: lineId,
+                        direction: SyrmosData.line(for: lineId)?.terminalB ?? "",
+                        isAirport: false
+                    )
                     Button {
                         selectedLineId = lineId
                     } label: {
                         HStack(spacing: 6) {
-                            Circle().fill(color).frame(width: 8, height: 8)
+                            if let iconName, UIImage(named: iconName) != nil {
+                                Image(iconName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 28, height: 18)
+                            } else {
+                                Circle().fill(color).frame(width: 8, height: 8)
+                            }
                             Text(SyrmosData.line(for: lineId)?.name ?? lineId)
                                 .font(.callout)
                                 .fontWeight(selectedLineId == lineId ? .semibold : .regular)

@@ -127,14 +127,18 @@ fun StationDetailScreen(
             if (uiState.departures.isNotEmpty()) {
                 item { SectionHeader(title = "Next departures") }
                 items(uiState.departures) { departure ->
+                    val direction = departure.notes ?: departure.direction.name.lowercase()
+                        .replaceFirstChar { it.uppercase() }
                     DepartureCard(
                         lineName = departure.lineId,
                         lineColor = lineIdToColor(departure.lineId),
-                        direction = departure.notes ?: departure.direction.name.lowercase()
-                            .replaceFirstChar { it.uppercase() },
+                        direction = direction,
                         minutesAway = departure.minutesAway,
                         departureTime = departure.time,
                         modifier = Modifier.padding(horizontal = 16.dp),
+                        lineId = departure.lineId,
+                        isAirport = direction.contains("airport", ignoreCase = true) ||
+                                direction.contains("αεροδρ", ignoreCase = true),
                     )
                 }
             }
