@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -37,6 +38,7 @@ import com.syrmos.app.tab.HomeTab
 import com.syrmos.app.tab.LinesTab
 import com.syrmos.app.tab.MapTab
 import com.syrmos.app.tab.SettingsTab
+import com.syrmos.app.tab.TimetablesTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.data.sync.ScheduleSyncRepository
@@ -89,6 +91,7 @@ fun SyrmosApp() {
                                     TabNavItem(HomeTab, Icons.Filled.Home)
                                     TabNavItem(LinesTab, Icons.Filled.DirectionsTransit)
                                     TabNavItem(MapTab, Icons.Filled.Map)
+                                    TabNavItem(TimetablesTab, Icons.Filled.AccessTime)
                                     TabNavItem(SettingsTab, Icons.Filled.Settings)
                                 }
                             },
