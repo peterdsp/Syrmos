@@ -33,6 +33,7 @@
 		4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */; };
 		8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551315413AD2438B8C7F5FF0 /* SafariSheet.swift */; };
 		03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* ThemeManager.swift */; };
+		470A39F895004D4CB8BC04D4 /* SyrmosTrainTimestampsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +65,7 @@
 		C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationMapSheet.swift; sourceTree = "<group>"; };
 		551315413AD2438B8C7F5FF0 /* SafariSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariSheet.swift; sourceTree = "<group>"; };
 		37E20527B3ED48E6806B8138 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosTrainTimestampsStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -165,7 +167,8 @@ DDCABDB1DD7B61F362465058 /* Home */,
 		F82A05549BFD7E1510363B16 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-																								37E20527B3ED48E6806B8138 /* ThemeManager.swift */,
+																												DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */,
+37E20527B3ED48E6806B8138 /* ThemeManager.swift */,
 51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */,
 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */,
 5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */,
@@ -247,7 +250,8 @@ C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-																																				03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */,
+																																								470A39F895004D4CB8BC04D4 /* SyrmosTrainTimestampsStore.swift in Sources */,
+03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */,
 8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,

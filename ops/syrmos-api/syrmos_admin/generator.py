@@ -155,6 +155,67 @@ def _build_operators(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_train_timestamps(conn: sqlite3.Connection) -> dict:
+    """Group raw timestamp rows into per-train stopping patterns. Output is
+    keyed by line + day_type + direction so the clients can pick the relevant
+    set in O(1) and render the timetable straight from real data, no
+    band projection needed."""
+    rows = conn.execute(
+        "SELECT line_id, direction, day_type, train_no, station_id, "
+        " station_name_en, station_name_el, time, stop_sequence, source_pdf, valid_from"
+        " FROM train_timestamps"
+        " ORDER BY line_id, day_type, direction, train_no, stop_sequence"
+    ).fetchall()
+
+    trains: dict[tuple[str, str, str, str], dict] = {}
+    for r in rows:
+        key = (r["line_id"], r["day_type"], r["direction"], r["train_no"])
+        if key not in trains:
+            trains[key] = {
+                "lineId": r["line_id"],
+                "dayType": r["day_type"],
+                "direction": r["direction"],
+                "trainNo": r["train_no"],
+                "sourcePdf": r["source_pdf"],
+                "validFrom": r["valid_from"],
+                "stops": [],
+            }
+        trains[key]["stops"].append({
+            "stationId": r["station_id"] or "",
+            "stationNameEn": r["station_name_en"],
+            "stationNameEl": r["station_name_el"],
+            "time": r["time"],
+            "sequence": r["stop_sequence"],
+        })
+
+    # Sort each train's stops by sequence, and order trains by first-stop time.
+    train_list = []
+    for t in trains.values():
+        t["stops"].sort(key=lambda s: s["sequence"])
+        first_time = t["stops"][0]["time"] if t["stops"] else "99:99"
+        t["firstTime"] = first_time
+        train_list.append(t)
+    train_list.sort(key=lambda t: (t["lineId"], t["dayType"], t["direction"], t["firstTime"], t["trainNo"]))
+
+    return {
+        "updatedAt": _now_iso(),
+        "trains": train_list,
+        "summary": {
+            "totalTrains": len(train_list),
+            "byLine": _group_count(train_list, "lineId"),
+            "byDayType": _group_count(train_list, "dayType"),
+        },
+    }
+
+
+def _group_count(items: list[dict], field: str) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for item in items:
+        k = item.get(field, "?")
+        out[k] = out.get(k, 0) + 1
+    return out
+
+
 def _build_icons(conn: sqlite3.Connection) -> dict:
     """Effective icon manifest: station-id -> SVG url, plus vehicle direction map.
     Override URL wins over default; consumers use this as the source of truth."""
@@ -327,6 +388,14 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
         operators_payload = _build_operators(conn)
         operators_hash = _atomic_write_json(out_dir / "operators.json", operators_payload)
 
+        # /api/train-timestamps - per-train per-station timestamps parsed from
+        # operator PDFs. Apps prefer these over band-based projection for any
+        # (line, day_type) where rows exist.
+        train_timestamps_payload = _build_train_timestamps(conn)
+        train_timestamps_hash = _atomic_write_json(
+            out_dir / "train-timestamps.json", train_timestamps_payload
+        )
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -362,6 +431,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "lineDisplayHash": ld_hash,
             "stationsHash": stations_hash,
             "operatorsHash": operators_hash,
+            "trainTimestampsHash": train_timestamps_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 
