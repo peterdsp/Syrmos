@@ -19,6 +19,7 @@ FILES_TO_ADD = [
     ("Models/SyrmosSchedulesStore.swift", "Models"),
     ("Models/ScheduleProjector.swift", "Models"),
     ("Models/SyrmosVisualOverridesStore.swift", "Models"),
+    ("Views/Timetables/TimetablesView.swift", "Views"),
 ]
 
 
