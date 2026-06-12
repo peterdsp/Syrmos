@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -39,22 +40,75 @@ OUT_DIR = CACHE_DIR / "parsed"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 URL = "https://www.oasa.gr/en/tickets/prices-of-products/"
+URL_EL = "https://www.oasa.gr/εισιτήρια/τιμολογιακή/"
 USER_AGENT = "syrmos-oasa-fetch/1.0 (+https://syrmos.peterdsp.dev)"
 
 PRICE_RE = re.compile(r"(\d+(?:[.,]\d{1,2})?)\s*€")
 PACK_PRICE_RE = re.compile(r"^\s*(\d+(?:[.,]\d{1,2})?)\s*€?\s*$")
 
 
-def fetch_html() -> str:
-    cached = CACHE_DIR / "prices-of-products.html"
+def fetch_html(url: str = URL, cache_name: str = "prices-of-products.html") -> str:
+    cached = CACHE_DIR / cache_name
     if cached.exists():
         return cached.read_text()
-    req = urllib.request.Request(URL, headers={"User-Agent": USER_AGENT})
+    # URL-encode non-ASCII path segments so the Greek route survives the
+    # urllib socket write. Query string is preserved as-is.
+    parsed = urllib.parse.urlsplit(url)
+    safe_path = urllib.parse.quote(parsed.path, safe="/%")
+    encoded = urllib.parse.urlunsplit(
+        (parsed.scheme, parsed.netloc, safe_path, parsed.query, parsed.fragment)
+    )
+    req = urllib.request.Request(encoded, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=30) as r:
         html = r.read().decode("utf-8", errors="ignore")
     cached.parent.mkdir(parents=True, exist_ok=True)
     cached.write_text(html)
     return html
+
+
+# Greek section keywords map to the same canonical section keys English uses
+# so the two parses can be aligned by (section, ordinal).
+SECTION_KEYWORDS_EL = {
+    "ΕΝΙΑΙΑ ΕΙΣΙΤΗΡΙΑ":         "single",
+    "ΠΡΟΣΦΟΡΕΣ":                "offers",
+    "ΕΙΣΙΤΗΡΙΑ ΓΡΑΜΜΩΝ ΑΕΡΟΔΡΟΜΙΟΥ": "airport",
+    "ΛΕΩΦΟΡΙΑΚΕΣ ΓΡΑΜΜΕΣ EXPRESS":   "airport",
+    "ΓΙΑ ΟΛΑ ΤΑ ΜΕΣΑ":          "passes",
+    "ΗΜΕΡΩΝ":                   "passes",
+}
+
+
+def _extract_greek_titles_by_section(html: str) -> dict[str, list[str]]:
+    """Walk the Greek page in document order and group every product
+    heading under whichever section header it most recently appeared under.
+    Order within each section mirrors the English page, so we pair by
+    positional index in the ingest step."""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript", "header", "footer", "nav"]):
+        tag.decompose()
+    out: dict[str, list[str]] = {"single": [], "offers": [], "airport": [], "passes": []}
+    current = "single"
+    for heading in soup.find_all(["h2", "h3", "h4"]):
+        title = heading.get_text(" ", strip=True)
+        if not title:
+            continue
+        upper = title.upper()
+        matched_section = None
+        for kw, section in SECTION_KEYWORDS_EL.items():
+            if kw in upper:
+                matched_section = section
+                break
+        # Top-level section anchors and stray "ΗΜΕΡΩΝ" stubs are not products.
+        is_anchor = upper in (
+            "ΕΝΙΑΙΑ ΕΙΣΙΤΗΡΙΑ", "ΠΡΟΣΦΟΡΕΣ", "ΕΙΣΙΤΗΡΙΑ ΓΡΑΜΜΩΝ ΑΕΡΟΔΡΟΜΙΟΥ",
+            "ΛΕΩΦΟΡΙΑΚΕΣ ΓΡΑΜΜΕΣ EXPRESS", "ΗΜΕΡΩΝ",
+        ) or upper.startswith("ΓΙΑ ΟΛΑ ΤΑ ΜΕΣΑ")
+        if is_anchor:
+            if matched_section:
+                current = matched_section
+            continue
+        out[current].append(title)
+    return out
 
 
 def parse_price(raw: str) -> float | None:
@@ -105,8 +159,18 @@ def main() -> None:
     for tag in soup(["script", "style", "noscript", "header", "footer", "nav"]):
         tag.decompose()
 
+    # Parallel Greek-language scrape. Soft-fail if oasa.gr/el route changes
+    # so the English path keeps working.
+    el_titles: dict[str, list[str]] = {}
+    try:
+        el_html = fetch_html(URL_EL, cache_name="prices-of-products.el.html")
+        el_titles = _extract_greek_titles_by_section(el_html)
+    except Exception as e:  # noqa: BLE001
+        print(f"  WARN: Greek scrape failed: {e}", file=sys.stderr)
+
     records: list[dict] = []
     current_section = "single"
+    section_position: dict[str, int] = {}
 
     for heading in soup.find_all(["h2", "h3", "h4"]):
         title = heading.get_text(" ", strip=True)
@@ -159,9 +223,18 @@ def main() -> None:
         if full_price is None and disc_price is None:
             continue
 
+        # Pair the English title with the Greek title at the same position
+        # within this section. Falls back to empty when the Greek scrape
+        # missed a row, so the apps degrade to English-only gracefully.
+        idx = section_position.get(current_section, 0)
+        el_pool = el_titles.get(current_section, [])
+        title_el = el_pool[idx] if idx < len(el_pool) else ""
+        section_position[current_section] = idx + 1
+
         records.append({
             "section":               current_section,
             "title_en":              title,
+            "title_el":              title_el,
             "full_price_eur":        full_price,
             "discounted_price_eur":  disc_price,
             "validity":              validity,

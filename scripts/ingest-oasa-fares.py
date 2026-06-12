@@ -37,12 +37,13 @@ def main() -> None:
             rec = json.loads(line)
             conn.execute(
                 "INSERT INTO fare_products"
-                " (section, title_en, full_price_eur, discounted_price_eur,"
+                " (section, title_en, title_el, full_price_eur, discounted_price_eur,"
                 "  validity, notes, tags, sort_order)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     rec.get("section") or "single",
                     rec["title_en"],
+                    rec.get("title_el") or "",
                     rec.get("full_price_eur"),
                     rec.get("discounted_price_eur"),
                     rec.get("validity") or "",

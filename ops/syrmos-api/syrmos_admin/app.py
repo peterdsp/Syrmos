@@ -1013,9 +1013,41 @@ def docs_page(_: str = Depends(auth)) -> HTMLResponse:
 def publish(_: str = Depends(auth)) -> RedirectResponse:
     """Trigger a full snapshot regeneration. Same as Sync > Regenerate JSON,
     but invoked from the Docs page so a non-engineer admin has one obvious
-    button to push after any edit."""
+    button to push after any edit. Also pings the GitHub seed-refresh
+    workflow so the bundled seeds in the repo update within minutes
+    instead of waiting for the nightly cron."""
     generator.generate()
+    _trigger_seed_refresh()
     return RedirectResponse(f"{ADMIN_PREFIX}/docs", status_code=303)
+
+
+def _trigger_seed_refresh() -> None:
+    """Best-effort dispatch of the seed-refresh GitHub Action. Requires
+    SYRMOS_GITHUB_TOKEN in the admin env (a fine-grained PAT with
+    contents:write on peterdsp/Syrmos). Silent no-op if absent."""
+    token = os.environ.get("SYRMOS_GITHUB_TOKEN")
+    if not token:
+        return
+    import urllib.error
+    import urllib.request
+    url = "https://api.github.com/repos/peterdsp/Syrmos/actions/workflows/seed-refresh.yml/dispatches"
+    body = b'{"ref":"main"}'
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "User-Agent": "syrmos-admin/1.0",
+        },
+    )
+    try:
+        urllib.request.urlopen(req, timeout=10).close()
+    except (urllib.error.URLError, TimeoutError, OSError):
+        # Non-blocking; the nightly cron is the safety net.
+        pass
 
 
 # Health (unauthenticated)
