@@ -144,7 +144,8 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = product.titleEn,
+                    text = if (lang == AppLanguage.GREEK && product.titleEl.isNotEmpty())
+                        product.titleEl else product.titleEn,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -224,10 +225,16 @@ private fun badgeColor(product: FareProduct): Color {
     }
 }
 
-private fun formatEur(value: Double): String =
-    "€" + ((value * 100).toLong() / 100.0).toString().padEnd(4, '0').let {
-        if (it.contains('.')) it.padEnd(it.indexOf('.') + 3, '0') else "$it.00"
-    }.take(if (value >= 10) 5 else 4)
+private fun formatEur(value: Double): String {
+    // Cross-target euro formatter. Wasm/JS doesn't ship java.text.NumberFormat
+    // or String.format, so we compose the digits ourselves: round to cents,
+    // split euros and cents, pad cents to two digits. Always reads as
+    // "€1.20", "€20.00", "€2.50".
+    val cents = kotlin.math.round(value * 100.0).toLong()
+    val euros = cents / 100
+    val rem = (cents % 100).toString().padStart(2, '0')
+    return "€$euros.$rem"
+}
 
 private fun sectionTitle(key: String, lang: AppLanguage): String = when (key to lang) {
     "single" to AppLanguage.ENGLISH -> "Single tickets"
