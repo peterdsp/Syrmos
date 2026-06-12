@@ -164,11 +164,21 @@ struct TimetablesView: View {
     private func row(for dep: Departure) -> some View {
         let isPastDep = isPast(dep)
         let isAirport = dep.serviceType == "airport"
+        let iconName = TimetablesIcons.vehicleImageName(lineId: dep.lineId, direction: dep.direction, isAirport: isAirport)
         return HStack(spacing: 12) {
-            Circle()
-                .fill(SyrmosData.lineColor(for: dep.lineId))
-                .frame(width: 10, height: 10)
-                .opacity(isPastDep ? 0.3 : 1.0)
+            Group {
+                if let iconName, UIImage(named: iconName) != nil {
+                    Image(iconName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 30)
+                } else {
+                    Circle()
+                        .fill(SyrmosData.lineColor(for: dep.lineId))
+                        .frame(width: 12, height: 12)
+                }
+            }
+            .opacity(isPastDep ? 0.4 : 1.0)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
