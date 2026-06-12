@@ -29,6 +29,7 @@
 		3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */; };
 		C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */; };
 		8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */; };
+		B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* TimetablesView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosSchedulesStore.swift; sourceTree = "<group>"; };
 		395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleProjector.swift; sourceTree = "<group>"; };
 		51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosVisualOverridesStore.swift; sourceTree = "<group>"; };
+		09288EF8307B4CDC9D065AED /* TimetablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetablesView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -87,7 +89,8 @@
 		47615221B72C5C4C581C11A5 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				DDCABDB1DD7B61F362465058 /* Home */,
+								09288EF8307B4CDC9D065AED /* TimetablesView.swift */,
+DDCABDB1DD7B61F362465058 /* Home */,
 				D86A94D82859CC3CC2167D28 /* Lines */,
 				40A679F330FF3148AC14E1B1 /* Map */,
 				7B19ADD08DF2697525E49E13 /* Settings */,
@@ -235,7 +238,8 @@ C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-																				8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */,
+																								B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */,
 C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */,
 3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */,
 002709A0C1454019B429939D /* SyrmosSchedulesService.swift in Sources */,

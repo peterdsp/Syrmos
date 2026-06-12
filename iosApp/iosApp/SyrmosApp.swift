@@ -76,6 +76,13 @@ struct ContentView: View {
                     }
                     .tag(SyrmosTab.map)
 
+                TimetablesView()
+                    .tabItem {
+                        Label(loc.language == .greek ? "Δρομολόγια" : "Timetables",
+                              systemImage: "clock")
+                    }
+                    .tag(SyrmosTab.timetables)
+
                 SyrmosSettingsView()
                     .tabItem {
                         Label(loc[.settings], systemImage: "gearshape")
@@ -108,5 +115,5 @@ struct ContentView: View {
 }
 
 enum SyrmosTab {
-    case home, lines, map, settings
+    case home, lines, map, timetables, settings
 }

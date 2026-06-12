@@ -144,20 +144,62 @@
         }
     } catch (_) {}
 
+    // Source of truth for the polyline shape: OSM relation geometry served at
+    // /line-geometry/{id}.geojson. Falls back to Catmull-Rom through station
+    // coords if the GeoJSON can't be fetched (offline first launch).
+    const geoCache = new Map();
+    try {
+        const cached = localStorage.getItem("syrmos.line_geometry.v1");
+        if (cached) for (const [lid, feat] of Object.entries(JSON.parse(cached))) geoCache.set(lid, feat);
+    } catch (_) {}
+    const geoFetches = await Promise.all(
+        lines.map((line) =>
+            fetch(`https://api-syrmos.peterdsp.dev/line-geometry/${line.id}.geojson`)
+                .then((r) => (r.ok ? r.json() : null))
+                .catch(() => null)
+                .then((feat) => ({ id: line.id, feat }))
+        )
+    );
+    const persist = {};
+    for (const { id, feat } of geoFetches) {
+        if (feat && feat.geometry) {
+            geoCache.set(id, feat);
+            persist[id] = feat;
+        }
+    }
+    if (Object.keys(persist).length) {
+        try { localStorage.setItem("syrmos.line_geometry.v1", JSON.stringify(persist)); } catch (_) {}
+    }
+
     for (const line of lines) {
         const ld = lineDisplayById.get(line.id);
+        const feat = geoCache.get(line.id);
+        const strokeColor = ld?.strokeColor || line.color;
+        const strokeWeight = ld?.strokeWeight ?? (line.type === "suburban" ? 4 : 5);
+        const polylineOpts = {
+            color: strokeColor,
+            weight: strokeWeight,
+            opacity: 0.9,
+            lineCap: "round",
+            lineJoin: "round",
+            dashArray: ld?.strokeDash || null,
+        };
+        if (feat && feat.geometry) {
+            // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
+            const segments = feat.geometry.type === "MultiLineString"
+                ? feat.geometry.coordinates
+                : [feat.geometry.coordinates];
+            for (const seg of segments) {
+                const latLngs = seg.map(([lng, lat]) => [lat, lng]);
+                if (latLngs.length > 1) L.polyline(latLngs, polylineOpts).addTo(map);
+            }
+            continue;
+        }
         const orderedStations = lineStations.get(line.id) || [];
         const latLngs = orderedStations.map((station) => [station.latitude, station.longitude]);
         if (latLngs.length > 1) {
             const smoothed = catmullRomSpline(latLngs, 5);
-            L.polyline(smoothed, {
-                color: ld?.strokeColor || line.color,
-                weight: ld?.strokeWeight ?? (line.type === "suburban" ? 4 : 5),
-                opacity: 0.9,
-                lineCap: "round",
-                lineJoin: "round",
-                dashArray: ld?.strokeDash || null,
-            }).addTo(map);
+            L.polyline(smoothed, polylineOpts).addTo(map);
         }
     }
 
