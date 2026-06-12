@@ -3,6 +3,15 @@ import SwiftUI
 struct SyrmosSettingsView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
+    @State private var safariURL: URL?
+    @State private var refreshAlert: RefreshAlert?
+
+    private struct RefreshAlert: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+        let isSuccess: Bool
+    }
 
     var body: some View {
         NavigationStack {
@@ -26,7 +35,7 @@ struct SyrmosSettingsView: View {
                         set: { schedules.offlineOnly = $0 }
                     ))
                     Button {
-                        Task { await schedules.refresh() }
+                        Task { await runRefresh() }
                     } label: {
                         HStack {
                             Label(checkNowLabel, systemImage: "arrow.clockwise")
@@ -40,7 +49,9 @@ struct SyrmosSettingsView: View {
                 }
 
                 Section {
-                    Link(destination: URL(string: "https://www.oasa.gr/en/tickets/prices-of-products/")!) {
+                    Button {
+                        safariURL = URL(string: "https://www.oasa.gr/en/tickets/prices-of-products/")
+                    } label: {
                         Label(
                             loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων (OASA)" : "Ticket prices (OASA)",
                             systemImage: "eurosign.circle"
@@ -88,6 +99,48 @@ struct SyrmosSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .navigationTitle(loc[.settings])
+            .inAppSafari(url: $safariURL)
+            .alert(item: $refreshAlert) { alert in
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
+    }
+
+    @MainActor
+    private func runRefresh() async {
+        let before = schedules.lastSyncAt
+        await schedules.refresh()
+        let after = schedules.lastSyncAt
+        let isGreek = loc.language == .greek
+
+        if after != nil, after != before {
+            refreshAlert = RefreshAlert(
+                title: isGreek ? "Ενημερώθηκε" : "Up to date",
+                message: isGreek
+                    ? "Τα δρομολόγια συγχρονίστηκαν με την τελευταία έκδοση."
+                    : "Schedules synced with the latest version.",
+                isSuccess: true
+            )
+        } else if schedules.offlineOnly {
+            refreshAlert = RefreshAlert(
+                title: isGreek ? "Λειτουργία εκτός σύνδεσης" : "Offline-only mode",
+                message: isGreek
+                    ? "Απενεργοποιήστε την για να συγχρονίσετε με τον διακομιστή."
+                    : "Turn it off to sync with the server.",
+                isSuccess: false
+            )
+        } else {
+            refreshAlert = RefreshAlert(
+                title: isGreek ? "Δεν ήταν δυνατή η ενημέρωση" : "Update failed",
+                message: isGreek
+                    ? "Δεν φτάσαμε στον διακομιστή. Δοκιμάστε ξανά με σύνδεση στο διαδίκτυο."
+                    : "Could not reach the server. Try again on a stable connection.",
+                isSuccess: false
+            )
         }
     }
 

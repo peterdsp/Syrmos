@@ -251,31 +251,59 @@ struct TimetablesView: View {
                 (minutesOfDay(a.timeStart) ?? 0) < (minutesOfDay(b.timeStart) ?? 0)
             }
 
-        var out: [Departure] = []
-        var idIndex = 0
+        // For a real-life timetable, a frequency band describes how often
+        // trains pass in EACH direction. So a 6-minute headway means a train
+        // every 6 min toward terminalA AND every 6 min toward terminalB, with
+        // the two directions offset by half the headway at the same station.
+        // Emit both, interleaved by departure time, so the user sees the full
+        // picture instead of only the terminalB-bound trains.
+        let displayLineId = lineId == "M3_AIR" ? "M3" : lineId
+        let line = SyrmosData.line(for: displayLineId)
+        let directions: [String] = [line?.terminalA, line?.terminalB]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+
+        struct Slot { let minute: Int; let direction: String; let label: String }
+        var slots: [Slot] = []
         for band in bands {
             guard let rawStart = minutesOfDay(band.timeStart),
                   let rawEnd = minutesOfDay(band.timeEnd),
                   band.headwayMinutes > 0 else { continue }
-            var slot = Double(rawStart)
-            let end = Double(rawEnd)
-            while slot <= end {
-                let slotMin = Int(slot.rounded())
-                if rule.is247 || (slotMin >= openM && slotMin <= effClose) {
-                    let display = ((slotMin % (24 * 60)) + 24 * 60) % (24 * 60)
-                    let h = display / 60
-                    let m = display % 60
-                    out.append(Departure(
-                        time: String(format: "%02d:%02d", h, m),
-                        lineId: lineId == "M3_AIR" ? "M3" : lineId,
-                        direction: SyrmosData.line(for: lineId == "M3_AIR" ? "M3" : lineId)?.terminalB ?? "",
-                        minutesAway: idIndex,
-                        serviceType: lineId == "M3_AIR" ? "airport" : (band.label.contains("late") ? "late_night" : "regular")
-                    ))
-                    idIndex += 1
+            // Half-headway offset for the second direction so the two streams
+            // do not stack on the same minute.
+            let directionOffsets: [Double] = directions.count == 2
+                ? [0, band.headwayMinutes / 2.0]
+                : [0]
+            for (i, direction) in directions.enumerated() {
+                let offset = directionOffsets[min(i, directionOffsets.count - 1)]
+                var slot = Double(rawStart) + offset
+                let end = Double(rawEnd)
+                while slot <= end {
+                    let slotMin = Int(slot.rounded())
+                    if rule.is247 || (slotMin >= openM && slotMin <= effClose) {
+                        slots.append(Slot(minute: slotMin, direction: direction, label: band.label))
+                    }
+                    slot += band.headwayMinutes
                 }
-                slot += band.headwayMinutes
             }
+        }
+        slots.sort { lhs, rhs in
+            if lhs.minute != rhs.minute { return lhs.minute < rhs.minute }
+            return lhs.direction < rhs.direction
+        }
+
+        var out: [Departure] = []
+        for (idx, s) in slots.enumerated() {
+            let display = ((s.minute % (24 * 60)) + 24 * 60) % (24 * 60)
+            let h = display / 60
+            let m = display % 60
+            out.append(Departure(
+                time: String(format: "%02d:%02d", h, m),
+                lineId: displayLineId,
+                direction: s.direction,
+                minutesAway: idx,
+                serviceType: lineId == "M3_AIR" ? "airport" : (s.label.contains("late") ? "late_night" : "regular")
+            ))
         }
         return out
     }
