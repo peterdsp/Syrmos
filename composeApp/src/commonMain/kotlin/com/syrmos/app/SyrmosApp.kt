@@ -61,7 +61,11 @@ fun SyrmosApp() {
         }
         // Hydrate from bundled snapshot first so projector has data immediately,
         // even if network is down. Live refresh then overlays anything newer.
+        // Hydrate from bundled snapshot first so the projector + visuals have
+        // correct data immediately, even on airplane mode. Live refresh then
+        // overlays anything newer when the network is available.
         runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
+        runCatching { visualOverrides.hydrateFromBundleIfNeeded() }
         runCatching { linesRefresher.refresh() }
         runCatching { scheduleSync.refresh() }
         runCatching { visualOverrides.refresh() }
