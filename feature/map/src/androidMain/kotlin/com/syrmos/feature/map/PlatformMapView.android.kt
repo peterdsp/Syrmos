@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -152,7 +153,9 @@ internal actual fun PlatformMapView(
 
     val mapView = mapViewRef.value ?: return
 
-    LaunchedEffect(uiState.lines, uiState.lineStations) {
+    val visualOverrides = org.koin.compose.koinInject<com.syrmos.core.data.sync.VisualOverridesRepository>()
+    val displayOverrides by visualOverrides.lineDisplay.collectAsState()
+    LaunchedEffect(uiState.lines, uiState.lineStations, displayOverrides) {
         lineOverlays.forEach { mapView.overlays.remove(it) }
         lineOverlays.clear()
 
@@ -162,11 +165,22 @@ internal actual fun PlatformMapView(
 
             val rawPoints = lineStations.map { GeoPoint(it.latitude, it.longitude) }
             val smoothed = catmullRomSpline(rawPoints)
+            val override = displayOverrides[line.id]
+            val color = override?.strokeColor?.let { parseHex(it) }
+                ?: line.color.toComposeColor().toArgb()
+            val width = override?.strokeWeight?.toFloat()
+                ?: (if (line.type == LineType.SUBURBAN) 7f else 10f)
             val polyline = Polyline().apply {
-                outlinePaint.color = line.color.toComposeColor().toArgb()
-                outlinePaint.strokeWidth = if (line.type == LineType.SUBURBAN) 7f else 10f
+                outlinePaint.color = color
+                outlinePaint.strokeWidth = width
                 outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
                 outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                override?.strokeDash?.let { dashSpec ->
+                    val parts = dashSpec.split(" ").mapNotNull { it.toFloatOrNull() }
+                    if (parts.size >= 2) {
+                        outlinePaint.pathEffect = android.graphics.DashPathEffect(parts.toFloatArray(), 0f)
+                    }
+                }
                 setPoints(smoothed)
             }
             lineOverlays.add(polyline)
@@ -314,6 +328,15 @@ internal actual fun PlatformMapView(
                 mapView.controller.animateTo(myLocation, 15.0, 500L)
             }
         }
+    }
+}
+
+private fun parseHex(hex: String): Int {
+    val s = hex.removePrefix("#")
+    return when (s.length) {
+        6 -> 0xFF000000.toInt() or s.toInt(16)
+        8 -> s.toLong(16).toInt()
+        else -> 0xFF64748B.toInt()
     }
 }
 
