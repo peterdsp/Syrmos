@@ -1,0 +1,20 @@
+[Unit]
+Description=Syrmos STASY announcements watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+Environment=PIPELINE_ROOT=/home/peterdsp/syrmos-api
+Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python /home/peterdsp/syrmos-api/scripts/stasy-announcements-watcher.py
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+StandardOutput=append:/home/peterdsp/syrmos-api/watcher-announcements.log
+StandardError=append:/home/peterdsp/syrmos-api/watcher-announcements.log
+
+[Install]
+WantedBy=multi-user.target

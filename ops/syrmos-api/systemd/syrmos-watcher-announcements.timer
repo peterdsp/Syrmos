@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily Syrmos STASY announcements watcher
+Requires=syrmos-watcher-announcements.service
+
+[Timer]
+# Status banner changes more often than the rest; run every 4h. Staggered
+# off the daily watchers (Hellenic Train 03:17, STASY HTML 03:42, OASA 04:07).
+OnCalendar=*-*-* 00,04,08,12,16,20:23:00
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

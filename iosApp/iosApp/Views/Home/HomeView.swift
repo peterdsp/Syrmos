@@ -285,16 +285,83 @@ struct HomeView: View {
             }
         }
 
-        if stasyService.error != nil {
-            HStack(spacing: 6) {
-                Image(systemName: "wifi.slash")
-                    .font(.caption)
-                Text(loc[.couldNotReach])
-                    .font(.caption)
+        serviceStatusPill
+    }
+
+    /// Compact status row that replaces the prior "Could not reach stasy.gr"
+    /// error banner. Surfaces /api/announcements.status: normal operation
+    /// gets a green checkmark; an alert (e.g. "Trains until 21:40") shows
+    /// the operator's verbatim message in orange. Falls back to today's
+    /// last-departure time computed from the synced schedule rules so the
+    /// user always sees SOMETHING, even when the announcements watcher is
+    /// behind.
+    @ViewBuilder
+    private var serviceStatusPill: some View {
+        let status = stasyService.serviceStatus
+        let isAlert = status?.status == "alert"
+        let message: String? = {
+            if let s = status, !s.rawMessage.isEmpty {
+                return s.rawMessage
             }
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            return fallbackServiceHours()
+        }()
+        if let message {
+            HStack(spacing: 8) {
+                Image(systemName: isAlert
+                      ? "exclamationmark.triangle.fill"
+                      : "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(isAlert ? .orange : .green)
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isAlert ? Color.orange.opacity(0.12) : Color.green.opacity(0.10))
+            )
         }
+    }
+
+    /// Today's last metro/tram departure derived from the synced schedule
+    /// rules. Picks the latest close_time across M1/M2/M3/T6/T7 for the
+    /// current Athens day_type; falls back to a generic "Trains running"
+    /// string when bundles aren't loaded yet.
+    private func fallbackServiceHours() -> String? {
+        let store = SyrmosSchedulesStore.shared
+        let bundles = store.service.bundles
+        if bundles.isEmpty { return nil }
+        let athens = TimeZone(identifier: "Europe/Athens")!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = athens
+        let weekday = cal.component(.weekday, from: Date())
+        let dayType: String
+        switch weekday {
+        case 1: dayType = "sun"
+        case 2, 3, 4, 5: dayType = "mon_thu"
+        case 6: dayType = "fri"
+        case 7: dayType = "sat"
+        default: dayType = "mon_thu"
+        }
+        var latest = ""
+        for lineId in ["M1", "M2", "M3", "T6", "T7"] {
+            guard let bundle = bundles[lineId] else { continue }
+            guard let rule = bundle.rules.first(where: { $0.dayType == dayType }) else { continue }
+            if rule.closeTime > latest { latest = rule.closeTime }
+            if rule.is247 {
+                return loc.language == .greek
+                    ? "Λειτουργία 24/7 σήμερα"
+                    : "24/7 service today"
+            }
+        }
+        if latest.isEmpty { return nil }
+        return loc.language == .greek
+            ? "Δρομολόγια έως \(latest)"
+            : "Trains until \(latest)"
     }
 
     private var linesSection: some View {

@@ -155,6 +155,53 @@ def _build_operators(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_announcements(conn: sqlite3.Connection) -> dict:
+    """STASY homepage status + announcement feed. Tables are optional
+    (migration 0009 may not have run yet on an older Pi); return a sane
+    empty payload in that case so the apps still get a clean 200 response."""
+    try:
+        status_row = conn.execute(
+            "SELECT status, raw_message, service_until, scraped_at FROM stasy_status WHERE id = 1"
+        ).fetchone()
+    except sqlite3.OperationalError:
+        status_row = None
+    try:
+        rows = conn.execute(
+            "SELECT id, title, summary, url, date, category"
+            " FROM announcements ORDER BY sort_order"
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = []
+
+    status_payload = (
+        {
+            "status": status_row["status"],
+            "rawMessage": status_row["raw_message"],
+            "serviceUntil": status_row["service_until"],
+            "scrapedAt": status_row["scraped_at"],
+        }
+        if status_row
+        else {"status": "unknown", "rawMessage": "", "serviceUntil": None, "scrapedAt": ""}
+    )
+    announcements = [
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "summary": r["summary"],
+            "url": r["url"],
+            "date": r["date"],
+            "category": r["category"],
+        }
+        for r in rows
+    ]
+    return {
+        "updatedAt": _now_iso(),
+        "count": len(announcements),
+        "status": status_payload,
+        "announcements": announcements,
+    }
+
+
 def _build_station_offsets(conn: sqlite3.Connection) -> dict:
     """STASY per-station minutes-from-origin grouped by (line, direction).
     Apps multiply the headway grid by these offsets to compute exact HH:MM
@@ -472,6 +519,14 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             out_dir / "station-offsets.json", station_offsets_payload
         )
 
+        # /api/announcements - STASY homepage status + news feed scraped by
+        # the daily announcements watcher. Apps consume this for the
+        # service-status banner and the "Latest from STASY" carousel.
+        announcements_payload = _build_announcements(conn)
+        announcements_hash = _atomic_write_json(
+            out_dir / "announcements.json", announcements_payload
+        )
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -509,6 +564,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "operatorsHash": operators_hash,
             "trainTimestampsHash": train_timestamps_hash,
             "stationOffsetsHash": station_offsets_hash,
+            "announcementsHash": announcements_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 
