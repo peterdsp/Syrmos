@@ -254,6 +254,11 @@ body {
     transform: translateY(1px);
 }
 
+.control-button--active {
+    background: rgba(0, 114, 206, 0.18);
+    border-color: rgba(0, 114, 206, 0.6);
+}
+
 .search-card {
     position: relative;
     flex: 1 1 520px;
