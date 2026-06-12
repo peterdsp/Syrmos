@@ -1,0 +1,50 @@
+name: Refresh seed bundles from API
+
+# Nightly job that pulls the current /api/* snapshot from the Pi and
+# commits the bundled seeds whenever they drift from what's in the repo.
+# Without this, every admin Publish action needs a developer to run
+# `python3 scripts/snapshot-api-to-seed.py` manually before the apps
+# pick up the new data on cold start. With this, the seeds always
+# reflect the API as of the last 24h.
+
+on:
+  schedule:
+    # 05:30 UTC = 08:30 Athens. Fires after all three Pi watchers
+    # (Hellenic Train 03:17 UTC, STASY 03:42 UTC, OASA 04:07 UTC have
+    # all finished and the manifest has been bumped).
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seed-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Snapshot live API into bundled seeds
+        run: python3 scripts/snapshot-api-to-seed.py
+
+      - name: Commit if seeds changed
+        run: |
+          if git diff --quiet -- core/data/src/commonMain/composeResources/files/seed/schedules-v2 \
+                                 androidApp/src/androidMain/assets/files/seed/schedules-v2 \
+                                 iosApp/iosApp/Resources/seed-schedules-v2; then
+            echo "no seed drift"
+            exit 0
+          fi
+          git config user.name  "syrmos-bot"
+          git config user.email "info@peterdsp.dev"
+          git add core/data/src/commonMain/composeResources/files/seed/schedules-v2 \
+                  androidApp/src/androidMain/assets/files/seed/schedules-v2 \
+                  iosApp/iosApp/Resources/seed-schedules-v2
+          git commit -m "Refresh bundled seeds from /api/* snapshot"
+          git push origin HEAD

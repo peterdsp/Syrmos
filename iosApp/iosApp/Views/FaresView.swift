@@ -138,7 +138,7 @@ private struct FareCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(product.titleEn.capitalized)
+                Text(displayTitle.capitalized)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .lineLimit(2)
@@ -191,5 +191,12 @@ private struct FareCard: View {
             return .orange
         }
         return .secondary
+    }
+
+    private var displayTitle: String {
+        if loc.language == .greek && !product.titleEl.isEmpty {
+            return product.titleEl
+        }
+        return product.titleEn
     }
 }
