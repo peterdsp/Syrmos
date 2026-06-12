@@ -20,7 +20,7 @@ We now match by **station name** instead. Each manifest entry has a
 canonical `station` field; we normalize both sides (lowercase, strip
 accents, drop common Greek/English prefixes like "Aghios/Ag/Ano/Kato/Leof")
 and pair them. Stations with no matching manifest entry simply don't get a
-per-station icon — the web/app already falls back to a clean line-colored
+per-station icon. The web/app already falls back to a clean line-colored
 marker, which is the desired behaviour for those routes.
 
 Run:
@@ -67,7 +67,8 @@ INTERCHANGE_TO_STATIONS = {
 # Normalize them away on both sides so "Aghios Eleftherios" matches
 # "Ag. Eleftherios" and "Άγιος Ελευθέριος".
 _PREFIX_PATTERNS = [
-    r"^aghios\b", r"^aghia\b", r"^agios\b", r"^agia\b", r"^ag\b\.?",
+    r"^aghios\b", r"^aghia\b", r"^aghias\b",
+    r"^agios\b", r"^agia\b", r"^agias\b", r"^agioi\b", r"^ag\b\.?",
     r"^leoforos\b\.?", r"^leof\b\.?",
     r"^platia\b", r"^plateia\b",
     r"^neos\b", r"^nea\b", r"^neo\b",
@@ -75,6 +76,49 @@ _PREFIX_PATTERNS = [
     r"^m\.\s*",  # "M. Mousourou" -> "Mousourou"
 ]
 _PREFIX_RE = re.compile("|".join(_PREFIX_PATTERNS))
+
+_WORD_ALIASES = [
+    # Same stations are romanized differently across STASY, OASA, Hellenic Train
+    # and the icon package. Keep these narrow so we do not reintroduce
+    # sequence-based false positives.
+    (r"\bposidonos\b", "poseidonos"),
+    (r"\bippodameias\b", "ippodamias"),
+    (r"\bfoteinis\b", "fotini"),
+    (r"\bzappeion\b", "zappio"),
+    (r"\bthiseio\b", "thissio"),
+    (r"\bpatisia\b", "patissia"),
+    (r"\birakleio\b", "iraklio"),
+    (r"\beirini\b", "irini"),
+    (r"\bmarousi\b", "maroussi"),
+    (r"\bmetaxourgeio\b", "metaxourghio"),
+    (r"\bsyngrou\b", "sygrou"),
+    (r"\bnikaia\b", "nikea"),
+    (r"\bkatechaki\b", "katehaki"),
+    (r"\bcholargos\b", "holargos"),
+    (r"\bchalandri\b", "halandri"),
+    (r"\bpaiania\b", "peania"),
+    (r"\bzefiri\b", "zefyri"),
+    (r"\bcorinth\b", "korinthos"),
+    (r"\bhellinon\b", "ellinon"),
+    (r"\bolympionikon\b", "olymbionikon"),
+    (r"\bdemarhio\b", "dimarhio"),
+    (r"\bagheiou\b", "angelou"),
+    (r"\baghiou\b", "ag"),
+    (r"\bagioi\b", "ag"),
+    (r"\bs e f\b", "sef"),
+    (r"\b(\d+)ou\b", r"\1"),
+    (r"\bpezikou\b", ""),
+    (r"\bvaso\b", ""),
+    (r"\bplateia\b", "platia"),
+]
+
+_EXACT_ALIASES = {
+    "tavros eleftherios venizelos": "tavros",
+    "peace and friendship stadium": "sef",
+    "omiridou skylitsi": "skylitsi",
+    "fotini platia": "fotini",
+    "ag fotini platia": "fotini",
+}
 
 
 def _fold(s: str) -> str:
@@ -91,7 +135,10 @@ def normalize_name(name: str) -> str:
         return ""
     s = _fold(name)
     s = re.sub(r"[\.\,'`’‘()\[\]]", " ", s)
-    s = re.sub(r"[\-–—]", " ", s)
+    s = re.sub(r"[-\u2013\u2014/]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    for pattern, replacement in _WORD_ALIASES:
+        s = re.sub(pattern, replacement, s)
     s = re.sub(r"\s+", " ", s).strip()
     # Strip leading prefixes (may appear multiple times: "Ag. N. Faliro").
     for _ in range(3):
@@ -100,6 +147,7 @@ def normalize_name(name: str) -> str:
             break
         s = new
         s = re.sub(r"\s+", " ", s).strip()
+    s = _EXACT_ALIASES.get(s, s)
     return s
 
 
@@ -109,7 +157,14 @@ def relative_path(svg: Path) -> str:
 
 
 def load_manifest() -> dict:
-    """Load the package's station manifest. Returns {(line_id, normalized_name): file_path}."""
+    """Load the package's station manifest.
+
+    Returns:
+      {
+        "by_name": {(line_id, normalized_name): file_path},
+        "by_station_id": {station_id: file_path},
+      }
+    """
     manifest_path = (
         PKG_ICONS_DIR
         / "station_smart_codes"
@@ -118,18 +173,22 @@ def load_manifest() -> dict:
     )
     if not manifest_path.exists():
         # Fall back to scanning the directory tree if the manifest is missing.
-        return {}
+        return {"by_name": {}, "by_station_id": {}}
     data = json.loads(manifest_path.read_text())
-    out: dict[tuple[str, str], str] = {}
+    by_name: dict[tuple[str, str], str] = {}
+    by_station_id: dict[str, str] = {}
     for entry in data.get("station_icons", []):
         line = entry.get("line", "")
         line_id = MANIFEST_LINE_TO_DB.get(line, line)
         name = entry.get("station", "")
         fname = entry.get("file", "")
+        station_id = entry.get("station_id", "")
         if not (line_id and name and fname):
             continue
-        out[(line_id, normalize_name(name))] = fname
-    return out
+        if station_id:
+            by_station_id[station_id] = fname
+        by_name[(line_id, normalize_name(name))] = fname
+    return {"by_name": by_name, "by_station_id": by_station_id}
 
 
 def build_station_directory(conn) -> dict[str, list[dict]]:
@@ -178,7 +237,7 @@ def apply(conn, dry_run: bool) -> dict:
         raise RuntimeError(f"package missing at {PKG_ICONS_DIR}")
 
     manifest = load_manifest()
-    if not manifest:
+    if not manifest["by_name"] and not manifest["by_station_id"]:
         raise RuntimeError("manifest.json not found or empty")
 
     stations_by_line = build_station_directory(conn)
@@ -199,9 +258,19 @@ def apply(conn, dry_run: bool) -> dict:
     # manifest. Stations with no manifest entry are left without an override.
     for line_id, stops in stations_by_line.items():
         for stop in stops:
+            fname = manifest["by_station_id"].get(stop["station_id"])
+            if fname:
+                svg_path = pkg_stations_root / fname
+                rows.append((
+                    "station", stop["station_id"], None, None,
+                    relative_path(svg_path),
+                    f"Per-line icon for {stop['station_id']} ({stop['name_en']})",
+                ))
+                summary["station"] += 1
+                continue
             for candidate in (stop["name_en"], stop["name_el"]):
                 key = (line_id, normalize_name(candidate))
-                fname = manifest.get(key)
+                fname = manifest["by_name"].get(key)
                 if fname:
                     svg_path = pkg_stations_root / fname
                     rows.append((

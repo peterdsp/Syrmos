@@ -6,6 +6,7 @@ set -euo pipefail
 PI=${PI:-peterdsp@192.168.10.10}
 REMOTE_HOME=/home/peterdsp/syrmos-api
 HERE=$(cd "$(dirname "$0")" && pwd)
+REPO_ROOT=$(cd "$HERE/../.." && pwd)
 
 echo ">>> syncing code to $PI"
 rsync -avz --delete \
@@ -16,6 +17,11 @@ rsync -avz --delete \
   --exclude __pycache__ \
   --exclude '*.pyc' \
   "$HERE"/ "$PI:$REMOTE_HOME"/
+
+echo ">>> syncing icon package to $PI"
+ssh "$PI" "mkdir -p $REMOTE_HOME/assets/icons"
+rsync -avz --delete \
+  "$REPO_ROOT/assets/athens-transit-package/icons"/ "$PI:$REMOTE_HOME/assets/icons"/
 
 echo ">>> installing venv + deps"
 ssh "$PI" bash <<'REMOTE'
@@ -39,6 +45,7 @@ cd ~/syrmos-api
 export SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
 export SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
 .venv/bin/python -m scripts.import_athens_package --apply
+.venv/bin/python -m scripts.import_icons --apply
 .venv/bin/python -m syrmos_admin.scraper_24mmm || echo "scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.generator
 REMOTE
