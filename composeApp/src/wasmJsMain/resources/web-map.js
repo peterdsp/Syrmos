@@ -678,6 +678,32 @@
         map.zoomOut();
     });
 
+    // Vehicles-hidden toggle: removes all live + simulated train markers from
+    // the map so the user can read the network (lines + stations) without the
+    // moving dots cluttering the view. Toggling back replays whatever the
+    // current train state is.
+    const vehiclesToggle = document.getElementById("vehiclesToggle");
+    let vehiclesHidden = false;
+    if (vehiclesToggle) {
+        vehiclesToggle.addEventListener("click", () => {
+            vehiclesHidden = !vehiclesHidden;
+            vehiclesToggle.classList.toggle("control-button--active", vehiclesHidden);
+            vehiclesToggle.setAttribute(
+                "aria-label", vehiclesHidden ? "Show vehicles" : "Hide vehicles"
+            );
+            vehiclesToggle.title = vehiclesHidden ? "Show vehicles" : "Hide vehicles";
+            window.__syrmosVehiclesHidden = vehiclesHidden;
+            if (vehiclesHidden) {
+                liveTrainMarkers.forEach((marker) => marker.remove());
+                liveTrainMarkers.clear();
+                simulatedTrainMarkers.forEach((marker) => marker.remove());
+                simulatedTrainMarkers.clear();
+            } else if (lastSimulatedTrains.length) {
+                renderSimulatedTrainsOnMap(lastSimulatedTrains);
+            }
+        });
+    }
+
     map.on("click", () => {
         clearSelection();
     });
@@ -827,6 +853,13 @@
             if (!existing.includes('data-live-suburban')) {
                 liveTrainList.innerHTML = existing + suburbanHtml;
             }
+        }
+
+        // The Hide vehicles toggle: keep the live-train list panel populated
+        // (users still want to know what's running) but skip rendering any
+        // marker on the map itself.
+        if (window.__syrmosVehiclesHidden) {
+            return;
         }
 
         for (const train of trains) {
@@ -1173,6 +1206,15 @@
     function renderSimulatedTrainsOnMap(trains) {
         lastSimulatedTrains = trains;
         const activeIds = new Set(trains.map((t) => t.id));
+
+        // The Hide vehicles toggle: pull every simulated-train marker off the
+        // map. Coords keep accumulating in lastSimulatedTrains so toggling back
+        // restores positions without missing a beat.
+        if (window.__syrmosVehiclesHidden) {
+            simulatedTrainMarkers.forEach((marker) => marker.remove());
+            simulatedTrainMarkers.clear();
+            return;
+        }
 
         simulatedTrainMarkers.forEach((marker, id) => {
             if (!activeIds.has(id)) {

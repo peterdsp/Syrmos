@@ -211,10 +211,30 @@ struct TimetablesView: View {
     }
 
     /// Project the entire day for the selected line. Walks each frequency
-    /// band for the appropriate day_type and emits every slot.
+    /// band for the appropriate day_type and emits every slot. For M3 also
+    /// projects the M3_AIR (airport branch) bundle and merges: only ~every
+    /// 30th train continues to the Airport, so showing them as a separate
+    /// stream is critical for accuracy. Without this, every M3 row would
+    /// say Airport even though the city terminal is Doukissis Plakentias.
     private func projectDay() -> [Departure] {
+        let primary = projectBundle(lineId: selectedLineId, displayLineId: selectedLineId)
+        guard selectedLineId == "M3" else { return primary }
+        let airport = projectBundle(lineId: "M3_AIR", displayLineId: "M3")
+        return (primary + airport).sorted { lhs, rhs in
+            if lhs.time != rhs.time { return lhs.time < rhs.time }
+            return lhs.direction < rhs.direction
+        }
+        .enumerated()
+        .map { idx, dep in
+            Departure(
+                time: dep.time, lineId: dep.lineId, direction: dep.direction,
+                minutesAway: idx, serviceType: dep.serviceType
+            )
+        }
+    }
+
+    private func projectBundle(lineId: String, displayLineId: String) -> [Departure] {
         let target = Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Date()) ?? Date()
-        let lineId = selectedLineId
         let bundle = schedules.service.bundles[lineId]
         guard let bundle = bundle else { return [] }
 
@@ -257,11 +277,10 @@ struct TimetablesView: View {
         // the two directions offset by half the headway at the same station.
         // Emit both, interleaved by departure time, so the user sees the full
         // picture instead of only the terminalB-bound trains.
-        let displayLineId = lineId == "M3_AIR" ? "M3" : lineId
         let line = SyrmosData.line(for: displayLineId)
-        let directions: [String] = [line?.terminalA, line?.terminalB]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
+        let directions: [String] = lineId == "M3_AIR"
+            ? ["Airport"]
+            : [line?.terminalA, line?.terminalB].compactMap { $0 }.filter { !$0.isEmpty }
 
         struct Slot { let minute: Int; let direction: String; let label: String }
         var slots: [Slot] = []
