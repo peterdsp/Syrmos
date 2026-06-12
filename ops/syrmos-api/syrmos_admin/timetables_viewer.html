@@ -379,12 +379,14 @@ async function load() {
 function synthesizeFromBundle(lineId, bundle) {
   // Walk each frequency band for each day_type and emit one synthetic train
   // per slot in each direction. Honors operating-hours via rule.openTime /
-  // closeTime so closed periods don't get rows.
+  // closeTime so closed periods don't get rows. Both directions emit for
+  // every line including M3_AIR so the airport branch shows trains running
+  // in both directions, matching the operator's published service.
   const out = [];
   const displayLineId = lineId === 'M3_AIR' ? 'M3' : lineId;
   const term = LINE_TERMINALS[displayLineId];
   const directions = lineId === 'M3_AIR'
-    ? [{ key: 'outbound', label: 'Airport' }]
+    ? [{ key: 'outbound', label: 'Airport' }, { key: 'inbound', label: 'Doukissis Plakentias' }]
     : (term ? [{ key: 'outbound', label: term.b }, { key: 'inbound', label: term.a }] : []);
   const minutes = hhmm => {
     const [h, m] = hhmm.split(':').map(Number);
@@ -415,17 +417,21 @@ function synthesizeFromBundle(lineId, bundle) {
           if (!rule.is247 && (mins < open || mins > close)) continue;
           trainCount++;
           // Synthetic train: only first + last stop for the band grid view.
+          const runtime = officialRunMinutes(lineId, dir.key);
+          const originName = lineId === 'M3_AIR'
+            ? (dir.key === 'inbound' ? 'Airport' : 'Doukissis Plakentias')
+            : (dir.key === 'inbound' ? (term?.b || '') : (term?.a || ''));
           out.push({
             lineId: displayLineId,
             dayType,
-            direction: lineId === 'M3_AIR' ? 'outbound' : dir.key,
+            direction: dir.key,
             trainNo: `${displayLineId}-${dayType}-${dir.key}-${String(trainCount).padStart(4, '0')}`,
             sourcePdf: lineId === 'M3_AIR' ? 'band:M3_AIR' : `band:${displayLineId}`,
             validFrom: '',
             firstTime: fmt(mins),
             stops: [
-              { stationId: '', stationNameEn: dir.key === 'inbound' ? (term?.b || '') : (term?.a || ''), stationNameEl: '', time: fmt(mins), sequence: 0 },
-              { stationId: '', stationNameEn: dir.label, stationNameEl: '', time: fmt(mins + estimateRunMinutes(displayLineId)), sequence: 1 },
+              { stationId: '', stationNameEn: originName, stationNameEl: '', time: fmt(mins), sequence: 0 },
+              { stationId: '', stationNameEn: dir.label, stationNameEl: '', time: fmt(mins + runtime), sequence: 1 },
             ],
           });
         }
@@ -435,9 +441,25 @@ function synthesizeFromBundle(lineId, bundle) {
   return out;
 }
 
-function estimateRunMinutes(lineId) {
-  // Coarse end-to-end run times so the card shows a plausible arrival time.
-  return { M1: 50, M2: 40, M3: 55, T6: 35, T7: 50 }[lineId] || 30;
+function officialRunMinutes(lineId, directionKey) {
+  // Published STASY end-to-end run times from
+  // athens_fixed_rail_station_coordinates.md > Official Run Times.
+  // STASY publishes some directions with a 1-5 min asymmetry; we keep the
+  // per-direction value rather than averaging. M3 uses the city-only
+  // duration (Dimotiko Theatro <-> Doukissis Plakentias); M3_AIR uses the
+  // airport extension duration (Doukissis Plakentias <-> Airport).
+  // Source: https://www.stasy.gr/en/timetables/
+  const table = {
+    M1:     { outbound: 51, inbound: 51 },
+    M2:     { outbound: 32, inbound: 32 },
+    M3:     { outbound: 44, inbound: 44 },   // city-only segment
+    M3_AIR: { outbound: 19, inbound: 20 },   // airport extension
+    T6:     { outbound: 33, inbound: 35 },
+    T7:     { outbound: 54, inbound: 59 },   // inbound includes Piraeus loop
+  };
+  const lineEntry = table[lineId];
+  if (!lineEntry) return 30;
+  return lineEntry[directionKey] ?? lineEntry.outbound ?? 30;
 }
 
 function buildDayChips() {
