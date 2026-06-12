@@ -9,14 +9,30 @@ Default URL pattern (served by nginx on the Pi, see nginx.locations.conf):
 
 Idempotent: re-running upserts every row, preserving any admin override_url.
 
+Matching strategy
+-----------------
+Older versions paired manifest entries to stations by position (seq number).
+That breaks the moment the database has more (or differently-ordered) stops
+than the icon manifest, which is the case on T6 (19 DB stops vs 13 manifest
+icons). Stations ended up wearing each other's labels.
+
+We now match by **station name** instead. Each manifest entry has a
+canonical `station` field; we normalize both sides (lowercase, strip
+accents, drop common Greek/English prefixes like "Aghios/Ag/Ano/Kato/Leof")
+and pair them. Stations with no matching manifest entry simply don't get a
+per-station icon — the web/app already falls back to a clean line-colored
+marker, which is the desired behaviour for those routes.
+
 Run:
     python3 -m scripts.import_icons --apply
 """
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 import os
@@ -35,32 +51,8 @@ PKG_ICONS_DIR = Path(os.environ.get(
 ))
 BASE_URL = os.environ.get("SYRMOS_ICONS_BASE_URL", "https://api-syrmos.peterdsp.dev/icons")
 
-
-# Per-line station icons follow this filename pattern:
-#   metro_m1_01_piraeus_pi.svg -> seq=1, line=M1, mode=metro
-PER_LINE_RE = re.compile(r"^[a-z]+_([a-z0-9]+)_(\d+)_")
-
-# Map sequence position on the package's stations to the app's station_id.
-# We derive this by reading the existing line_stations table.
-
-
-def relative_path(svg: Path) -> str:
-    rel = svg.relative_to(PKG_ICONS_DIR)
-    return f"{BASE_URL}/{rel.as_posix()}"
-
-
-def build_seq_to_station(conn) -> dict[str, dict[int, str]]:
-    """Return {line_id: {seq: station_id}}. seq is 1-based, matches the
-    `01` `02` ... padding in the package filenames."""
-    out: dict[str, dict[int, str]] = {}
-    rows = conn.execute(
-        "SELECT line_id, station_id, seq FROM line_stations WHERE direction='both' ORDER BY line_id, seq"
-    ).fetchall()
-    for r in rows:
-        line = r["line_id"]
-        out.setdefault(line, {})[r["seq"]] = r["station_id"]
-    return out
-
+# Hellenic-Train manifest line codes -> Syrmos line ids in the DB.
+MANIFEST_LINE_TO_DB = {"P1": "A1", "P2": "A4", "P3": "A3"}
 
 # Interchange filename -> station_ids that should resolve to this combined icon.
 INTERCHANGE_TO_STATIONS = {
@@ -69,6 +61,97 @@ INTERCHANGE_TO_STATIONS = {
     "station_dimotiko_theatro_m3_t7": ["M3_DIM"],
     "station_dimarhio_dimotiko_theatro_m3_t7": ["T7_DIM"],
 }
+
+
+# Greek/English prefixes that are routinely shortened or dropped on signage.
+# Normalize them away on both sides so "Aghios Eleftherios" matches
+# "Ag. Eleftherios" and "Άγιος Ελευθέριος".
+_PREFIX_PATTERNS = [
+    r"^aghios\b", r"^aghia\b", r"^agios\b", r"^agia\b", r"^ag\b\.?",
+    r"^leoforos\b\.?", r"^leof\b\.?",
+    r"^platia\b", r"^plateia\b",
+    r"^neos\b", r"^nea\b", r"^neo\b",
+    r"^ano\b", r"^kato\b", r"^paleo\b", r"^paleos\b", r"^palaio\b",
+    r"^m\.\s*",  # "M. Mousourou" -> "Mousourou"
+]
+_PREFIX_RE = re.compile("|".join(_PREFIX_PATTERNS))
+
+
+def _fold(s: str) -> str:
+    """Lowercase + strip diacritics."""
+    nkfd = unicodedata.normalize("NFD", s).lower()
+    return "".join(c for c in nkfd if not unicodedata.combining(c))
+
+
+def normalize_name(name: str) -> str:
+    """Canonicalize a station name for cross-source matching.
+    Lowercase, strip accents, drop common prefixes, collapse whitespace and
+    punctuation to single spaces, trim."""
+    if not name:
+        return ""
+    s = _fold(name)
+    s = re.sub(r"[\.\,'`’‘()\[\]]", " ", s)
+    s = re.sub(r"[\-–—]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    # Strip leading prefixes (may appear multiple times: "Ag. N. Faliro").
+    for _ in range(3):
+        new = _PREFIX_RE.sub("", s).strip()
+        if new == s:
+            break
+        s = new
+        s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def relative_path(svg: Path) -> str:
+    rel = svg.relative_to(PKG_ICONS_DIR)
+    return f"{BASE_URL}/{rel.as_posix()}"
+
+
+def load_manifest() -> dict:
+    """Load the package's station manifest. Returns {(line_id, normalized_name): file_path}."""
+    manifest_path = (
+        PKG_ICONS_DIR
+        / "station_smart_codes"
+        / "athens_station_smart_code_icons"
+        / "manifest.json"
+    )
+    if not manifest_path.exists():
+        # Fall back to scanning the directory tree if the manifest is missing.
+        return {}
+    data = json.loads(manifest_path.read_text())
+    out: dict[tuple[str, str], str] = {}
+    for entry in data.get("station_icons", []):
+        line = entry.get("line", "")
+        line_id = MANIFEST_LINE_TO_DB.get(line, line)
+        name = entry.get("station", "")
+        fname = entry.get("file", "")
+        if not (line_id and name and fname):
+            continue
+        out[(line_id, normalize_name(name))] = fname
+    return out
+
+
+def build_station_directory(conn) -> dict[str, list[dict]]:
+    """{line_id: [{station_id, name_en, name_el}]} for every active line."""
+    rows = conn.execute(
+        "SELECT ls.line_id, ls.station_id, s.name_en, s.name_el"
+        " FROM line_stations ls"
+        " JOIN stations s ON s.id = ls.station_id"
+        " WHERE ls.direction = 'both'"
+        " GROUP BY ls.line_id, ls.station_id"
+        " ORDER BY ls.line_id, ls.seq"
+    ).fetchall()
+    out: dict[str, list[dict]] = {}
+    for r in rows:
+        out.setdefault(r["line_id"], []).append(
+            {
+                "station_id": r["station_id"],
+                "name_en": r["name_en"] or "",
+                "name_el": r["name_el"] or "",
+            }
+        )
+    return out
 
 
 def parse_vehicle(svg: Path) -> dict | None:
@@ -84,7 +167,6 @@ def parse_vehicle(svg: Path) -> dict | None:
             direction = "airport"
             line_id = "M3_AIR"
         return {"line_id": line_id, "direction": direction}
-    # Generic vehicle: vehicle_metro / vehicle_tram / vehicle_train
     if fname.startswith("vehicle_"):
         return None
     return None
@@ -95,40 +177,54 @@ def apply(conn, dry_run: bool) -> dict:
     if not PKG_ICONS_DIR.exists():
         raise RuntimeError(f"package missing at {PKG_ICONS_DIR}")
 
-    seq_map = build_seq_to_station(conn)
+    manifest = load_manifest()
+    if not manifest:
+        raise RuntimeError("manifest.json not found or empty")
 
-    rows = []  # (scope, station_id, line_id, direction, default_url, description)
-    summary = {"station": 0, "interchange": 0, "vehicle_directional": 0, "vehicle_generic": 0}
+    stations_by_line = build_station_directory(conn)
 
-    # Per-line station icons
-    stations_root = PKG_ICONS_DIR / "station_smart_codes" / "athens_station_smart_code_icons" / "stations_smart_codes"
-    for svg in sorted(stations_root.rglob("*.svg")):
-        parts = svg.relative_to(stations_root).parts
-        # parts = [mode, LINE, filename]
-        if len(parts) != 3:
-            continue
-        mode, line_letter, fname = parts
-        m = PER_LINE_RE.match(fname)
-        if not m:
-            continue
-        seq = int(m.group(2))
-        # Map P1/P2/P3 (Hellenic Train labels) to A1/A2/A3/A4 line ids in DB
-        line_id = {"P1": "A1", "P2": "A4", "P3": "A3"}.get(line_letter, line_letter)
-        sid = seq_map.get(line_id, {}).get(seq)
-        if sid is None:
-            continue
-        rows.append(("station", sid, None, None, relative_path(svg), f"Per-line icon for {sid}"))
-        summary["station"] += 1
+    rows = []
+    summary = {
+        "station": 0,
+        "interchange": 0,
+        "vehicle_directional": 0,
+        "vehicle_generic": 0,
+        "unmatched_stations": 0,
+    }
+    unmatched: list[tuple[str, str]] = []
+
+    pkg_stations_root = PKG_ICONS_DIR / "station_smart_codes" / "athens_station_smart_code_icons"
+
+    # Per-line station icons: walk the DB, look up each station's name in the
+    # manifest. Stations with no manifest entry are left without an override.
+    for line_id, stops in stations_by_line.items():
+        for stop in stops:
+            for candidate in (stop["name_en"], stop["name_el"]):
+                key = (line_id, normalize_name(candidate))
+                fname = manifest.get(key)
+                if fname:
+                    svg_path = pkg_stations_root / fname
+                    rows.append((
+                        "station", stop["station_id"], None, None,
+                        relative_path(svg_path),
+                        f"Per-line icon for {stop['station_id']} ({candidate})",
+                    ))
+                    summary["station"] += 1
+                    break
+            else:
+                unmatched.append((line_id, stop["station_id"]))
+                summary["unmatched_stations"] += 1
 
     # Combined interchange icons
-    inter_root = PKG_ICONS_DIR / "station_smart_codes" / "athens_station_smart_code_icons" / "station_connection_icons"
+    inter_root = pkg_stations_root / "station_connection_icons"
     for svg in sorted(inter_root.glob("*.svg")):
         basename = svg.stem
-        stations = INTERCHANGE_TO_STATIONS.get(basename)
-        if not stations:
+        sids = INTERCHANGE_TO_STATIONS.get(basename)
+        if not sids:
             continue
-        for sid in stations:
-            rows.append(("interchange", sid, None, None, relative_path(svg), f"Combined-line interchange icon for {sid}"))
+        for sid in sids:
+            rows.append(("interchange", sid, None, None, relative_path(svg),
+                         f"Combined-line interchange icon for {sid}"))
             summary["interchange"] += 1
 
     # Directional vehicle icons
@@ -137,15 +233,25 @@ def apply(conn, dry_run: bool) -> dict:
         info = parse_vehicle(svg)
         if not info:
             continue
-        rows.append(("vehicle", None, info["line_id"], info["direction"], relative_path(svg), f"{info['line_id']} {info['direction']}"))
+        rows.append(("vehicle", None, info["line_id"], info["direction"],
+                     relative_path(svg), f"{info['line_id']} {info['direction']}"))
         summary["vehicle_directional"] += 1
 
     # Generic vehicles (mode-only fallback)
     for svg in sorted((vehicles_root / "generic_vehicle").glob("*.svg")):
-        rows.append(("vehicle", None, None, svg.stem.removeprefix("vehicle_"), relative_path(svg), f"Generic {svg.stem}"))
+        rows.append(("vehicle", None, None, svg.stem.removeprefix("vehicle_"),
+                     relative_path(svg), f"Generic {svg.stem}"))
         summary["vehicle_generic"] += 1
 
-    print({k: v for k, v in summary.items()}, "(total {})".format(sum(summary.values())))
+    print({k: v for k, v in summary.items()}, "(total rows {})".format(
+        sum(v for k, v in summary.items() if k != "unmatched_stations")
+    ))
+    if unmatched:
+        print(f"Unmatched (no per-station icon): {len(unmatched)}")
+        for line, sid in unmatched[:20]:
+            print(f"  - {line} {sid}")
+        if len(unmatched) > 20:
+            print(f"  ... +{len(unmatched) - 20} more")
 
     if dry_run:
         return summary
@@ -153,13 +259,14 @@ def apply(conn, dry_run: bool) -> dict:
     cur = conn.cursor()
     cur.execute("BEGIN")
     try:
-        # Preserve override_url on re-import: only update default_url + description.
+        # Preserve override_url on re-import: drop default-only rows, then
+        # re-insert anything that doesn't already have an admin override.
         cur.execute("DELETE FROM icons WHERE override_url IS NULL")
-        # For rows with override_url set, leave them alone — re-insert only the
-        # ones we don't already have.
         existing_override = {
             (r["scope"], r["station_id"], r["line_id"], r["direction"])
-            for r in cur.execute("SELECT scope, station_id, line_id, direction FROM icons WHERE override_url IS NOT NULL")
+            for r in cur.execute(
+                "SELECT scope, station_id, line_id, direction FROM icons WHERE override_url IS NOT NULL"
+            )
         }
         cur.executemany(
             "INSERT INTO icons(scope, station_id, line_id, direction, default_url, description)"
