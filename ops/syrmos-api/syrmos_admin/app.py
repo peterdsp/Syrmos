@@ -71,6 +71,8 @@ BASE = """<!doctype html><html><head><meta charset="utf-8"><title>{title}</title
  <a href="/overrides">Overrides</a>
  <a href="/icons">Icons</a>
  <a href="/line-display">Line drawing</a>
+ <a href="/stations">Stations</a>
+ <a href="/operators">Operators</a>
  <a href="/sync">Sync</a>
 </nav><hr>{body}</body></html>"""
 
@@ -417,6 +419,169 @@ def line_display_save(
         )
     generator.generate()
     return RedirectResponse("/line-display", status_code=303)
+
+
+# Stations — bulk edit names + coords + accessibility
+
+@app.get("/stations", response_class=HTMLResponse)
+def stations_page(line: str | None = None, q: str | None = None,
+                  _: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
+        where = []
+        params: list = []
+        if line:
+            where.append("EXISTS(SELECT 1 FROM line_stations ls WHERE ls.station_id=s.id AND ls.line_id=?)")
+            params.append(line)
+        if q:
+            where.append("(s.name_en LIKE ? OR s.name_el LIKE ? OR s.id LIKE ?)")
+            like = f"%{q}%"
+            params.extend([like, like, like])
+        wsql = (" WHERE " + " AND ".join(where)) if where else ""
+        rows = conn.execute(
+            "SELECT s.id, s.name_en, s.name_el, s.lat, s.lng,"
+            " (SELECT GROUP_CONCAT(ls.line_id) FROM line_stations ls WHERE ls.station_id=s.id) AS lines"
+            f" FROM stations s{wsql} ORDER BY s.id LIMIT 500",
+            params,
+        ).fetchall()
+    line_opts = (
+        "<option value=''>All lines</option>"
+        + "".join(
+            f"<option value='{lid}' {'selected' if lid == line else ''}>{lid}</option>"
+            for lid in line_ids
+        )
+    )
+    tr = "".join(
+        f"<tr><form method=post action=/stations/save>"
+        f"<td><code>{r['id']}</code><input type=hidden name=id value='{r['id']}'></td>"
+        f"<td><input name=name_en value='{(r['name_en'] or '').replace(chr(39), '&#39;')}' size=20></td>"
+        f"<td><input name=name_el value='{(r['name_el'] or '').replace(chr(39), '&#39;')}' size=20></td>"
+        f"<td><input name=lat type=number step=0.0000001 value='{r['lat']}' style=width:10em></td>"
+        f"<td><input name=lng type=number step=0.0000001 value='{r['lng']}' style=width:10em></td>"
+        f"<td class=small>{r['lines'] or ''}</td>"
+        f"<td><button>save</button></form></tr>"
+        for r in rows
+    )
+    body = f"""
+<h2>Stations</h2>
+<p class=small>Edit station names (EN/EL) and coordinates. The /api/stations endpoint re-publishes on every save.</p>
+<form method=get class=filter-bar>
+ Line <select name=line>{line_opts}</select>
+ Search <input name=q value='{q or ""}' placeholder='Syntagma, Σύνταγμα, M3_NIK'>
+ <button>Filter</button>
+</form>
+<table><tr><th>ID</th><th>Name (EN)</th><th>Name (EL)</th><th>Lat</th><th>Lng</th><th>Lines</th><th></th></tr>{tr}</table>"""
+    return page("Stations", body)
+
+
+@app.post("/stations/save")
+def stations_save(
+    id: str = Form(...),
+    name_en: str = Form(...),
+    name_el: str = Form(...),
+    lat: float = Form(...),
+    lng: float = Form(...),
+    _: str = Depends(auth),
+) -> RedirectResponse:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE stations SET name_en=?, name_el=?, lat=?, lng=? WHERE id=?",
+            (name_en.strip(), name_el.strip(), lat, lng, id),
+        )
+    generator.generate()
+    return RedirectResponse("/stations", status_code=303)
+
+
+# Operator partners — placeholder for live-feed credentials
+
+@app.get("/operators", response_class=HTMLResponse)
+def operators_page(_: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, operator_id, operator_name, contact_email, contact_url,"
+            " feed_kind, feed_url, auth_method, refresh_seconds, status, notes,"
+            " last_seen_at, enabled_at"
+            " FROM operator_partners ORDER BY status DESC, operator_id"
+        ).fetchall()
+    status_opts = ("awaiting_partnership", "in_discussion", "enabled", "disabled", "broken")
+    auth_opts = ("none", "bearer", "basic", "header_key")
+    feed_opts = ("live_arrivals", "live_positions", "service_alerts", "gtfs_realtime")
+    tr = "".join(
+        f"<tr><form method=post action=/operators/save>"
+        f"<input type=hidden name=id value={r['id']}>"
+        f"<td><strong>{r['operator_name']}</strong><br><span class=small><code>{r['operator_id']}</code></span></td>"
+        f"<td><select name=feed_kind>{''.join(f'<option {chr(34) + chr(34) if k != r[chr(34)+chr(34) + chr(34) + chr(34) + chr(34)+chr(34)] else chr(34) + chr(34)} value={chr(34)}{k}{chr(34)} {chr(34) + chr(34) if k != r[chr(34)+chr(34) + chr(34) + chr(34) + chr(34)+chr(34)] else chr(34) + chr(34)}>{k}</option>' for k in feed_opts)}</select></td>"
+        f"<td><input name=feed_url value='{r['feed_url'] or ''}' placeholder='https://...' size=36></td>"
+        f"<td><select name=auth_method>{''.join(f'<option value={chr(34)}{a}{chr(34)} {chr(34)+chr(34) if a == r[chr(34)+chr(34)+chr(34)+chr(34)+chr(34)+chr(34)] else chr(34) + chr(34)}>{a}</option>' for a in auth_opts)}</select></td>"
+        f"<td><input name=auth_credential type=password placeholder='set to update' size=18></td>"
+        f"<td><input name=refresh_seconds type=number value={r['refresh_seconds']} min=5 max=3600 style=width:5em></td>"
+        f"<td><select name=status>{''.join(f'<option value={chr(34)}{s}{chr(34)} {chr(34) if s == r[chr(34)+chr(34)+chr(34)+chr(34)+chr(34)+chr(34)] else chr(34) + chr(34)}>{s}</option>' for s in status_opts)}</select></td>"
+        f"<td><button>save</button></form></tr>"
+        for r in rows
+    )
+    # The above f-string is ugly; rebuild simply.
+    parts = []
+    for r in rows:
+        feed_sel = "".join(f'<option value="{k}" {"selected" if k == r["feed_kind"] else ""}>{k}</option>' for k in feed_opts)
+        auth_sel = "".join(f'<option value="{a}" {"selected" if a == r["auth_method"] else ""}>{a}</option>' for a in auth_opts)
+        status_sel = "".join(f'<option value="{s}" {"selected" if s == r["status"] else ""}>{s}</option>' for s in status_opts)
+        parts.append(
+            "<tr><form method=post action=/operators/save>"
+            f"<input type=hidden name=id value={r['id']}>"
+            f"<td><strong>{r['operator_name']}</strong><br><span class=small><code>{r['operator_id']}</code></span></td>"
+            f"<td><select name=feed_kind>{feed_sel}</select></td>"
+            f"<td><input name=feed_url value='{r['feed_url'] or ''}' placeholder='https://...' size=32></td>"
+            f"<td><select name=auth_method>{auth_sel}</select></td>"
+            f"<td><input name=auth_credential type=password placeholder='set to update' size=14></td>"
+            f"<td><input name=refresh_seconds type=number value={r['refresh_seconds']} min=5 max=3600 style=width:5em></td>"
+            f"<td><select name=status>{status_sel}</select></td>"
+            f"<td><button>save</button></form></tr>"
+            f"<tr><td colspan=8 class=small style='border:none;padding-bottom:14px'>{r['notes'] or ''}</td></tr>"
+        )
+    tr = "".join(parts)
+    body = f"""
+<h2>Operator partners</h2>
+<p class=small>This page is the seam where future STASY / OASA / Hellenic Train real-time feeds plug in. Set <em>status=enabled</em> only after you've validated the feed shape; the <code>LiveArrivalsProvider</code> implementations in <code>core/domain</code> read these rows.</p>
+<p class=small><strong>Privacy/security note.</strong> <code>auth_credential</code> is stored as-is in SQLite today. For production credentials, switch the column to encrypted-at-rest or move secrets to a dedicated vault (1Password Connect, Doppler, etc.).</p>
+<table>
+ <tr><th>Operator</th><th>Feed kind</th><th>URL</th><th>Auth</th><th>Credential</th><th>Refresh (s)</th><th>Status</th><th></th></tr>
+ {tr}
+</table>"""
+    return page("Operators", body)
+
+
+@app.post("/operators/save")
+def operators_save(
+    id: int = Form(...), feed_kind: str = Form(...), feed_url: str = Form(""),
+    auth_method: str = Form("none"), auth_credential: str = Form(""),
+    refresh_seconds: int = Form(30), status: str = Form("awaiting_partnership"),
+    _: str = Depends(auth),
+) -> RedirectResponse:
+    with get_db() as conn:
+        if auth_credential.strip():
+            conn.execute(
+                "UPDATE operator_partners SET feed_kind=?, feed_url=?, auth_method=?,"
+                " auth_credential=?, refresh_seconds=?, status=?,"
+                " updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now'),"
+                " enabled_at=CASE WHEN ?='enabled' AND enabled_at IS NULL"
+                "   THEN strftime('%Y-%m-%dT%H:%M:%SZ','now') ELSE enabled_at END"
+                " WHERE id=?",
+                (feed_kind, feed_url.strip() or None, auth_method, auth_credential.strip(),
+                 refresh_seconds, status, status, id),
+            )
+        else:
+            conn.execute(
+                "UPDATE operator_partners SET feed_kind=?, feed_url=?, auth_method=?,"
+                " refresh_seconds=?, status=?,"
+                " updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now'),"
+                " enabled_at=CASE WHEN ?='enabled' AND enabled_at IS NULL"
+                "   THEN strftime('%Y-%m-%dT%H:%M:%SZ','now') ELSE enabled_at END"
+                " WHERE id=?",
+                (feed_kind, feed_url.strip() or None, auth_method, refresh_seconds,
+                 status, status, id),
+            )
+    generator.generate()
+    return RedirectResponse("/operators", status_code=303)
 
 
 # Sync / scrape

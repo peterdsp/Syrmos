@@ -505,7 +505,85 @@ What *can* move to the API later, if the trade-off shifts:
 
 If/when that table ships, the maintainer can rebrand T7 without a release. The default art stays embedded so the offline-first guarantee survives the rebrand being undone too.
 
-## Appendix J — Product Roadmap
+## Appendix J — Syrmos as a Template for Any City
+
+Syrmos's architecture is generic. Athens-specific knowledge lives in two well-bounded places — the reference package and the operator-partner registry — and everything else is reusable.
+
+### What's transferable verbatim
+
+These pieces have no Athens-specific code:
+
+| Layer | What | Why portable |
+|---|---|---|
+| `core/domain/usecase/ComputeDeparturesFromBandsUseCase` | Frequency-band projector with day-type resolution, late-night tail handling, M3-style line-split support, holiday lookup | Operates on generic operator-rule shape (open/close per day-type + frequency bands), not Athens specifics |
+| `core/domain/live/LiveArrivalsProvider` interface + router | Pluggable real-time arrivals seam, with per-operator implementations that route by line-id ownership | The interface contract is operator-agnostic; only the body of each implementation knows its feed |
+| `core/data/sync/ScheduleSyncRepository` | Hydrate-from-bundle then refresh-over-network pattern with ETag short-circuit | Standard offline-first pattern, no Athens specifics |
+| Pi-hosted API layer (FastAPI + SQLite + nginx) | Schema for lines, stations, frequency_bands, holidays, overrides, icons, line_display, fares, operator_partners; admin UI; daily upstream watcher | The schema describes any rail/tram/bus network. New cities are new rows |
+| Build-time API snapshot bundling | `scripts/snapshot-api-to-seed.py` snapshots `/api/schedules` into each app at release time so offline-first works from second 0 | Reads from any URL matching the Syrmos API shape |
+| Zoom-aware map markers (4-bucket pattern) | Web + iOS + Android | Tile zoom levels are the same on every Leaflet/MapKit/osmdroid map |
+| Cloudflare Access for admin authentication | Free for ≤50 users; no SDK to integrate | Works on any domain with a Cloudflare account |
+| Daily upstream-source watcher | Hashes operator-page URLs; admin sees diffs without spam | Drop-in for any operator that publishes anything |
+| CI workflow (`.github/workflows/tests.yml`) | KMP unit + Android lint + iOS build + Web build + Python API smoke | No transit-specific logic |
+| Bilingual EN+local UI infrastructure | `LocalizationManager` + per-platform string resolvers | Change "EL" to any second language |
+
+### What needs city-specific work (and how much)
+
+| Layer | What you'd swap | Effort |
+|---|---|---|
+| `assets/{city}-transit-package/` | The transit reference package: station coordinates, operator rules, icon set, RULES.md priority document | This is the bulk of the work for a new city. Days, not weeks, if the operator publishes coordinates (most do — OSM relations are usually a starting point) |
+| `ops/syrmos-api/scripts/import_athens_package.py` | A `{city}_package.py` that parses your local reference package shape and seeds the SQLite | A day. The package parser is small; only its column layout assumptions need to change |
+| Holiday rule resolver | Athens has Orthodox-Easter-relative holidays; other countries differ (Western Easter offsets, religious holidays, regional public holidays) | Half a day. The pattern syntax (`easter+1`, `12-25`, `aug_15`) covers most patterns; add new keywords as needed |
+| `LiveArrivalsProvider` implementations | One stub per operator in your city. Body filled in when a feed exists | Half a day per operator stub. Real implementation is whatever the operator publishes |
+| Brand colors and pin glyphs | `core/designsystem/theme/Color.kt`, `SyrmosColors.swift`, web `web-map.css` | A morning, mostly visual taste calls |
+| App naming and store metadata | Renames in `androidApp/build.gradle.kts` (`applicationId`), `iosApp/Syrmos.xcodeproj` (target name), `manifest.webmanifest`, `index.html`, App Store / Play Store listings | A morning. The codebase compiles fine after rename if you keep the package structure |
+| Live train SSE proxy | The current Pi runs a Hellenic Train SSE relay. Other operators publish in different shapes (GTFS-realtime is the most common — Syrmos doesn't consume it yet but the seam is ready) | A day or two per operator data shape |
+| Privacy policy and the ticket-link disclosure pattern | New operators, new external-link footnotes, possible regulatory wording (GDPR/CCPA/equivalent) | A day, plus a lawyer's review if you're feeling careful |
+
+### A worked example: porting to Thessaloniki
+
+Thessaloniki has a single metro line (Line 1, opened 2024) operated by AMETRO, plus bus services from OASTH. To stand up "Syrmos Thessaloniki":
+
+1. Fork the repo, rename to `syrmos-thes` (or similar), change `applicationId`.
+2. Drop a `assets/thessaloniki-transit-package/` with AMETRO's 13 stations + their published schedule rules + an icon set.
+3. Write `import_thes_package.py` modeled on the Athens importer. Most of it copy-pastes.
+4. Seed the `lines` and `frequency_bands` and `holiday_rules` tables. Thessaloniki uses the same Greek public holiday calendar so the existing Easter-relative resolver works.
+5. Add `AmetroLiveArrivalsProvider` and `OasthLiveArrivalsProvider` stubs. They return `null` for now; when AMETRO publishes a feed, fill the body.
+6. Rebrand colors (AMETRO's brand red) and rebuild map pins.
+7. Build, sign, ship to the same App Store / Play Store via a different bundle id.
+
+Estimate: 1–2 weeks of focused work for a solo developer who has already shipped Syrmos Athens. The actual operator data inquiry (does AMETRO publish anything machine-readable?) is the long pole; the engineering is repetitive.
+
+### What's deliberately not transferable
+
+Two things stay Athens-specific by design:
+
+1. **The operator-partner registry rows.** `operator_partners` in the seed migration documents specific conversations we want to have with STASY, OASA, and Hellenic Train. A new city ships a fresh seed for its own operators.
+2. **Specific schedule values** (frequencies, hours, holidays). These come from each city's authoritative source.
+
+The architecture is the template. The data is local.
+
+### Suggested taxonomy for a multi-city deployment
+
+If you want to support more than one city from a single backend, two reasonable paths:
+
+| Approach | Pros | Cons |
+|---|---|---|
+| **One repo / one binary per city** (current pattern) | Simple, isolates incidents, easy to license per-city | Code drift accumulates across forks |
+| **One repo / multi-tenant API + per-city app builds** (gradle flavors / Xcode schemes) | Single source of truth for the API + admin; each app reads `?city={code}` parameter | The admin UI gains a city filter on every page; deployment moves from "one Pi" to "one backend with multiple Cloudflare Tunnels" |
+
+For two or three cities, single-tenant per fork is cheaper. Beyond that, invest in the multi-tenant migration.
+
+### License and reuse
+
+The repository is dual-licensed: source under BSD 3-Clause, documentation and the reference package under CC BY-SA 4.0. This means:
+
+- Any developer can fork Syrmos for a different city without paying or notifying
+- The reference package format can be republished for other cities — under CC BY-SA 4.0, the new package must remain CC BY-SA 4.0
+- A commercial fork is allowed; it must keep the BSD attribution on source and the CC BY-SA on derived documentation
+
+This is intentional. Syrmos is a civic project and we want the architecture in as many cities as will take it.
+
+## Appendix K — Product Roadmap
 
 | Version | Features | Target |
 |---|---|---|
@@ -526,6 +604,7 @@ If/when that table ships, the maintainer can rebrand T7 without a release. The d
 | 2026-06-12 | Petros Dhespollari | Schedule correctness refactor (Appendix B). Added Pi-hosted API at `api-syrmos.peterdsp.dev` for live schedule updates, FastAPI admin behind Cloudflare Access, daily OASA 24mmm scraper, daily upstream-source watcher across STASY/OASA/Hellenic Train PDFs, build-time API snapshot bundled into every release, frequency-band projector in `core/domain` and Swift `ScheduleProjector`, suburban A1–A4 schedules from Hellenic Train PDFs effective 2025-11-22, Buy Ticket link to Hellenic Train (Appendix C) with explicit privacy disclosure. iOS bumped to 1.0.1 build 9. |
 | 2026-06-12 (later) | Petros Dhespollari | Zoom-aware map markers across web/iOS/Android (Appendix E), `LiveArrivalsProvider` infrastructure with no-op STASY/OASA/Hellenic Train providers ready for operator feeds (Appendix D), `/api/fares` endpoint with OASA price-page link + contactless tap-and-go metadata (Appendix F), and `index.html` SEO overhaul with JSON-LD, OG, Twitter Card, PWA manifest, and store badges for the "Syrmos" Google search problem (Appendix G). |
 | 2026-06-12 (final) | Petros Dhespollari | T7 Piraeus loop integrated into bundled seed across iOS/KMP (43 stops in package order). GitHub Actions CI workflow with KMP/Android/iOS/Web/API jobs (Appendix H). Decision on icons-vs-API split documented (Appendix I). Android bumped to 1.0.1 (versionCode 6), release APK + AAB built. |
+| 2026-06-12 (later, again) | Petros Dhespollari | Icons + line drawing parameters now editable from the admin UI without an app release (`/api/icons`, `/api/line-display`, `/admin/icons`, `/admin/line-display`). Athens reference package committed to `assets/athens-transit-package/`. Web client reads both endpoints with offline-cached fallback. Stations bulk-editor at `/admin/stations` with filter by line + search. Operator partner registry at `/admin/operators` documenting the no-feed-yet state and providing the row-insert seam for any future STASY/OASA/Hellenic Train real-time feed. License hardened: dual-licensed BSD 3-Clause (code) + CC BY-SA 4.0 (docs + reference package), with NOTICE, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, REUSE.toml. Case study Appendix J reframes Syrmos as a template architecture portable to any city. |
 
 ---
 
