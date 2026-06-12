@@ -1,0 +1,254 @@
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 0, "station_en": "Piraeus", "minutes_from_origin": 0}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 1, "station_en": "Faliro", "minutes_from_origin": 4}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 2, "station_en": "Moschato", "minutes_from_origin": 7}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 3, "station_en": "Kallithea", "minutes_from_origin": 9}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 4, "station_en": "Tavros", "minutes_from_origin": 11}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 5, "station_en": "Petralona", "minutes_from_origin": 13}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 6, "station_en": "Thissio", "minutes_from_origin": 15}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 7, "station_en": "Monastiraki", "minutes_from_origin": 17}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 8, "station_en": "Omonia", "minutes_from_origin": 19}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 9, "station_en": "Victoria", "minutes_from_origin": 21}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 10, "station_en": "Attiki", "minutes_from_origin": 24}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 11, "station_en": "Aghios Nikolaos", "minutes_from_origin": 26}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 12, "station_en": "Kato Patissia", "minutes_from_origin": 28}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 13, "station_en": "Aghios Eleftherios", "minutes_from_origin": 30}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 14, "station_en": "Ano Patissia", "minutes_from_origin": 31}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 15, "station_en": "Perissos", "minutes_from_origin": 34}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 16, "station_en": "Pefkakia", "minutes_from_origin": 35}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 17, "station_en": "Nea Ionia", "minutes_from_origin": 37}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 18, "station_en": "Iraklio", "minutes_from_origin": 39}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 19, "station_en": "Irini", "minutes_from_origin": 42}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 20, "station_en": "Neratziotissa", "minutes_from_origin": 44}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 21, "station_en": "Maroussi", "minutes_from_origin": 47}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 22, "station_en": "Kat", "minutes_from_origin": 49}
+{"line_id": "M1", "direction": "outbound", "origin": "Piraeus", "destination": "Kifissia", "stop_sequence": 23, "station_en": "Kifissia", "minutes_from_origin": 51}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 0, "station_en": "Kifissia", "minutes_from_origin": 0}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 1, "station_en": "Kat", "minutes_from_origin": 2}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 2, "station_en": "Maroussi", "minutes_from_origin": 5}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 3, "station_en": "Neratziotissa", "minutes_from_origin": 8}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 4, "station_en": "Irini", "minutes_from_origin": 10}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 5, "station_en": "Iraklio", "minutes_from_origin": 12}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 6, "station_en": "Nea Ionia", "minutes_from_origin": 15}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 7, "station_en": "Pefkakia", "minutes_from_origin": 16}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 8, "station_en": "Perissos", "minutes_from_origin": 18}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 9, "station_en": "Ano Patissia", "minutes_from_origin": 20}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 10, "station_en": "Aghios Eleftherios", "minutes_from_origin": 22}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 11, "station_en": "Kato Patissia", "minutes_from_origin": 24}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 12, "station_en": "Aghios Nikolaos", "minutes_from_origin": 25}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 13, "station_en": "Attiki", "minutes_from_origin": 27}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 14, "station_en": "Victoria", "minutes_from_origin": 30}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 15, "station_en": "Omonia", "minutes_from_origin": 32}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 16, "station_en": "Monastiraki", "minutes_from_origin": 35}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 17, "station_en": "Thissio", "minutes_from_origin": 36}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 18, "station_en": "Petralona", "minutes_from_origin": 39}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 19, "station_en": "Tavros", "minutes_from_origin": 41}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 20, "station_en": "Kallithea", "minutes_from_origin": 42}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 21, "station_en": "Moschato", "minutes_from_origin": 45}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 22, "station_en": "Faliro", "minutes_from_origin": 48}
+{"line_id": "M1", "direction": "inbound", "origin": "Kifissia", "destination": "Piraeus", "stop_sequence": 23, "station_en": "Piraeus", "minutes_from_origin": 51}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 0, "station_en": "Anthoupoli", "minutes_from_origin": 0}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 1, "station_en": "Peristeri", "minutes_from_origin": 1}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 2, "station_en": "Aghios Antonios", "minutes_from_origin": 2}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 3, "station_en": "Sepolia", "minutes_from_origin": 4}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 4, "station_en": "Attiki", "minutes_from_origin": 6}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 5, "station_en": "Larissa St.", "minutes_from_origin": 8}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 6, "station_en": "Metaxourghio", "minutes_from_origin": 9}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 7, "station_en": "Omonia", "minutes_from_origin": 10}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 8, "station_en": "Panepistimio", "minutes_from_origin": 12}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 9, "station_en": "Syntagma", "minutes_from_origin": 14}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 10, "station_en": "Akropoli", "minutes_from_origin": 16}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 11, "station_en": "Sygroy - Fix", "minutes_from_origin": 17}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 12, "station_en": "Neos Kosmos", "minutes_from_origin": 19}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 13, "station_en": "Aghios Ioannis", "minutes_from_origin": 20}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 14, "station_en": "Dafni", "minutes_from_origin": 22}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 15, "station_en": "Aghios Dimitrios", "minutes_from_origin": 24}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 16, "station_en": "Ilioupoli", "minutes_from_origin": 26}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 17, "station_en": "Alimos", "minutes_from_origin": 28}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 18, "station_en": "Argyroupoli", "minutes_from_origin": 30}
+{"line_id": "M2", "direction": "outbound", "origin": "Anthoupoli", "destination": "Elliniko", "stop_sequence": 19, "station_en": "Elliniko", "minutes_from_origin": 32}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 0, "station_en": "Elliniko", "minutes_from_origin": 0}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 1, "station_en": "Argyroupoli", "minutes_from_origin": 1}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 2, "station_en": "Alimos", "minutes_from_origin": 4}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 3, "station_en": "Ilioupoli", "minutes_from_origin": 6}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 4, "station_en": "Aghios Dimitrios", "minutes_from_origin": 7}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 5, "station_en": "Dafni", "minutes_from_origin": 9}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 6, "station_en": "Aghios Ioannis", "minutes_from_origin": 11}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 7, "station_en": "Neos Kosmos", "minutes_from_origin": 12}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 8, "station_en": "Sygrou - Fix", "minutes_from_origin": 14}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 9, "station_en": "Akropoli", "minutes_from_origin": 15}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 10, "station_en": "Syntagma", "minutes_from_origin": 17}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 11, "station_en": "Panepistimio", "minutes_from_origin": 19}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 12, "station_en": "Omonia", "minutes_from_origin": 20}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 13, "station_en": "Metaxourghio", "minutes_from_origin": 22}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 14, "station_en": "Larissa St.", "minutes_from_origin": 23}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 15, "station_en": "Attiki", "minutes_from_origin": 25}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 16, "station_en": "Sepolia", "minutes_from_origin": 26}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 17, "station_en": "Aghios Antonios", "minutes_from_origin": 29}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 18, "station_en": "Peristeri", "minutes_from_origin": 31}
+{"line_id": "M2", "direction": "inbound", "origin": "Elliniko", "destination": "Anthoupoli", "stop_sequence": 19, "station_en": "Anthoupoli", "minutes_from_origin": 32}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 0, "station_en": "Dimotiko Theatro", "minutes_from_origin": 0}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 1, "station_en": "Piraeus", "minutes_from_origin": 2}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 2, "station_en": "Maniatika", "minutes_from_origin": 4}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 3, "station_en": "Nikea", "minutes_from_origin": 6}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 4, "station_en": "Korydallos", "minutes_from_origin": 8}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 5, "station_en": "Aghia Varvara", "minutes_from_origin": 10}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 6, "station_en": "Aghia Marina", "minutes_from_origin": 12}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 7, "station_en": "Egaleo", "minutes_from_origin": 14}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 8, "station_en": "Eleonas", "minutes_from_origin": 17}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 9, "station_en": "Kerameikos", "minutes_from_origin": 20}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 10, "station_en": "Monastiraki", "minutes_from_origin": 22}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 11, "station_en": "Syntagma", "minutes_from_origin": 24}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 12, "station_en": "Evangelismos", "minutes_from_origin": 26}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 13, "station_en": "Megaro Moussikis", "minutes_from_origin": 27}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 14, "station_en": "Ambelokipi", "minutes_from_origin": 29}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 15, "station_en": "Panormou", "minutes_from_origin": 31}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 16, "station_en": "Katehaki", "minutes_from_origin": 33}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 17, "station_en": "Ethniki Amyna", "minutes_from_origin": 35}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 18, "station_en": "Holargos", "minutes_from_origin": 37}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 19, "station_en": "Nomismatokopio", "minutes_from_origin": 39}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 20, "station_en": "Aghia Paraskevi", "minutes_from_origin": 40}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 21, "station_en": "Halandri", "minutes_from_origin": 42}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 22, "station_en": "Douk. Plakentias", "minutes_from_origin": 44}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 23, "station_en": "Pallini", "minutes_from_origin": 50}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 24, "station_en": "Peania - Kantza", "minutes_from_origin": 52}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 25, "station_en": "Koropi", "minutes_from_origin": 58}
+{"line_id": "M3", "direction": "outbound", "origin": "Dimotiko Theatro", "destination": "Airport", "stop_sequence": 26, "station_en": "Airport", "minutes_from_origin": 63}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 0, "station_en": "Airport", "minutes_from_origin": 0}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 1, "station_en": "Koropi", "minutes_from_origin": 6}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 2, "station_en": "Peania - Kantza", "minutes_from_origin": 12}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 3, "station_en": "Pallini", "minutes_from_origin": 14}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 4, "station_en": "Douk. Plakentias", "minutes_from_origin": 20}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 5, "station_en": "Halandri", "minutes_from_origin": 22}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 6, "station_en": "Aghia Paraskevi", "minutes_from_origin": 24}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 7, "station_en": "Nomismatokopio", "minutes_from_origin": 25}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 8, "station_en": "Holargos", "minutes_from_origin": 27}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 9, "station_en": "Ethniki Amyna", "minutes_from_origin": 29}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 10, "station_en": "Katehaki", "minutes_from_origin": 31}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 11, "station_en": "Panormou", "minutes_from_origin": 33}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 12, "station_en": "Ambelokipi", "minutes_from_origin": 35}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 13, "station_en": "Megaro Moussikis", "minutes_from_origin": 37}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 14, "station_en": "Evangelismos", "minutes_from_origin": 38}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 15, "station_en": "Syntagma", "minutes_from_origin": 40}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 16, "station_en": "Monastiraki", "minutes_from_origin": 42}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 17, "station_en": "Kerameikos", "minutes_from_origin": 44}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 18, "station_en": "Eleonas", "minutes_from_origin": 47}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 19, "station_en": "Egaleo", "minutes_from_origin": 49}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 20, "station_en": "Aghia Marina", "minutes_from_origin": 52}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 21, "station_en": "Aghia Varvara", "minutes_from_origin": 54}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 22, "station_en": "Korydallos", "minutes_from_origin": 56}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 23, "station_en": "Nikea", "minutes_from_origin": 58}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 24, "station_en": "Maniatika", "minutes_from_origin": 60}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 25, "station_en": "Piraeus", "minutes_from_origin": 61}
+{"line_id": "M3", "direction": "inbound", "origin": "Airport", "destination": "Dimotiko Theatro", "stop_sequence": 26, "station_en": "Dimotiko Theatro", "minutes_from_origin": 63}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 0, "station_en": "Syntagma", "minutes_from_origin": 0}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 1, "station_en": "Zappio", "minutes_from_origin": 2}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 2, "station_en": "L. Vouliagmenis", "minutes_from_origin": 5}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 3, "station_en": "Fix", "minutes_from_origin": 7}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 4, "station_en": "Kasomouli", "minutes_from_origin": 9}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 5, "station_en": "Neos Kosmos", "minutes_from_origin": 11}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 6, "station_en": "Baknana", "minutes_from_origin": 13}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 7, "station_en": "Aegeou", "minutes_from_origin": 15}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 8, "station_en": "Aghia Fotini", "minutes_from_origin": 17}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 9, "station_en": "Megalou Alexandrou", "minutes_from_origin": 19}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 10, "station_en": "Aghia Paraskevi", "minutes_from_origin": 21}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 11, "station_en": "Medeas - Mykalis", "minutes_from_origin": 22}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 12, "station_en": "Evangeliki Scholi", "minutes_from_origin": 23}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 13, "station_en": "Achilleos", "minutes_from_origin": 24}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 14, "station_en": "Amfitheas", "minutes_from_origin": 26}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 15, "station_en": "Panaghitsa", "minutes_from_origin": 27}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 16, "station_en": "Mousson", "minutes_from_origin": 29}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 17, "station_en": "Edem", "minutes_from_origin": 32}
+{"line_id": "T6", "direction": "outbound", "origin": "Syntagma", "destination": "Pikrodafni", "stop_sequence": 18, "station_en": "Pikrodafni", "minutes_from_origin": 33}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 0, "station_en": "Pikrodafni", "minutes_from_origin": 0}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 1, "station_en": "Edem", "minutes_from_origin": 2}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 2, "station_en": "Mousson", "minutes_from_origin": 5}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 3, "station_en": "Panaghitsa", "minutes_from_origin": 7}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 4, "station_en": "Amfitheas", "minutes_from_origin": 9}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 5, "station_en": "Achilleos", "minutes_from_origin": 10}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 6, "station_en": "Evangeliki Scholi", "minutes_from_origin": 12}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 7, "station_en": "Medeas - Mykalis", "minutes_from_origin": 13}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 8, "station_en": "Aghia Paraskevi", "minutes_from_origin": 15}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 9, "station_en": "Megalou Alexandrou", "minutes_from_origin": 16}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 10, "station_en": "Aghia Fotini", "minutes_from_origin": 18}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 11, "station_en": "Aegeou", "minutes_from_origin": 21}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 12, "station_en": "Baknana", "minutes_from_origin": 23}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 13, "station_en": "Neos Kosmos", "minutes_from_origin": 25}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 14, "station_en": "Kasomouli", "minutes_from_origin": 27}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 15, "station_en": "Fix", "minutes_from_origin": 29}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 16, "station_en": "L. Vouliagmenis", "minutes_from_origin": 30}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 17, "station_en": "Zappio", "minutes_from_origin": 32}
+{"line_id": "T6", "direction": "inbound", "origin": "Pikrodafni", "destination": "Syntagma", "stop_sequence": 18, "station_en": "Syntagma", "minutes_from_origin": 35}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 0, "station_en": "Akti Posidonos", "minutes_from_origin": 0}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 1, "station_en": "Aghia Triada", "minutes_from_origin": 2}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 2, "station_en": "Platia Ippodamias", "minutes_from_origin": 4}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 3, "station_en": "34ou SYNTAGMATOS", "minutes_from_origin": 5}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 4, "station_en": "Androutsou", "minutes_from_origin": 7}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 5, "station_en": "Skylitsi", "minutes_from_origin": 8}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 6, "station_en": "S.E.F.", "minutes_from_origin": 9}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 7, "station_en": "Neo Faliro", "minutes_from_origin": 11}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 8, "station_en": "Moschato", "minutes_from_origin": 12}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 9, "station_en": "Kallithea", "minutes_from_origin": 13}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 10, "station_en": "Tzitzifies", "minutes_from_origin": 14}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 11, "station_en": "Delta Falirou", "minutes_from_origin": 15}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 12, "station_en": "Aghia Skepi", "minutes_from_origin": 17}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 13, "station_en": "Trocadero", "minutes_from_origin": 18}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 14, "station_en": "Parko Flisvou", "minutes_from_origin": 20}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 15, "station_en": "Flisvos", "minutes_from_origin": 21}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 16, "station_en": "Batis", "minutes_from_origin": 23}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 17, "station_en": "Edem", "minutes_from_origin": 25}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 18, "station_en": "Pikrodafni", "minutes_from_origin": 26}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 19, "station_en": "Marina Alimou", "minutes_from_origin": 28}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 20, "station_en": "Kalamaki", "minutes_from_origin": 29}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 21, "station_en": "Zefyros", "minutes_from_origin": 31}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 22, "station_en": "Loutra Alimou", "minutes_from_origin": 32}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 23, "station_en": "Elliniko", "minutes_from_origin": 32}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 24, "station_en": "1St Ag. Kosma", "minutes_from_origin": 33}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 25, "station_en": "2Nd Ag. Kosma", "minutes_from_origin": 35}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 26, "station_en": "Aghios Alexandros", "minutes_from_origin": 36}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 27, "station_en": "Hellinon Olympionikon", "minutes_from_origin": 37}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 28, "station_en": "Kentro Istioploias", "minutes_from_origin": 39}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 29, "station_en": "Platia Vergoti", "minutes_from_origin": 40}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 30, "station_en": "Paralia Glyfadas", "minutes_from_origin": 42}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 31, "station_en": "Paleo Dimarhio", "minutes_from_origin": 44}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 32, "station_en": "Platia Katraki", "minutes_from_origin": 46}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 33, "station_en": "Agg. Metaxa", "minutes_from_origin": 47}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 34, "station_en": "Platia Esperidon", "minutes_from_origin": 49}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 35, "station_en": "Kolymvitirio", "minutes_from_origin": 51}
+{"line_id": "T7", "direction": "outbound", "origin": "Akti Poseidonos", "destination": "Asklipiio Voulas", "stop_sequence": 36, "station_en": "Asklipiio Voulas", "minutes_from_origin": 54}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 0, "station_en": "Asklipiio Voulas", "minutes_from_origin": 0}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 1, "station_en": "Kolymvitirio", "minutes_from_origin": 2}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 2, "station_en": "Platia Esperidon", "minutes_from_origin": 4}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 3, "station_en": "Angelou Metaxa", "minutes_from_origin": 5}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 4, "station_en": "Platia Katraki", "minutes_from_origin": 7}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 5, "station_en": "Paleo Dimarhio", "minutes_from_origin": 9}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 6, "station_en": "Paralia Glyfadas", "minutes_from_origin": 11}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 7, "station_en": "Platia Vergoti", "minutes_from_origin": 12}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 8, "station_en": "Kentro Istioploias", "minutes_from_origin": 13}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 9, "station_en": "Hellinon Olympionikon", "minutes_from_origin": 14}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 10, "station_en": "Aghios Alexandros", "minutes_from_origin": 15}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 11, "station_en": "2Nd Aghiou Kosma", "minutes_from_origin": 17}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 12, "station_en": "1St Aghiou Kosma", "minutes_from_origin": 18}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 13, "station_en": "Helliniko", "minutes_from_origin": 18}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 14, "station_en": "Loutra Alimou", "minutes_from_origin": 19}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 15, "station_en": "Zefyros", "minutes_from_origin": 21}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 16, "station_en": "Kalamaki", "minutes_from_origin": 22}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 17, "station_en": "Marina Alimou", "minutes_from_origin": 24}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 18, "station_en": "Pikrodafni", "minutes_from_origin": 25}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 19, "station_en": "Edem", "minutes_from_origin": 27}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 20, "station_en": "Batis", "minutes_from_origin": 29}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 21, "station_en": "Flisvos", "minutes_from_origin": 30}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 22, "station_en": "Parko Flisvou", "minutes_from_origin": 31}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 23, "station_en": "Trocadero", "minutes_from_origin": 33}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 24, "station_en": "Aghia Skepi", "minutes_from_origin": 34}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 25, "station_en": "Delta Falirou", "minutes_from_origin": 35}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 26, "station_en": "Tzitzifies", "minutes_from_origin": 36}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 27, "station_en": "Kallithea", "minutes_from_origin": 37}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 28, "station_en": "Moschato", "minutes_from_origin": 38}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 29, "station_en": "Neo Faliro", "minutes_from_origin": 40}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 30, "station_en": "Gipedo Karaiskaki", "minutes_from_origin": 42}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 31, "station_en": "Mikras Asias", "minutes_from_origin": 44}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 32, "station_en": "Lambraki", "minutes_from_origin": 48}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 33, "station_en": "Evangelistria", "minutes_from_origin": 51}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 34, "station_en": "Platia Deligianni", "minutes_from_origin": 53}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 35, "station_en": "Dimarhio", "minutes_from_origin": 55}
+{"line_id": "T7", "direction": "inbound", "origin": "Asklipiio Voulas", "destination": "Akti Poseidonos", "stop_sequence": 36, "station_en": "Akti Posidonos", "minutes_from_origin": 59}
