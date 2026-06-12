@@ -959,3 +959,71 @@ body {
         height: 32px;
     }
 }
+
+/* Live suburban-train marker: pulsing ring + glyph + line-id badge so users
+   can tell apart real trains from the simulated metro/tram dots. */
+.leaflet-marker-icon.live-train-marker {
+    background: transparent !important;
+    border: none !important;
+    pointer-events: auto;
+}
+
+.live-train-marker {
+    position: relative;
+    width: 44px;
+    height: 56px;
+}
+
+.live-train-marker__pulse {
+    position: absolute;
+    left: 50%;
+    top: 22px;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #7C4DFF;
+    opacity: 0.85;
+    animation: live-train-pulse 1.4s ease-out infinite;
+    pointer-events: none;
+}
+
+.live-train-marker__core {
+    position: absolute;
+    left: 50%;
+    top: 22px;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #7C4DFF;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.live-train-marker__glyph {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.live-train-marker__badge {
+    position: absolute;
+    left: 50%;
+    top: 38px;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+    white-space: nowrap;
+}
+
+@keyframes live-train-pulse {
+    0%   { width: 24px; height: 24px; opacity: 0.85; }
+    100% { width: 56px; height: 56px; opacity: 0;    }
+}

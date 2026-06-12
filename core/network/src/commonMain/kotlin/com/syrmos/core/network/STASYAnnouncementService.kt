@@ -48,7 +48,7 @@ class STASYAnnouncementService(
     private val json = Json { ignoreUnknownKeys = true }
 
     fun fetchAnnouncements(): Flow<List<STASYAnnouncement>> = flow {
-        emit(fetchFeed().announcements)
+        emit(fetchFeedOnce().announcements)
     }
 
     fun fetchFeed(): Flow<STASYFeed> = flow {

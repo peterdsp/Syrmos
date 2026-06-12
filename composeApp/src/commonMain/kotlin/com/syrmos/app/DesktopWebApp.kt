@@ -57,16 +57,21 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
+import com.syrmos.core.network.STASYAnnouncement
+import com.syrmos.core.network.STASYServiceStatus
+import com.syrmos.core.network.SyrmosSchedulesService.FareProduct
 import com.syrmos.feature.home.HomeViewModel
 import com.syrmos.feature.lines.LinesViewModel
 import com.syrmos.feature.map.MapScreen
 import com.syrmos.feature.map.MapStationNode
 import com.syrmos.feature.map.MapViewModel
+import androidx.compose.ui.platform.LocalUriHandler
 import org.koin.compose.koinInject
 
 private enum class DesktopSection(
@@ -84,10 +89,13 @@ fun DesktopWebApp() {
     val mapViewModel = koinInject<MapViewModel>()
     val homeViewModel = koinInject<HomeViewModel>()
     val linesViewModel = koinInject<LinesViewModel>()
+    val faresRepo = koinInject<FaresRepository>()
     val mapState by mapViewModel.uiState.collectAsState()
     val homeState by homeViewModel.uiState.collectAsState()
     val linesState by linesViewModel.uiState.collectAsState()
+    val fareProducts by faresRepo.products.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
+    val uriHandler = LocalUriHandler.current
     var selectedSection by remember { mutableStateOf(DesktopSection.Planner) }
     var search by remember { mutableStateOf("") }
 
@@ -140,6 +148,34 @@ fun DesktopWebApp() {
                         nearestStations = homeState.nearestStations,
                         mapStations = mapState.mapStations,
                         lines = mapState.lines,
+                    )
+                }
+
+                if (homeState.announcements.isNotEmpty() || homeState.serviceStatus != null) {
+                    item {
+                        UpdatesCard(
+                            status = homeState.serviceStatus,
+                            announcements = homeState.announcements,
+                            lang = lang,
+                            onOpenUrl = uriHandler::openUri,
+                        )
+                    }
+                }
+
+                if (fareProducts.isNotEmpty()) {
+                    item {
+                        TicketsCard(
+                            products = fareProducts,
+                            lang = lang,
+                            onBuy = { uriHandler.openUri(it) },
+                        )
+                    }
+                }
+
+                item {
+                    HellenicTrainCard(
+                        lang = lang,
+                        onBuy = { uriHandler.openUri(it) },
                     )
                 }
 
@@ -569,6 +605,168 @@ private fun ExportCard() {
             }
         }
     }
+}
+
+@Composable
+private fun UpdatesCard(
+    status: STASYServiceStatus?,
+    announcements: List<STASYAnnouncement>,
+    lang: AppLanguage,
+    onOpenUrl: (String) -> Unit,
+) {
+    DashboardCard(title = L.LATEST_FROM_STASY.text(lang)) {
+        if (status != null) {
+            val message = if (lang == AppLanguage.GREEK) status.rawMessage else status.rawMessageEn
+            if (message.isNotBlank()) {
+                val bg = if (status.isAlert) Color(0x1FFF9800) else Color(0x1A4CAF50)
+                val accent = if (status.isAlert) Color(0xFFE65100) else Color(0xFF2E7D32)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(bg)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = if (status.isAlert) "⚠" else "✓",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = accent,
+                    )
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+        announcements.take(4).forEach { ann ->
+            val title = if (lang == AppLanguage.GREEK) ann.title else ann.titleEn
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { if (ann.url.isNotBlank()) onOpenUrl(ann.url) }
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = if (ann.isServiceAlert) "⚠" else "•",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (ann.isServiceAlert) Color(0xFFE65100) else MaterialTheme.colorScheme.primary,
+                )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (ann.date.isNotBlank()) {
+                        Text(
+                            text = ann.date,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TicketsCard(
+    products: List<FareProduct>,
+    lang: AppLanguage,
+    onBuy: (String) -> Unit,
+) {
+    DashboardCard(title = if (lang == AppLanguage.GREEK) "Εισιτήρια OASA" else "OASA tickets") {
+        val featured = products.take(6)
+        featured.forEach { product ->
+            val title = if (lang == AppLanguage.GREEK && product.titleEl.isNotBlank()) product.titleEl else product.titleEn
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val price = product.fullPriceEur
+                if (price != null) {
+                    Text(
+                        text = formatEurDesktop(price),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Button(
+            onClick = { onBuy("https://www.athenacard.gr/") },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (lang == AppLanguage.GREEK) "Αγορά μέσω Athena Card ↗" else "Buy on Athena Card ↗")
+        }
+        Text(
+            text = if (lang == AppLanguage.GREEK) {
+                "Τιμές από επίσημες πηγές OASA. Η αγορά γίνεται απευθείας στο athenacard.gr."
+            } else {
+                "Prices from official OASA sources. Purchase happens directly on athenacard.gr."
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun HellenicTrainCard(
+    lang: AppLanguage,
+    onBuy: (String) -> Unit,
+) {
+    DashboardCard(title = if (lang == AppLanguage.GREEK) "Hellenic Train" else "Hellenic Train") {
+        Text(
+            text = if (lang == AppLanguage.GREEK) {
+                "Εισιτήρια Προαστιακού (A1–A4), InterCity και υπεραστικών αμαξοστοιχιών απευθείας από την Hellenic Train."
+            } else {
+                "Tickets for Suburban (A1–A4), InterCity and intercity trains directly from Hellenic Train."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { onBuy("https://tickets.hellenictrain.gr/") },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(if (lang == AppLanguage.GREEK) "Αγορά εισιτηρίου ↗" else "Buy ticket ↗")
+            }
+            OutlinedButton(
+                onClick = { onBuy("https://www.hellenictrain.gr/") },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(if (lang == AppLanguage.GREEK) "Πληροφορίες ↗" else "Info ↗")
+            }
+        }
+    }
+}
+
+private fun formatEurDesktop(value: Double): String {
+    val cents = kotlin.math.round(value * 100.0).toLong()
+    val euros = cents / 100
+    val rem = (cents % 100).toString().padStart(2, '0')
+    return "€$euros.$rem"
 }
 
 @Composable
