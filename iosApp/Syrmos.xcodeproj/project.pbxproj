@@ -30,6 +30,7 @@
 		C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */; };
 		8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */; };
 		B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* TimetablesView.swift */; };
+		4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +59,7 @@
 		395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleProjector.swift; sourceTree = "<group>"; };
 		51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosVisualOverridesStore.swift; sourceTree = "<group>"; };
 		09288EF8307B4CDC9D065AED /* TimetablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetablesView.swift; sourceTree = "<group>"; };
+		C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationMapSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -89,7 +91,8 @@
 		47615221B72C5C4C581C11A5 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-								09288EF8307B4CDC9D065AED /* TimetablesView.swift */,
+												C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */,
+09288EF8307B4CDC9D065AED /* TimetablesView.swift */,
 DDCABDB1DD7B61F362465058 /* Home */,
 				D86A94D82859CC3CC2167D28 /* Lines */,
 				40A679F330FF3148AC14E1B1 /* Map */,
@@ -238,7 +241,8 @@ C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-																								B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+																												4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
+B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
 8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */,
 C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */,
 3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */,

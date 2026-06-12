@@ -15,6 +15,7 @@ Run when stations or routes change:
 from __future__ import annotations
 
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -84,8 +85,11 @@ def extract_line_strings(payload: dict) -> list[list[tuple[float, float]]]:
     for rel in relations:
         coords: list[tuple[float, float]] = []
         last_point: tuple[float, float] | None = None
+        # Exclude "backward" role: those are return-track ways on bidirectional
+        # corridors that, when chained, cause the polyline to double back
+        # through the same area. Apple Maps shows a single centerline.
         for member in rel.get("members", []):
-            if member.get("type") != "way" or member.get("role") not in ("", "forward", "backward", None):
+            if member.get("type") != "way" or member.get("role") not in ("", "forward", None):
                 continue
             w = ways.get(member.get("ref"))
             if not w:
@@ -104,11 +108,66 @@ def extract_line_strings(payload: dict) -> list[list[tuple[float, float]]]:
     return line_strings or [w for w in ways.values() if w]
 
 
+def _perp_distance(p: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Perpendicular distance from p to segment a-b (in lng/lat degrees; we
+    treat them as planar for simplification purposes — accurate enough for
+    city-scale tram tracks)."""
+    ax, ay = a
+    bx, by = b
+    px, py = p
+    dx = bx - ax
+    dy = by - ay
+    if dx == 0 and dy == 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+    cx = ax + t * dx
+    cy = ay + t * dy
+    return math.hypot(px - cx, py - cy)
+
+
+def ramer_douglas_peucker(points: list[tuple[float, float]], epsilon: float) -> list[tuple[float, float]]:
+    """RDP simplification. Drops intermediate points that lie within
+    `epsilon` (degrees) of the straight line between their neighbours."""
+    if len(points) < 3:
+        return list(points)
+    dmax = 0.0
+    index = 0
+    end = len(points) - 1
+    for i in range(1, end):
+        d = _perp_distance(points[i], points[0], points[end])
+        if d > dmax:
+            dmax = d
+            index = i
+    if dmax > epsilon:
+        left = ramer_douglas_peucker(points[: index + 1], epsilon)
+        right = ramer_douglas_peucker(points[index:], epsilon)
+        return left[:-1] + right
+    return [points[0], points[end]]
+
+
+# Per-line tolerance. Trams have tight curves that need a finer epsilon than
+# a long suburban rail line. ~7m in latitude at Athens (1deg lat = ~111km).
+SIMPLIFY_EPSILON = {
+    "M1": 0.00003,
+    "M2": 0.00003,
+    "M3": 0.00003,
+    "T6": 0.00004,
+    "T7": 0.00004,
+    "A1": 0.00006,
+    "A2": 0.00006,
+    "A3": 0.00006,
+    "A4": 0.00006,
+}
+
+
 def to_geojson(line_strings: list[list[tuple[float, float]]], line_id: str) -> dict:
-    if len(line_strings) == 1:
-        geom = {"type": "LineString", "coordinates": line_strings[0]}
+    eps = SIMPLIFY_EPSILON.get(line_id, 0.00004)
+    simplified = [ramer_douglas_peucker(s, eps) for s in line_strings]
+    simplified = [s for s in simplified if len(s) >= 2]
+    if len(simplified) == 1:
+        geom = {"type": "LineString", "coordinates": simplified[0]}
     else:
-        geom = {"type": "MultiLineString", "coordinates": line_strings}
+        geom = {"type": "MultiLineString", "coordinates": simplified}
     return {
         "type": "Feature",
         "properties": {"lineId": line_id, "source": "OpenStreetMap"},
