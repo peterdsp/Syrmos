@@ -23,10 +23,13 @@ struct HomeView: View {
                     liveTrainsSection
                     linesSection
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
-            .navigationTitle("Syrmos")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .refreshable {
                 await stasyService.fetchAnnouncements()
             }
@@ -57,6 +60,9 @@ struct HomeView: View {
 
     private var welcomeSection: some View {
         VStack(alignment: .leading, spacing: 4) {
+            Text("Syrmos")
+                .font(.largeTitle)
+                .fontWeight(.bold)
             Text(loc[.appSubtitle])
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

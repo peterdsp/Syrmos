@@ -983,17 +983,21 @@
 
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
-            const manifestLine = lineIdToManifestLine[train.lineId] || train.lineId;
-            const dir = train.destination && /αεροδρομ|airport/i.test(train.destination) ? "outbound" : "inbound";
-            const svgKey = vehicleIconMap.get(`${manifestLine}_${dir}`) || vehicleIconMap.get(`${manifestLine}_outbound`);
-            const icon = svgKey
-                ? L.icon({ iconUrl: svgKey, iconSize: [38, 38], iconAnchor: [19, 19], className: "sim-train-marker" })
-                : L.divIcon({
-                    className: "train-marker",
-                    html: `<span class="train-marker__ring" style="background:${line ? line.color : "#0072CE"}"></span>`,
-                    iconSize: [22, 22],
-                    iconAnchor: [11, 11],
-                });
+            const lineColor = line ? line.color : "#7C4DFF";
+            // Custom divIcon so suburban trains are clearly distinguishable
+            // from simulated metro/tram dots: pulsing ring + line-id badge.
+            const icon = L.divIcon({
+                className: "live-train-marker",
+                html: `
+                    <span class="live-train-marker__pulse" style="border-color:${lineColor}"></span>
+                    <span class="live-train-marker__core" style="background:${lineColor}">
+                        <span class="live-train-marker__glyph">🚆</span>
+                    </span>
+                    <span class="live-train-marker__badge" style="background:${lineColor}">${train.lineId}</span>
+                `,
+                iconSize: [44, 56],
+                iconAnchor: [22, 22],
+            });
             const marker = L.marker([train.lat, train.lng], {
                 icon,
                 keyboard: false,
