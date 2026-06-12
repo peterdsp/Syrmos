@@ -531,11 +531,22 @@ function render() {
   const trains = filtered();
   const summary = document.getElementById('summary');
   summary.innerHTML = '';
+  // Absolute earliest / latest HH:MM across every train and every stop, not
+  // just the first train's first stop. Strings sort lexically which matches
+  // HH:MM ordering for our 00:00-23:59 range.
+  let earliest = '99:99';
+  let latest = '00:00';
+  for (const t of trains) {
+    for (const s of t.stops) {
+      if (s.time && s.time < earliest) earliest = s.time;
+      if (s.time && s.time > latest) latest = s.time;
+    }
+  }
   const stats = [
     { label: 'Trains shown', value: trains.length },
     { label: 'Stations served', value: new Set(trains.flatMap(t => t.stops.map(s => s.stationNameEn))).size },
-    { label: 'First departure', value: trains[0]?.firstTime || '—' },
-    { label: 'Last departure', value: trains[trains.length - 1]?.firstTime || '—' },
+    { label: 'Earliest departure', value: earliest === '99:99' ? '—' : earliest },
+    { label: 'Latest departure', value: latest === '00:00' ? '—' : latest },
   ];
   for (const s of stats) {
     const card = document.createElement('div');
