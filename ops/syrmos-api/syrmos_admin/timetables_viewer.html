@@ -337,15 +337,16 @@ const DAY_LABELS = {
 };
 const DIRECTION_LABELS = { outbound: 'Outbound', inbound: 'Inbound', both: 'Both directions', extension: 'Extension' };
 
-const state = { trains: [], updatedAt: '', lineId: 'A1', dayType: 'mon_fri', direction: 'all', search: '', stationIcons: {} };
+const state = { trains: [], updatedAt: '', lineId: 'A1', dayType: 'mon_fri', direction: 'all', search: '', stationIcons: {}, stationOffsets: {} };
 
 const BAND_LINES = ['M1', 'M2', 'M3', 'T6', 'T7'];
 
 async function load() {
   try {
-    const [ttRes, iconsRes, ...schedRes] = await Promise.all([
+    const [ttRes, iconsRes, offsetsRes, ...schedRes] = await Promise.all([
       fetch('/api/train-timestamps', { headers: { Accept: 'application/json' } }),
       fetch('/api/icons', { headers: { Accept: 'application/json' } }).catch(() => null),
+      fetch('/api/station-offsets', { headers: { Accept: 'application/json' } }).catch(() => null),
       ...BAND_LINES.map(lid => fetch(`/api/schedules/${lid}`).then(r => r.ok ? r.json() : null).catch(() => null)),
       fetch('/api/schedules/M3_AIR').then(r => r.ok ? r.json() : null).catch(() => null),
     ]);
@@ -355,6 +356,14 @@ async function load() {
     if (iconsRes && iconsRes.ok) {
       const icons = await iconsRes.json();
       state.stationIcons = icons.stations || {};
+    }
+    if (offsetsRes && offsetsRes.ok) {
+      const offsets = await offsetsRes.json();
+      // Key by `${lineId}|${direction}` for O(1) lookup in synthesizeFromBundle.
+      state.stationOffsets = {};
+      for (const line of offsets.lines || []) {
+        state.stationOffsets[`${line.lineId}|${line.direction}`] = line;
+      }
     }
     // Synthesize per-line "trains" from frequency bands so metro + tram show
     // up in the same UI as the PDF-grounded suburban data. Each band slot
@@ -416,23 +425,38 @@ function synthesizeFromBundle(lineId, bundle) {
           const mins = Math.round(slot);
           if (!rule.is247 && (mins < open || mins > close)) continue;
           trainCount++;
-          // Synthetic train: only first + last stop for the band grid view.
+          // Use real STASY per-station offsets when we have them so the
+          // expanded view shows every station's HH:MM along the route. Falls
+          // back to origin + destination only when offsets aren't loaded.
+          const offsetLine = state.stationOffsets?.[`${displayLineId}|${dir.key}`];
           const runtime = officialRunMinutes(lineId, dir.key);
           const originName = lineId === 'M3_AIR'
             ? (dir.key === 'inbound' ? 'Airport' : 'Doukissis Plakentias')
             : (dir.key === 'inbound' ? (term?.b || '') : (term?.a || ''));
+          let stops;
+          if (offsetLine && offsetLine.stops?.length >= 2 && lineId !== 'M3_AIR') {
+            stops = offsetLine.stops.map(s => ({
+              stationId: s.stationId || '',
+              stationNameEn: s.stationEn,
+              stationNameEl: '',
+              time: fmt(mins + (s.minutesFromOrigin || 0)),
+              sequence: s.stopSequence,
+            }));
+          } else {
+            stops = [
+              { stationId: '', stationNameEn: originName, stationNameEl: '', time: fmt(mins), sequence: 0 },
+              { stationId: '', stationNameEn: dir.label, stationNameEl: '', time: fmt(mins + runtime), sequence: 1 },
+            ];
+          }
           out.push({
             lineId: displayLineId,
             dayType,
             direction: dir.key,
             trainNo: `${displayLineId}-${dayType}-${dir.key}-${String(trainCount).padStart(4, '0')}`,
-            sourcePdf: lineId === 'M3_AIR' ? 'band:M3_AIR' : `band:${displayLineId}`,
+            sourcePdf: lineId === 'M3_AIR' ? 'band:M3_AIR' : `band:${displayLineId}+stasy-html`,
             validFrom: '',
             firstTime: fmt(mins),
-            stops: [
-              { stationId: '', stationNameEn: originName, stationNameEl: '', time: fmt(mins), sequence: 0 },
-              { stationId: '', stationNameEn: dir.label, stationNameEl: '', time: fmt(mins + runtime), sequence: 1 },
-            ],
+            stops,
           });
         }
       }

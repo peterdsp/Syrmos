@@ -155,6 +155,47 @@ def _build_operators(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_station_offsets(conn: sqlite3.Connection) -> dict:
+    """STASY per-station minutes-from-origin grouped by (line, direction).
+    Apps multiply the headway grid by these offsets to compute exact HH:MM
+    at every station for every synthesized train, without baking runtimes
+    into the client."""
+    try:
+        rows = conn.execute(
+            "SELECT line_id, direction, origin, destination, stop_sequence,"
+            " station_en, station_id, minutes_from_origin"
+            " FROM station_offsets"
+            " ORDER BY line_id, direction, stop_sequence"
+        ).fetchall()
+    except sqlite3.OperationalError:
+        # Migration not yet applied; treat as empty rather than crashing.
+        return {"updatedAt": _now_iso(), "lines": []}
+
+    grouped: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        key = (r["line_id"], r["direction"])
+        if key not in grouped:
+            grouped[key] = {
+                "lineId": r["line_id"],
+                "direction": r["direction"],
+                "origin": r["origin"],
+                "destination": r["destination"],
+                "stops": [],
+            }
+        grouped[key]["stops"].append({
+            "stationId": r["station_id"] or "",
+            "stationEn": r["station_en"],
+            "stopSequence": r["stop_sequence"],
+            "minutesFromOrigin": r["minutes_from_origin"],
+        })
+
+    return {
+        "updatedAt": _now_iso(),
+        "source": "STASY https://www.stasy.gr/en/timetables/",
+        "lines": list(grouped.values()),
+    }
+
+
 def _build_train_timestamps(conn: sqlite3.Connection) -> dict:
     """Group raw timestamp rows into per-train stopping patterns. Output is
     keyed by line + day_type + direction so the clients can pick the relevant
@@ -396,6 +437,14 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             out_dir / "train-timestamps.json", train_timestamps_payload
         )
 
+        # /api/station-offsets - per-station minutes-from-origin for M1, M2,
+        # M3, T6, T7 scraped from STASY HTML. Apps multiply by their headway
+        # grid to compute exact per-stop HH:MM without baking runtimes in.
+        station_offsets_payload = _build_station_offsets(conn)
+        station_offsets_hash = _atomic_write_json(
+            out_dir / "station-offsets.json", station_offsets_payload
+        )
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -432,6 +481,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "stationsHash": stations_hash,
             "operatorsHash": operators_hash,
             "trainTimestampsHash": train_timestamps_hash,
+            "stationOffsetsHash": station_offsets_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 
