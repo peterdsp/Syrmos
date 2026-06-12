@@ -11,6 +11,7 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYAnnouncementService
+import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,7 @@ data class HomeUiState(
     val selectedStationId: String? = null,
     val lines: List<Line> = emptyList(),
     val announcements: List<STASYAnnouncement> = emptyList(),
+    val serviceStatus: STASYServiceStatus? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
 )
@@ -63,10 +65,15 @@ class HomeViewModel(
 
     private fun loadAnnouncements() {
         scope.launch {
-            stasyService.fetchAnnouncements()
+            stasyService.fetchFeed()
                 .catch { /* ignore */ }
-                .collect { announcements ->
-                    _uiState.update { it.copy(announcements = announcements) }
+                .collect { feed ->
+                    _uiState.update {
+                        it.copy(
+                            announcements = feed.announcements,
+                            serviceStatus = feed.status,
+                        )
+                    }
                 }
         }
     }
