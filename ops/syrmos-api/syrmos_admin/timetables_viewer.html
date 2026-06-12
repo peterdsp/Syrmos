@@ -233,8 +233,8 @@ footer a:hover { text-decoration: underline; }
   </div>
 </header>
 <main class="shell">
-  <h1>Suburban timetables</h1>
-  <p class="lede">Every Hellenic Train suburban departure for Athens (A1, A2, A3, A4), parsed straight from the operator's official PDFs. Filter by line, day, and destination.</p>
+  <h1>Athens transit timetables</h1>
+  <p class="lede">Metro, tram and suburban departures for Athens. Suburban (A1, A2, A3, A4) comes straight from Hellenic Train's official PDFs as per-train timestamps. Metro (M1, M2, M3) and tram (T6, T7) are projected from the operator-rule schedule with the master document's frequency bands. Filter by line, day, direction or station.</p>
 
   <section class="filters">
     <div class="filter-group">
@@ -266,46 +266,88 @@ footer a:hover { text-decoration: underline; }
 </footer>
 
 <script>
-const ICON_BASE = '/icons/directional_vehicle_icons/directional/train';
-// Per-line vehicle icon paths. The 'p' prefix is the operator's own line
-// label set (p1 = Piraeus-Airport, p2 = Piraeus-Kiato, p3 = Athens-Chalkida,
-// p1a = Ano Liosia-Airport). We map each (line, direction) to the matching
-// directional SVG. For "both" PDFs we fall back to the outbound vehicle.
+const ICON_BASE_TRAIN = '/icons/directional_vehicle_icons/directional/train';
+const ICON_BASE_METRO = '/icons/directional_vehicle_icons/directional/metro';
+const ICON_BASE_TRAM  = '/icons/directional_vehicle_icons/directional/tram';
+// Per-line vehicle icon paths. Train uses operator labels (p1 = Piraeus-Airport,
+// p2 = Piraeus-Kiato, p3 = Athens-Chalkida, p1a = Ano Liosia-Airport). Metro
+// and tram have their own directional SVG sets. For "both" PDFs we fall back
+// to the outbound vehicle.
 const VEHICLE_ICON = {
-  A1: { outbound: `${ICON_BASE}/p1_piraeus_airport/train_p1_right_to_airport.svg`,
-        inbound:  `${ICON_BASE}/p1_piraeus_airport/train_p1_left_to_piraeus.svg`,
-        both:     `${ICON_BASE}/p1_piraeus_airport/train_p1_right_to_airport.svg`,
-        extension:`${ICON_BASE}/p1_piraeus_airport/train_p1_right_to_airport.svg` },
-  A2: { outbound: `${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`,
-        inbound:  `${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_left_to_ano_liosia.svg`,
-        both:     `${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`,
-        extension:`${ICON_BASE}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg` },
-  A3: { outbound: `${ICON_BASE}/p3_athens_chalkida/train_p3_right_to_chalkida.svg`,
-        inbound:  `${ICON_BASE}/p3_athens_chalkida/train_p3_left_to_athens.svg`,
-        both:     `${ICON_BASE}/p3_athens_chalkida/train_p3_right_to_chalkida.svg`,
-        extension:`${ICON_BASE}/p3_athens_chalkida/train_p3_right_to_chalkida.svg` },
-  A4: { outbound: `${ICON_BASE}/p2_piraeus_kiato/train_p2_right_to_kiato.svg`,
-        inbound:  `${ICON_BASE}/p2_piraeus_kiato/train_p2_left_to_piraeus.svg`,
-        both:     `${ICON_BASE}/p2_piraeus_kiato/train_p2_right_to_kiato.svg`,
-        extension:`${ICON_BASE}/p2_piraeus_kiato/train_p2_right_to_kiato.svg` },
+  A1: { outbound: `${ICON_BASE_TRAIN}/p1_piraeus_airport/train_p1_right_to_airport.svg`,
+        inbound:  `${ICON_BASE_TRAIN}/p1_piraeus_airport/train_p1_left_to_piraeus.svg`,
+        both:     `${ICON_BASE_TRAIN}/p1_piraeus_airport/train_p1_right_to_airport.svg`,
+        extension:`${ICON_BASE_TRAIN}/p1_piraeus_airport/train_p1_right_to_airport.svg` },
+  A2: { outbound: `${ICON_BASE_TRAIN}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`,
+        inbound:  `${ICON_BASE_TRAIN}/p1a_ano_liosia_airport/train_p1a_left_to_ano_liosia.svg`,
+        both:     `${ICON_BASE_TRAIN}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg`,
+        extension:`${ICON_BASE_TRAIN}/p1a_ano_liosia_airport/train_p1a_right_to_airport.svg` },
+  A3: { outbound: `${ICON_BASE_TRAIN}/p3_athens_chalkida/train_p3_right_to_chalkida.svg`,
+        inbound:  `${ICON_BASE_TRAIN}/p3_athens_chalkida/train_p3_left_to_athens.svg`,
+        both:     `${ICON_BASE_TRAIN}/p3_athens_chalkida/train_p3_right_to_chalkida.svg`,
+        extension:`${ICON_BASE_TRAIN}/p3_athens_chalkida/train_p3_right_to_chalkida.svg` },
+  A4: { outbound: `${ICON_BASE_TRAIN}/p2_piraeus_kiato/train_p2_right_to_kiato.svg`,
+        inbound:  `${ICON_BASE_TRAIN}/p2_piraeus_kiato/train_p2_left_to_piraeus.svg`,
+        both:     `${ICON_BASE_TRAIN}/p2_piraeus_kiato/train_p2_right_to_kiato.svg`,
+        extension:`${ICON_BASE_TRAIN}/p2_piraeus_kiato/train_p2_right_to_kiato.svg` },
+  M1: { outbound: `${ICON_BASE_METRO}/m1_piraeus_kifissia/metro_m1_right_to_kifissia.svg`,
+        inbound:  `${ICON_BASE_METRO}/m1_piraeus_kifissia/metro_m1_left_to_piraeus.svg`,
+        both:     `${ICON_BASE_METRO}/m1_piraeus_kifissia/metro_m1_right_to_kifissia.svg` },
+  M2: { outbound: `${ICON_BASE_METRO}/m2_anthoupoli_elliniko/metro_m2_right_to_elliniko.svg`,
+        inbound:  `${ICON_BASE_METRO}/m2_anthoupoli_elliniko/metro_m2_left_to_anthoupoli.svg`,
+        both:     `${ICON_BASE_METRO}/m2_anthoupoli_elliniko/metro_m2_right_to_elliniko.svg` },
+  M3: { outbound: `${ICON_BASE_METRO}/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_doukissis_plakentias.svg`,
+        inbound:  `${ICON_BASE_METRO}/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_left_to_dimotiko_theatro.svg`,
+        both:     `${ICON_BASE_METRO}/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_doukissis_plakentias.svg`,
+        airport:  `${ICON_BASE_METRO}/m3_dimotiko_theatro_doukissis_plakentias_airport/metro_m3_right_to_airport.svg` },
+  T6: { outbound: `${ICON_BASE_TRAM}/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_right_to_akti_posidonos.svg`,
+        inbound:  `${ICON_BASE_TRAM}/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_left_to_syntagma.svg`,
+        both:     `${ICON_BASE_TRAM}/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_right_to_akti_posidonos.svg` },
+  T7: { outbound: `${ICON_BASE_TRAM}/t6t7_syntagma_asklipiio_voulas_via_pikrodafni/tram_t6t7_right_to_asklipiio_voulas.svg`,
+        inbound:  `${ICON_BASE_TRAM}/t6t7_syntagma_akti_posidonos_via_pikrodafni/tram_t6t7_left_to_syntagma.svg`,
+        both:     `${ICON_BASE_TRAM}/t6t7_syntagma_asklipiio_voulas_via_pikrodafni/tram_t6t7_right_to_asklipiio_voulas.svg` },
 };
-const LINE_COLORS = { A1: 'var(--c-a1)', A2: 'var(--c-a2)', A3: 'var(--c-a3)', A4: 'var(--c-a4)' };
+const LINE_COLORS = {
+  M1: 'var(--c-m1)', M2: 'var(--c-m2)', M3: 'var(--c-m3)',
+  T6: 'var(--c-t6)', T7: 'var(--c-t7)',
+  A1: 'var(--c-a1)', A2: 'var(--c-a2)', A3: 'var(--c-a3)', A4: 'var(--c-a4)',
+};
 const LINE_LABELS = {
+  M1: 'M1 Piraeus ↔ Kifissia',
+  M2: 'M2 Anthoupoli ↔ Elliniko',
+  M3: 'M3 Dimotiko Theatro ↔ Doukissis Plakentias / Airport',
+  T6: 'T6 Syntagma ↔ Pikrodafni',
+  T7: 'T7 Akti Poseidonos ↔ Asklipiio Voulas',
   A1: 'A1 Piraeus ↔ Airport',
   A2: 'A2 Ano Liosia ↔ Airport',
   A3: 'A3 Athens ↔ Chalkida',
   A4: 'A4 Piraeus ↔ Kiato',
 };
-const DAY_LABELS = { mon_fri: 'Mon–Fri', weekend: 'Weekend', all: 'All days' };
+const LINE_TERMINALS = {
+  M1: { a: 'Piraeus', b: 'Kifissia' },
+  M2: { a: 'Anthoupoli', b: 'Elliniko' },
+  M3: { a: 'Dimotiko Theatro', b: 'Doukissis Plakentias' },
+  T6: { a: 'Syntagma', b: 'Pikrodafni' },
+  T7: { a: 'Akti Poseidonos', b: 'Asklipiio Voulas' },
+};
+const DAY_LABELS = {
+  mon_fri: 'Mon–Fri', weekend: 'Weekend', all: 'All days',
+  mon_thu: 'Mon–Thu', fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
+  holiday: 'Holiday', bank_holiday: 'Bank holiday', aug_15: 'Aug 15', dec_24_31: 'Dec 24/31',
+};
 const DIRECTION_LABELS = { outbound: 'Outbound', inbound: 'Inbound', both: 'Both directions', extension: 'Extension' };
 
 const state = { trains: [], updatedAt: '', lineId: 'A1', dayType: 'mon_fri', direction: 'all', search: '', stationIcons: {} };
 
+const BAND_LINES = ['M1', 'M2', 'M3', 'T6', 'T7'];
+
 async function load() {
   try {
-    const [ttRes, iconsRes] = await Promise.all([
+    const [ttRes, iconsRes, ...schedRes] = await Promise.all([
       fetch('/api/train-timestamps', { headers: { Accept: 'application/json' } }),
       fetch('/api/icons', { headers: { Accept: 'application/json' } }).catch(() => null),
+      ...BAND_LINES.map(lid => fetch(`/api/schedules/${lid}`).then(r => r.ok ? r.json() : null).catch(() => null)),
+      fetch('/api/schedules/M3_AIR').then(r => r.ok ? r.json() : null).catch(() => null),
     ]);
     const data = await ttRes.json();
     state.trains = data.trains || [];
@@ -314,11 +356,104 @@ async function load() {
       const icons = await iconsRes.json();
       state.stationIcons = icons.stations || {};
     }
+    // Synthesize per-line "trains" from frequency bands so metro + tram show
+    // up in the same UI as the PDF-grounded suburban data. Each band slot
+    // becomes a synthetic departure (one per direction at the offset minute).
+    const allBundles = [...BAND_LINES, 'M3_AIR'];
+    const bundleArray = schedRes;
+    for (let i = 0; i < allBundles.length; i++) {
+      const lid = allBundles[i];
+      const bundle = bundleArray[i];
+      if (bundle && bundle.bands && bundle.rules) {
+        state.trains.push(...synthesizeFromBundle(lid, bundle));
+      }
+    }
     document.getElementById('updatedAt').textContent = state.updatedAt ? new Date(state.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
     buildFilters();
     render();
   } catch (e) {
     document.getElementById('trainGrid').innerHTML = `<div class="empty">Could not load timetables. ${e}</div>`;
+  }
+}
+
+function synthesizeFromBundle(lineId, bundle) {
+  // Walk each frequency band for each day_type and emit one synthetic train
+  // per slot in each direction. Honors operating-hours via rule.openTime /
+  // closeTime so closed periods don't get rows.
+  const out = [];
+  const displayLineId = lineId === 'M3_AIR' ? 'M3' : lineId;
+  const term = LINE_TERMINALS[displayLineId];
+  const directions = lineId === 'M3_AIR'
+    ? [{ key: 'outbound', label: 'Airport' }]
+    : (term ? [{ key: 'outbound', label: term.b }, { key: 'inbound', label: term.a }] : []);
+  const minutes = hhmm => {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const fmt = mins => {
+    const wrapped = ((mins % 1440) + 1440) % 1440;
+    return `${String(Math.floor(wrapped / 60)).padStart(2, '0')}:${String(wrapped % 60).padStart(2, '0')}`;
+  };
+  for (const rule of bundle.rules) {
+    const dayType = rule.dayType;
+    const open = minutes(rule.openTime);
+    const closeRaw = minutes(rule.closeTime);
+    const close = closeRaw <= open ? closeRaw + 1440 : closeRaw;
+    const bands = bundle.bands.filter(b => b.dayType === dayType)
+      .sort((a, b) => minutes(a.timeStart) - minutes(b.timeStart));
+    for (const dir of directions) {
+      let trainCount = 0;
+      for (const band of bands) {
+        const start = minutes(band.timeStart);
+        const end = minutes(band.timeEnd);
+        const headway = band.headwayMinutes;
+        if (!headway || headway <= 0) continue;
+        // Half-headway offset for the second direction so they don't stack.
+        const offset = dir.key === 'inbound' ? headway / 2 : 0;
+        for (let slot = start + offset; slot <= end; slot += headway) {
+          const mins = Math.round(slot);
+          if (!rule.is247 && (mins < open || mins > close)) continue;
+          trainCount++;
+          // Synthetic train: only first + last stop for the band grid view.
+          out.push({
+            lineId: displayLineId,
+            dayType,
+            direction: lineId === 'M3_AIR' ? 'outbound' : dir.key,
+            trainNo: `${displayLineId}-${dayType}-${dir.key}-${String(trainCount).padStart(4, '0')}`,
+            sourcePdf: lineId === 'M3_AIR' ? 'band:M3_AIR' : `band:${displayLineId}`,
+            validFrom: '',
+            firstTime: fmt(mins),
+            stops: [
+              { stationId: '', stationNameEn: dir.key === 'inbound' ? (term?.b || '') : (term?.a || ''), stationNameEl: '', time: fmt(mins), sequence: 0 },
+              { stationId: '', stationNameEn: dir.label, stationNameEl: '', time: fmt(mins + estimateRunMinutes(displayLineId)), sequence: 1 },
+            ],
+          });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function estimateRunMinutes(lineId) {
+  // Coarse end-to-end run times so the card shows a plausible arrival time.
+  return { M1: 50, M2: 40, M3: 55, T6: 35, T7: 50 }[lineId] || 30;
+}
+
+function buildDayChips() {
+  const dayRow = document.getElementById('dayFilters');
+  dayRow.innerHTML = '';
+  const dayOrder = ['mon_fri', 'mon_thu', 'fri', 'weekend', 'sat', 'sun', 'all', 'holiday', 'bank_holiday', 'aug_15', 'dec_24_31'];
+  const daysPresent = Array.from(new Set(state.trains.filter(t => t.lineId === state.lineId).map(t => t.dayType)));
+  const orderedDays = dayOrder.filter(d => daysPresent.includes(d)).concat(daysPresent.filter(d => !dayOrder.includes(d)));
+  if (!orderedDays.includes(state.dayType)) state.dayType = orderedDays[0] || 'mon_fri';
+  for (const dt of orderedDays) {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (state.dayType === dt ? ' is-active' : '');
+    chip.dataset.value = dt;
+    chip.textContent = DAY_LABELS[dt] || dt;
+    chip.onclick = () => { state.dayType = dt; updateChips(dayRow, dt); render(); };
+    dayRow.appendChild(chip);
   }
 }
 
@@ -331,20 +466,11 @@ function buildFilters() {
     chip.className = 'chip' + (state.lineId === lid ? ' is-active' : '');
     chip.dataset.value = lid;
     chip.innerHTML = `<span class="swatch" style="background:${LINE_COLORS[lid] || 'var(--accent)'}"></span>${LINE_LABELS[lid] || lid}`;
-    chip.onclick = () => { state.lineId = lid; updateChips(lineRow, lid); render(); };
+    chip.onclick = () => { state.lineId = lid; updateChips(lineRow, lid); buildDayChips(); render(); };
     lineRow.appendChild(chip);
   }
 
-  const dayRow = document.getElementById('dayFilters');
-  dayRow.innerHTML = '';
-  for (const dt of ['mon_fri', 'weekend', 'all']) {
-    const chip = document.createElement('button');
-    chip.className = 'chip' + (state.dayType === dt ? ' is-active' : '');
-    chip.dataset.value = dt;
-    chip.textContent = DAY_LABELS[dt];
-    chip.onclick = () => { state.dayType = dt; updateChips(dayRow, dt); render(); };
-    dayRow.appendChild(chip);
-  }
+  buildDayChips();
 
   const dirRow = document.getElementById('directionFilters');
   dirRow.innerHTML = '';
