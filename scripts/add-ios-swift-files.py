@@ -22,6 +22,7 @@ FILES_TO_ADD = [
     ("Views/Timetables/TimetablesView.swift", "Views"),
     ("Views/Stations/StationMapSheet.swift", "Views"),
     ("Views/SafariSheet.swift", "Views"),
+    ("Models/ThemeManager.swift", "Models"),
 ]
 
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct SyrmosSettingsView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
+    @ObservedObject private var themeManager = ThemeManager.shared
     @State private var safariURL: URL?
     @State private var refreshAlert: RefreshAlert?
 
@@ -22,11 +23,14 @@ struct SyrmosSettingsView: View {
                             Text(lang.displayName).tag(lang)
                         }
                     }
-                    LabeledContent(loc[.theme], value: loc[.systemDefault])
+                    Picker(loc[.theme], selection: $themeManager.theme) {
+                        ForEach(AppTheme.allCases) { theme in
+                            Text(theme.localizedName(loc.language)).tag(theme)
+                        }
+                    }
                 }
 
                 Section(loc[.data]) {
-                    LabeledContent(loc[.scheduleVersion], value: scheduleVersionLabel)
                     LabeledContent(loc[.stations], value: "90+")
                     LabeledContent(loc[.lines], value: "9")
                     LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
