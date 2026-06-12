@@ -84,10 +84,24 @@ struct StationDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(departures.prefix(10)) { departure in
+                        let iconName = TimetablesIcons.vehicleImageName(
+                            lineId: departure.lineId,
+                            direction: departure.direction,
+                            isAirport: departure.serviceType == "airport"
+                        )
                         HStack {
-                            Circle()
-                                .fill(SyrmosData.lineColor(for: departure.lineId))
-                                .frame(width: 10, height: 10)
+                            Group {
+                                if let iconName, UIImage(named: iconName) != nil {
+                                    Image(iconName)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 44, height: 30)
+                                } else {
+                                    Circle()
+                                        .fill(SyrmosData.lineColor(for: departure.lineId))
+                                        .frame(width: 12, height: 12)
+                                }
+                            }
 
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 4) {
