@@ -45,7 +45,7 @@ enum class L {
         TRAM -> if (lang == AppLanguage.GREEK) "Τραμ" else "Tram"
         SUBURBAN -> if (lang == AppLanguage.GREEK) "Προαστιακός" else "Suburban"
         SERVICE_ALERTS -> if (lang == AppLanguage.GREEK) "Έκτακτες Ανακοινώσεις" else "Service Alerts"
-        LATEST_FROM_STASY -> if (lang == AppLanguage.GREEK) "Τελευταία από ΣΤΑΣΥ" else "Latest from STASY"
+        LATEST_FROM_STASY -> if (lang == AppLanguage.GREEK) "Ενημέρωση Μετρό & Τραμ" else "Metro & Tram updates"
         READ_MORE -> if (lang == AppLanguage.GREEK) "Διαβάστε περισσότερα" else "Read more"
         SHOW_MORE -> if (lang == AppLanguage.GREEK) "Δείτε περισσότερα" else "Show more"
         SHOW_LESS -> if (lang == AppLanguage.GREEK) "Δείτε λιγότερα" else "Show less"

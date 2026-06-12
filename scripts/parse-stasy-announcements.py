@@ -18,12 +18,20 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+
+
+def _fold(s: str) -> str:
+    """Lowercase + strip accents so keyword matching ignores tonos/dialytika.
+    Python's str.lower() already maps uppercase Σ to word-final ς correctly."""
+    nkfd = unicodedata.normalize("NFD", s).lower()
+    return "".join(c for c in nkfd if not unicodedata.combining(c))
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = ROOT / "assets" / "stasy-announcements"
@@ -84,15 +92,76 @@ def _normalize_hhmm(s: str) -> str:
     return f"{int(h):02d}:{int(m):02d}"
 
 
+# STASY's news page mixes operational notices (the only ones our users care
+# about) with cultural events, chamber-of-commerce announcements, tenders,
+# hires, etc. Drop everything that doesn't mention the network. `serviceAlert`
+# items always pass — those are the Έκτακτες Ανακοινώσεις banner posts.
+# Operational keywords. All compared in accent-folded lowercase form.
+TRANSIT_KEYWORDS = (
+    # Greek
+    "μετρο", "τραμ", "προαστιακ",
+    "γραμμη 1", "γραμμη 2", "γραμμη 3",
+    "γραμμες", "γραμμων",
+    "σταθμ", "δρομολογ",
+    "καθυστερ", "αναστολ", "διακοπ",
+    "κυκλοφορ", "συρμ", "αμαξοστοιχ",
+    "εισιτηρ", "ωραρι",
+    "δικτυο", "συγκοινων",
+    "οασα", "στασυ", "στα.συ",
+    # English / transliterated
+    "metro", "tram", "suburban",
+    "station", "line 1", "line 2", "line 3",
+    "schedule", "timetable", "delay", "service",
+    "fare", "ticket", "network",
+)
+
+# HR postings, tenders, and cultural events that happen to mention "σταθμό",
+# "ΣΤΑ.ΣΥ", or "μετρό" but aren't operational. All accent-folded.
+EXCLUDE_TERMS = (
+    # Hiring / personnel competitions
+    "πληρωσης θεσεων", "αγγελια πληρωσης",
+    "θεσεων προσωπικου",
+    "πινακες καταταξης", "πινακων προκηρυξης",
+    "οριστικων πινακων", "προσωρινων πινακων",
+    "δημοσιευσης", "προκηρυξης", "προκηρυξη",
+    "οδηγων συρμων", "εκδοτων εισιτηριων",
+    "σταθμαρχων", "ελεγκτων κομιστρου",
+    "ορθη επαναληψη", "επανακοινοποιησης",
+    # Procurement / venue rental tenders
+    "προσκληση εκδηλωσης ενδιαφεροντος",
+    "μισθωση χωρων", "διαθεση χωρων",
+    "χωρου πολλαπλων χρησεων", "πολλαπλων χρησεων",
+    "αντικειμενο την", "επαναφορτισης ηλεκτρονικων",
+    # Cultural events held at metro stations
+    "πανηγυρι", "γευσεις απο",
+    "χριστουγεννιατικη εκθεση",
+    "ιδρυμα βιβλιου", "ελιβιπ",
+    "καρδια της ελλαδας",
+)
+
+
+def _is_transit_related(item: dict) -> bool:
+    if item.get("category") == "serviceAlert":
+        return True
+    blob = _fold(" ".join((item.get("title", ""), item.get("summary", ""), item.get("url", ""))))
+    return any(k in blob for k in TRANSIT_KEYWORDS)
+
+
+def _is_excluded(item: dict) -> bool:
+    blob = _fold(" ".join((item.get("title", ""), item.get("summary", ""))))
+    return any(k in blob for k in EXCLUDE_TERMS)
+
+
 def extract_news(html: str, limit: int = 30) -> list[dict]:
     """The STASY news page is built with Elementor, which renders each post
     title in an `entry-title` (or `elementor-post__title`) wrapper and the
     canonical link a few ancestors up. We pair them by walking up the DOM
-    from each unique title, dedupe by URL, and emit at most `limit` items."""
+    from each unique title, dedupe by URL, filter to transit-relevant
+    content, and emit at most `limit` items."""
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
-    items: list[dict] = []
+    raw: list[dict] = []
     seen_urls: set[str] = set()
     title_nodes = soup.find_all(class_=re.compile(r"entry-title|elementor-post__title"))
     for t in title_nodes:
@@ -132,7 +201,7 @@ def extract_news(html: str, limit: int = 30) -> list[dict]:
             cur_text = cur.get_text(" ", strip=True)[:300]
             if "Έκτακτες" in cur_text:
                 cat = "serviceAlert"
-        items.append({
+        raw.append({
             "id": _slug(href),
             "title": title[:200],
             "summary": summary,
@@ -140,9 +209,12 @@ def extract_news(html: str, limit: int = 30) -> list[dict]:
             "date": date_str,
             "category": cat,
         })
-        if len(items) >= limit:
-            break
-    return items
+    filtered = [
+        it for it in raw
+        if it.get("category") == "serviceAlert"
+        or (_is_transit_related(it) and not _is_excluded(it))
+    ]
+    return filtered[:limit]
 
 
 def _slug(url: str) -> str:

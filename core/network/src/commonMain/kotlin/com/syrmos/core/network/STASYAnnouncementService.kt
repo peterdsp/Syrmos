@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 data class STASYAnnouncement(
     val id: String,
     val title: String,
+    val titleEn: String,
     val date: String,
     val url: String,
     val isServiceAlert: Boolean,
@@ -39,6 +40,7 @@ class STASYAnnouncementService(
                     STASYAnnouncement(
                         id = item.id,
                         title = item.title,
+                        titleEn = item.titleEn.ifBlank { item.title },
                         date = item.date,
                         url = item.url,
                         isServiceAlert = item.category == CATEGORY_SERVICE_ALERT,
@@ -61,8 +63,10 @@ class STASYAnnouncementService(
     private data class AnnouncementItem(
         val id: String,
         val title: String,
+        @SerialName("titleEn") val titleEn: String = "",
         val date: String = "",
         val summary: String = "",
+        @SerialName("summaryEn") val summaryEn: String = "",
         val url: String = "",
         val category: String = "",
     )
