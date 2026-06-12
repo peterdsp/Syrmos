@@ -184,6 +184,15 @@ struct TransitMapView: View {
     /// just the lines + stations. Persists across navigation but resets on
     /// cold launch (deliberate: it's a quick toggle, not a setting).
     @State private var vehiclesHidden = false
+    /// Force-rebuild key for the SwiftUI Map. iOS 18's Map(position:) has a
+    /// CAMetalLayer lifecycle bug where the layer stops rendering after the
+    /// system intercepts the app (screenshot, control center, lock/unlock),
+    /// leaving the user staring at a black canvas. Incrementing this id on
+    /// every screenshot + scenePhase resume forces SwiftUI to discard the
+    /// broken view and instantiate a fresh one - hundreds of times cheaper
+    /// than the full UIViewRepresentable rewrite.
+    @State private var mapRebuildKey: Int = 0
+    @Environment(\.scenePhase) private var scenePhase
 
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
@@ -256,6 +265,21 @@ struct TransitMapView: View {
                     guard let id = newId,
                           let station = stations.first(where: { $0.id == id }) else { return }
                     tappedStation = station
+                }
+                .id(mapRebuildKey)
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIApplication.userDidTakeScreenshotNotification
+                )) { _ in
+                    // iOS volume-up+side-button briefly resigns the app and
+                    // the Map's Metal layer can come back black. Force a
+                    // fresh instance by bumping the rebuild key.
+                    mapRebuildKey &+= 1
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    // Same protection on lock/unlock and control-center swipe.
+                    if newPhase == .active {
+                        mapRebuildKey &+= 1
+                    }
                 }
 
                 if !mapLoaded {
