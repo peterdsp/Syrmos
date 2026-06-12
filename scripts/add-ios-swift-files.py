@@ -23,6 +23,7 @@ FILES_TO_ADD = [
     ("Views/Stations/StationMapSheet.swift", "Views"),
     ("Views/SafariSheet.swift", "Views"),
     ("Models/ThemeManager.swift", "Models"),
+    ("Models/SyrmosTrainTimestampsStore.swift", "Models"),
 ]
 
 

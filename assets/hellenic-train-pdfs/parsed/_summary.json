@@ -1,0 +1,62 @@
+{
+  "total_trains": 244,
+  "stations_seen": 61,
+  "per_pdf": [
+    {
+      "pdf": "PIRAEUS-ATHENS-LIOSIA-AIRPORT_MON-FRI_from_221125_0.pdf",
+      "direction": "outbound",
+      "day_type": "mon_fri",
+      "stations": 21,
+      "trains": 53,
+      "output": "assets/hellenic-train-pdfs/parsed/PIRAEUS-ATHENS-LIOSIA-AIRPORT_MON-FRI_from_221125_0.jsonl"
+    },
+    {
+      "pdf": "PIRAEUS-ATHENS-LIOSIA-AIRPORT_WEEKENDS_from_221125_0.pdf",
+      "direction": "outbound",
+      "day_type": "weekend",
+      "stations": 21,
+      "trains": 38,
+      "output": "assets/hellenic-train-pdfs/parsed/PIRAEUS-ATHENS-LIOSIA-AIRPORT_WEEKENDS_from_221125_0.jsonl"
+    },
+    {
+      "pdf": "AIRPORT-LIOSIA-ATHENS-PIRAEUS_MON-FRI_from_221125_0.pdf",
+      "direction": "inbound",
+      "day_type": "mon_fri",
+      "stations": 21,
+      "trains": 53,
+      "output": "assets/hellenic-train-pdfs/parsed/AIRPORT-LIOSIA-ATHENS-PIRAEUS_MON-FRI_from_221125_0.jsonl"
+    },
+    {
+      "pdf": "AIRPORT-LIOSIA-ATHENS-PIRAEUS_WEEKENDS_from_221125_0.pdf",
+      "direction": "inbound",
+      "day_type": "weekend",
+      "stations": 21,
+      "trains": 38,
+      "output": "assets/hellenic-train-pdfs/parsed/AIRPORT-LIOSIA-ATHENS-PIRAEUS_WEEKENDS_from_221125_0.jsonl"
+    },
+    {
+      "pdf": "ATHENS-CHALKIDA-ATHENS_from_221125_0.pdf",
+      "direction": "both",
+      "day_type": "all",
+      "stations": 17,
+      "trains": 22,
+      "output": "assets/hellenic-train-pdfs/parsed/ATHENS-CHALKIDA-ATHENS_from_221125_0.jsonl"
+    },
+    {
+      "pdf": "PIRAEUS-KIATO-PIRAEUS_from_221125_0.pdf",
+      "direction": "both",
+      "day_type": "all",
+      "stations": 20,
+      "trains": 35,
+      "output": "assets/hellenic-train-pdfs/parsed/PIRAEUS-KIATO-PIRAEUS_from_221125_0.jsonl"
+    },
+    {
+      "pdf": "KIATO-AIGIO-KIATO_from_221125_0.pdf",
+      "direction": "both",
+      "day_type": "all",
+      "stations": 15,
+      "trains": 5,
+      "output": "assets/hellenic-train-pdfs/parsed/KIATO-AIGIO-KIATO_from_221125_0.jsonl"
+    }
+  ]
+}

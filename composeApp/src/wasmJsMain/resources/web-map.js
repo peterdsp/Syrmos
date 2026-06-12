@@ -67,6 +67,25 @@
             try { localStorage.setItem(cachedIconsKey, JSON.stringify(fresh)); } catch (_) {}
         }
     } catch (_) {}
+    // PDF-grounded per-train timestamps for suburban A1-A4. When this is
+    // populated, buildStationDepartures uses it for suburban stations and
+    // falls back to band projection only when the operator hasn't published
+    // a real timetable. Cached for offline cold start.
+    let apiTrainTimestamps = { trains: [] };
+    try {
+        const cachedTT = localStorage.getItem("syrmos.train-timestamps.v1");
+        if (cachedTT) apiTrainTimestamps = JSON.parse(cachedTT);
+    } catch (_) {}
+    try {
+        const freshTT = await fetch("https://api-syrmos.peterdsp.dev/api/train-timestamps")
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
+        if (freshTT && Array.isArray(freshTT.trains)) {
+            apiTrainTimestamps = freshTT;
+            try { localStorage.setItem("syrmos.train-timestamps.v1", JSON.stringify(freshTT)); } catch (_) {}
+        }
+    } catch (_) {}
+
     // Source of truth for schedules: /api/schedules/{lineId}. Cached in
     // localStorage so an offline cold start still has correct data.
     const apiSchedules = new Map();
@@ -459,7 +478,40 @@
             }
         }
     }
+    /// PDF-grounded next-departures path. For any suburban station call
+    /// (A1-A4), pull the next few trains that stop here from the per-train
+    /// timestamp data set, with the real published HH:MM time.
+    function realTimetableDepartures(station) {
+        if (!apiTrainTimestamps || !apiTrainTimestamps.trains?.length) return [];
+        const wantedNames = new Set([station.name, station.nameEl].filter(Boolean));
+        const out = [];
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        for (const train of apiTrainTimestamps.trains) {
+            const stop = train.stops.find((s) => wantedNames.has(s.stationNameEn) || wantedNames.has(s.stationNameEl));
+            if (!stop) continue;
+            const [h, m] = stop.time.split(":").map((n) => parseInt(n, 10));
+            if (Number.isNaN(h) || Number.isNaN(m)) continue;
+            let minutesAway = h * 60 + m - nowMinutes;
+            if (minutesAway < 0 || minutesAway > 240) continue;  // drop past and >4h ahead
+            const last = train.stops[train.stops.length - 1];
+            const line = lineMap.get(train.lineId);
+            out.push({
+                line: line || { id: train.lineId, name: train.lineId, color: "#7e22ce" },
+                direction: last.stationNameEn,
+                minutesAway,
+                timeMinutes: h * 60 + m,
+                timeLabel: stop.time,
+                trainNo: train.trainNo,
+            });
+        }
+        return out.sort((a, b) => a.minutesAway - b.minutesAway).slice(0, 10);
+    }
+
     function buildStationDepartures(station) {
+        // Prefer PDF-grounded data when we have it for this station.
+        const real = realTimetableDepartures(station);
+        if (real.length) return real;
         if (!apiSchedules || apiSchedules.size === 0) return [];
         const nowDate = new Date();
         const result = [];
