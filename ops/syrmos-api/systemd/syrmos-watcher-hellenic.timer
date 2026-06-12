@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily Syrmos Hellenic Train PDF watcher
+Requires=syrmos-watcher-hellenic.service
+
+[Timer]
+# Daily at 03:17 local time. Slightly off-pattern so we don't pile up at
+# 03:00 with other system cron jobs, plus a small random delay.
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target
