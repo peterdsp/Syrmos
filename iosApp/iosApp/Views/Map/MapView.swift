@@ -234,7 +234,7 @@ struct TransitMapView: View {
 
                         ForEach(liveTrainService.trains) { train in
                             Annotation(train.trainNumber, coordinate: train.coordinate) {
-                                TrainDot()
+                                LiveTrainMarker(lineId: train.lineId)
                             }
                         }
                     }
@@ -744,6 +744,45 @@ struct TrainDot: View {
                 .frame(width: 6, height: 6)
         }
         .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+    }
+}
+
+/// Live suburban train marker: pulsing purple ring + line-id badge so users
+/// can spot real trains amid the simulated metro/tram dots. The pulse runs
+/// off TimelineView so it animates without forcing the parent map to redraw.
+struct LiveTrainMarker: View {
+    let lineId: String
+    @State private var pulsing = false
+
+    var body: some View {
+        VStack(spacing: 2) {
+            ZStack {
+                Circle()
+                    .stroke(Color.suburbanPurple.opacity(0.55), lineWidth: 2)
+                    .frame(width: pulsing ? 44 : 26, height: pulsing ? 44 : 26)
+                    .opacity(pulsing ? 0 : 0.9)
+                Circle()
+                    .fill(Color.suburbanPurple)
+                    .frame(width: 22, height: 22)
+                Image(systemName: "tram.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            Text(lineId)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(Color.suburbanPurple)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
+        }
+        .shadow(color: .black.opacity(0.18), radius: 3, y: 2)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: false)) {
+                pulsing = true
+            }
+        }
     }
 }
 

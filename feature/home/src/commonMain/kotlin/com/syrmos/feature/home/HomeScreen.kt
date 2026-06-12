@@ -64,7 +64,7 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 28.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
@@ -96,9 +96,10 @@ fun HomeScreen(
             }
         }
 
-        if (uiState.serviceStatus != null) {
+        val status = uiState.serviceStatus
+        if (status != null) {
             item {
-                ServiceStatusPill(status = uiState.serviceStatus, lang = lang)
+                ServiceStatusPill(status = status, lang = lang)
             }
         }
 

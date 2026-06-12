@@ -282,17 +282,18 @@ internal actual fun PlatformMapView(
         }
 
         uiState.liveTrains.forEach { train ->
+            val color = uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
+                ?: 0xFF7C4DFF.toInt()
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
                 existing.position = GeoPoint(train.latitude, train.longitude)
+                existing.icon = buildLiveTrainBitmap(color = color, lineId = train.lineId)
             } else {
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(train.latitude, train.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = buildLiveTrainBitmap(
-                        color = uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
-                            ?: 0xFF0072CE.toInt(),
-                    )
+                    icon = buildLiveTrainBitmap(color = color, lineId = train.lineId)
+                    title = "${train.lineId} ${train.trainNumber}"
                 }
                 liveTrainMarkers[train.id] = marker
                 mapView.overlays.add(marker)
@@ -573,18 +574,42 @@ private fun buildAirportTrainBitmap(): android.graphics.drawable.Drawable {
     return BitmapDrawable(null, bitmap)
 }
 
-private fun buildLiveTrainBitmap(color: Int): android.graphics.drawable.Drawable {
-    val size = 40
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+private fun buildLiveTrainBitmap(color: Int, lineId: String): android.graphics.drawable.Drawable {
+    // Bigger marker with halo, line-color core, and a line-id badge underneath
+    // so suburban trains stand out clearly against the simulated metro/tram
+    // dots. Static (no animation here — osmdroid markers don't redraw on tick)
+    // but the size + badge already deliver the visibility the user asked for.
+    val width = 88
+    val height = 116
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    val cx = size / 2f
-    val cy = size / 2f
-    val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0x330072CE }
+    val cx = width / 2f
+    val cy = 44f
+
+    val haloColor = (color and 0x00FFFFFF) or 0x33000000
+    val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = haloColor }
     val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
     val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+    val badgeText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = 0xFFFFFFFF.toInt()
+        this.textSize = 22f
+        this.isFakeBoldText = true
+        this.textAlign = Paint.Align.CENTER
+    }
+    val badge = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
 
-    canvas.drawCircle(cx, cy, 15f, halo)
-    canvas.drawCircle(cx, cy, 9f, fill)
-    canvas.drawCircle(cx, cy, 3f, white)
+    canvas.drawCircle(cx, cy, 36f, halo)
+    canvas.drawCircle(cx, cy, 24f, fill)
+    canvas.drawCircle(cx, cy, 8f, white)
+
+    val badgeWidth = 44f
+    val badgeHeight = 26f
+    val badgeTop = 78f
+    val badgeRect = android.graphics.RectF(
+        cx - badgeWidth / 2f, badgeTop,
+        cx + badgeWidth / 2f, badgeTop + badgeHeight,
+    )
+    canvas.drawRoundRect(badgeRect, 13f, 13f, badge)
+    canvas.drawText(lineId, cx, badgeTop + 19f, badgeText)
     return BitmapDrawable(null, bitmap)
 }
