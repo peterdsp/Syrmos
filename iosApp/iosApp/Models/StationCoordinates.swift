@@ -125,7 +125,9 @@ enum StationCoords {
         // below run as an inbound loop terminating at stop 7 (Akti Poseidonos).
         // They are kept in package-defined order so map polyline can draw the
         // loop arc before joining the outbound spine.
-        ("T7_DIM", "Dimotiko Theatro", "Δημοτικό Θέατρο", 37.9416350, 23.6506700),
+        // RULES.md ships the T7 stop with the official dual name; STASY's
+        // pages alternate "Dimarhio" and "Dimotiko Theatro" for the same node.
+        ("T7_DIM", "Dimarhio / Dimotiko Theatro", "Δημαρχείο / Δημοτικό Θέατρο", 37.9416350, 23.6506700),
         ("T7_PLA", "Plateia Deligianni", "Πλατεία Δεληγιάννη", 37.9449550, 23.6535200),
         ("T7_EVA", "Evangelistria", "Ευαγγελίστρια", 37.9480500, 23.6561550),
         ("T7_GRI", "Grigoriou Lambraki", "Γρηγορίου Λαμπράκη", 37.9457700, 23.6601800),
