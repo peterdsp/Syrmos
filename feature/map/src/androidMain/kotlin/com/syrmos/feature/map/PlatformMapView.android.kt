@@ -22,6 +22,8 @@ import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.SimulatedTrain
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
@@ -29,6 +31,30 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+
+/**
+ * OSM-derived rail route geometry shipped at `assets/files/seed/schedules-v2/shapes.json`.
+ * Loaded once at first map mount and used in place of catmullRomSpline(stations)
+ * so polylines follow real track (T7 Piraeus loop, M3 airport branch, A4 Megara curve).
+ * Falls back to spline-of-stations when a line has no shape.
+ */
+@Serializable
+private data class RouteShape(val coordinates: List<List<Double>>)
+
+@Serializable
+private data class RouteShapesPayload(val shapes: Map<String, RouteShape>)
+
+private fun loadRouteShapes(context: Context): Map<String, List<GeoPoint>> {
+    return runCatching {
+        val body = context.assets.open("files/seed/schedules-v2/shapes.json").bufferedReader().use { it.readText() }
+        val payload = Json { ignoreUnknownKeys = true }.decodeFromString<RouteShapesPayload>(body)
+        payload.shapes.mapValues { (_, shape) ->
+            shape.coordinates.mapNotNull { pair ->
+                if (pair.size >= 2) GeoPoint(pair[0], pair[1]) else null
+            }
+        }
+    }.getOrDefault(emptyMap())
+}
 
 private fun resolveVehicleDrawable(context: Context, train: SimulatedTrain): android.graphics.drawable.Drawable? {
     val drawableName = vehicleDrawableName(train) ?: return null
@@ -102,6 +128,7 @@ internal actual fun PlatformMapView(
     val context = LocalContext.current
     var hasFittedBounds by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
+    val routeShapes = remember { loadRouteShapes(context) }
     val lineOverlays = remember { mutableListOf<Polyline>() }
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
     val trainMarkers = remember { mutableMapOf<String, Marker>() }
@@ -163,8 +190,15 @@ internal actual fun PlatformMapView(
             val lineStations = uiState.lineStations[line.id].orEmpty()
             if (lineStations.size < 2) return@forEach
 
-            val rawPoints = lineStations.map { GeoPoint(it.latitude, it.longitude) }
-            val smoothed = catmullRomSpline(rawPoints)
+            // Prefer real OSM track geometry over a spline through station
+            // points so the Piraeus loop, M3 airport branch and suburban
+            // curves render accurately.
+            val osmShape = routeShapes[line.id]
+            val smoothed: List<GeoPoint> = if (osmShape != null && osmShape.size >= 2) {
+                osmShape
+            } else {
+                catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
+            }
             val override = displayOverrides[line.id]
             val color = override?.strokeColor?.let { parseHex(it) }
                 ?: line.color.toComposeColor().toArgb()

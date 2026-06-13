@@ -167,10 +167,31 @@
         }
     } catch (_) {}
 
-    // Source of truth for the polyline shape: OSM relation geometry served at
-    // /line-geometry/{id}.geojson. Falls back to Catmull-Rom through station
-    // coords if the GeoJSON can't be fetched (offline first launch).
+    // Source of truth order for polyline shape:
+    //   1. Bundled `shapes.json` (OSM relation geometry stitched at build time,
+    //      ODbL). Always available, fastest, accurate enough for every line.
+    //   2. `/line-geometry/{id}.geojson` from the API as remote override —
+    //      lets the Pi push corrections without an app release.
+    //   3. Catmull-Rom spline through station coords as last-resort fallback.
     const geoCache = new Map();
+    try {
+        const bundled = await fetch("./shapes.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        if (bundled && bundled.shapes) {
+            for (const [lid, shape] of Object.entries(bundled.shapes)) {
+                if (shape && Array.isArray(shape.coordinates) && shape.coordinates.length > 1) {
+                    geoCache.set(lid, {
+                        geometry: {
+                            type: "LineString",
+                            // Convert our [lat,lng] tuples to GeoJSON [lng,lat] so the
+                            // downstream renderer treats them uniformly with remote
+                            // GeoJSON features.
+                            coordinates: shape.coordinates.map(([lat, lng]) => [lng, lat]),
+                        },
+                    });
+                }
+            }
+        }
+    } catch (_) {}
     try {
         const cached = localStorage.getItem("syrmos.line_geometry.v1");
         if (cached) for (const [lid, feat] of Object.entries(JSON.parse(cached))) geoCache.set(lid, feat);

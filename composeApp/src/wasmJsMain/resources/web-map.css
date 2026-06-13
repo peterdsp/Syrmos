@@ -2,7 +2,11 @@ html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100%;
+    /* 100dvh (dynamic viewport) shrinks when iOS Safari shows its URL bar,
+       so absolute-positioned UI anchored to bottom: 0 stays above the bar
+       and the bottom peek button is actually tappable. 100vh ignores
+       Safari chrome and put our peek bar behind the URL strip. */
+    height: 100dvh;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
     background: #eef3f8;
     color: #101418;
@@ -15,7 +19,7 @@ body {
 .app-shell {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
 }
 
 #map {
@@ -362,7 +366,7 @@ body {
     display: flex;
     flex-direction: column;
     max-width: 520px;
-    max-height: min(760px, calc(100vh - 32px));
+    max-height: min(760px, calc(100dvh - 32px));
     margin-left: auto;
     margin-right: auto;
     padding: 12px 16px 18px;
@@ -697,7 +701,7 @@ body {
     }
 
     .insight-panel--expanded {
-        max-height: calc(65vh + env(safe-area-inset-bottom, 0px));
+        max-height: calc(65dvh + env(safe-area-inset-bottom, 0px));
         overflow-y: auto;
     }
 
@@ -739,7 +743,7 @@ body {
 
     .panel-cards-wrap {
         padding: 8px 12px 20px;
-        max-height: calc(65vh - 54px);
+        max-height: calc(65dvh - 54px);
         overflow-y: auto;
     }
 
@@ -758,7 +762,7 @@ body {
         left: 12px;
         right: 12px;
         bottom: 12px;
-        max-height: min(720px, calc(100vh - 24px));
+        max-height: min(720px, calc(100dvh - 24px));
     }
 }
 

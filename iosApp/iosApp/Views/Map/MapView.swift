@@ -91,13 +91,25 @@ enum PreloadedData {
         uniqueKeysWithValues: stations.map { ($0.id, $0) }
     )
     static let routeLines: [RouteLine] = SyrmosData.lines.compactMap { line in
+        // Prefer OSM-derived geometry from the bundled shapes.json so the
+        // polyline follows the actual rail/tram track (T7 Piraeus loop, M3
+        // airport branch, A4 Megara curve). Falls back to a Catmull–Rom
+        // spline of station coordinates when no shape is bundled for a
+        // line, which keeps the curve smooth instead of zigzagging.
         let stations = SyrmosData.stations(for: line.id)
-        guard stations.count >= 2 else { return nil }
-        let raw = stations.map { $0.coordinate }
+        let osmCoords = SyrmosRouteShapesStore.shared.coordinates(for: line.id)
+        let coords: [CLLocationCoordinate2D]
+        if let osm = osmCoords, osm.count >= 2 {
+            coords = osm
+        } else if stations.count >= 2 {
+            coords = catmullRomSpline(stations.map { $0.coordinate })
+        } else {
+            return nil
+        }
         return RouteLine(
             id: line.id,
             color: line.color,
-            coordinates: catmullRomSpline(raw),
+            coordinates: coords,
             lineWeight: line.type == .suburban ? 3 : 4
         )
     }
@@ -175,7 +187,6 @@ struct TransitMapView: View {
     )
     @State private var selectedId: String?
     @State private var tappedStation: MapStationNode?
-    @State private var mapLoaded = false
     @State private var showLocationDeniedAlert = false
     /// 0 = country view (huge span), 1 = city, 2 = district, 3 = street.
     /// Mirrors the web buckets so pins look consistent across platforms.
@@ -200,91 +211,99 @@ struct TransitMapView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
-                Map(position: $position, selection: $selectedId) {
-                    UserAnnotation()
+                // Wrapping the Map in a Group with `.id()` on the Group (not on
+                // Map itself) is what actually forces SwiftUI to dispose of the
+                // underlying MKMapView on iOS 18. Putting `.id()` directly on
+                // Map(position:) is silently no-op'd by MapKit-for-SwiftUI's
+                // internal view reuse, so the dead Metal layer survives. The
+                // Group wrapper bypasses that reuse and gives us a guaranteed
+                // fresh instance after screenshot or scenePhase resume.
+                Group {
+                    Map(position: $position, selection: $selectedId) {
+                        UserAnnotation()
 
-                    ForEach(routeLines) { route in
-                        MapPolyline(coordinates: route.coordinates)
-                            .stroke(route.color, lineWidth: route.lineWeight)
-                    }
+                        ForEach(routeLines) { route in
+                            MapPolyline(coordinates: route.coordinates)
+                                .stroke(route.color, lineWidth: route.lineWeight)
+                        }
 
-                    ForEach(stations) { station in
-                        Annotation(station.displayName, coordinate: station.coordinate) {
-                            StationDot(
-                                station: station,
-                                isSelected: selectedId == station.id,
-                                zoomBucket: zoomBucket
-                            )
-                                .onTapGesture {
-                                    selectedId = station.id
+                        ForEach(stations) { station in
+                            Annotation(station.displayName, coordinate: station.coordinate) {
+                                StationDot(
+                                    station: station,
+                                    isSelected: selectedId == station.id,
+                                    zoomBucket: zoomBucket
+                                )
+                                    .onTapGesture {
+                                        selectedId = station.id
+                                    }
+                            }
+                            .tag(station.id)
+                        }
+
+                        if !vehiclesHidden {
+                            ForEach(trainSimulator.trains) { train in
+                                Annotation(
+                                    "\(train.lineName) → \(train.destinationName)",
+                                    coordinate: train.coordinate
+                                ) {
+                                    SimulatedTrainDot(train: train)
                                 }
-                        }
-                        .tag(station.id)
-                    }
-
-                    if !vehiclesHidden {
-                        ForEach(trainSimulator.trains) { train in
-                            Annotation(
-                                "\(train.lineName) → \(train.destinationName)",
-                                coordinate: train.coordinate
-                            ) {
-                                SimulatedTrainDot(train: train)
                             }
-                        }
 
-                        ForEach(liveTrainService.trains) { train in
-                            Annotation(train.trainNumber, coordinate: train.coordinate) {
-                                LiveTrainMarker(lineId: train.lineId)
+                            ForEach(liveTrainService.trains) { train in
+                                Annotation(train.trainNumber, coordinate: train.coordinate) {
+                                    LiveTrainMarker(lineId: train.lineId)
+                                }
                             }
                         }
                     }
-                }
-                .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll, showsTraffic: false))
-                .mapControls {
-                    MapCompass()
-                    MapScaleView()
-                }
-                .onAppear { mapLoaded = true }
-                .onMapCameraChange(frequency: .onEnd) { ctx in
-                    // Span thresholds match the web's zoom buckets:
-                    //   z >= 14 (street)   => bucket 3 = full SVG
-                    //   z >= 12 (district) => bucket 2 = SVG slightly smaller
-                    //   z >= 10 (city)     => bucket 1 = colored mode-pin
-                    //   else (country)     => bucket 0 = tiny colored dot
-                    let span = ctx.region.span.latitudeDelta
-                    let next: Int
-                    switch span {
-                    case ..<0.05: next = 3
-                    case ..<0.18: next = 2
-                    case ..<0.6:  next = 1
-                    default:      next = 0
+                    .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll, showsTraffic: false))
+                    .mapControls {
+                        MapCompass()
+                        MapScaleView()
                     }
-                    if next != zoomBucket { zoomBucket = next }
+                    .onMapCameraChange(frequency: .onEnd) { ctx in
+                        // Span thresholds match the web's zoom buckets:
+                        //   z >= 14 (street)   => bucket 3 = full SVG
+                        //   z >= 12 (district) => bucket 2 = SVG slightly smaller
+                        //   z >= 10 (city)     => bucket 1 = colored mode-pin
+                        //   else (country)     => bucket 0 = tiny colored dot
+                        let span = ctx.region.span.latitudeDelta
+                        let next: Int
+                        switch span {
+                        case ..<0.05: next = 3
+                        case ..<0.18: next = 2
+                        case ..<0.6:  next = 1
+                        default:      next = 0
+                        }
+                        if next != zoomBucket { zoomBucket = next }
+                    }
                 }
+                .id(mapRebuildKey)
                 .onChange(of: selectedId) { _, newId in
                     guard let id = newId,
                           let station = stations.first(where: { $0.id == id }) else { return }
                     tappedStation = station
                 }
-                .id(mapRebuildKey)
                 .onReceive(NotificationCenter.default.publisher(
                     for: UIApplication.userDidTakeScreenshotNotification
                 )) { _ in
-                    // iOS volume-up+side-button briefly resigns the app and
-                    // the Map's Metal layer can come back black. Force a
-                    // fresh instance by bumping the rebuild key.
+                    // Screenshot (volume-up + side-button) briefly resigns the
+                    // app; the SwiftUI Map's CAMetalLayer can come back dead.
+                    // Bumping the rebuild key on the Group wrapper forces a
+                    // genuinely fresh MKMapView instead of the silently reused
+                    // one MapKit-for-SwiftUI hands back on `.id()` on Map alone.
                     mapRebuildKey &+= 1
                 }
-                .onChange(of: scenePhase) { _, newPhase in
-                    // Same protection on lock/unlock and control-center swipe.
-                    if newPhase == .active {
+                .onChange(of: scenePhase) { oldPhase, newPhase in
+                    // Same protection on lock/unlock, control-center swipe, app
+                    // switcher, notification banners. Rebuild only on the
+                    // background/inactive → active edge so we don't churn the
+                    // map every time a `.onChange` fires with the same phase.
+                    if oldPhase != .active && newPhase == .active {
                         mapRebuildKey &+= 1
                     }
-                }
-
-                if !mapLoaded {
-                    Color(.systemBackground)
-                        .ignoresSafeArea()
                 }
 
                 VStack(spacing: 12) {
