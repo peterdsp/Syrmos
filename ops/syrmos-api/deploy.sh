@@ -25,6 +25,11 @@ ssh "$PI" "mkdir -p $REMOTE_HOME/assets/icons"
 rsync -avz --delete \
   "$REPO_ROOT/assets/athens-transit-package/icons"/ "$PI:$REMOTE_HOME/assets/icons"/
 
+echo ">>> syncing OSM line-geometry to $PI"
+ssh "$PI" "mkdir -p $REMOTE_HOME/assets/line-geometry"
+rsync -avz --delete \
+  "$REPO_ROOT/assets/line-geometry"/ "$PI:$REMOTE_HOME/assets/line-geometry"/
+
 echo ">>> installing venv + deps"
 ssh "$PI" bash <<'REMOTE'
 set -euo pipefail
