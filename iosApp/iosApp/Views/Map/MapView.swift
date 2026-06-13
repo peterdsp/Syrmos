@@ -354,8 +354,15 @@ struct TransitMapView: View {
             .navigationTitle(loc[.map])
             .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
                 StationSheetView(station: station)
-                    .presentationDetents([.medium])
+                    // Three detents so the user can pull up to a near-full
+                    // view that shows every projected departure, or settle
+                    // at the standard medium / large for quick glances.
+                    // .large makes the sheet take ~the full safe area; the
+                    // departures scroll internally and the Get directions
+                    // button stays pinned at the bottom regardless.
+                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
+                    .presentationContentInteraction(.scrolls)
             }
             .alert(
                 loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
@@ -387,15 +394,31 @@ struct StationSheetView: View {
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                lineBadges
-                stationFactsChips
-                if !departures.isEmpty { departuresList }
-                directionsButton
+        // Pinned bottom layout: everything else scrolls, the Get directions
+        // call-to-action stays parked at the bottom edge so the user never
+        // has to scroll to find their primary action.
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    lineBadges
+                    stationFactsChips
+                    if !departures.isEmpty { departuresList }
+                }
+                .padding()
+                .padding(.bottom, 12)
             }
-            .padding()
+            .scrollIndicators(.automatic)
+
+            // Solid background + top divider so the pinned footer reads as
+            // a sticky action bar over the scrolling list rather than
+            // floating on top of mid-content text.
+            Divider()
+            directionsButton
+                .padding(.horizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+                .background(.thinMaterial)
         }
         .onAppear(perform: reloadDepartures)
         .onReceive(refreshTimer) { _ in reloadDepartures() }
