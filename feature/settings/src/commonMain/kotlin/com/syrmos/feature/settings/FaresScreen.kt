@@ -40,6 +40,7 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.network.SyrmosSchedulesService.FareProduct
+import com.syrmos.core.network.SyrmosSchedulesService.InfoLink
 import org.koin.compose.koinInject
 
 private val SectionOrder = listOf("single", "offers", "airport", "passes")
@@ -49,6 +50,7 @@ private val SectionOrder = listOf("single", "offers", "airport", "passes")
 fun FaresScreen(onBack: () -> Unit) {
     val faresRepo = koinInject<FaresRepository>()
     val products by faresRepo.products.collectAsState()
+    val infoLinks by faresRepo.infoLinks.collectAsState()
     val updatedAt by faresRepo.updatedAt.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
 
@@ -93,6 +95,20 @@ fun FaresScreen(onBack: () -> Unit) {
                 }
                 items(items) { product ->
                     FareCard(product = product, lang = lang)
+                }
+            }
+
+            if (infoLinks.isNotEmpty()) {
+                item {
+                    Text(
+                        text = if (lang == AppLanguage.GREEK) "Χρήσιμες πληροφορίες" else "Useful information",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    )
+                }
+                items(infoLinks) { link ->
+                    InfoLinkCard(link = link, lang = lang)
                 }
             }
 
@@ -187,6 +203,43 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                     maxLines = 4,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
+    val uriHandler = LocalUriHandler.current
+    val target = if (lang == AppLanguage.GREEK) link.urlEl.ifEmpty { link.urlEn } else link.urlEn
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { uriHandler.openUri(target) },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = link.operatorId.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "›",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -4,6 +4,7 @@ import com.syrmos.core.data.seed.ResourceReader
 import com.syrmos.core.network.SyrmosSchedulesService
 import com.syrmos.core.network.SyrmosSchedulesService.FareProduct
 import com.syrmos.core.network.SyrmosSchedulesService.FaresPayload
+import com.syrmos.core.network.SyrmosSchedulesService.InfoLink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,9 @@ class FaresRepository(
     private val _products = MutableStateFlow<List<FareProduct>>(emptyList())
     val products: StateFlow<List<FareProduct>> = _products.asStateFlow()
 
+    private val _infoLinks = MutableStateFlow<List<InfoLink>>(emptyList())
+    val infoLinks: StateFlow<List<InfoLink>> = _infoLinks.asStateFlow()
+
     private val _updatedAt = MutableStateFlow("")
     val updatedAt: StateFlow<String> = _updatedAt.asStateFlow()
 
@@ -41,6 +45,9 @@ class FaresRepository(
             _products.value = payload.products
             _updatedAt.value = payload.updatedAt
         }
+        if (payload.infoLinks.isNotEmpty()) {
+            _infoLinks.value = payload.infoLinks
+        }
     }
 
     suspend fun refresh() {
@@ -48,6 +55,9 @@ class FaresRepository(
         if (payload.products.isNotEmpty()) {
             _products.value = payload.products
             _updatedAt.value = payload.updatedAt
+        }
+        if (payload.infoLinks.isNotEmpty()) {
+            _infoLinks.value = payload.infoLinks
         }
     }
 
