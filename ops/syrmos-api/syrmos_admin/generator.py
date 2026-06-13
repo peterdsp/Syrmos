@@ -405,10 +405,10 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
         }
         for r in product_rows
     ]
-    # Operator info pages — points of sale, validation rules, STASY general
-    # instructions — surfaced as a button row below the price cards in the
-    # apps. Hardcoded here because OASA and STASY URLs are stable; they
-    # change less often than the prices.
+    # Operator info pages summarised inline so users get the canonical rules
+    # offline. URLs ride along as a "Verify on OASA/STASY" affordance for
+    # users who want to double-check the live page. Content is hardcoded
+    # because these policies change less often than the prices.
     info_links = [
         {
             "id": "oasa-points-of-supply",
@@ -416,6 +416,20 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "icon": "mappin.and.ellipse",
             "titleEn": "Points of supply for tickets and cards",
             "titleEl": "Σημεία πώλησης εισιτηρίων και καρτών",
+            "summaryEn": "Where to buy or top up an Athena Card and where to pick up paper tickets.",
+            "summaryEl": "Πού αγοράζεις ή φορτίζεις Athena Card και πού βρίσκεις χάρτινα εισιτήρια.",
+            "bullets": [
+                {"en": "Automatic vending machines at every metro and tram station (cash and card).",
+                 "el": "Αυτόματα μηχανήματα σε κάθε σταθμό μετρό και τραμ (μετρητά και κάρτα)."},
+                {"en": "Manned OASA ticket offices at Syntagma, Monastiraki, Omonia, Piraeus and the Airport.",
+                 "el": "Στελεχωμένα εκδοτήρια OASA σε Σύνταγμα, Μοναστηράκι, Ομόνοια, Πειραιά και Αεροδρόμιο."},
+                {"en": "Authorised kiosks and convenience stores (περίπτερα) carrying the OASA logo.",
+                 "el": "Εξουσιοδοτημένα περίπτερα και καταστήματα με το σήμα του OASA."},
+                {"en": "Online top-up at athenacard.gr — register the card once, then reload any time.",
+                 "el": "Online ανανέωση στο athenacard.gr — εγγραφή κάρτας μία φορά, μετά φορτίζεις όποτε θες."},
+                {"en": "OASA Telematics app for single tickets bought from the phone.",
+                 "el": "OASA Telematics εφαρμογή για μονά εισιτήρια από το κινητό."},
+            ],
             "urlEn": "https://www.oasa.gr/en/tickets/points-of-sale-reloading/points-of-supply-for-tickets-and-cards/",
             "urlEl": "https://www.oasa.gr/εισιτήρια/σημεία-πώλησης-επαναφόρτισης/σημεία-έκδοσης-προσωποποιημένων-καρ/",
         },
@@ -425,6 +439,22 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "icon": "checkmark.seal",
             "titleEn": "Ticket validation rules",
             "titleEl": "Κανόνες ακύρωσης εισιτηρίων",
+            "summaryEn": "How and when to validate so a ticket counts as legally paid.",
+            "summaryEl": "Πώς και πότε ακυρώνεις ώστε ένα εισιτήριο να μετράει νόμιμα.",
+            "bullets": [
+                {"en": "Validate once at entry — the 90-minute window starts from the first validation.",
+                 "el": "Ακύρωσε μία φορά στην είσοδο — τα 90 λεπτά μετράνε από την πρώτη ακύρωση."},
+                {"en": "Tap contactless (Apple Pay, Google Wallet, Visa/Mastercard) at metro and tram gates instead of buying a paper ticket.",
+                 "el": "Ανέπαφη χρέωση (Apple Pay, Google Wallet, Visa/Mastercard) στις πύλες μετρό και τραμ αντί για χάρτινο εισιτήριο."},
+                {"en": "Inside trams and Hellenic Train suburban trains, tap the on-board contactless validators if you didn't tap at a gate.",
+                 "el": "Μέσα σε τραμ και προαστιακό, σάρωσε στα τερματικά μέσα στο όχημα αν δεν σάρωσες σε πύλη."},
+                {"en": "Free transfers between metro, tram and bus inside the 90-minute window (Airport routes are excluded).",
+                 "el": "Δωρεάν μετεπιβίβαση μετρό-τραμ-λεωφορείο μέσα στα 90 λεπτά (εκτός Αεροδρομίου)."},
+                {"en": "Reduced-fare riders must carry student / senior / disability ID and show it on inspection.",
+                 "el": "Όσοι ταξιδεύουν με μειωμένο πρέπει να φέρουν φοιτητική / 65+ / αναπηρίας ταυτότητα στον έλεγχο."},
+                {"en": "Penalty for non-validation: 60× the basic single fare, payable on the spot or via OASA.",
+                 "el": "Πρόστιμο μη ακύρωσης: 60× την τιμή του απλού εισιτηρίου, στον έλεγχο ή στον OASA."},
+            ],
             "urlEn": "https://www.oasa.gr/en/tickets/useful-information/#validation_ticket_info",
             "urlEl": "https://www.oasa.gr/εισιτήρια/χρήσιμες-πληροφορίες/#validation_ticket_info",
         },
@@ -434,6 +464,20 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "icon": "info.circle",
             "titleEn": "STASY general ticket instructions",
             "titleEl": "Γενικές οδηγίες STASY",
+            "summaryEn": "Rules that apply to every STASY-operated line: M1, M2, M3, T6, T7.",
+            "summaryEl": "Κανόνες που ισχύουν σε κάθε γραμμή STASY: Μ1, Μ2, Μ3, Τ6, Τ7.",
+            "bullets": [
+                {"en": "Buy or activate the ticket before boarding — there are no on-train or on-tram sales.",
+                 "el": "Αγόρασε ή ενεργοποίησε το εισιτήριο πριν επιβιβαστείς — δεν υπάρχει πώληση μέσα στο όχημα."},
+                {"en": "Reduced fare: under 18, over 65 with proof, students with a Greek academic ID, persons with disability.",
+                 "el": "Μειωμένο: κάτω των 18, άνω των 65 με δικαιολογητικό, φοιτητές με ακαδημαϊκή ταυτότητα, ΑμεΑ."},
+                {"en": "Free travel: children under 6, persons with disability above 67% (and accompanying carer where required).",
+                 "el": "Δωρεάν: παιδιά κάτω των 6, ΑμεΑ με αναπηρία άνω του 67% (και συνοδός όπου απαιτείται)."},
+                {"en": "Keep the ticket or contactless receipt visible until you exit the station.",
+                 "el": "Φύλαξε το εισιτήριο ή την απόδειξη ανέπαφης χρέωσης μέχρι να βγεις από τον σταθμό."},
+                {"en": "Refunds and lost-card replacements go through the OASA central office, not the station.",
+                 "el": "Επιστροφές και αντικατάσταση χαμένης κάρτας γίνονται στα κεντρικά γραφεία OASA, όχι στον σταθμό."},
+            ],
             "urlEn": "https://www.stasy.gr/en/tickets-cards/general-instructions/",
             "urlEl": "https://www.stasy.gr/eisitiria-kartes/genikes-odhgies/",
         },
