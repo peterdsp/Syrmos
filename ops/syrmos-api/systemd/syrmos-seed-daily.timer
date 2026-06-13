@@ -1,0 +1,14 @@
+[Unit]
+Description=Run Syrmos seeders + generator nightly
+Requires=syrmos-seed-daily.service
+
+[Timer]
+# 04:45 Athens — after the OASA watcher (04:07) and STASY (03:42) finish
+# refreshing their HTML caches. Seeders are idempotent so a no-op night
+# costs almost nothing.
+OnCalendar=*-*-* 04:45:00 Europe/Athens
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

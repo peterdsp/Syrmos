@@ -18,6 +18,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Hard gate before any Gradle work: if the bundled seeds break the
+      # offline-first contract (empty fares.products, T7 < 43 stations,
+      # shape too short, etc.) the build fails fast and the platform jobs
+      # don't waste 20+ minutes on a broken bundle.
+      - name: Verify bundled seeds satisfy offline-first contract
+        run: python3 scripts/verify-bundles.py
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
