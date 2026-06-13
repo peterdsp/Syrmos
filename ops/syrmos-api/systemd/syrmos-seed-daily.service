@@ -1,0 +1,27 @@
+[Unit]
+Description=Nightly Syrmos data seeders + API JSON regen
+After=network-online.target syrmos-watcher-oasa.service syrmos-watcher-stasy.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+Environment=PIPELINE_ROOT=/home/peterdsp/syrmos-api
+Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
+Environment=SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
+ExecStart=/bin/bash -c '\
+  set -e; cd /home/peterdsp/syrmos-api; \
+  .venv/bin/python -m scripts.import_athens_package --apply; \
+  .venv/bin/python -m scripts.import_icons --apply; \
+  .venv/bin/python -m scripts.seed_fare_products; \
+  .venv/bin/python -m scripts.seed_station_offsets; \
+  .venv/bin/python -m syrmos_admin.generator'
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+StandardOutput=append:/home/peterdsp/syrmos-api/seed-daily.log
+StandardError=append:/home/peterdsp/syrmos-api/seed-daily.log
+
+[Install]
+WantedBy=multi-user.target
