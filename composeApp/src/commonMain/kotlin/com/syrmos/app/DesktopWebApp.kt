@@ -66,6 +66,7 @@ import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.SyrmosSchedulesService.FareProduct
+import com.syrmos.core.network.SyrmosSchedulesService.InfoLink
 import com.syrmos.feature.home.HomeViewModel
 import com.syrmos.feature.lines.LinesViewModel
 import com.syrmos.feature.map.MapScreen
@@ -94,6 +95,7 @@ fun DesktopWebApp() {
     val homeState by homeViewModel.uiState.collectAsState()
     val linesState by linesViewModel.uiState.collectAsState()
     val fareProducts by faresRepo.products.collectAsState()
+    val fareInfoLinks by faresRepo.infoLinks.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     val uriHandler = LocalUriHandler.current
     var selectedSection by remember { mutableStateOf(DesktopSection.Planner) }
@@ -168,6 +170,16 @@ fun DesktopWebApp() {
                             products = fareProducts,
                             lang = lang,
                             onBuy = { uriHandler.openUri(it) },
+                        )
+                    }
+                }
+
+                if (fareInfoLinks.isNotEmpty()) {
+                    item {
+                        InfoLinksCard(
+                            links = fareInfoLinks,
+                            lang = lang,
+                            onOpen = { uriHandler.openUri(it) },
                         )
                     }
                 }
@@ -727,6 +739,43 @@ private fun TicketsCard(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun InfoLinksCard(
+    links: List<InfoLink>,
+    lang: AppLanguage,
+    onOpen: (String) -> Unit,
+) {
+    DashboardCard(title = if (lang == AppLanguage.GREEK) "Χρήσιμες πληροφορίες" else "Useful information") {
+        links.forEach { link ->
+            val target = if (lang == AppLanguage.GREEK) link.urlEl.ifEmpty { link.urlEn } else link.urlEn
+            OutlinedButton(
+                onClick = { onOpen(target) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = link.operatorId.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(text = "↗", style = MaterialTheme.typography.titleSmall)
+                }
+            }
+        }
     }
 }
 

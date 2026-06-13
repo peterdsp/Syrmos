@@ -9,6 +9,7 @@ final class SyrmosFaresStore: ObservableObject {
     static let shared = SyrmosFaresStore()
 
     @Published private(set) var products: [Product] = []
+    @Published private(set) var infoLinks: [InfoLink] = []
     @Published private(set) var updatedAt: String = ""
 
     private let base = "https://api-syrmos.peterdsp.dev"
@@ -32,6 +33,7 @@ final class SyrmosFaresStore: ObservableObject {
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
             let payload = try JSONDecoder().decode(Payload.self, from: data)
             self.products = payload.products
+            self.infoLinks = payload.infoLinks ?? []
             self.updatedAt = payload.updatedAt
         } catch {
             // Silent: keep whatever the bundle hydrated.
@@ -49,12 +51,29 @@ final class SyrmosFaresStore: ObservableObject {
               let payload = try? JSONDecoder().decode(Payload.self, from: data)
         else { return }
         self.products = payload.products
+        self.infoLinks = payload.infoLinks ?? []
         self.updatedAt = payload.updatedAt
     }
 
     struct Payload: Decodable {
         let updatedAt: String
         let products: [Product]
+        let infoLinks: [InfoLink]?
+    }
+
+    struct InfoLink: Decodable, Identifiable {
+        let id: String
+        let operator_: String
+        let icon: String
+        let titleEn: String
+        let titleEl: String
+        let urlEn: String
+        let urlEl: String
+
+        enum CodingKeys: String, CodingKey {
+            case id, icon, titleEn, titleEl, urlEn, urlEl
+            case operator_ = "operator"
+        }
     }
 
     struct Product: Decodable, Identifiable {

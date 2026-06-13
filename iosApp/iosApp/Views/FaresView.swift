@@ -19,6 +19,9 @@ struct FaresView: View {
                 ForEach(sortedSections, id: \.0) { (section, products) in
                     sectionView(title: sectionTitle(section), products: products)
                 }
+                if !store.infoLinks.isEmpty {
+                    infoLinksSection
+                }
                 footer
             }
             .padding(.vertical, 16)
@@ -76,6 +79,51 @@ struct FaresView: View {
                 .background(Color.syrmosPrimary.opacity(0.12))
                 .foregroundStyle(Color.syrmosPrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+
+    private var infoLinksSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(loc.language == .greek ? "Χρήσιμες πληροφορίες" : "Useful information")
+                .font(.headline)
+                .padding(.horizontal, 16)
+            VStack(spacing: 10) {
+                ForEach(store.infoLinks) { link in
+                    Button {
+                        let raw = loc.language == .greek ? link.urlEl : link.urlEn
+                        if let url = URL(string: raw) ?? URL(string: link.urlEn) {
+                            safariURL = url
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: link.icon)
+                                .font(.system(size: 18))
+                                .frame(width: 28)
+                                .foregroundStyle(Color.syrmosPrimary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(loc.language == .greek ? link.titleEl : link.titleEn)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.primary)
+                                    .multilineTextAlignment(.leading)
+                                Text(link.operator_.uppercased())
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(uiColor: .secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 16)
         }

@@ -152,6 +152,7 @@ class SyrmosSchedulesService(
     data class FaresPayload(
         @SerialName("updatedAt") val updatedAt: String = "",
         val products: List<FareProduct> = emptyList(),
+        @SerialName("infoLinks") val infoLinks: List<InfoLink> = emptyList(),
     )
 
     @Serializable
@@ -165,6 +166,17 @@ class SyrmosSchedulesService(
         val notes: String = "",
         val tags: List<String> = emptyList(),
         @SerialName("sourceUrl") val sourceUrl: String = "",
+    )
+
+    @Serializable
+    data class InfoLink(
+        val id: String,
+        @SerialName("operator") val operatorId: String,
+        val icon: String,
+        @SerialName("titleEn") val titleEn: String,
+        @SerialName("titleEl") val titleEl: String,
+        @SerialName("urlEn") val urlEn: String,
+        @SerialName("urlEl") val urlEl: String,
     )
 
     private companion object {
