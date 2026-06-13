@@ -425,13 +425,30 @@ struct StationSheetView: View {
     }
 
     private func reloadDepartures() {
-        var next = station.lineIds.flatMap { lineId in
-            let stationId = station.stationIdByLineId[lineId] ?? station.stationIds.first ?? station.id
-            return SyrmosData.sampleDepartures(for: stationId, lineIds: [lineId])
+        // Use the real ScheduleProjector instead of sampleDepartures so the
+        // map sheet honors operator open/close rules, frequency bands and
+        // STASY station offsets. Has to be one call PER (stationId,
+        // lineId) pair because at interchanges (Syntagma, Monastiraki,
+        // Piraeus) each line has its own physical station id and the
+        // projector reads /api/station-offsets keyed by (lineId,
+        // stationId). Passing a cluster's first station id to every line
+        // would zero-out the per-line offsets and show origin-terminal
+        // times at the interchange.
+        var collected: [Departure] = []
+        for lineId in station.lineIds {
+            let stationId = station.stationIdByLineId[lineId]
+                ?? station.stationIds.first
+                ?? station.id
+            collected.append(contentsOf: ScheduleProjector.nextDepartures(
+                for: stationId,
+                lineIds: [lineId],
+                limit: 8
+            ))
         }
-        .sorted { $0.minutesAway < $1.minutesAway }
-        if next.count > 6 { next = Array(next.prefix(6)) }
-        departures = next
+        departures = collected
+            .sorted { $0.minutesAway < $1.minutesAway }
+            .prefix(8)
+            .map { $0 }
     }
 
     private var header: some View {
