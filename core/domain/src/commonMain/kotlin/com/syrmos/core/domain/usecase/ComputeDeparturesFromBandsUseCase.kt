@@ -82,7 +82,91 @@ class ComputeDeparturesFromBandsUseCase(
                 out = results,
             )
         }
-        return results.sortedBy { it.minutesAway }.take(limit)
+        val sorted = results.sortedBy { it.minutesAway }.take(limit).toMutableList()
+
+        // M3 callers pass lineIds = [M3, M3_AIR]. After 23:00 every day the
+        // airport branch is closed, so projectForLine emits nothing for
+        // M3_AIR and the user has no signal of when the next Airport-bound
+        // train runs. Scan forward up to a week to find the next slot from
+        // the M3_AIR bundle and append it as a look-ahead row so the
+        // dashboard always shows "next Airport train" even when it's 7+
+        // hours out.
+        val wantsAirport = "M3_AIR" in lineIds && stationId != null
+            && stationId !in line3AirportOnlyStations
+        val hasAirport = sorted.any { it.lineId == "M3_AIR" }
+        if (wantsAirport && !hasAirport) {
+            val bundle = bundles["M3_AIR"]
+            if (bundle != null) {
+                val offset = stationOffsets?.offsetFor(
+                    lineId = "M3_AIR",
+                    direction = Direction.OUTBOUND.name.lowercase(),
+                    stationId = stationId!!,
+                )?.minutesFromOrigin ?: 0
+                val lookahead = nextAirportLookahead(
+                    bundle = bundle,
+                    today = today,
+                    nowMinutes = nowMinutes,
+                    offsetMinutes = offset,
+                )
+                if (lookahead != null) sorted += lookahead
+            }
+        }
+        return sorted
+    }
+
+    private fun nextAirportLookahead(
+        bundle: SyrmosSchedulesService.LineSchedule,
+        today: LocalDate,
+        nowMinutes: Int,
+        offsetMinutes: Int,
+    ): UpcomingDeparture? {
+        for (dayOffset in 0 until 7) {
+            val date = today.plusDays(dayOffset)
+            val dayType = dayTypeFor(date, resolveHolidayDayType(date))
+            val rule = bundle.rules.firstOrNull { it.dayType == dayType } ?: continue
+            if (!rule.is247) {
+                val openMin = rule.openTime.toMinutesOfDay()
+                val closeMin = rule.closeTime.toMinutesOfDay()
+                if (openMin != null && closeMin != null) {
+                    val effectiveClose = if (closeMin <= openMin) closeMin + 24 * 60 else closeMin
+                    if (dayOffset == 0 && nowMinutes > effectiveClose) continue
+                }
+            }
+            val bands = bundle.bands.filter { it.dayType == dayType }
+                .sortedBy { it.timeStart.toMinutesOfDay() ?: 0 }
+            for (band in bands) {
+                val rawStart = band.timeStart.toMinutesOfDay() ?: continue
+                val rawEnd = band.timeEnd.toMinutesOfDay() ?: continue
+                val headway = band.headwayMinutes
+                if (headway <= 0.0) continue
+                val end = rawEnd + if (rawEnd < rawStart) 24 * 60 else 0
+                var slot = rawStart.toDouble()
+                if (dayOffset == 0 && slot < nowMinutes) {
+                    val skips = ((nowMinutes - slot) / headway).toLong().coerceAtLeast(0L)
+                    slot = rawStart + skips * headway
+                    while (slot < nowMinutes) slot += headway
+                }
+                if (slot <= end) {
+                    val totalMinutes = slot.roundToInt() + offsetMinutes + dayOffset * 24 * 60
+                    val display = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60)
+                    val hh = pad(display / 60)
+                    val mm = pad(display % 60)
+                    val minutesAway = (totalMinutes - nowMinutes).coerceAtLeast(0)
+                    return UpcomingDeparture(
+                        time = "$hh:$mm",
+                        minutesAway = minutesAway,
+                        direction = Direction.OUTBOUND,
+                        lineId = "M3_AIR",
+                        notes = band.label.ifBlank { null },
+                    )
+                }
+            }
+        }
+        return null
+    }
+
+    private companion object {
+        private val line3AirportOnlyStations = setOf("M3_PAL", "M3_PEK", "M3_KRP", "M3_AER")
     }
 
     private fun resolveHolidayDayType(date: LocalDate): String? {
@@ -222,6 +306,21 @@ private fun String.toMinutesOfDay(): Int? {
     val h = parts[0].toIntOrNull() ?: return null
     val m = parts[1].toIntOrNull() ?: return null
     return h * 60 + m
+}
+
+private fun LocalDate.plusDays(days: Int): LocalDate {
+    if (days == 0) return this
+    var d = this
+    repeat(days) { d = d.plusOneDay() }
+    return d
+}
+
+private fun LocalDate.plusOneDay(): LocalDate {
+    val maxDay = daysInMonth(year, monthNumber)
+    if (dayOfMonth < maxDay) return LocalDate(year, monthNumber, dayOfMonth + 1)
+    val nextMonth = if (monthNumber < 12) monthNumber + 1 else 1
+    val nextYear = if (monthNumber < 12) year else year + 1
+    return LocalDate(nextYear, nextMonth, 1)
 }
 
 private fun LocalDate.minusOneDay(): LocalDate {
