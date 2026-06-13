@@ -211,21 +211,20 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
 private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
     val uriHandler = LocalUriHandler.current
     val target = if (lang == AppLanguage.GREEK) link.urlEl.ifEmpty { link.urlEn } else link.urlEn
+    val title = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn
+    val summary = if (lang == AppLanguage.GREEK) link.summaryEl else link.summaryEn
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { uriHandler.openUri(target) },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn,
+                    text = title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -235,11 +234,48 @@ private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = "›",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (summary.isNotEmpty()) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (link.bullets.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    link.bullets.forEach { bullet ->
+                        val text = if (lang == AppLanguage.GREEK) bullet.el else bullet.en
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape)
+                    .clickable { uriHandler.openUri(target) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = (if (lang == AppLanguage.GREEK) "Επιβεβαίωση στο " else "Verify on ") + link.operatorId.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }
