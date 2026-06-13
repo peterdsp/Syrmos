@@ -248,6 +248,13 @@ The list below is realistic to ship without anyone at STASY, OASA, or Hellenic T
 - **Compose snapshot tests** for the station detail screen + station list rows. Catches the kind of visual regression that the projector's data correctness can't.
 - **End-to-end web test** with Playwright running against the live web bundle. One smoke run per push: load the page, search "Syntagma", click a result, assert departures rendered.
 
+## Contributing
+
+PR-first workflow with a CI guard on `main`. See
+[Contribution workflow](docs/CONTRIBUTING_WORKFLOW.md) for the branching
+model, status checks, and the auto-revert behaviour that opens a draft
+PR + tracking issue when something does land broken.
+
 ## Privacy
 
 Syrmos does not collect, store, or transmit personal data. Location is processed on-device only. No analytics, no ads, no tracking. See [Privacy Policy](docs/PRIVACY_POLICY.md).
