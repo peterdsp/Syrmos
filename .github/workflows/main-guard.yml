@@ -1,0 +1,126 @@
+name: Main branch guard
+
+# Runs after every push to main. If CI fails, opens an Issue tagging the
+# repo owner and creates a draft revert PR so a one-click rollback is
+# ready. The Issue includes a link to the failing run and the SHA that
+# broke things, so the human in the loop can decide whether to merge the
+# revert or push a fix-forward commit.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: main-guard
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      verify_failed: ${{ steps.verify_step.outcome == 'failure' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify bundled seeds satisfy offline-first contract
+        id: verify_step
+        continue-on-error: true
+        run: python3 scripts/verify-bundles.py
+
+      - name: Surface failure to the next job
+        if: steps.verify_step.outcome == 'failure'
+        run: |
+          echo "verify-bundles failed on $GITHUB_SHA"
+          exit 1
+
+  open-revert-on-failure:
+    needs: verify
+    if: failure() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name  "syrmos-bot"
+          git config user.email "info@peterdsp.dev"
+
+      - name: Create revert branch
+        id: revert
+        run: |
+          REVERT_BRANCH="auto-revert/${GITHUB_SHA::7}"
+          echo "branch=$REVERT_BRANCH" >> "$GITHUB_OUTPUT"
+          git checkout -b "$REVERT_BRANCH"
+          # --no-edit so the commit lands without an interactive editor;
+          # the owner can amend later if they want a longer message.
+          git revert --no-edit "$GITHUB_SHA" || {
+            echo "Revert failed (merge commit or conflicts) — fall back to a marker commit so the PR still opens."
+            git revert --abort || true
+            git commit --allow-empty -m "Revert $GITHUB_SHA (manual fix required)"
+          }
+          git push origin "$REVERT_BRANCH"
+
+      - name: Open draft revert PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --draft \
+            --base main \
+            --head "${{ steps.revert.outputs.branch }}" \
+            --title "Auto-revert ${GITHUB_SHA::7} (CI failed on main)" \
+            --body "$(cat <<EOF
+          The post-merge guard detected a CI failure on \`main\` for commit
+          [\`${GITHUB_SHA::7}\`](https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}).
+
+          This is a **draft** revert ready to merge in one click if you want
+          to roll back. Alternatively, push a fix-forward commit and close
+          this PR.
+
+          - Failing run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - Triggered by: @${{ github.actor }}
+
+          Once you merge or close this PR, the guard arms again for the
+          next push.
+          EOF
+          )" || echo "PR creation failed — check the auto-revert branch manually."
+
+      - name: Open tracking Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "CI failed on main at ${GITHUB_SHA::7}" \
+            --body "$(cat <<EOF
+          Main branch CI failed.
+
+          - Commit: [\`${GITHUB_SHA::7}\`](https://github.com/${{ github.repository }}/commit/${GITHUB_SHA})
+          - Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - Pushed by: @${{ github.actor }}
+
+          A draft revert PR was opened automatically. Pick one:
+          1. Merge the revert PR to roll back.
+          2. Push a fix-forward commit and close the revert PR.
+
+          Closing this issue acks that you saw the failure; the guard
+          does not auto-close issues.
+          EOF
+          )" \
+            --label "ci-failure" || echo "Issue creation failed — see the workflow run logs."
