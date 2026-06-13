@@ -6,28 +6,31 @@ struct LinesView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(TransitType.allCases, id: \.self) { type in
-                    let filtered = lines.filter { $0.type == type }
-                    if !filtered.isEmpty {
-                        Section(type.localizedName(loc.language)) {
-                            ForEach(filtered) { line in
-                                NavigationLink {
-                                    LineDetailView(
-                                        line: line,
-                                        stations: SyrmosData.stations(for: line.id)
-                                    )
-                                } label: {
-                                    LineRow(line: line)
+            VStack(spacing: 0) {
+                CompactTabHeader(loc[.lines])
+                List {
+                    ForEach(TransitType.allCases, id: \.self) { type in
+                        let filtered = lines.filter { $0.type == type }
+                        if !filtered.isEmpty {
+                            Section(type.localizedName(loc.language)) {
+                                ForEach(filtered) { line in
+                                    NavigationLink {
+                                        LineDetailView(
+                                            line: line,
+                                            stations: SyrmosData.stations(for: line.id)
+                                        )
+                                    } label: {
+                                        LineRow(line: line)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
-            .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .navigationTitle(loc[.lines])
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
