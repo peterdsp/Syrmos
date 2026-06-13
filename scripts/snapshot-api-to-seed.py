@@ -75,6 +75,12 @@ def main() -> None:
         bundles[lid] = fetch(f"/api/schedules/{lid}")
         print(f"  fetched {lid}: {len(bundles[lid]['bands'])} bands, {len(bundles[lid]['rules'])} rules")
 
+    # OSM route shapes ride along — bundled offline-first, not pulled from
+    # the API on each snapshot. Keep the repo-canonical copy across the
+    # rmtree so we don't have to regenerate it after every schedules pull.
+    shapes_canonical = ROOT / "assets/line-geometry/shapes.json"
+    shapes_bytes = shapes_canonical.read_bytes() if shapes_canonical.exists() else None
+
     for dest in (DEST_KMP, DEST_ANDROID, DEST_IOS):
         if dest.exists():
             shutil.rmtree(dest)
@@ -88,9 +94,17 @@ def main() -> None:
         total += write(dest / "fares.json", fares)
         if station_offsets is not None:
             total += write(dest / "station-offsets.json", station_offsets)
+        if shapes_bytes is not None:
+            (dest / "shapes.json").write_bytes(shapes_bytes)
+            total += len(shapes_bytes)
         for lid, payload in bundles.items():
             total += write(dest / f"{lid}.json", payload)
-        n_files = len(bundles) + 6 + (1 if station_offsets is not None else 0)
+        n_files = (
+            len(bundles)
+            + 6
+            + (1 if station_offsets is not None else 0)
+            + (1 if shapes_bytes is not None else 0)
+        )
         print(f"wrote {n_files} files ({total} bytes) -> {dest.relative_to(ROOT)}")
 
 
