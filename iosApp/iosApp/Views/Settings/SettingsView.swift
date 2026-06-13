@@ -16,8 +16,10 @@ struct SyrmosSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section(loc[.preferences]) {
+            VStack(spacing: 0) {
+                CompactTabHeader(loc[.settings])
+                List {
+                    Section(loc[.preferences]) {
                     Picker(loc[.language], selection: $loc.language) {
                         ForEach(AppLanguage.allCases, id: \.self) { lang in
                             Text(lang.displayName).tag(lang)
@@ -100,9 +102,10 @@ struct SyrmosSettingsView: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
+                .scrollContentBackground(.hidden)
+            }
             .background(Color.syrmosBackground)
-            .navigationTitle(loc[.settings])
+            .toolbar(.hidden, for: .navigationBar)
             .inAppSafari(url: $safariURL)
             .alert(item: $refreshAlert) { alert in
                 Alert(
