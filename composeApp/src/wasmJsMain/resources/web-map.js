@@ -142,6 +142,84 @@
     const liveTrainList = document.getElementById("liveTrainList");
     const nearbyStationList = document.getElementById("nearbyStationList");
     const popularStationList = document.getElementById("popularStationList");
+    const faresList = document.getElementById("faresList");
+    const faresLink = document.getElementById("faresLink");
+    const infoLinksList = document.getElementById("infoLinksList");
+
+    // Hydrate OASA tickets + useful info cards from /api/fares. Bundled
+    // version is not strictly needed here because the JS map is online-only
+    // by design (Leaflet tiles), but we fall back to the structured panel
+    // empty state if the API is down rather than rendering nothing.
+    (async () => {
+        if (!faresList && !infoLinksList) return;
+        try {
+            const r = await fetch("https://api-syrmos.peterdsp.dev/api/fares");
+            if (!r.ok) throw new Error("fares fetch failed");
+            const payload = await r.json();
+            renderFaresPanel(payload);
+            renderInfoLinksPanel(payload);
+        } catch (_) {
+            if (faresList) faresList.innerHTML = "<div class=\"panel-item__meta\">Tickets unavailable</div>";
+            if (infoLinksList) infoLinksList.innerHTML = "";
+        }
+    })();
+
+    function renderFaresPanel(payload) {
+        if (!faresList) return;
+        const products = (payload && payload.products) || [];
+        if (!products.length) {
+            faresList.innerHTML = "<div class=\"panel-item__meta\">No fare data</div>";
+            return;
+        }
+        // Show top 6 in a compact "title — €price" list so the panel doesn't
+        // dominate the sidebar. Verify-on-OASA link below carries the user
+        // to the full price list.
+        const top = products.slice(0, 6);
+        faresList.innerHTML = top.map((p) => {
+            const eur = p.fullPriceEur != null ? `€${p.fullPriceEur.toFixed(2)}` : "";
+            const sub = p.discountedPriceEur != null
+                ? `Reduced €${p.discountedPriceEur.toFixed(2)}`
+                : (p.validity || "");
+            return `
+                <div class="panel-item">
+                    <div class="panel-item__title">${escapeHtml(p.titleEn || p.titleEl || "")}</div>
+                    <div class="panel-item__meta">${escapeHtml(sub)}</div>
+                    <div class="panel-item__count">${eur}</div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderInfoLinksPanel(payload) {
+        if (!infoLinksList) return;
+        const links = (payload && payload.infoLinks) || [];
+        if (!links.length) {
+            infoLinksList.innerHTML = "";
+            return;
+        }
+        infoLinksList.innerHTML = links.map((link) => {
+            const bullets = (link.bullets || []).map((b) =>
+                `<li>${escapeHtml(b.en || b.el)}</li>`
+            ).join("");
+            const summary = link.summaryEn ? `<p class="info-link__summary">${escapeHtml(link.summaryEn)}</p>` : "";
+            return `
+                <article class="info-link">
+                    <header class="info-link__head">
+                        <h4 class="info-link__title">${escapeHtml(link.titleEn || "")}</h4>
+                        <span class="info-link__op">${escapeHtml((link.operator || "").toUpperCase())}</span>
+                    </header>
+                    ${summary}
+                    <ul class="info-link__bullets">${bullets}</ul>
+                    <a class="info-link__verify" href="${escapeAttr(link.urlEn || link.urlEl || "#")}" target="_blank" rel="noopener">Verify on ${escapeHtml((link.operator || "").toUpperCase())} ↗</a>
+                </article>
+            `;
+        }).join("");
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
 
     const map = L.map("map", {
         zoomControl: false,
