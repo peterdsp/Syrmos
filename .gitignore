@@ -26,5 +26,5 @@ output/playwright/
 *.keystore
 *.jks
 
-# Claude Code local config
+# Local editor and assistant config
 .claude/
