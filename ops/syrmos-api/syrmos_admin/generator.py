@@ -405,6 +405,39 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
         }
         for r in product_rows
     ]
+    # Operator info pages — points of sale, validation rules, STASY general
+    # instructions — surfaced as a button row below the price cards in the
+    # apps. Hardcoded here because OASA and STASY URLs are stable; they
+    # change less often than the prices.
+    info_links = [
+        {
+            "id": "oasa-points-of-supply",
+            "operator": "oasa",
+            "icon": "mappin.and.ellipse",
+            "titleEn": "Points of supply for tickets and cards",
+            "titleEl": "Σημεία πώλησης εισιτηρίων και καρτών",
+            "urlEn": "https://www.oasa.gr/en/tickets/points-of-sale-reloading/points-of-supply-for-tickets-and-cards/",
+            "urlEl": "https://www.oasa.gr/εισιτήρια/σημεία-πώλησης-επαναφόρτισης/σημεία-έκδοσης-προσωποποιημένων-καρ/",
+        },
+        {
+            "id": "oasa-validation-info",
+            "operator": "oasa",
+            "icon": "checkmark.seal",
+            "titleEn": "Ticket validation rules",
+            "titleEl": "Κανόνες ακύρωσης εισιτηρίων",
+            "urlEn": "https://www.oasa.gr/en/tickets/useful-information/#validation_ticket_info",
+            "urlEl": "https://www.oasa.gr/εισιτήρια/χρήσιμες-πληροφορίες/#validation_ticket_info",
+        },
+        {
+            "id": "stasy-general-instructions",
+            "operator": "stasy",
+            "icon": "info.circle",
+            "titleEn": "STASY general ticket instructions",
+            "titleEl": "Γενικές οδηγίες STASY",
+            "urlEn": "https://www.stasy.gr/en/tickets-cards/general-instructions/",
+            "urlEl": "https://www.stasy.gr/eisitiria-kartes/genikes-odhgies/",
+        },
+    ]
     return {
         "updatedAt": _now_iso(),
         "fares": [
@@ -423,6 +456,7 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             for r in rows
         ],
         "products": products,
+        "infoLinks": info_links,
     }
 
 
