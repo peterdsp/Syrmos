@@ -210,7 +210,49 @@ struct TransitMapView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: .topLeading) {
+                mapContent
+                CompactTabHeader(loc[.map])
+                    .padding(.top, 4)
+                    .background(
+                        // Subtle gradient so the headline reads against the
+                        // map without painting a hard white bar over it.
+                        LinearGradient(
+                            colors: [
+                                Color(uiColor: .systemBackground).opacity(0.85),
+                                Color(uiColor: .systemBackground).opacity(0.0),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .top)
+                    )
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
+                StationSheetView(station: station)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationContentInteraction(.scrolls)
+            }
+            .alert(
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
+                isPresented: $showLocationDeniedAlert
+            ) {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : "Open Settings") {
+                    locationManager.openSystemSettings()
+                }
+                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {}
+            } message: {
+                Text(loc.language == .greek
+                    ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
+                    : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
+            }
+        }
+    }
+
+    private var mapContent: some View {
+        ZStack(alignment: .bottomTrailing) {
                 // Wrapping the Map in a Group with `.id()` on the Group (not on
                 // Map itself) is what actually forces SwiftUI to dispose of the
                 // underlying MKMapView on iOS 18. Putting `.id()` directly on
@@ -350,36 +392,8 @@ struct TransitMapView: View {
                 }
                 .padding(.trailing, 16)
                 .padding(.bottom, 80)
-            }
-            .navigationTitle(loc[.map])
-            .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
-                StationSheetView(station: station)
-                    // Three detents so the user can pull up to a near-full
-                    // view that shows every projected departure, or settle
-                    // at the standard medium / large for quick glances.
-                    // .large makes the sheet take ~the full safe area; the
-                    // departures scroll internally and the Get directions
-                    // button stays pinned at the bottom regardless.
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-                    .presentationContentInteraction(.scrolls)
-            }
-            .alert(
-                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
-                isPresented: $showLocationDeniedAlert
-            ) {
-                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : "Open Settings") {
-                    locationManager.openSystemSettings()
-                }
-                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {}
-            } message: {
-                Text(loc.language == .greek
-                    ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
-                    : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
-            }
         }
     }
-
 }
 
 // MARK: - Station Sheet

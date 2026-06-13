@@ -18,15 +18,15 @@ struct TimetablesView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
+                CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : "Timetables")
                 linePicker
                 dayPicker
                 searchBar
                 departuresList
             }
-            .padding(.top, 8)
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .navigationTitle(loc.language == .greek ? "Δρομολόγια" : "Timetables")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 
