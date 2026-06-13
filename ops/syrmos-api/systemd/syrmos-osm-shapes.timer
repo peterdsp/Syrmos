@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh OSM route geometry weekly
+Requires=syrmos-osm-shapes.service
+
+[Timer]
+# Sunday 05:30 Athens. Athens transit relations change only when a line
+# extends (T7 in 2022, M4 someday); weekly is more than enough.
+OnCalendar=Sun *-*-* 05:30:00 Europe/Athens
+RandomizedDelaySec=1800
+Persistent=true
+
+[Install]
+WantedBy=timers.target

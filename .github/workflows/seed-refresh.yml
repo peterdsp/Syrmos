@@ -33,6 +33,12 @@ jobs:
       - name: Snapshot live API into bundled seeds
         run: python3 scripts/snapshot-api-to-seed.py
 
+      # Refuse to commit drift that would break the offline-first contract.
+      # If verify-bundles fails, the workflow stops here and tries again the
+      # following night — no broken seed ever lands in main.
+      - name: Verify refreshed bundles
+        run: python3 scripts/verify-bundles.py
+
       - name: Commit if seeds changed
         run: |
           if git diff --quiet -- core/data/src/commonMain/composeResources/files/seed/schedules-v2 \

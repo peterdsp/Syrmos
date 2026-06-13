@@ -1,0 +1,18 @@
+[Unit]
+Description=Weekly Syrmos OSM route-geometry refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python /home/peterdsp/syrmos-api/scripts/refresh_osm_shapes.py
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+StandardOutput=append:/home/peterdsp/syrmos-api/osm-shapes.log
+StandardError=append:/home/peterdsp/syrmos-api/osm-shapes.log
+
+[Install]
+WantedBy=multi-user.target
