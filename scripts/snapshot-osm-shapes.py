@@ -142,13 +142,39 @@ def main():
         os.path.join(repo_root, "core/data/src/commonMain/composeResources/files/seed/schedules-v2/shapes.json"),
         os.path.join(repo_root, "androidApp/src/androidMain/assets/files/seed/schedules-v2/shapes.json"),
         os.path.join(repo_root, "composeApp/src/wasmJsMain/resources/shapes.json"),
+        os.path.join(repo_root, "assets/line-geometry/shapes.json"),
     ]
     for p in out_paths:
         os.makedirs(os.path.dirname(p), exist_ok=True)
         with open(p, "w", encoding="utf-8") as f:
             f.write(body)
         print(f"wrote {p}")
-    print(f"total bytes: {len(body):,}")
+
+    # Per-line GeoJSON Features for the Pi's /line-geometry/{id}.geojson
+    # endpoint. Lng/lat order per the GeoJSON spec (RFC 7946) — internal
+    # shapes.json uses [lat, lng] to match Leaflet's L.polyline argument.
+    geojson_dir = os.path.join(repo_root, "assets/line-geometry")
+    os.makedirs(geojson_dir, exist_ok=True)
+    for line_id, shape in shapes.items():
+        feature = {
+            "type": "Feature",
+            "properties": {
+                "lineId": line_id,
+                "from": shape["from"],
+                "to": shape["to"],
+                "osmRelationId": shape["osmRelationId"],
+                "attribution": "© OpenStreetMap contributors, ODbL",
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[c[1], c[0]] for c in shape["coordinates"]],
+            },
+        }
+        path = os.path.join(geojson_dir, f"{line_id}.geojson")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(feature, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"wrote {path}")
+    print(f"total bytes (shapes.json): {len(body):,}")
 
 
 if __name__ == "__main__":
