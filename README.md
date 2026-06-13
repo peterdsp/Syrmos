@@ -72,6 +72,7 @@ Syrmos is a transit companion for the Athens metro, tram and suburban railway. P
 - **External ticket purchase link** for Hellenic Train (suburban) stations — opens `newtickets.hellenictrain.gr` in the browser. Syrmos collects nothing; the purchase happens entirely on Hellenic Train's site, under their own terms
 - **Contactless tap-and-go info** in Settings — links to OASA's official ticket-price page and explains that Apple Pay, Google Wallet, or any contactless Visa/Mastercard works at metro and tram gates, and also on the validators inside trams and trains. Syrmos doesn't store prices; it links to the operator's source of truth
 - **Zoom-aware map pins** on all three platforms — at country zoom you see colored mode-glyph pins; at street zoom you see the per-station smart-code SVG. The web uses Leaflet `divIcon` + emoji glyphs, iOS uses SF Symbols inside a teardrop, Android draws a custom bitmap. Replaces the old "white egg" look at low zoom
+- **Real OSM track geometry** for every line polyline. Pulled per route relation, stitched in member order with reversal handling, bundled offline in all three apps plus served at `/line-geometry/{id}.geojson` so the Pi can push shape corrections without an app release. The T7 Piraeus loop, M3 airport branch and A4 Megara curve render along actual rail, not as straight zigzags between station coordinates. Data © OpenStreetMap contributors, ODbL.
 - **Live-arrivals infrastructure**, ready for the day Athens operators publish real-time feeds. A `LiveArrivalsProvider` interface in `core/domain` is implemented as no-op stubs for STASY, OASA Telematics, and Hellenic Train. The use case prefers live data when available and falls back to the rule-based projector when not. Currently every stub returns `null`, so projector remains the answer — but the wiring is in place
 
 ## Transit coverage
@@ -79,7 +80,7 @@ Syrmos is a transit companion for the Athens metro, tram and suburban railway. P
 | Mode | Lines | Stations | Operator |
 |------|-------|----------|----------|
 | Metro | Line 1 (Green), Line 2 (Red), Line 3 (Blue) | 71 | STASY |
-| Tram | T6 (Syntagma-Pikrodafni), T7 (Akti Poseidonos-Voula) | 56 | STASY |
+| Tram | T6 (Syntagma-Pikrodafni), T7 (Akti Poseidonos-Voula) | 62 | STASY |
 | Suburban | A1, A2 (Airport), A3 (Chalcis), A4 (Kiato) | 68 | Hellenic Train |
 
 ## Platforms
@@ -170,16 +171,17 @@ core/ -- domain    (use cases — incl. ComputeDeparturesFromBandsUseCase)
 ```
 api-syrmos.peterdsp.dev (Cloudflare Tunnel)
     |
-    +-- /api/lines               -- canonical line + station snapshot
-    +-- /api/schedules           -- full frequency-band snapshot
-    +-- /api/schedules/manifest  -- version + per-line hashes (ETag-driven)
-    +-- /api/schedules/{lineId}  -- single-line bundle
-    +-- /api/holidays            -- holiday rules (Aug 15, Dec 24/31, etc.)
-    +-- /api/overrides           -- per-date overrides
-    +-- /api/fares               -- OASA fare-page link + contactless tap-and-go metadata
-    +-- /api/announcements       -- STASY service alerts
-    +-- /api/trains              -- Hellenic Train SSE relay (positions only, no per-stop ETAs)
-    +-- /admin/                  -- FastAPI UI, gated by Cloudflare Access
+    +-- /api/lines                       -- canonical line + station snapshot
+    +-- /api/schedules                   -- full frequency-band snapshot
+    +-- /api/schedules/manifest          -- version + per-line hashes (ETag-driven)
+    +-- /api/schedules/{lineId}          -- single-line bundle
+    +-- /api/holidays                    -- holiday rules (Aug 15, Dec 24/31, etc.)
+    +-- /api/overrides                   -- per-date overrides
+    +-- /api/fares                       -- OASA fare-page link + contactless tap-and-go metadata
+    +-- /api/announcements               -- STASY service alerts
+    +-- /api/trains                      -- Hellenic Train SSE relay (positions only, no per-stop ETAs)
+    +-- /line-geometry/{lineId}.geojson  -- OSM-derived polyline geometry per line (ODbL)
+    +-- /admin/                          -- FastAPI UI, gated by Cloudflare Access
 
 ops/syrmos-api/
     syrmos_admin/      FastAPI service + SQLite-backed source of truth
@@ -226,7 +228,6 @@ Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket pu
 These are all in-flight or sitting in a branch waiting for the same release window:
 
 - **Tap-a-station → bottom-sheet mini-map** showing only that line drawn, only that station highlighted, with a "Get Directions" button that hands off to Apple Maps / Google Maps. iOS + Android + web. Already designed; the multi-platform UI plumbing is the work.
-- **T7 polyline as a true loop** in the map rendering. The station data is correct (43 stops in package order, loop stops 1-6 followed by spine 7-43), but the polyline is drawn as a single path through all 43 points so it looks like an X across Piraeus. Fix is splitting the polyline at the Akti Poseidonos junction.
 - **Admin UI polish.** The FastAPI `/admin` page is functional but plain — sortable tables, inline editing, diff preview before save, scrape_log inline.
 - **iOS TestFlight upload automation.** Build artifact is ready; CI workflow needs Apple Developer secrets (`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, `APP_STORE_CONNECT_API_KEY`) before the upload job can run.
 
