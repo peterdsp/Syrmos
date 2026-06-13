@@ -175,8 +175,17 @@ class SyrmosSchedulesService(
         val icon: String,
         @SerialName("titleEn") val titleEn: String,
         @SerialName("titleEl") val titleEl: String,
+        @SerialName("summaryEn") val summaryEn: String = "",
+        @SerialName("summaryEl") val summaryEl: String = "",
+        val bullets: List<InfoBullet> = emptyList(),
         @SerialName("urlEn") val urlEn: String,
         @SerialName("urlEl") val urlEl: String,
+    )
+
+    @Serializable
+    data class InfoBullet(
+        val en: String,
+        val el: String,
     )
 
     private companion object {

@@ -89,40 +89,13 @@ struct FaresView: View {
             Text(loc.language == .greek ? "Χρήσιμες πληροφορίες" : "Useful information")
                 .font(.headline)
                 .padding(.horizontal, 16)
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 ForEach(store.infoLinks) { link in
-                    Button {
-                        let raw = loc.language == .greek ? link.urlEl : link.urlEn
-                        if let url = URL(string: raw) ?? URL(string: link.urlEn) {
+                    InfoLinkCard(link: link) { rawUrl in
+                        if let url = URL(string: rawUrl) ?? URL(string: link.urlEn) {
                             safariURL = url
                         }
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: link.icon)
-                                .font(.system(size: 18))
-                                .frame(width: 28)
-                                .foregroundStyle(Color.syrmosPrimary)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(loc.language == .greek ? link.titleEl : link.titleEn)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.primary)
-                                    .multilineTextAlignment(.leading)
-                                Text(link.operator_.uppercased())
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
@@ -176,6 +149,79 @@ struct FaresView: View {
             return out.string(from: date)
         }
         return store.updatedAt
+    }
+}
+
+private struct InfoLinkCard: View {
+    let link: SyrmosFaresStore.InfoLink
+    let onVerify: (String) -> Void
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: link.icon)
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.syrmosPrimary)
+                    .frame(width: 26)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(loc.language == .greek ? link.titleEl : link.titleEn)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text(link.operator_.uppercased())
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if let summary = displaySummary, !summary.isEmpty {
+                Text(summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let bullets = link.bullets, !bullets.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(bullets) { bullet in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("•")
+                                .font(.caption)
+                                .foregroundStyle(Color.syrmosPrimary)
+                            Text(loc.language == .greek ? bullet.el : bullet.en)
+                                .font(.caption)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+            Button {
+                let raw = loc.language == .greek ? link.urlEl : link.urlEn
+                onVerify(raw)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.caption2)
+                    Text(loc.language == .greek
+                         ? "Επιβεβαίωση στο \(link.operator_.uppercased())"
+                         : "Verify on \(link.operator_.uppercased())")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.syrmosPrimary.opacity(0.12))
+                .foregroundStyle(Color.syrmosPrimary)
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var displaySummary: String? {
+        loc.language == .greek ? link.summaryEl : link.summaryEn
     }
 }
 

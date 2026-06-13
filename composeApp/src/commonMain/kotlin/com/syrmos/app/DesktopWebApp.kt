@@ -751,30 +751,48 @@ private fun InfoLinksCard(
     DashboardCard(title = if (lang == AppLanguage.GREEK) "Χρήσιμες πληροφορίες" else "Useful information") {
         links.forEach { link ->
             val target = if (lang == AppLanguage.GREEK) link.urlEl.ifEmpty { link.urlEn } else link.urlEn
-            OutlinedButton(
-                onClick = { onOpen(target) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+            val title = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn
+            val summary = if (lang == AppLanguage.GREEK) link.summaryEl else link.summaryEn
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = link.operatorId.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (summary.isNotEmpty()) {
                     Text(
-                        text = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = link.operatorId.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
+                        text = summary,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(text = "↗", style = MaterialTheme.typography.titleSmall)
+                }
+                link.bullets.forEach { bullet ->
+                    val text = if (lang == AppLanguage.GREEK) bullet.el else bullet.en
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(text = text, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                OutlinedButton(
+                    onClick = { onOpen(target) },
+                ) {
+                    Text(
+                        text = (if (lang == AppLanguage.GREEK) "Επιβεβαίωση στο " else "Verify on ") + link.operatorId.uppercase()
+                                + "  ↗",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
                 }
             }
+            Spacer(Modifier.height(4.dp))
         }
     }
 }

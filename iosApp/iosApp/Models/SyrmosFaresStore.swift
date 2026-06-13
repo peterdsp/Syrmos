@@ -67,13 +67,22 @@ final class SyrmosFaresStore: ObservableObject {
         let icon: String
         let titleEn: String
         let titleEl: String
+        let summaryEn: String?
+        let summaryEl: String?
+        let bullets: [Bullet]?
         let urlEn: String
         let urlEl: String
 
         enum CodingKeys: String, CodingKey {
-            case id, icon, titleEn, titleEl, urlEn, urlEl
+            case id, icon, titleEn, titleEl, summaryEn, summaryEl, bullets, urlEn, urlEl
             case operator_ = "operator"
         }
+    }
+
+    struct Bullet: Decodable, Identifiable {
+        let en: String
+        let el: String
+        var id: String { en }
     }
 
     struct Product: Decodable, Identifiable {
