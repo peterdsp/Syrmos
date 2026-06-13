@@ -2,10 +2,20 @@ html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    /* 100dvh (dynamic viewport) shrinks when iOS Safari shows its URL bar,
-       so absolute-positioned UI anchored to bottom: 0 stays above the bar
-       and the bottom peek button is actually tappable. 100vh ignores
-       Safari chrome and put our peek bar behind the URL strip. */
+    /* Viewport height fallbacks, in order from most-supported to most-correct:
+       - 100vh: old browsers (pre-Safari 15.4, Chrome 107-, Firefox 100-).
+         Behind the browser chrome on mobile but at least renders.
+       - 100svh: smallest viewport — always-visible area assuming all browser
+         chrome is on screen. Safe baseline for the peek button.
+       - 100dvh: dynamic viewport — adjusts as Safari / Chrome Android /
+         Firefox / Brave show or hide their address bars. The browser picks
+         this when supported.
+       Result: peek button is tappable on every modern mobile browser
+       (iOS Safari, iOS Chrome/Brave/Firefox, Android Chrome / Brave /
+       Firefox / Samsung Internet) regardless of whether the address bar
+       is currently visible. */
+    height: 100vh;
+    height: 100svh;
     height: 100dvh;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
     background: #eef3f8;
@@ -19,6 +29,8 @@ body {
 .app-shell {
     position: relative;
     width: 100vw;
+    height: 100vh;
+    height: 100svh;
     height: 100dvh;
 }
 
@@ -442,6 +454,8 @@ body {
     display: flex;
     flex-direction: column;
     max-width: 520px;
+    max-height: min(760px, calc(100vh - 32px));
+    max-height: min(760px, calc(100svh - 32px));
     max-height: min(760px, calc(100dvh - 32px));
     margin-left: auto;
     margin-right: auto;
@@ -762,9 +776,16 @@ body {
         top: auto;
         right: 0;
         left: 0;
-        /* env(safe-area-inset-bottom) keeps the peek above Safari's URL bar
-           on iOS so the panel is actually tappable when the bar is shown. */
-        bottom: env(safe-area-inset-bottom, 0px);
+        /* Anchor to the bottom of the visible viewport regardless of mobile
+           browser. Combination of:
+           - bottom: 0 keeps the panel inside the layout flow under 100dvh,
+             which all modern Chrome/Brave/Firefox/Edge/Samsung mobile
+             browsers shrink when their address bar shows.
+           - env(safe-area-inset-bottom) lifts the panel above iOS Safari's
+             home indicator and any rounded-corner intrusion.
+           - max() instead of bare env() so older non-safe-area browsers
+             still get a 12px buffer rather than sitting flush at y=0. */
+        bottom: max(12px, env(safe-area-inset-bottom, 12px));
         width: 100%;
         max-height: calc(64px + env(safe-area-inset-bottom, 0px));
         border-radius: 18px 18px 0 0;
@@ -777,8 +798,14 @@ body {
     }
 
     .insight-panel--expanded {
+        max-height: calc(65vh + env(safe-area-inset-bottom, 0px));
+        max-height: calc(65svh + env(safe-area-inset-bottom, 0px));
         max-height: calc(65dvh + env(safe-area-inset-bottom, 0px));
         overflow-y: auto;
+        /* Inner clearance so the bottom-most card never gets trapped under
+           Android Chrome's translucent bottom toolbar during the show /
+           hide transition. */
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
     }
 
     .panel-peek {
@@ -786,12 +813,18 @@ body {
         align-items: center;
         gap: 8px;
         padding: 16px 20px;
-        /* Extra tap target so the peek bar stays comfortably finger-sized
-           even when iOS Safari hides/shows its URL bar mid-scroll. */
+        /* 56px = Apple HIG / Material Design minimum tap target. Stays
+           comfortably finger-sized whether the browser chrome is showing
+           (iOS Safari URL bar, Android Chrome bottom address bar) or
+           hidden. */
         min-height: 56px;
         cursor: pointer;
         user-select: none;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        /* touch-action lets the peek bar respond instantly to taps without
+           the 300ms click-delay some Android browsers still apply to
+           ambiguous touch targets. */
+        touch-action: manipulation;
     }
 
     .panel-peek__icon {
@@ -819,8 +852,15 @@ body {
 
     .panel-cards-wrap {
         padding: 8px 12px 20px;
+        max-height: calc(65vh - 54px);
+        max-height: calc(65svh - 54px);
         max-height: calc(65dvh - 54px);
         overflow-y: auto;
+        /* Prevent the page itself from scrolling while the user is panning
+           inside the panel — solves the "tap goes through to the map"
+           bug on Android Chrome where touch is sometimes routed to the
+           background element. */
+        overscroll-behavior: contain;
     }
 
     .panel-card {
