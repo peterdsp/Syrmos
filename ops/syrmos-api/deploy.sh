@@ -53,6 +53,7 @@ export SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
 export SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
 .venv/bin/python -m scripts.import_athens_package --apply
 .venv/bin/python -m scripts.import_icons --apply
+.venv/bin/python -m scripts.seed_fare_products
 .venv/bin/python -m syrmos_admin.scraper_24mmm || echo "scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.generator
 REMOTE
