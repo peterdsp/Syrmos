@@ -11,7 +11,9 @@ REPO_ROOT=$(cd "$HERE/../.." && pwd)
 echo ">>> syncing code to $PI"
 rsync -avz --delete \
   --exclude data \
+  --exclude db \
   --exclude out \
+  --exclude backups \
   --exclude .venv \
   --exclude '*.log' \
   --exclude __pycache__ \
