@@ -48,10 +48,105 @@ enum ScheduleProjector {
                 into: &results
             )
         }
-        return results
+        var sorted = results
             .sorted { $0.minutesAway < $1.minutesAway }
             .prefix(limit)
             .map { $0 }
+
+        // M3 city stations: guarantee at least one Airport-bound entry is
+        // visible. M3_AIR closes at 23:00 every day, so after the last
+        // airport train the city-section trains still keep listing while
+        // the user has no signal of when the next Airport-bound is. Scan
+        // forward up to a week to find the next M3_AIR departure and
+        // append it as a "look-ahead" row — caller / UI can present it
+        // however it wants because the serviceType is "airport".
+        let wantsAirport = resolvedLineIds.contains("M3_AIR")
+            && !line3AirportOnlyStations.contains(stationId)
+        let hasAirport = sorted.contains { $0.serviceType == "airport" }
+        if wantsAirport && !hasAirport, let bundle = bundles["M3_AIR"] {
+            if let lookahead = nextAirportLookahead(
+                bundle: bundle,
+                weekday: nowComp.weekday ?? 1,
+                nowMinutes: nowMinutes,
+                holidayMonth: nowComp.month ?? 1,
+                holidayDay: nowComp.day ?? 1,
+                stationId: stationId
+            ) {
+                sorted.append(lookahead)
+            }
+        }
+        return sorted
+    }
+
+    /// Scans forward up to 7 days for the next M3_AIR departure when the
+    /// regular projection window has nothing left for today. Caps the
+    /// search so a missing bundle never spins forever.
+    private static func nextAirportLookahead(
+        bundle: SyrmosSchedulesService.LineSchedule,
+        weekday: Int,
+        nowMinutes: Int,
+        holidayMonth: Int,
+        holidayDay: Int,
+        stationId: String
+    ) -> Departure? {
+        let athens = TimeZone(identifier: "Europe/Athens")!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = athens
+        let now = Date()
+        for dayOffset in 0..<7 {
+            guard let date = cal.date(byAdding: .day, value: dayOffset, to: now) else { continue }
+            let comp = cal.dateComponents([.month, .day, .weekday], from: date)
+            let holiday = resolveHolidayDayType(month: comp.month ?? holidayMonth, day: comp.day ?? holidayDay)
+            let dt = dayType(for: comp.weekday ?? weekday, holiday: holiday)
+            // Same gating the normal projector uses. Skip the day if the
+            // rule says the line is closed.
+            guard let rule = bundle.rules.first(where: { $0.dayType == dt }) else { continue }
+            let openMin = minutesOfDay(rule.openTime)
+            let closeMin = minutesOfDay(rule.closeTime)
+            let nowForDay = dayOffset == 0 ? nowMinutes : -1
+            if !rule.is247, let openM = openMin, let closeM = closeMin {
+                let effectiveClose = closeM <= openM ? closeM + 24 * 60 : closeM
+                if dayOffset == 0 && nowForDay > effectiveClose { continue }
+            }
+            let bands = bundle.bands
+                .filter { $0.dayType == dt }
+                .sorted { (a, b) in
+                    let am = minutesOfDay(a.timeStart) ?? 0
+                    let bm = minutesOfDay(b.timeStart) ?? 0
+                    return am < bm
+                }
+            let offsetMin = SyrmosStationOffsetsStore.shared.offsetMinutes(
+                lineId: "M3_AIR", direction: "outbound", stationId: stationId
+            )
+            for band in bands {
+                guard let rawStart = minutesOfDay(band.timeStart),
+                      let rawEnd = minutesOfDay(band.timeEnd),
+                      band.headwayMinutes > 0
+                else { continue }
+                let end = rawEnd + (rawEnd < rawStart ? 24 * 60 : 0)
+                var slot = Double(rawStart)
+                if dayOffset == 0, slot < Double(nowMinutes) {
+                    let skips = max(0, Int((Double(nowMinutes) - slot) / band.headwayMinutes))
+                    slot = Double(rawStart) + Double(skips) * band.headwayMinutes
+                    while slot < Double(nowMinutes) { slot += band.headwayMinutes }
+                }
+                if slot <= Double(end) {
+                    let totalMinutes = Int(slot.rounded()) + offsetMin + dayOffset * 24 * 60
+                    let display = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60)
+                    let h = display / 60
+                    let m = display % 60
+                    let mins = max(0, totalMinutes - nowMinutes)
+                    return Departure(
+                        time: String(format: "%02d:%02d", h, m),
+                        lineId: "M3",
+                        direction: "Airport",
+                        minutesAway: mins,
+                        serviceType: "airport"
+                    )
+                }
+            }
+        }
+        return nil
     }
 
     // MARK: - M3 airport branch handling
