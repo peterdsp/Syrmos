@@ -127,12 +127,16 @@ enum StationCoords {
         // loop arc before joining the outbound spine.
         // RULES.md ships the T7 stop with the official dual name; STASY's
         // pages alternate "Dimarhio" and "Dimotiko Theatro" for the same node.
-        ("T7_DIM", "Dimarhio / Dimotiko Theatro", "Δημαρχείο / Δημοτικό Θέατρο", 37.9416350, 23.6506700),
-        ("T7_PLA", "Plateia Deligianni", "Πλατεία Δεληγιάννη", 37.9449550, 23.6535200),
-        ("T7_EVA", "Evangelistria", "Ευαγγελίστρια", 37.9480500, 23.6561550),
-        ("T7_GRI", "Grigoriou Lambraki", "Γρηγορίου Λαμπράκη", 37.9457700, 23.6601800),
-        ("T7_MIK", "Mikras Asias", "Μικράς Ασίας", 37.9444100, 23.6649650),
-        ("T7_GIP", "Gipedo Karaiskaki", "Γήπεδο Καραϊσκάκη", 37.9445650, 23.6687750),
+        // Coords realigned to live OSM stop nodes (June 2026) — T7_DIM sits
+        // right next to M3_DIM (the metro Dimotiko Theatro), and the other
+        // five loop stops trace the actual one-way arc around the Piraeus
+        // peninsula. Previous values came from a stale package snapshot.
+        ("T7_DIM", "Dimarhio / Dimotiko Theatro", "Δημαρχείο / Δημοτικό Θέατρο", 37.9426370, 23.6475020),
+        ("T7_PLA", "Plateia Deligianni", "Πλατεία Δεληγιάννη", 37.9413440, 23.6503940),
+        ("T7_EVA", "Evangelistria", "Ευαγγελίστρια", 37.9446190, 23.6532460),
+        ("T7_GRI", "Grigoriou Lambraki", "Γρηγορίου Λαμπράκη", 37.9479420, 23.6560600),
+        ("T7_MIK", "Mikras Asias", "Μικράς Ασίας", 37.9459170, 23.6600430),
+        ("T7_GIP", "Gipedo Karaiskaki", "Γήπεδο Καραϊσκάκη", 37.9444230, 23.6648380),
         // --- Outbound spine: Akti Poseidonos -> Asklipiio Voulas ---
         ("T7_AKT", "Akti Poseidonos", "Ακτή Ποσειδώνος", 37.9449134, 23.6430209),
         ("T7_ATR", "Agia Triada", "Αγία Τριάδα", 37.9449403, 23.6451956),
