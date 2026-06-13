@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -37,6 +38,15 @@ def fetch(path: str) -> dict:
     req = urllib.request.Request(BASE + path, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
+
+
+def fetch_geojson_optional(path: str) -> dict | None:
+    """Single-shot fetch with no exceptions on 404. Used for shapes which
+    may not exist for every line, so the snapshot tolerates partial sets."""
+    try:
+        return fetch(path)
+    except (urllib.error.URLError, urllib.error.HTTPError):
+        return None
 
 
 def write(p: Path, payload: dict) -> int:
@@ -75,11 +85,34 @@ def main() -> None:
         bundles[lid] = fetch(f"/api/schedules/{lid}")
         print(f"  fetched {lid}: {len(bundles[lid]['bands'])} bands, {len(bundles[lid]['rules'])} rules")
 
-    # OSM route shapes ride along — bundled offline-first, not pulled from
-    # the API on each snapshot. Keep the repo-canonical copy across the
-    # rmtree so we don't have to regenerate it after every schedules pull.
-    shapes_canonical = ROOT / "assets/line-geometry/shapes.json"
-    shapes_bytes = shapes_canonical.read_bytes() if shapes_canonical.exists() else None
+    # OSM route shapes from /line-geometry/{id}.geojson. The API is the
+    # single source of truth so a snapshot run captures whatever is
+    # currently deployed on the Pi, not whatever happens to be sitting in
+    # a local working copy. Lines without geometry are skipped silently.
+    shapes_payload = {
+        "version": 1,
+        "source": "OpenStreetMap (ODbL) via api-syrmos.peterdsp.dev/line-geometry",
+        "shapes": {},
+    }
+    for lid in line_ids:
+        feature = fetch_geojson_optional(f"/line-geometry/{lid}.geojson")
+        if not feature:
+            continue
+        geom = feature.get("geometry") or {}
+        coords = geom.get("coordinates") or []
+        if not coords:
+            continue
+        props = feature.get("properties") or {}
+        # GeoJSON ships [lng, lat]; the apps consume [lat, lng] to match
+        # MapKit / Leaflet / osmdroid native LatLng order.
+        shapes_payload["shapes"][lid] = {
+            "osmRelationId": props.get("osmRelationId"),
+            "from": props.get("from", ""),
+            "to": props.get("to", ""),
+            "points": len(coords),
+            "coordinates": [[lat, lng] for lng, lat in coords],
+        }
+    shapes_bytes = json.dumps(shapes_payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
     for dest in (DEST_KMP, DEST_ANDROID, DEST_IOS):
         if dest.exists():
@@ -94,16 +127,14 @@ def main() -> None:
         total += write(dest / "fares.json", fares)
         if station_offsets is not None:
             total += write(dest / "station-offsets.json", station_offsets)
-        if shapes_bytes is not None:
-            (dest / "shapes.json").write_bytes(shapes_bytes)
-            total += len(shapes_bytes)
+        (dest / "shapes.json").write_bytes(shapes_bytes)
+        total += len(shapes_bytes)
         for lid, payload in bundles.items():
             total += write(dest / f"{lid}.json", payload)
         n_files = (
             len(bundles)
-            + 6
+            + 7
             + (1 if station_offsets is not None else 0)
-            + (1 if shapes_bytes is not None else 0)
         )
         print(f"wrote {n_files} files ({total} bytes) -> {dest.relative_to(ROOT)}")
 
