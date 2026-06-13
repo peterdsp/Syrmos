@@ -8,9 +8,11 @@ struct HomeView: View {
     @ObservedObject private var liveTrainService = LiveTrainService.shared
     @StateObject private var locationService = LocationService()
     @ObservedObject private var loc = LocalizationManager.shared
+    @ObservedObject private var schedules = SyrmosSchedulesStore.shared
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
+    @State private var showFreshDataAlert = false
 
     var body: some View {
         NavigationStack {
@@ -54,6 +56,24 @@ struct HomeView: View {
                 Text(loc.language == .greek
                     ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
+            }
+            // "Hey, new data" alert: fires the first time the refreshed
+            // manifest version on this device is higher than the one we
+            // remember. The store sets hasFreshData=true; we mirror it into
+            // a local @State so the user can dismiss without instantly
+            // re-arming the alert next render.
+            .onChange(of: schedules.hasFreshData) { _, newValue in
+                if newValue { showFreshDataAlert = true }
+            }
+            .alert(
+                loc.language == .greek ? "Νέα δεδομένα" : "New data available",
+                isPresented: $showFreshDataAlert
+            ) {
+                Button(loc.language == .greek ? "Εντάξει" : "Got it") {
+                    schedules.ackFreshData()
+                }
+            } message: {
+                Text(schedules.freshDataSummary)
             }
         }
     }
