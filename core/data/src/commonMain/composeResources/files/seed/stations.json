@@ -2571,8 +2571,8 @@
     "id": "T7_DIM",
     "name": "Dimarhio / Dimotiko Theatro",
     "name_el": "Δημαρχείο / Δημοτικό Θέατρο",
-    "latitude": 37.941635,
-    "longitude": 23.65067,
+    "latitude": 37.942637,
+    "longitude": 23.647502,
     "line_ids": [
       "T7"
     ],
@@ -2584,8 +2584,8 @@
     "id": "T7_PLA",
     "name": "Plateia Deligianni",
     "name_el": "Πλατεία Δεληγιάννη",
-    "latitude": 37.944955,
-    "longitude": 23.65352,
+    "latitude": 37.941344,
+    "longitude": 23.650394,
     "line_ids": [
       "T7"
     ],
@@ -2597,8 +2597,8 @@
     "id": "T7_EVA",
     "name": "Evangelistria",
     "name_el": "Ευαγγελίστρια",
-    "latitude": 37.94805,
-    "longitude": 23.656155,
+    "latitude": 37.944619,
+    "longitude": 23.653246,
     "line_ids": [
       "T7"
     ],
@@ -2610,8 +2610,8 @@
     "id": "T7_GRI",
     "name": "Grigoriou Lambraki",
     "name_el": "Γρηγορίου Λαμπράκη",
-    "latitude": 37.94577,
-    "longitude": 23.66018,
+    "latitude": 37.947942,
+    "longitude": 23.65606,
     "line_ids": [
       "T7"
     ],
@@ -2623,8 +2623,8 @@
     "id": "T7_MIK",
     "name": "Mikras Asias",
     "name_el": "Μικράς Ασίας",
-    "latitude": 37.94441,
-    "longitude": 23.664965,
+    "latitude": 37.945917,
+    "longitude": 23.660043,
     "line_ids": [
       "T7"
     ],
@@ -2636,8 +2636,8 @@
     "id": "T7_GIP",
     "name": "Gipedo Karaiskaki",
     "name_el": "Γήπεδο Καραϊσκάκη",
-    "latitude": 37.944565,
-    "longitude": 23.668775,
+    "latitude": 37.944423,
+    "longitude": 23.664838,
     "line_ids": [
       "T7"
     ],
