@@ -161,7 +161,12 @@ class ComputeDeparturesFromBandsUseCase(
         val rawStart = band.timeStart.toMinutesOfDay() ?: return
         val rawEnd = band.timeEnd.toMinutesOfDay() ?: return
         val start = rawStart + shiftMinutes
-        val end = rawEnd + shiftMinutes
+        // Bands that close past midnight (e.g. M2 sat 22:00 -> 00:20) ship
+        // with rawEnd < rawStart because timeEnd is the next calendar day.
+        // Wrap them forward 24h so [start, end] is monotonic and 22:45
+        // still lands inside the window instead of falling off the early
+        // return below.
+        val end = rawEnd + shiftMinutes + (if (rawEnd < rawStart) 24 * 60 else 0)
         if (end < start) return
         val headway = if (band.headwayMinutes > 0.0) band.headwayMinutes else return
 

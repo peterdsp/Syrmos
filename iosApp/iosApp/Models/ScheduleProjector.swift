@@ -190,7 +190,11 @@ enum ScheduleProjector {
               band.headwayMinutes > 0
         else { return }
         let start = rawStart + shift
-        let end = rawEnd + shift
+        // Bands that close past midnight (e.g. M2 sat 22:00 -> 00:20) ship
+        // with end < start because timeEnd is the next calendar day. Wrap
+        // them forward 24h so [start, end] is monotonic and 22:45 still
+        // lands inside the window instead of falling off the early-return.
+        let end = rawEnd + shift + (rawEnd < rawStart ? 24 * 60 : 0)
         guard end >= start else { return }
 
         // Shift every projected slot by the station's cumulative minutes
