@@ -23,3 +23,5 @@ CREATE TABLE IF NOT EXISTS announcements (
 
 CREATE INDEX IF NOT EXISTS idx_announcements_category
     ON announcements(category, sort_order);
+
+INSERT OR IGNORE INTO schema_version(version) VALUES (9);

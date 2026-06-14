@@ -6,3 +6,5 @@
 ALTER TABLE announcements ADD COLUMN title_en TEXT NOT NULL DEFAULT '';
 ALTER TABLE announcements ADD COLUMN summary_en TEXT NOT NULL DEFAULT '';
 ALTER TABLE stasy_status  ADD COLUMN raw_message_en TEXT NOT NULL DEFAULT '';
+
+INSERT OR IGNORE INTO schema_version(version) VALUES (10);

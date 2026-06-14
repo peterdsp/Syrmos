@@ -23,3 +23,5 @@ CREATE INDEX IF NOT EXISTS idx_station_offsets_line_dir
 
 CREATE INDEX IF NOT EXISTS idx_station_offsets_station
     ON station_offsets(station_en, line_id);
+
+INSERT OR IGNORE INTO schema_version(version) VALUES (6);
