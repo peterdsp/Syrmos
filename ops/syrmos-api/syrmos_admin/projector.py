@@ -180,10 +180,15 @@ def _display_line_id(line_id: str) -> str:
 
 
 def _dedupe(rows: Iterable[Departure]) -> list[Departure]:
+    # Key by (lineId, directionKey, direction, time). serviceType is metadata,
+    # not identity: two overlapping bands (e.g. seeded saturday_overnight_24_7
+    # and scraper sat_24mmm) at the same minute represent ONE train, just
+    # labeled differently. Including direction keeps M3 city (DPL) and
+    # M3_AIR (Airport) trains separate at the same minute.
     seen: set[tuple[str, str, str, str]] = set()
     out: list[Departure] = []
     for row in rows:
-        key = (row.lineId, row.directionKey, row.time, row.serviceType)
+        key = (row.lineId, row.directionKey, row.direction, row.time)
         if key in seen:
             continue
         seen.add(key)
