@@ -5,7 +5,9 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-private val athensTimeZone = TimeZone.of("Europe/Athens")
+// Lazy because wasmJs lacks the full IANA tzdb at class-load time and would
+// throw IllegalTimeZoneException eagerly, killing tests that don't touch tz.
+private val athensTimeZone by lazy { TimeZone.of("Europe/Athens") }
 
 fun currentAthensTime(): LocalTime {
     val now = Clock.System.now()

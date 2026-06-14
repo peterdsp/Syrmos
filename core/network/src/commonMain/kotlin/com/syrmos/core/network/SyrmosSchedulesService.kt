@@ -3,6 +3,7 @@ package com.syrmos.core.network
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
@@ -77,6 +78,33 @@ class SyrmosSchedulesService(
         val payload = runCatching {
             val response = httpClient.get(FARES_URL)
             json.decodeFromString<FaresPayload>(response.bodyAsText())
+        }.getOrNull()
+        emit(payload)
+    }
+
+    /**
+     * Calls the API-side projector that returns real HH:MM departures for a
+     * station. Callers fall back to bundled schedules when this returns null.
+     */
+    fun fetchProjectedDepartures(
+        stationId: String,
+        lineIds: List<String>,
+        limit: Int = 8,
+        direction: String? = null,
+    ): Flow<ProjectedDeparturesPayload?> = flow {
+        val payload = runCatching {
+            val response = httpClient.get(DEPARTURES_NEXT_URL) {
+                parameter("stationId", stationId)
+                parameter("lineIds", lineIds.joinToString(","))
+                parameter("limit", limit)
+                if (!direction.isNullOrBlank()) {
+                    parameter("direction", direction)
+                }
+            }
+            if (response.status != HttpStatusCode.OK) {
+                return@runCatching null
+            }
+            json.decodeFromString<ProjectedDeparturesPayload>(response.bodyAsText())
         }.getOrNull()
         emit(payload)
     }
@@ -188,11 +216,32 @@ class SyrmosSchedulesService(
         val el: String,
     )
 
+    @Serializable
+    data class ProjectedDeparturesPayload(
+        @SerialName("stationId") val stationId: String = "",
+        @SerialName("lineIds") val lineIds: List<String> = emptyList(),
+        val direction: String? = null,
+        @SerialName("generatedAt") val generatedAt: String = "",
+        val departures: List<ProjectedDeparture> = emptyList(),
+    )
+
+    @Serializable
+    data class ProjectedDeparture(
+        @SerialName("lineId") val lineId: String = "",
+        val line: String = "",
+        @SerialName("directionKey") val directionKey: String = "",
+        val direction: String = "",
+        val time: String = "",
+        val minutesAway: Int = 0,
+        val serviceType: String = "",
+    )
+
     private companion object {
         private const val BASE = "https://api-syrmos.peterdsp.dev"
         private const val MANIFEST_URL = "$BASE/api/schedules/manifest"
         private const val LINE_URL_PREFIX = "$BASE/api/schedules/"
         private const val STATION_OFFSETS_URL = "$BASE/api/station-offsets"
         private const val FARES_URL = "$BASE/api/fares"
+        private const val DEPARTURES_NEXT_URL = "$BASE/api/departures/next"
     }
 }

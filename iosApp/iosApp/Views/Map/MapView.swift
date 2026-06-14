@@ -439,30 +439,54 @@ struct StationSheetView: View {
     }
 
     private func reloadDepartures() {
-        // Use the real ScheduleProjector instead of sampleDepartures so the
-        // map sheet honors operator open/close rules, frequency bands and
-        // STASY station offsets. Has to be one call PER (stationId,
-        // lineId) pair because at interchanges (Syntagma, Monastiraki,
-        // Piraeus) each line has its own physical station id and the
-        // projector reads /api/station-offsets keyed by (lineId,
-        // stationId). Passing a cluster's first station id to every line
-        // would zero-out the per-line offsets and show origin-terminal
-        // times at the interchange.
+        let fallback = localDepartures()
+        if departures.isEmpty {
+            departures = fallback
+        }
+        Task { @MainActor in
+            var collected: [Departure] = []
+            for lineId in station.lineIds {
+                let stationId = station.stationIdByLineId[lineId]
+                    ?? station.stationIds.first
+                    ?? station.id
+                if let remote = await SyrmosDeparturesService.nextDepartures(
+                    for: stationId,
+                    lineIds: [lineId],
+                    limit: 8
+                ), !remote.isEmpty {
+                    collected.append(contentsOf: remote)
+                } else {
+                    collected.append(contentsOf: localDepartures(for: lineId, stationId: stationId))
+                }
+            }
+            let next = collected
+                .sorted { $0.minutesAway < $1.minutesAway }
+                .prefix(8)
+                .map { $0 }
+            departures = next.isEmpty ? fallback : next
+        }
+    }
+
+    private func localDepartures() -> [Departure] {
         var collected: [Departure] = []
         for lineId in station.lineIds {
             let stationId = station.stationIdByLineId[lineId]
                 ?? station.stationIds.first
                 ?? station.id
-            collected.append(contentsOf: ScheduleProjector.nextDepartures(
-                for: stationId,
-                lineIds: [lineId],
-                limit: 8
-            ))
+            collected.append(contentsOf: localDepartures(for: lineId, stationId: stationId))
         }
-        departures = collected
+        return collected
             .sorted { $0.minutesAway < $1.minutesAway }
             .prefix(8)
             .map { $0 }
+    }
+
+    private func localDepartures(for lineId: String, stationId: String) -> [Departure] {
+        ScheduleProjector.nextDepartures(
+            for: stationId,
+            lineIds: [lineId],
+            limit: 8
+        )
     }
 
     private var header: some View {

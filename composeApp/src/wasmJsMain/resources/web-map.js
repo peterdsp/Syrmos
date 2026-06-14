@@ -225,10 +225,14 @@
         zoomControl: false,
         attributionControl: true,
     }).setView(ATHENS_CENTER, INITIAL_ZOOM);
+    // Drop Leaflet's default "Leaflet | " prefix; the OSM credit alone meets
+    // the tile provider's attribution requirement and avoids the cream-coloured
+    // strip stretching across the bottom of the viewport on mobile.
+    map.attributionControl.setPrefix("");
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors",
+        attribution: "&copy; OpenStreetMap",
     }).addTo(map);
 
     // Pull live line-drawing settings (color, weight, dash) from the API so
