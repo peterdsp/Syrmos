@@ -67,6 +67,7 @@ android {
             "NullSafeMutableLiveData",
             "RememberInComposition",
             "FrequentlyChangingValue",
+            "AutoboxingStateCreation",
         )
     }
     bundle {

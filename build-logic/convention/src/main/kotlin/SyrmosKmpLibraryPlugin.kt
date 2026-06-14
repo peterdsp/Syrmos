@@ -43,6 +43,7 @@ class SyrmosKmpLibraryPlugin : Plugin<Project> {
                     "NullSafeMutableLiveData",
                     "RememberInComposition",
                     "FrequentlyChangingValue",
+                    "AutoboxingStateCreation",
                 )
             }
         }
