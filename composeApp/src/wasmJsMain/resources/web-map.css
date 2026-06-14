@@ -83,11 +83,11 @@ body {
         display: flex !important;
         left: auto !important;
         right: 16px !important;
-        /* Match the visual top edge of the left panel — the left aside
-           sits visually below the App Store / Google Play row inside
-           the floating top bar; the right side of that bar is empty,
-           so the right aside has to be pushed down explicitly. */
-        top: 200px !important;
+        /* Use the same top as the left aside so the gap to the floating
+           top bar matches on both sides. Both panels sit at top: 78px;
+           the floating bar (z-index 1000, same as panels but earlier in
+           the DOM) covers their first ~140px, so visually both start
+           right below the bar. */
     }
 }
 
