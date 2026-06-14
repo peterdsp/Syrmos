@@ -1277,17 +1277,6 @@
         requestAnimationFrame(animateTrains);
     }
 
-    function smoothEase(t) {
-        if (t < 0.15) {
-            const x = t / 0.15;
-            return x * x * 0.15;
-        } else if (t > 0.85) {
-            const x = (t - 0.85) / 0.15;
-            return 0.85 + (1 - (1 - x) * (1 - x)) * 0.15;
-        }
-        return t;
-    }
-
     // Snapshot of `/api/live-positions` + `/api/station-offsets`. The map
     // dot's position for every metro / tram train is derived from these,
     // not from a haversine guess, so the moving icon stays locked to the
@@ -1394,109 +1383,6 @@
         return result;
     }
 
-    function simulateAllTrains_legacy_DEAD() {
-        const now = new Date();
-        const athensNow = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Athens" }));
-        const fractionalSeconds = athensNow.getSeconds() + (now.getMilliseconds() / 1000);
-        let nowMins = athensNow.getHours() * 60 + athensNow.getMinutes() + fractionalSeconds / 60;
-        if (nowMins < 300) nowMins += 1440;
-        if (nowMins < 300 || nowMins > 1500) return [];
-
-        const TRAVEL = { metro: 1.8, tram: 2.2 };
-        const DWELL = { metro: 0.5, tram: 0.4 };
-        const DWELL_TERMINAL = 1.0;
-        const FREQ = { M1: 5, M2: 4, M3: 5, T6: 9, T7: 12 };
-        const result = [];
-
-        for (const line of lines) {
-            if (line.type === "suburban") continue;
-            const orderedStations = lineStations.get(line.id) || [];
-            if (orderedStations.length < 2) continue;
-
-            const travelMins = TRAVEL[line.type] || 2;
-            const dwellMins = DWELL[line.type] || 0.5;
-            const freq = FREQ[line.id] || 7;
-
-            for (const direction of ["outbound", "inbound"]) {
-                const stns = direction === "outbound" ? orderedStations : [...orderedStations].reverse();
-
-                let totalDist = 0;
-                const segDists = [];
-                for (let i = 0; i < stns.length - 1; i++) {
-                    const d = distanceMeters(stns[i].latitude, stns[i].longitude, stns[i + 1].latitude, stns[i + 1].longitude);
-                    segDists.push(d);
-                    totalDist += d;
-                }
-                const avgDist = totalDist / Math.max(segDists.length, 1);
-                const totalTravelMins = travelMins * (stns.length - 1);
-
-                const timings = [];
-                let cumulative = 0;
-                for (let i = 0; i < stns.length; i++) {
-                    const arrival = cumulative;
-                    const dwell = (i === 0 || i === stns.length - 1) ? DWELL_TERMINAL : dwellMins;
-                    timings.push({ station: stns[i], arrival, departure: arrival + dwell });
-                    if (i < stns.length - 1) {
-                        const segTravel = totalTravelMins * (segDists[i] / totalDist);
-                        cumulative = arrival + dwell + segTravel;
-                    }
-                }
-
-                const tripDuration = timings[timings.length - 1].arrival;
-                const offset = direction === "inbound" ? freq / 2 : 0;
-                let departureTime = 300 + offset;
-                let trainIdx = 0;
-
-                while (departureTime <= 1500) {
-                    const elapsed = nowMins - departureTime;
-                    if (elapsed >= 0 && elapsed <= tripDuration) {
-                        let segIdx = 0;
-                        for (let i = timings.length - 1; i >= 0; i--) {
-                            if (timings[i].departure <= elapsed) { segIdx = i; break; }
-                        }
-                        segIdx = Math.min(segIdx, timings.length - 2);
-                        const from = timings[segIdx];
-                        const to = timings[segIdx + 1];
-
-                        let lat, lng;
-                        if (elapsed < from.departure) {
-                            lat = from.station.latitude;
-                            lng = from.station.longitude;
-                        } else {
-                            const travelStart = from.departure;
-                            const travelEnd = to.arrival;
-                            const travelDuration = travelEnd - travelStart;
-                            const rawFrac = travelDuration > 0
-                                ? Math.min(Math.max((elapsed - travelStart) / travelDuration, 0), 1)
-                                : 0;
-                            const frac = smoothEase(rawFrac);
-                            lat = from.station.latitude + (to.station.latitude - from.station.latitude) * frac;
-                            lng = from.station.longitude + (to.station.longitude - from.station.longitude) * frac;
-                        }
-
-                        const isAirport = line.id === "M3" && direction === "outbound" && segIdx >= orderedStations.length - 6;
-                        const dest = direction === "outbound" ? line.terminal_b : line.terminal_a;
-
-                        result.push({
-                            id: `${line.id}_${direction}_${trainIdx}`,
-                            line,
-                            direction,
-                            destination: dest,
-                            fromStation: from.station.name,
-                            toStation: to.station.name,
-                            lat,
-                            lng,
-                            isAirport,
-                            progress: elapsed / tripDuration,
-                        });
-                    }
-                    departureTime += freq;
-                    trainIdx++;
-                }
-            }
-        }
-        return result;
-    }
 
     function trainMarkerIcon(train) {
         const zoom = map.getZoom();
