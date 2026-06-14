@@ -17,6 +17,9 @@ import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.RailwayGovLiveTrackerService
+import com.syrmos.core.network.SyrmosLivePositionsService
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -58,14 +61,17 @@ class MapViewModel(
     private val getNextDepartures: GetNextDeparturesUseCase,
     private val transitPatternRepository: TransitPatternRepositoryImpl,
     private val liveTrackerService: RailwayGovLiveTrackerService,
+    private val livePositionsService: SyrmosLivePositionsService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+    private var livePositionsSnapshot: LivePositionsSnapshot? = null
 
     init {
         loadMapData()
         observeLiveTrains()
+        pollLivePositions()
         runTrainSimulation()
     }
 
@@ -146,10 +152,41 @@ class MapViewModel(
             while (isActive) {
                 val state = _uiState.value
                 if (state.lines.isNotEmpty() && state.lineStations.isNotEmpty()) {
-                    val simulated = simulateTrains(state.lines, state.lineStations)
+                    val simulated = simulateTrains(
+                        state.lines,
+                        state.lineStations,
+                        livePositionsSnapshot,
+                    )
                     _uiState.update { it.copy(simulatedTrains = simulated) }
                 }
                 delay(1_000)
+            }
+        }
+    }
+
+    private fun pollLivePositions() {
+        scope.launch {
+            val targetLines = listOf("M1", "M2", "M3", "M3_AIR", "T6", "T7")
+            // Offsets are essentially static; pull once at start and reuse.
+            val offsetsResponse = livePositionsService.fetchStationOffsets()
+            val offsetsMap = offsetsResponse?.lines
+                ?.associate { (it.lineId to it.direction) to it.stops.sortedBy { s -> s.stopSequence } }
+                .orEmpty()
+            while (isActive) {
+                val active = livePositionsService.fetchActiveTrains(targetLines)
+                if (active != null) {
+                    val generatedAtEpoch = runCatching {
+                        Instant.parse(active.generatedAt).epochSeconds
+                    }.getOrElse {
+                        kotlinx.datetime.Clock.System.now().epochSeconds
+                    }
+                    livePositionsSnapshot = LivePositionsSnapshot(
+                        trains = active.trains,
+                        offsets = offsetsMap,
+                        generatedAtEpochSeconds = generatedAtEpoch,
+                    )
+                }
+                delay(15_000)
             }
         }
     }
