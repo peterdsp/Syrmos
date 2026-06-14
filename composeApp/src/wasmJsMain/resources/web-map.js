@@ -647,7 +647,7 @@
                 if (!result[i].direction) {
                     // Both-direction lines: alternate between terminalA / terminalB for the next two
                     const slot = result[i].timeMinutes - (result[before]?.timeMinutes ?? 0);
-                    result[i].direction = (i - before) % 2 === 0 ? line?.terminal_b || "" : line?.terminal_a || "";
+                    result[i].direction = (i - before) % 2 === 0 ? line?.terminalB || "" : line?.terminalA || "";
                 }
             }
         }
@@ -1372,7 +1372,7 @@
 
             const lat = fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac;
             const lng = fromStation.longitude + (toStation.longitude - fromStation.longitude) * frac;
-            const dest = raw.directionKey === "outbound" ? line.terminal_b : line.terminal_a;
+            const dest = raw.directionKey === "outbound" ? line.terminalB : line.terminalA;
 
             result.push({
                 id: `${raw.lineId}_${raw.directionKey}_${Math.round(raw.originDepartureMinute)}`,
