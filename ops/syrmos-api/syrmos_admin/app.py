@@ -10,13 +10,15 @@ Run: uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8091
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import datetime as _dt
 from contextlib import contextmanager
+from html import escape as _html_escape
 from pathlib import Path
 from typing import Any, Iterator
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from . import db as dbmod
@@ -1076,6 +1078,258 @@ def _parse_projector_now(value: str | None) -> _dt.datetime | None:
         return _dt.datetime.fromisoformat(normalised)
     except ValueError:
         raise HTTPException(status_code=400, detail="now must be ISO-8601") from None
+
+
+# --- contact-developer feature ---
+# Apps post a free-text message (optional image / video / file attachment)
+# from the Settings screen. The admin reads them in the /admin/contact
+# panel below and optionally gets an email nudge per arrival.
+CONTACT_UPLOAD_DIR = pathlib.Path(
+    os.environ.get("SYRMOS_CONTACT_UPLOAD_DIR", "/home/peterdsp/syrmos-api/uploads/contact")
+)
+MAX_CONTACT_ATTACHMENT_BYTES = 15 * 1024 * 1024  # 15 MB
+MAX_CONTACT_MESSAGE_CHARS = 8000
+
+
+def _send_contact_email_nudge(message_id: int, platform: str, subject: str, body_preview: str) -> None:
+    """Best-effort email notification to the admin.
+
+    Configured via env vars; silently a no-op if SMTP credentials aren't
+    set on the Pi. Never raises — the contact submission itself must not
+    fail just because the mail relay is down.
+    """
+    smtp_host = os.environ.get("SYRMOS_SMTP_HOST")
+    smtp_user = os.environ.get("SYRMOS_SMTP_USER")
+    smtp_pass = os.environ.get("SYRMOS_SMTP_PASS")
+    admin_email = os.environ.get("SYRMOS_CONTACT_NOTIFY_EMAIL", "info@peterdsp.dev")
+    if not (smtp_host and smtp_user and smtp_pass and admin_email):
+        return
+    try:
+        import smtplib
+        from email.message import EmailMessage
+        msg = EmailMessage()
+        msg["From"] = smtp_user
+        msg["To"] = admin_email
+        msg["Subject"] = f"[Syrmos #{message_id}] {platform}: {subject or 'New message'}"
+        msg.set_content(
+            f"New message from a Syrmos {platform} user.\n\n"
+            f"{body_preview[:1500]}\n\n"
+            f"Open the admin panel: https://api-syrmos.peterdsp.dev/admin/contact/{message_id}"
+        )
+        port = int(os.environ.get("SYRMOS_SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, port, timeout=8) as s:
+            s.starttls()
+            s.login(smtp_user, smtp_pass)
+            s.send_message(msg)
+    except Exception:
+        pass
+
+
+@app.post("/api/contact")
+async def api_contact_submit(
+    platform: str = Form(...),
+    message: str = Form(...),
+    app_version: str | None = Form(None),
+    locale: str | None = Form(None),
+    user_agent: str | None = Form(None),
+    category: str | None = Form("other"),
+    subject: str | None = Form(None),
+    contact_email: str | None = Form(None),
+    attachment: UploadFile | None = File(None),
+) -> JSONResponse:
+    """User-submitted feedback / bug report / feature request.
+
+    Accepts multipart/form-data so the apps can attach a screenshot or
+    short video. Returns the assigned message id so the client can show
+    "Sent (#42)" without needing to re-fetch.
+    """
+    platform = (platform or "").strip().lower()
+    if platform not in {"ios", "android", "web", "other"}:
+        raise HTTPException(status_code=400, detail="platform must be ios|android|web|other")
+    message = (message or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="message required")
+    if len(message) > MAX_CONTACT_MESSAGE_CHARS:
+        raise HTTPException(status_code=400, detail="message too long")
+    category = (category or "other").strip().lower()
+    if category not in {"bug", "feature", "question", "other"}:
+        category = "other"
+
+    attachment_path_rel: str | None = None
+    attachment_mime: str | None = None
+    attachment_size: int | None = None
+    if attachment is not None and attachment.filename:
+        contents = await attachment.read()
+        if len(contents) > MAX_CONTACT_ATTACHMENT_BYTES:
+            raise HTTPException(status_code=413, detail="attachment too large")
+        attachment_size = len(contents)
+        attachment_mime = attachment.content_type or "application/octet-stream"
+        suffix = pathlib.Path(attachment.filename).suffix[:8]
+        CONTACT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        import secrets
+        fname = f"{_dt.datetime.now(_dt.UTC).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(6)}{suffix}"
+        (CONTACT_UPLOAD_DIR / fname).write_bytes(contents)
+        attachment_path_rel = fname
+
+    with dbmod.connect() as conn:
+        dbmod.migrate(conn)
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO contact_messages"
+            "(platform, app_version, locale, user_agent, category, subject, message,"
+            " contact_email, attachment_path, attachment_mime, attachment_size)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                platform, app_version, locale, user_agent, category, subject, message,
+                contact_email, attachment_path_rel, attachment_mime, attachment_size,
+            ),
+        )
+        message_id = cur.lastrowid
+
+    _send_contact_email_nudge(
+        message_id=int(message_id),
+        platform=platform,
+        subject=subject or category,
+        body_preview=message,
+    )
+    return JSONResponse({"id": message_id, "ok": True})
+
+
+def _contact_status_badge(status: str) -> str:
+    color = {
+        "new": "#0072CE",
+        "read": "#7a8593",
+        "replied": "#22a35a",
+        "spam": "#b32a2a",
+    }.get(status, "#7a8593")
+    return (
+        f"<span style='display:inline-block;padding:2px 8px;border-radius:8px;"
+        f"background:{color};color:#fff;font-size:11px;'>{_html_escape(status)}</span>"
+    )
+
+
+@app.get("/contact", response_class=HTMLResponse)
+def admin_contact_list(_: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, created_at, platform, app_version, category, subject,"
+            " substr(message, 1, 200) AS preview, contact_email, attachment_path,"
+            " status FROM contact_messages ORDER BY created_at DESC LIMIT 500"
+        ).fetchall()
+    new_count = sum(1 for r in rows if r["status"] == "new")
+    body_parts = [
+        f"<h2 style='margin-top:0;'>Inbox <small>({new_count} new)</small></h2>",
+        "<table class='data-table'><thead><tr>"
+        "<th>#</th><th>When</th><th>Platform</th><th>Category</th>"
+        "<th>Subject / preview</th><th>Attachment</th><th>Status</th>"
+        "</tr></thead><tbody>",
+    ]
+    for r in rows:
+        att = "📎" if r["attachment_path"] else ""
+        subj = r["subject"] or ""
+        preview = r["preview"] or ""
+        body_parts.append(
+            f"<tr><td><a href='{ADMIN_PREFIX}/contact/{r['id']}'>{r['id']}</a></td>"
+            f"<td>{_html_escape(r['created_at'])}</td>"
+            f"<td>{_html_escape(r['platform'])} {_html_escape(r['app_version'] or '')}</td>"
+            f"<td>{_html_escape(r['category'] or '')}</td>"
+            f"<td><strong>{_html_escape(subj)}</strong><br>"
+            f"<span style='color:#7a8593;'>{_html_escape(preview)}</span></td>"
+            f"<td>{att}</td>"
+            f"<td>{_contact_status_badge(r['status'])}</td></tr>"
+        )
+    body_parts.append("</tbody></table>")
+    if not rows:
+        body_parts.append("<p>No messages yet.</p>")
+    return page(title=f"Inbox ({new_count})", body="".join(body_parts))
+
+
+@app.get("/contact/{message_id}", response_class=HTMLResponse)
+def admin_contact_detail(message_id: int, _: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM contact_messages WHERE id=?", (message_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="not found")
+        if row["status"] == "new":
+            conn.execute(
+                "UPDATE contact_messages SET status='read' WHERE id=?", (message_id,),
+            )
+    att_html = ""
+    if row["attachment_path"]:
+        mime = row["attachment_mime"] or ""
+        href = f"{ADMIN_PREFIX}/contact/{message_id}/attachment"
+        if mime.startswith("image/"):
+            att_html = f"<img src='{href}' style='max-width:520px;border-radius:12px;'>"
+        elif mime.startswith("video/"):
+            att_html = f"<video src='{href}' style='max-width:520px;border-radius:12px;' controls></video>"
+        else:
+            att_html = f"<a href='{href}'>Download attachment ({mime}, {row['attachment_size']} bytes)</a>"
+    reply_btn = ""
+    if row["contact_email"]:
+        reply_btn = (
+            f"<a class='button' href='mailto:{_html_escape(row['contact_email'])}"
+            f"?subject=Re%3A%20Syrmos%20%23{message_id}'>Reply via email</a>"
+        )
+    status_buttons = "".join(
+        f"<form method='post' action='{ADMIN_PREFIX}/contact/{message_id}/status' style='display:inline'>"
+        f"<input type='hidden' name='status' value='{s}'>"
+        f"<button class='button' type='submit'>{s.title()}</button></form>"
+        for s in ("read", "replied", "spam", "new")
+    )
+    body = f"""
+<h2 style='margin-top:0;'>Message #{message_id} {_contact_status_badge(row['status'])}</h2>
+<p><a href='{ADMIN_PREFIX}/contact'>← Back to inbox</a></p>
+<table class='data-table'><tbody>
+<tr><th>When</th><td>{_html_escape(row['created_at'])}</td></tr>
+<tr><th>Platform</th><td>{_html_escape(row['platform'])} {_html_escape(row['app_version'] or '')}</td></tr>
+<tr><th>Locale</th><td>{_html_escape(row['locale'] or '')}</td></tr>
+<tr><th>User-Agent</th><td>{_html_escape(row['user_agent'] or '')}</td></tr>
+<tr><th>Category</th><td>{_html_escape(row['category'] or '')}</td></tr>
+<tr><th>Subject</th><td>{_html_escape(row['subject'] or '')}</td></tr>
+<tr><th>Reply-to</th><td>{_html_escape(row['contact_email'] or '')}</td></tr>
+</tbody></table>
+<h3>Message</h3>
+<pre style='white-space:pre-wrap;background:#f7fafc;padding:14px;border-radius:12px;'>{_html_escape(row['message'])}</pre>
+{att_html}
+<div style='margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;'>{reply_btn}{status_buttons}</div>
+"""
+    return page(title=f"Message #{message_id}", body=body)
+
+
+@app.get("/contact/{message_id}/attachment")
+def admin_contact_attachment(message_id: int, _: str = Depends(auth)):
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT attachment_path, attachment_mime FROM contact_messages WHERE id=?",
+            (message_id,),
+        ).fetchone()
+        if not row or not row["attachment_path"]:
+            raise HTTPException(status_code=404, detail="no attachment")
+    path = CONTACT_UPLOAD_DIR / row["attachment_path"]
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="file missing")
+    from fastapi.responses import FileResponse
+    return FileResponse(str(path), media_type=row["attachment_mime"] or "application/octet-stream")
+
+
+@app.post("/contact/{message_id}/status")
+def admin_contact_set_status(
+    message_id: int,
+    status: str = Form(...),
+    _: str = Depends(auth),
+):
+    if status not in {"new", "read", "replied", "spam"}:
+        raise HTTPException(status_code=400, detail="bad status")
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE contact_messages SET status=?, replied_at=CASE WHEN ?='replied'"
+            " THEN strftime('%Y-%m-%dT%H:%M:%SZ','now') ELSE replied_at END"
+            " WHERE id=?",
+            (status, status, message_id),
+        )
+    return RedirectResponse(url=f"{ADMIN_PREFIX}/contact/{message_id}", status_code=303)
 
 
 @app.get("/api/live-positions")
