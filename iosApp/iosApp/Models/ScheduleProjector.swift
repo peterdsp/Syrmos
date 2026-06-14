@@ -197,12 +197,28 @@ enum ScheduleProjector {
         limit: Int,
         into out: inout [Departure]
     ) {
-        // Descriptors to try: today's day-type at offset 0, plus yesterday's at
-        // offset -24h if we're in the early-morning tail of the previous service day.
-        var descriptors: [(String, Int)] = [(dayType(for: weekday, holiday: holidayDayType), 0)]
-        if nowMinutes < 4 * 60 {
+        // Descriptors to try, in order:
+        //  1. today's day-type, no shift.
+        //  2. yesterday's day-type with -24h shift — for bands that wrap
+        //     past midnight (e.g. 'sat 22:00 -> 00:20' covers Sunday 00:15).
+        //  3. yesterday's day-type with no shift — for bands whose
+        //     timeStart is already in today's clock domain because the
+        //     operator tags them under yesterday's service-day. OASA does
+        //     this for Saturday's 24/7 overnight: 'sat 00:30 -> 05:30
+        //     saturday_overnight_24_7' literally means Sunday clock
+        //     00:30-05:30 inside Saturday's service window. Without this
+        //     descriptor, Sunday 03:33 finds nothing because the regular
+        //     Sunday rule isn't open yet (05:30 -> 00:30) and Saturday's
+        //     shifted bands all sit at negative minutes.
+        let todayDayType = dayType(for: weekday, holiday: holidayDayType)
+        var descriptors: [(String, Int)] = [(todayDayType, 0)]
+        if nowMinutes < 6 * 60 {
             let yesterdayWeekday = weekday == 1 ? 7 : weekday - 1
-            descriptors.append((dayType(for: yesterdayWeekday, holiday: nil), -24 * 60))
+            let yesterdayDayType = dayType(for: yesterdayWeekday, holiday: nil)
+            descriptors.append((yesterdayDayType, -24 * 60))
+            if yesterdayDayType != todayDayType {
+                descriptors.append((yesterdayDayType, 0))
+            }
         }
 
         for (dt, shift) in descriptors {

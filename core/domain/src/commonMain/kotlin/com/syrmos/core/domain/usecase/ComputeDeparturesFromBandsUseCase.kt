@@ -191,11 +191,26 @@ class ComputeDeparturesFromBandsUseCase(
         offsetMinutes: Int,
         out: MutableList<UpcomingDeparture>,
     ) {
+        // Descriptors to try, in order:
+        //  1. today's day-type, no shift.
+        //  2. yesterday's day-type with -24h shift — for bands that wrap
+        //     past midnight (e.g. 'sat 22:00 -> 00:20' covers Sunday 00:15).
+        //  3. yesterday's day-type with no shift — for bands whose
+        //     timeStart is already in today's clock domain because the
+        //     operator tags them under yesterday's service-day. OASA does
+        //     this for Saturday's 24/7 overnight: 'sat 00:30 -> 05:30
+        //     saturday_overnight_24_7' literally means Sunday clock
+        //     00:30-05:30 inside Saturday's service window.
+        val todayDayType = dayTypeFor(today, holidayDayType)
         val descriptors = mutableListOf<Pair<String, Int>>().apply {
-            add(dayTypeFor(today, holidayDayType) to 0)
-            if (nowMinutes < 4 * 60) {
+            add(todayDayType to 0)
+            if (nowMinutes < 6 * 60) {
                 val y = today.minusOneDay()
-                add(dayTypeFor(y, holidayDayType = null) to -24 * 60)
+                val yesterdayDayType = dayTypeFor(y, holidayDayType = null)
+                add(yesterdayDayType to -24 * 60)
+                if (yesterdayDayType != todayDayType) {
+                    add(yesterdayDayType to 0)
+                }
             }
         }
 
