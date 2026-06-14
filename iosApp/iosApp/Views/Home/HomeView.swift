@@ -69,7 +69,18 @@ struct HomeView: View {
                 loc.language == .greek ? "Νέα δεδομένα" : "New data available",
                 isPresented: $showFreshDataAlert
             ) {
-                Button(loc.language == .greek ? "Εντάξει" : "Got it") {
+                // Primary action: re-pull /api/* so the user gets even the
+                // latest delta that may have shipped between cold start and
+                // this prompt. The bundles are already on disk so this is a
+                // small etag-validated request; in the common case it's a
+                // 304 and exits in under a second.
+                Button(loc.language == .greek ? "Ενημέρωση τώρα" : "Update now") {
+                    Task {
+                        await schedules.refresh()
+                        schedules.ackFreshData()
+                    }
+                }
+                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {
                     schedules.ackFreshData()
                 }
             } message: {
