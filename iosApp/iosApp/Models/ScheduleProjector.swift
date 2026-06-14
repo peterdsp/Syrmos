@@ -210,18 +210,28 @@ enum ScheduleProjector {
         //     descriptor, Sunday 03:33 finds nothing because the regular
         //     Sunday rule isn't open yet (05:30 -> 00:30) and Saturday's
         //     shifted bands all sit at negative minutes.
+        // Yesterday's "next-day extension" bands have clock times in the
+        // small-hours of today (e.g. 'sat 00:30 -> 05:30 saturday_overnight').
+        // We only want THOSE under shift=0, not regular daytime bands of
+        // yesterday like 'sat 05:30 -> 10:00'. Cutoff at 05:00 because OASA's
+        // overnight extensions all end by 05:30 and normal Saturday morning
+        // bands start at 05:30 onwards.
+        let nextDayExtensionCutoffMinutes = 5 * 60
         let todayDayType = dayType(for: weekday, holiday: holidayDayType)
-        var descriptors: [(String, Int)] = [(todayDayType, 0)]
+        struct Descriptor { let dt: String; let shift: Int; let nextDayOnly: Bool }
+        var descriptors: [Descriptor] = [Descriptor(dt: todayDayType, shift: 0, nextDayOnly: false)]
         if nowMinutes < 6 * 60 {
             let yesterdayWeekday = weekday == 1 ? 7 : weekday - 1
             let yesterdayDayType = dayType(for: yesterdayWeekday, holiday: nil)
-            descriptors.append((yesterdayDayType, -24 * 60))
+            descriptors.append(Descriptor(dt: yesterdayDayType, shift: -24 * 60, nextDayOnly: false))
             if yesterdayDayType != todayDayType {
-                descriptors.append((yesterdayDayType, 0))
+                descriptors.append(Descriptor(dt: yesterdayDayType, shift: 0, nextDayOnly: true))
             }
         }
 
-        for (dt, shift) in descriptors {
+        for descriptor in descriptors {
+            let dt = descriptor.dt
+            let shift = descriptor.shift
             // Honor schedule_rules. If the line has no rule for this day type
             // OR the current time falls outside [open, close], skip — the line
             // is closed and shouldn't emit any departure (this is the bug that
@@ -236,7 +246,20 @@ enum ScheduleProjector {
             }
 
             let bands = bundle.bands
-                .filter { $0.dayType == dt }
+                .filter { band in
+                    guard band.dayType == dt else { return false }
+                    // Under the next-day-extension descriptor, only consider
+                    // bands whose clock window lies in early morning. Skip
+                    // yesterday's actual daytime bands (05:30+) which would
+                    // otherwise emit phantom slots like 'T6 in 110 min at
+                    // 05:32' on Sunday 03:43 — that's literally Saturday
+                    // 05:30, not Sunday's first T6.
+                    if descriptor.nextDayOnly {
+                        guard let rs = minutesOfDay(band.timeStart) else { return false }
+                        return rs < nextDayExtensionCutoffMinutes
+                    }
+                    return true
+                }
                 .sorted { (a, b) in
                     let am = minutesOfDay(a.timeStart) ?? 0
                     let bm = minutesOfDay(b.timeStart) ?? 0
