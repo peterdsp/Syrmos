@@ -34,12 +34,20 @@ def current_version(conn: sqlite3.Connection) -> int:
 def migrate(conn: sqlite3.Connection) -> int:
     applied = current_version(conn)
     files = sorted(MIGRATIONS_DIR.glob("[0-9]*.sql"))
-    for path in files:
-        n = int(path.stem.split("_", 1)[0])
-        if n <= applied:
-            continue
-        sql = path.read_text(encoding="utf-8")
-        conn.executescript(sql)
+    # Seed inserts in later migrations (e.g. line_display) reference rows
+    # populated by importer scripts that run after migrate(), so FK enforcement
+    # has to be off for a fresh DB bootstrap. 0001 turns it back on via PRAGMA,
+    # and each executescript() ends a transaction, so reset before every file.
+    try:
+        for path in files:
+            n = int(path.stem.split("_", 1)[0])
+            if n <= applied:
+                continue
+            conn.execute("PRAGMA foreign_keys = OFF")
+            sql = path.read_text(encoding="utf-8")
+            conn.executescript(sql)
+    finally:
+        conn.execute("PRAGMA foreign_keys = ON")
     return current_version(conn)
 
 

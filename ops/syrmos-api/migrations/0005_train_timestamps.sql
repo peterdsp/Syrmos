@@ -29,3 +29,5 @@ CREATE INDEX IF NOT EXISTS idx_train_timestamps_station
 
 CREATE INDEX IF NOT EXISTS idx_train_timestamps_train
     ON train_timestamps(train_no, line_id);
+
+INSERT OR IGNORE INTO schema_version(version) VALUES (5);
