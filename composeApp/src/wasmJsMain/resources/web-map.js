@@ -225,15 +225,21 @@
         zoomControl: false,
         attributionControl: true,
     }).setView(ATHENS_CENTER, INITIAL_ZOOM);
-    // Drop Leaflet's default "Leaflet | " prefix; the OSM credit alone meets
-    // the tile provider's attribution requirement and avoids the cream-coloured
-    // strip stretching across the bottom of the viewport on mobile.
-    map.attributionControl.setPrefix("");
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap",
     }).addTo(map);
+
+    // Drop Leaflet's default "Leaflet | " prefix once the map is fully
+    // wired up. Guarded because a Leaflet version mismatch could expose
+    // a different attribution-control shape, and we'd rather lose the
+    // prefix tweak than the whole map.
+    try {
+        if (map.attributionControl && typeof map.attributionControl.setPrefix === "function") {
+            map.attributionControl.setPrefix("");
+        }
+    } catch (_) {}
 
     // Pull live line-drawing settings (color, weight, dash) from the API so
     // a maintainer can rebrand a line from the admin without an app release.
@@ -1264,11 +1270,12 @@
         let lastMapUpdate = 0;
         function animateTrains(timestamp) {
             if (timestamp - lastMapUpdate > 250) {
-                const trains = simulateAllTrains();
-                renderSimulatedTrainsOnMap(trains);
+                let trains = [];
+                try { trains = simulateAllTrains(); } catch (_) { trains = []; }
+                try { renderSimulatedTrainsOnMap(trains); } catch (_) {}
                 lastMapUpdate = timestamp;
                 if (timestamp - lastPanelUpdate > 2000) {
-                    renderSimulatedTrainsInPanel(trains);
+                    try { renderSimulatedTrainsInPanel(trains); } catch (_) {}
                     lastPanelUpdate = timestamp;
                 }
             }
