@@ -764,7 +764,7 @@
                 <div class="departure-card">
                     <div class="departure-card__header">
                         ${iconHtml}
-                        <div>
+                        <div class="departure-card__text">
                             <div class="departure-card__line">
                                 <span>${departure.line?.name || lineId}</span>
                             </div>
