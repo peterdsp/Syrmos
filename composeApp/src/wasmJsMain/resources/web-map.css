@@ -577,6 +577,12 @@ body {
     gap: 12px;
 }
 
+.departure-card__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: left;
+}
+
 .departure-card__line {
     display: inline-flex;
     align-items: center;
