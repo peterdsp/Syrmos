@@ -194,6 +194,14 @@
         </div>
     </aside>
 
+    <!-- Mirror of the bottom sheet for wide desktop layouts. JS moves the
+         right-on-desktop cards into here on load + resize so they sit on
+         the right edge of the viewport with the map between the two
+         columns. Stays empty (and visually collapsed) on mobile. -->
+    <aside class="insight-panel insight-panel--right" id="insightPanelRight" aria-hidden="true">
+        <div class="panel-cards-wrap" id="insightPanelRightWrap"></div>
+    </aside>
+
     <section id="stationSheet" class="station-sheet station-sheet--hidden" aria-live="polite">
         <div class="sheet-handle"></div>
         <div class="sheet-header">

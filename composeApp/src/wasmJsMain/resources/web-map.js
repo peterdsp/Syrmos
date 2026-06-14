@@ -996,6 +996,7 @@
     updateNearbyPanel();
     connectLiveTrainStream();
     pollLivePositions();
+    setupRightRail();
     startTrainSimulation();
     setupPanelBehavior();
 
@@ -1269,6 +1270,23 @@
             }[match]))
             .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
     }
+    function setupRightRail() {
+        const leftWrap = document.querySelector("#insightPanel .panel-cards-wrap");
+        const rightWrap = document.getElementById("insightPanelRightWrap");
+        if (!leftWrap || !rightWrap) return;
+        const mq = window.matchMedia("(min-width: 980px)");
+        const cards = Array.from(leftWrap.querySelectorAll(".panel-card--right-on-desktop"));
+        function sync() {
+            const target = mq.matches ? rightWrap : leftWrap;
+            for (const card of cards) {
+                if (card.parentNode !== target) target.appendChild(card);
+            }
+        }
+        sync();
+        if (mq.addEventListener) mq.addEventListener("change", sync);
+        else mq.addListener(sync);
+    }
+
     function setupPanelBehavior() {
         const panel = document.getElementById("insightPanel");
         const peek = document.getElementById("panelPeek");
