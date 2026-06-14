@@ -1,5 +1,6 @@
 plugins {
     id("syrmos.feature")
+    id("syrmos.serialization")
 }
 
 kotlin {
@@ -22,6 +23,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.osmdroid.android)
+            implementation(libs.kotlinx.serialization.json)
         }
     }
 }

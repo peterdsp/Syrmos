@@ -22,3 +22,5 @@ CREATE INDEX IF NOT EXISTS idx_station_name_aliases_norm
 
 CREATE INDEX IF NOT EXISTS idx_station_name_aliases_id
     ON station_name_aliases(canonical_station_id);
+
+INSERT OR IGNORE INTO schema_version(version) VALUES (7);

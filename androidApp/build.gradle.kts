@@ -61,6 +61,13 @@ android {
     lint {
         abortOnError = false
         checkReleaseBuilds = false
+        // Detectors that crash with IncompatibleClassChangeError under the
+        // current Kotlin/AGP combo. Re-enable once the AGP fix ships.
+        disable += setOf(
+            "NullSafeMutableLiveData",
+            "RememberInComposition",
+            "FrequentlyChangingValue",
+        )
     }
     bundle {
         language { enableSplit = false }

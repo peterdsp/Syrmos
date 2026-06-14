@@ -23,3 +23,5 @@ CREATE TABLE IF NOT EXISTS fare_products (
 
 CREATE INDEX IF NOT EXISTS idx_fare_products_section
     ON fare_products(section, sort_order);
+
+INSERT OR IGNORE INTO schema_version(version) VALUES (8);
