@@ -72,15 +72,17 @@ body {
 
 /* Mirrored right-side panel for wide desktop layouts. Stays empty (and
    hidden) on mobile; JS reparents the .panel-card--right-on-desktop
-   cards into it once the viewport crosses the 980px breakpoint. */
-.insight-panel--right {
+   cards into it once the viewport crosses the 980px breakpoint.
+   !important on positioning because the base .insight-panel rule has
+   identical specificity and was winning the cascade in practice. */
+.insight-panel.insight-panel--right {
     display: none;
 }
 @media (min-width: 980px) {
-    .insight-panel--right {
-        display: flex;
-        left: auto;
-        right: 16px;
+    .insight-panel.insight-panel--right {
+        display: flex !important;
+        left: auto !important;
+        right: 16px !important;
     }
 }
 
