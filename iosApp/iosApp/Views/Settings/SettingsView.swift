@@ -96,14 +96,22 @@ struct SyrmosSettingsView: View {
                     Button {
                         showContactSheet = true
                     } label: {
-                        Label(
-                            loc.language == .greek ? "Επικοινωνία με τον προγραμματιστή" : "Contact developer",
-                            systemImage: "envelope"
-                        )
+                        HStack {
+                            Label(
+                                loc.language == .greek ? "Επικοινωνία με τον προγραμματιστή" : "Contact developer",
+                                systemImage: "envelope"
+                            )
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
                     }
-                    .foregroundStyle(.primary)
+                    .buttonStyle(.plain)
                 }
 
+                #if DEBUG
                 Section {
                     NavigationLink {
                         DiagnosticsView()
@@ -114,6 +122,7 @@ struct SyrmosSettingsView: View {
                         )
                     }
                 }
+                #endif
             }
                 .scrollContentBackground(.hidden)
             }
