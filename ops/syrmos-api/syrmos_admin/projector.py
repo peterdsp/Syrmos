@@ -415,6 +415,124 @@ def _project_band(
         added += 1
 
 
+def _total_travel_minutes(conn: sqlite3.Connection, line_id: str, direction: str) -> int:
+    """Maximum minutes_from_origin across all stations on this leg — i.e. the
+    travel time from the first station to the terminus. Used to decide whether
+    a train that already departed origin is still on the line."""
+    lookup_line_id = "M3" if line_id == "M3_AIR" else line_id
+    row = conn.execute(
+        "SELECT MAX(minutes_from_origin) AS m FROM station_offsets"
+        " WHERE line_id=? AND direction=?",
+        (lookup_line_id, direction.lower()),
+    ).fetchone()
+    return int(row[0]) if row and row[0] is not None else 0
+
+
+def active_trains(
+    conn: sqlite3.Connection,
+    line_ids: list[str],
+    *,
+    now: datetime | None = None,
+) -> list[dict]:
+    """Enumerate every train currently somewhere along its line.
+
+    A train is active when origin_depart_minute_of_clock <= now and the train
+    has not yet reached its terminus (elapsed_minutes <= total_travel_minutes).
+
+    The output is the minimum the clients need to place a moving dot on the
+    map: line + direction + when the train left its origin (absolute Athens
+    minute-of-clock relative to today's midnight, can be negative if the
+    train started yesterday) + the line's total travel time. The client
+    combines this with its bundled station_offsets + station coords to
+    interpolate the dot's position between fetches.
+    """
+    if now is None:
+        now = datetime.now(ATHENS)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=ATHENS)
+    else:
+        now = now.astimezone(ATHENS)
+
+    now_minutes = now.hour * 60 + now.minute + now.second / 60.0
+    weekday = (now.isoweekday() % 7) + 1
+    holiday = HOLIDAY_DAY_TYPE.get((now.month, now.day))
+
+    out: list[dict] = []
+    seen: set[tuple[str, str, int]] = set()
+
+    for line_id in line_ids:
+        bundle = _load_bundle(conn, line_id)
+        if bundle is None:
+            continue
+        streams = _direction_streams(line_id, conn)
+        display_line_id = _display_line_id(line_id)
+
+        today_dt = _day_type(weekday, holiday)
+        descriptors: list[tuple[str, int, bool]] = [(today_dt, 0, False)]
+        # A train that left origin yesterday and hasn't reached terminus yet
+        # still counts, so always include yesterday with -24h shift. The
+        # 6-hour gate the projector uses for next-departure queries is too
+        # narrow here.
+        yesterday_weekday = 7 if weekday == 1 else weekday - 1
+        yesterday_dt = _day_type(yesterday_weekday, None)
+        descriptors.append((yesterday_dt, -24 * 60, False))
+
+        for dt, shift, _next_day_only in descriptors:
+            rule = next((r for r in bundle["rules"] if r["dayType"] == dt), None)
+            if rule is None:
+                continue
+            if not rule["is247"]:
+                open_min = _minutes_of_day(rule["openTime"])
+                close_min = _minutes_of_day(rule["closeTime"])
+                if open_min is not None and close_min is not None:
+                    effective_close = close_min + 24 * 60 if close_min <= open_min else close_min
+                    effective_now = now_minutes + shift
+                    # Allow some slack on either side so a train that departed
+                    # right before service open or right after close is still
+                    # found when interpolating its tail end.
+                    if effective_now < open_min - 120 or effective_now > effective_close + 120:
+                        continue
+
+            bands = [b for b in bundle["bands"] if b["dayType"] == dt]
+            for band in bands:
+                raw_start = _minutes_of_day(band["timeStart"])
+                raw_end = _minutes_of_day(band["timeEnd"])
+                headway = band["headwayMinutes"]
+                if raw_start is None or raw_end is None or headway is None or headway <= 0:
+                    continue
+                start = raw_start + shift
+                end = raw_end + shift + (24 * 60 if raw_end < raw_start else 0)
+                if end < start:
+                    continue
+
+                for direction_key, _direction_label in streams:
+                    travel = _total_travel_minutes(conn, line_id, direction_key)
+                    if travel <= 0:
+                        continue
+                    # Earliest slot that could still be active: now - travel.
+                    # Snap to the band's headway grid.
+                    earliest = max(start, now_minutes - travel)
+                    skips = max(0, int((earliest - start) / headway))
+                    slot = start + skips * headway
+                    while slot <= end and slot <= now_minutes + 0.5:
+                        elapsed = now_minutes - slot
+                        if 0 <= elapsed <= travel:
+                            key = (display_line_id, direction_key, int(round(slot)))
+                            if key not in seen:
+                                seen.add(key)
+                                out.append({
+                                    "lineId": display_line_id,
+                                    "directionKey": direction_key,
+                                    "originDepartureMinute": round(slot, 2),
+                                    "elapsedMinutes": round(elapsed, 2),
+                                    "totalTravelMinutes": travel,
+                                    "serviceType": _service_type(line_id, band["label"]),
+                                })
+                        slot += headway
+
+    return out
+
+
 def _next_airport_lookahead(
     *,
     bundle: dict,

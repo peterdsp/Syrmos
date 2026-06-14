@@ -3,6 +3,7 @@ package com.syrmos.core.network.di
 import com.syrmos.core.network.STASYAnnouncementService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLinesService
+import com.syrmos.core.network.SyrmosLivePositionsService
 import com.syrmos.core.network.SyrmosSchedulesService
 import com.syrmos.core.network.SyrmosVisualOverridesService
 import io.ktor.client.HttpClient
@@ -28,5 +29,6 @@ val networkModule = module {
     single { RailwayGovLiveTrackerService(httpClient = get()) }
     single { SyrmosLinesService(httpClient = get()) }
     single { SyrmosSchedulesService(httpClient = get()) }
+    single { SyrmosLivePositionsService(httpClient = get()) }
     single { SyrmosVisualOverridesService(httpClient = get()) }
 }

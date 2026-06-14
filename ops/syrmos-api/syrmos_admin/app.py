@@ -1078,6 +1078,34 @@ def _parse_projector_now(value: str | None) -> _dt.datetime | None:
         raise HTTPException(status_code=400, detail="now must be ISO-8601") from None
 
 
+@app.get("/api/live-positions")
+def api_live_positions(
+    lineIds: str,
+    now: str | None = None,
+) -> JSONResponse:
+    """Active trains right now for the requested lines.
+
+    The map renders dots from this list. Each train carries enough info
+    (line, direction, when it left origin, total travel time on the leg)
+    that the client can interpolate position locally against its bundled
+    station_offsets + station coordinates, so the moving icon and the
+    bottom-sheet "minutes away" agree by construction — both come out of
+    the same projector logic.
+    """
+    line_id_list = [s for s in (lineIds or "").split(",") if s]
+    if not line_id_list:
+        raise HTTPException(status_code=400, detail="lineIds required")
+    now_dt = _parse_projector_now(now)
+    with dbmod.connect() as conn:
+        dbmod.migrate(conn)
+        trains = projector_mod.active_trains(conn, line_id_list, now=now_dt)
+    return JSONResponse({
+        "generatedAt": (now_dt or _dt.datetime.now(projector_mod.ATHENS)).isoformat(),
+        "lineIds": line_id_list,
+        "trains": trains,
+    })
+
+
 @app.get("/api/departures/next")
 def api_departures_next(
     stationId: str,

@@ -474,172 +474,93 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
     }
 
     private static func runLoop(_ instance: TrainSimulatorService?) async {
-        let first = simulateTrains()
+        let first = await projectTrains()
         await MainActor.run { instance?.trains = first }
         while !Task.isCancelled {
             // 5s cadence — fast enough for a believable live feel, slow
             // enough that we don't thrash SwiftUI Map annotations with
             // dozens of @Published updates per second across all tabs.
+            // LivePositionsService runs its own 15s API poll on top; this
+            // loop just re-interpolates from the cached snapshot.
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             if Task.isCancelled { return }
-            let next = simulateTrains()
+            let next = await projectTrains()
             await MainActor.run { instance?.trains = next }
         }
     }
 
-    private static let dwellMetro = 0.5
-    private static let dwellTram = 0.4
-    private static let dwellTerminal = 1.0
+    /// Build SimulatedTrain values by interpolating each API-reported active
+    /// train along its line's station_offsets table. The map dot lands on
+    /// the same minute the bottom sheet projects, because both are derived
+    /// from the same projector.
+    private static func projectTrains() async -> [SimulatedTrain] {
+        let service = await LivePositionsService.shared
+        let activeTrains = await service.trains
+        let offsetsByLine = await service.offsets
+        if activeTrains.isEmpty || offsetsByLine.isEmpty { return [] }
 
-    private static func haversine(_ lat1: Double, _ lon1: Double, _ lat2: Double, _ lon2: Double) -> Double {
-        let r = 6_371_000.0
-        let dLat = (lat2 - lat1) * .pi / 180
-        let dLon = (lon2 - lon1) * .pi / 180
-        let a = sin(dLat / 2) * sin(dLat / 2) +
-            cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) * sin(dLon / 2) * sin(dLon / 2)
-        return 2 * r * asin(sqrt(a))
-    }
+        let stationCoords = StationCoordinateLookup.shared
+        let nowEpoch = Date().timeIntervalSince1970
 
-    private static func smoothEase(_ t: Double) -> Double {
-        if t < 0.15 {
-            let x = t / 0.15
-            return x * x * 0.15
-        } else if t > 0.85 {
-            let x = (t - 0.85) / 0.15
-            return 0.85 + (1 - (1 - x) * (1 - x)) * 0.15
-        }
-        return t
-    }
-
-    private static func simulateTrains() -> [SimulatedTrain] {
-        let calendar = Calendar.current
-        let tz = TimeZone(identifier: "Europe/Athens")!
-        let now = Date()
-        let components = calendar.dateComponents(in: tz, from: now)
-        let hour = components.hour ?? 0
-        let minute = components.minute ?? 0
-        let second = components.second ?? 0
-        let nanosecond = components.nanosecond ?? 0
-        let nowMinutes = Double(hour) * 60 + Double(minute) + Double(second) / 60.0 + (Double(nanosecond) / 1_000_000_000) / 60.0
-
-        let serviceStart = 5.0 * 60
-        let serviceEnd = 25.0 * 60
-        let adjustedNow = nowMinutes < serviceStart ? nowMinutes + 24 * 60 : nowMinutes
-        guard adjustedNow >= serviceStart && adjustedNow <= serviceEnd else { return [] }
-
-        struct LineConfig {
-            let id: String
-            let name: String
-            let type: TransitType
-            let terminalA: String
-            let terminalB: String
-            let stations: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)]
-            let travelMinutes: Double
-            let dwellMinutes: Double
-            let frequency: Double
-        }
-
-        let configs: [LineConfig] = [
-            LineConfig(id: "M1", name: "Line 1", type: .metro, terminalA: "Piraeus", terminalB: "Kifissia",
-                       stations: StationCoords.line1, travelMinutes: 1.8, dwellMinutes: dwellMetro, frequency: 5),
-            LineConfig(id: "M2", name: "Line 2", type: .metro, terminalA: "Anthoupoli", terminalB: "Elliniko",
-                       stations: StationCoords.line2, travelMinutes: 1.8, dwellMinutes: dwellMetro, frequency: 4),
-            LineConfig(id: "M3", name: "Line 3", type: .metro, terminalA: "Dimotiko Theatro", terminalB: "Airport",
-                       stations: StationCoords.line3, travelMinutes: 1.8, dwellMinutes: dwellMetro, frequency: 5),
-            LineConfig(id: "T6", name: "Tram T6", type: .tram, terminalA: "Syntagma", terminalB: "Pikrodafni",
-                       stations: StationCoords.tramT6, travelMinutes: 2.2, dwellMinutes: dwellTram, frequency: 9),
-            LineConfig(id: "T7", name: "Tram T7", type: .tram, terminalA: "Akti Poseidonos", terminalB: "Asklipiio Voulas",
-                       stations: StationCoords.tramT7, travelMinutes: 2.2, dwellMinutes: dwellTram, frequency: 12),
+        let lineMeta: [String: (name: String, type: TransitType, terminalA: String, terminalB: String)] = [
+            "M1":     ("Line 1",      .metro, "Piraeus",          "Kifissia"),
+            "M2":     ("Line 2",      .metro, "Anthoupoli",       "Elliniko"),
+            "M3":     ("Line 3",      .metro, "Dimotiko Theatro", "Doukissis Plakentias"),
+            "M3_AIR": ("Line 3",      .metro, "Doukissis Plakentias", "Airport"),
+            "T6":     ("Tram T6",     .tram,  "Syntagma",         "Pikrodafni"),
+            "T7":     ("Tram T7",     .tram,  "Akti Poseidonos",  "Asklipiio Voulas"),
         ]
 
         var result: [SimulatedTrain] = []
+        for train in activeTrains {
+            guard let meta = lineMeta[train.lineId] else { continue }
+            // station_offsets keys M3_AIR under M3; the projector uses that
+            // remap internally so do the same here.
+            let offsetsLineKey = (train.lineId == "M3_AIR") ? "M3" : train.lineId
+            guard let stops = offsetsByLine[offsetsLineKey]?[train.directionKey], stops.count >= 2 else { continue }
 
-        for config in configs {
-            guard config.stations.count >= 2 else { continue }
+            let elapsed = (nowEpoch - train.originDepartureEpoch) / 60.0
+            if elapsed < 0 || elapsed > Double(train.totalTravelMinutes) + 0.5 { continue }
 
-            for direction in ["outbound", "inbound"] {
-                let stns = direction == "outbound" ? config.stations : config.stations.reversed()
-
-                struct Timing {
-                    let station: (id: String, name: String, nameEl: String, lat: Double, lon: Double)
-                    let arrival: Double
-                    let departure: Double
+            var segIdx = 0
+            for i in 0..<(stops.count - 1) {
+                if stops[i].minutesFromOrigin <= elapsed && elapsed < stops[i + 1].minutesFromOrigin {
+                    segIdx = i
+                    break
                 }
-
-                var segDists: [Double] = []
-                var totalDist = 0.0
-                for i in 0..<(stns.count - 1) {
-                    let d = Self.haversine(stns[i].lat, stns[i].lon, stns[i+1].lat, stns[i+1].lon)
-                    segDists.append(d)
-                    totalDist += d
-                }
-                if totalDist < 1 { totalDist = 1 }
-                let totalTravelMins = config.travelMinutes * Double(stns.count - 1)
-
-                var timings: [Timing] = []
-                var cumulative = 0.0
-                for (i, stn) in stns.enumerated() {
-                    let arrival = cumulative
-                    let dwell = (i == 0 || i == stns.count - 1) ? dwellTerminal : config.dwellMinutes
-                    timings.append(Timing(station: stn, arrival: arrival, departure: arrival + dwell))
-                    if i < stns.count - 1 {
-                        let segTravel = totalTravelMins * (segDists[i] / totalDist)
-                        cumulative = arrival + dwell + segTravel
-                    }
-                }
-
-                let tripDuration = timings.last!.arrival
-                let offset = direction == "inbound" ? config.frequency / 2 : 0
-                var departureTime = serviceStart + offset
-                var trainIdx = 0
-
-                while departureTime <= serviceEnd {
-                    let elapsed = adjustedNow - departureTime
-                    if elapsed >= 0 && elapsed <= tripDuration {
-                        var segIdx = 0
-                        for i in stride(from: timings.count - 1, through: 0, by: -1) {
-                            if timings[i].departure <= elapsed { segIdx = i; break }
-                        }
-                        segIdx = min(segIdx, timings.count - 2)
-                        let from = timings[segIdx]
-                        let to = timings[segIdx + 1]
-
-                        let lat: Double
-                        let lon: Double
-                        if elapsed < from.departure {
-                            lat = from.station.lat
-                            lon = from.station.lon
-                        } else {
-                            let travelStart = from.departure
-                            let travelEnd = to.arrival
-                            let travelDuration = travelEnd - travelStart
-                            let rawFrac = travelDuration > 0 ? min(max((elapsed - travelStart) / travelDuration, 0), 1) : 0
-                            let frac = smoothEase(rawFrac)
-                            lat = from.station.lat + (to.station.lat - from.station.lat) * frac
-                            lon = from.station.lon + (to.station.lon - from.station.lon) * frac
-                        }
-
-                        let isAirport = config.id == "M3" && direction == "outbound" && segIdx >= config.stations.count - 6
-                        let dest = direction == "outbound" ? config.terminalB : config.terminalA
-
-                        result.append(SimulatedTrain(
-                            id: "\(config.id)_\(direction)_\(trainIdx)",
-                            lineId: config.id,
-                            lineName: config.name,
-                            lineType: config.type,
-                            direction: direction,
-                            destinationName: dest,
-                            currentStationName: from.station.name,
-                            nextStationName: to.station.name,
-                            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                            isAirportService: isAirport
-                        ))
-                    }
-                    departureTime += config.frequency
-                    trainIdx += 1
-                }
+                if i == stops.count - 2 { segIdx = i }
             }
+
+            let from = stops[segIdx]
+            let to = stops[segIdx + 1]
+            guard let fromCoord = stationCoords.coordinate(for: from.stationId),
+                  let toCoord = stationCoords.coordinate(for: to.stationId) else { continue }
+
+            let segDuration = to.minutesFromOrigin - from.minutesFromOrigin
+            let frac = segDuration > 0 ? min(max((elapsed - from.minutesFromOrigin) / segDuration, 0), 1) : 0
+            let lat = fromCoord.lat + (toCoord.lat - fromCoord.lat) * frac
+            let lon = fromCoord.lon + (toCoord.lon - fromCoord.lon) * frac
+
+            let destination = train.directionKey == "outbound" ? meta.terminalB : meta.terminalA
+            let displayLineId = train.lineId == "M3_AIR" ? "M3" : train.lineId
+            let fromName = stationCoords.englishName(for: from.stationId) ?? from.stationId
+            let toName = stationCoords.englishName(for: to.stationId) ?? to.stationId
+            let isAirport = train.lineId == "M3_AIR"
+
+            result.append(SimulatedTrain(
+                id: train.id,
+                lineId: displayLineId,
+                lineName: meta.name,
+                lineType: meta.type,
+                direction: train.directionKey,
+                destinationName: destination,
+                currentStationName: fromName,
+                nextStationName: toName,
+                coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+                isAirportService: isAirport
+            ))
         }
         return result
     }
+
 }

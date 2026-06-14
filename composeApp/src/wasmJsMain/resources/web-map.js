@@ -956,6 +956,7 @@
     renderPopularPanel();
     updateNearbyPanel();
     connectLiveTrainStream();
+    pollLivePositions();
     startTrainSimulation();
     setupPanelBehavior();
 
@@ -1287,7 +1288,113 @@
         return t;
     }
 
+    // Snapshot of `/api/live-positions` + `/api/station-offsets`. The map
+    // dot's position for every metro / tram train is derived from these,
+    // not from a haversine guess, so the moving icon stays locked to the
+    // projector's "X min away" output.
+    let livePositionsSnapshot = null;
+    let stationOffsetsByLineDirection = null;
+
+    async function loadStationOffsets() {
+        try {
+            const r = await fetch("https://api-syrmos.peterdsp.dev/api/station-offsets");
+            const data = await r.json();
+            const map = new Map();
+            for (const line of data.lines || []) {
+                const stops = (line.stops || []).slice().sort((a, b) => a.stopSequence - b.stopSequence);
+                map.set(`${line.lineId}|${line.direction}`, stops);
+            }
+            stationOffsetsByLineDirection = map;
+        } catch (_) {}
+    }
+
+    async function pollLivePositions() {
+        const PROJECTED = "M1,M2,M3,M3_AIR,T6,T7";
+        async function tick() {
+            try {
+                const r = await fetch(`https://api-syrmos.peterdsp.dev/api/live-positions?lineIds=${PROJECTED}`);
+                const data = await r.json();
+                const generatedAtEpoch = Date.parse(data.generatedAt) / 1000;
+                livePositionsSnapshot = {
+                    trains: data.trains || [],
+                    generatedAtEpochSeconds: isNaN(generatedAtEpoch) ? Date.now() / 1000 : generatedAtEpoch,
+                };
+            } catch (_) {}
+        }
+        await loadStationOffsets();
+        await tick();
+        setInterval(tick, 15000);
+    }
+
     function simulateAllTrains() {
+        // Bail until both snapshots have landed; the very first paint
+        // shows no dots rather than haversine guesses that disagree
+        // with the bottom-sheet projector.
+        if (!livePositionsSnapshot || !stationOffsetsByLineDirection) return [];
+
+        const nowEpoch = Date.now() / 1000;
+        const linesById = new Map(lines.map((l) => [l.id, l]));
+        const stationById = new Map();
+        for (const stns of lineStations.values()) {
+            for (const s of stns) stationById.set(s.id, s);
+        }
+
+        const result = [];
+        for (const raw of livePositionsSnapshot.trains) {
+            // station_offsets keys M3_AIR rows under "M3" because the
+            // airport service rides the same polyline up to Doukissis
+            // Plakentias; mirror the lookup.
+            const offsetKey = `${raw.lineId === "M3_AIR" ? "M3" : raw.lineId}|${raw.directionKey}`;
+            const stops = stationOffsetsByLineDirection.get(offsetKey);
+            if (!stops || stops.length < 2) continue;
+
+            const displayLineId = raw.lineId === "M3_AIR" ? "M3" : raw.lineId;
+            const line = linesById.get(displayLineId);
+            if (!line || line.type === "suburban") continue;
+
+            const originEpoch = livePositionsSnapshot.generatedAtEpochSeconds - raw.elapsedMinutes * 60;
+            const elapsed = (nowEpoch - originEpoch) / 60;
+            if (elapsed < 0 || elapsed > raw.totalTravelMinutes + 0.5) continue;
+
+            let segIdx = 0;
+            for (let i = 0; i < stops.length - 1; i++) {
+                if (stops[i].minutesFromOrigin <= elapsed && elapsed < stops[i + 1].minutesFromOrigin) {
+                    segIdx = i;
+                    break;
+                }
+                if (i === stops.length - 2) segIdx = i;
+            }
+            const fromStop = stops[segIdx];
+            const toStop = stops[segIdx + 1];
+            const fromStation = stationById.get(fromStop.stationId);
+            const toStation = stationById.get(toStop.stationId);
+            if (!fromStation || !toStation) continue;
+            const segDuration = toStop.minutesFromOrigin - fromStop.minutesFromOrigin;
+            const frac = segDuration > 0
+                ? Math.min(Math.max((elapsed - fromStop.minutesFromOrigin) / segDuration, 0), 1)
+                : 0;
+
+            const lat = fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac;
+            const lng = fromStation.longitude + (toStation.longitude - fromStation.longitude) * frac;
+            const dest = raw.directionKey === "outbound" ? line.terminal_b : line.terminal_a;
+
+            result.push({
+                id: `${raw.lineId}_${raw.directionKey}_${Math.round(raw.originDepartureMinute)}`,
+                line,
+                direction: raw.directionKey,
+                destination: dest,
+                fromStation: fromStation.name,
+                toStation: toStation.name,
+                lat,
+                lng,
+                isAirport: raw.lineId === "M3_AIR",
+                progress: Math.min(elapsed / raw.totalTravelMinutes, 1),
+            });
+        }
+        return result;
+    }
+
+    function simulateAllTrains_legacy_DEAD() {
         const now = new Date();
         const athensNow = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Athens" }));
         const fractionalSeconds = athensNow.getSeconds() + (now.getMilliseconds() / 1000);

@@ -311,3 +311,37 @@ enum StationCoords {
         return Array(stationMap.values).sorted { $0.name < $1.name }
     }
 }
+
+/// O(1) lookup of station coordinate + English name by station id. Used by
+/// TrainSimulatorService while interpolating live-train positions between
+/// adjacent stations on a line.
+struct StationCoordinateLookup {
+    static let shared = StationCoordinateLookup()
+
+    private let byId: [String: (lat: Double, lon: Double, name: String)]
+
+    private init() {
+        var map: [String: (lat: Double, lon: Double, name: String)] = [:]
+        let allLists: [[(id: String, name: String, nameEl: String, lat: Double, lon: Double)]] = [
+            StationCoords.line1, StationCoords.line2, StationCoords.line3,
+            StationCoords.tramT6, StationCoords.tramT7,
+            StationCoords.suburbanA1, StationCoords.suburbanA2,
+            StationCoords.suburbanA3, StationCoords.suburbanA4,
+        ]
+        for list in allLists {
+            for s in list where map[s.id] == nil {
+                map[s.id] = (s.lat, s.lon, s.name)
+            }
+        }
+        byId = map
+    }
+
+    func coordinate(for stationId: String) -> (lat: Double, lon: Double)? {
+        guard let v = byId[stationId] else { return nil }
+        return (v.lat, v.lon)
+    }
+
+    func englishName(for stationId: String) -> String? {
+        byId[stationId]?.name
+    }
+}
