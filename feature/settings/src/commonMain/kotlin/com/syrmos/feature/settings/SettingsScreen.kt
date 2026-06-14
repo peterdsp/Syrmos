@@ -60,9 +60,9 @@ fun SettingsScreen() {
         FaresScreen(onBack = { showFares = false })
         return
     }
+
     if (showContact) {
-        ContactDeveloperScreen(onBack = { showContact = false })
-        return
+        ContactDeveloperSheet(onDismiss = { showContact = false })
     }
 
     LazyColumn(
