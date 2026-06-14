@@ -14,6 +14,7 @@ Lives at `~/syrmos-api/` on the Pi, behind nginx + Cloudflare Tunnel at
 | `/api/schedules/{lineId}` | `out/schedules/{lineId}.json` | 10m |
 | `/api/holidays` | `out/holidays.json` | 1h |
 | `/api/overrides` | `out/overrides.json` | 5m |
+| `/api/departures/next` | FastAPI projector | no-store |
 | `/admin/` | uvicorn 127.0.0.1:8092 | no-store |
 
 Line IDs: `M1`, `M2`, `M3`, `T6`, `T7`, `A1`, `A2`, `A3`, `A4`, `M3_AIR`.
@@ -47,7 +48,7 @@ The script:
 1. Syncs source to the Pi
 2. Creates a venv, installs FastAPI + uvicorn
 3. Runs migrations, imports the package, runs the 24mmm scraper, regenerates JSON
-4. Patches `~/syrmos-proxy/nginx.conf` in place and reloads nginx (no sudo needed — pid file is owned by peterdsp)
+4. Patches `~/syrmos-proxy/nginx.conf` in place and reloads nginx (no sudo needed, pid file is owned by peterdsp)
 
 ## Remaining manual step (sudo required)
 

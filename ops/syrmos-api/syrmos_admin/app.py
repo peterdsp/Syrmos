@@ -10,6 +10,8 @@ Run: uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8091
 from __future__ import annotations
 
 import os
+import re
+import datetime as _dt
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
@@ -19,6 +21,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from . import db as dbmod
 from . import generator
+from . import projector as projector_mod
 
 ADMIN_TOKEN = os.environ.get("SYRMOS_ADMIN_TOKEN")  # fallback when CF Access is off
 CF_USER_HEADER = "cf-access-authenticated-user-email"
@@ -79,7 +82,7 @@ BASE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{title} — Syrmos Admin</title>
+<title>{title} - Syrmos Admin</title>
 <style>
 :root {{
   --bg: #f7f8fa;
@@ -592,7 +595,7 @@ def delete_override(id: int = Form(...), _: str = Depends(auth)) -> RedirectResp
     return RedirectResponse(f"{ADMIN_PREFIX}/overrides", status_code=303)
 
 
-# Icons — table of every station icon with preview + override field
+# Icons: table of every station icon with preview + override field
 
 @app.get("/icons", response_class=HTMLResponse)
 def icons_page(scope: str = "station", _: str = Depends(auth)) -> HTMLResponse:
@@ -642,7 +645,7 @@ def icons_save(id: int = Form(...), override_url: str = Form(""), scope: str = F
     return RedirectResponse(f"{ADMIN_PREFIX}/icons?scope={scope}", status_code=303)
 
 
-# Line drawing — editable polyline parameters
+# Line drawing: editable polyline parameters
 
 @app.get("/line-display", response_class=HTMLResponse)
 def line_display_page(_: str = Depends(auth)) -> HTMLResponse:
@@ -697,7 +700,7 @@ def line_display_save(
     return RedirectResponse(f"{ADMIN_PREFIX}/line-display", status_code=303)
 
 
-# Stations — bulk edit names + coords + accessibility
+# Stations: bulk edit names, coords and accessibility
 
 @app.get("/stations", response_class=HTMLResponse)
 def stations_page(line: str | None = None, q: str | None = None,
@@ -768,7 +771,7 @@ def stations_save(
     return RedirectResponse(f"{ADMIN_PREFIX}/stations", status_code=303)
 
 
-# Operator partners — placeholder for live-feed credentials
+# Operator partners: placeholder for live-feed credentials
 
 @app.get("/operators", response_class=HTMLResponse)
 def operators_page(_: str = Depends(auth)) -> HTMLResponse:
@@ -1055,3 +1058,66 @@ def _trigger_seed_refresh() -> None:
 @app.get("/healthz")
 def healthz() -> JSONResponse:
     return JSONResponse({"ok": True})
+
+
+# Public projector endpoint. Single source of truth for what the apps render
+# in the Next Departures lists. It bypasses admin auth deliberately because it
+# is read only.
+
+_TZ_OFFSET_RE = re.compile(r"([+-]\d{2})(\d{2})$")
+
+
+def _parse_projector_now(value: str | None) -> _dt.datetime | None:
+    if not value:
+        return None
+    normalised = value.replace("Z", "+00:00")
+    normalised = _TZ_OFFSET_RE.sub(r"\1:\2", normalised)
+    try:
+        return _dt.datetime.fromisoformat(normalised)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="now must be ISO-8601") from None
+
+
+@app.get("/api/departures/next")
+def api_departures_next(
+    stationId: str,
+    lineIds: str,
+    limit: int = 8,
+    now: str | None = None,
+    direction: str | None = None,
+) -> JSONResponse:
+    """Project next departures for (stationId, lineIds) at the requested
+    time (defaults to Athens-now). Returns a JSON list of departure dicts
+    sorted by minutesAway.
+
+    Query params:
+      stationId  e.g. M2_SYN, T7_DIM
+      lineIds    comma-separated, e.g. M2,M3
+      limit      max entries (default 8, capped at 30 to discourage abuse)
+      now        optional ISO-8601 timestamp; defaults to server time
+      direction  optional outbound or inbound filter
+    """
+    line_id_list = [s for s in (lineIds or "").split(",") if s]
+    if not stationId or not line_id_list:
+        raise HTTPException(status_code=400, detail="stationId and lineIds required")
+    limit = max(1, min(int(limit), 30))
+
+    now_dt = _parse_projector_now(now)
+
+    with dbmod.connect() as conn:
+        dbmod.migrate(conn)
+        departures = projector_mod.project_next_departures(
+            conn,
+            stationId,
+            line_id_list,
+            direction=direction,
+            now=now_dt,
+            limit=limit,
+        )
+    return JSONResponse({
+        "stationId": stationId,
+        "lineIds": line_id_list,
+        "direction": direction,
+        "generatedAt": (now_dt or _dt.datetime.now(projector_mod.ATHENS)).isoformat(),
+        "departures": departures,
+    })
