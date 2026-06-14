@@ -202,19 +202,27 @@ class ComputeDeparturesFromBandsUseCase(
         //     saturday_overnight_24_7' literally means Sunday clock
         //     00:30-05:30 inside Saturday's service window.
         val todayDayType = dayTypeFor(today, holidayDayType)
-        val descriptors = mutableListOf<Pair<String, Int>>().apply {
-            add(todayDayType to 0)
+        // Yesterday's "next-day extension" bands have clock times in the
+        // small-hours of today (e.g. 'sat 00:30 -> 05:30 saturday_overnight').
+        // Only THOSE are valid under the yesterday+shift=0 descriptor, not
+        // regular daytime bands of yesterday like 'sat 05:30 -> 10:00'.
+        val nextDayExtensionCutoffMinutes = 5 * 60
+        data class Descriptor(val dt: String, val shift: Int, val nextDayOnly: Boolean)
+        val descriptors = mutableListOf<Descriptor>().apply {
+            add(Descriptor(todayDayType, 0, nextDayOnly = false))
             if (nowMinutes < 6 * 60) {
                 val y = today.minusOneDay()
                 val yesterdayDayType = dayTypeFor(y, holidayDayType = null)
-                add(yesterdayDayType to -24 * 60)
+                add(Descriptor(yesterdayDayType, -24 * 60, nextDayOnly = false))
                 if (yesterdayDayType != todayDayType) {
-                    add(yesterdayDayType to 0)
+                    add(Descriptor(yesterdayDayType, 0, nextDayOnly = true))
                 }
             }
         }
 
-        for ((dayType, shiftMinutes) in descriptors) {
+        for (descriptor in descriptors) {
+            val dayType = descriptor.dt
+            val shiftMinutes = descriptor.shift
             // Honor schedule_rules: skip if line is CLOSED at the current time.
             // Without this, the projector emits departures from any band whose
             // window contains "now", even when the line operating window doesn't.
@@ -229,8 +237,15 @@ class ComputeDeparturesFromBandsUseCase(
                 }
             }
 
-            val bands = bundle.bands.filter { it.dayType == dayType }
-                .sortedBy { it.timeStart.toMinutesOfDay() ?: 0 }
+            val bands = bundle.bands.filter { band ->
+                if (band.dayType != dayType) return@filter false
+                if (descriptor.nextDayOnly) {
+                    val rs = band.timeStart.toMinutesOfDay() ?: return@filter false
+                    rs < nextDayExtensionCutoffMinutes
+                } else {
+                    true
+                }
+            }.sortedBy { it.timeStart.toMinutesOfDay() ?: 0 }
             for (band in bands) {
                 projectBand(
                     band = band,
