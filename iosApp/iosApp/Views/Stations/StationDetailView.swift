@@ -147,11 +147,11 @@ struct StationDetailView: View {
         .background(Color.syrmosBackground)
         .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
-            departures = currentDepartures()
+            reloadDepartures()
         }
         .onReceive(refreshTimer) { _ in
             nowTick = Date()
-            departures = currentDepartures()
+            reloadDepartures()
         }
         .sheet(isPresented: $showMapSheet) {
             StationMapSheet(station: station)
@@ -164,12 +164,27 @@ struct StationDetailView: View {
         station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
     }
 
-    /// API + synced-bundle source of truth. Empty result means the bundles
-    /// haven't loaded yet (offline cold start before the first manifest
-    /// poll); the UI shows the "Loading departures..." state in that case.
-    /// The sampleDepartures seed fallback was removed per the spec because
-    /// it didn't honor /api/station-offsets and made the apps show
-    /// origin-terminal times at every stop.
+    /// Server projector first, synced-bundle projector as offline fallback.
+    private func reloadDepartures() {
+        let fallback = currentDepartures()
+        if departures.isEmpty {
+            departures = fallback
+        }
+        Task { @MainActor in
+            if let remote = await SyrmosDeparturesService.nextDepartures(
+                for: station.id,
+                lineIds: station.lineIds,
+                limit: 10
+            ), !remote.isEmpty {
+                departures = remote
+            } else {
+                departures = fallback
+            }
+        }
+    }
+
+    /// Local synced-bundle fallback. Empty result means the bundles haven't
+    /// loaded yet.
     private func currentDepartures() -> [Departure] {
         return ScheduleProjector.nextDepartures(
             for: station.id,

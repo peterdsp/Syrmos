@@ -19,13 +19,13 @@ val domainModule = module {
     factory { GetLineDetailUseCase(lineRepository = get(), stationRepository = get(), scheduleRepository = get()) }
     factory { GetStationDetailUseCase(stationRepository = get(), lineRepository = get()) }
     factory { ComputeDeparturesFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
-    factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get()) }
+    factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get()) }
     factory { SearchStationsUseCase(stationRepository = get()) }
     factory { FindNearestStationUseCase(stationRepository = get()) }
 
     // Live arrivals infrastructure. All providers return null today (no
     // operator publishes a real-time arrivals feed for Athens). When any
-    // operator does, fill in the relevant provider — no other code changes.
+    // operator does, fill in the relevant provider, no other code changes.
     single { StasyLiveArrivalsProvider() }
     single { OasaLiveArrivalsProvider() }
     single { HellenicTrainLiveArrivalsProvider() }

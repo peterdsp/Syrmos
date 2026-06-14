@@ -76,7 +76,42 @@ ssh "$PI" "sudo systemctl enable --now syrmos-backup.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-seed-daily.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-osm-shapes.timer"
 
-echo ">>> reminder: merge nginx.locations.conf into ~/syrmos-proxy/nginx.conf and reload nginx"
-echo "    ssh $PI 'sudo systemctl reload syrmos-static.service'"
+echo ">>> patching ~/syrmos-proxy/nginx.conf with /api/departures/next + reloading nginx"
+ssh "$PI" bash <<'REMOTE'
+set -e
+conf=~/syrmos-proxy/nginx.conf
+if ! grep -q "/api/departures/next" "$conf"; then
+  cp "$conf" "$conf.bak.$(date +%s)"
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "syrmos-proxy/nginx.conf"
+txt = p.read_text()
+marker = "# --- admin UI (FastAPI"
+block = """        # --- server-side projector: next departures per station ---
+        location = /api/departures/next {
+            proxy_pass http://127.0.0.1:8092/api/departures/next$is_args$args;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Cache-Control "no-store" always;
+        }
+
+        """
+p.write_text(txt.replace(marker, block + marker, 1))
+print("patched")
+PY
+fi
+/usr/sbin/nginx -t -c "$conf" -p ~/syrmos-proxy/
+pid=$(cat ~/syrmos-proxy/nginx.pid 2>/dev/null || true)
+if [ -n "$pid" ]; then
+  kill -HUP "$pid"
+  echo "nginx HUP sent to pid $pid"
+fi
+REMOTE
+
+echo ">>> restarting admin service"
+ssh "$PI" "sudo systemctl restart syrmos-admin.service"
 
 echo "done"
