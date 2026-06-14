@@ -83,6 +83,33 @@ body {
         display: flex !important;
         left: auto !important;
         right: 16px !important;
+        /* Align the top edge with where the left panel visually starts —
+           below the App Store / Google Play row that lives inside the
+           floating top bar. The base top: 78px puts the right panel
+           snug against the bottom of the floating bar instead. */
+        top: 200px !important;
+        /* The right column is info-dense (popular stations, fare prices,
+           a long bulleted "useful info"). Shrink the card body so all
+           three fit within the viewport above the bottom: 16px line. */
+        width: 260px !important;
+    }
+    .insight-panel--right .panel-cards-wrap {
+        gap: 8px;
+    }
+    .insight-panel--right .panel-card {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    .insight-panel--right .panel-card__title {
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+    .insight-panel--right .panel-list > * {
+        padding: 6px 0;
+    }
+    .insight-panel--right .info-links-list li {
+        font-size: 11px;
+        line-height: 1.35;
     }
 }
 
