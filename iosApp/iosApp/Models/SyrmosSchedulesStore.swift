@@ -76,19 +76,17 @@ final class SyrmosSchedulesStore: ObservableObject {
         freshDataSummary = ""
     }
 
-    /// Builds a 1-2 sentence Greek/English string describing what's likely
-    /// different. We can't diff every line bundle cheaply, so we surface
-    /// the manifest version and the count of bundle hashes that exist —
-    /// enough signal that something material changed without overstating.
+    /// Builds a 1-2 sentence Greek/English string describing what's new.
+    /// We deliberately don't surface the internal manifest version number
+    /// — users only care about the categories of data that changed, not
+    /// the bookkeeping integer the Pi maintains. The list of sources is
+    /// fixed (STASY metro / tram, OASA fares, Hellenic Train suburban)
+    /// because today every snapshot can touch any of them.
     private func composeFreshDataSummary() -> String {
-        let version = manifestVersion ?? 0
-        let bundleCount = service.bundles.count
         let lang = LocalizationManager.shared.language
         if lang == .greek {
-            return "Νέα έκδοση δεδομένων v\(version) με \(bundleCount) γραμμές. "
-                 + "Ενημερωμένα δρομολόγια, τιμές εισιτηρίων και ανακοινώσεις από STASY / OASA / Hellenic Train."
+            return "Ενημερωμένα δρομολόγια, τιμές εισιτηρίων και ανακοινώσεις από STASY, OASA και Hellenic Train."
         }
-        return "Schedule data updated to v\(version), covering \(bundleCount) lines. "
-             + "Includes refreshed timetables, fare prices and STASY / OASA / Hellenic Train announcements."
+        return "Refreshed timetables, fare prices and announcements from STASY, OASA and Hellenic Train."
     }
 }
