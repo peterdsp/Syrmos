@@ -449,6 +449,13 @@ def apply(conn, dry_run: bool) -> dict:
     sort_idx = 0
     for s in summaries:
         ta, tb = terminals_from_direction(s.direction_label)
+        # Source MD summary conflates M3 city + airport into "Dimotiko Theatro
+        # to Airport". The regular M3 city terminus is Doukissis Plakentias;
+        # only the M3_AIR variant reaches the Airport. Override so the
+        # projector labels regular outbound trains as "towards Doukissis
+        # Plakentias" and only the M3_AIR rows display "Airport".
+        if s.line_id == "M3":
+            tb = "Doukissis Plakentias"
         line_rows.append(
             (
                 s.line_id,
