@@ -65,36 +65,51 @@ MODE_LABEL = {"Metro": "metro", "Tram": "tram", "Suburban railway": "suburban"}
 
 WEEKLY_HOURS = [
     # (line_id, day_type, open, close, is_24_7, notes)
-    ("M1", "mon_thu", "05:00", "00:30", 0, None),
-    ("M1", "fri",     "05:00", "00:30", 0, None),
-    ("M1", "sat",     "05:00", "00:30", 0, None),
-    ("M1", "sun",     "05:00", "00:30", 0, None),
+    # close = last origin departure (the later of the two directions), so
+    # the projector never truncates an in-flight train; per-direction band
+    # ends inside FREQUENCY_BANDS already enforce the real last departure
+    # for each direction.
+    #
+    # M1 — Piraeus / Kifissia, Mon-Fri identical (STASY collapses them).
+    ("M1", "mon_thu", "05:00", "01:30", 0, None),
+    ("M1", "fri",     "05:00", "01:30", 0, None),
+    ("M1", "sat",     "05:00", "01:00", 0, None),
+    ("M1", "sun",     "05:00", "01:00", 0, None),
 
-    ("M2", "mon_thu", "05:30", "00:30", 0, None),
+    # M2 — Anthoupoli / Elliniko. STASY Mon-Thu last from Anthoupoli 00:06,
+    # from Elliniko 00:03 → close 00:20 (band end). Fri late extension to
+    # 02:00 brings last to ~01:43. Sat 24-hour, Sun standard.
+    ("M2", "mon_thu", "05:30", "00:20", 0, None),
     ("M2", "fri",     "05:30", "02:00", 0, "Friday late extension to 02:00"),
     ("M2", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
-    ("M2", "sun",     "05:30", "00:30", 0, None),
+    ("M2", "sun",     "05:30", "00:20", 0, None),
 
-    ("M3", "mon_thu", "05:30", "00:30", 0, "City segment; airport segment closes 23:00"),
+    # M3 — city service (Dim. Theatro / Doukissis Plakentias). Last from
+    # Dim. Theatro Mon-Thu/Sun 23:57. Fri 01:34. Sat 24-hour.
+    ("M3", "mon_thu", "05:30", "00:20", 0, "City service; airport branch closes 23:21 outbound"),
     ("M3", "fri",     "05:30", "02:00", 0, "Friday late extension to 02:00 (city only)"),
     ("M3", "sat",     "00:00", "23:59", 1, "Saturday 24/7 (city only)"),
-    ("M3", "sun",     "05:30", "00:30", 0, None),
+    ("M3", "sun",     "05:30", "00:20", 0, None),
 
-    # Airport branch: hard 23:00 cutoff every day, no 24/7, no Fri extension.
-    ("M3_AIR", "mon_thu", "05:30", "23:00", 0, None),
-    ("M3_AIR", "fri",     "05:30", "23:00", 0, None),
-    ("M3_AIR", "sat",     "05:30", "23:00", 0, None),
-    ("M3_AIR", "sun",     "05:30", "23:00", 0, None),
+    # M3_AIR — airport branch. Excluded from 24-hour service and from
+    # late-night extensions per STASY note. Outbound last 22:54 from Dim.
+    # Theatro Mon-Thu/Sun (Fri last 01:34); inbound last 23:34 from Airport.
+    ("M3_AIR", "mon_thu", "05:30", "23:35", 0, None),
+    ("M3_AIR", "fri",     "05:30", "23:35", 0, None),
+    ("M3_AIR", "sat",     "05:30", "23:35", 0, None),
+    ("M3_AIR", "sun",     "05:30", "23:35", 0, None),
 
-    ("T6", "mon_thu", "05:30", "01:00", 0, None),
-    ("T6", "fri",     "05:00", "01:30", 0, None),
+    # T6 / T7. Mon-Thu/Sat/Sun last 00:30. Fri late extension to 01:40.
+    # Sat 24-hour.
+    ("T6", "mon_thu", "05:30", "00:30", 0, None),
+    ("T6", "fri",     "05:30", "01:40", 0, None),
     ("T6", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
-    ("T6", "sun",     "05:30", "01:00", 0, None),
+    ("T6", "sun",     "05:30", "00:30", 0, None),
 
-    ("T7", "mon_thu", "05:30", "01:00", 0, None),
-    ("T7", "fri",     "05:00", "01:30", 0, None),
+    ("T7", "mon_thu", "05:30", "00:30", 0, None),
+    ("T7", "fri",     "05:30", "01:40", 0, None),
     ("T7", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
-    ("T7", "sun",     "05:30", "01:00", 0, None),
+    ("T7", "sun",     "05:30", "00:30", 0, None),
 
     # Suburban / Hellenic Train. Source PDFs in assets/hellenic-train-timetables/
     # Effective 2025-11-22. A1, A2 share the Airport corridor; from 2025-11-22
@@ -120,169 +135,202 @@ WEEKLY_HOURS = [
     ("A4", "sun",     "05:30", "22:30", 0, None),
 ]
 
-# Frequency bands. headway_minutes is a float (e.g. 4.5, 10.5).
-# day_type ∈ mon_thu | fri | sat | sun | holiday | bank_holiday | aug_15 | dec_24_31
+# Frequency bands. (line_id, day_type, time_start, time_end, headway_min, label, direction)
+# direction ∈ both | outbound | inbound. day_type ∈ mon_thu | fri | sat | sun | aug_15 | dec_24_31.
+# All numbers transcribed from the STASY "Frequency of Routes" tables on
+# stasy.gr (Lines 1, 2, 3, Tram). Sub-30-minute bands are preserved
+# verbatim rather than collapsed so the projector matches the published
+# minute-by-minute timetable.
 FREQUENCY_BANDS = [
-    # Weekday early morning 05:30-07:00 (service is open per schedule_rules
-    # from 05:30 but the STASY minute-by-minute table starts at morning_peak;
-    # match Friday's early_morning frequencies, which are the published values).
-    ("M1", "mon_thu", "05:00", "07:00", 8.0,  "early_morning"),
-    ("M2", "mon_thu", "05:30", "07:00", 6.0,  "early_morning"),
-    ("M3", "mon_thu", "05:30", "07:00", 6.0,  "early_morning"),
-    ("M3_AIR", "mon_thu", "05:30", "07:00", 36.0, "early_morning"),
-    ("T6", "mon_thu", "05:00", "07:00", 12.0, "early_morning"),
-    ("T7", "mon_thu", "05:00", "07:00", 12.0, "early_morning"),
+    # ---------------- M1 (Piraeus ↔ Kifissia) ----------------
+    # STASY publishes a single Mon-Fri schedule; we duplicate it into
+    # mon_thu + fri so the projector picks the right day_type.
+    ("M1", "mon_thu", "05:00", "05:30", 15.0,    "early_morning",   "both"),
+    ("M1", "mon_thu", "05:30", "07:00", 7.5,     "early_morning",   "both"),
+    ("M1", "mon_thu", "07:00", "10:00", 6.0,     "morning_peak",    "both"),
+    ("M1", "mon_thu", "10:00", "15:00", 7.5,     "midday_offpeak",  "both"),
+    ("M1", "mon_thu", "15:00", "18:00", 6.0,     "afternoon_peak",  "both"),
+    ("M1", "mon_thu", "18:00", "22:30", 7.5,     "evening_offpeak", "both"),
+    ("M1", "mon_thu", "22:30", "23:00", 11.5,    "wind_down",       "both"),
+    ("M1", "mon_thu", "23:00", "23:30", 12.5,    "wind_down",       "both"),
+    ("M1", "mon_thu", "23:30", "01:30", 15.0,    "late_night",      "both"),
+    ("M1", "fri", "05:00", "05:30", 15.0,    "early_morning",   "both"),
+    ("M1", "fri", "05:30", "07:00", 7.5,     "early_morning",   "both"),
+    ("M1", "fri", "07:00", "10:00", 6.0,     "morning_peak",    "both"),
+    ("M1", "fri", "10:00", "15:00", 7.5,     "midday_offpeak",  "both"),
+    ("M1", "fri", "15:00", "18:00", 6.0,     "afternoon_peak",  "both"),
+    ("M1", "fri", "18:00", "22:30", 7.5,     "evening_offpeak", "both"),
+    ("M1", "fri", "22:30", "23:00", 11.5,    "wind_down",       "both"),
+    ("M1", "fri", "23:00", "23:30", 12.5,    "wind_down",       "both"),
+    ("M1", "fri", "23:30", "01:30", 15.0,    "late_night",      "both"),
+    ("M1", "sat", "05:00", "05:30", 15.0,    "early_morning",   "both"),
+    ("M1", "sat", "05:30", "23:30", 10.5,    "saturday_day",    "both"),
+    ("M1", "sat", "23:30", "01:00", 15.0,    "saturday_late",   "both"),
+    ("M1", "sun", "05:00", "05:30", 15.0,    "early_morning",   "both"),
+    ("M1", "sun", "05:30", "23:30", 10.5,    "sunday_day",      "both"),
+    ("M1", "sun", "23:30", "01:00", 15.0,    "sunday_late",     "both"),
 
-    # Weekday morning peak 07:00-10:00
-    ("M1", "mon_thu", "07:00", "10:00", 6.0,  "morning_peak"),
-    ("M2", "mon_thu", "07:00", "10:00", 4.0,  "morning_peak"),
-    ("M3", "mon_thu", "07:00", "10:00", 4.0,  "morning_peak"),
-    ("M3_AIR", "mon_thu", "07:00", "10:00", 36.0, "morning_peak"),
-    ("T6", "mon_thu", "07:00", "10:00", 10.0, "morning_peak"),
-    ("T7", "mon_thu", "07:00", "10:00", 10.0, "morning_peak"),
+    # ---------------- M2 (Anthoupoli ↔ Elliniko) ----------------
+    ("M2", "mon_thu", "05:30", "06:00", 10.0,    "early_morning",   "both"),
+    ("M2", "mon_thu", "06:00", "06:30", 7.5,     "early_morning",   "both"),
+    ("M2", "mon_thu", "06:30", "07:00", 5.5,     "early_morning",   "both"),
+    ("M2", "mon_thu", "07:00", "10:00", 4.5,     "morning_peak",    "both"),
+    ("M2", "mon_thu", "10:00", "10:30", 5.0,     "midday_offpeak",  "both"),
+    ("M2", "mon_thu", "10:30", "14:00", 6.333,   "midday_offpeak",  "both"),  # 6'20"
+    ("M2", "mon_thu", "14:00", "19:00", 5.0,     "afternoon_peak",  "both"),
+    ("M2", "mon_thu", "19:00", "20:00", 5.5,     "evening_offpeak", "both"),
+    ("M2", "mon_thu", "20:00", "20:30", 6.333,   "evening_offpeak", "both"),
+    ("M2", "mon_thu", "20:30", "21:00", 7.0,     "evening_offpeak", "both"),
+    ("M2", "mon_thu", "21:00", "21:30", 7.5,     "wind_down",       "both"),
+    ("M2", "mon_thu", "21:30", "22:00", 8.5,     "wind_down",       "both"),
+    ("M2", "mon_thu", "22:00", "22:30", 9.5,     "wind_down",       "both"),
+    ("M2", "mon_thu", "22:30", "00:20", 10.0,    "late_night",      "both"),
+    ("M2", "fri", "05:30", "06:00", 10.0,    "early_morning",   "both"),
+    ("M2", "fri", "06:00", "06:30", 7.5,     "early_morning",   "both"),
+    ("M2", "fri", "06:30", "07:00", 5.5,     "early_morning",   "both"),
+    ("M2", "fri", "07:00", "10:00", 4.5,     "morning_peak",    "both"),
+    ("M2", "fri", "10:00", "10:30", 5.0,     "midday_offpeak",  "both"),
+    ("M2", "fri", "10:30", "14:00", 6.333,   "midday_offpeak",  "both"),
+    ("M2", "fri", "14:00", "19:00", 5.0,     "afternoon_peak",  "both"),
+    ("M2", "fri", "19:00", "20:00", 5.5,     "evening_offpeak", "both"),
+    ("M2", "fri", "20:00", "20:30", 6.333,   "evening_offpeak", "both"),
+    ("M2", "fri", "20:30", "21:00", 7.0,     "evening_offpeak", "both"),
+    ("M2", "fri", "21:00", "21:30", 7.5,     "wind_down",       "both"),
+    ("M2", "fri", "21:30", "22:00", 8.5,     "wind_down",       "both"),
+    ("M2", "fri", "22:00", "22:30", 9.5,     "wind_down",       "both"),
+    ("M2", "fri", "22:30", "00:20", 10.0,    "late_night",      "both"),
+    ("M2", "fri", "00:20", "02:00", 15.0,    "fri_late_extension", "both"),
+    ("M2", "sat", "05:30", "09:00", 12.5,    "saturday_morning","both"),
+    ("M2", "sat", "09:00", "12:00", 10.833,  "saturday_day",    "both"),  # 10'50"
+    ("M2", "sat", "12:00", "12:30", 9.5,     "saturday_day",    "both"),
+    ("M2", "sat", "12:30", "13:00", 8.5,     "saturday_day",    "both"),
+    ("M2", "sat", "13:00", "21:00", 7.5,     "saturday_day",    "both"),
+    ("M2", "sat", "21:00", "21:30", 8.5,     "saturday_evening","both"),
+    ("M2", "sat", "21:30", "22:00", 9.5,     "saturday_evening","both"),
+    ("M2", "sat", "22:00", "00:20", 10.833,  "saturday_evening","both"),
+    ("M2", "sat", "00:20", "05:30", 15.0,    "saturday_overnight_24_7", "both"),
+    ("M2", "sun", "05:30", "07:00", 12.5,    "sunday_morning",  "both"),
+    ("M2", "sun", "07:00", "10:00", 10.833,  "sunday_day",      "both"),
+    ("M2", "sun", "10:00", "11:00", 9.5,     "sunday_day",      "both"),
+    ("M2", "sun", "11:00", "19:00", 8.5,     "sunday_day",      "both"),
+    ("M2", "sun", "19:00", "20:00", 9.5,     "sunday_evening",  "both"),
+    ("M2", "sun", "20:00", "23:30", 10.833,  "sunday_evening",  "both"),
+    ("M2", "sun", "23:30", "00:20", 12.5,    "sunday_late",     "both"),
 
-    # Weekday midday 10:00-17:00 (ranges -> midpoint)
-    ("M1", "mon_thu", "10:00", "17:00", 8.0,  "midday_offpeak"),
-    ("M2", "mon_thu", "10:00", "17:00", 6.0,  "midday_offpeak"),
-    ("M3", "mon_thu", "10:00", "17:00", 6.0,  "midday_offpeak"),
-    ("M3_AIR", "mon_thu", "10:00", "17:00", 36.0, "midday_offpeak"),
-    ("T6", "mon_thu", "10:00", "17:00", 12.0, "midday_offpeak"),
-    ("T7", "mon_thu", "10:00", "17:00", 12.0, "midday_offpeak"),
+    # ---------------- M3 city (Dim. Theatro ↔ Doukissis Plakentias) ----------------
+    ("M3", "mon_thu", "05:30", "06:00", 10.0,    "early_morning",   "both"),
+    ("M3", "mon_thu", "06:00", "06:30", 7.0,     "early_morning",   "both"),
+    ("M3", "mon_thu", "06:30", "07:00", 4.5,     "early_morning",   "both"),
+    ("M3", "mon_thu", "07:00", "10:00", 4.0,     "morning_peak",    "both"),
+    ("M3", "mon_thu", "10:00", "10:30", 5.0,     "midday_offpeak",  "both"),
+    ("M3", "mon_thu", "10:30", "13:30", 6.0,     "midday_offpeak",  "both"),
+    ("M3", "mon_thu", "13:30", "14:00", 5.5,     "midday_offpeak",  "both"),
+    ("M3", "mon_thu", "14:00", "18:00", 4.25,    "afternoon_peak",  "both"),  # 4'15"
+    ("M3", "mon_thu", "18:00", "19:30", 4.583,   "evening_peak",    "both"),  # 4'35"
+    ("M3", "mon_thu", "19:30", "20:30", 5.5,     "evening_offpeak", "both"),
+    ("M3", "mon_thu", "20:30", "21:00", 6.25,    "evening_offpeak", "both"),  # 6'15"
+    ("M3", "mon_thu", "21:00", "21:30", 7.0,     "wind_down",       "both"),
+    ("M3", "mon_thu", "21:30", "22:00", 8.0,     "wind_down",       "both"),
+    ("M3", "mon_thu", "22:00", "00:20", 9.0,     "late_night",      "both"),
+    ("M3", "fri", "05:30", "06:00", 10.0,    "early_morning",   "both"),
+    ("M3", "fri", "06:00", "06:30", 7.0,     "early_morning",   "both"),
+    ("M3", "fri", "06:30", "07:00", 4.5,     "early_morning",   "both"),
+    ("M3", "fri", "07:00", "10:00", 4.0,     "morning_peak",    "both"),
+    ("M3", "fri", "10:00", "10:30", 5.0,     "midday_offpeak",  "both"),
+    ("M3", "fri", "10:30", "13:30", 6.0,     "midday_offpeak",  "both"),
+    ("M3", "fri", "13:30", "14:00", 5.5,     "midday_offpeak",  "both"),
+    ("M3", "fri", "14:00", "18:00", 4.25,    "afternoon_peak",  "both"),
+    ("M3", "fri", "18:00", "19:30", 4.583,   "evening_peak",    "both"),
+    ("M3", "fri", "19:30", "20:30", 5.5,     "evening_offpeak", "both"),
+    ("M3", "fri", "20:30", "21:00", 6.25,    "evening_offpeak", "both"),
+    ("M3", "fri", "21:00", "21:30", 7.0,     "wind_down",       "both"),
+    ("M3", "fri", "21:30", "22:00", 8.0,     "wind_down",       "both"),
+    ("M3", "fri", "22:00", "00:20", 9.0,     "late_night",      "both"),
+    ("M3", "fri", "00:20", "02:00", 15.0,    "fri_late_extension", "both"),
+    ("M3", "sat", "05:30", "09:00", 10.0,    "saturday_morning","both"),
+    ("M3", "sat", "09:00", "12:00", 9.0,     "saturday_day",    "both"),
+    ("M3", "sat", "12:00", "12:30", 8.5,     "saturday_day",    "both"),
+    ("M3", "sat", "12:30", "13:00", 7.5,     "saturday_day",    "both"),
+    ("M3", "sat", "13:00", "21:00", 7.0,     "saturday_day",    "both"),
+    ("M3", "sat", "21:00", "21:30", 7.5,     "saturday_evening","both"),
+    ("M3", "sat", "21:30", "22:00", 8.0,     "saturday_evening","both"),
+    ("M3", "sat", "22:00", "00:20", 9.0,     "saturday_evening","both"),
+    ("M3", "sat", "00:20", "05:30", 15.0,    "saturday_overnight_24_7", "both"),
+    ("M3", "sun", "05:30", "07:00", 10.0,    "sunday_morning",  "both"),
+    ("M3", "sun", "07:00", "10:00", 9.0,     "sunday_day",      "both"),
+    ("M3", "sun", "10:00", "11:00", 8.5,     "sunday_day",      "both"),
+    ("M3", "sun", "11:00", "19:00", 7.5,     "sunday_day",      "both"),
+    ("M3", "sun", "19:00", "20:30", 9.0,     "sunday_evening",  "both"),
+    ("M3", "sun", "20:30", "21:30", 8.5,     "sunday_evening",  "both"),
+    ("M3", "sun", "21:30", "00:20", 10.0,    "sunday_late",     "both"),
 
-    # Weekday evening peak 17:00-20:00
-    ("M1", "mon_thu", "17:00", "20:00", 6.0,  "evening_peak"),
-    ("M2", "mon_thu", "17:00", "20:00", 4.5,  "evening_peak"),
-    ("M3", "mon_thu", "17:00", "20:00", 4.5,  "evening_peak"),
-    ("M3_AIR", "mon_thu", "17:00", "20:00", 36.0, "evening_peak"),
-    ("T6", "mon_thu", "17:00", "20:00", 10.0, "evening_peak"),
-    ("T7", "mon_thu", "17:00", "20:00", 10.0, "evening_peak"),
+    # ---------------- M3_AIR (airport route, per-direction) ----------------
+    # Outbound: from Dim. Theatro towards Airport. First 05:30, last 22:54
+    # Mon-Thu/Sun (Fri last 01:34 — but per STASY the Friday late extension
+    # excludes airport, so we keep Fri identical). Inbound: from Airport
+    # towards Dim. Theatro. First 06:10, last 23:34.
+    ("M3_AIR", "mon_thu", "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "mon_thu", "06:10", "23:34", 36.0, "airport_daily", "inbound"),
+    ("M3_AIR", "fri",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "fri",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
+    ("M3_AIR", "sat",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "sat",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
+    ("M3_AIR", "sun",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "sun",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
 
-    # Weekday night off-peak 20:00-22:30
-    ("M1", "mon_thu", "20:00", "22:30", 10.0, "night_offpeak"),
-    ("M2", "mon_thu", "20:00", "22:30", 10.0, "night_offpeak"),
-    ("M3", "mon_thu", "20:00", "22:30", 10.0, "night_offpeak"),
-    ("M3_AIR", "mon_thu", "20:00", "23:00", 36.0, "night_offpeak"),
-    ("T6", "mon_thu", "20:00", "22:30", 15.0, "night_offpeak"),
-    ("T7", "mon_thu", "20:00", "22:30", 15.0, "night_offpeak"),
+    # ---------------- T6 (Syntagma ↔ Pikrodafni) ----------------
+    ("T6", "mon_thu", "05:30", "07:00", 12.0, "early_morning",  "both"),
+    ("T6", "mon_thu", "07:00", "19:00", 9.0,  "day",            "both"),
+    ("T6", "mon_thu", "19:00", "22:00", 12.0, "evening",        "both"),
+    ("T6", "mon_thu", "22:00", "00:30", 15.0, "late_night",     "both"),
+    ("T6", "fri", "05:30", "07:00", 12.0, "early_morning",  "both"),
+    ("T6", "fri", "07:00", "19:00", 9.0,  "day",            "both"),
+    ("T6", "fri", "19:00", "22:00", 12.0, "evening",        "both"),
+    ("T6", "fri", "22:00", "00:30", 15.0, "late_night",     "both"),
+    ("T6", "fri", "00:30", "01:40", 25.0, "fri_late_extension", "both"),
+    ("T6", "sat", "05:30", "09:00", 15.0, "saturday_morning", "both"),
+    ("T6", "sat", "09:00", "21:00", 12.0, "saturday_day",     "both"),
+    ("T6", "sat", "21:00", "00:30", 15.0, "saturday_evening", "both"),
+    ("T6", "sat", "00:30", "05:30", 25.0, "saturday_overnight_24_7", "both"),
+    ("T6", "sun", "05:30", "09:00", 15.0, "sunday_morning",   "both"),
+    ("T6", "sun", "09:00", "21:00", 15.0, "sunday_day",       "both"),
+    ("T6", "sun", "21:00", "00:30", 15.0, "sunday_evening",   "both"),
 
-    # Weekday late-night wind-down 22:30-00:30
-    ("M1", "mon_thu", "22:30", "24:30", 15.0, "late_night"),
-    ("M2", "mon_thu", "22:30", "24:30", 15.0, "late_night"),
-    ("M3", "mon_thu", "22:30", "24:30", 15.0, "late_night"),
-    ("T6", "mon_thu", "22:30", "25:00", 15.0, "late_night"),
-    ("T7", "mon_thu", "22:30", "25:00", 15.0, "late_night"),
+    # ---------------- T7 (Akti Posidonos ↔ Asklipiio Voulas) ----------------
+    ("T7", "mon_thu", "05:30", "07:00", 12.0, "early_morning",  "both"),
+    ("T7", "mon_thu", "07:00", "19:00", 12.0, "day",            "both"),
+    ("T7", "mon_thu", "19:00", "22:00", 12.0, "evening",        "both"),
+    ("T7", "mon_thu", "22:00", "00:30", 15.0, "late_night",     "both"),
+    ("T7", "fri", "05:30", "07:00", 12.0, "early_morning",  "both"),
+    ("T7", "fri", "07:00", "19:00", 12.0, "day",            "both"),
+    ("T7", "fri", "19:00", "22:00", 12.0, "evening",        "both"),
+    ("T7", "fri", "22:00", "00:30", 15.0, "late_night",     "both"),
+    ("T7", "fri", "00:30", "01:40", 25.0, "fri_late_extension", "both"),
+    ("T7", "sat", "05:30", "09:00", 15.0, "saturday_morning", "both"),
+    ("T7", "sat", "09:00", "21:00", 15.0, "saturday_day",     "both"),
+    ("T7", "sat", "21:00", "00:30", 15.0, "saturday_evening", "both"),
+    ("T7", "sat", "00:30", "05:30", 25.0, "saturday_overnight_24_7", "both"),
+    ("T7", "sun", "05:30", "09:00", 15.0, "sunday_morning",   "both"),
+    ("T7", "sun", "09:00", "21:00", 15.0, "sunday_day",       "both"),
+    ("T7", "sun", "21:00", "00:30", 15.0, "sunday_evening",   "both"),
 
-    # Friday clones weekday daytime, then late extension 00:30-02:00 @ 15 min
-    ("M1", "fri", "05:00", "07:00", 8.0,  "early_morning"),
-    ("M1", "fri", "07:00", "10:00", 6.0,  "morning_peak"),
-    ("M1", "fri", "10:00", "17:00", 8.0,  "midday_offpeak"),
-    ("M1", "fri", "17:00", "20:00", 6.0,  "evening_peak"),
-    ("M1", "fri", "20:00", "22:30", 10.0, "night_offpeak"),
-    ("M1", "fri", "22:30", "24:30", 15.0, "late_night"),
-
-    ("M2", "fri", "05:30", "07:00", 6.0,  "early_morning"),
-    ("M2", "fri", "07:00", "10:00", 4.0,  "morning_peak"),
-    ("M2", "fri", "10:00", "17:00", 6.0,  "midday_offpeak"),
-    ("M2", "fri", "17:00", "20:00", 4.5,  "evening_peak"),
-    ("M2", "fri", "20:00", "22:30", 10.0, "night_offpeak"),
-    ("M2", "fri", "22:30", "00:30", 15.0, "late_night"),
-    ("M2", "fri", "00:30", "02:00", 15.0, "fri_late_extension"),
-
-    ("M3", "fri", "05:30", "07:00", 6.0,  "early_morning"),
-    ("M3", "fri", "07:00", "10:00", 4.0,  "morning_peak"),
-    ("M3", "fri", "10:00", "17:00", 6.0,  "midday_offpeak"),
-    ("M3", "fri", "17:00", "20:00", 4.5,  "evening_peak"),
-    ("M3", "fri", "20:00", "22:30", 10.0, "night_offpeak"),
-    ("M3", "fri", "22:30", "00:30", 15.0, "late_night"),
-    ("M3", "fri", "00:30", "02:00", 15.0, "fri_late_extension"),
-
-    ("M3_AIR", "fri", "05:30", "23:00", 36.0, "all_day_fixed"),
-
-    ("T6", "fri", "05:00", "07:00", 12.0, "early_morning"),
-    ("T6", "fri", "07:00", "10:00", 10.0, "morning_peak"),
-    ("T6", "fri", "10:00", "17:00", 12.0, "midday_offpeak"),
-    ("T6", "fri", "17:00", "20:00", 10.0, "evening_peak"),
-    ("T6", "fri", "20:00", "22:30", 15.0, "night_offpeak"),
-    ("T6", "fri", "22:30", "25:30", 15.0, "late_night"),
-
-    ("T7", "fri", "05:00", "07:00", 12.0, "early_morning"),
-    ("T7", "fri", "07:00", "10:00", 10.0, "morning_peak"),
-    ("T7", "fri", "10:00", "17:00", 12.0, "midday_offpeak"),
-    ("T7", "fri", "17:00", "20:00", 10.0, "evening_peak"),
-    ("T7", "fri", "20:00", "22:30", 15.0, "night_offpeak"),
-    ("T7", "fri", "22:30", "25:30", 15.0, "late_night"),
-
-    # Saturday daytime
-    ("M1", "sat", "05:00", "20:00", 9.0,  "saturday_day"),
-    ("M2", "sat", "05:30", "20:00", 8.5,  "saturday_day"),
-    ("M3", "sat", "05:30", "20:00", 8.5,  "saturday_day"),
-    ("M3_AIR", "sat", "05:30", "23:00", 36.0, "saturday_day_fixed"),
-    ("T6", "sat", "05:30", "20:00", 12.0, "saturday_day"),
-    ("T7", "sat", "05:30", "20:00", 12.0, "saturday_day"),
-
-    # Saturday evening + 24/7 overnight (M2/M3/Tram only, M1 closes normally)
-    ("M1", "sat", "20:00", "24:30", 15.0, "saturday_evening"),
-    ("M2", "sat", "20:00", "00:30", 15.0, "saturday_evening"),
-    ("M2", "sat", "00:30", "05:30", 15.0, "saturday_overnight_24_7"),
-    ("M3", "sat", "20:00", "00:30", 15.0, "saturday_evening"),
-    ("M3", "sat", "00:30", "05:30", 15.0, "saturday_overnight_24_7"),
-    ("T6", "sat", "20:00", "00:30", 15.0, "saturday_evening"),
-    ("T6", "sat", "00:30", "05:30", 15.0, "saturday_overnight_24_7"),
-    ("T7", "sat", "20:00", "00:30", 15.0, "saturday_evening"),
-    ("T7", "sat", "00:30", "05:30", 15.0, "saturday_overnight_24_7"),
-
-    # Sunday holiday-style
-    ("M1", "sun", "05:00", "24:30", 12.5, "sunday_all_day"),
-    ("M2", "sun", "05:30", "00:30", 12.5, "sunday_all_day"),
-    ("M3", "sun", "05:30", "00:30", 12.5, "sunday_all_day"),
-    ("M3_AIR", "sun", "05:30", "23:00", 36.0, "sunday_all_day_fixed"),
-    ("T6", "sun", "05:30", "01:00", 15.0, "sunday_all_day"),
-    ("T7", "sun", "05:30", "01:00", 15.0, "sunday_all_day"),
-
-    # August 15 — flat 12-min interval all metro, airport remains 36 min
-    ("M1", "aug_15", "05:00", "24:30", 12.0, "aug15_flat"),
-    ("M2", "aug_15", "05:30", "00:30", 12.0, "aug15_flat"),
-    ("M3", "aug_15", "05:30", "00:30", 12.0, "aug15_flat"),
-    ("M3_AIR", "aug_15", "05:30", "23:00", 36.0, "aug15_flat_fixed"),
-    ("T6", "aug_15", "05:30", "01:00", 15.0, "aug15_tram"),
-    ("T7", "aug_15", "05:30", "01:00", 15.0, "aug15_tram"),
-
-    # Dec 24/31 — last trains 22:00–22:20, full shutdown by 23:00
-    ("M1", "dec_24_31", "05:00", "22:20", 10.0, "early_shutdown"),
-    ("M2", "dec_24_31", "05:30", "22:20", 10.0, "early_shutdown"),
-    ("M3", "dec_24_31", "05:30", "22:20", 10.0, "early_shutdown"),
-    ("M3_AIR", "dec_24_31", "05:30", "22:00", 36.0, "early_shutdown"),
-    ("T6", "dec_24_31", "05:30", "22:20", 12.0, "early_shutdown"),
-    ("T7", "dec_24_31", "05:30", "22:20", 12.0, "early_shutdown"),
-
-    # === Suburban (Hellenic Train). Effective 2025-11-22 ===
-    # A1 Piraeus-Athens-Airport, ~hourly through-trains. Interleaved with A2 at Airport-Metamorfosi.
-    ("A1", "mon_thu", "04:00", "06:30", 60.0, "early_morning"),
-    ("A1", "mon_thu", "06:30", "21:30", 60.0, "weekday_all_day"),
-    ("A1", "mon_thu", "21:30", "23:00", 60.0, "evening"),
-    ("A1", "fri",     "04:00", "23:00", 60.0, "weekday_all_day"),
-    ("A1", "sat",     "05:00", "22:00", 75.0, "weekend"),
-    ("A1", "sun",     "05:00", "22:00", 75.0, "weekend"),
-
-    # A2 Ano Liosia-Airport branch. Interleaved with A1 at Airport corridor for combined 20-min.
-    ("A2", "mon_thu", "05:30", "22:00", 30.0, "weekday_all_day"),
-    ("A2", "fri",     "05:30", "22:00", 30.0, "weekday_all_day"),
-    ("A2", "sat",     "06:00", "22:00", 60.0, "weekend"),
-    ("A2", "sun",     "06:00", "22:00", 60.0, "weekend"),
-
-    # A3 Athens-Chalkida regional. Roughly hourly off-peak, denser at peak.
-    ("A3", "mon_thu", "05:00", "08:00", 60.0, "early_morning"),
-    ("A3", "mon_thu", "08:00", "20:00", 60.0, "weekday_all_day"),
-    ("A3", "mon_thu", "20:00", "23:00", 90.0, "evening"),
-    ("A3", "fri",     "05:00", "23:00", 60.0, "weekday_all_day"),
-    ("A3", "sat",     "06:00", "22:00", 90.0, "weekend"),
-    ("A3", "sun",     "06:00", "22:00", 90.0, "weekend"),
-
-    # A4 Piraeus-Kiato regional. Hourly through-trains.
-    ("A4", "mon_thu", "04:30", "23:30", 60.0, "weekday_all_day"),
-    ("A4", "fri",     "04:30", "23:30", 60.0, "weekday_all_day"),
-    ("A4", "sat",     "05:30", "22:30", 90.0, "weekend"),
-    ("A4", "sun",     "05:30", "22:30", 90.0, "weekend"),
+    # ---------------- Suburban (Hellenic Train, placeholder cadence) ----------------
+    ("A1", "mon_thu", "04:00", "23:00", 60.0, "weekday",  "both"),
+    ("A1", "fri",     "04:00", "23:00", 60.0, "weekday",  "both"),
+    ("A1", "sat",     "05:00", "22:00", 90.0, "weekend",  "both"),
+    ("A1", "sun",     "05:00", "22:00", 90.0, "weekend",  "both"),
+    ("A2", "mon_thu", "05:30", "22:00", 60.0, "weekday",  "both"),
+    ("A2", "fri",     "05:30", "22:00", 60.0, "weekday",  "both"),
+    ("A2", "sat",     "06:00", "22:00", 90.0, "weekend",  "both"),
+    ("A2", "sun",     "06:00", "22:00", 90.0, "weekend",  "both"),
+    ("A3", "mon_thu", "05:00", "23:00", 90.0, "weekday",  "both"),
+    ("A3", "fri",     "05:00", "23:00", 90.0, "weekday",  "both"),
+    ("A3", "sat",     "06:00", "22:00", 120.0,"weekend",  "both"),
+    ("A3", "sun",     "06:00", "22:00", 120.0,"weekend",  "both"),
+    ("A4", "mon_thu", "04:30", "23:30", 60.0, "weekday",  "both"),
+    ("A4", "fri",     "04:30", "23:30", 60.0, "weekday",  "both"),
+    ("A4", "sat",     "05:30", "22:30", 90.0, "weekend",  "both"),
+    ("A4", "sun",     "05:30", "22:30", 90.0, "weekend",  "both"),
 ]
 
 # Holiday calendar. date_pattern + day_type to apply.
@@ -584,8 +632,9 @@ def apply(conn, dry_run: bool) -> dict:
             WEEKLY_HOURS,
         )
         cur.executemany(
-            "INSERT INTO frequency_bands(line_id,day_type,time_start,time_end,headway_minutes,label)"
-            " VALUES(?,?,?,?,?,?)",
+            "INSERT INTO frequency_bands"
+            "(line_id,day_type,time_start,time_end,headway_minutes,label,direction)"
+            " VALUES(?,?,?,?,?,?,?)",
             FREQUENCY_BANDS,
         )
         cur.executemany(
