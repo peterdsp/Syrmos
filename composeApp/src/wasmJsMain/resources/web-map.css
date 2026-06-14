@@ -803,18 +803,14 @@ body {
         top: auto;
         right: 0;
         left: 0;
-        /* Anchor to the bottom of the visible viewport regardless of mobile
-           browser. Combination of:
-           - bottom: 0 keeps the panel inside the layout flow under 100dvh,
-             which all modern Chrome/Brave/Firefox/Edge/Samsung mobile
-             browsers shrink when their address bar shows.
-           - env(safe-area-inset-bottom) lifts the panel above iOS Safari's
-             home indicator and any rounded-corner intrusion.
-           - max() instead of bare env() so older non-safe-area browsers
-             still get a 12px buffer rather than sitting flush at y=0. */
-        bottom: max(12px, env(safe-area-inset-bottom, 12px));
+        /* Anchor flush to the viewport bottom. The home-indicator safe
+           area is absorbed via padding-bottom so the panel fabric runs
+           all the way to the edge instead of leaving a visible body /
+           Safari-chrome strip below the rounded card. */
+        bottom: 0;
         width: 100%;
         max-height: calc(64px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         border-radius: 18px 18px 0 0;
         background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(20px);
