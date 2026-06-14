@@ -1302,9 +1302,12 @@
         });
 
         const topBar = document.querySelector(".top-bar");
+        const rightPanel = document.getElementById("insightPanelRight");
         if (topBar && window.matchMedia("(min-width: 721px)").matches) {
             const observer = new ResizeObserver(() => {
-                panel.style.top = (topBar.offsetHeight + topBar.offsetTop + 12) + "px";
+                const topPx = (topBar.offsetHeight + topBar.offsetTop + 12) + "px";
+                panel.style.top = topPx;
+                if (rightPanel) rightPanel.style.top = topPx;
             });
             observer.observe(topBar);
         }
