@@ -1,27 +1,28 @@
 package com.syrmos.feature.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,16 +40,27 @@ import com.syrmos.core.network.SyrmosContactService
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
-/// User-facing form to send the developer a message.
+/// Settings → "Contact developer" bottom sheet.
 ///
-/// Posts multipart/form-data to /api/contact on the Pi. The Pi stores the
-/// message in its admin inbox at /admin/contact and optionally fires an
-/// email nudge to the admin. The iOS app has a richer native version of
-/// this same screen that can attach a photo or video — the KMP version
-/// keeps to a text payload for now since cross-platform file pickers
-/// would require expect/actual plumbing and the iOS side covers media.
+/// Slides up over the Settings screen rather than navigating away, so the
+/// user keeps their place. Posts multipart/form-data to /api/contact, then
+/// auto-dismisses on success. The KMP version is text-only — the iOS app's
+/// native SwiftUI equivalent (ContactDeveloperView.swift) handles photo /
+/// video attachments via PhotosPicker.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContactDeveloperScreen(onBack: () -> Unit) {
+fun ContactDeveloperSheet(onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        ContactDeveloperSheetContent(onDismiss = onDismiss)
+    }
+}
+
+@Composable
+private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
     val lang by LocalizationManager.language.collectAsState()
     val service = koinInject<SyrmosContactService>()
     val scope = rememberCoroutineScope()
@@ -63,27 +76,20 @@ fun ContactDeveloperScreen(onBack: () -> Unit) {
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp)),
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            TextButton(onClick = onBack) {
-                Text(if (lang == AppLanguage.GREEK) "← Πίσω" else "← Back")
-            }
-            Spacer(modifier = Modifier.size(8.dp))
-            Text(
-                text = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον προγραμματιστή" else "Contact developer",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        Text(
+            text = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον προγραμματιστή" else "Contact developer",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
 
         Text(
             text = if (lang == AppLanguage.GREEK)
-                "Στείλε σχόλιο, αναφορά σφάλματος ή ιδέα. Όλα τα μηνύματα φτάνουν στον προγραμματιστή."
+                "Στείλε σχόλιο, αναφορά σφάλματος ή ιδέα. Όλα φτάνουν στον προγραμματιστή."
             else
                 "Send feedback, a bug report or an idea. Every message lands in the developer's inbox.",
             style = MaterialTheme.typography.bodyMedium,
@@ -91,7 +97,7 @@ fun ContactDeveloperScreen(onBack: () -> Unit) {
         )
 
         Surface(
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(16.dp),
             tonalElevation = 1.dp,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -99,7 +105,7 @@ fun ContactDeveloperScreen(onBack: () -> Unit) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(if (lang == AppLanguage.GREEK) "Κατηγορία" else "Category")
                     TextButton(onClick = { menuOpen = true }) {
@@ -149,7 +155,7 @@ fun ContactDeveloperScreen(onBack: () -> Unit) {
 
         statusBanner?.let { banner ->
             Surface(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = if (statusIsError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -161,48 +167,60 @@ fun ContactDeveloperScreen(onBack: () -> Unit) {
             }
         }
 
-        Button(
-            onClick = {
-                if (sending || message.isBlank()) return@Button
-                scope.launch {
-                    sending = true
-                    statusBanner = null
-                    val result = service.submit(
-                        platform = currentPlatformId(),
-                        message = message.trim(),
-                        category = category,
-                        subject = subject.trim().ifEmpty { null },
-                        contactEmail = email.trim().ifEmpty { null },
-                        appVersion = currentAppVersion(),
-                        locale = if (lang == AppLanguage.GREEK) "el" else "en",
-                        userAgent = currentPlatformUserAgent(),
-                    )
-                    sending = false
-                    if (result != null) {
-                        statusIsError = false
-                        statusBanner = if (lang == AppLanguage.GREEK)
-                            "Στάλθηκε. Αναφορά #${result.id}."
-                        else
-                            "Sent. Reference #${result.id}."
-                        subject = ""
-                        message = ""
-                        email = ""
-                        category = "bug"
-                    } else {
-                        statusIsError = true
-                        statusBanner = if (lang == AppLanguage.GREEK)
-                            "Δεν ήταν δυνατή η αποστολή. Έλεγξε τη σύνδεση και ξαναπροσπάθησε."
-                        else
-                            "Couldn't send. Check your connection and try again."
-                    }
-                }
-            },
-            enabled = !sending && message.isNotBlank(),
+        Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (sending) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                enabled = !sending,
+            ) {
+                Text(if (lang == AppLanguage.GREEK) "Κλείσιμο" else "Close")
+            }
+            Button(
+                onClick = {
+                    if (sending || message.isBlank()) return@Button
+                    scope.launch {
+                        sending = true
+                        statusBanner = null
+                        val result = service.submit(
+                            platform = currentPlatformId(),
+                            message = message.trim(),
+                            category = category,
+                            subject = subject.trim().ifEmpty { null },
+                            contactEmail = email.trim().ifEmpty { null },
+                            appVersion = currentAppVersion(),
+                            locale = if (lang == AppLanguage.GREEK) "el" else "en",
+                            userAgent = currentPlatformUserAgent(),
+                        )
+                        sending = false
+                        if (result != null) {
+                            statusIsError = false
+                            statusBanner = if (lang == AppLanguage.GREEK)
+                                "Στάλθηκε. Αναφορά #${result.id}."
+                            else
+                                "Sent. Reference #${result.id}."
+                            subject = ""
+                            message = ""
+                            email = ""
+                            category = "bug"
+                        } else {
+                            statusIsError = true
+                            statusBanner = if (lang == AppLanguage.GREEK)
+                                "Δεν ήταν δυνατή η αποστολή. Έλεγξε τη σύνδεση και ξαναπροσπάθησε."
+                            else
+                                "Couldn't send. Check your connection and try again."
+                        }
+                    }
+                },
+                enabled = !sending && message.isNotBlank(),
+                modifier = Modifier.weight(1f),
+            ) {
+                if (sending) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.size(8.dp))
+                }
                 Text(if (lang == AppLanguage.GREEK) "Αποστολή" else "Send")
             }
         }

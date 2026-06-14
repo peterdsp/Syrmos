@@ -6,6 +6,7 @@ struct SyrmosSettingsView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var safariURL: URL?
     @State private var refreshAlert: RefreshAlert?
+    @State private var showContactSheet = false
 
     private struct RefreshAlert: Identifiable {
         let id = UUID()
@@ -91,15 +92,19 @@ struct SyrmosSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section {
-                    NavigationLink {
-                        ContactDeveloperView()
+                Section(loc.language == .greek ? "Επικοινωνία" : "Contact") {
+                    Button {
+                        showContactSheet = true
                     } label: {
                         Label(
                             loc.language == .greek ? "Επικοινωνία με τον προγραμματιστή" : "Contact developer",
                             systemImage: "envelope"
                         )
                     }
+                    .foregroundStyle(.primary)
+                }
+
+                Section {
                     NavigationLink {
                         DiagnosticsView()
                     } label: {
@@ -115,6 +120,20 @@ struct SyrmosSettingsView: View {
             .background(Color.syrmosBackground)
             .toolbar(.hidden, for: .navigationBar)
             .inAppSafari(url: $safariURL)
+            .sheet(isPresented: $showContactSheet) {
+                NavigationStack {
+                    ContactDeveloperView()
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button(loc.language == .greek ? "Κλείσιμο" : "Close") {
+                                    showContactSheet = false
+                                }
+                            }
+                        }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
             .alert(item: $refreshAlert) { alert in
                 Alert(
                     title: Text(alert.title),
