@@ -708,8 +708,41 @@
         }
     }
 
-    function renderDepartures(station) {
-        const departures = buildStationDepartures(station);
+    async function fetchApiDepartures(station) {
+        // The server-side projector at /api/departures/next is the single
+        // source of truth (iOS uses it too). It returns regular city M3
+        // service alongside M3_AIR, sorted by minutesAway, so the bottom
+        // sheet shows both Doukissis Plakentias and Airport rows.
+        try {
+            const stationId = station.stationIds?.[0] || station.id;
+            const expanded = expandLineIds(stationId, station.lineIds);
+            if (!expanded.length) return null;
+            const url = `https://api-syrmos.peterdsp.dev/api/departures/next?stationId=${encodeURIComponent(stationId)}&lineIds=${encodeURIComponent(expanded.join(","))}&limit=10`;
+            const r = await fetch(url);
+            if (!r.ok) return null;
+            const data = await r.json();
+            const items = (data.departures || []).map((dep) => {
+                const lineKey = dep.lineId === "M3_AIR" ? "M3" : dep.lineId;
+                const line = lineMap.get(lineKey) || { id: lineKey, name: dep.line || lineKey, color: "#64748b" };
+                return {
+                    line,
+                    direction: dep.direction || "",
+                    destination: dep.direction || "",
+                    minutesAway: Math.max(0, Math.round(dep.minutesAway)),
+                    time: dep.time || "",
+                };
+            });
+            return items;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function renderDepartures(station) {
+        const apiDepartures = await fetchApiDepartures(station);
+        const departures = (apiDepartures && apiDepartures.length)
+            ? apiDepartures
+            : buildStationDepartures(station);
         if (!departures.length) {
             stationDepartures.innerHTML = '<div class="departure-empty">No departures available for this station right now.</div>';
             return;
