@@ -20,6 +20,7 @@ final class SyrmosSchedulesStore: ObservableObject {
     @Published var freshDataSummary: String = ""
 
     private let kKnownVersionKey = "syrmos.schedules.knownVersion"
+    private let kBaselineMigrationKey = "syrmos.schedules.baseline.v2"
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -61,11 +62,21 @@ final class SyrmosSchedulesStore: ObservableObject {
     private func evaluateFreshData() {
         guard let version = manifestVersion else { return }
         let defaults = UserDefaults.standard
-        // First launch (fresh install) has no stored value, so UserDefaults
-        // returns the default 0. Treat that as "user already has whatever
-        // the API currently serves" — silently baseline the version and
-        // skip the alert. Otherwise every first-launch sees the "New data
-        // available" prompt with nothing actually new.
+        // One-time re-baseline. Older builds wrote 0 to kKnownVersionKey on
+        // fresh install (UserDefaults.integer returns 0 even when unset),
+        // so when the API version later moved above 0 every user saw the
+        // "New data available" prompt with nothing actually new. The first
+        // launch under this baseline-aware build silently snaps the stored
+        // version to whatever the API currently serves and records the
+        // migration. Subsequent launches use the normal version > known
+        // comparison.
+        if !defaults.bool(forKey: kBaselineMigrationKey) {
+            defaults.set(version, forKey: kKnownVersionKey)
+            defaults.set(true, forKey: kBaselineMigrationKey)
+            return
+        }
+        // Truly fresh installs (no UserDefaults at all) — same idea, no
+        // alert until the user has at least one acknowledged baseline.
         if defaults.object(forKey: kKnownVersionKey) == nil {
             defaults.set(version, forKey: kKnownVersionKey)
             return
