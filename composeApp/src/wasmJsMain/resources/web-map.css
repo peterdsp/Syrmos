@@ -70,37 +70,17 @@ body {
     scrollbar-color: rgba(0,0,0,0.15) transparent;
 }
 
-/* On a wide desktop viewport, split the panel across both edges of the
-   map: keep "Live trains" + "Nearby stations" on the left, hoist Popular
-   stations / OASA tickets / Useful information to a right column. The
-   stretched container stays pointer-events: none so the map between the
-   two columns remains pannable; the cards themselves re-enable pointer
-   events for clicks and scrolling. */
+/* Mirrored right-side panel for wide desktop layouts. Stays empty (and
+   hidden) on mobile; JS reparents the .panel-card--right-on-desktop
+   cards into it once the viewport crosses the 980px breakpoint. */
+.insight-panel--right {
+    display: none;
+}
 @media (min-width: 980px) {
-    .insight-panel {
-        left: 16px;
+    .insight-panel--right {
+        display: flex;
+        left: auto;
         right: 16px;
-        width: auto;
-        bottom: 16px;
-        overflow: visible;
-        pointer-events: none;
-    }
-    .panel-cards-wrap {
-        display: grid;
-        grid-template-columns: 280px 1fr 280px;
-        grid-auto-rows: min-content;
-        column-gap: 16px;
-        row-gap: 10px;
-        align-content: start;
-        overflow: visible;
-        pointer-events: none;
-    }
-    .panel-cards-wrap > .panel-card {
-        grid-column: 1;
-        pointer-events: auto;
-    }
-    .panel-cards-wrap > .panel-card--right-on-desktop {
-        grid-column: 3;
     }
 }
 
