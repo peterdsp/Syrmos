@@ -39,6 +39,7 @@
 		D4A0E928208E4D84AD520D52 /* SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */; };
 		D7E8F9A0B1C2D3E4F5060708 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5060709 /* Diagnostics.swift */; };
 		DF3C6FE39FA544239D09EE50 /* SyrmosFaresStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E4CA5A03BC488B882F9BB0 /* SyrmosFaresStore.swift */; };
+		E1A2B3C4D5E60718293A4B5C /* SyrmosDeparturesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
 /* End PBXBuildFile section */
 
@@ -74,6 +75,7 @@
 		DD55D549DBE24531BEA4597D /* FaresView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaresView.swift; sourceTree = "<group>"; };
 		DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosTrainTimestampsStore.swift; sourceTree = "<group>"; };
 		DDCB57EF47F5B2293727841A /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosDeparturesService.swift; sourceTree = "<group>"; };
 		E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F7CC446436C541DC9D86F2C1 /* SyrmosStationOffsetsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosStationOffsetsStore.swift; sourceTree = "<group>"; };
 		F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosRouteShapesStore.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 				395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */,
 				5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */,
 				0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */,
+				E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */,
 				C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
 				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
 				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
@@ -283,6 +286,7 @@
 				C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */,
 				3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */,
 				002709A0C1454019B429939D /* SyrmosSchedulesService.swift in Sources */,
+				E1A2B3C4D5E60718293A4B5C /* SyrmosDeparturesService.swift in Sources */,
 				A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */,
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,

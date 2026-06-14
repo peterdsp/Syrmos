@@ -36,6 +36,16 @@ class SyrmosKmpLibraryPlugin : Plugin<Project> {
                 sourceCompatibility = org.gradle.api.JavaVersion.VERSION_17
                 targetCompatibility = org.gradle.api.JavaVersion.VERSION_17
             }
+            lint {
+                // Detectors that crash with IncompatibleClassChangeError under the
+                // current Kotlin/AGP combo. Re-enable once the AGP fix ships.
+                disable += setOf(
+                    "NullSafeMutableLiveData",
+                    "RememberInComposition",
+                    "FrequentlyChangingValue",
+                    "AutoboxingStateCreation",
+                )
+            }
         }
     }
 }

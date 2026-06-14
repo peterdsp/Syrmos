@@ -123,6 +123,16 @@ WEEKLY_HOURS = [
 # Frequency bands. headway_minutes is a float (e.g. 4.5, 10.5).
 # day_type ∈ mon_thu | fri | sat | sun | holiday | bank_holiday | aug_15 | dec_24_31
 FREQUENCY_BANDS = [
+    # Weekday early morning 05:30-07:00 (service is open per schedule_rules
+    # from 05:30 but the STASY minute-by-minute table starts at morning_peak;
+    # match Friday's early_morning frequencies, which are the published values).
+    ("M1", "mon_thu", "05:00", "07:00", 8.0,  "early_morning"),
+    ("M2", "mon_thu", "05:30", "07:00", 6.0,  "early_morning"),
+    ("M3", "mon_thu", "05:30", "07:00", 6.0,  "early_morning"),
+    ("M3_AIR", "mon_thu", "05:30", "07:00", 36.0, "early_morning"),
+    ("T6", "mon_thu", "05:00", "07:00", 12.0, "early_morning"),
+    ("T7", "mon_thu", "05:00", "07:00", 12.0, "early_morning"),
+
     # Weekday morning peak 07:00-10:00
     ("M1", "mon_thu", "07:00", "10:00", 6.0,  "morning_peak"),
     ("M2", "mon_thu", "07:00", "10:00", 4.0,  "morning_peak"),
@@ -449,6 +459,13 @@ def apply(conn, dry_run: bool) -> dict:
     sort_idx = 0
     for s in summaries:
         ta, tb = terminals_from_direction(s.direction_label)
+        # Source MD summary conflates M3 city + airport into "Dimotiko Theatro
+        # to Airport". The regular M3 city terminus is Doukissis Plakentias;
+        # only the M3_AIR variant reaches the Airport. Override so the
+        # projector labels regular outbound trains as "towards Doukissis
+        # Plakentias" and only the M3_AIR rows display "Airport".
+        if s.line_id == "M3":
+            tb = "Doukissis Plakentias"
         line_rows.append(
             (
                 s.line_id,

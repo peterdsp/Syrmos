@@ -974,6 +974,37 @@ body {
 
 .dark-mode .leaflet-tile-pane { filter: brightness(0.6) contrast(1.15) saturate(0.75); }
 
+/* OSM tile licensing requires attribution but the default Leaflet styling
+   draws a stark cream-coloured bar across the bottom of the map that clashes
+   with the rounded insight panel. Trim it to a small pill that tucks neatly
+   into the bottom-right corner above the panel. */
+.leaflet-control-attribution {
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: rgba(26, 26, 46, 0.7);
+    font-size: 9px;
+    line-height: 1.2;
+    padding: 1px 6px;
+    margin: 0 6px 6px 0 !important;
+    border-radius: 4px;
+}
+.leaflet-control-attribution a { color: rgba(26, 26, 46, 0.85); }
+.dark-mode .leaflet-control-attribution {
+    background: rgba(10, 10, 10, 0.55) !important;
+    color: rgba(226, 232, 240, 0.7);
+}
+.dark-mode .leaflet-control-attribution a { color: rgba(226, 232, 240, 0.85); }
+/* On phones the panel covers the bottom edge already and the attribution
+   peeking through reads as a stray cream line. Lift it just above the
+   collapsed panel-peek and shrink it further. */
+@media (max-width: 720px) {
+    .leaflet-control-attribution {
+        font-size: 8px;
+        margin: 0 6px max(72px, calc(60px + env(safe-area-inset-bottom, 0px))) 0 !important;
+    }
+}
+
 @media (max-width: 720px) {
     .dark-mode .insight-panel {
         background: rgba(0, 0, 0, 0.98);
