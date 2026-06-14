@@ -52,11 +52,16 @@ fun SettingsScreen() {
     val offlineOnly by scheduleSync.offlineOnly.collectAsState()
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
+    var showContact by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     // Native OASA tickets catalogue takes over the whole tab when shown.
     if (showFares) {
         FaresScreen(onBack = { showFares = false })
+        return
+    }
+    if (showContact) {
+        ContactDeveloperScreen(onBack = { showContact = false })
         return
     }
 
@@ -172,6 +177,16 @@ fun SettingsScreen() {
                     title = if (lang == AppLanguage.GREEK) "Τιμοκατάλογος OASA" else "Ticket prices (OASA)",
                     value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
                     onClick = { showFares = true },
+                )
+            }
+        }
+
+        item {
+            SettingsSection(title = if (lang == AppLanguage.GREEK) "Επικοινωνία" else "Contact") {
+                SettingsRow(
+                    title = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον προγραμματιστή" else "Contact developer",
+                    value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
+                    onClick = { showContact = true },
                 )
             }
         }

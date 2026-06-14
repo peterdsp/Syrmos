@@ -93,6 +93,14 @@ struct SyrmosSettingsView: View {
 
                 Section {
                     NavigationLink {
+                        ContactDeveloperView()
+                    } label: {
+                        Label(
+                            loc.language == .greek ? "Επικοινωνία με τον προγραμματιστή" : "Contact developer",
+                            systemImage: "envelope"
+                        )
+                    }
+                    NavigationLink {
                         DiagnosticsView()
                     } label: {
                         Label(

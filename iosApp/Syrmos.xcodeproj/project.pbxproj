@@ -11,6 +11,7 @@
 		017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */; };
 		03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* ThemeManager.swift */; };
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
+		E1A2B3C4D5E60718293A4C70 /* ContactDeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */; };
 		03FBB75EEE74C7E43F7A609B /* CompactTabHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */; };
 		0658B8596FD64D0EB5BE30A0 /* FaresView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD55D549DBE24531BEA4597D /* FaresView.swift */; };
 		090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */; };
@@ -62,6 +63,7 @@
 		7FD822CADE700A3FA325710D /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineDetailView.swift; sourceTree = "<group>"; };
 		836DE84E99C06ABA19E71805 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactDeveloperView.swift; sourceTree = "<group>"; };
 		836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactTabHeader.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
 		AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 			isa = PBXGroup;
 			children = (
 				836DE84E99C06ABA19E71805 /* SettingsView.swift */,
+				E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -297,6 +300,7 @@
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
 				AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */,
 				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
+				E1A2B3C4D5E60718293A4C70 /* ContactDeveloperView.swift in Sources */,
 				2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */,
 				59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */,
 				B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */,
