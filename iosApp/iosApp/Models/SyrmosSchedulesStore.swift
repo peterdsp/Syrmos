@@ -61,6 +61,15 @@ final class SyrmosSchedulesStore: ObservableObject {
     private func evaluateFreshData() {
         guard let version = manifestVersion else { return }
         let defaults = UserDefaults.standard
+        // First launch (fresh install) has no stored value, so UserDefaults
+        // returns the default 0. Treat that as "user already has whatever
+        // the API currently serves" — silently baseline the version and
+        // skip the alert. Otherwise every first-launch sees the "New data
+        // available" prompt with nothing actually new.
+        if defaults.object(forKey: kKnownVersionKey) == nil {
+            defaults.set(version, forKey: kKnownVersionKey)
+            return
+        }
         let known = defaults.integer(forKey: kKnownVersionKey)
         if version > known {
             hasFreshData = true
