@@ -219,7 +219,7 @@ def _load_bundle(conn: sqlite3.Connection, line_id: str) -> dict | None:
         (line_id,),
     ).fetchall()
     band_rows = conn.execute(
-        "SELECT day_type, time_start, time_end, headway_minutes, label"
+        "SELECT day_type, time_start, time_end, headway_minutes, label, direction"
         " FROM frequency_bands WHERE line_id=? ORDER BY day_type, time_start",
         (line_id,),
     ).fetchall()
@@ -242,6 +242,7 @@ def _load_bundle(conn: sqlite3.Connection, line_id: str) -> dict | None:
                 "timeEnd": r["time_end"],
                 "headwayMinutes": r["headway_minutes"],
                 "label": r["label"] or "",
+                "direction": (r["direction"] if "direction" in r.keys() else "both") or "both",
             }
             for r in band_rows
         ],
@@ -249,8 +250,15 @@ def _load_bundle(conn: sqlite3.Connection, line_id: str) -> dict | None:
 
 
 def _direction_streams(line_id: str, conn: sqlite3.Connection):
+    # M3_AIR runs in both directions per STASY's separate Airport
+    # timetables (Dim. Theatro→Airport and Airport→Dim. Theatro). Expose
+    # both so a station like Nikaia can show "to Airport" alongside
+    # "from Airport".
     if line_id == "M3_AIR":
-        return [("outbound", "Airport")]
+        return [
+            ("outbound", "Airport"),
+            ("inbound", "Dimotiko Theatro"),
+        ]
     display_id = "M3" if line_id.startswith("M3") else line_id
     row = conn.execute(
         "SELECT terminal_a, terminal_b FROM lines WHERE id=?",
@@ -267,12 +275,20 @@ def _direction_streams(line_id: str, conn: sqlite3.Connection):
 def _station_offset_minutes(conn: sqlite3.Connection, line_id: str, direction: str, station_id: str) -> int:
     if not station_id:
         return 0
-    lookup_line_id = "M3" if line_id == "M3_AIR" else line_id
+    # Try the line's own offsets first; fall back to M3 city offsets for
+    # M3_AIR if no M3_AIR-specific row exists yet (the airport route
+    # shares track up to Doukissis Plakentias with M3 city service).
     row = conn.execute(
         "SELECT minutes_from_origin FROM station_offsets"
         " WHERE line_id=? AND direction=? AND station_id=? LIMIT 1",
-        (lookup_line_id, direction.lower(), station_id),
+        (line_id, direction.lower(), station_id),
     ).fetchone()
+    if row is None and line_id == "M3_AIR":
+        row = conn.execute(
+            "SELECT minutes_from_origin FROM station_offsets"
+            " WHERE line_id='M3' AND direction=? AND station_id=? LIMIT 1",
+            (direction.lower(), station_id),
+        ).fetchone()
     return int(row[0]) if row else 0
 
 
@@ -343,7 +359,10 @@ def _project_line(
         bands.sort(key=lambda b: _minutes_of_day(b["timeStart"]) or 0)
 
         for band in bands:
+            band_dir = (band.get("direction") or "both").lower()
             for direction_key, direction_label in streams:
+                if band_dir != "both" and band_dir != direction_key:
+                    continue
                 _project_band(
                     band=band,
                     shift=shift,
@@ -419,12 +438,17 @@ def _total_travel_minutes(conn: sqlite3.Connection, line_id: str, direction: str
     """Maximum minutes_from_origin across all stations on this leg — i.e. the
     travel time from the first station to the terminus. Used to decide whether
     a train that already departed origin is still on the line."""
-    lookup_line_id = "M3" if line_id == "M3_AIR" else line_id
     row = conn.execute(
         "SELECT MAX(minutes_from_origin) AS m FROM station_offsets"
         " WHERE line_id=? AND direction=?",
-        (lookup_line_id, direction.lower()),
+        (line_id, direction.lower()),
     ).fetchone()
+    if (row is None or row[0] is None) and line_id == "M3_AIR":
+        row = conn.execute(
+            "SELECT MAX(minutes_from_origin) AS m FROM station_offsets"
+            " WHERE line_id='M3' AND direction=?",
+            (direction.lower(),),
+        ).fetchone()
     return int(row[0]) if row and row[0] is not None else 0
 
 
@@ -505,7 +529,10 @@ def active_trains(
                 if end < start:
                     continue
 
+                band_dir = (band.get("direction") or "both").lower()
                 for direction_key, _direction_label in streams:
+                    if band_dir != "both" and band_dir != direction_key:
+                        continue
                     travel = _total_travel_minutes(conn, line_id, direction_key)
                     if travel <= 0:
                         continue
