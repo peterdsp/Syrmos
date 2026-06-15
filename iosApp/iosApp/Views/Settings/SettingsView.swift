@@ -99,7 +99,7 @@ struct SyrmosSettingsView: View {
                     } label: {
                         HStack {
                             Label(
-                                loc.language == .greek ? "Χάρτης δικτύου STASY" : "STASY system map",
+                                loc.language == .greek ? "Σιδηροδρομικό δίκτυο Αθήνας" : "Athens metropolitan area railways",
                                 systemImage: "map"
                             )
                             Spacer()

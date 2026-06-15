@@ -185,7 +185,7 @@ fun SettingsScreen() {
         item {
             SettingsSection(title = if (lang == AppLanguage.GREEK) "Χάρτης" else "Map") {
                 SettingsRow(
-                    title = if (lang == AppLanguage.GREEK) "Χάρτης δικτύου STASY" else "STASY system map",
+                    title = if (lang == AppLanguage.GREEK) "Σιδηροδρομικό δίκτυο Αθήνας" else "Athens metropolitan area railways",
                     value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
                     onClick = { openStasyMap() },
                 )

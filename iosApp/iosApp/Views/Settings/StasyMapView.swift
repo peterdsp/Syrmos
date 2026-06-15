@@ -28,7 +28,7 @@ struct StasyMapView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .navigationTitle(loc.language == .greek ? "Χάρτης δικτύου" : "System map")
+            .navigationTitle(loc.language == .greek ? "Σιδηροδρομικό δίκτυο Αθήνας" : "Athens metropolitan area railways")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
