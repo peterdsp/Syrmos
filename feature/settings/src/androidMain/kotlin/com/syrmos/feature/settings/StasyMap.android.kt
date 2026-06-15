@@ -14,11 +14,12 @@ actual fun rememberStasyMapOpener(): () -> Unit {
     val context = LocalContext.current
     return {
         try {
-            // Copy the bundled PDF to the app's cache so a content:// URI can
-            // be granted to the chosen PDF viewer (assets:// isn't shareable).
-            val outFile = File(context.cacheDir, "stasy_system_map.pdf")
+            // Copy the bundled JPEG to the app's cache so a content:// URI
+            // can be granted to the chosen image viewer (assets:// isn't
+            // shareable across packages).
+            val outFile = File(context.cacheDir, "athens_rail_map.jpg")
             if (!outFile.exists() || outFile.length() == 0L) {
-                context.assets.open("stasy_system_map.pdf").use { input ->
+                context.assets.open("athens_rail_map.jpg").use { input ->
                     FileOutputStream(outFile).use { output ->
                         input.copyTo(output)
                     }
@@ -27,7 +28,7 @@ actual fun rememberStasyMapOpener(): () -> Unit {
             val authority = "${context.packageName}.fileprovider"
             val uri: Uri = FileProvider.getUriForFile(context, authority, outFile)
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
+                setDataAndType(uri, "image/jpeg")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
