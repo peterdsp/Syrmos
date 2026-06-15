@@ -28,7 +28,7 @@ struct HomeView: View {
                 .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
             }
             .navigationBarTitleDisplayMode(.inline)

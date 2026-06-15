@@ -27,7 +27,7 @@ struct LinesView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader(loc[.lines])
             }
             .toolbar(.hidden, for: .navigationBar)

@@ -16,6 +16,13 @@ struct CompactTabHeader: View {
     }
 
     var body: some View {
+        capsuleContent
+            .background(capsuleBackground)
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+    }
+
+    private var capsuleContent: some View {
         HStack(alignment: .center, spacing: 0) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -34,12 +41,22 @@ struct CompactTabHeader: View {
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 14)
-        .background(
+    }
+
+    /// iOS 26 ships the real liquid-glass API (the same one the system tab
+    /// bar uses). Apply it when available so the pill picks up Apple's
+    /// specular highlights, edge refraction, and adaptive translucency.
+    /// On iOS 17 / 18 / 25 fall back to the regularMaterial fill that's
+    /// the closest visual approximation.
+    @ViewBuilder
+    private var capsuleBackground: some View {
+        if #available(iOS 26.0, *) {
+            Color.clear
+                .glassEffect(.regular, in: Capsule(style: .continuous))
+        } else {
             Capsule(style: .continuous)
                 .fill(.regularMaterial)
                 .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 5)
-        )
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
+        }
     }
 }
