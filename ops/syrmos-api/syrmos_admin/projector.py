@@ -92,9 +92,15 @@ def project_next_departures(
     bundles = {lid: _load_bundle(conn, lid) for lid in expanded}
     bundles = {k: v for k, v in bundles.items() if v is not None}
 
+    # Skip lines marked closed for today by date_overrides — typically a
+    # STASY announcement (e.g. "Δεν λειτουργούν την Παρασκευή 1η Μαΐου").
+    closed_today = _closed_lines_for_date(conn, now.date().isoformat())
+
     direction_filter = _normalise_direction(direction)
     out: list[Departure] = []
     for lid in expanded:
+        if lid in closed_today or _display_line_id(lid) in closed_today:
+            continue
         bundle = bundles.get(lid)
         if bundle is None:
             continue
@@ -141,6 +147,31 @@ def project_next_departures(
 
 
 # --- internals ---
+
+def _closed_lines_for_date(conn: sqlite3.Connection, date_iso: str) -> set[str]:
+    """Lines that should emit no departures / no active trains for date_iso.
+    Populated by the STASY announcements scraper when it detects a
+    closure ("Δεν λειτουργούν την …"). Each row's payload is JSON; we
+    treat any row with payload.closed == true OR payload.is_closed == true
+    as a closure for that (line_id, date)."""
+    closed: set[str] = set()
+    try:
+        rows = conn.execute(
+            "SELECT line_id, payload_json FROM date_overrides WHERE override_date=?",
+            (date_iso,),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return closed
+    import json as _json
+    for r in rows:
+        try:
+            data = _json.loads(r["payload_json"] or "{}")
+        except (ValueError, TypeError):
+            continue
+        if data.get("closed") is True or data.get("is_closed") is True:
+            closed.add(r["line_id"])
+    return closed
+
 
 def _expand_line_ids(station_id: str, line_ids: list[str]) -> list[str]:
     out: list[str] = []
@@ -481,10 +512,14 @@ def active_trains(
     weekday = (now.isoweekday() % 7) + 1
     holiday = HOLIDAY_DAY_TYPE.get((now.month, now.day))
 
+    closed_today = _closed_lines_for_date(conn, now.date().isoformat())
+
     out: list[dict] = []
     seen: set[tuple[str, str, int]] = set()
 
     for line_id in line_ids:
+        if line_id in closed_today or _display_line_id(line_id) in closed_today:
+            continue
         bundle = _load_bundle(conn, line_id)
         if bundle is None:
             continue

@@ -1,0 +1,10 @@
+[Unit]
+Description=STASY announcements hourly scrape
+
+[Timer]
+OnCalendar=*-*-* *:07:00 Europe/Athens
+Persistent=true
+Unit=syrmos-scraper-stasy.service
+
+[Install]
+WantedBy=timers.target
