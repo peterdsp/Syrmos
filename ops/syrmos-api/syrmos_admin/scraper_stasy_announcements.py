@@ -116,6 +116,62 @@ WARNING_KEYWORDS = (
     "maintenance", "rail replacement",
 )
 
+# Anti-relevance keywords. If an article's title or body matches any of these
+# AND has no transit-relevant signal of its own, it's almost certainly
+# corporate / HR / procurement / culture noise that a transit rider never
+# wants to see ("we hired a new CFO", "tender for office cleaning",
+# "competition for student photography"). Bilingual.
+ANTI_RELEVANCE_KEYWORDS = (
+    # Greek
+    "διαγωνισμ", "πρόσκληση εκδήλωσης", "προμήθεια",
+    "θέσεις εργασίας", "θέση εργασίας", "προκήρυξη θέσ",
+    "ισολογισμός", "οικονομικά στοιχεία", "δελτίο τύπου",
+    "ετήσια έκθεση", "γενική συνέλευση", "διοικητικό συμβούλιο",
+    "εκπαιδευτικ", "πολιτιστικ", "καλλιτεχνικ", "διαγωνισμός φωτογραφ",
+    "πολιτική απορρήτου", "πολιτική cookies", "όροι χρήσης",
+    "εορτασμός", "επέτειος",
+    # English
+    "tender", "procurement", "job position", "vacancy", "recruitment",
+    "annual report", "balance sheet", "press release",
+    "general assembly", "board of directors", "anniversary",
+    "photo competition", "art competition", "student competition",
+    "privacy policy", "cookies policy", "terms of use",
+)
+
+# Transit-relevance keywords. If a title / body matches at least one of these,
+# the article is about something a rider could be affected by. Used both to
+# accept Greek-homepage candidates and to override the anti-relevance check
+# when the body genuinely is about service.
+TRANSIT_RELEVANCE_KEYWORDS = (
+    # Greek
+    "γραμμή 1", "γραμμή 2", "γραμμή 3", "γραμμή 6", "γραμμή 7",
+    "μετρό", "τραμ", "προαστιακ", "δρομολόγ", "σταθμός", "σταθμοί",
+    "συρμό", "συρμοί", "κλείν", "κλειστ", "δεν λειτουργ",
+    "καθυστερ", "διακοπ", "αλλαγή ωραρ", "παράταση ωραρ",
+    "κυκλοφοριακές ρυθμ", "απεργ", "στάση εργασ",
+    "εργασίες", "αντικατάσταση", "λεωφορει",
+    # English
+    "line 1", "line 2", "line 3", "line 6", "line 7",
+    "metro", "tram", "suburban", "station", "stations",
+    "schedule", "schedules", "departure", "operating hours",
+    "closure", "closed", "out of service",
+    "delay", "strike", "service alert", "rail replacement",
+    "traffic arrangement", "maintenance",
+)
+
+
+def is_transit_relevant(text: str) -> bool:
+    """Soft filter for whether an article is about something a rider would
+    want to hear about. Match logic: at least one transit-relevance hit
+    and either zero anti-relevance hits or more transit hits than
+    anti-relevance hits."""
+    lowered = text.lower()
+    transit_hits = sum(1 for k in TRANSIT_RELEVANCE_KEYWORDS if k in lowered)
+    anti_hits = sum(1 for k in ANTI_RELEVANCE_KEYWORDS if k in lowered)
+    if transit_hits == 0:
+        return False
+    return transit_hits >= anti_hits
+
 
 @dataclass
 class AnnouncementItem:
@@ -417,6 +473,10 @@ def build_announcement(
             return None
         summary_en = _summary(body)
     classifier_text = " ".join((title_en, summary_en)).lower()
+    # Transit-relevance gate. Drop corporate / HR / tender / cultural junk
+    # before it ever reaches the DB so the home screen stays signal-only.
+    if not is_transit_relevant(classifier_text):
+        return None
     severity = classify(classifier_text)
     affected = detect_affected_lines(classifier_text)
     if not affected and severity in ("warning", "closure"):
