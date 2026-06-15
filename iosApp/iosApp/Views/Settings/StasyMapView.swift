@@ -42,62 +42,114 @@ struct StasyMapView: View {
     }
 }
 
+/// We render the system-map PDF to a high-resolution UIImage at view
+/// load and show it inside a UIScrollView with pinch + pan. PDFKit's
+/// PDFView always biased the initial layout with internal page padding,
+/// so the user landed on whitespace above the actual map content. The
+/// image+scrollview approach gives full control: zero padding, true
+/// fill-to-view at min zoom, pinch up to 6x, smooth pan in any
+/// direction.
 private struct StasyMapPDF: UIViewRepresentable {
     let url: URL
 
-    func makeUIView(context: Context) -> PDFView {
-        let view = PDFView()
-        view.document = PDFDocument(url: url)
-        // singlePageContinuous + horizontal lets the user scroll/pan
-        // around the over-sized map smoothly. With plain .singlePage
-        // mode the view padlocks to a centered fit and bands the
-        // screen with white space above and below the page.
-        view.displayMode = .singlePageContinuous
-        view.displayDirection = .vertical
-        view.backgroundColor = .systemBackground
-        view.autoScales = false
-        view.maxScaleFactor = 6.0
-        DispatchQueue.main.async {
-            applyFillScale(view)
-        }
-        NotificationCenter.default.addObserver(
-            forName: .PDFViewVisiblePagesChanged,
-            object: view,
-            queue: .main
-        ) { _ in applyFillScale(view) }
+    func makeUIView(context: Context) -> ZoomableImageView {
+        let view = ZoomableImageView()
+        view.image = Self.renderPDF(url: url)
         return view
     }
 
-    func updateUIView(_ uiView: PDFView, context: Context) {
-        DispatchQueue.main.async {
-            applyFillScale(uiView)
+    func updateUIView(_ uiView: ZoomableImageView, context: Context) {}
+
+    /// Single-page render at 3x logical resolution so the map stays
+    /// crisp at maximum zoom. The PDF is ~1 MB, the resulting image is
+    /// ~6-8 MB in memory — comfortable on every supported device.
+    private static func renderPDF(url: URL) -> UIImage? {
+        guard let document = PDFDocument(url: url),
+              let page = document.page(at: 0) else { return nil }
+        let bounds = page.bounds(for: .mediaBox)
+        let scale: CGFloat = 3.0
+        let pixelSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: pixelSize)
+        return renderer.image { context in
+            UIColor.systemBackground.setFill()
+            context.fill(CGRect(origin: .zero, size: pixelSize))
+            context.cgContext.translateBy(x: 0, y: pixelSize.height)
+            context.cgContext.scaleBy(x: scale, y: -scale)
+            page.draw(with: .mediaBox, to: context.cgContext)
+        }
+    }
+}
+
+/// UIScrollView + UIImageView with the standard delegate plumbing for
+/// pinch-zoom and pan, plus a min-zoom that fills the available space
+/// edge-to-edge so the image never letterboxes the view.
+final class ZoomableImageView: UIView, UIScrollViewDelegate {
+    private let scrollView = UIScrollView()
+    private let imageView = UIImageView()
+
+    var image: UIImage? {
+        didSet {
+            imageView.image = image
+            if let image = image {
+                imageView.frame = CGRect(origin: .zero, size: image.size)
+                scrollView.contentSize = image.size
+                setNeedsLayout()
+            }
         }
     }
 
-    /// Initial display strategy: use the scale that makes the page FILL
-    /// the view (the larger of the width/height ratios), not the one
-    /// that makes it fit-inside (the smaller). The Athens map PDF is
-    /// wider than the iPhone screen aspect, so fit-inside left huge
-    /// white bands above and below. Fill-the-view means the user can
-    /// pan to see the cropped sides — the same gesture model as Apple
-    /// Maps. Min scale stays at fit-inside so the user can always pinch
-    /// out to see the whole network.
-    private func applyFillScale(_ view: PDFView) {
-        guard let page = view.document?.page(at: 0) else { return }
-        let pageRect = page.bounds(for: .cropBox)
-        let viewBounds = view.bounds
-        guard viewBounds.width > 0, viewBounds.height > 0,
-              pageRect.width > 0, pageRect.height > 0 else { return }
-        let widthScale = viewBounds.width / pageRect.width
-        let heightScale = viewBounds.height / pageRect.height
-        let fitScale = min(widthScale, heightScale)
-        let fillScale = max(widthScale, heightScale)
-        view.minScaleFactor = fitScale
-        // Don't yank the user back to fill scale if they've pinched
-        // beyond fit. The threshold check leaves their zoom alone once
-        // they've scaled past 110% of fit-inside.
-        if view.scaleFactor <= fitScale * 1.1 {
-            view.scaleFactor = fillScale
-        }
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        scrollView.delegate = self
+        scrollView.maximumZoomScale = 6.0
+        scrollView.minimumZoomScale = 1.0
+        scrollView.bouncesZoom = true
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.contentInsetAdjustmentBehavior = .never
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
+        scrollView.addSubview(imageView)
+        addSubview(scrollView)
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
     }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let image = image, bounds.width > 0, bounds.height > 0 else { return }
+        // Fill the view edge-to-edge as the minimum zoom: pick the
+        // larger of width/height ratios so neither axis letterboxes.
+        // The user can still pinch out to fit-inside; we don't enforce
+        // a hard minimum that hides part of the map.
+        let widthRatio = bounds.width / image.size.width
+        let heightRatio = bounds.height / image.size.height
+        let minZoom = min(widthRatio, heightRatio)
+        let fillZoom = max(widthRatio, heightRatio)
+        scrollView.minimumZoomScale = minZoom
+        if scrollView.zoomScale < minZoom || scrollView.zoomScale > scrollView.maximumZoomScale {
+            scrollView.zoomScale = fillZoom
+        } else if scrollView.zoomScale == 1.0 {
+            // Initial layout pass — match fill so the image fills the view.
+            scrollView.zoomScale = fillZoom
+        }
+        centerContent()
+    }
+
+    private func centerContent() {
+        let boundsSize = scrollView.bounds.size
+        var frameToCenter = imageView.frame
+        frameToCenter.origin.x = max(0, (boundsSize.width - frameToCenter.size.width) / 2)
+        frameToCenter.origin.y = max(0, (boundsSize.height - frameToCenter.size.height) / 2)
+        imageView.frame = frameToCenter
+    }
+
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? { imageView }
+    func scrollViewDidZoom(_ scrollView: UIScrollView) { centerContent() }
 }
