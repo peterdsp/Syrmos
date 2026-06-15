@@ -12,7 +12,6 @@ struct HomeView: View {
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
-    @State private var showFreshDataAlert = false
 
     var body: some View {
         NavigationStack {
@@ -57,35 +56,10 @@ struct HomeView: View {
                     ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
-            // "Hey, new data" alert: fires the first time the refreshed
-            // manifest version on this device is higher than the one we
-            // remember. The store sets hasFreshData=true; we mirror it into
-            // a local @State so the user can dismiss without instantly
-            // re-arming the alert next render.
-            .onChange(of: schedules.hasFreshData) { _, newValue in
-                if newValue { showFreshDataAlert = true }
-            }
-            .alert(
-                loc.language == .greek ? "Νέα δεδομένα" : "New data available",
-                isPresented: $showFreshDataAlert
-            ) {
-                // Primary action: re-pull /api/* so the user gets even the
-                // latest delta that may have shipped between cold start and
-                // this prompt. The bundles are already on disk so this is a
-                // small etag-validated request; in the common case it's a
-                // 304 and exits in under a second.
-                Button(loc.language == .greek ? "Ενημέρωση τώρα" : "Update now") {
-                    Task {
-                        await schedules.refresh()
-                        schedules.ackFreshData()
-                    }
-                }
-                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {
-                    schedules.ackFreshData()
-                }
-            } message: {
-                Text(schedules.freshDataSummary)
-            }
+            // The legacy "New data available" alert was removed — schedule
+            // refreshes happen silently in the background and the new data
+            // simply takes effect on the user's next interaction. See the
+            // store comment on evaluateFreshData() for the rationale.
         }
     }
 

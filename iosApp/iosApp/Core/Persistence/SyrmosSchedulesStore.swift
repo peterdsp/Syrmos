@@ -55,37 +55,24 @@ final class SyrmosSchedulesStore: ObservableObject {
         return outcome
     }
 
-    /// Compares the freshly-loaded manifest version against the last one we
-    /// stored. Sets `hasFreshData=true` plus a one-line `freshDataSummary`
-    /// so the UI can present a "New data" alert. Idempotent: once the user
-    /// dismisses, ackFreshData() bumps the stored version.
+    /// Silently records the freshest manifest version against the device's
+    /// stored baseline. The blocking "New data available" alert this used
+    /// to trigger was bad UX (it fired after the refresh had already
+    /// finished, asking the user to make a decision they couldn't act on
+    /// meaningfully) — see the in-app refresh discussion in the case
+    /// study. `hasFreshData` is therefore kept false. The store keeps
+    /// the property and `ackFreshData()` for binary-compat with any
+    /// remaining consumers; new code should just observe the underlying
+    /// data and let it update.
     private func evaluateFreshData() {
         guard let version = manifestVersion else { return }
         let defaults = UserDefaults.standard
-        // One-time re-baseline. Older builds wrote 0 to kKnownVersionKey on
-        // fresh install (UserDefaults.integer returns 0 even when unset),
-        // so when the API version later moved above 0 every user saw the
-        // "New data available" prompt with nothing actually new. The first
-        // launch under this baseline-aware build silently snaps the stored
-        // version to whatever the API currently serves and records the
-        // migration. Subsequent launches use the normal version > known
-        // comparison.
         if !defaults.bool(forKey: kBaselineMigrationKey) {
-            defaults.set(version, forKey: kKnownVersionKey)
             defaults.set(true, forKey: kBaselineMigrationKey)
-            return
         }
-        // Truly fresh installs (no UserDefaults at all) — same idea, no
-        // alert until the user has at least one acknowledged baseline.
-        if defaults.object(forKey: kKnownVersionKey) == nil {
-            defaults.set(version, forKey: kKnownVersionKey)
-            return
-        }
-        let known = defaults.integer(forKey: kKnownVersionKey)
-        if version > known {
-            hasFreshData = true
-            freshDataSummary = composeFreshDataSummary()
-        }
+        defaults.set(version, forKey: kKnownVersionKey)
+        hasFreshData = false
+        freshDataSummary = ""
     }
 
     func ackFreshData() {
