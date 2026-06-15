@@ -40,7 +40,7 @@ import com.syrmos.core.network.SyrmosContactService
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
-/// Settings → "Contact developer" bottom sheet.
+/// Settings → "Contact engineer" bottom sheet.
 ///
 /// Slides up over the Settings screen rather than navigating away, so the
 /// user keeps their place. Posts multipart/form-data to /api/contact, then
@@ -82,7 +82,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον προγραμματιστή" else "Contact developer",
+            text = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον μηχανικό" else "Contact engineer",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
         )
