@@ -84,10 +84,17 @@ private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 
 private struct LaunchSplashView: View {
     var body: some View {
-        Image("StartScreen")
-            .resizable()
-            .scaledToFill()
-            .ignoresSafeArea()
+        ZStack {
+            // Backdrop matches the LaunchBackground colour the system splash
+            // uses, so there is no visible flash between the OS splash and
+            // this view even before the JPEG decodes.
+            Color(red: 0xF6 / 255, green: 0xF8 / 255, blue: 0xFA / 255)
+                .ignoresSafeArea()
+            Image("StartScreen")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+        }
     }
 }
 
