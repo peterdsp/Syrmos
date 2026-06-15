@@ -31,8 +31,8 @@ RUNTIMES = [
     ("M1", "inbound",  51),  # Kifissia -> Piraeus
     ("M2", "outbound", 32),  # Anthoupoli -> Elliniko
     ("M2", "inbound",  32),
-    ("M3", "outbound", 63),  # Dimotiko Theatro -> Airport (full)
-    ("M3", "inbound",  63),
+    ("M3", "outbound", 44),  # Dim. Theatro -> Doukissis Plakentias (city only)
+    ("M3", "inbound",  44),
     ("T6", "outbound", 33),  # Syntagma -> Pikrodafni
     ("T6", "inbound",  35),
     ("T7", "outbound", 54),  # Akti Posidonos -> Asklipiio Voulas
@@ -87,23 +87,16 @@ STASY_OFFSETS: dict[tuple[str, str], dict[str, int]] = {
         "M3_EGA": 30, "M3_AG2": 32, "M3_AGI": 34, "M3_KOR": 36, "M3_NIK": 38,
         "M3_MAN": 40, "M3_PIR": 42, "M3_DIM": 44,
     },
-    # M3_AIR airport route: shares track with M3 from Dim. Theatro to DPL,
-    # then extends to AIRPORT. Inbound starts at AIRPORT so SYN is at 40.
+    # M3_AIR is the airport extension only. Physically the airport train
+    # is one of the M3 city trains continuing past Doukissis Plakentias,
+    # so we render it only on the DPL <-> Airport stretch. The city
+    # section (Dim. Theatro <-> DPL) is owned exclusively by M3 to avoid
+    # double-rendering the same physical train on the map.
     ("M3_AIR", "outbound"): {
-        "M3_DIM": 0, "M3_PIR": 2, "M3_MAN": 4, "M3_NIK": 6, "M3_KOR": 8,
-        "M3_AGI": 10, "M3_AG2": 12, "M3_EGA": 14, "M3_ELE": 17, "M3_KER": 20,
-        "M3_MON": 22, "M3_SYN": 24, "M3_EVA": 26, "M3_MEG": 27, "M3_AMB": 29,
-        "M3_PAN": 31, "M3_KAT": 33, "M3_ETH": 35, "M3_CHO": 37, "M3_NOM": 39,
-        "M3_AG3": 40, "M3_CHA": 42, "M3_DOY": 44, "M3_PAL": 50, "M3_PEA": 52,
-        "M3_KO2": 58, "M3_AER": 63,
+        "M3_DOY": 0, "M3_PAL": 6, "M3_PEA": 8, "M3_KO2": 14, "M3_AER": 19,
     },
     ("M3_AIR", "inbound"): {
         "M3_AER": 0, "M3_KO2": 6, "M3_PEA": 12, "M3_PAL": 14, "M3_DOY": 20,
-        "M3_CHA": 22, "M3_AG3": 24, "M3_NOM": 25, "M3_CHO": 27, "M3_ETH": 29,
-        "M3_KAT": 31, "M3_PAN": 33, "M3_AMB": 35, "M3_MEG": 37, "M3_EVA": 38,
-        "M3_SYN": 40, "M3_MON": 42, "M3_KER": 44, "M3_ELE": 47, "M3_EGA": 49,
-        "M3_AG2": 52, "M3_AGI": 54, "M3_KOR": 56, "M3_NIK": 58, "M3_MAN": 60,
-        "M3_PIR": 61, "M3_DIM": 63,
     },
     ("T6", "outbound"): {
         "T6_SYN": 0, "T6_ZAP": 2, "T6_VOU": 5, "T6_FIX": 7, "T6_KAS": 9,
@@ -243,8 +236,10 @@ def _apply_stasy_overrides(
     stops: list[dict], line_id: str, direction: str
 ) -> list[dict]:
     """Replace haversine-prorated minutes with STASY's published per-station
-    minutes whenever we have them. Falls back to the haversine value for
-    any station the table doesn't cover."""
+    minutes whenever we have them. For M3 specifically the city service
+    terminates at Doukissis Plakentias, so we DROP any stop past the table
+    (Pallini / Kantza / Koropi / Airport) rather than letting the haversine
+    prorate them — those stops are served only by M3_AIR trains."""
     overrides = STASY_OFFSETS.get((line_id, direction))
     if not overrides:
         return stops
@@ -253,6 +248,9 @@ def _apply_stasy_overrides(
         sid = stop["station_id"]
         if sid in overrides:
             result.append({**stop, "minutes_from_origin": overrides[sid]})
+        elif line_id == "M3":
+            # M3 city service: skip airport-extension stops.
+            continue
         else:
             result.append(stop)
     return result
