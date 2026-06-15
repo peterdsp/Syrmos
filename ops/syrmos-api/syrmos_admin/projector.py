@@ -553,14 +553,27 @@ def _project_scheduled_trip_departures(
         delta = raw - now_minutes
         if delta < -1:
             continue
-        # Resolve destination by looking up the trip's last stop.
-        last = conn.execute(
-            "SELECT station_id, departure_time FROM scheduled_trip_stops"
-            " WHERE line_id=? AND day_type=? AND direction=? AND train_no=?"
-            " ORDER BY stop_sequence DESC LIMIT 1",
-            (line_id, day_type, r["direction"], r["train_no"]),
-        ).fetchone()
-        destination = _suburban_terminus_label(line_id, r["direction"], last["station_id"] if last else "")
+        # Resolve destination by looking up the trip's actual terminus.
+        # Seed stop_sequence is in canonical (outbound) station order, so
+        # outbound trains end at the highest sequence and inbound trains
+        # end at the lowest. Partial-route trains (e.g. 3201 terminating
+        # at Tavros) get the correct terminus from this — not the line's
+        # nominal endpoint.
+        if r["direction"] == "outbound":
+            terminus = conn.execute(
+                "SELECT station_id FROM scheduled_trip_stops"
+                " WHERE line_id=? AND day_type=? AND direction=? AND train_no=?"
+                " ORDER BY stop_sequence DESC LIMIT 1",
+                (line_id, day_type, r["direction"], r["train_no"]),
+            ).fetchone()
+        else:
+            terminus = conn.execute(
+                "SELECT station_id FROM scheduled_trip_stops"
+                " WHERE line_id=? AND day_type=? AND direction=? AND train_no=?"
+                " ORDER BY stop_sequence ASC LIMIT 1",
+                (line_id, day_type, r["direction"], r["train_no"]),
+            ).fetchone()
+        destination = _suburban_terminus_label(line_id, r["direction"], terminus["station_id"] if terminus else "")
         candidates.append(Departure(
             lineId=line_id,
             line=line_id,
@@ -578,10 +591,10 @@ def _suburban_terminus_label(line_id: str, direction: str, last_station_id: str)
     """Human-readable destination for a suburban trip given its final
     station. Falls back to the station id when no friendly label is known."""
     aliases = {
-        "A1_AIR": "Airport", "A1_PIR": "Piraeus",
+        "A1_AIR": "Airport", "A1_PIR": "Piraeus", "A1_TAY": "Tavros",
         "A2_AIR": "Airport", "A2_ANO": "Ano Liosia",
-        "A3_CHA": "Chalkida", "A3_ATH": "Athens",
-        "A4_KIA": "Kiato", "A4_PIR": "Piraeus",
+        "A3_CHA": "Chalkida", "A3_ATH": "Athens", "A3_AYL": "Avlonas",
+        "A4_KIA": "Kiato", "A4_PIR": "Piraeus", "A4_NEA": "Nea Peramos",
     }
     if last_station_id in aliases:
         return aliases[last_station_id]
