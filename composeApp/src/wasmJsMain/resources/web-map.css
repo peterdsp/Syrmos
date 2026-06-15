@@ -603,6 +603,22 @@ body {
     font-size: 13px;
 }
 
+.departure-card__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+}
+
+.departure-card__pill--airport {
+    background: rgba(0, 114, 206, 0.12);
+    color: #0072ce;
+}
+
 .departure-card__eta {
     text-align: right;
 }
