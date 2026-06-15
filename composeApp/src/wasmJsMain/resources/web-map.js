@@ -1194,7 +1194,7 @@
             grouped.get(key).push(station);
         }
 
-        return [...grouped.values()]
+        const initial = [...grouped.values()]
             .flatMap((group) => clusterByProximity(group).map((cluster, index) => {
                 const primary = cluster[0];
                 const lineIds = [...new Set(cluster.flatMap((station) => station.line_ids))];
@@ -1221,8 +1221,50 @@
                     accessibility: cluster.some((station) => station.accessibility),
                     zone: Math.min(...cluster.map((station) => station.zone || 1)),
                 };
-            }))
+            }));
+        return mergeColocatedNodes(initial)
             .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // Mirror of the iOS map's second-pass distance merge — folds nodes
+    // that sit within 60 m of each other even when their names differ
+    // (M3 "Dimotiko Theatro" + T7 "Dimarhio / Dimotiko Theatro" are the
+    // canonical example: same Piraeus square, ~32 m apart, but two
+    // different mode names so the first-pass name-then-distance
+    // clustering never compares them).
+    function mergeColocatedNodes(nodes) {
+        const radiusMeters = 60;
+        const merged = [];
+        for (const node of nodes) {
+            const idx = merged.findIndex((existing) =>
+                distanceMeters(existing.latitude, existing.longitude, node.latitude, node.longitude) <= radiusMeters
+            );
+            if (idx >= 0) {
+                const existing = merged[idx];
+                const combinedLineIds = [...new Set([...existing.lineIds, ...node.lineIds])];
+                const combinedMap = { ...existing.stationIdByLineId };
+                for (const [lineId, stationId] of Object.entries(node.stationIdByLineId)) {
+                    if (!combinedMap[lineId]) combinedMap[lineId] = stationId;
+                }
+                const pickName = node.name.length > existing.name.length ? node : existing;
+                merged[idx] = {
+                    id: existing.id,
+                    stationIds: [...existing.stationIds, ...node.stationIds],
+                    stationIdByLineId: combinedMap,
+                    name: pickName.name,
+                    nameEl: pickName.nameEl,
+                    latitude: (existing.latitude + node.latitude) / 2,
+                    longitude: (existing.longitude + node.longitude) / 2,
+                    lineIds: combinedLineIds,
+                    isInterchange: combinedLineIds.length > 1 || existing.isInterchange || node.isInterchange,
+                    accessibility: existing.accessibility || node.accessibility,
+                    zone: Math.min(existing.zone || 1, node.zone || 1),
+                };
+            } else {
+                merged.push(node);
+            }
+        }
+        return merged;
     }
 
     function roundKey(value) {
