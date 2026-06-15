@@ -48,42 +48,56 @@ private struct StasyMapPDF: UIViewRepresentable {
     func makeUIView(context: Context) -> PDFView {
         let view = PDFView()
         view.document = PDFDocument(url: url)
-        view.displayMode = .singlePage
+        // singlePageContinuous + horizontal lets the user scroll/pan
+        // around the over-sized map smoothly. With plain .singlePage
+        // mode the view padlocks to a centered fit and bands the
+        // screen with white space above and below the page.
+        view.displayMode = .singlePageContinuous
         view.displayDirection = .vertical
         view.backgroundColor = .systemBackground
-        view.autoScales = true
+        view.autoScales = false
         view.maxScaleFactor = 6.0
-        // PDFView's scaleFactorForSizeToFit returns garbage at init time
-        // because the view has no bounds yet. The PDF renders at its
-        // native page size and the user lands looking at the top-left
-        // corner of a giant transit map. Defer the scale-to-fit to the
-        // next run loop tick when the layout pass has settled, then
-        // again when the bounds change (e.g. on rotation).
         DispatchQueue.main.async {
-            applyFitScale(view)
+            applyFillScale(view)
         }
         NotificationCenter.default.addObserver(
             forName: .PDFViewVisiblePagesChanged,
             object: view,
             queue: .main
-        ) { _ in applyFitScale(view) }
+        ) { _ in applyFillScale(view) }
         return view
     }
 
     func updateUIView(_ uiView: PDFView, context: Context) {
         DispatchQueue.main.async {
-            applyFitScale(uiView)
+            applyFillScale(uiView)
         }
     }
 
-    private func applyFitScale(_ view: PDFView) {
-        let fit = view.scaleFactorForSizeToFit
-        guard fit > 0 else { return }
-        view.minScaleFactor = fit
-        // Only snap back to fit while the user hasn't zoomed in past it.
-        // If they pinched to 2x, don't yank them back to 1x on rotation.
-        if view.scaleFactor < fit * 1.01 {
-            view.scaleFactor = fit
+    /// Initial display strategy: use the scale that makes the page FILL
+    /// the view (the larger of the width/height ratios), not the one
+    /// that makes it fit-inside (the smaller). The Athens map PDF is
+    /// wider than the iPhone screen aspect, so fit-inside left huge
+    /// white bands above and below. Fill-the-view means the user can
+    /// pan to see the cropped sides — the same gesture model as Apple
+    /// Maps. Min scale stays at fit-inside so the user can always pinch
+    /// out to see the whole network.
+    private func applyFillScale(_ view: PDFView) {
+        guard let page = view.document?.page(at: 0) else { return }
+        let pageRect = page.bounds(for: .cropBox)
+        let viewBounds = view.bounds
+        guard viewBounds.width > 0, viewBounds.height > 0,
+              pageRect.width > 0, pageRect.height > 0 else { return }
+        let widthScale = viewBounds.width / pageRect.width
+        let heightScale = viewBounds.height / pageRect.height
+        let fitScale = min(widthScale, heightScale)
+        let fillScale = max(widthScale, heightScale)
+        view.minScaleFactor = fitScale
+        // Don't yank the user back to fill scale if they've pinched
+        // beyond fit. The threshold check leaves their zoom alone once
+        // they've scaled past 110% of fit-inside.
+        if view.scaleFactor <= fitScale * 1.1 {
+            view.scaleFactor = fillScale
         }
     }
 }
