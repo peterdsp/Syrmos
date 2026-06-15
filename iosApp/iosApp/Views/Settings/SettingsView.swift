@@ -7,6 +7,7 @@ struct SyrmosSettingsView: View {
     @State private var safariURL: URL?
     @State private var refreshAlert: RefreshAlert?
     @State private var showContactSheet = false
+    @State private var showSystemMap = false
 
     private struct RefreshAlert: Identifiable {
         let id = UUID()
@@ -93,14 +94,22 @@ struct SyrmosSettingsView: View {
                 }
 
                 Section(loc.language == .greek ? "Χάρτης" : "Map") {
-                    NavigationLink {
-                        StasyMapView()
+                    Button {
+                        showSystemMap = true
                     } label: {
-                        Label(
-                            loc.language == .greek ? "Χάρτης δικτύου STASY" : "STASY system map",
-                            systemImage: "map"
-                        )
+                        HStack {
+                            Label(
+                                loc.language == .greek ? "Χάρτης δικτύου STASY" : "STASY system map",
+                                systemImage: "map"
+                            )
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
 
                 Section(loc.language == .greek ? "Επικοινωνία" : "Contact") {
@@ -140,6 +149,9 @@ struct SyrmosSettingsView: View {
             .background(Color.syrmosBackground)
             .toolbar(.hidden, for: .navigationBar)
             .inAppSafari(url: $safariURL)
+            .sheet(isPresented: $showSystemMap) {
+                StasyMapView()
+            }
             .sheet(isPresented: $showContactSheet) {
                 NavigationStack {
                     ContactDeveloperView()

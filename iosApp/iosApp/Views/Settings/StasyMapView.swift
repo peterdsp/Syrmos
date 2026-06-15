@@ -3,28 +3,42 @@ import PDFKit
 
 /// Settings → "System map". Renders the official STASY 2022 system
 /// map PDF that ships in the bundle so users can browse the full
-/// metro / tram / suburban network offline. Single-page document.
+/// metro / tram / suburban network offline. Single-page document,
+/// presented as a sheet (modal popup) with its own header and a
+/// close button rather than pushed onto the Settings navigation
+/// stack. PDFKit gives pinch-zoom and pan for free.
 struct StasyMapView: View {
-    @EnvironmentObject private var loc: LocalizationManager
+    @ObservedObject private var loc = LocalizationManager.shared
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        Group {
-            if let url = Bundle.main.url(forResource: "StasySystemMap", withExtension: "pdf") {
-                StasyMapPDF(url: url)
-                    .ignoresSafeArea(edges: .bottom)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text(loc.language == .greek ? "Δεν βρέθηκε ο χάρτης." : "Map not found in bundle.")
-                        .foregroundStyle(.secondary)
+        NavigationStack {
+            Group {
+                if let url = Bundle.main.url(forResource: "StasySystemMap", withExtension: "pdf") {
+                    StasyMapPDF(url: url)
+                        .ignoresSafeArea(edges: .bottom)
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text(loc.language == .greek ? "Δεν βρέθηκε ο χάρτης." : "Map not found in bundle.")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .navigationTitle(loc.language == .greek ? "Χάρτης δικτύου" : "System map")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(loc.language == .greek ? "Κλείσιμο" : "Close") {
+                        dismiss()
+                    }
+                }
             }
         }
-        .navigationTitle(loc.language == .greek ? "Χάρτης δικτύου" : "System map")
-        .navigationBarTitleDisplayMode(.inline)
+        .presentationDragIndicator(.visible)
     }
 }
 
