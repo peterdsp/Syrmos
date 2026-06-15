@@ -322,6 +322,22 @@ struct TimetablesView: View {
                     serviceType: dep.serviceType
                 ))
             }
+            // For M3 city stations (where cityOutShift / cityInShift exist
+            // but M3_AIR offsets don't), replace the city-band-projected
+            // rows that correspond to actual airport-train passages with
+            // authoritative rows derived from the operational AIRPORT TRAIN
+            // SCHEDULES PDFs. Outbound: terminus flips to "Airport".
+            // Inbound: terminus stays "Dimotiko Theatro", serviceType
+            // flips to "airport" so the pill renders.
+            if selectedLineId == "M3" {
+                shifted = annotateAirportPassagesAt(
+                    rows: shifted,
+                    cityOutShift: cityOutShift,
+                    cityInShift: cityInShift,
+                    terminalA: terminalA,
+                    terminalB: terminalB
+                )
+            }
             // Sort by station-arrival time so the user sees the order
             // trains actually pass / leave the searched station, not the
             // origin-departure order.
@@ -539,6 +555,103 @@ struct TimetablesView: View {
         let p = hhmm.split(separator: ":")
         guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]) else { return nil }
         return h * 60 + m
+    }
+
+    /// Exact DT-origin departures of M3_AIR outbound trains (DT → Airport),
+    /// transcribed from ops/syrmos-api/reference/stasy_pdfs/M3_AIR_to_Airport.pdf.
+    /// The airport service runs the same schedule every day of the week
+    /// (excluded from Sat 24/7 and Fri late-night extensions).
+    private static let m3AirDtOutboundDepartures: [Int] = [
+        5*60+30,  6*60+6,   6*60+42,  7*60+18,  7*60+54,  8*60+30,  9*60+6,
+        9*60+42,  10*60+18, 10*60+54, 11*60+30, 12*60+6,  12*60+42, 13*60+18,
+        13*60+54, 14*60+30, 15*60+6,  15*60+42, 16*60+18, 16*60+54, 17*60+30,
+        18*60+6,  18*60+42, 19*60+18, 19*60+54, 20*60+30, 21*60+6,  21*60+42,
+        22*60+18, 22*60+54,
+    ]
+
+    /// Exact AIR-origin departures of M3_AIR inbound trains (Airport → DT),
+    /// transcribed from ops/syrmos-api/reference/stasy_pdfs/M3_AIR_to_DimotikoTheatro.pdf.
+    /// AIR → Doukissis Plakentias takes 20 min, so passing time at any city
+    /// station S is: (AIR origin) + 20 + (M3 inbound offset from DPL to S).
+    private static let m3AirAirInboundDepartures: [Int] = [
+        6*60+10,  6*60+46,  7*60+19,  7*60+58,  8*60+34,  9*60+10,  9*60+46,
+        10*60+22, 10*60+58, 11*60+34, 12*60+10, 12*60+46, 13*60+22, 13*60+58,
+        14*60+34, 15*60+10, 15*60+46, 16*60+19, 16*60+58, 17*60+34, 18*60+10,
+        18*60+46, 19*60+22, 19*60+58, 20*60+34, 21*60+10, 21*60+46, 22*60+22,
+        22*60+58, 23*60+34,
+    ]
+
+    /// AIR → Doukissis Plakentias transit time (PDF: AIR 6:10 → DPL 6:30).
+    private static let airToPlakentiasMinutes = 20
+
+    /// Replace city-band rows that correspond to actual M3_AIR through-
+    /// services with authoritative rows derived from the operational PDF
+    /// schedules. The band projection emits synthetic every-N-minutes
+    /// slots that don't necessarily land on the real airport-train times;
+    /// without this pass the user sees only "→ Doukissis Plakentias" at
+    /// every city station outbound, with no airport hint. After this
+    /// pass: one in every ~8 rows is labelled "→ Airport" (outbound) or
+    /// keeps "→ Dimotiko Theatro" with the airport pill (inbound).
+    private func annotateAirportPassagesAt(
+        rows: [Departure],
+        cityOutShift: Int?,
+        cityInShift: Int?,
+        terminalA: String,
+        terminalB: String
+    ) -> [Departure] {
+        let tolerance = 3  // ±3 min absorbs band-projection imprecision
+        var out = rows
+
+        func format(_ minutes: Int) -> String {
+            let mod = ((minutes % (24 * 60)) + 24 * 60) % (24 * 60)
+            return String(format: "%02d:%02d", mod / 60, mod % 60)
+        }
+
+        if let outShift = cityOutShift, !terminalB.isEmpty {
+            let airOutMins: [Int] = Self.m3AirDtOutboundDepartures.map { ($0 + outShift) % (24 * 60) }
+            out.removeAll { dep in
+                guard dep.lineId == "M3",
+                      dep.direction == terminalB,
+                      dep.serviceType != "airport",
+                      let m = minutesOfDay(dep.time)
+                else { return false }
+                return airOutMins.contains { abs($0 - m) <= tolerance }
+            }
+            for m in airOutMins {
+                out.append(Departure(
+                    time: format(m),
+                    lineId: "M3",
+                    direction: "Airport",
+                    minutesAway: 0,
+                    serviceType: "airport"
+                ))
+            }
+        }
+
+        if let inShift = cityInShift, !terminalA.isEmpty {
+            let airInMins: [Int] = Self.m3AirAirInboundDepartures.map {
+                ($0 + Self.airToPlakentiasMinutes + inShift) % (24 * 60)
+            }
+            out.removeAll { dep in
+                guard dep.lineId == "M3",
+                      dep.direction == terminalA,
+                      dep.serviceType != "airport",
+                      let m = minutesOfDay(dep.time)
+                else { return false }
+                return airInMins.contains { abs($0 - m) <= tolerance }
+            }
+            for m in airInMins {
+                out.append(Departure(
+                    time: format(m),
+                    lineId: "M3",
+                    direction: terminalA,
+                    minutesAway: 0,
+                    serviceType: "airport"
+                ))
+            }
+        }
+
+        return out
     }
 
     private func isPast(_ dep: Departure) -> Bool {
