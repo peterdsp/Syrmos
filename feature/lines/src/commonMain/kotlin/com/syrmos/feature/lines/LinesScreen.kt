@@ -48,10 +48,8 @@ fun LinesScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
-            Text(
-                text = L.LINES.text(lang),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
+            com.syrmos.core.designsystem.component.CompactTabHeader(
+                title = L.LINES.text(lang),
             )
         }
 

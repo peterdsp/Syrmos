@@ -68,7 +68,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
-            ScreenHeader(
+            com.syrmos.core.designsystem.component.CompactTabHeader(
                 title = "Syrmos",
                 subtitle = L.APP_SUBTITLE.text(lang),
             )
