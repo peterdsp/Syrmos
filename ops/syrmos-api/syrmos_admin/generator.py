@@ -178,7 +178,8 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     )
     status_row = status_rows[0] if status_rows else None
     rows, has_en = _safe_select(
-        "SELECT id, title, title_en, summary, summary_en, url, date, category"
+        "SELECT id, title, title_en, summary, summary_en, url, date, category,"
+        " affected_lines, severity, valid_from, valid_until"
         " FROM announcements ORDER BY sort_order",
         "SELECT id, title, summary, url, date, category"
         " FROM announcements ORDER BY sort_order",
@@ -196,8 +197,19 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     else:
         status_payload = {"status": "unknown", "rawMessage": "", "rawMessageEn": "", "serviceUntil": None, "scrapedAt": ""}
 
-    announcements = [
-        {
+    def _decode_lines(raw: str) -> list[str]:
+        if not raw:
+            return []
+        try:
+            value = json.loads(raw)
+            return [str(x) for x in value] if isinstance(value, list) else []
+        except (TypeError, ValueError):
+            return []
+
+    announcements = []
+    for r in rows:
+        cols = r.keys()
+        announcements.append({
             "id": r["id"],
             "title": r["title"],
             "titleEn": r["title_en"] if has_en else r["title"],
@@ -206,9 +218,12 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "url": r["url"],
             "date": r["date"],
             "category": r["category"],
-        }
-        for r in rows
-    ]
+            # Structured fields, all optional so older clients keep working.
+            "affectedLines": _decode_lines(r["affected_lines"]) if "affected_lines" in cols else [],
+            "severity": r["severity"] if "severity" in cols else "info",
+            "validFrom": r["valid_from"] if "valid_from" in cols else None,
+            "validUntil": r["valid_until"] if "valid_until" in cols else None,
+        })
     return {
         "updatedAt": _now_iso(),
         "count": len(announcements),
