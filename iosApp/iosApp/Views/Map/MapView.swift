@@ -210,24 +210,10 @@ struct TransitMapView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .topLeading) {
-                mapContent
-                CompactTabHeader(loc[.map])
-                    .padding(.top, 4)
-                    .background(
-                        // Subtle gradient so the headline reads against the
-                        // map without painting a hard white bar over it.
-                        LinearGradient(
-                            colors: [
-                                Color(uiColor: .systemBackground).opacity(0.85),
-                                Color(uiColor: .systemBackground).opacity(0.0),
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .ignoresSafeArea(edges: .top)
-                    )
-            }
+            mapContent
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    CompactTabHeader(loc[.map])
+                }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
                 StationSheetView(station: station)
