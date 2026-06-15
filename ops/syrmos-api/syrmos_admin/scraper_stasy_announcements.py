@@ -39,7 +39,29 @@ USER_AGENT = "syrmos-stasy-scraper/1.0 (+https://syrmos.peterdsp.dev)"
 # is plain HTML and lists every post — and the Greek detail page is
 # just the English URL with /en/ stripped, so we get both languages.
 INDEX_URL = "https://www.stasy.gr/en/announcements/"
+GREEK_HOMEPAGE_URL = "https://www.stasy.gr/"
 TIMEOUT_SECONDS = 25
+
+# Slugs at the root of stasy.gr that are section / nav roots or legal /
+# infra pages, not announcement permalinks.
+_GREEK_HOMEPAGE_NAV_SLUGS = {
+    "ανακοινώσεις", "δελτία-τύπου", "δρομολόγια", "εισιτήρια-κάρτες",
+    "εκδηλώσεις", "εμπορική-εκμετάλλευση", "εξυπηρέτηση-επιβατών",
+    "εταιρεία", "διαφήμιση", "διαγωνισμοί", "επικοινωνία", "σταθμοί",
+    "χάρτης", "en", "category", "tag", "author",
+    # Legal / infrastructure pages — never service alerts:
+    "πολιτική-απορρήτου-και-προστασίας-δεδομένων", "πολιτική-cookies",
+    "όροι-χρήσης", "λειτουργικότητα-ανελκυστήρων", "νέα-ανακοινώσεις",
+    "προσβασιμότητα", "δελτία-τύπου-2",
+}
+
+# Match canonical homepage links to article-style permalinks (percent-encoded
+# Greek slugs surfaced on the homepage as "Έκτακτες Ανακοινώσεις"). Excludes
+# the language switch and resource sections.
+_GREEK_ARTICLE_RE = re.compile(
+    r'href=["\'](https://www\.stasy\.gr/[^/\"\']+/)["\']',
+    re.IGNORECASE,
+)
 
 # Bilingual line-detection patterns. Matches are case-insensitive
 # substring tests. The longer patterns are listed first so e.g.
@@ -174,6 +196,34 @@ _HEADING_LINK_RE = re.compile(
     r'(https://www\.stasy\.gr/en/[^"\']+/)["\'][^>]*>([^<]+)</a>',
     re.IGNORECASE,
 )
+
+
+def parse_greek_homepage(html: str) -> list[str]:
+    """Return article URLs surfaced on STASY's Greek homepage. STASY
+    features fresh "Έκτακτες Ανακοινώσεις" as direct permalinks to
+    Greek-only articles (e.g. the rolling 'rail replacement works'
+    notice). Those don't appear on /en/announcements/, so this is the
+    only path that catches them."""
+    from urllib.parse import unquote
+    seen: set[str] = set()
+    out: list[str] = []
+    for match in _GREEK_ARTICLE_RE.findall(html):
+        url = match.rstrip("/") + "/"
+        # Take the slug between stasy.gr/ and the trailing slash
+        try:
+            slug = url.split("stasy.gr/", 1)[1].rstrip("/")
+        except IndexError:
+            continue
+        slug_decoded = unquote(slug).lower()
+        if slug_decoded in _GREEK_HOMEPAGE_NAV_SLUGS:
+            continue
+        if slug_decoded.startswith(("διαγωνισμ", "wp-", "feed")):
+            continue
+        if url in seen:
+            continue
+        seen.add(url)
+        out.append(url)
+    return out
 
 
 def parse_index(html: str) -> list[tuple[str, str]]:
@@ -467,11 +517,32 @@ def run_once(now: date | None = None) -> int:
             )
         return 0
     links = parse_index(index_html)
+    # Also pull Greek-only urgent announcements from the homepage. STASY
+    # features service alerts (e.g. the rolling Line 3 rail-replacement
+    # closure that doesn't appear on the English page at all) directly on
+    # https://www.stasy.gr/ as permalinks. Without this path, fresh active
+    # alerts go silently missing from the app.
+    greek_links: list[str] = []
+    try:
+        greek_homepage_html = fetch_text(GREEK_HOMEPAGE_URL)
+        greek_links = parse_greek_homepage(greek_homepage_html)
+    except (URLError, TimeoutError):
+        greek_links = []
     items: list[AnnouncementItem] = []
+    seen_slugs: set[str] = set()
     for url, title in links[:30]:  # cap so a runaway page doesn't tarpit the cron
         item = build_announcement(url, title, today=now)
         if item is not None:
             items.append(item)
+            seen_slugs.add(item.slug)
+    for url in greek_links[:30]:
+        slug = slug_from_url(url)
+        if slug in seen_slugs:
+            continue
+        item = build_announcement(url, "", today=now)
+        if item is not None:
+            items.append(item)
+            seen_slugs.add(item.slug)
     with dbmod.connect() as conn:
         count = upsert(conn, items)
         conn.execute(
