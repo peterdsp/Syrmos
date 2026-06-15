@@ -7,5 +7,5 @@ import kotlinx.browser.window
 actual fun rememberStasyMapOpener(): () -> Unit = {
     // Served as a static asset from wasmJsMain/resources, so it lands
     // next to index.html in the Pages deploy.
-    window.open("stasy_system_map.pdf", "_blank")
+    window.open("athens_rail_map.jpg", "_blank")
 }
