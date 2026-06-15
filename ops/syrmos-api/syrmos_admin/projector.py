@@ -211,14 +211,35 @@ def _display_line_id(line_id: str) -> str:
 
 
 def _dedupe(rows: Iterable[Departure]) -> list[Departure]:
-    # Key by (lineId, directionKey, direction, time). serviceType is metadata,
-    # not identity: two overlapping bands (e.g. seeded saturday_overnight_24_7
-    # and scraper sat_24mmm) at the same minute represent ONE train, just
-    # labeled differently. Including direction keeps M3 city (DPL) and
-    # M3_AIR (Airport) trains separate at the same minute.
+    # Step 1: Line 3 airport/city merge. A Line 3 train scheduled at the
+    # same minute outbound is ONE physical train — the airport-bound run
+    # is just the city train that doesn't terminate at Doukissis
+    # Plakentias and continues to Airport. So when both a city ("DPL")
+    # and an airport ("Airport") row exist at the same minute, drop the
+    # city one and keep only the airport label.
+    airport_times: set[str] = {
+        row.time for row in rows
+        if row.lineId == "M3" and row.directionKey == "outbound"
+        and row.serviceType == "airport"
+    }
+    filtered: list[Departure] = []
+    for row in rows:
+        if (
+            row.lineId == "M3"
+            and row.directionKey == "outbound"
+            and row.serviceType != "airport"
+            and row.time in airport_times
+        ):
+            continue
+        filtered.append(row)
+
+    # Step 2: exact-duplicate suppression. Key by (lineId, directionKey,
+    # direction, time). serviceType is metadata, not identity: two
+    # overlapping bands at the same minute represent ONE train, just
+    # labeled differently.
     seen: set[tuple[str, str, str, str]] = set()
     out: list[Departure] = []
-    for row in rows:
+    for row in filtered:
         key = (row.lineId, row.directionKey, row.direction, row.time)
         if key in seen:
             continue
