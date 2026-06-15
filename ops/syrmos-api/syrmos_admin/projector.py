@@ -98,8 +98,21 @@ def project_next_departures(
 
     direction_filter = _normalise_direction(direction)
     out: list[Departure] = []
+    today_dt = _day_type(weekday, holiday)
     for lid in expanded:
         if lid in closed_today or _display_line_id(lid) in closed_today:
+            continue
+        if lid in SCHEDULED_TRIP_LINES and _has_scheduled_trips(conn, lid, today_dt):
+            _project_scheduled_trip_departures(
+                conn=conn,
+                line_id=lid,
+                station_id=station_id,
+                day_type=today_dt,
+                direction_filter=direction_filter,
+                now_minutes=now_minutes,
+                limit=limit,
+                out=out,
+            )
             continue
         bundle = bundles.get(lid)
         if bundle is None:
@@ -486,6 +499,161 @@ def _project_band(
         added += 1
 
 
+# Suburban lines run on a fixed published timetable (scheduled_trips), not on
+# a regular headway grid. The projector picks the explicit-trips path for
+# these when the line has rows in scheduled_trips for the current day_type,
+# and falls back to the frequency_bands path otherwise.
+SCHEDULED_TRIP_LINES = {"A1", "A2", "A3", "A4"}
+
+
+def _hhmm_to_minutes(hhmm: str) -> int | None:
+    if not hhmm or ":" not in hhmm:
+        return None
+    try:
+        h, m = hhmm.split(":")
+        return int(h) * 60 + int(m)
+    except ValueError:
+        return None
+
+
+def _has_scheduled_trips(conn: sqlite3.Connection, line_id: str, day_type: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM scheduled_trips WHERE line_id=? AND day_type=? LIMIT 1",
+        (line_id, day_type),
+    ).fetchone()
+    return row is not None
+
+
+def _project_scheduled_trip_departures(
+    conn: sqlite3.Connection,
+    line_id: str,
+    station_id: str,
+    day_type: str,
+    direction_filter: str | None,
+    now_minutes: int,
+    limit: int,
+    out: list[Departure],
+) -> None:
+    """Departures path for suburban lines. Reads scheduled_trip_stops
+    directly so the output mirrors Hellenic Train's published HH:MM."""
+    rows = conn.execute(
+        "SELECT s.train_no, s.direction, s.departure_time"
+        " FROM scheduled_trip_stops s"
+        " WHERE s.line_id=? AND s.day_type=? AND s.station_id=?"
+        " ORDER BY s.departure_time",
+        (line_id, day_type, station_id),
+    ).fetchall()
+    candidates: list[Departure] = []
+    for r in rows:
+        if direction_filter and r["direction"] != direction_filter:
+            continue
+        raw = _hhmm_to_minutes(r["departure_time"])
+        if raw is None:
+            continue
+        delta = raw - now_minutes
+        if delta < -1:
+            continue
+        # Resolve destination by looking up the trip's last stop.
+        last = conn.execute(
+            "SELECT station_id, departure_time FROM scheduled_trip_stops"
+            " WHERE line_id=? AND day_type=? AND direction=? AND train_no=?"
+            " ORDER BY stop_sequence DESC LIMIT 1",
+            (line_id, day_type, r["direction"], r["train_no"]),
+        ).fetchone()
+        destination = _suburban_terminus_label(line_id, r["direction"], last["station_id"] if last else "")
+        candidates.append(Departure(
+            lineId=line_id,
+            line=line_id,
+            directionKey=r["direction"],
+            direction=destination,
+            time=r["departure_time"],
+            minutesAway=max(0, delta),
+            serviceType="regular",
+        ))
+    candidates.sort(key=lambda d: d.minutesAway)
+    out.extend(candidates[:limit])
+
+
+def _suburban_terminus_label(line_id: str, direction: str, last_station_id: str) -> str:
+    """Human-readable destination for a suburban trip given its final
+    station. Falls back to the station id when no friendly label is known."""
+    aliases = {
+        "A1_AIR": "Airport", "A1_PIR": "Piraeus",
+        "A2_AIR": "Airport", "A2_ANO": "Ano Liosia",
+        "A3_CHA": "Chalkida", "A3_ATH": "Athens",
+        "A4_KIA": "Kiato", "A4_PIR": "Piraeus",
+    }
+    if last_station_id in aliases:
+        return aliases[last_station_id]
+    return "Outbound" if direction == "outbound" else "Inbound"
+
+
+def _project_scheduled_trip_active(
+    conn: sqlite3.Connection,
+    line_id: str,
+    day_type: str,
+    now_minutes: float,
+    out: list[dict],
+    seen: set,
+) -> None:
+    """active_trains path for suburban lines."""
+    rows = conn.execute(
+        "SELECT train_no, direction,"
+        " MIN(departure_time) AS first_time,"
+        " MAX(departure_time) AS last_time"
+        " FROM scheduled_trip_stops"
+        " WHERE line_id=? AND day_type=?"
+        " GROUP BY train_no, direction",
+        (line_id, day_type),
+    ).fetchall()
+    for r in rows:
+        # The seed encodes stop_sequence in canonical (outbound) station
+        # order, so for inbound trips the first stop_sequence isn't the
+        # actual trip origin. Sort the stops by departure_time instead, and
+        # detect a midnight crossing by looking for a stop whose time wraps.
+        edges = conn.execute(
+            "SELECT departure_time FROM scheduled_trip_stops"
+            " WHERE line_id=? AND day_type=? AND direction=? AND train_no=?",
+            (line_id, day_type, r["direction"], r["train_no"]),
+        ).fetchall()
+        if not edges:
+            continue
+        times = [_hhmm_to_minutes(e["departure_time"]) for e in edges]
+        times = [t for t in times if t is not None]
+        if not times:
+            continue
+        # If the spread is huge, assume any time < min+12h that's smaller
+        # than the previous one represents a midnight rollover.
+        sorted_times = sorted(times)
+        if sorted_times[-1] - sorted_times[0] > 12 * 60:
+            # Looks like a midnight wrap: trips that have e.g. 21:32 and
+            # 00:26 sort to 00:26 first. Re-bucket: anything below 5*60 is
+            # "next day".
+            adjusted = [(t + 24 * 60 if t < 5 * 60 else t) for t in times]
+            start = min(adjusted)
+            end = max(adjusted)
+        else:
+            start = min(times)
+            end = max(times)
+        if not (start <= now_minutes <= end):
+            continue
+        travel = end - start
+        elapsed = now_minutes - start
+        key = (line_id, r["direction"], r["train_no"])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({
+            "lineId": line_id,
+            "directionKey": r["direction"],
+            "originDepartureMinute": round(start, 2),
+            "elapsedMinutes": round(elapsed, 2),
+            "totalTravelMinutes": travel,
+            "serviceType": "regular",
+            "trainNo": r["train_no"],
+        })
+
+
 def _total_travel_minutes(conn: sqlite3.Connection, line_id: str, direction: str) -> int:
     """Maximum minutes_from_origin across all stations on this leg — i.e. the
     travel time from the first station to the terminus. Used to decide whether
@@ -538,8 +706,19 @@ def active_trains(
     out: list[dict] = []
     seen: set[tuple[str, str, int]] = set()
 
+    today_dt_active = _day_type(weekday, holiday)
     for line_id in line_ids:
         if line_id in closed_today or _display_line_id(line_id) in closed_today:
+            continue
+        if line_id in SCHEDULED_TRIP_LINES and _has_scheduled_trips(conn, line_id, today_dt_active):
+            _project_scheduled_trip_active(
+                conn=conn,
+                line_id=line_id,
+                day_type=today_dt_active,
+                now_minutes=now_minutes,
+                out=out,
+                seen=seen,
+            )
             continue
         bundle = _load_bundle(conn, line_id)
         if bundle is None:
