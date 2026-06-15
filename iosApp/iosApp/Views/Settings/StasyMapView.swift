@@ -44,16 +44,46 @@ struct StasyMapView: View {
 
 private struct StasyMapPDF: UIViewRepresentable {
     let url: URL
+
     func makeUIView(context: Context) -> PDFView {
         let view = PDFView()
         view.document = PDFDocument(url: url)
-        view.autoScales = true
         view.displayMode = .singlePage
         view.displayDirection = .vertical
         view.backgroundColor = .systemBackground
+        view.autoScales = true
         view.maxScaleFactor = 6.0
-        view.minScaleFactor = view.scaleFactorForSizeToFit
+        // PDFView's scaleFactorForSizeToFit returns garbage at init time
+        // because the view has no bounds yet. The PDF renders at its
+        // native page size and the user lands looking at the top-left
+        // corner of a giant transit map. Defer the scale-to-fit to the
+        // next run loop tick when the layout pass has settled, then
+        // again when the bounds change (e.g. on rotation).
+        DispatchQueue.main.async {
+            applyFitScale(view)
+        }
+        NotificationCenter.default.addObserver(
+            forName: .PDFViewVisiblePagesChanged,
+            object: view,
+            queue: .main
+        ) { _ in applyFitScale(view) }
         return view
     }
-    func updateUIView(_ uiView: PDFView, context: Context) {}
+
+    func updateUIView(_ uiView: PDFView, context: Context) {
+        DispatchQueue.main.async {
+            applyFitScale(uiView)
+        }
+    }
+
+    private func applyFitScale(_ view: PDFView) {
+        let fit = view.scaleFactorForSizeToFit
+        guard fit > 0 else { return }
+        view.minScaleFactor = fit
+        // Only snap back to fit while the user hasn't zoomed in past it.
+        // If they pinched to 2x, don't yank them back to 1x on rotation.
+        if view.scaleFactor < fit * 1.01 {
+            view.scaleFactor = fit
+        }
+    }
 }
