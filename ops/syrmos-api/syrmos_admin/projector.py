@@ -135,36 +135,45 @@ def project_next_departures(
     out = out[:limit]
 
     # M3 city station guarantee: always surface the next Airport-bound
-    # train even if it's hours away. Lookahead scans forward up to 7 days
-    # so the row appears after the last airport service has run for today.
-    # Check direction explicitly: an inbound "from Airport" row in window
-    # doesn't satisfy the "next outbound to Airport" requirement.
-    wants_airport = (
+    # AND the next from-Airport train, even if they're hours away. The
+    # lookahead scans forward up to 7 days so the row appears after the
+    # last airport service has run for today. Check direction explicitly
+    # so an outbound airport row doesn't satisfy the inbound requirement,
+    # and vice versa.
+    can_lookahead = (
         "M3_AIR" in expanded
         and station_id not in LINE3_AIRPORT_ONLY_STATIONS
-        and direction_filter in (None, "outbound")
     )
-    has_outbound_airport = any(
-        d.serviceType == "airport" and d.directionKey == "outbound"
-        for d in out
-    )
-    if wants_airport and not has_outbound_airport:
+    if can_lookahead:
         bundle = bundles.get("M3_AIR")
         if bundle is not None:
-            la = _next_airport_lookahead(
-                bundle=bundle,
-                now=now,
-                now_minutes=now_minutes,
-                station_id=station_id,
-                conn=conn,
-            )
-            if la is not None:
-                # Re-dedup so a same-minute DPL outbound row collapses
-                # into this Airport row (M3 dedup keeps the airport label).
-                out.append(la)
-                out = _dedupe(out)
-                out.sort(key=lambda d: d.minutesAway)
-                out = out[:limit]
+            wanted_directions: list[str] = []
+            if direction_filter in (None, "outbound"):
+                wanted_directions.append("outbound")
+            if direction_filter in (None, "inbound"):
+                wanted_directions.append("inbound")
+            for d_key in wanted_directions:
+                has_match = any(
+                    d.serviceType == "airport" and d.directionKey == d_key
+                    for d in out
+                )
+                if has_match:
+                    continue
+                la = _next_airport_lookahead(
+                    bundle=bundle,
+                    now=now,
+                    now_minutes=now_minutes,
+                    station_id=station_id,
+                    conn=conn,
+                    direction_key=d_key,
+                )
+                if la is not None:
+                    out.append(la)
+            # Re-dedup so any same-minute city row collapses into the
+            # airport-labeled row (the dedup keeps the airport label).
+            out = _dedupe(out)
+            out.sort(key=lambda d: d.minutesAway)
+            out = out[:limit]
 
     return [d.to_dict() for d in out]
 
@@ -235,23 +244,21 @@ def _display_line_id(line_id: str) -> str:
 
 def _dedupe(rows: Iterable[Departure]) -> list[Departure]:
     # Step 1: Line 3 airport/city merge. A Line 3 train scheduled at the
-    # same minute outbound is ONE physical train — the airport-bound run
-    # is just the city train that doesn't terminate at Doukissis
-    # Plakentias and continues to Airport. So when both a city ("DPL")
-    # and an airport ("Airport") row exist at the same minute, drop the
-    # city one and keep only the airport label.
-    airport_times: set[str] = {
-        row.time for row in rows
-        if row.lineId == "M3" and row.directionKey == "outbound"
-        and row.serviceType == "airport"
-    }
+    # same minute is ONE physical train in each direction — the airport
+    # run is just the city train that continues past Doukissis Plakentias.
+    # When a city row and an airport row share the same minute AND
+    # direction, drop the city row so the Airport (outbound) / from-Airport
+    # (inbound) label wins.
+    airport_times_by_dir: dict[str, set[str]] = {"outbound": set(), "inbound": set()}
+    for row in rows:
+        if row.lineId == "M3" and row.serviceType == "airport":
+            airport_times_by_dir.setdefault(row.directionKey, set()).add(row.time)
     filtered: list[Departure] = []
     for row in rows:
         if (
             row.lineId == "M3"
-            and row.directionKey == "outbound"
             and row.serviceType != "airport"
-            and row.time in airport_times
+            and row.time in airport_times_by_dir.get(row.directionKey, set())
         ):
             continue
         filtered.append(row)
@@ -825,8 +832,17 @@ def _next_airport_lookahead(
     now_minutes: int,
     station_id: str,
     conn: sqlite3.Connection,
+    direction_key: str = "outbound",
 ) -> Departure | None:
-    offset = _station_offset_minutes(conn, "M3_AIR", "outbound", station_id)
+    """Find the next M3_AIR slot for direction_key at station_id.
+
+    direction_key="outbound" -> next train to Airport (terminus "Airport").
+    direction_key="inbound"  -> next train from Airport going to Dim.
+    Theatro (terminus "Dimotiko Theatro"). The serviceType stays "airport"
+    so the iOS / Android / Web badge fires on inbound rows too.
+    """
+    offset = _station_offset_minutes(conn, "M3_AIR", direction_key, station_id)
+    terminus = "Airport" if direction_key == "outbound" else "Dimotiko Theatro"
     for day_offset in range(AIRPORT_LOOKAHEAD_DAYS):
         date = now + timedelta(days=day_offset)
         weekday = (date.isoweekday() % 7) + 1
@@ -843,8 +859,14 @@ def _next_airport_lookahead(
                 if day_offset == 0 and now_minutes > effective_close:
                     continue
 
+        # Bands can be direction-tagged. Keep "both" plus the matching
+        # direction; this matches the natural projection's band filter.
         bands = sorted(
-            [b for b in bundle["bands"] if b["dayType"] == dt],
+            [
+                b for b in bundle["bands"]
+                if b["dayType"] == dt
+                and (b.get("direction", "both") in (direction_key, "both"))
+            ],
             key=lambda b: _minutes_of_day(b["timeStart"]) or 0,
         )
         for band in bands:
@@ -868,8 +890,8 @@ def _next_airport_lookahead(
                 return Departure(
                     lineId="M3",
                     line="M3",
-                    directionKey="outbound",
-                    direction="Airport",
+                    directionKey=direction_key,
+                    direction=terminus,
                     time=time_str,
                     minutesAway=minutes_away,
                     serviceType="airport",

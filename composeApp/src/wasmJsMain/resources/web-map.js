@@ -735,6 +735,7 @@
                     destination: dep.direction || "",
                     minutesAway: Math.max(0, Math.round(dep.minutesAway)),
                     time: dep.time || "",
+                    serviceType: dep.serviceType || "",
                 };
             });
             return items;
@@ -765,6 +766,14 @@
             const iconHtml = iconSrc
                 ? `<img class="departure-card__icon" src="https://api-syrmos.peterdsp.dev${iconSrc}" alt="${lineId}" loading="lazy" />`
                 : `<span class="line-dot" style="background:${departure.line?.color || 'var(--accent)'};"></span>`;
+            // Airport pill: serviceType=="airport" covers both outbound (to
+            // Airport) and inbound (from Airport → Dimotiko Theatro). Keeps
+            // the terminus text intact so the destination column stays
+            // truthful — the pill just signals "this train touches the
+            // Airport leg."
+            const airportPill = departure.serviceType === "airport"
+                ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
+                : "";
             return `
                 <div class="departure-card">
                     <div class="departure-card__header">
@@ -772,6 +781,7 @@
                         <div class="departure-card__text">
                             <div class="departure-card__line">
                                 <span>${departure.line?.name || lineId}</span>
+                                ${airportPill}
                             </div>
                             <div class="departure-card__destination">${destination}</div>
                         </div>

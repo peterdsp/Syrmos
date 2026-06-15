@@ -23,6 +23,7 @@ data class UpcomingDeparture(
     val direction: Direction,
     val lineId: String,
     val notes: String? = null,
+    val serviceType: String? = null,
 )
 
 class GetNextDeparturesUseCase(
@@ -148,6 +149,7 @@ class GetNextDeparturesUseCase(
             },
             lineId = resolvedLineId,
             notes = direction.ifBlank { null },
+            serviceType = serviceType.ifBlank { null },
         )
     }
 

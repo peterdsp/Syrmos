@@ -137,7 +137,13 @@ fun StationDetailScreen(
                         departureTime = departure.time,
                         modifier = Modifier.padding(horizontal = 16.dp),
                         lineId = departure.lineId,
-                        isAirport = direction.contains("airport", ignoreCase = true) ||
+                        // serviceType=="airport" covers both outbound (terminus
+                        // "Airport") and inbound (terminus "Dimotiko Theatro"
+                        // but originated at the Airport). Fall back to direction
+                        // text for offline/bundled-seed paths that don't carry
+                        // the API field.
+                        isAirport = departure.serviceType == "airport" ||
+                                direction.contains("airport", ignoreCase = true) ||
                                 direction.contains("αεροδρ", ignoreCase = true),
                     )
                 }
