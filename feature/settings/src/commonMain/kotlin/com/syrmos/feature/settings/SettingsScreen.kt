@@ -195,7 +195,7 @@ fun SettingsScreen() {
         item {
             SettingsSection(title = if (lang == AppLanguage.GREEK) "Επικοινωνία" else "Contact") {
                 SettingsRow(
-                    title = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον προγραμματιστή" else "Contact developer",
+                    title = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον μηχανικό" else "Contact engineer",
                     value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
                     onClick = { showContact = true },
                 )

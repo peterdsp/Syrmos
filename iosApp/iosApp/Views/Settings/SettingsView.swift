@@ -109,7 +109,7 @@ struct SyrmosSettingsView: View {
                     } label: {
                         HStack {
                             Label(
-                                loc.language == .greek ? "Επικοινωνία με τον προγραμματιστή" : "Contact developer",
+                                loc.language == .greek ? "Επικοινωνία με τον μηχανικό" : "Contact engineer",
                                 systemImage: "envelope"
                             )
                             Spacer()

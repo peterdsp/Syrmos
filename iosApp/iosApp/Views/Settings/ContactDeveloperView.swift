@@ -1,7 +1,7 @@
 import SwiftUI
 import PhotosUI
 
-/// Settings → Contact developer.
+/// Settings → Contact engineer.
 ///
 /// Users describe a bug / feature request / general feedback and (optionally)
 /// attach a screenshot or short video from their photo library. The form
@@ -10,7 +10,7 @@ import PhotosUI
 /// SMTP env vars are set on the Pi it also fires an email nudge to
 /// info@peterdsp.dev so the admin knows a new message landed.
 struct ContactDeveloperView: View {
-    @EnvironmentObject private var loc: LocalizationManager
+    @ObservedObject private var loc = LocalizationManager.shared
 
     @State private var category: Category = .bug
     @State private var subject: String = ""
