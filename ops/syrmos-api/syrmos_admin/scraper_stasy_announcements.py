@@ -87,8 +87,11 @@ CLOSURE_KEYWORDS = (
 WARNING_KEYWORDS = (
     "παράταση ωραρ", "αλλαγή", "τροποποίηση", "αλλαγές δρομολογ",
     "καθυστερ", "απεργ", "στάση εργασ",
+    "κυκλοφοριακές ρυθμ", "ρυθμίσεις",
+    "εργασ", "αντικατάστασ",                 # railworks, maintenance
     "extension of", "extended", "schedule change", "schedule changes",
     "traffic arrangement", "strike", "modification", "delay",
+    "maintenance", "rail replacement",
 )
 
 
@@ -246,46 +249,98 @@ def detect_affected_lines(text: str) -> list[str]:
     return found
 
 
-_DMY_RE = re.compile(
+_DMY_GREEK_RE = re.compile(
     r"(\d{1,2})\s*(?:η|ης|ού|ου|ή)?\s*"
     r"(ιαν|φεβ|μαρ|απρ|μαΐ|μαϊ|μαι|ιουν|ιουλ|αυγ|σεπ|οκτ|νοε|δεκ)[α-ωίάέήόύώϊϋΐΰ]*",
     re.IGNORECASE,
 )
+_DMY_NUMERIC_RE = re.compile(
+    r"(?<!\d)(\d{1,2})[/\-.](\d{1,2})(?:[/\-.](\d{2,4}))?(?!\d)"
+)
+_TIME_OF_DAY_RE = re.compile(r"\b(\d{1,2}):(\d{2})\b")
 _GREEK_MONTHS = {
     "ιαν": 1, "φεβ": 2, "μαρ": 3, "απρ": 4, "μαΐ": 5, "μαϊ": 5, "μαι": 5,
     "ιουν": 6, "ιουλ": 7, "αυγ": 8, "σεπ": 9, "οκτ": 10, "νοε": 11, "δεκ": 12,
 }
 
 
+def _nearest_year(today: date, month: int, day: int) -> date | None:
+    """Pick the year that puts this (month, day) closest to today. Used
+    when the article cites a date with no year (e.g. "Δευτέρα 15/06"):
+    the article was almost certainly written for the upcoming or
+    just-past occurrence, not one years away."""
+    for y in (today.year - 1, today.year, today.year + 1):
+        try:
+            candidate = date(y, month, day)
+        except ValueError:
+            continue
+        if abs((candidate - today).days) <= 200:
+            return candidate
+    try:
+        return date(today.year, month, day)
+    except ValueError:
+        return None
+
+
 def detect_dates(text: str, today: date | None = None) -> tuple[str | None, str | None, list[str]]:
-    """Returns (valid_from, valid_until, closure_dates). For each Greek
-    date phrase we encounter, build a YYYY-MM-DD by picking the year
-    closest to ``today`` (so "1η Μαΐου" picks the upcoming May 1, not
-    one already passed by ~6 months)."""
+    """Returns (valid_from, valid_until, closure_dates) parsed from the
+    article body. Handles both Greek month-name phrases ("1η Μαΐου") and
+    DD/MM[/YYYY] numeric dates ("Δευτέρα 15/06")."""
     if today is None:
         today = date.today()
-    iso_dates: list[str] = []
-    for d_str, m_str in _DMY_RE.findall(text.lower()):
+    iso_dates: set[str] = set()
+
+    for d_str, m_str in _DMY_GREEK_RE.findall(text.lower()):
         try:
             day = int(d_str)
             month = _GREEK_MONTHS.get(m_str.strip()[:3].lower())
-            if not month or not 1 <= day <= 31:
-                continue
         except ValueError:
             continue
-        year = today.year
+        if not month or not 1 <= day <= 31:
+            continue
+        candidate = _nearest_year(today, month, day)
+        if candidate is not None:
+            iso_dates.add(candidate.isoformat())
+
+    for d_str, m_str, y_str in _DMY_NUMERIC_RE.findall(text):
         try:
-            candidate = date(year, month, day)
+            day = int(d_str)
+            month = int(m_str)
         except ValueError:
             continue
-        # If the date is more than 6 months behind us, assume next year.
-        if (today - candidate).days > 180:
-            candidate = candidate.replace(year=year + 1)
-        iso_dates.append(candidate.isoformat())
-    iso_dates = sorted(set(iso_dates))
-    if not iso_dates:
+        if not (1 <= day <= 31 and 1 <= month <= 12):
+            continue
+        if y_str:
+            year = int(y_str)
+            if year < 100:
+                year += 2000
+            try:
+                iso_dates.add(date(year, month, day).isoformat())
+            except ValueError:
+                pass
+        else:
+            candidate = _nearest_year(today, month, day)
+            if candidate is not None:
+                iso_dates.add(candidate.isoformat())
+
+    ordered = sorted(iso_dates)
+    if not ordered:
         return None, None, []
-    return iso_dates[0], iso_dates[-1], iso_dates
+    return ordered[0], ordered[-1], ordered
+
+
+def has_time_of_day(text: str) -> bool:
+    """True if the body cites a specific HH:MM. Used to downgrade
+    severity from 'closure' to 'warning' — STASY's full-day closures
+    don't mention a time, only the date; partial closures like
+    "θα κλείνουν στις 21:40" do, and shouldn't write date_overrides."""
+    for h, m in _TIME_OF_DAY_RE.findall(text):
+        try:
+            if 0 <= int(h) <= 23 and 0 <= int(m) <= 59:
+                return True
+        except ValueError:
+            continue
+    return False
 
 
 def build_announcement(
@@ -317,6 +372,13 @@ def build_announcement(
     if not affected and severity in ("warning", "closure"):
         affected = ["M1", "M2", "M3", "M3_AIR", "T6", "T7"]
     valid_from, valid_until, closure_dates = detect_dates(classifier_text, today=today)
+
+    # Partial-time closures ("stations will close at 21:40", "after 23:00")
+    # mention a specific HH:MM and are not full-day shutdowns. Drop them
+    # back to a warning so we never write a phantom date_overrides row.
+    # A full-day closure requires the wording AND a date AND no time.
+    if severity == "closure" and (has_time_of_day(classifier_text) or not closure_dates):
+        severity = "warning"
 
     item = AnnouncementItem(
         slug=slug_from_url(english_url),
