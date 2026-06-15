@@ -211,7 +211,7 @@ struct TransitMapView: View {
     var body: some View {
         NavigationStack {
             mapContent
-                .safeAreaInset(edge: .top, spacing: 0) {
+                .safeAreaInset(edge: .top, spacing: 8) {
                     CompactTabHeader(loc[.map])
                 }
             .toolbar(.hidden, for: .navigationBar)

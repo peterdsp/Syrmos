@@ -26,7 +26,7 @@ struct TimetablesView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : "Timetables")
             }
             .toolbar(.hidden, for: .navigationBar)

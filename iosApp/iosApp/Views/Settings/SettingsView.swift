@@ -144,7 +144,7 @@ struct SyrmosSettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader(loc[.settings])
             }
             .toolbar(.hidden, for: .navigationBar)
