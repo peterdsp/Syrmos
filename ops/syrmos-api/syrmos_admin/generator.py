@@ -11,7 +11,7 @@ import json
 import os
 import sqlite3
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date as _date, datetime, timedelta as _timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -206,9 +206,45 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
         except (TypeError, ValueError):
             return []
 
+    today = _date.today()
+    fresh_cutoff = today - _timedelta(days=90)
+    expiry_cutoff = today - _timedelta(days=7)
+
+    def _parse_iso_date(s: str | None) -> "_date | None":
+        if not s:
+            return None
+        try:
+            return _date.fromisoformat(s[:10])
+        except (TypeError, ValueError):
+            return None
+
+    def _is_fresh(r, cols, severity: str) -> bool:
+        vu = _parse_iso_date(r["valid_until"] if "valid_until" in cols else None)
+        vf = _parse_iso_date(r["valid_from"] if "valid_from" in cols else None)
+        # Closures get extra grace — they're high-impact and we want to
+        # surface even short notices, but still expire once the date is
+        # well in the past.
+        if severity == "closure":
+            if vu is not None:
+                return vu >= expiry_cutoff
+            if vf is not None:
+                return vf >= expiry_cutoff
+            return False
+        if vu is not None:
+            return vu >= expiry_cutoff
+        if vf is not None:
+            return vf >= fresh_cutoff
+        # STASY keeps "TIME-SCHEDULE OF LINE 3" style permalinks live for
+        # years. Drop anything without an extractable date — including
+        # severity=warning permalinks from 2022.
+        return False
+
     announcements = []
     for r in rows:
         cols = r.keys()
+        severity = (r["severity"] if "severity" in cols else "info") or "info"
+        if not _is_fresh(r, cols, severity):
+            continue
         announcements.append({
             "id": r["id"],
             "title": r["title"],
@@ -220,7 +256,7 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "category": r["category"],
             # Structured fields, all optional so older clients keep working.
             "affectedLines": _decode_lines(r["affected_lines"]) if "affected_lines" in cols else [],
-            "severity": r["severity"] if "severity" in cols else "info",
+            "severity": severity,
             "validFrom": r["valid_from"] if "valid_from" in cols else None,
             "validUntil": r["valid_until"] if "valid_until" in cols else None,
         })

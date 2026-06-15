@@ -527,52 +527,39 @@ struct AlertCard: View {
     let announcement: STASYAnnouncement
     let onReadMore: (URL) -> Void
     @ObservedObject private var loc = LocalizationManager.shared
-    @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(announcement.displayTitle(language: loc.language))
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(isExpanded ? nil : 3)
-                .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        Button {
+            if let url = announcement.url { onReadMore(url) }
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(announcement.displayTitle(language: loc.language))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(.primary)
 
-            if !announcement.date.isEmpty {
-                Text(announcement.date)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-
-            HStack(spacing: 16) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        isExpanded.toggle()
+                    if !announcement.date.isEmpty {
+                        Text(announcement.date)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(isExpanded ? loc[.showLess] : loc[.showMore])
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
-
-                if let url = announcement.url {
-                    Button {
-                        onReadMore(url)
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(loc[.readMore])
-                            Image(systemName: "arrow.up.right")
-                        }
-                        .font(.caption)
+                Spacer(minLength: 4)
+                if announcement.url != nil {
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(Color.syrmosPrimary)
-                    }
+                        .padding(.top, 2)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .buttonStyle(.plain)
+        .disabled(announcement.url == nil)
         .background(
             announcement.category == .serviceAlert
                 ? Color.orange.opacity(0.08)

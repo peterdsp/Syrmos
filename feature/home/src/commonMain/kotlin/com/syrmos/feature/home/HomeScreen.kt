@@ -561,52 +561,47 @@ private fun AlertCard(
     lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-
+    val hasUrl = announcement.url.isNotBlank()
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (hasUrl) Modifier.clickable { onOpenUrl(announcement.url) } else Modifier),
         colors = CardDefaults.cardColors(
             containerColor = if (isAlert) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.surface,
         ),
         border = if (isAlert) BorderStroke(1.dp, Color(0x33E87722)) else null,
         shape = RoundedCornerShape(10.dp),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
-                .animateContentSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                text = if (lang == AppLanguage.GREEK) announcement.title else announcement.titleEn,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (announcement.date.isNotBlank()) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Text(
-                    text = announcement.date,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = if (lang == AppLanguage.GREEK) announcement.title else announcement.titleEn,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
                 )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = if (isExpanded) L.SHOW_LESS.text(lang) else L.SHOW_MORE.text(lang),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable { isExpanded = !isExpanded },
-                )
-                if (announcement.url.isNotBlank()) {
+                if (announcement.date.isNotBlank()) {
                     Text(
-                        text = "${L.READ_MORE.text(lang)} ↗",
+                        text = announcement.date,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { onOpenUrl(announcement.url) },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            if (hasUrl) {
+                Text(
+                    text = "↗",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }

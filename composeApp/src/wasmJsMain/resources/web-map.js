@@ -119,24 +119,29 @@
         }
     } catch (_) {}
 
+    // Hydrate from API first (preferred source of truth), then plug any
+    // gaps from the bundled manifest. The API currently returns empty
+    // {stations:{},interchanges:{}} maps, so the bundle is what actually
+    // populates the per-station SVGs in production.
     if (apiIcons && apiIcons.stations) {
         for (const [sid, url] of Object.entries(apiIcons.stations)) stationIconBySid.set(sid, url);
         for (const [sid, url] of Object.entries(apiIcons.interchanges || {})) stationIconBySid.set(sid, url);
-    } else {
-        // Bundled fallback (legacy manifest layout, still ships in the build).
-        const stationIconManifest = await fetch("icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
-        const lineToManifestDir = { M1: "metro/M1", M2: "metro/M2", M3: "metro/M3", T6: "tram/T6", T7: "tram/T7", A1: "train/P1", A2: "train/P1", A3: "train/P3", A4: "train/P2" };
-        for (const route of routes) {
-            const mDir = lineToManifestDir[route.line_id];
-            if (!mDir) continue;
-            route.station_ids.forEach((stationId, index) => {
-                const key = `${mDir}/${String(index + 1).padStart(2, "0")}`;
-                if (stationIconManifest[key]) stationIconBySid.set(stationId, stationIconManifest[key]);
-            });
-        }
-        for (const [key, url] of Object.entries(stationIconManifest)) {
-            if (key.startsWith("interchange/")) stationIconBySid.set(key.substring("interchange/".length), url);
-        }
+    }
+    const stationIconManifest = await fetch("icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
+    const lineToManifestDir = { M1: "metro/M1", M2: "metro/M2", M3: "metro/M3", T6: "tram/T6", T7: "tram/T7", A1: "train/P1", A2: "train/P1", A3: "train/P3", A4: "train/P2" };
+    for (const route of routes) {
+        const mDir = lineToManifestDir[route.line_id];
+        if (!mDir) continue;
+        route.station_ids.forEach((stationId, index) => {
+            if (stationIconBySid.has(stationId)) return;
+            const key = `${mDir}/${String(index + 1).padStart(2, "0")}`;
+            if (stationIconManifest[key]) stationIconBySid.set(stationId, stationIconManifest[key]);
+        });
+    }
+    for (const [key, url] of Object.entries(stationIconManifest)) {
+        if (!key.startsWith("interchange/")) continue;
+        const sid = key.substring("interchange/".length);
+        if (!stationIconBySid.has(sid)) stationIconBySid.set(sid, url);
     }
 
     const liveTrainList = document.getElementById("liveTrainList");
