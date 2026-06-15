@@ -137,13 +137,18 @@ def project_next_departures(
     # M3 city station guarantee: always surface the next Airport-bound
     # train even if it's hours away. Lookahead scans forward up to 7 days
     # so the row appears after the last airport service has run for today.
+    # Check direction explicitly: an inbound "from Airport" row in window
+    # doesn't satisfy the "next outbound to Airport" requirement.
     wants_airport = (
         "M3_AIR" in expanded
         and station_id not in LINE3_AIRPORT_ONLY_STATIONS
         and direction_filter in (None, "outbound")
     )
-    has_airport = any(d.serviceType == "airport" for d in out)
-    if wants_airport and not has_airport:
+    has_outbound_airport = any(
+        d.serviceType == "airport" and d.directionKey == "outbound"
+        for d in out
+    )
+    if wants_airport and not has_outbound_airport:
         bundle = bundles.get("M3_AIR")
         if bundle is not None:
             la = _next_airport_lookahead(
@@ -154,7 +159,12 @@ def project_next_departures(
                 conn=conn,
             )
             if la is not None:
+                # Re-dedup so a same-minute DPL outbound row collapses
+                # into this Airport row (M3 dedup keeps the airport label).
                 out.append(la)
+                out = _dedupe(out)
+                out.sort(key=lambda d: d.minutesAway)
+                out = out[:limit]
 
     return [d.to_dict() for d in out]
 
