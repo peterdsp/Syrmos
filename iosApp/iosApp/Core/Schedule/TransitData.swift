@@ -229,7 +229,7 @@ extension SyrmosData {
             return $0.id < $1.id
         }, by: { $0.clusterKey })
 
-        return grouped.flatMap { _, group in
+        let nodes: [MapStationNode] = grouped.flatMap { _, group in
             group.clusterByProximity().enumerated().map { index, cluster in
                 let primary = cluster.first!
                 let lineIds = Array(Set(cluster.flatMap { $0.lineIds })).sorted()
@@ -256,7 +256,56 @@ extension SyrmosData {
                 )
             }
         }
-        .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+        return mergeColocatedNodes(initial: nodes)
+            .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+    }
+
+    /// Second-pass merge for stations that share a physical location but
+    /// have different names. The primary clustering groups stations by
+    /// normalized name first, then by proximity — so M3 "Dimotiko Theatro"
+    /// and T7 "Dimarhio / Dimotiko Theatro" sit ~32 m apart but never
+    /// compare against each other because their names differ. This pass
+    /// runs a final 60 m distance sweep over the produced nodes and
+    /// folds any two that are clearly the same hub. The threshold is
+    /// tight enough to never collapse adjacent-but-separate stops.
+    private static func mergeColocatedNodes(initial: [MapStationNode]) -> [MapStationNode] {
+        let radiusMeters = 60.0
+        var merged: [MapStationNode] = []
+        for node in initial {
+            if let idx = merged.firstIndex(where: {
+                distanceMeters(
+                    $0.coordinate.latitude, $0.coordinate.longitude,
+                    node.coordinate.latitude, node.coordinate.longitude
+                ) <= radiusMeters
+            }) {
+                let existing = merged[idx]
+                let combinedLineIds = Array(Set(existing.lineIds + node.lineIds)).sorted()
+                var combinedMap = existing.stationIdByLineId
+                for (lineId, stationId) in node.stationIdByLineId where combinedMap[lineId] == nil {
+                    combinedMap[lineId] = stationId
+                }
+                let count = 2.0
+                let lat = (existing.coordinate.latitude + node.coordinate.latitude) / count
+                let lon = (existing.coordinate.longitude + node.coordinate.longitude) / count
+                // Pick the more descriptive name for the merged node — the
+                // longer one is usually the "Dimarhio / Dimotiko Theatro"
+                // style dual label rather than a single mode's shorthand.
+                let pickName = node.name.count > existing.name.count ? node : existing
+                merged[idx] = MapStationNode(
+                    id: existing.id,
+                    stationIds: existing.stationIds + node.stationIds,
+                    stationIdByLineId: combinedMap,
+                    name: pickName.name,
+                    nameEl: pickName.nameEl,
+                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+                    lineIds: combinedLineIds,
+                    isInterchange: combinedLineIds.count > 1 || existing.isInterchange || node.isInterchange
+                )
+            } else {
+                merged.append(node)
+            }
+        }
+        return merged
     }
 }
 
