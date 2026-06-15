@@ -15,18 +15,20 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    welcomeSection
-                    alertsSection
-                    networkOverview
-                    nearMeSection
-                    liveTrainsSection
-                    linesSection
+            VStack(spacing: 0) {
+                CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
+                ScrollView {
+                    VStack(spacing: 20) {
+                        alertsSection
+                        networkOverview
+                        nearMeSection
+                        liveTrainsSection
+                        linesSection
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
             .navigationBarTitleDisplayMode(.inline)
@@ -61,18 +63,6 @@ struct HomeView: View {
             // simply takes effect on the user's next interaction. See the
             // store comment on evaluateFreshData() for the rationale.
         }
-    }
-
-    private var welcomeSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Syrmos")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            Text(loc[.appSubtitle])
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var networkOverview: some View {
