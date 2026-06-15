@@ -8,6 +8,7 @@ struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
     @ObservedObject private var timestamps = SyrmosTrainTimestampsStore.shared
+    @ObservedObject private var offsets = SyrmosStationOffsetsStore.shared
 
     @State private var selectedLineId: String = "M3"
     @State private var selectedDayOffset: Int = 0  // 0 = today, 1 = tomorrow, ...
@@ -141,12 +142,7 @@ struct TimetablesView: View {
 
     private var departuresList: some View {
         let projected = projectDay()
-        let filtered = searchText.isEmpty
-            ? projected
-            : projected.filter { dep in
-                dep.direction.localizedCaseInsensitiveContains(searchText)
-                    || dep.lineId.localizedCaseInsensitiveContains(searchText)
-            }
+        let filtered = applySearch(to: projected)
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -240,6 +236,84 @@ struct TimetablesView: View {
     /// directly. For metro and tram we still use the band projector (STASY
     /// PDFs are next on the list). M3 stays special-cased: city + airport
     /// branches projected separately and merged.
+    /// Filter the projected list against the search box. Two modes:
+    /// - destination / line filter: substring match on direction or lineId
+    /// - station filter: substring match on a station name along the
+    ///   selected line. When a station match wins, the displayed time
+    ///   shifts from origin-departure to station-arrival (origin slot
+    ///   plus minutes_from_origin) so the user sees when trains actually
+    ///   pass through the station they searched for.
+    private func applySearch(to departures: [Departure]) -> [Departure] {
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        if query.isEmpty { return departures }
+
+        // Resolve query against stations on the currently-selected line.
+        // Use both the offset store (canonical EN) and SyrmosData (EL).
+        let stationsForLine = SyrmosData.stations(for: selectedLineId)
+        let matchedStation = stationsForLine.first { st in
+            st.name.localizedCaseInsensitiveContains(query)
+                || st.nameEl.localizedCaseInsensitiveContains(query)
+        }
+        if let st = matchedStation {
+            // Build a (direction-label -> minutes-from-origin) map so we
+            // know how to shift each departure to its station arrival.
+            // SyrmosStationOffsetsStore uses "outbound"/"inbound"; the
+            // departure rows use the line's terminalA/B label.
+            let line = SyrmosData.line(for: selectedLineId)
+            let outboundMin = offsets.offsetMinutes(
+                lineId: selectedLineId, direction: "outbound", stationId: st.id
+            )
+            let inboundMin = offsets.offsetMinutes(
+                lineId: selectedLineId, direction: "inbound", stationId: st.id
+            )
+            let outboundLabel = line?.terminalB ?? ""
+            let inboundLabel = line?.terminalA ?? ""
+
+            var shifted: [Departure] = []
+            for dep in departures {
+                let shiftMinutes: Int
+                if dep.direction == outboundLabel {
+                    shiftMinutes = outboundMin
+                } else if dep.direction == inboundLabel {
+                    shiftMinutes = inboundMin
+                } else if dep.direction == "Airport" {
+                    // M3_AIR outbound: DPL-origin, so Airport-bound trains
+                    // don't normally stop at upstream city stations like
+                    // Nikaia. Skip unless the station IS on the airport
+                    // extension (DPL, Pallini, Kantza, Koropi, Airport).
+                    let airportOffset = offsets.offsetMinutes(
+                        lineId: "M3_AIR", direction: "outbound", stationId: st.id
+                    )
+                    if airportOffset == 0 && !st.id.hasSuffix("_DOY") {
+                        continue
+                    }
+                    shiftMinutes = airportOffset
+                } else {
+                    shiftMinutes = 0
+                }
+                guard let baseMinute = minutesOfDay(dep.time) else { continue }
+                let total = baseMinute + shiftMinutes
+                let display = ((total % (24 * 60)) + 24 * 60) % (24 * 60)
+                let h = display / 60
+                let m = display % 60
+                shifted.append(Departure(
+                    time: String(format: "%02d:%02d", h, m),
+                    lineId: dep.lineId,
+                    direction: dep.direction,
+                    minutesAway: dep.minutesAway,
+                    serviceType: dep.serviceType
+                ))
+            }
+            return shifted
+        }
+
+        // Fall back to the original destination / line substring filter.
+        return departures.filter { dep in
+            dep.direction.localizedCaseInsensitiveContains(query)
+                || dep.lineId.localizedCaseInsensitiveContains(query)
+        }
+    }
+
     private func projectDay() -> [Departure] {
         if ["A1", "A2", "A3", "A4"].contains(selectedLineId) {
             let real = projectFromTimestamps()
