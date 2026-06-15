@@ -255,44 +255,60 @@ struct TimetablesView: View {
                 || st.nameEl.localizedCaseInsensitiveContains(query)
         }
         if let st = matchedStation {
-            // Build a (direction-label -> minutes-from-origin) map so we
-            // know how to shift each departure to its station arrival.
-            // SyrmosStationOffsetsStore uses "outbound"/"inbound"; the
-            // departure rows use the line's terminalA/B label.
+            // For each direction stream that runs through the line we
+            // look up the station's minutes_from_origin. Membership is
+            // tested against the full stops list — `offsetMinutes` would
+            // return 0 both for "station is origin" and for "station
+            // isn't on this stream", and the two cases need different
+            // behaviour (origin = include with shift 0; not-on-stream =
+            // skip the departure entirely).
             let line = SyrmosData.line(for: selectedLineId)
-            let outboundMin = offsets.offsetMinutes(
-                lineId: selectedLineId, direction: "outbound", stationId: st.id
+            let terminalA = line?.terminalA ?? ""
+            let terminalB = line?.terminalB ?? ""
+
+            func shiftIfOnStream(_ stops: [SyrmosStationOffsetsStore.Stop], _ stationId: String) -> Int? {
+                stops.first { $0.stationId == stationId }?.minutesFromOrigin
+            }
+            let cityOutShift = shiftIfOnStream(
+                offsets.stops(lineId: selectedLineId, direction: "outbound"), st.id
             )
-            let inboundMin = offsets.offsetMinutes(
-                lineId: selectedLineId, direction: "inbound", stationId: st.id
+            let cityInShift = shiftIfOnStream(
+                offsets.stops(lineId: selectedLineId, direction: "inbound"), st.id
             )
-            let outboundLabel = line?.terminalB ?? ""
-            let inboundLabel = line?.terminalA ?? ""
+            // M3_AIR shares track with M3 but has its own clipped offsets.
+            // Only relevant when the selected line is M3 since A1/A2/A3/A4
+            // don't have an airport-extension cousin.
+            var airOutShift: Int? = nil
+            var airInShift: Int? = nil
+            if selectedLineId == "M3" {
+                airOutShift = shiftIfOnStream(
+                    offsets.stops(lineId: "M3_AIR", direction: "outbound"), st.id
+                )
+                airInShift = shiftIfOnStream(
+                    offsets.stops(lineId: "M3_AIR", direction: "inbound"), st.id
+                )
+            }
 
             var shifted: [Departure] = []
             for dep in departures {
-                let shiftMinutes: Int
-                if dep.direction == outboundLabel {
-                    shiftMinutes = outboundMin
-                } else if dep.direction == inboundLabel {
-                    shiftMinutes = inboundMin
-                } else if dep.direction == "Airport" {
-                    // M3_AIR outbound: DPL-origin, so Airport-bound trains
-                    // don't normally stop at upstream city stations like
-                    // Nikaia. Skip unless the station IS on the airport
-                    // extension (DPL, Pallini, Kantza, Koropi, Airport).
-                    let airportOffset = offsets.offsetMinutes(
-                        lineId: "M3_AIR", direction: "outbound", stationId: st.id
-                    )
-                    if airportOffset == 0 && !st.id.hasSuffix("_DOY") {
-                        continue
-                    }
-                    shiftMinutes = airportOffset
-                } else {
-                    shiftMinutes = 0
+                // M3 inbound and M3_AIR inbound both label their destination
+                // "Dimotiko Theatro". serviceType separates them — airport
+                // trains are tagged "airport" in projectBundle.
+                let isAirportService = dep.serviceType == "airport"
+                let shiftMin: Int?
+                switch dep.direction {
+                case terminalB where !terminalB.isEmpty:
+                    shiftMin = cityOutShift
+                case terminalA where !terminalA.isEmpty:
+                    shiftMin = isAirportService ? airInShift : cityInShift
+                case "Airport":
+                    shiftMin = airOutShift
+                default:
+                    shiftMin = nil
                 }
+                guard let shift = shiftMin else { continue }
                 guard let baseMinute = minutesOfDay(dep.time) else { continue }
-                let total = baseMinute + shiftMinutes
+                let total = baseMinute + shift
                 let display = ((total % (24 * 60)) + 24 * 60) % (24 * 60)
                 let h = display / 60
                 let m = display % 60
@@ -304,7 +320,10 @@ struct TimetablesView: View {
                     serviceType: dep.serviceType
                 ))
             }
-            return shifted
+            // Sort by station-arrival time so the user sees the order
+            // trains actually pass / leave the searched station, not the
+            // origin-departure order.
+            return shifted.sorted { $0.time < $1.time }
         }
 
         // Fall back to the original destination / line substring filter.
