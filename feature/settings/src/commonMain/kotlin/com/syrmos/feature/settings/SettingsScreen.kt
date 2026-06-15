@@ -74,10 +74,8 @@ fun SettingsScreen() {
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
-            Text(
-                text = L.SETTINGS.text(lang),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
+            com.syrmos.core.designsystem.component.CompactTabHeader(
+                title = L.SETTINGS.text(lang),
             )
         }
 

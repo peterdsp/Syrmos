@@ -2,11 +2,24 @@ package com.syrmos.app
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsTransit
@@ -17,9 +30,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +45,6 @@ import org.jetbrains.compose.resources.painterResource
 import syrmos.composeapp.generated.resources.Res
 import syrmos.composeapp.generated.resources.start_screen
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.CurrentTab
@@ -108,27 +117,14 @@ fun SyrmosApp() {
                     DesktopWebApp()
                 } else {
                     TabNavigator(HomeTab) {
-                        Scaffold(
-                            bottomBar = {
-                                NavigationBar(
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    tonalElevation = 0.dp,
-                                ) {
-                                    TabNavItem(HomeTab, Icons.Filled.Home)
-                                    TabNavItem(LinesTab, Icons.Filled.DirectionsTransit)
-                                    TabNavItem(MapTab, Icons.Filled.Map)
-                                    TabNavItem(TimetablesTab, Icons.Filled.AccessTime)
-                                    TabNavItem(SettingsTab, Icons.Filled.Settings)
-                                }
-                            },
-                        ) { padding ->
-                            Box(
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CurrentTab()
+                            LiquidGlassTabBar(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(padding),
-                            ) {
-                                CurrentTab()
-                            }
+                                    .align(Alignment.BottomCenter)
+                                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                                    .windowInsetsPadding(WindowInsets.navigationBars),
+                            )
                         }
                     }
                 }
@@ -154,25 +150,51 @@ private fun BootSplash() {
 }
 
 @Composable
-private fun RowScope.TabNavItem(
+private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        shadowElevation = 10.dp,
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LiquidGlassTabItem(HomeTab, Icons.Filled.Home)
+            LiquidGlassTabItem(LinesTab, Icons.Filled.DirectionsTransit)
+            LiquidGlassTabItem(MapTab, Icons.Filled.Map)
+            LiquidGlassTabItem(TimetablesTab, Icons.Filled.AccessTime)
+            LiquidGlassTabItem(SettingsTab, Icons.Filled.Settings)
+        }
+    }
+}
+
+@Composable
+private fun LiquidGlassTabItem(
     tab: Tab,
     icon: ImageVector,
 ) {
     val tabNavigator = LocalTabNavigator.current
-
-    NavigationBarItem(
-        selected = tabNavigator.current == tab,
-        onClick = { tabNavigator.current = tab },
-        label = { Text(tab.options.title) },
-        colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = MaterialTheme.colorScheme.primary,
-            selectedTextColor = MaterialTheme.colorScheme.primary,
-            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-        icon = {
-            Icon(imageVector = icon, contentDescription = tab.options.title)
-        },
-    )
+    val selected = tabNavigator.current == tab
+    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = Modifier
+            .clickable(onClick = { tabNavigator.current = tab })
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = tab.options.title, tint = tint)
+        Text(
+            text = tab.options.title,
+            style = MaterialTheme.typography.labelSmall,
+            color = tint,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        )
+    }
 }
