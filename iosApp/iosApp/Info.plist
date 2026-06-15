@@ -26,10 +26,8 @@
 	<string>Syrmos uses your location to find the nearest metro, tram, and suburban railway stations so you can see upcoming departures.</string>
 	<key>UILaunchScreen</key>
 	<dict>
-		<key>UIImageName</key>
-		<string>StartScreen</string>
-		<key>UIImageRespectsSafeAreaInsets</key>
-		<false/>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
 	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
