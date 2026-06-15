@@ -586,6 +586,44 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
         " FROM frequency_bands WHERE line_id=? ORDER BY day_type, time_start",
         (line_id,),
     ).fetchall()
+    # Suburban lines (A1/A2/A3/A4) have an explicit trip timetable in
+    # addition to (or instead of) the headway bands. Surface trips so
+    # clients can render the Hellenic-Train-style "next departures" list.
+    trips_rows: list = []
+    try:
+        trips_rows = conn.execute(
+            "SELECT t.train_no, t.line_id, t.direction, t.day_type, t.service_label,"
+            "       s.station_id, s.stop_sequence, s.departure_time"
+            " FROM scheduled_trips t"
+            " JOIN scheduled_trip_stops s"
+            "   ON s.train_no=t.train_no AND s.line_id=t.line_id"
+            "      AND s.day_type=t.day_type AND s.direction=t.direction"
+            " WHERE t.line_id=?"
+            " ORDER BY t.day_type, t.direction, t.train_no, s.stop_sequence",
+            (line_id,),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        trips_rows = []
+
+    trips_by_key: dict[tuple[str, str, str], dict] = {}
+    for r in trips_rows:
+        key = (r["day_type"], r["direction"], r["train_no"])
+        bucket = trips_by_key.get(key)
+        if bucket is None:
+            bucket = {
+                "trainNo": r["train_no"],
+                "dayType": r["day_type"],
+                "direction": r["direction"],
+                "serviceLabel": r["service_label"] or "",
+                "stops": [],
+            }
+            trips_by_key[key] = bucket
+        bucket["stops"].append({
+            "stationId": r["station_id"],
+            "stopSequence": r["stop_sequence"],
+            "departureTime": r["departure_time"],
+        })
+
     return {
         "lineId": line_id,
         "rules": [
@@ -608,6 +646,7 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
             }
             for b in bands
         ],
+        "trips": list(trips_by_key.values()),
     }
 
 
