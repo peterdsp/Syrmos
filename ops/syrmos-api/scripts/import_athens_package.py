@@ -91,13 +91,14 @@ WEEKLY_HOURS = [
     ("M3", "sat",     "00:00", "23:59", 1, "Saturday 24/7 (city only)"),
     ("M3", "sun",     "05:30", "00:20", 0, None),
 
-    # M3_AIR — airport branch. Excluded from 24-hour service and from
-    # late-night extensions per STASY note. Outbound last 22:54 from Dim.
-    # Theatro Mon-Thu/Sun (Fri last 01:34); inbound last 23:34 from Airport.
-    ("M3_AIR", "mon_thu", "05:30", "23:35", 0, None),
-    ("M3_AIR", "fri",     "05:30", "23:35", 0, None),
-    ("M3_AIR", "sat",     "05:30", "23:35", 0, None),
-    ("M3_AIR", "sun",     "05:30", "23:35", 0, None),
+    # M3_AIR — airport extension only (DPL <-> Airport). Excluded from
+    # 24-hour service and from late-night extensions per STASY note.
+    # Earliest active is inbound first Airport departure 06:10; latest is
+    # outbound last DPL passage 23:37 (= last DT departure 22:54 + 43 min).
+    ("M3_AIR", "mon_thu", "06:10", "23:37", 0, None),
+    ("M3_AIR", "fri",     "06:10", "23:37", 0, None),
+    ("M3_AIR", "sat",     "06:10", "23:37", 0, None),
+    ("M3_AIR", "sun",     "06:10", "23:37", 0, None),
 
     # T6 / T7. Mon-Thu/Sat/Sun last 00:30. Fri late extension to 01:40.
     # Sat 24-hour.
@@ -264,18 +265,21 @@ FREQUENCY_BANDS = [
     ("M3", "sun", "20:30", "21:30", 8.5,     "sunday_evening",  "both"),
     ("M3", "sun", "21:30", "00:20", 10.0,    "sunday_late",     "both"),
 
-    # ---------------- M3_AIR (airport route, per-direction) ----------------
-    # Outbound: from Dim. Theatro towards Airport. First 05:30, last 22:54
-    # Mon-Thu/Sun (Fri last 01:34 — but per STASY the Friday late extension
-    # excludes airport, so we keep Fri identical). Inbound: from Airport
-    # towards Dim. Theatro. First 06:10, last 23:34.
-    ("M3_AIR", "mon_thu", "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    # ---------------- M3_AIR (airport extension, per-direction) ----------------
+    # Airport trains physically share the city section (Dim. Theatro <->
+    # Doukissis Plakentias) with regular M3 trains, so we render them only
+    # on the airport extension to avoid double-counting on the map. The
+    # band time_start is now the DPL-origin departure time outbound (= the
+    # Dim. Theatro departure shifted by the 44-min city travel: first
+    # 05:30+44 = 06:14, last 22:54+43 = 23:37). Inbound origin is Airport
+    # so the values stay 06:10 / 23:34.
+    ("M3_AIR", "mon_thu", "06:14", "23:37", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "mon_thu", "06:10", "23:34", 36.0, "airport_daily", "inbound"),
-    ("M3_AIR", "fri",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "fri",     "06:14", "23:37", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "fri",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
-    ("M3_AIR", "sat",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "sat",     "06:14", "23:37", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "sat",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
-    ("M3_AIR", "sun",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "sun",     "06:14", "23:37", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "sun",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
 
     # ---------------- T6 (Syntagma ↔ Pikrodafni) ----------------
