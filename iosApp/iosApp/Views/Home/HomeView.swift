@@ -15,22 +15,22 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
-                ScrollView {
-                    VStack(spacing: 20) {
-                        alertsSection
-                        networkOverview
-                        nearMeSection
-                        liveTrainsSection
-                        linesSection
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 20)
+            ScrollView {
+                VStack(spacing: 20) {
+                    alertsSection
+                    networkOverview
+                    nearMeSection
+                    liveTrainsSection
+                    linesSection
                 }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .refreshable {

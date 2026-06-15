@@ -19,7 +19,6 @@ struct TimetablesView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-                CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : "Timetables")
                 linePicker
                 dayPicker
                 searchBar
@@ -27,6 +26,9 @@ struct TimetablesView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : "Timetables")
+            }
             .toolbar(.hidden, for: .navigationBar)
         }
     }
