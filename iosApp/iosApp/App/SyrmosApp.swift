@@ -44,36 +44,24 @@ struct SyrmosApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: kOnboardingCompletedKey)
-    @State private var isWarmingUp = true
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                if hasCompletedOnboarding {
-                    ContentView()
-                } else {
-                    OnboardingView {
-                        UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            hasCompletedOnboarding = true
-                        }
+            // Note: a SwiftUI LaunchSplashView used to overlay this ZStack
+            // for 1.4s after the system splash handed off. It caused a
+            // window-blank regression on background-to-foreground because
+            // the .task re-fired and the overlay could re-mount on top of
+            // a not-yet-redrawn ContentView. The system launch screen
+            // (Info.plist UILaunchScreen) already covers the cold-start
+            // visual; SwiftUI doesn't need to repeat that.
+            if hasCompletedOnboarding {
+                ContentView()
+            } else {
+                OnboardingView {
+                    UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        hasCompletedOnboarding = true
                     }
-                }
-
-                if isWarmingUp {
-                    LaunchSplashView()
-                        .transition(.opacity)
-                        .zIndex(1)
-                }
-            }
-            .task {
-                // Keep the launch image on screen until the first run loop tick
-                // has had a chance to draw the real UI behind it. Bumping the
-                // hold to 1.4s also covers the cold-start window where the
-                // schedule store + theme manager are still warming up.
-                try? await Task.sleep(nanoseconds: 1_400_000_000)
-                withAnimation(.easeOut(duration: 0.35)) {
-                    isWarmingUp = false
                 }
             }
         }
@@ -81,22 +69,6 @@ struct SyrmosApp: App {
 }
 
 private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
-
-private struct LaunchSplashView: View {
-    var body: some View {
-        ZStack {
-            // Backdrop matches the LaunchBackground colour the system splash
-            // uses, so there is no visible flash between the OS splash and
-            // this view even before the JPEG decodes.
-            Color(red: 0xF6 / 255, green: 0xF8 / 255, blue: 0xFA / 255)
-                .ignoresSafeArea()
-            Image("StartScreen")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-        }
-    }
-}
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
