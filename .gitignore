@@ -28,3 +28,7 @@ output/playwright/
 
 # Local editor and assistant config
 .claude/
+
+# Local syrmos-api dev state (DB + venv created when running importer locally)
+ops/syrmos-api/.venv/
+ops/syrmos-api/db/

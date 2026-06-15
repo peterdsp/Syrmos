@@ -70,47 +70,51 @@ WEEKLY_HOURS = [
     # ends inside FREQUENCY_BANDS already enforce the real last departure
     # for each direction.
     #
-    # M1 — Piraeus / Kifissia, Mon-Fri identical (STASY collapses them).
-    ("M1", "mon_thu", "05:00", "01:30", 0, None),
-    ("M1", "fri",     "05:00", "01:30", 0, None),
-    ("M1", "sat",     "05:00", "01:00", 0, None),
-    ("M1", "sun",     "05:00", "01:00", 0, None),
+    # M1 — Piraeus / Kifissia. STASY publishes a single LAST DEPARTURE
+    # column for all days: 00:15 full route, 00:30 short-turn to Omonia.
+    # close = 00:30 (latest train still leaving an origin).
+    ("M1", "mon_thu", "05:00", "00:30", 0, None),
+    ("M1", "fri",     "05:00", "00:30", 0, None),
+    ("M1", "sat",     "05:00", "00:30", 0, None),
+    ("M1", "sun",     "05:00", "00:30", 0, None),
 
-    # M2 — Anthoupoli / Elliniko. STASY Mon-Thu last from Anthoupoli 00:06,
-    # from Elliniko 00:03 → close 00:20 (band end). Fri late extension to
-    # 02:00 brings last to ~01:43. Sat 24-hour, Sun standard.
-    ("M2", "mon_thu", "05:30", "00:20", 0, None),
-    ("M2", "fri",     "05:30", "02:00", 0, "Friday late extension to 02:00"),
+    # M2 — Anthoupoli / Elliniko. STASY last origin Mon-Thu/Sun:
+    # Anthoupoli 00:06, Elliniko 00:03 → close 00:06. Fri late extension:
+    # Anthoupoli 01:43, Elliniko 01:40 → close 01:43. Sat 24-hour.
+    ("M2", "mon_thu", "05:30", "00:06", 0, None),
+    ("M2", "fri",     "05:30", "01:43", 0, "Friday late extension: last Anthoupoli 01:43"),
     ("M2", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
-    ("M2", "sun",     "05:30", "00:20", 0, None),
+    ("M2", "sun",     "05:30", "00:06", 0, None),
 
-    # M3 — city service (Dim. Theatro / Doukissis Plakentias). Last from
-    # Dim. Theatro Mon-Thu/Sun 23:57. Fri 01:34. Sat 24-hour.
-    ("M3", "mon_thu", "05:30", "00:20", 0, "City service; airport branch closes 23:21 outbound"),
-    ("M3", "fri",     "05:30", "02:00", 0, "Friday late extension to 02:00 (city only)"),
+    # M3 — city service (Dim. Theatro / Doukissis Plakentias). Last origin
+    # Mon-Thu/Sun: DT 23:57, DPL 00:01 → close 00:01. Fri: DT 01:34,
+    # DPL 01:38 → close 01:38. Sat 24-hour (city only).
+    ("M3", "mon_thu", "05:30", "00:01", 0, "City service; airport branch closes earlier (M3_AIR)"),
+    ("M3", "fri",     "05:30", "01:38", 0, "Friday late extension: last DPL→DT 01:38"),
     ("M3", "sat",     "00:00", "23:59", 1, "Saturday 24/7 (city only)"),
-    ("M3", "sun",     "05:30", "00:20", 0, None),
+    ("M3", "sun",     "05:30", "00:01", 0, None),
 
-    # M3_AIR — airport extension only (DPL <-> Airport). Excluded from
-    # 24-hour service and from late-night extensions per STASY note.
-    # Earliest active is inbound first Airport departure 06:10; latest is
-    # outbound last DPL passage 23:37 (= last DT departure 22:54 + 43 min).
-    ("M3_AIR", "mon_thu", "06:10", "23:37", 0, None),
-    ("M3_AIR", "fri",     "06:10", "23:37", 0, None),
-    ("M3_AIR", "sat",     "06:10", "23:37", 0, None),
-    ("M3_AIR", "sun",     "06:10", "23:37", 0, None),
+    # M3_AIR — airport extension. Excluded from 24-hour Saturday and from
+    # Fri late-night extensions per STASY note. Last origin departures:
+    # DT→AIR 22:54, AIR→DT 23:34 → close 23:34 (Airport-origin latest).
+    ("M3_AIR", "mon_thu", "06:10", "23:34", 0, None),
+    ("M3_AIR", "fri",     "06:10", "23:34", 0, None),
+    ("M3_AIR", "sat",     "06:10", "23:34", 0, None),
+    ("M3_AIR", "sun",     "06:10", "23:34", 0, None),
 
-    # T6 / T7. Mon-Thu/Sat/Sun last 00:30. Fri late extension to 01:40.
+    # T6 / T7. Last origin per STASY First/Last table (later of two
+    # directions). Mon-Thu/Sun: T6 Syntagma 00:50, T7 Akti Posidonos
+    # 00:40. Fri extension: T6 Syntagma 01:40, T7 Akti Posidonos 01:50.
     # Sat 24-hour.
-    ("T6", "mon_thu", "05:30", "00:30", 0, None),
+    ("T6", "mon_thu", "05:30", "00:50", 0, None),
     ("T6", "fri",     "05:30", "01:40", 0, None),
     ("T6", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
-    ("T6", "sun",     "05:30", "00:30", 0, None),
+    ("T6", "sun",     "05:30", "00:50", 0, None),
 
-    ("T7", "mon_thu", "05:30", "00:30", 0, None),
-    ("T7", "fri",     "05:30", "01:40", 0, None),
+    ("T7", "mon_thu", "05:30", "00:40", 0, None),
+    ("T7", "fri",     "05:30", "01:50", 0, None),
     ("T7", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
-    ("T7", "sun",     "05:30", "00:30", 0, None),
+    ("T7", "sun",     "05:30", "00:40", 0, None),
 
     # Suburban / Hellenic Train. Source PDFs in assets/hellenic-train-timetables/
     # Effective 2025-11-22. A1, A2 share the Airport corridor; from 2025-11-22
