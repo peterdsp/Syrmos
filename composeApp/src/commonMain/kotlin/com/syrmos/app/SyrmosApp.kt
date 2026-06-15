@@ -1,11 +1,13 @@
 package com.syrmos.app
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.Home
@@ -29,6 +31,9 @@ import androidx.compose.runtime.setValue
 import com.syrmos.app.platform.markOnboardingCompleted
 import com.syrmos.app.platform.readOnboardingCompleted
 import com.syrmos.app.screen.OnboardingScreen
+import org.jetbrains.compose.resources.painterResource
+import syrmos.composeapp.generated.resources.Res
+import syrmos.composeapp.generated.resources.start_screen
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -63,12 +68,18 @@ fun SyrmosApp() {
     var hasCompletedOnboarding by remember { mutableStateOf(readOnboardingCompleted()) }
 
     LaunchedEffect(Unit) {
+        val startedAt = kotlin.time.TimeSource.Monotonic.markNow()
         try {
             dataSeeder.seedIfNeeded()
         } catch (_: Exception) {
-        } finally {
-            isSeeded = true
         }
+        // Hold the launch image for at least 1.4s so users actually see
+        // it on warm starts where the seed step finishes in tens of ms.
+        val held = startedAt.elapsedNow().inWholeMilliseconds
+        if (held < 1400L) {
+            kotlinx.coroutines.delay(1400L - held)
+        }
+        isSeeded = true
         // Hydrate from bundled snapshot first so the projector + visuals have
         // correct data immediately, even on airplane mode. Live refresh then
         // overlays anything newer when the network is available.
@@ -132,9 +143,13 @@ private fun BootSplash() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        Image(
+            painter = painterResource(Res.drawable.start_screen),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 

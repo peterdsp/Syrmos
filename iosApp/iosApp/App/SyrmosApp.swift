@@ -44,17 +44,36 @@ struct SyrmosApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: kOnboardingCompletedKey)
+    @State private var isWarmingUp = true
 
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
-                ContentView()
-            } else {
-                OnboardingView {
-                    UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        hasCompletedOnboarding = true
+            ZStack {
+                if hasCompletedOnboarding {
+                    ContentView()
+                } else {
+                    OnboardingView {
+                        UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            hasCompletedOnboarding = true
+                        }
                     }
+                }
+
+                if isWarmingUp {
+                    LaunchSplashView()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+            .task {
+                // Keep the launch image on screen until the first run loop tick
+                // has had a chance to draw the real UI behind it. Bumping the
+                // hold to 1.4s also covers the cold-start window where the
+                // schedule store + theme manager are still warming up.
+                try? await Task.sleep(nanoseconds: 1_400_000_000)
+                withAnimation(.easeOut(duration: 0.35)) {
+                    isWarmingUp = false
                 }
             }
         }
@@ -62,6 +81,15 @@ struct SyrmosApp: App {
 }
 
 private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
+
+private struct LaunchSplashView: View {
+    var body: some View {
+        Image("StartScreen")
+            .resizable()
+            .scaledToFill()
+            .ignoresSafeArea()
+    }
+}
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
