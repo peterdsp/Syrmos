@@ -160,6 +160,29 @@ TRANSIT_RELEVANCE_KEYWORDS = (
 )
 
 
+_GREEK_LETTER_RE = re.compile(r"[Ͱ-Ͽἀ-῿]")
+
+
+def _has_greek(text: str) -> bool:
+    return bool(_GREEK_LETTER_RE.search(text))
+
+
+def _translate_gr_en(text: str) -> str:
+    """Translate Greek text to English via deep-translator (Google).
+    Returns the original text on any failure so the scraper never errors
+    out a whole run because translation hiccups. Safe to call even when
+    deep-translator is missing — the import is wrapped."""
+    text = text.strip()
+    if not text or not _has_greek(text):
+        return text
+    try:
+        from deep_translator import GoogleTranslator
+        translated = GoogleTranslator(source="el", target="en").translate(text)
+        return (translated or "").strip() or text
+    except Exception:
+        return text
+
+
 def is_transit_relevant(text: str) -> bool:
     """Soft filter for whether an article is about something a rider would
     want to hear about. Match logic: at least one transit-relevance hit
@@ -490,13 +513,32 @@ def build_announcement(
     if severity == "closure" and (has_time_of_day(classifier_text) or not closure_dates):
         severity = "warning"
 
+    # When the source is Greek (the homepage path picks up Greek-only
+    # urgent permalinks), translate the title + summary to English so EN
+    # clients don't render Greek text. Greek stays in the `title` /
+    # `summary` fields and the translation goes in `title_en` /
+    # `summary_en`. For English sources both ends are already English so
+    # the translator no-ops on the relevance gate (no Greek chars).
+    raw_title = title_en.strip()
+    raw_summary = summary_en.strip()
+    if _has_greek(raw_title) or _has_greek(raw_summary):
+        title_translated = _translate_gr_en(raw_title)
+        summary_translated = _translate_gr_en(raw_summary)
+        title_native = raw_title
+        summary_native = raw_summary
+    else:
+        title_translated = raw_title
+        summary_translated = raw_summary
+        title_native = raw_title
+        summary_native = raw_summary
+
     item = AnnouncementItem(
         slug=slug_from_url(english_url),
-        title=title_en.strip(),
-        summary=summary_en.strip(),
+        title=title_native,
+        summary=summary_native,
         url=english_url,
-        title_en=title_en.strip(),
-        summary_en=summary_en.strip(),
+        title_en=title_translated,
+        summary_en=summary_translated,
         affected_lines=affected,
         severity=severity,
         valid_from=valid_from,
