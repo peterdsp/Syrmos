@@ -18,5 +18,8 @@ kotlin {
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.koin)
         }
+        androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
+        }
     }
 }

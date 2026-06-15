@@ -53,6 +53,7 @@ fun SettingsScreen() {
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
     var showContact by remember { mutableStateOf(false) }
+    val openStasyMap = rememberStasyMapOpener()
     val scope = rememberCoroutineScope()
 
     // Native OASA tickets catalogue takes over the whole tab when shown.
@@ -177,6 +178,16 @@ fun SettingsScreen() {
                     title = if (lang == AppLanguage.GREEK) "Τιμοκατάλογος OASA" else "Ticket prices (OASA)",
                     value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
                     onClick = { showFares = true },
+                )
+            }
+        }
+
+        item {
+            SettingsSection(title = if (lang == AppLanguage.GREEK) "Χάρτης" else "Map") {
+                SettingsRow(
+                    title = if (lang == AppLanguage.GREEK) "Χάρτης δικτύου STASY" else "STASY system map",
+                    value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
+                    onClick = { openStasyMap() },
                 )
             }
         }

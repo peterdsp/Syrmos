@@ -92,6 +92,17 @@ struct SyrmosSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section(loc.language == .greek ? "Χάρτης" : "Map") {
+                    NavigationLink {
+                        StasyMapView()
+                    } label: {
+                        Label(
+                            loc.language == .greek ? "Χάρτης δικτύου STASY" : "STASY system map",
+                            systemImage: "map"
+                        )
+                    }
+                }
+
                 Section(loc.language == .greek ? "Επικοινωνία" : "Contact") {
                     Button {
                         showContactSheet = true

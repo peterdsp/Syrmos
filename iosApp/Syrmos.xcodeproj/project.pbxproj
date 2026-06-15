@@ -30,6 +30,8 @@
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
 		AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
+		E1A2B3C4D5E60718293A4E80 /* StasySystemMap.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4E81 /* StasySystemMap.pdf */; };
+		E1A2B3C4D5E60718293A4E90 /* StasyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */; };
 		B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* TimetablesView.swift */; };
 		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
 		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
@@ -67,6 +69,8 @@
 		836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactTabHeader.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
 		AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
+		E1A2B3C4D5E60718293A4E81 /* StasySystemMap.pdf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/StasySystemMap.pdf"; sourceTree = "<group>"; };
+		E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StasyMapView.swift; sourceTree = "<group>"; };
 		BB22CC33DD44EE55FF660012 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosLinesService.swift; sourceTree = "<group>"; };
@@ -135,6 +139,7 @@
 			children = (
 				E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */,
 				AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */,
+				E1A2B3C4D5E60718293A4E81 /* StasySystemMap.pdf */,
 				1DF85A2E3F716D7313EC9642 /* Info.plist */,
 				287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */,
 				F82A05549BFD7E1510363B16 /* Models */,
@@ -149,6 +154,7 @@
 			children = (
 				836DE84E99C06ABA19E71805 /* SettingsView.swift */,
 				E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */,
+				E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -266,6 +272,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */,
+				E1A2B3C4D5E60718293A4E80 /* StasySystemMap.pdf in Resources */,
 				017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -301,6 +308,7 @@
 				AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */,
 				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
 				E1A2B3C4D5E60718293A4C70 /* ContactDeveloperView.swift in Sources */,
+				E1A2B3C4D5E60718293A4E90 /* StasyMapView.swift in Sources */,
 				2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */,
 				59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */,
 				B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */,
