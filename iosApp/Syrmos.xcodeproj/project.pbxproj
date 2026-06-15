@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		002709A0C1454019B429939D /* SyrmosSchedulesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */; };
+		AAAA111111111111111111B1 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* OnboardingView.swift */; };
+		AAAA111111111111111111B3 /* OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* OnboardingMeshBackground.swift */; };
 		017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */; };
 		03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* ThemeManager.swift */; };
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
@@ -49,6 +51,8 @@
 
 /* Begin PBXFileReference section */
 		09288EF8307B4CDC9D065AED /* TimetablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Features/Timetables/TimetablesView.swift"; sourceTree = SOURCE_ROOT; };
+		AAAA111111111111111111B2 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Features/Onboarding/OnboardingView.swift"; sourceTree = SOURCE_ROOT; };
+		AAAA111111111111111111B4 /* OnboardingMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Features/Onboarding/OnboardingMeshBackground.swift"; sourceTree = SOURCE_ROOT; };
 		0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Core/Networking/SyrmosSchedulesService.swift"; sourceTree = SOURCE_ROOT; };
 		18D0CA28E96EEF13502C887F /* LinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinesView.swift; sourceTree = "<group>"; };
 		1DF85A2E3F716D7313EC9642 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -192,10 +196,20 @@
 		AAAA000000000000000000F0 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				AAAA111111111111111111B0 /* Onboarding */,
 				AAAA000000000000000000F2 /* Timetables */,
 				AAAA000000000000000000F1 /* Fares */,
 			);
 			name = Features;
+			sourceTree = "<group>";
+		};
+		AAAA111111111111111111B0 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				AAAA111111111111111111B2 /* OnboardingView.swift */,
+				AAAA111111111111111111B4 /* OnboardingMeshBackground.swift */,
+			);
+			name = Onboarding;
 			sourceTree = "<group>";
 		};
 		AAAA000000000000000000F1 /* Fares */ = {
@@ -390,6 +404,8 @@
 				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+				AAAA111111111111111111B1 /* OnboardingView.swift in Sources */,
+				AAAA111111111111111111B3 /* OnboardingMeshBackground.swift in Sources */,
 				03FBB75EEE74C7E43F7A609B /* CompactTabHeader.swift in Sources */,
 				8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */,
 				C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */,

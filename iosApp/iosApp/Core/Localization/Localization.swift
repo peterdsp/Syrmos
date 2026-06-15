@@ -68,6 +68,18 @@ enum LocalizedKey {
     case about
     case aboutText
     case couldNotReach
+    case onboardWelcomeTitle
+    case onboardWelcomeBody
+    case onboardLiveTitle
+    case onboardLiveBody
+    case onboardLocationTitle
+    case onboardLocationBody
+    case onboardLocationCta
+    case onboardPrivacyTitle
+    case onboardPrivacyBody
+    case onboardContinue
+    case onboardGetStarted
+    case onboardSkip
 
     func text(for lang: AppLanguage) -> String {
         switch (self, lang) {
@@ -119,6 +131,30 @@ enum LocalizedKey {
             return "Δεδομένα δρομολογίων από τα επίσημα προγράμματα ΣΤΑΣΥ και Hellenic Train. Η εφαρμογή δεν σχετίζεται με ΣΤΑΣΥ, Hellenic Train ή ΟΑΣΑ."
         case (.couldNotReach, .english): return "Could not reach stasy.gr"
         case (.couldNotReach, .greek): return "Δεν ήταν δυνατή η σύνδεση με stasy.gr"
+        case (.onboardWelcomeTitle, .english): return "Welcome to Syrmos"
+        case (.onboardWelcomeTitle, .greek): return "Καλώς ήρθες στο Syrmos"
+        case (.onboardWelcomeBody, .english): return "Live arrivals for the Athens Metro, Tram and Suburban network, in your pocket."
+        case (.onboardWelcomeBody, .greek): return "Ζωντανές αφίξεις για Μετρό, Τραμ και Προαστιακό της Αθήνας, στην τσέπη σου."
+        case (.onboardLiveTitle, .english): return "Trains in real time"
+        case (.onboardLiveTitle, .greek): return "Συρμοί σε πραγματικό χρόνο"
+        case (.onboardLiveBody, .english): return "See the next departures and where every train is on the map, refreshed from STASY and Hellenic Train."
+        case (.onboardLiveBody, .greek): return "Δες τις επόμενες αναχωρήσεις και πού βρίσκεται κάθε συρμός στον χάρτη, με δεδομένα από ΣΤΑΣΥ και Hellenic Train."
+        case (.onboardLocationTitle, .english): return "Closest to you"
+        case (.onboardLocationTitle, .greek): return "Πιο κοντά σε σένα"
+        case (.onboardLocationBody, .english): return "Allow location so we can show the nearest stations and arrivals first. Used only on device."
+        case (.onboardLocationBody, .greek): return "Επίτρεψε την τοποθεσία για να βλέπεις τους πιο κοντινούς σταθμούς. Χρησιμοποιείται μόνο στη συσκευή."
+        case (.onboardLocationCta, .english): return "Allow location"
+        case (.onboardLocationCta, .greek): return "Επίτρεψε την τοποθεσία"
+        case (.onboardPrivacyTitle, .english): return "No accounts. No tracking."
+        case (.onboardPrivacyTitle, .greek): return "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."
+        case (.onboardPrivacyBody, .english): return "Syrmos doesn't ask you to sign in and doesn't store personal data. Just trains."
+        case (.onboardPrivacyBody, .greek): return "Το Syrmos δεν ζητάει σύνδεση και δεν αποθηκεύει προσωπικά δεδομένα. Μόνο συρμούς."
+        case (.onboardContinue, .english): return "Continue"
+        case (.onboardContinue, .greek): return "Συνέχεια"
+        case (.onboardGetStarted, .english): return "Get started"
+        case (.onboardGetStarted, .greek): return "Ξεκίνα"
+        case (.onboardSkip, .english): return "Skip"
+        case (.onboardSkip, .greek): return "Παράλειψη"
         }
     }
 }

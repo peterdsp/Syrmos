@@ -17,6 +17,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 private var appContext: Context? = null
+private var permissionRequester: (suspend () -> Unit)? = null
 
 fun initAndroidPlatform(context: Context) {
     com.syrmos.core.common.initLocalization(context)
@@ -26,10 +27,38 @@ fun initLocationProvider(context: Context) {
     appContext = context.applicationContext
 }
 
+/** Called from MainActivity so the Compose layer can trigger the
+ *  ActivityResultLauncher without holding a direct Activity reference. */
+fun setLocationPermissionRequester(requester: (suspend () -> Unit)?) {
+    permissionRequester = requester
+}
+
 fun hasLocationPermission(): Boolean {
     val ctx = appContext ?: return false
     return ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+}
+
+actual suspend fun requestLocationPermission() {
+    if (hasLocationPermission()) return
+    permissionRequester?.invoke()
+}
+
+private const val ONBOARDING_KEY = "syrmos.onboarding.completed.v1"
+private const val PREFS_NAME = "syrmos_prefs"
+
+actual fun readOnboardingCompleted(): Boolean {
+    val ctx = appContext ?: return false
+    return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(ONBOARDING_KEY, false)
+}
+
+actual fun markOnboardingCompleted() {
+    val ctx = appContext ?: return
+    ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean(ONBOARDING_KEY, true)
+        .apply()
 }
 
 @SuppressLint("MissingPermission")

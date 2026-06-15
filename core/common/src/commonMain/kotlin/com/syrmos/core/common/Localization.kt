@@ -37,7 +37,12 @@ enum class L {
     ABOUT, ABOUT_TEXT,
     COULD_NOT_REACH,
     LIVE_TRACKER, ACTIVE_TRAINS, NO_LIVE_TRAINS,
-    NEXT_STOP, UPDATED, SPEED, ON_TIME, DELAYED;
+    NEXT_STOP, UPDATED, SPEED, ON_TIME, DELAYED,
+    ONBOARD_WELCOME_TITLE, ONBOARD_WELCOME_BODY,
+    ONBOARD_LIVE_TITLE, ONBOARD_LIVE_BODY,
+    ONBOARD_LOCATION_TITLE, ONBOARD_LOCATION_BODY, ONBOARD_LOCATION_CTA,
+    ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
+    ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP;
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> if (lang == AppLanguage.GREEK) "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας" else "Live Athens rail times"
@@ -79,5 +84,33 @@ enum class L {
         SPEED -> if (lang == AppLanguage.GREEK) "Ταχύτητα" else "Speed"
         ON_TIME -> if (lang == AppLanguage.GREEK) "Στην ώρα του" else "On time"
         DELAYED -> if (lang == AppLanguage.GREEK) "Καθυστέρηση" else "Delayed"
+        ONBOARD_WELCOME_TITLE -> if (lang == AppLanguage.GREEK) "Καλώς ήρθες στο Syrmos" else "Welcome to Syrmos"
+        ONBOARD_WELCOME_BODY -> if (lang == AppLanguage.GREEK) {
+            "Ζωντανές αφίξεις για Μετρό, Τραμ και Προαστιακό της Αθήνας, στην τσέπη σου."
+        } else {
+            "Live arrivals for the Athens Metro, Tram and Suburban network, in your pocket."
+        }
+        ONBOARD_LIVE_TITLE -> if (lang == AppLanguage.GREEK) "Συρμοί σε πραγματικό χρόνο" else "Trains in real time"
+        ONBOARD_LIVE_BODY -> if (lang == AppLanguage.GREEK) {
+            "Δες τις επόμενες αναχωρήσεις και πού βρίσκεται κάθε συρμός στον χάρτη, με δεδομένα από ΣΤΑΣΥ και Hellenic Train."
+        } else {
+            "See the next departures and where every train is on the map, refreshed from STASY and Hellenic Train."
+        }
+        ONBOARD_LOCATION_TITLE -> if (lang == AppLanguage.GREEK) "Πιο κοντά σε σένα" else "Closest to you"
+        ONBOARD_LOCATION_BODY -> if (lang == AppLanguage.GREEK) {
+            "Επίτρεψε την τοποθεσία για να βλέπεις τους πιο κοντινούς σταθμούς. Χρησιμοποιείται μόνο στη συσκευή."
+        } else {
+            "Allow location so we can show the nearest stations and arrivals first. Used only on device."
+        }
+        ONBOARD_LOCATION_CTA -> if (lang == AppLanguage.GREEK) "Επίτρεψε την τοποθεσία" else "Allow location"
+        ONBOARD_PRIVACY_TITLE -> if (lang == AppLanguage.GREEK) "Χωρίς λογαριασμό. Χωρίς παρακολούθηση." else "No accounts. No tracking."
+        ONBOARD_PRIVACY_BODY -> if (lang == AppLanguage.GREEK) {
+            "Το Syrmos δεν ζητάει σύνδεση και δεν αποθηκεύει προσωπικά δεδομένα. Μόνο συρμούς."
+        } else {
+            "Syrmos doesn't ask you to sign in and doesn't store personal data. Just trains."
+        }
+        ONBOARD_CONTINUE -> if (lang == AppLanguage.GREEK) "Συνέχεια" else "Continue"
+        ONBOARD_GET_STARTED -> if (lang == AppLanguage.GREEK) "Ξεκίνα" else "Get started"
+        ONBOARD_SKIP -> if (lang == AppLanguage.GREEK) "Παράλειψη" else "Skip"
     }
 }
