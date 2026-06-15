@@ -43,12 +43,25 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
 struct SyrmosApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: kOnboardingCompletedKey)
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasCompletedOnboarding {
+                ContentView()
+            } else {
+                OnboardingView {
+                    UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        hasCompletedOnboarding = true
+                    }
+                }
+            }
         }
     }
 }
+
+private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home

@@ -26,6 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.syrmos.app.platform.markOnboardingCompleted
+import com.syrmos.app.platform.readOnboardingCompleted
+import com.syrmos.app.screen.OnboardingScreen
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,6 +60,7 @@ fun SyrmosApp() {
     val fares = koinInject<FaresRepository>()
     val visualOverrides = koinInject<VisualOverridesRepository>()
     var isSeeded by remember { mutableStateOf(false) }
+    var hasCompletedOnboarding by remember { mutableStateOf(readOnboardingCompleted()) }
 
     LaunchedEffect(Unit) {
         try {
@@ -82,6 +86,11 @@ fun SyrmosApp() {
     SyrmosTheme {
         if (!isSeeded) {
             BootSplash()
+        } else if (!hasCompletedOnboarding) {
+            OnboardingScreen(onComplete = {
+                markOnboardingCompleted()
+                hasCompletedOnboarding = true
+            })
         } else {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 if (isWebPlatform && maxWidth >= 900.dp) {
