@@ -178,5 +178,20 @@ final class SyrmosSchedulesService: ObservableObject {
         let timeEnd: String
         let headwayMinutes: Double
         let label: String
+        let direction: String?
+
+        private enum CodingKeys: String, CodingKey {
+            case dayType, timeStart, timeEnd, headwayMinutes, label, direction
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            dayType = try c.decode(String.self, forKey: .dayType)
+            timeStart = try c.decode(String.self, forKey: .timeStart)
+            timeEnd = try c.decode(String.self, forKey: .timeEnd)
+            headwayMinutes = try c.decode(Double.self, forKey: .headwayMinutes)
+            label = try c.decode(String.self, forKey: .label)
+            direction = try? c.decode(String.self, forKey: .direction)
+        }
     }
 }

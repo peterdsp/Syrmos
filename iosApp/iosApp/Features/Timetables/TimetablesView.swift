@@ -360,9 +360,21 @@ struct TimetablesView: View {
         // Emit both, interleaved by departure time, so the user sees the full
         // picture instead of only the terminalB-bound trains.
         let line = SyrmosData.line(for: displayLineId)
-        let directions: [String] = lineId == "M3_AIR"
-            ? ["Airport"]
-            : [line?.terminalA, line?.terminalB].compactMap { $0 }.filter { !$0.isEmpty }
+        // M3_AIR has direction-tagged bands: outbound is a DPL -> Airport
+        // run, inbound is an Airport -> Dim. Theatro run. Treating both as
+        // "Airport" was the bug — an inbound train heading WEST was being
+        // labelled with the destination "Airport". Now we read the band's
+        // direction field and pick the right destination terminal for each.
+        let terminalA = line?.terminalA ?? ""
+        let terminalB = line?.terminalB ?? ""
+        let directionLabel: (String?) -> String = { dir in
+            switch dir {
+            case "outbound": return terminalB.isEmpty ? "Airport" : terminalB
+            case "inbound": return terminalA.isEmpty ? "Dimotiko Theatro" : terminalA
+            default: return "Airport"
+            }
+        }
+        let pairedDirections: [String] = [terminalA, terminalB].compactMap { $0 }.filter { !$0.isEmpty }
 
         struct Slot { let minute: Int; let direction: String; let label: String }
         var slots: [Slot] = []
@@ -370,12 +382,22 @@ struct TimetablesView: View {
             guard let rawStart = minutesOfDay(band.timeStart),
                   let rawEnd = minutesOfDay(band.timeEnd),
                   band.headwayMinutes > 0 else { continue }
-            // Half-headway offset for the second direction so the two streams
-            // do not stack on the same minute.
-            let directionOffsets: [Double] = directions.count == 2
-                ? [0, band.headwayMinutes / 2.0]
-                : [0]
-            for (i, direction) in directions.enumerated() {
+            // M3_AIR bands are already split per direction on the server,
+            // so we emit one stream per band using that direction. Other
+            // lines use a single band per dayType for both directions; we
+            // emit both with a half-headway offset.
+            let bandDirections: [String]
+            let directionOffsets: [Double]
+            if lineId == "M3_AIR" {
+                bandDirections = [directionLabel(band.direction)]
+                directionOffsets = [0]
+            } else {
+                bandDirections = pairedDirections
+                directionOffsets = pairedDirections.count == 2
+                    ? [0, band.headwayMinutes / 2.0]
+                    : [0]
+            }
+            for (i, direction) in bandDirections.enumerated() {
                 let offset = directionOffsets[min(i, directionOffsets.count - 1)]
                 var slot = Double(rawStart) + offset
                 let end = Double(rawEnd)
@@ -387,6 +409,15 @@ struct TimetablesView: View {
                     slot += band.headwayMinutes
                 }
             }
+        }
+        // Adjacent bands share a boundary minute — e.g. M3 city Mon-Thu
+        // 10:30-13:30 (6 min) ends at 13:30 and 13:30-14:00 (5'30") starts
+        // at 13:30, producing two identical 13:30 rows. Dedup by
+        // (minute, direction) before sorting.
+        var seen = Set<String>()
+        slots = slots.filter { s in
+            let key = "\(s.minute)|\(s.direction)"
+            return seen.insert(key).inserted
         }
         slots.sort { lhs, rhs in
             if lhs.minute != rhs.minute { return lhs.minute < rhs.minute }
