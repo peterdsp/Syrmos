@@ -284,12 +284,18 @@ class ComputeDeparturesFromBandsUseCase(
         if (end < start) return
         val headway = if (band.headwayMinutes > 0.0) band.headwayMinutes else return
 
-        // Advance to first slot >= now
+        // Advance to the first slot whose ARRIVAL AT THIS STATION (slot +
+        // offsetMinutes) is in the future. The previous comparison against
+        // raw slot dropped any train that had already left the line origin,
+        // even when offsetMinutes meant it was still en-route to this stop,
+        // shifting the first displayed countdown ~offsetMinutes into the
+        // future.
         var slot = start.toDouble()
-        if (slot < nowMinutes) {
-            val skips = ((nowMinutes - slot) / headway).toLong().coerceAtLeast(0L)
+        val stationSlot = slot + offsetMinutes
+        if (stationSlot < nowMinutes) {
+            val skips = ((nowMinutes - stationSlot) / headway).toLong().coerceAtLeast(0L)
             slot = start + skips * headway
-            while (slot < nowMinutes) slot += headway
+            while (slot + offsetMinutes < nowMinutes) slot += headway
         }
 
         var added = 0

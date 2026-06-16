@@ -229,6 +229,10 @@ enum ScheduleProjector {
             }
         }
 
+        // Per-line accumulator. Each (band × direction) appends here without
+        // a running cap; we sort + prefix(limit) once at the end so both
+        // directions get a fair shot at the visible slots.
+        var lineOut: [Departure] = []
         for descriptor in descriptors {
             let dt = descriptor.dt
             let shift = descriptor.shift
@@ -268,7 +272,9 @@ enum ScheduleProjector {
             // Project both directions per band so T6/T7 inbound (35/59 min)
             // and outbound (33/54 min) asymmetric runtimes resolve correctly,
             // and so passengers see both upcoming destinations at every stop
-            // instead of just the line's outbound terminal.
+            // instead of just the line's outbound terminal. Each (band ×
+            // direction) projects into its own accumulator; we sort + trim
+            // once at the end so the first direction can't starve the second.
             let directions = directionStreams(for: lineId)
             for band in bands {
                 for stream in directions {
@@ -280,13 +286,16 @@ enum ScheduleProjector {
                         stationId: stationId,
                         directionKey: stream.key,
                         directionLabel: stream.label,
-                        limit: limit - out.count,
-                        into: &out
+                        limit: limit,
+                        into: &lineOut
                     )
-                    if out.count >= limit { return }
                 }
             }
         }
+        let trimmed = lineOut
+            .sorted { $0.minutesAway < $1.minutesAway }
+            .prefix(limit)
+        out.append(contentsOf: trimmed)
     }
 
     private struct DirectionStream {
@@ -340,11 +349,16 @@ enum ScheduleProjector {
             lineId: lineId, direction: directionKey, stationId: stationId
         )
 
+        // Skip past trains by ARRIVAL TIME at this station (slot + offset),
+        // not by origin-departure time. A train that left terminus 10 min
+        // ago but won't reach this station for another 10 min is the next
+        // arrival, not a stale slot to discard.
         var slot = Double(start)
-        if slot < Double(nowMinutes) {
-            let skips = max(0, Int((Double(nowMinutes) - slot) / band.headwayMinutes))
+        let stationSlot = slot + Double(offsetMin)
+        if stationSlot < Double(nowMinutes) {
+            let skips = max(0, Int((Double(nowMinutes) - stationSlot) / band.headwayMinutes))
             slot = Double(start) + Double(skips) * band.headwayMinutes
-            while slot < Double(nowMinutes) { slot += band.headwayMinutes }
+            while slot + Double(offsetMin) < Double(nowMinutes) { slot += band.headwayMinutes }
         }
         var added = 0
         while slot <= Double(end) && added < limit {
