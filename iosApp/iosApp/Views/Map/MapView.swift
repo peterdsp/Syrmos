@@ -1007,20 +1007,40 @@ struct SyrmosMKMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         let parent: SyrmosMKMapView
         var lastRecenterPing: Int = -1
-        /// Active position tween per annotation id. Each entry lerps
-        /// from the annotation's current on-screen coordinate to the
-        /// latest position the simulator emitted, over the polling
-        /// interval. A CADisplayLink ticks every frame and pushes the
-        /// interpolated value back onto the annotation so the train
-        /// glides between the discrete simulator snapshots instead of
-        /// teleporting once a second.
+        /// Active position tween per annotation id. The tween rides
+        /// along the line's polyline arc instead of straight-lerping
+        /// (lat, lon) — straight lerp between two arc-correct snapshots
+        /// still chord-cuts every curve in between, which is what made
+        /// the train appear to step / slide off the rails. We store
+        /// distance-along-polyline for start and end; the per-frame
+        /// tick walks the polyline to the interpolated distance.
         private struct PositionTween {
-            var start: CLLocationCoordinate2D
-            var end: CLLocationCoordinate2D
+            var polyline: [CLLocationCoordinate2D]
+            var cumulative: [Double]   // running haversine distance for polyline
+            var startDistance: Double
+            var endDistance: Double
+            /// Tells us whether to walk forward (false) or backward
+            /// (true) along the polyline. Simulator always advances
+            /// outbound trains in increasing arc distance, but
+            /// inbound trains go the other way.
+            var reversed: Bool
             var startTime: CFTimeInterval
             var duration: CFTimeInterval
         }
         private var tweens: [String: PositionTween] = [:]
+
+        /// Per-line cached polyline + cumulative distances. Computed
+        /// once on first use (haversine across ~200 vertices is
+        /// pennies). We keep the cumulative array alongside so the
+        /// per-frame lookup is a binary-walk + linear interp inside
+        /// one tiny segment instead of re-summing every frame.
+        private struct PolylineCache {
+            let polyline: [CLLocationCoordinate2D]
+            let cumulative: [Double]
+            var total: Double { cumulative.last ?? 0 }
+        }
+        private var polylineCache: [String: PolylineCache] = [:]
+
         private weak var mapView: MKMapView?
         private var displayLink: CADisplayLink?
 
@@ -1047,18 +1067,45 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         /// Set or refresh a tween for one annotation toward `target`.
-        /// First-time appearances snap directly with no animation
-        /// (otherwise newly-spawned trains would drift in from
-        /// wherever the previous tween thought they were).
+        /// Picks the polyline matching the train's line and resolves
+        /// start + end as arc distances along it. Falls back to a
+        /// chord lerp when the polyline cache has nothing (suburban
+        /// A1-A4 currently ship no OSM shape, for instance).
         func updateTween(id: String, ann: SyrmosTrainAnnotation, target: CLLocationCoordinate2D, duration: CFTimeInterval) {
             let now = CACurrentMediaTime()
+            let cache = cachedPolyline(for: ann.lineId)
+            let currentDisplay: CLLocationCoordinate2D
             if let existing = tweens[id] {
-                let currentDisplay = lerp(existing, at: now)
-                tweens[id] = PositionTween(start: currentDisplay, end: target, startTime: now, duration: duration)
-            } else if ann.coordinate.latitude != 0 || ann.coordinate.longitude != 0 {
-                tweens[id] = PositionTween(start: ann.coordinate, end: target, startTime: now, duration: duration)
+                currentDisplay = arcLookup(existing, at: now)
             } else {
-                ann.coordinate = target
+                currentDisplay = ann.coordinate
+            }
+            if let c = cache {
+                let startDist = arcDistance(to: currentDisplay, cache: c)
+                let endDist = arcDistance(to: target, cache: c)
+                tweens[id] = PositionTween(
+                    polyline: c.polyline,
+                    cumulative: c.cumulative,
+                    startDistance: startDist,
+                    endDistance: endDist,
+                    reversed: false,  // direction is encoded in start->end ordering
+                    startTime: now,
+                    duration: duration
+                )
+            } else {
+                // Polyline-less fallback: synthesise a 2-point line so the
+                // arc machinery still works, just degenerating to a chord.
+                let fakeLine = [currentDisplay, target]
+                let fakeCum = [0.0, haversineMeters(currentDisplay, target)]
+                tweens[id] = PositionTween(
+                    polyline: fakeLine,
+                    cumulative: fakeCum,
+                    startDistance: 0,
+                    endDistance: fakeCum.last ?? 0,
+                    reversed: false,
+                    startTime: now,
+                    duration: duration
+                )
             }
         }
 
@@ -1078,9 +1125,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             let trainAnns = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
             for ann in trainAnns {
                 guard let t = tweens[ann.id] else { continue }
-                let next = lerp(t, at: now)
-                // Avoid no-op writes; cheap, and silences whatever
-                // KVO chain MKMapView fires per coordinate set.
+                let next = arcLookup(t, at: now)
                 if next.latitude != ann.coordinate.latitude || next.longitude != ann.coordinate.longitude {
                     ann.coordinate = next
                 }
@@ -1090,13 +1135,91 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
         }
 
-        private func lerp(_ t: PositionTween, at now: CFTimeInterval) -> CLLocationCoordinate2D {
+        /// Interpolate along polyline arc distance: target =
+        /// startDistance + (endDistance - startDistance) * f, then
+        /// walk cumulative[] to find the segment containing the
+        /// target and linearly lerp inside that small chunk. Because
+        /// the polyline vertices are dense (OSM shape, every few
+        /// metres), the chord of one segment is visually
+        /// indistinguishable from the curve.
+        private func arcLookup(_ t: PositionTween, at now: CFTimeInterval) -> CLLocationCoordinate2D {
             let elapsed = now - t.startTime
             let f = t.duration > 0 ? min(max(elapsed / t.duration, 0), 1) : 1
-            return CLLocationCoordinate2D(
-                latitude: t.start.latitude + (t.end.latitude - t.start.latitude) * f,
-                longitude: t.start.longitude + (t.end.longitude - t.start.longitude) * f
-            )
+            let target = t.startDistance + (t.endDistance - t.startDistance) * f
+            return coordAt(distance: target, polyline: t.polyline, cumulative: t.cumulative)
+        }
+
+        // MARK: - Polyline distance helpers
+
+        private func cachedPolyline(for lineId: String) -> PolylineCache? {
+            if let hit = polylineCache[lineId] { return hit }
+            // M3_AIR shares the M3 OSM shape west of Doukissis Plakentias;
+            // try the canonical id first and fall back to M3.
+            let candidates: [String] = (lineId == "M3_AIR") ? ["M3_AIR", "M3"] : [lineId]
+            for candidate in candidates {
+                if let line = SyrmosRouteShapesStore.shared.coordinates(for: candidate), line.count >= 2 {
+                    var cum: [Double] = [0]
+                    cum.reserveCapacity(line.count)
+                    for i in 0..<(line.count - 1) {
+                        cum.append(cum.last! + haversineMeters(line[i], line[i + 1]))
+                    }
+                    let entry = PolylineCache(polyline: line, cumulative: cum)
+                    polylineCache[lineId] = entry
+                    return entry
+                }
+            }
+            return nil
+        }
+
+        private func arcDistance(to coord: CLLocationCoordinate2D, cache: PolylineCache) -> Double {
+            // Snap to closest polyline vertex by haversine. Good enough
+            // because the polyline is dense — using closest-segment
+            // perpendicular projection would be more accurate but the
+            // gain is sub-metre and not visually relevant at city zoom.
+            var bestIdx = 0
+            var bestDist = Double.greatestFiniteMagnitude
+            for (i, p) in cache.polyline.enumerated() {
+                let d = haversineMeters(p, coord)
+                if d < bestDist { bestDist = d; bestIdx = i }
+            }
+            return cache.cumulative[bestIdx]
+        }
+
+        private func coordAt(
+            distance: Double,
+            polyline: [CLLocationCoordinate2D],
+            cumulative: [Double]
+        ) -> CLLocationCoordinate2D {
+            guard polyline.count >= 2, !cumulative.isEmpty else {
+                return polyline.first ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
+            }
+            let clamped = min(max(distance, 0), cumulative.last ?? 0)
+            // Linear scan; polylines are short (<300 vertices typically)
+            // and the search runs at most ~30 trains × 60fps = 1800/s.
+            for i in 0..<(cumulative.count - 1) {
+                if cumulative[i + 1] >= clamped {
+                    let segLen = cumulative[i + 1] - cumulative[i]
+                    let segFrac = segLen > 0 ? (clamped - cumulative[i]) / segLen : 0
+                    let a = polyline[i]
+                    let b = polyline[i + 1]
+                    return CLLocationCoordinate2D(
+                        latitude: a.latitude + (b.latitude - a.latitude) * segFrac,
+                        longitude: a.longitude + (b.longitude - a.longitude) * segFrac
+                    )
+                }
+            }
+            return polyline.last ?? polyline[0]
+        }
+
+        private func haversineMeters(_ a: CLLocationCoordinate2D, _ b: CLLocationCoordinate2D) -> Double {
+            let r = 6371000.0
+            let dLat = (b.latitude - a.latitude) * .pi / 180
+            let dLon = (b.longitude - a.longitude) * .pi / 180
+            let lat1 = a.latitude * .pi / 180
+            let lat2 = b.latitude * .pi / 180
+            let h = sin(dLat / 2) * sin(dLat / 2)
+                + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+            return 2 * r * asin(min(1, sqrt(h)))
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -1248,6 +1371,16 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
         switch kind {
         case .simulated(let t): return "sim:\(t.id)"
         case .live(let t):      return "live:\(t.id)"
+        }
+    }
+    /// Line the train rides, used by the Coordinator's tween system to
+    /// look up the matching polyline cache entry. M3_AIR shares the
+    /// M3 polyline west of Doukissis Plakentias, so we keep the raw id
+    /// here and let the cache lookup decide on the fallback.
+    var lineId: String {
+        switch kind {
+        case .simulated(let t): return t.lineId
+        case .live(let t):      return t.lineId
         }
     }
     init(simulated: SimulatedTrain) {
