@@ -80,19 +80,11 @@ class ScheduleSyncRepository(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    private val _offlineOnly = MutableStateFlow(false)
-    val offlineOnly: StateFlow<Boolean> = _offlineOnly.asStateFlow()
-
-    fun setOfflineOnly(enabled: Boolean) {
-        _offlineOnly.value = enabled
-    }
-
     /**
      * Returns true when at least one line was refreshed, false otherwise
      * (no network, server unreachable, or nothing changed).
      */
     suspend fun refresh(): RefreshOutcome {
-        if (_offlineOnly.value) return RefreshOutcome.Skipped
         _isRefreshing.value = true
         try {
         val previousEtag = _manifest.value?.etag
