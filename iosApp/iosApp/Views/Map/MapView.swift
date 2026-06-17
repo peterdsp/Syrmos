@@ -156,12 +156,35 @@ enum PreloadedData {
 
 enum VehicleIcons {
     static func imageName(for train: SimulatedTrain) -> String? {
-        let isInbound = train.direction == "inbound"
-        switch train.lineId {
+        return imageName(lineId: train.lineId, direction: train.direction, isAirportService: train.isAirportService)
+    }
+
+    /// Live train counterpart. LiveTrain only carries destination as
+    /// a free-form string ("Airport", "Doukissis Plakentias",
+    /// "Piraeus" etc.), so we infer airport flag + direction from it.
+    static func imageName(for train: LiveTrain) -> String? {
+        let dest = train.destination.lowercased()
+        let isAirport = dest.contains("airport") || dest.contains("αεροδρόμιο") || dest.contains("aeroport")
+        // Per-line inbound terminals (small / west / south end of line).
+        // Anything else is treated as outbound and gets the right-arrow asset.
+        let inboundTerminals: [String: [String]] = [
+            "M1": ["piraeus", "πειραιάς"],
+            "M2": ["anthoupoli", "ανθούπολη"],
+            "M3": ["dimotiko theatro", "δημοτικό θέατρο"],
+            "T6": ["syntagma", "σύνταγμα"],
+            "T7": ["akti posidonos", "ακτή ποσειδώνος"],
+        ]
+        let isInbound = (inboundTerminals[train.lineId] ?? []).contains(where: { dest.contains($0) })
+        return imageName(lineId: train.lineId, direction: isInbound ? "inbound" : "outbound", isAirportService: isAirport)
+    }
+
+    private static func imageName(lineId: String, direction: String, isAirportService: Bool) -> String? {
+        let isInbound = direction == "inbound"
+        switch lineId {
         case "M1": return isInbound ? "metro_m1_left_to_piraeus" : "metro_m1_right_to_kifissia"
         case "M2": return isInbound ? "metro_m2_left_to_anthoupoli" : "metro_m2_right_to_elliniko"
         case "M3":
-            if train.isAirportService { return "metro_m3_right_to_airport" }
+            if isAirportService { return "metro_m3_right_to_airport" }
             return isInbound ? "metro_m3_left_to_dimotiko_theatro" : "metro_m3_right_to_doukissis_plakentias"
         case "T6": return isInbound ? "tram_t6_left_to_syntagma" : "tram_t6_right_to_pikrodafni"
         case "T7": return isInbound ? "tram_t7_left_to_akti_posidonos" : "tram_t7_right_to_asklipiio_voulas"
@@ -1046,6 +1069,24 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
+            // Prefer the bundled per-line, per-direction vehicle artwork
+            // (metro_m1_left_to_piraeus, tram_t7_right_to_asklipiio_voulas
+            // etc). Same path that VehicleIcons.imageName(for:) drives in
+            // the SwiftUI dot fallback. Only when no asset is bundled
+            // (e.g. suburban A1-A4 don't ship train sprites yet) do we
+            // fall back to the coloured rounded rect.
+            let iconName: String?
+            switch train.kind {
+            case .simulated(let t): iconName = VehicleIcons.imageName(for: t)
+            case .live(let t):      iconName = VehicleIcons.imageName(for: t)
+            }
+            if let n = iconName, let raw = UIImage(named: n) {
+                let target = CGSize(width: 44, height: 30)
+                let renderer = UIGraphicsImageRenderer(size: target)
+                return renderer.image { _ in
+                    raw.draw(in: CGRect(origin: .zero, size: target))
+                }
+            }
             let size = CGSize(width: 28, height: 22)
             let color: UIColor
             switch train.kind {
