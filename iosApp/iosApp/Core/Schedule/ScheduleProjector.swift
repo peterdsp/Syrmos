@@ -17,7 +17,8 @@ enum ScheduleProjector {
     static func nextDepartures(
         for stationId: String,
         lineIds: [String],
-        limit: Int = 8
+        limit: Int = 8,
+        dayOffset: Int = 0
     ) -> [Departure] {
         let store = SyrmosSchedulesStore.shared
         let bundles = store.service.bundles
@@ -26,9 +27,15 @@ enum ScheduleProjector {
         let athens = TimeZone(identifier: "Europe/Athens")!
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = athens
-        let now = Date()
-        let nowComp = cal.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: now)
-        let nowMinutes = (nowComp.hour ?? 0) * 60 + (nowComp.minute ?? 0)
+        let targetDate = cal.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+        let nowComp = cal.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: targetDate)
+        // For "today" we anchor at the current minute (next departures
+        // from now). For a future day we anchor at 00:00 so the user
+        // sees the entire day's schedule from the first slot, not just
+        // from whatever the clock happens to be.
+        let nowMinutes = dayOffset == 0
+            ? (nowComp.hour ?? 0) * 60 + (nowComp.minute ?? 0)
+            : 0
         let holidayDayType = resolveHolidayDayType(month: nowComp.month ?? 1, day: nowComp.day ?? 1)
 
         // Resolve which set of M3 bundles to use for this station.
