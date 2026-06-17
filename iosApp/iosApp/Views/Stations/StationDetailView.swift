@@ -175,37 +175,30 @@ struct StationDetailView: View {
         station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
     }
 
-    /// Server projector first, synced-bundle projector as offline fallback.
+    /// 100% offline. The station-detail screen is reachable from the
+    /// Lines list and from the Home nearest-stations card, both of
+    /// which want a deep "what's running today" view — 12 hours of
+    /// upcoming departures, drawn from the bundled schedule JSON +
+    /// station offsets. NO network call. Previously this method
+    /// queried /api/departures/next and replaced the offline result
+    /// with whatever the API returned, which meant any clock drift
+    /// or downtime on the Pi propagated straight into the UI even
+    /// though the offline projector had the right answer in hand.
     private func reloadDepartures() {
-        let fallback = currentDepartures()
-        if departures.isEmpty {
-            departures = fallback
-        }
-        Task { @MainActor in
-            if let remote = await SyrmosDeparturesService.nextDepartures(
-                for: station.id,
-                lineIds: station.lineIds,
-                limit: 10
-            ), !remote.isEmpty {
-                departures = remote
-            } else {
-                departures = fallback
-            }
-            // Flip the "we have an answer" flag exactly once. Subsequent
-            // empty results now render as "No service right now" rather
-            // than an endless "Loading…" spinner — important at 01:30
-            // when most lines have actually shut down for the night.
-            hasLoadedOnce = true
-        }
+        departures = currentDepartures()
+        hasLoadedOnce = true
     }
 
-    /// Local synced-bundle fallback. Empty result means the bundles haven't
-    /// loaded yet.
+    /// Bundled-projector projection for the next 12 hours. 12 h is
+    /// long enough to cover an overnight gap (last train ~01:30, next
+    /// train ~05:00 next morning) so the "Next train tomorrow at HH:MM"
+    /// state always shows up without a separate lookahead pass.
     private func currentDepartures() -> [Departure] {
         return ScheduleProjector.nextDepartures(
             for: station.id,
             lineIds: station.lineIds,
-            limit: 10
+            limit: 300,
+            timeHorizonMinutes: 12 * 60
         )
     }
 

@@ -388,55 +388,35 @@ struct StationSheetView: View {
         .onReceive(refreshTimer) { _ in reloadDepartures() }
     }
 
+    /// Map sheet entry: short list (4 entries) of the next departures
+    /// across whichever lines call at this stop. Offline only — the
+    /// previous SyrmosDeparturesService remote path was removed because
+    /// any time the Pi's clock drifted or the user spoofed their phone
+    /// clock the remote answer overwrote the locally-correct offline
+    /// answer and the screen reported stale data. Local projector with
+    /// a 12 h horizon guarantees we always have at least the next train
+    /// even if today's service has wrapped into tomorrow morning.
     private func reloadDepartures() {
-        let fallback = localDepartures()
-        if departures.isEmpty {
-            departures = fallback
-        }
-        Task { @MainActor in
-            var collected: [Departure] = []
-            for lineId in station.lineIds {
-                let stationId = station.stationIdByLineId[lineId]
-                    ?? station.stationIds.first
-                    ?? station.id
-                if let remote = await SyrmosDeparturesService.nextDepartures(
-                    for: stationId,
-                    lineIds: [lineId],
-                    limit: 8
-                ), !remote.isEmpty {
-                    collected.append(contentsOf: remote)
-                } else {
-                    collected.append(contentsOf: localDepartures(for: lineId, stationId: stationId))
-                }
-            }
-            let next = collected
-                .sorted { $0.minutesAway < $1.minutesAway }
-                .prefix(8)
-                .map { $0 }
-            departures = next.isEmpty ? fallback : next
-        }
+        departures = localDepartures(limit: 4)
     }
 
-    private func localDepartures() -> [Departure] {
+    private func localDepartures(limit: Int) -> [Departure] {
         var collected: [Departure] = []
         for lineId in station.lineIds {
             let stationId = station.stationIdByLineId[lineId]
                 ?? station.stationIds.first
                 ?? station.id
-            collected.append(contentsOf: localDepartures(for: lineId, stationId: stationId))
+            collected.append(contentsOf: ScheduleProjector.nextDepartures(
+                for: stationId,
+                lineIds: [lineId],
+                limit: limit,
+                timeHorizonMinutes: 12 * 60
+            ))
         }
         return collected
             .sorted { $0.minutesAway < $1.minutesAway }
-            .prefix(8)
+            .prefix(limit)
             .map { $0 }
-    }
-
-    private func localDepartures(for lineId: String, stationId: String) -> [Departure] {
-        ScheduleProjector.nextDepartures(
-            for: stationId,
-            lineIds: [lineId],
-            limit: 8
-        )
     }
 
     private var header: some View {
