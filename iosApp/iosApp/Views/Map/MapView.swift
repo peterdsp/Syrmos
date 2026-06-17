@@ -917,6 +917,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
             mv.addAnnotation(SyrmosStationAnnotation(station: station))
         }
 
+        // Hook up the CADisplayLink that smoothly animates train
+        // annotations between simulator snapshots.
+        context.coordinator.attach(to: mv)
+
         return mv
     }
 
@@ -945,33 +949,54 @@ struct SyrmosMKMapView: UIViewRepresentable {
         let existing = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
         var seenSim: Set<String> = []
         var seenLive: Set<String> = []
+        // Tween toward the new simulator-emitted position. The
+        // simulator pushes a fresh snapshot every few seconds; the
+        // CADisplayLink in the Coordinator interpolates the on-screen
+        // coordinate over that interval so the train glides instead
+        // of jumping. Match the tween duration to the simulator's
+        // poll cadence (defined in TrainSimulatorService.runLoop).
+        let tweenDuration: CFTimeInterval = 5.0
         for ann in existing {
             switch ann.kind {
             case .simulated:
                 if let train = wantSim[ann.id] {
-                    ann.coordinate = train.coordinate
+                    context.coordinator.updateTween(
+                        id: ann.id, ann: ann, target: train.coordinate, duration: tweenDuration
+                    )
                     seenSim.insert(ann.id)
                 } else {
+                    context.coordinator.dropTween(id: ann.id)
                     mv.removeAnnotation(ann)
                 }
             case .live:
                 if let train = wantLive[ann.id] {
-                    ann.coordinate = train.coordinate
+                    context.coordinator.updateTween(
+                        id: ann.id, ann: ann, target: train.coordinate, duration: tweenDuration
+                    )
                     seenLive.insert(ann.id)
                 } else {
+                    context.coordinator.dropTween(id: ann.id)
                     mv.removeAnnotation(ann)
                 }
             }
         }
         for train in simulatedTrains where !seenSim.contains(train.id) {
-            mv.addAnnotation(SyrmosTrainAnnotation(simulated: train))
+            let ann = SyrmosTrainAnnotation(simulated: train)
+            mv.addAnnotation(ann)
+            // First appearance: snap to the simulator's coord so the
+            // train doesn't slide in from (0, 0) or a stale previous
+            // location with the same id.
+            ann.coordinate = train.coordinate
         }
         for train in liveTrains where !seenLive.contains(train.id) {
-            mv.addAnnotation(SyrmosTrainAnnotation(live: train))
+            let ann = SyrmosTrainAnnotation(live: train)
+            mv.addAnnotation(ann)
+            ann.coordinate = train.coordinate
         }
     }
 
     static func dismantleUIView(_ mv: MKMapView, coordinator: Coordinator) {
+        coordinator.detachDisplayLink()
         mv.delegate = nil
         mv.removeOverlays(mv.overlays)
         mv.removeAnnotations(mv.annotations)
@@ -982,7 +1007,97 @@ struct SyrmosMKMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         let parent: SyrmosMKMapView
         var lastRecenterPing: Int = -1
+        /// Active position tween per annotation id. Each entry lerps
+        /// from the annotation's current on-screen coordinate to the
+        /// latest position the simulator emitted, over the polling
+        /// interval. A CADisplayLink ticks every frame and pushes the
+        /// interpolated value back onto the annotation so the train
+        /// glides between the discrete simulator snapshots instead of
+        /// teleporting once a second.
+        private struct PositionTween {
+            var start: CLLocationCoordinate2D
+            var end: CLLocationCoordinate2D
+            var startTime: CFTimeInterval
+            var duration: CFTimeInterval
+        }
+        private var tweens: [String: PositionTween] = [:]
+        private weak var mapView: MKMapView?
+        private var displayLink: CADisplayLink?
+
         init(_ parent: SyrmosMKMapView) { self.parent = parent }
+
+        // displayLink lives for the lifetime of the Coordinator. The
+        // MainActor isolation on the link prevents a non-isolated
+        // deinit cleanup, but since the parent dismantles the map
+        // (and nils out our reference) before the Coordinator goes
+        // away in practice, we let the runtime release it on its own
+        // tear-down rather than racing it from deinit.
+
+        /// Wire up the per-frame ticker once we have a real MKMapView
+        /// instance. Called from makeUIView right after the map is
+        /// constructed and the delegate is hooked up.
+        func attach(to mv: MKMapView) {
+            mapView = mv
+            if displayLink == nil {
+                let link = CADisplayLink(target: self, selector: #selector(tick))
+                link.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 60, preferred: 30)
+                link.add(to: .main, forMode: .common)
+                displayLink = link
+            }
+        }
+
+        /// Set or refresh a tween for one annotation toward `target`.
+        /// First-time appearances snap directly with no animation
+        /// (otherwise newly-spawned trains would drift in from
+        /// wherever the previous tween thought they were).
+        func updateTween(id: String, ann: SyrmosTrainAnnotation, target: CLLocationCoordinate2D, duration: CFTimeInterval) {
+            let now = CACurrentMediaTime()
+            if let existing = tweens[id] {
+                let currentDisplay = lerp(existing, at: now)
+                tweens[id] = PositionTween(start: currentDisplay, end: target, startTime: now, duration: duration)
+            } else if ann.coordinate.latitude != 0 || ann.coordinate.longitude != 0 {
+                tweens[id] = PositionTween(start: ann.coordinate, end: target, startTime: now, duration: duration)
+            } else {
+                ann.coordinate = target
+            }
+        }
+
+        func dropTween(id: String) {
+            tweens.removeValue(forKey: id)
+        }
+
+        func detachDisplayLink() {
+            displayLink?.invalidate()
+            displayLink = nil
+            mapView = nil
+        }
+
+        @objc private func tick() {
+            guard let mv = mapView, !tweens.isEmpty else { return }
+            let now = CACurrentMediaTime()
+            let trainAnns = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
+            for ann in trainAnns {
+                guard let t = tweens[ann.id] else { continue }
+                let next = lerp(t, at: now)
+                // Avoid no-op writes; cheap, and silences whatever
+                // KVO chain MKMapView fires per coordinate set.
+                if next.latitude != ann.coordinate.latitude || next.longitude != ann.coordinate.longitude {
+                    ann.coordinate = next
+                }
+                if now >= t.startTime + t.duration {
+                    tweens.removeValue(forKey: ann.id)
+                }
+            }
+        }
+
+        private func lerp(_ t: PositionTween, at now: CFTimeInterval) -> CLLocationCoordinate2D {
+            let elapsed = now - t.startTime
+            let f = t.duration > 0 ? min(max(elapsed / t.duration, 0), 1) : 1
+            return CLLocationCoordinate2D(
+                latitude: t.start.latitude + (t.end.latitude - t.start.latitude) * f,
+                longitude: t.start.longitude + (t.end.longitude - t.start.longitude) * f
+            )
+        }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let p = overlay as? SyrmosColoredPolyline {
