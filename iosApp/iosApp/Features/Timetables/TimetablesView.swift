@@ -628,15 +628,18 @@ enum AirportData {
             case ("M3", .greek): return "Μετρό Γραμμή 3"
             case ("M3", .albanian): return "Metroja Linja 3"
             case ("M3", _): return "Metro Line 3"
-            case ("A1", .greek): return "Προαστιακός A1"
-            case ("A1", .albanian): return "Treni periferik A1"
-            case ("A1", _): return "Suburban A1"
+            case ("A1", .greek): return "Προαστιακός A1 (Πειραιάς - Αεροδρόμιο)"
+            case ("A1", .albanian): return "Treni periferik A1 (Pireu - Aeroporti)"
+            case ("A1", _): return "Suburban A1 (Piraeus - Airport)"
+            case ("A2", .greek): return "Προαστιακός A2 (Άνω Λιόσια - Αεροδρόμιο)"
+            case ("A2", .albanian): return "Treni periferik A2 (Ano Liosia - Aeroporti)"
+            case ("A2", _): return "Suburban A2 (Ano Liosia - Airport)"
             default: return line
             }
         }
     }
 
-    static let airportLines: Set<String> = ["M3", "M3_AIR", "A1"]
+    static let airportLines: Set<String> = ["M3", "M3_AIR", "A1", "A2"]
 
     static func isAirportBoundDirection(_ dir: String) -> Bool {
         let d = dir.lowercased()
@@ -653,9 +656,14 @@ enum AirportData {
         Station(id: $0.id, name: $0.name, nameEl: $0.nameEl, lineIds: $0.lineIds)
     }
 
+    private static let a2Stations: [Station] = SyrmosData.stations(for: "A2").map {
+        Station(id: $0.id, name: $0.name, nameEl: $0.nameEl, lineIds: $0.lineIds)
+    }
+
     static let stationsByGroup: [Group] = [
         Group(line: "M3", stations: m3Stations),
         Group(line: "A1", stations: a1Stations),
+        Group(line: "A2", stations: a2Stations),
     ]
 
     private static let byId: [String: Station] = {
