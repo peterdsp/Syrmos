@@ -446,6 +446,27 @@ struct NearbyStationDestination: View {
     }
 
     private func resolveTransitStation() -> TransitStation? {
+        // The MapStationNode `node` already carries the cluster-merged
+        // line set (M1+M3+A1+A4 at Piraeus, M2+M3+T6 at Syntagma, etc).
+        // The base TransitStation we look up here only knows about its
+        // own per-row lineAssociations entry, which can be a strict
+        // subset — e.g. A1_PIR's row historically listed [A1, M1] and
+        // missed the M3 terminus. We override the returned station's
+        // lineIds with `node.lineIds` so the detail view always shows
+        // every line that actually calls at this physical platform,
+        // regardless of how complete the hardcoded association table is.
+        guard let base = lookupBaseStation() else { return nil }
+        return TransitStation(
+            id: base.id,
+            name: base.name,
+            nameEl: base.nameEl,
+            coordinate: base.coordinate,
+            lineIds: node.lineIds,
+            isInterchange: node.isInterchange || base.isInterchange
+        )
+    }
+
+    private func lookupBaseStation() -> TransitStation? {
         // 1. Best path: stationIdByLineId is correctly paired.
         for lineId in node.lineIds {
             if let stationId = node.stationIdByLineId[lineId],
