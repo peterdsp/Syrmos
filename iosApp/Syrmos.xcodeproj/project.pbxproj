@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		002709A0C1454019B429939D /* iosApp/Core/Networking/SyrmosSchedulesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */; };
 		017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */; };
+		A1B2C3D4E5F60718293A4B01 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */; };
 		03329116BFDB4F16A2A9B937 /* iosApp/DesignSystem/ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */; };
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
 		03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */; };
@@ -87,6 +88,7 @@
 		E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactDeveloperView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StasyMapView.swift; sourceTree = "<group>"; };
 		E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift; sourceTree = SOURCE_ROOT; };
 		F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosRouteShapesStore.swift; sourceTree = SOURCE_ROOT; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 			children = (
 				E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */,
 				AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */,
+				A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */,
 				1DF85A2E3F716D7313EC9642 /* Info.plist */,
 			);
 			name = Resources;
@@ -380,6 +383,7 @@
 			files = (
 				AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */,
 				017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */,
+				A1B2C3D4E5F60718293A4B01 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
