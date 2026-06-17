@@ -18,7 +18,18 @@ enum ScheduleProjector {
         for stationId: String,
         lineIds: [String],
         limit: Int = 8,
-        dayOffset: Int = 0
+        dayOffset: Int = 0,
+        /// When > 0, scan forward `dayOffset+1` … up to 7 days after the
+        /// current day to keep filling the result until either `limit`
+        /// entries are collected or every emitted Departure lies more
+        /// than `timeHorizonMinutes` ahead of the current minute. This
+        /// is what powers the station-detail "next 12 hours" view —
+        /// after the last train of the night the projector quietly
+        /// rolls into tomorrow's first slot so the screen never says
+        /// "no service" when there's a known next train within the
+        /// horizon. Pass 0 (default) to keep the legacy "next N from
+        /// now within today's bands" behaviour.
+        timeHorizonMinutes: Int = 0
     ) -> [Departure] {
         let store = SyrmosSchedulesStore.shared
         let bundles = store.service.bundles
@@ -60,15 +71,53 @@ enum ScheduleProjector {
             .prefix(limit)
             .map { $0 }
 
-        // M3 city stations: guarantee at least one Airport-bound entry is
-        // visible. M3_AIR closes at 23:00 every day, so after the last
-        // airport train the city-section trains still keep listing while
-        // the user has no signal of when the next Airport-bound is. Scan
-        // forward up to a week to find the next M3_AIR departure and
-        // append it as a "look-ahead" row — caller / UI can present it
-        // however it wants because the serviceType is "airport".
+        // 12-hour horizon: keep rolling into the next day until we hit
+        // `limit` entries or the horizon. Powers the station-detail
+        // page reached from Lines tab / Home nearest-stations — the
+        // user wants the whole night's worth of departures, including
+        // tomorrow's first morning train when today's last has already
+        // run. The roll honours each line's day_type so a Friday
+        // late-night band rolls into Saturday's 24/7 set correctly.
+        if timeHorizonMinutes > 0 && sorted.count < limit {
+            for tomorrowOffset in 1..<7 {
+                if sorted.count >= limit { break }
+                let extra = ScheduleProjector.nextDepartures(
+                    for: stationId,
+                    lineIds: lineIds,
+                    limit: limit - sorted.count,
+                    dayOffset: tomorrowOffset,
+                    timeHorizonMinutes: 0
+                )
+                // Re-anchor minutesAway: nested call returned values
+                // relative to that day's 00:00. Add tomorrowOffset × 24h
+                // minus today's nowMinutes to make them honest
+                // wall-clock deltas the UI can sort and display.
+                let shifted = extra.map { dep -> Departure in
+                    let absolute = dep.minutesAway + tomorrowOffset * 24 * 60 - nowMinutes
+                    return Departure(
+                        time: dep.time,
+                        lineId: dep.lineId,
+                        direction: dep.direction,
+                        minutesAway: max(0, absolute),
+                        serviceType: dep.serviceType
+                    )
+                }
+                let trimmed = shifted.filter { $0.minutesAway <= timeHorizonMinutes }
+                if trimmed.isEmpty { continue }
+                sorted.append(contentsOf: trimmed)
+                if sorted.count >= limit {
+                    sorted = Array(sorted.prefix(limit))
+                    break
+                }
+            }
+        }
+
+        // Legacy M3_AIR lookahead. Only matters for limit <= ~10
+        // call sites (map sheet); the 12-hour rollover above already
+        // covers the long-list path with both directions.
         let wantsAirport = resolvedLineIds.contains("M3_AIR")
             && !line3AirportOnlyStations.contains(stationId)
+            && timeHorizonMinutes == 0
         let hasAirport = sorted.contains { $0.serviceType == "airport" }
         if wantsAirport && !hasAirport, let bundle = bundles["M3_AIR"] {
             if let lookahead = nextAirportLookahead(
