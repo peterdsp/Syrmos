@@ -150,6 +150,9 @@ class SyrmosSchedulesService(
         @SerialName("timeEnd") val timeEnd: String,
         @SerialName("headwayMinutes") val headwayMinutes: Double,
         val label: String = "",
+        /// "outbound" / "inbound" / null. M3_AIR per-direction bands need
+        /// this so the airport screen can split "To Airport" vs "From".
+        val direction: String? = null,
     )
 
     @Serializable

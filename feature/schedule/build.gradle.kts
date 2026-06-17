@@ -16,6 +16,7 @@ kotlin {
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.koin)
             implementation(libs.kotlinx.datetime)
+            implementation(projects.core.common)
             implementation(projects.core.data)
             implementation(projects.core.network)
         }

@@ -15,7 +15,11 @@ object TimetablesTab : Tab {
             val lang by LocalizationManager.language.collectAsState()
             return TabOptions(
                 index = 3u,
-                title = if (lang.code == "el") "Δρομολόγια" else "Timetables",
+                title = when (lang.code) {
+                    "el" -> "Αεροδρόμιο"
+                    "sq" -> "Aeroporti"
+                    else -> "Airport"
+                },
                 icon = null,
             )
         }
