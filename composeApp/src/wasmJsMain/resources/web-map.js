@@ -763,6 +763,20 @@
         const minute = total % 60;
         return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
     }
+    // Mirrors core/designsystem/component/DepartureCard.kt#formatMinutesAway
+    // and iosApp/Departure.minutesAwayDisplay. "Now" once the train is at
+    // the platform, hours+min past 59 so late-night views like Nikaia M3
+    // at 02:09 show "3h 25min" instead of "205 min" (which in Greek and
+    // Albanian locales rendered as "1.315 min" — thousands-separator
+    // confusion that started this whole thread).
+    function formatMinutesAway(minutesAway) {
+        if (minutesAway <= 0) return t("now");
+        if (minutesAway === 1) return "1 min";
+        if (minutesAway < 60) return `${minutesAway} min`;
+        const h = Math.floor(minutesAway / 60);
+        const m = minutesAway % 60;
+        return m === 0 ? `${h}h` : `${h}h ${m}min`;
+    }
 
     // Band-based projector matching core/domain/ComputeDeparturesFromBandsUseCase
     // and iosApp/ScheduleProjector.swift. Reads /api/schedules/{lineId} once at
@@ -812,7 +826,10 @@
         const rawEnd = minutesOfDay(band.timeEnd);
         if (rawStart == null || rawEnd == null || !(band.headwayMinutes > 0)) return;
         const start = rawStart + shift;
-        const end = rawEnd + shift;
+        // Bands that close past midnight (M2 sat 22:00 → 00:20) ship with
+        // rawEnd < rawStart because timeEnd lives on the next calendar
+        // day. Wrap forward 24 h so 22:45 still lands inside the window.
+        const end = rawEnd + shift + (rawEnd < rawStart ? 24 * 60 : 0);
         if (end < start) return;
         let slot = start;
         if (slot < nowMinutes) {
@@ -856,10 +873,18 @@
             // closeTime can be 00:30, 02:00, etc. — treated as next-day if smaller than open.
             // If we're past closeTime relative to today's window AND we're not in the
             // late-night extension of yesterday, skip.
-            const effectiveNow = nowMinutes + shift;
-            if (closeMin != null && openMin != null) {
+            // Subtract the shift so today's nowMinutes lands inside the
+            // descriptor's own clock domain (shift = -1440 for the yesterday
+            // overnight pass). Then only reject bands that are fully in the
+            // past — future bands of today's day-type emit future slots
+            // naturally, which is what we want at 02:09 Thursday when M3
+            // mon_thu's first train is 05:30. 120 min upper slack mirrors
+            // the iOS / Pi projector so downstream stations still emit
+            // after the terminus's last slot leaves.
+            const effectiveNow = nowMinutes - shift;
+            if (closeMin != null && openMin != null && !rule.is247) {
                 const effectiveClose = closeMin <= openMin ? closeMin + 24 * 60 : closeMin;
-                if (!rule.is247 && (effectiveNow < openMin || effectiveNow > effectiveClose)) continue;
+                if (effectiveNow > effectiveClose + 120) continue;
             }
             const bands = bundle.bands
                 .filter((b) => b.dayType === dt)
@@ -1025,11 +1050,7 @@
         }
 
         stationDepartures.innerHTML = departures.map((departure) => {
-            const minutesLabel = departure.minutesAway <= 0
-                ? t("now")
-                : departure.minutesAway === 1
-                    ? "1 min"
-                    : `${departure.minutesAway} min`;
+            const minutesLabel = formatMinutesAway(departure.minutesAway);
             const lineId = departure.line?.id || "";
             const destination = departure.destination || departure.direction || "";
             const iconSrc = vehicleIconFor(lineId, destination);

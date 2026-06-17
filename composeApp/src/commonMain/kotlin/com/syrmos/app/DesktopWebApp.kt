@@ -1034,7 +1034,7 @@ private fun ScheduleRow(
             )
         }
         Text(
-            text = "$minutes min",
+            text = com.syrmos.core.designsystem.component.formatMinutesAway(minutes),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,

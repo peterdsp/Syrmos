@@ -458,7 +458,13 @@ def _project_line(
                 # last train passes Tavros at 01:41. Without slack the
                 # band is rejected at 01:38 and Tavros shows nothing
                 # even though a train is 3 minutes away.
-                if effective_now < open_min - 120 or effective_now > effective_close + 120:
+                # Only reject bands fully in the past. A future band of
+                # today's day-type emits future slots naturally; gating
+                # below open_min forced the projector to roll into the
+                # next-day fallback and surface Friday's 00:03 slot
+                # while Thursday's 05:30 morning service was right
+                # there, 3h21m away. Mirrors the iOS / web fix.
+                if effective_now > effective_close + 120:
                     continue
 
         # Filter bands by dayType plus next-day-extension rule
