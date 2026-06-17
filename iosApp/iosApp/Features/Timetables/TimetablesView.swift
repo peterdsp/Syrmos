@@ -1,672 +1,323 @@
 import SwiftUI
 
-/// Full timetables browser. Pick a line, see every projected departure
-/// for the chosen day (today by default). Search by destination ("airport")
-/// or station name. Powered by the same ScheduleProjector that drives the
-/// station detail screen, so what you see here matches reality.
+/// Airport-focused departures. The previous full timetables browser was
+/// noisy: a user trying to catch a plane had to know to pick line M3,
+/// type "airport" in the search box, and visually filter the resulting
+/// 60-row scroll. This screen replaces that workflow with a single
+/// purpose-built view: pick the station you're at, see only airport
+/// trains, split by direction.
+///
+/// The file is still named TimetablesView.swift / TimetablesView so the
+/// Xcode project membership doesn't need to change; we just rebadge the
+/// tab label and rewrite the body.
 struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
-    @ObservedObject private var timestamps = SyrmosTrainTimestampsStore.shared
-    @ObservedObject private var offsets = SyrmosStationOffsetsStore.shared
+    @State private var selectedStationId: String = AirportData.defaultStationId
+    @State private var departures: [Departure] = []
+    @State private var nowTick = Date()
 
-    @State private var selectedLineId: String = "M3"
-    @State private var selectedDayOffset: Int = 0  // 0 = today, 1 = tomorrow, ...
-    @State private var searchText: String = ""
-
-    private let lineIds: [String] = ["M1", "M2", "M3", "T6", "T7", "A1", "A2", "A3", "A4"]
+    private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                linePicker
-                dayPicker
-                searchBar
-                departuresList
+            List {
+                Section {
+                    StationPickerRow(
+                        selectedStationId: $selectedStationId,
+                        loc: loc
+                    )
+                } header: {
+                    Text(loc.language == .greek ? "Σταθμός" : loc.language == .albanian ? "Stacioni" : "Station")
+                } footer: {
+                    Text(footerText)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                Section {
+                    if toAirport.isEmpty {
+                        emptyRow
+                    } else {
+                        ForEach(toAirport.prefix(8)) { dep in
+                            AirportRow(departure: dep, loc: loc)
+                        }
+                    }
+                } header: {
+                    SectionHeader(
+                        icon: "airplane.departure",
+                        title: loc.language == .greek ? "Προς Αεροδρόμιο" : loc.language == .albanian ? "Drejt Aeroportit" : "To Airport",
+                        tint: .metroBlue
+                    )
+                }
+
+                Section {
+                    if fromAirport.isEmpty {
+                        emptyRow
+                    } else {
+                        ForEach(fromAirport.prefix(8)) { dep in
+                            AirportRow(departure: dep, loc: loc)
+                        }
+                    }
+                } header: {
+                    SectionHeader(
+                        icon: "airplane.arrival",
+                        title: loc.language == .greek ? "Από Αεροδρόμιο" : loc.language == .albanian ? "Nga Aeroporti" : "From Airport",
+                        tint: .arrivalModerate
+                    )
+                }
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
-                CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : loc.language == .albanian ? "Oraret" : "Timetables")
+                CompactTabHeader(
+                    loc.language == .greek ? "Αεροδρόμιο" :
+                    loc.language == .albanian ? "Aeroporti" : "Airport"
+                )
             }
             .toolbar(.hidden, for: .navigationBar)
-        }
-    }
-
-    private var linePicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(lineIds, id: \.self) { lineId in
-                    let color = SyrmosData.lineColor(for: lineId)
-                    // Outbound icon as the chip's mode glyph so the chip
-                    // matches the row artwork the user sees below.
-                    let iconName = TimetablesIcons.vehicleImageName(
-                        lineId: lineId,
-                        direction: SyrmosData.line(for: lineId)?.terminalB ?? "",
-                        isAirport: false
-                    )
-                    Button {
-                        selectedLineId = lineId
-                    } label: {
-                        HStack(spacing: 6) {
-                            if let iconName, UIImage(named: iconName) != nil {
-                                Image(iconName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 28, height: 18)
-                            } else {
-                                Circle().fill(color).frame(width: 8, height: 8)
-                            }
-                            Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                                .font(.callout)
-                                .fontWeight(selectedLineId == lineId ? .semibold : .regular)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule().fill(
-                                selectedLineId == lineId
-                                    ? color.opacity(0.18)
-                                    : Color(uiColor: .tertiarySystemGroupedBackground)
-                            )
-                        )
-                        .overlay(
-                            Capsule().strokeBorder(
-                                selectedLineId == lineId ? color : .clear, lineWidth: 1
-                            )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
+            .onAppear(perform: reload)
+            .onReceive(refreshTimer) { _ in
+                nowTick = Date()
+                reload()
             }
-            .padding(.horizontal, 16)
+            .onChange(of: selectedStationId) { _, _ in reload() }
         }
     }
 
-    private var dayPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(0..<7, id: \.self) { offset in
-                    let day = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
-                    Button {
-                        selectedDayOffset = offset
-                    } label: {
-                        VStack(spacing: 2) {
-                            Text(dayShortName(for: day))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text("\(Calendar.current.component(.day, from: day))")
-                                .font(.body)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Circle().fill(
-                                selectedDayOffset == offset
-                                    ? Color.syrmosPrimary.opacity(0.18)
-                                    : Color(uiColor: .tertiarySystemGroupedBackground)
-                            )
-                        )
-                        .overlay(
-                            Circle().strokeBorder(
-                                selectedDayOffset == offset ? Color.syrmosPrimary : .clear, lineWidth: 1.5
-                            )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 16)
+    private var footerText: String {
+        switch loc.language {
+        case .greek: return "Επόμενα δρομολόγια αεροδρομίου από τον επιλεγμένο σταθμό. Αλλάξτε σταθμό για να δείτε άλλη τοποθεσία."
+        case .albanian: return "Nisjet e ardhshme për aeroportin nga stacioni i zgjedhur. Ndrysho stacionin për një vendndodhje tjetër."
+        case .english: return "Next airport-train departures from the selected station. Change station to see another stop."
         }
     }
 
-    private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField(
-                loc.language == .greek
-                    ? "Αναζήτηση προορισμού (Αεροδρόμιο, Σύνταγμα...)"
-                    : loc.language == .albanian
-                    ? "Kërko destinacion (Aeroporti, Syntagma...)"
-                    : "Search destination (Airport, Syntagma...)",
-                text: $searchText
+    private var emptyRow: some View {
+        Text(loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια." :
+             loc.language == .albanian ? "Nuk ka nisje të disponueshme." :
+             "No departures available.")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .padding(.vertical, 6)
+    }
+
+    private var toAirport: [Departure] {
+        departures.filter {
+            $0.serviceType == "airport" && AirportData.isAirportBoundDirection($0.direction)
+        }
+    }
+
+    private var fromAirport: [Departure] {
+        departures.filter {
+            $0.serviceType == "airport" && !AirportData.isAirportBoundDirection($0.direction)
+        }
+    }
+
+    private func reload() {
+        let station = AirportData.station(for: selectedStationId)
+        let lineIds = station.lineIds.filter { AirportData.airportLines.contains($0) }
+        Task { @MainActor in
+            departures = ScheduleProjector.nextDepartures(
+                for: selectedStationId,
+                lineIds: lineIds,
+                limit: 20
             )
-            if !searchText.isEmpty {
-                Button { searchText = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-            }
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .padding(.horizontal, 16)
     }
+}
 
-    private var departuresList: some View {
-        let projected = projectDay()
-        let filtered = applySearch(to: projected)
-        return ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if filtered.isEmpty {
-                        Text(loc.language == .greek
-                             ? "Δεν υπάρχουν διαθέσιμα δρομολόγια για την επιλογή σας."
-                             : loc.language == .albanian
-                             ? "Nuk ka nisje në dispozicion për këtë përzgjedhje."
-                             : "No departures available for this selection.")
-                            .foregroundStyle(.secondary)
-                            .padding(40)
-                    } else {
-                        ForEach(filtered) { dep in
-                            row(for: dep)
-                                .id(dep.id)
+private struct StationPickerRow: View {
+    @Binding var selectedStationId: String
+    let loc: LocalizationManager
+
+    var body: some View {
+        Menu {
+            ForEach(AirportData.stationsByGroup, id: \.line) { group in
+                Section(group.label(loc.language)) {
+                    ForEach(group.stations, id: \.id) { st in
+                        Button {
+                            selectedStationId = st.id
+                        } label: {
+                            HStack {
+                                Text(loc.language == .greek ? st.nameEl : st.name)
+                                if st.id == selectedStationId {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
                         }
                     }
                 }
-                .padding(.horizontal, 16)
             }
-            .onAppear {
-                if let next = filtered.first(where: { $0.minutesAway >= 0 && !isPast($0) }) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        withAnimation { proxy.scrollTo(next.id, anchor: .top) }
-                    }
+        } label: {
+            let current = AirportData.station(for: selectedStationId)
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(loc.language == .greek ? current.nameEl : current.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(current.lineIds
+                        .filter { AirportData.airportLines.contains($0) }
+                        .joined(separator: " · "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
             }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
     }
+}
 
-    private func row(for dep: Departure) -> some View {
-        let isPastDep = isPast(dep)
-        let isAirport = dep.serviceType == "airport"
-        let iconName = TimetablesIcons.vehicleImageName(lineId: dep.lineId, direction: dep.direction, isAirport: isAirport)
-        return HStack(spacing: 12) {
+private struct SectionHeader: View {
+    let icon: String
+    let title: String
+    let tint: Color
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .foregroundStyle(tint)
+            Text(title)
+        }
+    }
+}
+
+private struct AirportRow: View {
+    let departure: Departure
+    let loc: LocalizationManager
+
+    var body: some View {
+        HStack(spacing: 12) {
             Group {
-                if let iconName, UIImage(named: iconName) != nil {
+                if let iconName = TimetablesIcons.vehicleImageName(
+                    lineId: departure.lineId,
+                    direction: departure.direction,
+                    isAirport: true
+                ), UIImage(named: iconName) != nil {
                     Image(iconName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 44, height: 30)
                 } else {
                     Circle()
-                        .fill(SyrmosData.lineColor(for: dep.lineId))
+                        .fill(SyrmosData.lineColor(for: departure.lineId))
                         .frame(width: 12, height: 12)
                 }
             }
-            .opacity(isPastDep ? 0.4 : 1.0)
 
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(SyrmosData.line(for: dep.lineId)?.name ?? dep.lineId)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    if isAirport {
-                        Text("Airport")
-                            .font(.caption2).fontWeight(.bold)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Color.metroBlue.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
-                }
-                Text(dep.direction)
+                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(directionLabel)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            Text(dep.time)
-                .font(.body.monospacedDigit())
-                .foregroundStyle(isPastDep ? .secondary : .primary)
-                .opacity(isPastDep ? 0.5 : 1.0)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(departure.minutesAway <= 1
+                     ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
+                     : "\(departure.minutesAway) min")
+                    .font(.headline)
+                    .foregroundStyle(color(for: departure.minutesAway))
+                Text(departure.time)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
         }
-        .padding(.vertical, 10)
-        .overlay(
-            Rectangle().fill(Color.secondary.opacity(0.12)).frame(height: 0.5),
-            alignment: .bottom
-        )
+        .padding(.vertical, 2)
     }
 
-    // MARK: - Helpers
-
-    private func dayShortName(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        formatter.locale = Locale(identifier: loc.language == .greek ? "el_GR" : loc.language == .albanian ? "sq_AL" : "en_GB")
-        return formatter.string(from: date).uppercased()
-    }
-
-    /// Project the entire day for the selected line. For suburban A1-A4 we
-    /// have real PDF-grounded timestamps from Hellenic Train and use those
-    /// directly. For metro and tram we still use the band projector (STASY
-    /// PDFs are next on the list). M3 stays special-cased: city + airport
-    /// branches projected separately and merged.
-    /// Filter the projected list against the search box. Two modes:
-    /// - destination / line filter: substring match on direction or lineId
-    /// - station filter: substring match on a station name along the
-    ///   selected line. When a station match wins, the displayed time
-    ///   shifts from origin-departure to station-arrival (origin slot
-    ///   plus minutes_from_origin) so the user sees when trains actually
-    ///   pass through the station they searched for.
-    private func applySearch(to departures: [Departure]) -> [Departure] {
-        let query = searchText.trimmingCharacters(in: .whitespaces)
-        if query.isEmpty { return departures }
-
-        // Resolve query against stations on the currently-selected line.
-        // Use both the offset store (canonical EN) and SyrmosData (EL).
-        let stationsForLine = SyrmosData.stations(for: selectedLineId)
-        let matchedStation = stationsForLine.first { st in
-            st.name.localizedCaseInsensitiveContains(query)
-                || st.nameEl.localizedCaseInsensitiveContains(query)
-        }
-        if let st = matchedStation {
-            // For each direction stream that runs through the line we
-            // look up the station's minutes_from_origin. Membership is
-            // tested against the full stops list — `offsetMinutes` would
-            // return 0 both for "station is origin" and for "station
-            // isn't on this stream", and the two cases need different
-            // behaviour (origin = include with shift 0; not-on-stream =
-            // skip the departure entirely).
-            let line = SyrmosData.line(for: selectedLineId)
-            let terminalA = line?.terminalA ?? ""
-            let terminalB = line?.terminalB ?? ""
-
-            func shiftIfOnStream(_ stops: [SyrmosStationOffsetsStore.Stop], _ stationId: String) -> Int? {
-                stops.first { $0.stationId == stationId }?.minutesFromOrigin
-            }
-            let cityOutShift = shiftIfOnStream(
-                offsets.stops(lineId: selectedLineId, direction: "outbound"), st.id
-            )
-            let cityInShift = shiftIfOnStream(
-                offsets.stops(lineId: selectedLineId, direction: "inbound"), st.id
-            )
-            // M3_AIR shares track with M3 but has its own clipped offsets.
-            // Only relevant when the selected line is M3 since A1/A2/A3/A4
-            // don't have an airport-extension cousin.
-            var airOutShift: Int? = nil
-            var airInShift: Int? = nil
-            if selectedLineId == "M3" {
-                airOutShift = shiftIfOnStream(
-                    offsets.stops(lineId: "M3_AIR", direction: "outbound"), st.id
-                )
-                airInShift = shiftIfOnStream(
-                    offsets.stops(lineId: "M3_AIR", direction: "inbound"), st.id
-                )
-            }
-
-            var shifted: [Departure] = []
-            for dep in departures {
-                // M3 inbound and M3_AIR inbound both label their destination
-                // "Dimotiko Theatro". serviceType separates them — airport
-                // trains are tagged "airport" in projectBundle.
-                let isAirportService = dep.serviceType == "airport"
-                let shiftMin: Int?
-                switch dep.direction {
-                case terminalB where !terminalB.isEmpty:
-                    shiftMin = cityOutShift
-                case terminalA where !terminalA.isEmpty:
-                    shiftMin = isAirportService ? airInShift : cityInShift
-                case "Airport":
-                    shiftMin = airOutShift
-                default:
-                    shiftMin = nil
-                }
-                guard let shift = shiftMin else { continue }
-                guard let baseMinute = minutesOfDay(dep.time) else { continue }
-                let total = baseMinute + shift
-                let display = ((total % (24 * 60)) + 24 * 60) % (24 * 60)
-                let h = display / 60
-                let m = display % 60
-                shifted.append(Departure(
-                    time: String(format: "%02d:%02d", h, m),
-                    lineId: dep.lineId,
-                    direction: dep.direction,
-                    minutesAway: dep.minutesAway,
-                    serviceType: dep.serviceType
-                ))
-            }
-            // For M3 city stations (where cityOutShift / cityInShift exist
-            // but M3_AIR offsets don't), replace the city-band-projected
-            // rows that correspond to actual airport-train passages with
-            // authoritative rows derived from the operational AIRPORT TRAIN
-            // SCHEDULES PDFs. Outbound: terminus flips to "Airport".
-            // Inbound: terminus stays "Dimotiko Theatro", serviceType
-            // flips to "airport" so the pill renders.
-            if selectedLineId == "M3" {
-                shifted = annotateAirportPassagesAt(
-                    rows: shifted,
-                    cityOutShift: cityOutShift,
-                    cityInShift: cityInShift,
-                    terminalA: terminalA,
-                    terminalB: terminalB
-                )
-            }
-            // Sort by station-arrival time so the user sees the order
-            // trains actually pass / leave the searched station, not the
-            // origin-departure order.
-            return shifted.sorted { $0.time < $1.time }
-        }
-
-        // Fall back to the original destination / line substring filter.
-        return departures.filter { dep in
-            dep.direction.localizedCaseInsensitiveContains(query)
-                || dep.lineId.localizedCaseInsensitiveContains(query)
+    private var directionLabel: String {
+        let dir = departure.direction
+        switch loc.language {
+        case .greek: return "προς \(dir)"
+        case .albanian: return "drejt \(dir)"
+        case .english: return "towards \(dir)"
         }
     }
 
-    private func projectDay() -> [Departure] {
-        if ["A1", "A2", "A3", "A4"].contains(selectedLineId) {
-            let real = projectFromTimestamps()
-            if !real.isEmpty { return real }
+    private func color(for minutes: Int) -> Color {
+        switch minutes {
+        case 0...2: return .arrivalSoon
+        case 3...5: return .arrivalModerate
+        default: return .arrivalFar
         }
-        let primary = projectBundle(lineId: selectedLineId, displayLineId: selectedLineId)
-        guard selectedLineId == "M3" else { return primary }
-        let airport = projectBundle(lineId: "M3_AIR", displayLineId: "M3")
-        return (primary + airport).sorted { lhs, rhs in
-            if lhs.time != rhs.time { return lhs.time < rhs.time }
-            return lhs.direction < rhs.direction
-        }
-        .enumerated()
-        .map { idx, dep in
-            Departure(
-                time: dep.time, lineId: dep.lineId, direction: dep.direction,
-                minutesAway: idx, serviceType: dep.serviceType
-            )
+    }
+}
+
+// MARK: - Static airport data
+
+enum AirportData {
+    struct Station: Identifiable, Hashable {
+        let id: String
+        let name: String
+        let nameEl: String
+        let lineIds: [String]
+    }
+
+    struct Group {
+        let line: String
+        let stations: [Station]
+        func label(_ lang: AppLanguage) -> String {
+            switch (line, lang) {
+            case ("M3", .greek): return "Μετρό Γραμμή 3"
+            case ("M3", .albanian): return "Metroja Linja 3"
+            case ("M3", _): return "Metro Line 3"
+            case ("A1", .greek): return "Προαστιακός A1"
+            case ("A1", .albanian): return "Treni periferik A1"
+            case ("A1", _): return "Suburban A1"
+            default: return line
+            }
         }
     }
 
-    /// Build departures straight from the train-timestamps API. Each train
-    /// in the store contributes one Departure per stop: the user sees the
-    /// HH:MM at every station on every real train, not synthesised slots.
-    private func projectFromTimestamps() -> [Departure] {
-        let target = Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Date()) ?? Date()
-        let dayType = athensDayType(for: target)
-        let entries = timestamps.trains(lineId: selectedLineId, dayType: dayType)
-        guard !entries.isEmpty else { return [] }
+    /// Lines whose schedule actually contains airport-tagged service
+    /// (serviceType == "airport"). Used both to filter station picker
+    /// entries and to pass the right lineIds to ScheduleProjector.
+    static let airportLines: Set<String> = ["M3", "M3_AIR", "A1"]
 
-        // For Timetables we surface one row per train at its FIRST station,
-        // labelled with its final destination. The user can drill into a
-        // specific station view to see when that train calls there.
-        var out: [Departure] = []
-        for (idx, train) in entries.enumerated() {
-            guard let first = train.stops.first, let last = train.stops.last else { continue }
-            let direction = loc.language == .greek ? last.stationNameEl : last.stationNameEn
-            let originLabel = loc.language == .greek ? first.stationNameEl : first.stationNameEn
-            out.append(Departure(
-                time: first.time,
-                lineId: selectedLineId,
-                direction: loc.language == .greek
-                    ? "από \(originLabel) προς \(direction)"
-                    : loc.language == .albanian
-                    ? "nga \(originLabel) drejt \(direction)"
-                    : "from \(originLabel) to \(direction)",
-                minutesAway: idx,
-                serviceType: train.direction == "outbound" ? "outbound" : "inbound"
-            ))
-        }
-        return out.sorted { lhs, rhs in
-            if lhs.time != rhs.time { return lhs.time < rhs.time }
-            return lhs.direction < rhs.direction
-        }
-        .enumerated()
-        .map { idx, dep in
-            Departure(
-                time: dep.time, lineId: dep.lineId, direction: dep.direction,
-                minutesAway: idx, serviceType: dep.serviceType
-            )
-        }
+    /// Direction labels emitted by the projector that count as
+    /// "airport-bound". Anything else (Dimotiko Theatro, Piraeus, etc)
+    /// is treated as "from airport". Case-insensitive substring match.
+    static func isAirportBoundDirection(_ dir: String) -> Bool {
+        let d = dir.lowercased()
+        return d.contains("airport") || d.contains("αεροδρόμιο") || d.contains("aeroport")
     }
 
-    private func athensDayType(for date: Date) -> String {
-        let athens = TimeZone(identifier: "Europe/Athens")!
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = athens
-        let weekday = cal.component(.weekday, from: date)
-        switch weekday {
-        case 1: return "sun"
-        case 2, 3, 4, 5: return "mon_thu"
-        case 6: return "fri"
-        case 7: return "sat"
-        default: return "mon_thu"
-        }
+    static let defaultStationId = "M3_SYN"
+
+    private static let m3Stations: [Station] = SyrmosData.stations(for: "M3").map {
+        Station(id: $0.id, name: $0.name, nameEl: $0.nameEl, lineIds: $0.lineIds)
     }
 
-    private func projectBundle(lineId: String, displayLineId: String) -> [Departure] {
-        let target = Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Date()) ?? Date()
-        let bundle = schedules.service.bundles[lineId]
-        guard let bundle = bundle else { return [] }
-
-        let athens = TimeZone(identifier: "Europe/Athens")!
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = athens
-        let comp = cal.dateComponents([.year, .month, .day, .weekday], from: target)
-        let weekday = comp.weekday ?? 1
-        let mmdd = String(format: "%02d-%02d", comp.month ?? 1, comp.day ?? 1)
-        let holiday: String? = ["01-01": "sun", "05-01": "sun", "10-28": "sun",
-                                "12-25": "sun", "12-26": "sun",
-                                "08-15": "aug_15", "12-24": "dec_24_31", "12-31": "dec_24_31",
-                                "01-02": "sat", "01-06": "sat", "11-17": "sat"][mmdd]
-        let dayType = holiday ?? {
-            switch weekday {
-            case 1: return "sun"
-            case 2, 3, 4, 5: return "mon_thu"
-            case 6: return "fri"
-            case 7: return "sat"
-            default: return "mon_thu"
-            }
-        }()
-
-        guard let rule = bundle.rules.first(where: { $0.dayType == dayType }) else { return [] }
-
-        // Compute open / close (handle past-midnight close like "00:30").
-        let openM = minutesOfDay(rule.openTime) ?? 0
-        let closeM = minutesOfDay(rule.closeTime) ?? (24 * 60)
-        let effClose = closeM <= openM ? closeM + 24 * 60 : closeM
-
-        let bands = bundle.bands
-            .filter { $0.dayType == dayType }
-            .sorted { (a, b) in
-                (minutesOfDay(a.timeStart) ?? 0) < (minutesOfDay(b.timeStart) ?? 0)
-            }
-
-        // For a real-life timetable, a frequency band describes how often
-        // trains pass in EACH direction. So a 6-minute headway means a train
-        // every 6 min toward terminalA AND every 6 min toward terminalB, with
-        // the two directions offset by half the headway at the same station.
-        // Emit both, interleaved by departure time, so the user sees the full
-        // picture instead of only the terminalB-bound trains.
-        let line = SyrmosData.line(for: displayLineId)
-        // M3_AIR has direction-tagged bands: outbound is a DPL -> Airport
-        // run, inbound is an Airport -> Dim. Theatro run. Treating both as
-        // "Airport" was the bug — an inbound train heading WEST was being
-        // labelled with the destination "Airport". Now we read the band's
-        // direction field and pick the right destination terminal for each.
-        let terminalA = line?.terminalA ?? ""
-        let terminalB = line?.terminalB ?? ""
-        let directionLabel: (String?) -> String = { dir in
-            switch dir {
-            case "outbound": return terminalB.isEmpty ? "Airport" : terminalB
-            case "inbound": return terminalA.isEmpty ? "Dimotiko Theatro" : terminalA
-            default: return "Airport"
-            }
-        }
-        let pairedDirections: [String] = [terminalA, terminalB].compactMap { $0 }.filter { !$0.isEmpty }
-
-        struct Slot { let minute: Int; let direction: String; let label: String }
-        var slots: [Slot] = []
-        for band in bands {
-            guard let rawStart = minutesOfDay(band.timeStart),
-                  let rawEnd = minutesOfDay(band.timeEnd),
-                  band.headwayMinutes > 0 else { continue }
-            // M3_AIR bands are already split per direction on the server,
-            // so we emit one stream per band using that direction. Other
-            // lines use a single band per dayType for both directions; we
-            // emit both with a half-headway offset.
-            let bandDirections: [String]
-            let directionOffsets: [Double]
-            if lineId == "M3_AIR" {
-                bandDirections = [directionLabel(band.direction)]
-                directionOffsets = [0]
-            } else {
-                bandDirections = pairedDirections
-                directionOffsets = pairedDirections.count == 2
-                    ? [0, band.headwayMinutes / 2.0]
-                    : [0]
-            }
-            for (i, direction) in bandDirections.enumerated() {
-                let offset = directionOffsets[min(i, directionOffsets.count - 1)]
-                var slot = Double(rawStart) + offset
-                let end = Double(rawEnd)
-                while slot <= end {
-                    let slotMin = Int(slot.rounded())
-                    if rule.is247 || (slotMin >= openM && slotMin <= effClose) {
-                        slots.append(Slot(minute: slotMin, direction: direction, label: band.label))
-                    }
-                    slot += band.headwayMinutes
-                }
-            }
-        }
-        // Adjacent bands share a boundary minute — e.g. M3 city Mon-Thu
-        // 10:30-13:30 (6 min) ends at 13:30 and 13:30-14:00 (5'30") starts
-        // at 13:30, producing two identical 13:30 rows. Dedup by
-        // (minute, direction) before sorting.
-        var seen = Set<String>()
-        slots = slots.filter { s in
-            let key = "\(s.minute)|\(s.direction)"
-            return seen.insert(key).inserted
-        }
-        slots.sort { lhs, rhs in
-            if lhs.minute != rhs.minute { return lhs.minute < rhs.minute }
-            return lhs.direction < rhs.direction
-        }
-
-        var out: [Departure] = []
-        for (idx, s) in slots.enumerated() {
-            let display = ((s.minute % (24 * 60)) + 24 * 60) % (24 * 60)
-            let h = display / 60
-            let m = display % 60
-            out.append(Departure(
-                time: String(format: "%02d:%02d", h, m),
-                lineId: displayLineId,
-                direction: s.direction,
-                minutesAway: idx,
-                serviceType: lineId == "M3_AIR" ? "airport" : (s.label.contains("late") ? "late_night" : "regular")
-            ))
-        }
-        return out
+    private static let a1Stations: [Station] = SyrmosData.stations(for: "A1").map {
+        Station(id: $0.id, name: $0.name, nameEl: $0.nameEl, lineIds: $0.lineIds)
     }
 
-    private func minutesOfDay(_ hhmm: String) -> Int? {
-        let p = hhmm.split(separator: ":")
-        guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]) else { return nil }
-        return h * 60 + m
-    }
-
-    /// Exact DT-origin departures of M3_AIR outbound trains (DT → Airport),
-    /// transcribed from ops/syrmos-api/reference/stasy_pdfs/M3_AIR_to_Airport.pdf.
-    /// The airport service runs the same schedule every day of the week
-    /// (excluded from Sat 24/7 and Fri late-night extensions).
-    private static let m3AirDtOutboundDepartures: [Int] = [
-        5*60+30,  6*60+6,   6*60+42,  7*60+18,  7*60+54,  8*60+30,  9*60+6,
-        9*60+42,  10*60+18, 10*60+54, 11*60+30, 12*60+6,  12*60+42, 13*60+18,
-        13*60+54, 14*60+30, 15*60+6,  15*60+42, 16*60+18, 16*60+54, 17*60+30,
-        18*60+6,  18*60+42, 19*60+18, 19*60+54, 20*60+30, 21*60+6,  21*60+42,
-        22*60+18, 22*60+54,
+    static let stationsByGroup: [Group] = [
+        Group(line: "M3", stations: m3Stations),
+        Group(line: "A1", stations: a1Stations),
     ]
 
-    /// Exact AIR-origin departures of M3_AIR inbound trains (Airport → DT),
-    /// transcribed from ops/syrmos-api/reference/stasy_pdfs/M3_AIR_to_DimotikoTheatro.pdf.
-    /// AIR → Doukissis Plakentias takes 20 min, so passing time at any city
-    /// station S is: (AIR origin) + 20 + (M3 inbound offset from DPL to S).
-    private static let m3AirAirInboundDepartures: [Int] = [
-        6*60+10,  6*60+46,  7*60+19,  7*60+58,  8*60+34,  9*60+10,  9*60+46,
-        10*60+22, 10*60+58, 11*60+34, 12*60+10, 12*60+46, 13*60+22, 13*60+58,
-        14*60+34, 15*60+10, 15*60+46, 16*60+19, 16*60+58, 17*60+34, 18*60+10,
-        18*60+46, 19*60+22, 19*60+58, 20*60+34, 21*60+10, 21*60+46, 22*60+22,
-        22*60+58, 23*60+34,
-    ]
-
-    /// AIR → Doukissis Plakentias transit time (PDF: AIR 6:10 → DPL 6:30).
-    private static let airToPlakentiasMinutes = 20
-
-    /// Replace city-band rows that correspond to actual M3_AIR through-
-    /// services with authoritative rows derived from the operational PDF
-    /// schedules. The band projection emits synthetic every-N-minutes
-    /// slots that don't necessarily land on the real airport-train times;
-    /// without this pass the user sees only "→ Doukissis Plakentias" at
-    /// every city station outbound, with no airport hint. After this
-    /// pass: one in every ~8 rows is labelled "→ Airport" (outbound) or
-    /// keeps "→ Dimotiko Theatro" with the airport pill (inbound).
-    private func annotateAirportPassagesAt(
-        rows: [Departure],
-        cityOutShift: Int?,
-        cityInShift: Int?,
-        terminalA: String,
-        terminalB: String
-    ) -> [Departure] {
-        let tolerance = 3  // ±3 min absorbs band-projection imprecision
-        var out = rows
-
-        func format(_ minutes: Int) -> String {
-            let mod = ((minutes % (24 * 60)) + 24 * 60) % (24 * 60)
-            return String(format: "%02d:%02d", mod / 60, mod % 60)
-        }
-
-        if let outShift = cityOutShift, !terminalB.isEmpty {
-            let airOutMins: [Int] = Self.m3AirDtOutboundDepartures.map { ($0 + outShift) % (24 * 60) }
-            out.removeAll { dep in
-                guard dep.lineId == "M3",
-                      dep.direction == terminalB,
-                      dep.serviceType != "airport",
-                      let m = minutesOfDay(dep.time)
-                else { return false }
-                return airOutMins.contains { abs($0 - m) <= tolerance }
-            }
-            for m in airOutMins {
-                out.append(Departure(
-                    time: format(m),
-                    lineId: "M3",
-                    direction: "Airport",
-                    minutesAway: 0,
-                    serviceType: "airport"
-                ))
+    private static let byId: [String: Station] = {
+        var m: [String: Station] = [:]
+        for g in stationsByGroup {
+            for s in g.stations where m[s.id] == nil {
+                m[s.id] = s
             }
         }
+        return m
+    }()
 
-        if let inShift = cityInShift, !terminalA.isEmpty {
-            let airInMins: [Int] = Self.m3AirAirInboundDepartures.map {
-                ($0 + Self.airToPlakentiasMinutes + inShift) % (24 * 60)
-            }
-            out.removeAll { dep in
-                guard dep.lineId == "M3",
-                      dep.direction == terminalA,
-                      dep.serviceType != "airport",
-                      let m = minutesOfDay(dep.time)
-                else { return false }
-                return airInMins.contains { abs($0 - m) <= tolerance }
-            }
-            for m in airInMins {
-                out.append(Departure(
-                    time: format(m),
-                    lineId: "M3",
-                    direction: terminalA,
-                    minutesAway: 0,
-                    serviceType: "airport"
-                ))
-            }
-        }
-
-        return out
-    }
-
-    private func isPast(_ dep: Departure) -> Bool {
-        guard selectedDayOffset == 0 else { return false }
-        let now = Date()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        formatter.timeZone = TimeZone(identifier: "Europe/Athens")
-        let nowStr = formatter.string(from: now)
-        return dep.time < nowStr
+    static func station(for id: String) -> Station {
+        byId[id] ?? Station(id: id, name: id, nameEl: id, lineIds: [])
     }
 }

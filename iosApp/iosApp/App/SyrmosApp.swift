@@ -138,8 +138,11 @@ struct ContentView: View {
 
                 TimetablesView()
                     .tabItem {
-                        Label(loc.language == .greek ? "Δρομολόγια" : loc.language == .albanian ? "Oraret" : "Timetables",
-                              systemImage: "clock")
+                        Label(
+                            loc.language == .greek ? "Αεροδρόμιο" :
+                            loc.language == .albanian ? "Aeroporti" : "Airport",
+                            systemImage: "airplane"
+                        )
                     }
                     .tag(SyrmosTab.timetables)
 
