@@ -949,44 +949,33 @@ struct SyrmosMKMapView: UIViewRepresentable {
         let existing = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
         var seenSim: Set<String> = []
         var seenLive: Set<String> = []
-        // Tween toward the new simulator-emitted position. The
-        // simulator pushes a fresh snapshot every few seconds; the
-        // CADisplayLink in the Coordinator interpolates the on-screen
-        // coordinate over that interval so the train glides instead
-        // of jumping. Match the tween duration to the simulator's
-        // poll cadence (defined in TrainSimulatorService.runLoop).
-        let tweenDuration: CFTimeInterval = 5.0
+        // Refresh the Coordinator's per-train descriptor cache. The
+        // displayLink reads these every frame; we only write here when
+        // the simulator pushes a new snapshot. Position itself is
+        // recomputed live, not tweened from the snapshot's coordinate.
         for ann in existing {
             switch ann.kind {
             case .simulated:
                 if let train = wantSim[ann.id] {
-                    context.coordinator.updateTween(
-                        id: ann.id, ann: ann, target: train.coordinate, duration: tweenDuration
-                    )
+                    context.coordinator.updateDescriptor(for: ann.id, train: train)
                     seenSim.insert(ann.id)
                 } else {
-                    context.coordinator.dropTween(id: ann.id)
+                    context.coordinator.dropDescriptor(id: ann.id)
                     mv.removeAnnotation(ann)
                 }
             case .live:
-                if let train = wantLive[ann.id] {
-                    context.coordinator.updateTween(
-                        id: ann.id, ann: ann, target: train.coordinate, duration: tweenDuration
-                    )
-                    seenLive.insert(ann.id)
-                } else {
-                    context.coordinator.dropTween(id: ann.id)
+                if !wantLive.keys.contains(ann.id) {
                     mv.removeAnnotation(ann)
+                } else {
+                    seenLive.insert(ann.id)
                 }
             }
         }
         for train in simulatedTrains where !seenSim.contains(train.id) {
             let ann = SyrmosTrainAnnotation(simulated: train)
             mv.addAnnotation(ann)
-            // First appearance: snap to the simulator's coord so the
-            // train doesn't slide in from (0, 0) or a stale previous
-            // location with the same id.
             ann.coordinate = train.coordinate
+            context.coordinator.updateDescriptor(for: ann.id, train: train)
         }
         for train in liveTrains where !seenLive.contains(train.id) {
             let ann = SyrmosTrainAnnotation(live: train)
@@ -1007,27 +996,22 @@ struct SyrmosMKMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         let parent: SyrmosMKMapView
         var lastRecenterPing: Int = -1
-        /// Active position tween per annotation id. The tween rides
-        /// along the line's polyline arc instead of straight-lerping
-        /// (lat, lon) — straight lerp between two arc-correct snapshots
-        /// still chord-cuts every curve in between, which is what made
-        /// the train appear to step / slide off the rails. We store
-        /// distance-along-polyline for start and end; the per-frame
-        /// tick walks the polyline to the interpolated distance.
-        private struct PositionTween {
-            var polyline: [CLLocationCoordinate2D]
-            var cumulative: [Double]   // running haversine distance for polyline
-            var startDistance: Double
-            var endDistance: Double
-            /// Tells us whether to walk forward (false) or backward
-            /// (true) along the polyline. Simulator always advances
-            /// outbound trains in increasing arc distance, but
-            /// inbound trains go the other way.
-            var reversed: Bool
-            var startTime: CFTimeInterval
-            var duration: CFTimeInterval
+        /// Live train descriptor cache keyed by annotation id. The
+        /// CADisplayLink ticks at the device's native refresh rate
+        /// (60 / 120 Hz) and recomputes each train's position from
+        /// `Date().timeIntervalSince1970 - originEpoch` against its
+        /// stops table on every frame. No tween, no interpolation
+        /// between discrete simulator snapshots — the on-screen
+        /// position IS the timetable position at this exact moment.
+        /// Simulator only refreshes the cache when the set of active
+        /// trains changes; per-frame motion is driven by the clock.
+        private struct LiveDescriptor {
+            let lineId: String
+            let originEpoch: TimeInterval
+            let totalTravelMinutes: Int
+            let stops: [(stationId: String, minutesFromOrigin: Double)]
         }
-        private var tweens: [String: PositionTween] = [:]
+        private var descriptors: [String: LiveDescriptor] = [:]
 
         /// Per-line cached polyline + cumulative distances. Computed
         /// once on first use (haversine across ~200 vertices is
@@ -1066,51 +1050,21 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
         }
 
-        /// Set or refresh a tween for one annotation toward `target`.
-        /// Picks the polyline matching the train's line and resolves
-        /// start + end as arc distances along it. Falls back to a
-        /// chord lerp when the polyline cache has nothing (suburban
-        /// A1-A4 currently ship no OSM shape, for instance).
-        func updateTween(id: String, ann: SyrmosTrainAnnotation, target: CLLocationCoordinate2D, duration: CFTimeInterval) {
-            let now = CACurrentMediaTime()
-            let cache = cachedPolyline(for: ann.lineId)
-            let currentDisplay: CLLocationCoordinate2D
-            if let existing = tweens[id] {
-                currentDisplay = arcLookup(existing, at: now)
-            } else {
-                currentDisplay = ann.coordinate
-            }
-            if let c = cache {
-                let startDist = arcDistance(to: currentDisplay, cache: c)
-                let endDist = arcDistance(to: target, cache: c)
-                tweens[id] = PositionTween(
-                    polyline: c.polyline,
-                    cumulative: c.cumulative,
-                    startDistance: startDist,
-                    endDistance: endDist,
-                    reversed: false,  // direction is encoded in start->end ordering
-                    startTime: now,
-                    duration: duration
-                )
-            } else {
-                // Polyline-less fallback: synthesise a 2-point line so the
-                // arc machinery still works, just degenerating to a chord.
-                let fakeLine = [currentDisplay, target]
-                let fakeCum = [0.0, haversineMeters(currentDisplay, target)]
-                tweens[id] = PositionTween(
-                    polyline: fakeLine,
-                    cumulative: fakeCum,
-                    startDistance: 0,
-                    endDistance: fakeCum.last ?? 0,
-                    reversed: false,
-                    startTime: now,
-                    duration: duration
-                )
-            }
+        /// Cache (or refresh) the descriptor for a train annotation.
+        /// Stable across simulator ticks because origin epoch + stops
+        /// table don't change for a given train; we only really need
+        /// to write here when a new train id appears.
+        func updateDescriptor(for id: String, train: SimulatedTrain) {
+            descriptors[id] = LiveDescriptor(
+                lineId: train.lineId,
+                originEpoch: train.originEpoch,
+                totalTravelMinutes: train.totalTravelMinutes,
+                stops: train.stops
+            )
         }
 
-        func dropTween(id: String) {
-            tweens.removeValue(forKey: id)
+        func dropDescriptor(id: String) {
+            descriptors.removeValue(forKey: id)
         }
 
         func detachDisplayLink() {
@@ -1120,33 +1074,59 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         @objc private func tick() {
-            guard let mv = mapView, !tweens.isEmpty else { return }
-            let now = CACurrentMediaTime()
+            guard let mv = mapView, !descriptors.isEmpty else { return }
+            let now = Date().timeIntervalSince1970
             let trainAnns = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
             for ann in trainAnns {
-                guard let t = tweens[ann.id] else { continue }
-                let next = arcLookup(t, at: now)
+                guard let d = descriptors[ann.id] else { continue }
+                guard let next = livePosition(descriptor: d, nowEpoch: now) else { continue }
                 if next.latitude != ann.coordinate.latitude || next.longitude != ann.coordinate.longitude {
                     ann.coordinate = next
-                }
-                if now >= t.startTime + t.duration {
-                    tweens.removeValue(forKey: ann.id)
                 }
             }
         }
 
-        /// Interpolate along polyline arc distance: target =
-        /// startDistance + (endDistance - startDistance) * f, then
-        /// walk cumulative[] to find the segment containing the
-        /// target and linearly lerp inside that small chunk. Because
-        /// the polyline vertices are dense (OSM shape, every few
-        /// metres), the chord of one segment is visually
-        /// indistinguishable from the curve.
-        private func arcLookup(_ t: PositionTween, at now: CFTimeInterval) -> CLLocationCoordinate2D {
-            let elapsed = now - t.startTime
-            let f = t.duration > 0 ? min(max(elapsed / t.duration, 0), 1) : 1
-            let target = t.startDistance + (t.endDistance - t.startDistance) * f
-            return coordAt(distance: target, polyline: t.polyline, cumulative: t.cumulative)
+        /// Resolve the train's exact position on the polyline at the
+        /// requested wall-clock instant. Walks the stops table to find
+        /// the segment containing the elapsed minutes-from-origin,
+        /// resolves the from/to station coords, then arc-interpolates
+        /// inside the polyline between them. Returns nil when the
+        /// train has finished its run (we let the simulator drop it
+        /// on its next tick).
+        private func livePosition(descriptor d: LiveDescriptor, nowEpoch: TimeInterval) -> CLLocationCoordinate2D? {
+            let elapsedMin = (nowEpoch - d.originEpoch) / 60.0
+            if elapsedMin < 0 { return nil }
+            if elapsedMin > Double(d.totalTravelMinutes) + 0.5 { return nil }
+            guard d.stops.count >= 2 else { return nil }
+            var segIdx = d.stops.count - 2
+            for i in 0..<(d.stops.count - 1) {
+                if d.stops[i].minutesFromOrigin <= elapsedMin && elapsedMin < d.stops[i + 1].minutesFromOrigin {
+                    segIdx = i
+                    break
+                }
+            }
+            let from = d.stops[segIdx]
+            let to = d.stops[segIdx + 1]
+            let segDur = to.minutesFromOrigin - from.minutesFromOrigin
+            let frac = segDur > 0 ? min(max((elapsedMin - from.minutesFromOrigin) / segDur, 0), 1) : 0
+
+            let coords = StationCoordinateLookup.shared
+            guard let fc = coords.coordinate(for: from.stationId),
+                  let tc = coords.coordinate(for: to.stationId) else { return nil }
+            let fromCoord = CLLocationCoordinate2D(latitude: fc.lat, longitude: fc.lon)
+            let toCoord = CLLocationCoordinate2D(latitude: tc.lat, longitude: tc.lon)
+
+            if let cache = cachedPolyline(for: d.lineId) {
+                let startDist = arcDistance(to: fromCoord, cache: cache)
+                let endDist = arcDistance(to: toCoord, cache: cache)
+                let target = startDist + (endDist - startDist) * frac
+                return coordAt(distance: target, polyline: cache.polyline, cumulative: cache.cumulative)
+            }
+            // Chord fallback for lines without an OSM shape (A1-A4).
+            return CLLocationCoordinate2D(
+                latitude: fromCoord.latitude + (toCoord.latitude - fromCoord.latitude) * frac,
+                longitude: fromCoord.longitude + (toCoord.longitude - fromCoord.longitude) * frac
+            )
         }
 
         // MARK: - Polyline distance helpers

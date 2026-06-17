@@ -498,8 +498,21 @@ struct SimulatedTrain: Identifiable {
     let destinationName: String
     let currentStationName: String
     let nextStationName: String
+    /// Last-known coordinate snapshot. Useful for the bottom sheet
+    /// distance display. The Map view IGNORES this field and recomputes
+    /// the live coordinate every frame from `originEpoch + stops` so
+    /// the train moves continuously instead of jumping between
+    /// simulator ticks.
     let coordinate: CLLocationCoordinate2D
     let isAirportService: Bool
+    // Per-frame position inputs. Filled by TrainSimulatorService when
+    // the train is built. Empty stops + 0 epoch are treated as "not
+    // enough info, fall back to coordinate snapshot".
+    let originEpoch: TimeInterval
+    let totalTravelMinutes: Int
+    /// Pre-resolved (stationId, minutesFromOrigin) for the train's
+    /// direction. Already ordered by stop_sequence.
+    let stops: [(stationId: String, minutesFromOrigin: Double)]
 }
 
 // MARK: - Train Simulator Service
@@ -613,6 +626,7 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
             let toName = stationCoords.englishName(for: to.stationId) ?? to.stationId
             let isAirport = train.lineId == "M3_AIR"
 
+            let stopTuples = stops.map { (stationId: $0.stationId, minutesFromOrigin: $0.minutesFromOrigin) }
             result.append(SimulatedTrain(
                 id: train.id,
                 lineId: displayLineId,
@@ -623,7 +637,10 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
                 currentStationName: fromName,
                 nextStationName: toName,
                 coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                isAirportService: isAirport
+                isAirportService: isAirport,
+                originEpoch: train.originDepartureEpoch,
+                totalTravelMinutes: train.totalTravelMinutes,
+                stops: stopTuples
             ))
         }
         return result
