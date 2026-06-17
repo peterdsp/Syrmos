@@ -33,8 +33,9 @@ LINE_SOURCES = {
     "M1": "https://www.stasy.gr/en/timetables/line-1/",
     "M2": "https://www.stasy.gr/en/timetables/line-2/",
     "M3": "https://www.stasy.gr/en/timetables/line-3/",
-    "T6": "https://www.stasy.gr/en/timetables/line-6/",
-    "T7": "https://www.stasy.gr/en/timetables/line-7/",
+    # Tram lines T6 + T7 share the same STASY page; parse_line scopes by
+    # the direction-title row to split them.
+    "TRAM": "https://www.stasy.gr/en/timetables/tram/",
 }
 
 # STASY's table titles encode direction. We key the desired entries on a
@@ -84,13 +85,17 @@ STATION_NAME_TO_ID = {
         "AIRPORT": "M3_AER",
     },
     "T6": {
-        # T6 stop names are long; only seed the ones the projector currently
-        # surfaces. The scraper falls back gracefully when a name doesn't
-        # match by skipping the row.
-        "SYNTAGMA": "T6_SYN", "PIKRODAFNI": "T6_PIK",
+        "SYNTAGMA": "T6_SYN", "ZAPPIO": "T6_ZAP", "FIX": "T6_FIX",
+        "KASOMOULI": "T6_KAS", "NEOS KOSMOS": "T6_NEO", "PANAGITSA": "T6_PAN",
+        "AGIOS IOANNIS": "T6_AGI", "DAFNI": "T6_DAF", "AGHIA PARASKEVI": "T6_APA",
+        "AEGEOU": "T6_AEG", "EDEM": "T6_EDE", "AMFITHEAS": "T6_AMF",
+        "PIKRODAFNI": "T6_PIK",
     },
     "T7": {
         "AKTI POSEIDONOS": "T7_AKT", "ASKLIPIIO VOULAS": "T7_ASK",
+        "S.E.F.": "T7_SEF", "NEO FALIRO": "T7_NEO", "MOSCHATO": "T7_MOS",
+        "KALLITHEA": "T7_KAL", "TROCADERO": "T7_TRO", "BATIS": "T7_BAT",
+        "ELLINIKO": "T7_ELL", "AGHIOS ALEXANDROS": "T7_AAL",
     },
 }
 
@@ -123,8 +128,10 @@ def parse_line(line_id: str, html: str) -> list[dict]:
     if not cells:
         return out
 
-    # A table is a contiguous run of rows where row 1 contains headers. We
-    # detect a table boundary whenever cell ('A', 1, ...) appears.
+    # A table is a contiguous run of cells where the smallest data-y is the
+    # header row. STASY publishes some pages (metro) with the header at
+    # y=1 and others (tram) with a title row at y=1 and the actual header
+    # at y=2. Split tables on every reset to column A row 1.
     tables: list[list[tuple[str, int, str]]] = []
     current: list[tuple[str, int, str]] = []
     for c in cells:
@@ -135,95 +142,159 @@ def parse_line(line_id: str, html: str) -> list[dict]:
     if current:
         tables.append(current)
 
-    # We only care about tables whose first row contains "FIRST" and "LAST"
-    # in the header — those are the first/last-train tables. Travel-time
-    # tables have "STATION" and "MINUTES" as headers and are skipped.
-    name_to_id = STATION_NAME_TO_ID.get(line_id, {})
-    line_dirs = LINE_DIRECTIONS.get(line_id, ())
+    # We only care about tables whose header row contains "FIRST" + "LAST".
+    # Travel-time tables (STATION/MINUTES) are skipped. The header row may
+    # be y=1 (metro) or y=2 (tram), so detect it dynamically.
     for table in tables:
         by_row: dict[int, dict[str, str]] = {}
         for col, row, val in table:
             by_row.setdefault(row, {})[col] = val
-        header = by_row.get(1, {})
-        header_vals = " | ".join(header.get(c, "") for c in sorted(header))
-        if "FIRST" not in header_vals.upper() or "LAST" not in header_vals.upper():
+        # Find the row that holds FIRST + LAST column labels.
+        header_row_idx = None
+        for r in sorted(by_row):
+            vals = " | ".join(by_row[r].values()).upper()
+            if "FIRST" in vals and "LAST" in vals:
+                header_row_idx = r
+                break
+        if header_row_idx is None:
             continue
-        # Direction inference: look at the first non-empty data row's
-        # FROM STATION value and match against LINE_DIRECTIONS.
-        row_data = [by_row[r] for r in sorted(by_row) if r > 1]
+        header = by_row[header_row_idx]
+        # Data rows are everything below the header.
+        row_data = [by_row[r] for r in sorted(by_row) if r > header_row_idx]
         if not row_data:
             continue
+
+        # Tram page lists T6 and T7 as separate tables on one URL; each
+        # table's first data row's "FROM STATION" tells us which line.
+        # Resolve the line_id_to_use per-table.
+        line_id_to_use, name_to_id, line_dirs = _resolve_line(line_id, row_data)
+        if line_id_to_use is None or name_to_id is None or not line_dirs:
+            continue
+
+        # Direction inference only needs the first row's station name —
+        # the last row varies between "ARRIVAL AT X STATION" (M1) and
+        # OASA footnotes ("Note: ...") on other lines. The first row is
+        # always the table's starting terminal.
         first_station = (row_data[0].get("A") or "").strip().upper()
-        last_station = (row_data[-1].get("A") or "").strip().upper()
-        # STASY's last row is "ARRIVAL AT X STATION" rather than the bare
-        # station name, so we substring-match the terminal against it and
-        # rely on the first row's exact match for direction inference.
         direction: str | None = None
         end_station_default: str | None = None
         outbound, inbound = line_dirs
-        if first_station == outbound[0] and outbound[1] in last_station:
+        if first_station == outbound[0]:
             direction = "outbound"
             end_station_default = name_to_id.get(outbound[1])
-        elif first_station == inbound[0] and inbound[1] in last_station:
+        elif first_station == inbound[0]:
             direction = "inbound"
             end_station_default = name_to_id.get(inbound[1])
         if direction is None or end_station_default is None:
             continue
 
-        # Map header columns -> what each column represents. Column 0 is
-        # "FROM STATION", column 1 is "FIRST", column 2 is "LAST", and any
-        # subsequent column is a short-turn destination encoded in the
-        # header like "LAST (UP TO OMONIA STATION)".
-        col_kind: dict[str, tuple[str, str | None]] = {}
+        # Map header columns -> (kind, day_types, end_station_override).
+        # kind: "from_station" / "first" / "last" / "short" / "ignore"
+        # day_types: list of day_type strings this column applies to
+        # end_station_override: short-turn terminal when kind == "short",
+        #   otherwise None (last regular train uses line terminal).
+        col_kind: dict[str, tuple[str, list[str], str | None]] = {}
         for col, val in header.items():
             up = val.upper()
-            if "FROM STATION" in up or "STATION" == up:
-                col_kind[col] = ("from_station", None)
-            elif up == "FIRST":
-                col_kind[col] = ("first", None)
-            elif up == "LAST":
-                col_kind[col] = ("last", end_station_default)
-            elif up.startswith("LAST (UP TO"):
-                m = re.search(r"UP TO ([A-Z\s]+?)(?:\s*STATION)?\)", up)
-                short_dest = m.group(1).strip() if m else None
-                short_id = name_to_id.get(short_dest) if short_dest else None
-                if short_id:
-                    col_kind[col] = ("short", short_id)
+            if "FROM STATION" in up or up == "STATION":
+                col_kind[col] = ("from_station", [], None)
+                continue
+            if "FIRST" in up:
+                col_kind[col] = ("first", _qualifier_day_types(up), None)
+                continue
+            if up.startswith("LAST"):
+                short_m = re.search(r"UP TO ([A-Z\s]+?)(?:\s*STATION)?\)", up)
+                if short_m:
+                    short_dest = short_m.group(1).strip()
+                    short_id = name_to_id.get(short_dest)
+                    if short_id:
+                        col_kind[col] = ("short", _qualifier_day_types(up), short_id)
+                    else:
+                        col_kind[col] = ("ignore", [], None)
+                elif "AIRPORT" in up:
+                    # M3 has a "LAST (AIRPORT)" column meaning the last
+                    # train on the airport branch. Routed under M3_AIR.
+                    col_kind[col] = ("last_airport", _qualifier_day_types(up), end_station_default)
                 else:
-                    col_kind[col] = ("ignore", None)
+                    col_kind[col] = ("last", _qualifier_day_types(up), end_station_default)
+                continue
+            col_kind[col] = ("ignore", [], None)
+
+        from_col = next((c for c, k in col_kind.items() if k[0] == "from_station"), None)
+        if from_col is None:
+            continue
 
         for row in row_data:
-            station_name = (row.get(next(c for c, k in col_kind.items() if k[0] == "from_station"), "") or "").strip().upper()
+            station_name = (row.get(from_col, "") or "").strip().upper()
             from_id = name_to_id.get(station_name)
             if not from_id:
                 continue
             for col, val in row.items():
-                kind, end_id = col_kind.get(col, ("ignore", None))
-                if kind in ("ignore", "from_station"):
+                kind, day_types, end_override = col_kind.get(col, ("ignore", [], None))
+                if kind in ("ignore", "from_station", "first"):
                     continue
                 time_str = (val or "").strip()
                 if not re.fullmatch(r"\d{2}:\d{2}", time_str):
                     continue
-                if kind == "first":
-                    # We don't store FIRST rows currently — the projector
-                    # uses rule.openTime + band emission for first slots.
-                    continue
+                end_id = end_override if kind == "short" else end_station_default
                 if end_id is None:
                     continue
-                # STASY publishes one table per line per direction with
-                # one row per day_type combined. We tag everything as
-                # mon_thu since the published table represents weekday
-                # service. (Future enhancement: scrape per-day tables.)
-                out.append({
-                    "line_id": line_id,
-                    "day_type": "mon_thu",
-                    "direction": direction,
-                    "from_station_id": from_id,
-                    "time": time_str,
-                    "end_station_id": end_id,
-                    "label": kind,
-                })
+                target_line = "M3_AIR" if kind == "last_airport" else line_id_to_use
+                normalized_label = "short" if kind == "short" else "last"
+                for dt in (day_types or ["mon_thu"]):
+                    out.append({
+                        "line_id": target_line,
+                        "day_type": dt,
+                        "direction": direction,
+                        "from_station_id": from_id,
+                        "time": time_str,
+                        "end_station_id": end_id,
+                        "label": normalized_label,
+                    })
     return out
+
+
+def _qualifier_day_types(header_upper: str) -> list[str]:
+    """Parse the parenthetical on a FIRST/LAST column header and return
+    the matching day_type strings. Unrecognised qualifiers (including
+    bare 'FIRST' / 'LAST') default to mon_thu, which is OASA's regular
+    weekday slot."""
+    # Strip everything before the open paren
+    m = re.search(r"\(([^)]+)\)", header_upper)
+    if not m:
+        return ["mon_thu"]
+    q = m.group(1).strip()
+    # Normalize separators
+    q = q.replace("&AMP;", "&").replace("&", "&").replace("  ", " ")
+    types: list[str] = []
+    if "MONDAY" in q and ("THURSDAY" in q or "FRIDAY" in q):
+        types.append("mon_thu")
+    if "FRIDAY" in q and "MONDAY" not in q:
+        types.append("fri")
+    if "SUNDAY" in q:
+        types.append("sun")
+    if "SATURDAY" in q:
+        types.append("sat")
+    if "AIRPORT" in q and not types:
+        # Bare "(AIRPORT)" header: use the regular weekday slot.
+        types.append("mon_thu")
+    return types or ["mon_thu"]
+
+
+def _resolve_line(scrape_key: str, row_data: list[dict]) -> tuple[str | None, dict | None, tuple | None]:
+    """Pick the line_id, station map, and direction tuple for a given
+    table. For metro pages the scrape key is the line id directly. The
+    tram page mixes T6 + T7 in successive tables; the first data row's
+    station name decides which line this table belongs to."""
+    if scrape_key in ("M1", "M2", "M3"):
+        return scrape_key, STATION_NAME_TO_ID.get(scrape_key), LINE_DIRECTIONS.get(scrape_key)
+    if scrape_key == "TRAM":
+        first_name = (row_data[0].get("A") or "").strip().upper()
+        for candidate in ("T6", "T7"):
+            terms = STATION_NAME_TO_ID.get(candidate, {})
+            if first_name in terms:
+                return candidate, terms, LINE_DIRECTIONS.get(candidate)
+    return None, None, None
 
 
 def write_rows(conn: sqlite3.Connection, rows: list[dict], source_url: str) -> int:
