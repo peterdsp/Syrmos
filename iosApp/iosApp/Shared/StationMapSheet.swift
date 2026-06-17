@@ -51,42 +51,85 @@ struct StationMapSheet: View {
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 240)
 
-            VStack(spacing: 10) {
-                HStack(spacing: 8) {
+            VStack(spacing: 12) {
+                HStack(spacing: 6) {
                     ForEach(station.lineIds, id: \.self) { lineId in
-                        HStack(spacing: 4) {
+                        HStack(spacing: 5) {
                             Circle()
                                 .fill(SyrmosData.lineColor(for: lineId))
-                                .frame(width: 8, height: 8)
-                            Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                                .font(.caption)
+                                .frame(width: 7, height: 7)
+                            Text(shortLineLabel(for: lineId))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.primary)
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(uiColor: .tertiarySystemGroupedBackground))
-                        .clipShape(Capsule())
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    Capsule().strokeBorder(
+                                        SyrmosData.lineColor(for: lineId).opacity(0.4),
+                                        lineWidth: 0.8
+                                    )
+                                )
+                        )
                     }
                     Spacer()
                 }
 
                 Button(action: openDirections) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                            .font(.headline)
                         Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : loc.language == .albanian ? "Udhëzime navigimi" : "Get directions")
-                            .fontWeight(.semibold)
+                            .font(.body.weight(.semibold))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.accentColor)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 14)
+                    .foregroundStyle(Color.accentColor)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
                 }
+                .buttonStyle(.plain)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
-        .background(Color.syrmosBackground.ignoresSafeArea())
-        .presentationDetents([.large])
+        .background(
+            // Liquid-glass sheet body. The material picks up colour from
+            // whatever's behind the sheet (map tiles) and keeps the sheet
+            // feeling translucent rather than a solid card pasted on top.
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+        )
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationBackground(.ultraThinMaterial)
+    }
+
+    private func shortLineLabel(for lineId: String) -> String {
+        switch lineId {
+        case "M1": return "M1"
+        case "M2": return "M2"
+        case "M3", "M3_AIR": return "M3"
+        case "T6": return "T6"
+        case "T7": return "T7"
+        case "A1": return "A1"
+        case "A2": return "A2"
+        case "A3": return "A3"
+        case "A4": return "A4"
+        default:   return lineId
+        }
     }
 
     private var routePolylines: [RouteLine] {
