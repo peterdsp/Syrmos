@@ -25,9 +25,14 @@ struct StationMapSheet: View {
                     Text(loc.language == .greek ? station.nameEl : station.name)
                         .font(.title3)
                         .fontWeight(.semibold)
-                    Text(loc.language == .greek ? station.name : station.nameEl)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    // Subtitle only meaningful in Greek mode (the Greek title
+                    // benefits from a Latin transliteration underneath). Non-
+                    // Greek users get a single Latin name, no Greek subtitle.
+                    if loc.language == .greek {
+                        Text(station.name)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 Button {
