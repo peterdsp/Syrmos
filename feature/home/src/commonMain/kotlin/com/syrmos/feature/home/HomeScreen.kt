@@ -268,7 +268,11 @@ private fun ServiceStatusPill(
     status: STASYServiceStatus,
     lang: AppLanguage,
 ) {
-    val message = if (lang == AppLanguage.GREEK) status.rawMessage else status.rawMessageEn
+    val message = when (lang) {
+        AppLanguage.GREEK -> status.rawMessage
+        AppLanguage.ALBANIAN -> status.rawMessageSq.ifEmpty { status.rawMessageEn.ifEmpty { status.rawMessage } }
+        else -> status.rawMessageEn.ifEmpty { status.rawMessage }
+    }
     if (message.isBlank()) return
     val bg = if (status.isAlert) Color(0x1FFF9800) else Color(0x1A4CAF50)
     val accent = if (status.isAlert) Color(0xFFE65100) else Color(0xFF2E7D32)

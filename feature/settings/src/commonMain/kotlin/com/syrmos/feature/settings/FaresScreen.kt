@@ -206,14 +206,18 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (product.validity.isNotEmpty()) {
+            val displayValidity = when (lang) {
+                AppLanguage.ALBANIAN -> product.validitySq.ifEmpty { product.validity }
+                else -> product.validity
+            }
+            if (displayValidity.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .background(badgeColor(product).copy(alpha = 0.18f), CircleShape)
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
-                        text = product.validity,
+                        text = displayValidity,
                         style = MaterialTheme.typography.labelSmall,
                         color = badgeColor(product),
                     )

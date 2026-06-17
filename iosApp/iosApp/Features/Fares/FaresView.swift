@@ -264,8 +264,9 @@ private struct FareCard: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            if !product.validity.isEmpty {
-                Text(product.validity)
+            let displayValidity = product.localizedValidity(loc.language)
+            if !displayValidity.isEmpty {
+                Text(displayValidity)
                     .font(.caption2)
                     .fontWeight(.medium)
                     .padding(.horizontal, 8)

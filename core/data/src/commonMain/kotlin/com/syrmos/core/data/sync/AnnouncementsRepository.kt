@@ -75,12 +75,14 @@ class AnnouncementsRepository(
         val status: String = "unknown",
         val rawMessage: String = "",
         @SerialName("rawMessageEn") val rawMessageEn: String = "",
+        @SerialName("rawMessageSq") val rawMessageSq: String = "",
         val serviceUntil: String? = null,
     ) {
         fun toModel(): STASYServiceStatus = STASYServiceStatus(
             status = status,
             rawMessage = rawMessage,
             rawMessageEn = rawMessageEn.ifBlank { rawMessage },
+            rawMessageSq = rawMessageSq,
             serviceUntil = serviceUntil,
         )
     }
@@ -90,7 +92,11 @@ class AnnouncementsRepository(
         val id: String,
         val title: String,
         @SerialName("titleEn") val titleEn: String = "",
+        @SerialName("titleSq") val titleSq: String = "",
         val date: String = "",
+        val summary: String = "",
+        @SerialName("summaryEn") val summaryEn: String = "",
+        @SerialName("summarySq") val summarySq: String = "",
         val url: String = "",
         val category: String = "",
         @SerialName("affectedLines") val affectedLines: List<String> = emptyList(),
@@ -102,7 +108,11 @@ class AnnouncementsRepository(
             id = id,
             title = title,
             titleEn = titleEn.ifBlank { title },
+            titleSq = titleSq,
             date = date,
+            summary = summary,
+            summaryEn = summaryEn,
+            summarySq = summarySq,
             url = url,
             isServiceAlert = category == "serviceAlert",
             affectedLines = affectedLines,

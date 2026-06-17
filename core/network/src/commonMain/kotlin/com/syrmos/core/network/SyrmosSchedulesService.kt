@@ -192,6 +192,7 @@ class SyrmosSchedulesService(
         @SerialName("fullPriceEur") val fullPriceEur: Double? = null,
         @SerialName("discountedPriceEur") val discountedPriceEur: Double? = null,
         val validity: String = "",
+        @SerialName("validitySq") val validitySq: String = "",
         val notes: String = "",
         @SerialName("notesSq") val notesSq: String = "",
         val tags: List<String> = emptyList(),

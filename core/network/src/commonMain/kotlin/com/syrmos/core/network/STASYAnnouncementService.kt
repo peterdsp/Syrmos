@@ -13,7 +13,11 @@ data class STASYAnnouncement(
     val id: String,
     val title: String,
     val titleEn: String,
+    val titleSq: String = "",
     val date: String,
+    val summary: String = "",
+    val summaryEn: String = "",
+    val summarySq: String = "",
     val url: String,
     val isServiceAlert: Boolean,
     val affectedLines: List<String> = emptyList(),
@@ -28,6 +32,7 @@ data class STASYServiceStatus(
     val status: String,
     val rawMessage: String,
     val rawMessageEn: String,
+    val rawMessageSq: String = "",
     val serviceUntil: String?,
 ) {
     val isAlert: Boolean get() = status == "alert"
@@ -69,6 +74,7 @@ class STASYAnnouncementService(
                     status = it.status,
                     rawMessage = it.rawMessage,
                     rawMessageEn = it.rawMessageEn.ifBlank { it.rawMessage },
+                    rawMessageSq = it.rawMessageSq,
                     serviceUntil = it.serviceUntil,
                 )
             }
@@ -77,7 +83,11 @@ class STASYAnnouncementService(
                     id = item.id,
                     title = item.title,
                     titleEn = item.titleEn.ifBlank { item.title },
+                    titleSq = item.titleSq,
                     date = item.date,
+                    summary = item.summary,
+                    summaryEn = item.summaryEn,
+                    summarySq = item.summarySq,
                     url = item.url,
                     isServiceAlert = item.category == CATEGORY_SERVICE_ALERT,
                     affectedLines = item.affectedLines,
@@ -105,6 +115,7 @@ class STASYAnnouncementService(
         val status: String = "unknown",
         val rawMessage: String = "",
         @SerialName("rawMessageEn") val rawMessageEn: String = "",
+        @SerialName("rawMessageSq") val rawMessageSq: String = "",
         val serviceUntil: String? = null,
     )
 
@@ -113,9 +124,11 @@ class STASYAnnouncementService(
         val id: String,
         val title: String,
         @SerialName("titleEn") val titleEn: String = "",
+        @SerialName("titleSq") val titleSq: String = "",
         val date: String = "",
         val summary: String = "",
         @SerialName("summaryEn") val summaryEn: String = "",
+        @SerialName("summarySq") val summarySq: String = "",
         val url: String = "",
         val category: String = "",
         @SerialName("affectedLines") val affectedLines: List<String> = emptyList(),

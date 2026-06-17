@@ -170,20 +170,52 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             except sqlite3.OperationalError:
                 return [], False
 
-    status_rows, _ = _safe_select(
-        "SELECT status, raw_message, raw_message_en, service_until, scraped_at"
-        " FROM stasy_status WHERE id = 1",
+    # Try newest schema (raw_message_sq, migration 0016) first and walk
+    # backwards to the bare schema so an older Pi still serves a payload.
+    status_row = None
+    for sql in (
+        "SELECT status, raw_message, raw_message_en, raw_message_sq,"
+        " service_until, scraped_at FROM stasy_status WHERE id = 1",
+        "SELECT status, raw_message, raw_message_en, service_until,"
+        " scraped_at FROM stasy_status WHERE id = 1",
         "SELECT status, raw_message, service_until, scraped_at"
         " FROM stasy_status WHERE id = 1",
-    )
-    status_row = status_rows[0] if status_rows else None
-    rows, has_en = _safe_select(
-        "SELECT id, title, title_en, summary, summary_en, url, date, category,"
-        " affected_lines, severity, valid_from, valid_until"
-        " FROM announcements ORDER BY sort_order",
-        "SELECT id, title, summary, url, date, category"
-        " FROM announcements ORDER BY sort_order",
-    )
+    ):
+        try:
+            rows = conn.execute(sql).fetchall()
+            if rows:
+                status_row = rows[0]
+            break
+        except sqlite3.OperationalError:
+            continue
+    rows = []
+    has_en = False
+    has_sq = False
+    for sql, en_flag, sq_flag in (
+        (
+            "SELECT id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+            " url, date, category, affected_lines, severity, valid_from, valid_until"
+            " FROM announcements ORDER BY sort_order",
+            True, True,
+        ),
+        (
+            "SELECT id, title, title_en, summary, summary_en, url, date, category,"
+            " affected_lines, severity, valid_from, valid_until"
+            " FROM announcements ORDER BY sort_order",
+            True, False,
+        ),
+        (
+            "SELECT id, title, summary, url, date, category"
+            " FROM announcements ORDER BY sort_order",
+            False, False,
+        ),
+    ):
+        try:
+            rows = conn.execute(sql).fetchall()
+            has_en, has_sq = en_flag, sq_flag
+            break
+        except sqlite3.OperationalError:
+            continue
 
     if status_row:
         cols = status_row.keys()
@@ -191,11 +223,12 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "status": status_row["status"],
             "rawMessage": status_row["raw_message"],
             "rawMessageEn": status_row["raw_message_en"] if "raw_message_en" in cols else status_row["raw_message"],
+            "rawMessageSq": status_row["raw_message_sq"] if "raw_message_sq" in cols else "",
             "serviceUntil": status_row["service_until"],
             "scrapedAt": status_row["scraped_at"],
         }
     else:
-        status_payload = {"status": "unknown", "rawMessage": "", "rawMessageEn": "", "serviceUntil": None, "scrapedAt": ""}
+        status_payload = {"status": "unknown", "rawMessage": "", "rawMessageEn": "", "rawMessageSq": "", "serviceUntil": None, "scrapedAt": ""}
 
     def _decode_lines(raw: str) -> list[str]:
         if not raw:
@@ -249,8 +282,10 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "id": r["id"],
             "title": r["title"],
             "titleEn": r["title_en"] if has_en else r["title"],
+            "titleSq": (r["title_sq"] if has_sq else "") or "",
             "summary": r["summary"],
             "summaryEn": r["summary_en"] if has_en else r["summary"],
+            "summarySq": (r["summary_sq"] if has_sq else "") or "",
             "url": r["url"],
             "date": r["date"],
             "category": r["category"],
@@ -432,26 +467,28 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
     ).fetchall()
     # Per-ticket catalogue scraped from OASA. Optional table; may not exist
     # on older Pis until migration 0008 runs.
-    try:
-        product_rows = conn.execute(
-            "SELECT section, title_en, title_el, title_sq, full_price_eur,"
-            " discounted_price_eur, validity, notes, notes_sq, tags, source_url,"
-            " sort_order, fetched_at"
-            " FROM fare_products ORDER BY section, sort_order"
-        ).fetchall()
-    except sqlite3.OperationalError:
-        # Migration 0015 (Albanian columns) may not have run yet on an
-        # older Pi; fall back to the pre-Sq column set and emit empty
-        # Albanian strings.
+    # Walk the column set from newest to oldest so a Pi behind on
+    # migrations (0016 -> 0015 -> pre-0015) still serves something.
+    product_rows = []
+    for sql in (
+        "SELECT section, title_en, title_el, title_sq, full_price_eur,"
+        " discounted_price_eur, validity, validity_sq, notes, notes_sq,"
+        " tags, source_url, sort_order, fetched_at"
+        " FROM fare_products ORDER BY section, sort_order",
+        "SELECT section, title_en, title_el, title_sq, full_price_eur,"
+        " discounted_price_eur, validity, notes, notes_sq, tags, source_url,"
+        " sort_order, fetched_at"
+        " FROM fare_products ORDER BY section, sort_order",
+        "SELECT section, title_en, title_el, full_price_eur,"
+        " discounted_price_eur, validity, notes, tags, source_url,"
+        " sort_order, fetched_at"
+        " FROM fare_products ORDER BY section, sort_order",
+    ):
         try:
-            product_rows = conn.execute(
-                "SELECT section, title_en, title_el, full_price_eur,"
-                " discounted_price_eur, validity, notes, tags, source_url,"
-                " sort_order, fetched_at"
-                " FROM fare_products ORDER BY section, sort_order"
-            ).fetchall()
+            product_rows = conn.execute(sql).fetchall()
+            break
         except sqlite3.OperationalError:
-            product_rows = []
+            continue
 
     def _opt(row, key):
         try:
@@ -468,6 +505,7 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "fullPriceEur":       r["full_price_eur"],
             "discountedPriceEur": r["discounted_price_eur"],
             "validity":           r["validity"] or "",
+            "validitySq":         _opt(r, "validity_sq") or "",
             "notes":              r["notes"] or "",
             "notesSq":            _opt(r, "notes_sq") or "",
             "tags":               [t for t in (r["tags"] or "").split(",") if t],
