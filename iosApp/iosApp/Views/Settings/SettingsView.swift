@@ -51,7 +51,14 @@ struct SyrmosSettingsView: View {
                             }
                         }
                     }
-                    .disabled(schedules.isRefreshing || schedules.offlineOnly)
+                    // Always tappable. The previous gate disabled the
+                    // button whenever the offline-only toggle was on,
+                    // but that misread the product intent: Syrmos is an
+                    // offline app by default, and Check now is the only
+                    // way the user gets fresh server data. Forcing the
+                    // user to toggle "offline mode" off first to then
+                    // tap Check now was friction with no purpose.
+                    .disabled(schedules.isRefreshing)
                 }
 
                 Section {
@@ -183,7 +190,23 @@ struct SyrmosSettingsView: View {
     @MainActor
     private func runRefresh() async {
         let before = schedules.lastSyncAt
+        // Refresh EVERY store we ship, not just the schedule rules.
+        // Previously Check now only hit /api/schedules/manifest; the
+        // fares, train timestamps, station offsets, visual overrides
+        // and live train feeds were on independent auto-poll loops
+        // that have now been disabled in favour of this single
+        // explicit pull. Sequential rather than parallel so the user
+        // sees one progress indicator and we don't flood the Pi with
+        // 6 simultaneous requests on a flaky mobile link.
         await schedules.refresh()
+        let lines = SyrmosLinesService()
+        await lines.refresh()
+        await SyrmosStationOffsetsStore.shared.refresh()
+        await SyrmosVisualOverridesStore.shared.refresh()
+        await SyrmosTrainTimestampsStore.shared.refresh()
+        await SyrmosFaresStore.shared.refresh()
+        await LivePositionsService.shared.refresh()
+        await LiveTrainService.shared.refresh()
         let after = schedules.lastSyncAt
         let lang = loc.language
 

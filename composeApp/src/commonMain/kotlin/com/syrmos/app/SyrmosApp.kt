@@ -92,15 +92,17 @@ fun SyrmosApp() {
         // Hydrate from bundled snapshot first so the projector + visuals have
         // correct data immediately, even on airplane mode. Live refresh then
         // overlays anything newer when the network is available.
+        // Offline-first: hydrate ONLY from the bundled JSON snapshot.
+        // No network refresh on app start — Syrmos is an offline app,
+        // every schedule / fare / icon / station offset ships in the
+        // bundle. The user triggers a server refresh exclusively via
+        // Settings -> Check now. Removing the auto-refresh pass that
+        // used to fire here means the app never silently talks to the
+        // Pi, which was leaking clock drift / API hiccups into the UI.
         runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
         runCatching { stationOffsets.hydrateFromBundleIfNeeded() }
         runCatching { fares.hydrateFromBundleIfNeeded() }
         runCatching { visualOverrides.hydrateFromBundleIfNeeded() }
-        runCatching { linesRefresher.refresh() }
-        runCatching { scheduleSync.refresh() }
-        runCatching { stationOffsets.refresh() }
-        runCatching { fares.refresh() }
-        runCatching { visualOverrides.refresh() }
     }
 
     SyrmosTheme {

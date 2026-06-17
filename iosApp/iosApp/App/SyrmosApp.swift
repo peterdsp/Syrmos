@@ -178,16 +178,17 @@ struct ContentView: View {
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
         .task {
+            // 100% OFFLINE on app start. The previous code refreshed six
+            // stores from the API on every ContentView appearance, which
+            // meant the app silently talked to the Pi every cold start
+            // (and every backgrounding edge that re-fired .task). That
+            // contradicts the product promise — Syrmos is an offline app
+            // that ships every schedule, fare, icon and offset in the
+            // bundled JSON. Network refreshes are now driven exclusively
+            // by the user tapping "Check now" in Settings; this .task
+            // body is reserved for diagnostics breadcrumbs only.
             _ = DiagnosticsCenter.shared
             DiagnosticsCenter.shared.leaveBreadcrumb("app", "ContentView appeared")
-
-            let svc = SyrmosLinesService()
-            await svc.refresh()
-            await SyrmosSchedulesStore.shared.refresh()
-            await SyrmosVisualOverridesStore.shared.refresh()
-            await SyrmosTrainTimestampsStore.shared.refresh()
-            await SyrmosStationOffsetsStore.shared.refresh()
-            await SyrmosFaresStore.shared.refresh()
         }
         .onChange(of: selectedTab) { _, newTab in
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")
