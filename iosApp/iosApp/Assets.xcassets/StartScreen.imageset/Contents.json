@@ -1,17 +1,29 @@
 {
   "images" : [
     {
-      "filename" : "StartScreen.jpg",
-      "idiom" : "universal",
+      "filename" : "StartScreen-iPhone@1x.jpeg",
+      "idiom" : "iphone",
       "scale" : "1x"
     },
     {
-      "idiom" : "universal",
+      "filename" : "StartScreen-iPhone@2x.jpeg",
+      "idiom" : "iphone",
       "scale" : "2x"
     },
     {
-      "idiom" : "universal",
+      "filename" : "StartScreen-iPhone@3x.jpeg",
+      "idiom" : "iphone",
       "scale" : "3x"
+    },
+    {
+      "filename" : "StartScreen-iPad@1x.jpeg",
+      "idiom" : "ipad",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "StartScreen-iPad@2x.jpeg",
+      "idiom" : "ipad",
+      "scale" : "2x"
     }
   ],
   "info" : {
