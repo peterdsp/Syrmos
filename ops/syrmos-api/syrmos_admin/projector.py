@@ -423,8 +423,34 @@ def _project_line(
             open_min = _minutes_of_day(rule["openTime"])
             close_min = _minutes_of_day(rule["closeTime"])
             if open_min is not None and close_min is not None:
-                effective_close = close_min + 24 * 60 if close_min <= open_min else close_min
-                effective_now = now_minutes + shift
+                rule_close = close_min + 24 * 60 if close_min <= open_min else close_min
+                # OASA's rule.closeTime is when the station officially
+                # shuts; the bands themselves carry the truth and often
+                # extend past that mark (M1 mon_thu rule says 00:30 but
+                # the late_night band runs to 01:30). Honour the bands
+                # so a passenger boarding at 01:25 still sees the
+                # final train of the night.
+                band_max_end = rule_close
+                for b in bundle["bands"]:
+                    if b["dayType"] != dt:
+                        continue
+                    rs = _minutes_of_day(b["timeStart"])
+                    re = _minutes_of_day(b["timeEnd"])
+                    if rs is None or re is None:
+                        continue
+                    band_end = re + (24 * 60 if re < rs else 0)
+                    if band_end > band_max_end:
+                        band_max_end = band_end
+                effective_close = max(rule_close, band_max_end)
+                # Convert today's wall-clock minute back into the rule's
+                # own clock domain. For yesterday's overnight descriptor
+                # shift = -1440 (yesterday-clock = today-clock + 1440)
+                # so we *subtract* the shift to put nowMinutes back into
+                # yesterday's frame. The previous formula used + shift,
+                # which mapped today's 01:25 to yesterday's -1355 and
+                # threw away every late-night M1 / M2 / M3 train still
+                # in transit right after midnight.
+                effective_now = now_minutes - shift
                 if effective_now < open_min or effective_now > effective_close:
                     continue
 

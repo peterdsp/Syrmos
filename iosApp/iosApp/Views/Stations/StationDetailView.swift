@@ -4,6 +4,7 @@ struct StationDetailView: View {
     let station: TransitStation
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var departures: [Departure] = []
+    @State private var hasLoadedOnce: Bool = false
     @State private var nowTick = Date()
     @State private var showMapSheet = false
     @State private var safariURL: URL?
@@ -73,8 +74,23 @@ struct StationDetailView: View {
 
             Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
                 if departures.isEmpty {
-                    Text(loc.language == .greek ? "Φόρτωση δρομολογίων..." : loc.language == .albanian ? "Duke ngarkuar oraret..." : "Loading departures...")
+                    // After the initial reload completes there's a real
+                    // distinction between "still loading" and "the
+                    // projector returned zero". hasLoadedOnce flips to
+                    // true the moment the first projection (local or
+                    // remote) lands, so subsequent empty results are
+                    // shown as a real end-of-service state instead of
+                    // an indefinite "loading" spinner.
+                    Text(hasLoadedOnce
+                         ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
+                            loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
+                            "No departures right now. The line is closed or today's service has ended.")
+                         : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
+                            loc.language == .albanian ? "Duke ngarkuar oraret..." :
+                            "Loading departures..."))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
                 } else {
                     ForEach(departures.prefix(10)) { departure in
                         let iconName = TimetablesIcons.vehicleImageName(
@@ -175,6 +191,11 @@ struct StationDetailView: View {
             } else {
                 departures = fallback
             }
+            // Flip the "we have an answer" flag exactly once. Subsequent
+            // empty results now render as "No service right now" rather
+            // than an endless "Loading…" spinner — important at 01:30
+            // when most lines have actually shut down for the night.
+            hasLoadedOnce = true
         }
     }
 

@@ -21,6 +21,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Drop the launch theme (full-screen StartScreen image set on
+        // the activity in AndroidManifest.xml) BEFORE super so the
+        // splash is only visible during the cold-start window. After
+        // super.onCreate the regular Theme.Syrmos paints behind the
+        // Compose tree as normal.
+        setTheme(R.style.Theme_Syrmos)
         super.onCreate(savedInstanceState)
 
         // Permission is requested from the onboarding flow now, not on launch.
