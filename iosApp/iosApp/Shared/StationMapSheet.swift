@@ -78,27 +78,33 @@ struct StationMapSheet: View {
                     Spacer()
                 }
 
-                Button(action: openDirections) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
-                            .font(.headline)
-                        Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : loc.language == .albanian ? "Udhëzime navigimi" : "Get directions")
-                            .font(.body.weight(.semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .foregroundStyle(Color.accentColor)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
-                    )
-                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
+                // Custom tappable view (not Button) because iOS 26 keeps
+                // re-applying its bordered-prominent treatment to any
+                // SwiftUI Button inside a sheet even when we set
+                // .buttonStyle(.plain) — the screenshot showed a solid
+                // accent-fill rectangle with white text instead of the
+                // glass capsule we configured. An onTapGesture HStack
+                // sidesteps every default Button style.
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                        .font(.headline)
+                    Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : loc.language == .albanian ? "Udhëzime navigimi" : "Get directions")
+                        .font(.body.weight(.semibold))
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .foregroundStyle(Color.accentColor)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.accentColor.opacity(0.55), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 3)
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .onTapGesture(perform: openDirections)
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
