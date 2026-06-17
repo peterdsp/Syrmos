@@ -422,7 +422,16 @@ enum ScheduleProjector {
             let closeMin = minutesOfDay(rule.closeTime)
             if !rule.is247, let openM = openMin, let closeM = closeMin {
                 let effectiveClose = closeM <= openM ? closeM + 24 * 60 : closeM
-                let effectiveNow = nowMinutes + shift
+                // Convert today's wall-clock minute back into the rule's
+                // own clock domain. For today's descriptor shift = 0 so
+                // effectiveNow == nowMinutes. For yesterday's overnight
+                // descriptor shift = -1440 (yesterday-clock = today-clock
+                // + 1440), so we *subtract* the shift to put nowMinutes
+                // back into yesterday's frame. The previous formula used
+                // `+ shift`, which mapped today's 00:03 to yesterday's
+                // -1437 and threw away every late-night band on M1/M2
+                // mon_thu (open 05:00 close 00:30) right after midnight.
+                let effectiveNow = nowMinutes - shift
                 if effectiveNow < openM || effectiveNow > effectiveClose { continue }
             }
 
