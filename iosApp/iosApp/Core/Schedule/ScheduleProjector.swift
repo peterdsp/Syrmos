@@ -191,36 +191,73 @@ enum ScheduleProjector {
 
         var out: [Departure] = []
 
-        if let bundle = bundles["M3_AIR"] {
-            emitAirportSlots(
-                bundle: bundle,
-                dayType: dt,
-                cutoffMinutes: cutoffMinutes,
-                stationId: stationId,
-                lineId: "M3",
-                outboundDirectionLabel: "Airport",
-                inboundDirectionLabel: "Dimotiko Theatro",
-                into: &out
-            )
+        // Only emit per-line entries if the picked station actually
+        // sits on that line. Nikaia is on M3 (so it sees M3_AIR which
+        // shares M3's western track), it is NOT on A1 (A1 runs Piraeus
+        // -> Airport via SKA, never touches Nikaia). Emitting A1 rows
+        // here would tell the user "A1 Piraeus-Airport towards Airport
+        // 04:00" at a station the train never visits.
+        let stationLineIds = Set(AirportData.station(for: stationId).lineIds)
+
+        if stationLineIds.contains("M3") || stationLineIds.contains("M3_AIR") {
+            if let bundle = bundles["M3_AIR"] {
+                emitAirportSlots(
+                    bundle: bundle,
+                    dayType: dt,
+                    cutoffMinutes: cutoffMinutes,
+                    stationId: stationId,
+                    lineId: "M3",
+                    outboundDirectionLabel: "Airport",
+                    inboundDirectionLabel: "Dimotiko Theatro",
+                    into: &out
+                )
+            }
         }
 
         // A1 bands carry direction = "both"; we emit a pair (one per
         // direction) for each slot so the picker can split them into
         // To Airport / From Airport sections.
-        if let bundle = bundles["A1"] {
-            emitAirportSlots(
-                bundle: bundle,
-                dayType: dt,
-                cutoffMinutes: cutoffMinutes,
-                stationId: stationId,
-                lineId: "A1",
-                outboundDirectionLabel: "Airport",
-                inboundDirectionLabel: "Piraeus",
-                into: &out
-            )
+        if stationLineIds.contains("A1") {
+            if let bundle = bundles["A1"] {
+                emitAirportSlots(
+                    bundle: bundle,
+                    dayType: dt,
+                    cutoffMinutes: cutoffMinutes,
+                    stationId: stationId,
+                    lineId: "A1",
+                    outboundDirectionLabel: "Airport",
+                    inboundDirectionLabel: "Piraeus",
+                    into: &out
+                )
+            }
         }
 
         return out.sorted { $0.minutesAway < $1.minutesAway }
+    }
+
+    /// Resolves the time-from-origin for a station on an airport line.
+    /// M3_AIR trains physically share the M3 western track from
+    /// Dimotiko Theatro to Doukissis Plakentias, so a city-section
+    /// stop like Nikaia or Korydallos has its offset registered under
+    /// M3, not M3_AIR. Falling back lets the displayed clock time
+    /// match when the train actually passes the station instead of
+    /// just echoing the line-origin departure.
+    private static func airportStationOffset(
+        stationId: String,
+        lineId: String,
+        direction: String
+    ) -> Int {
+        let store = SyrmosStationOffsetsStore.shared
+        let primary = store.offsetMinutes(
+            lineId: lineId, direction: direction, stationId: stationId
+        )
+        if primary > 0 { return primary }
+        if lineId == "M3_AIR" {
+            return store.offsetMinutes(
+                lineId: "M3", direction: direction, stationId: stationId
+            )
+        }
+        return 0
     }
 
     private static func emitAirportSlots(
@@ -233,11 +270,11 @@ enum ScheduleProjector {
         inboundDirectionLabel: String,
         into out: inout [Departure]
     ) {
-        let outOffset = SyrmosStationOffsetsStore.shared.offsetMinutes(
-            lineId: bundle.lineId, direction: "outbound", stationId: stationId
+        let outOffset = airportStationOffset(
+            stationId: stationId, lineId: bundle.lineId, direction: "outbound"
         )
-        let inOffset = SyrmosStationOffsetsStore.shared.offsetMinutes(
-            lineId: bundle.lineId, direction: "inbound", stationId: stationId
+        let inOffset = airportStationOffset(
+            stationId: stationId, lineId: bundle.lineId, direction: "inbound"
         )
 
         for band in bundle.bands where band.dayType == dt {
