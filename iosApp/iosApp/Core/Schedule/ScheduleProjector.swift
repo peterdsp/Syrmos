@@ -421,7 +421,26 @@ enum ScheduleProjector {
             let openMin = minutesOfDay(rule.openTime)
             let closeMin = minutesOfDay(rule.closeTime)
             if !rule.is247, let openM = openMin, let closeM = closeMin {
-                let effectiveClose = closeM <= openM ? closeM + 24 * 60 : closeM
+                // Real close = whatever lasts longer between the rule's
+                // own closeTime and the last band's timeEnd for this
+                // day type. OASA's published rule.closeTime is when the
+                // station officially shuts; bands often extend past it
+                // because trains that left origin before close are still
+                // running. M2 mon_thu rule says 00:06 but the late_night
+                // band runs until 00:20; M3 mon_thu says 00:01 but the
+                // band reaches 00:20. Gating strictly on rule.closeTime
+                // threw away every late-night entry between the rule's
+                // close and the bands' real end.
+                let bandMaxEnd = bundle.bands
+                    .filter { $0.dayType == dt }
+                    .compactMap { band -> Int? in
+                        guard let rs = minutesOfDay(band.timeStart),
+                              let re = minutesOfDay(band.timeEnd) else { return nil }
+                        return re + (re < rs ? 24 * 60 : 0)
+                    }
+                    .max() ?? closeM
+                let ruleClose = closeM <= openM ? closeM + 24 * 60 : closeM
+                let effectiveClose = max(ruleClose, bandMaxEnd)
                 // Convert today's wall-clock minute back into the rule's
                 // own clock domain. For today's descriptor shift = 0 so
                 // effectiveNow == nowMinutes. For yesterday's overnight
