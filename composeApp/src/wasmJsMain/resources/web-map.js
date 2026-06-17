@@ -397,9 +397,10 @@
         const top = products.slice(0, 6);
         faresList.innerHTML = top.map((p) => {
             const eur = p.fullPriceEur != null ? `€${p.fullPriceEur.toFixed(2)}` : "";
+            const validityLocalised = pickLocalised(p, "validity") || p.validity || "";
             const sub = p.discountedPriceEur != null
                 ? `${t("reduced")} €${p.discountedPriceEur.toFixed(2)}`
-                : (p.validity || "");
+                : validityLocalised;
             return `
                 <div class="panel-item">
                     <div class="panel-item__title">${escapeHtml(pickLocalised(p, "title"))}</div>

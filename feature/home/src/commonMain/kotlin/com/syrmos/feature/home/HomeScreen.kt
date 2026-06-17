@@ -596,7 +596,11 @@ private fun AlertCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = if (lang == AppLanguage.GREEK) announcement.title else announcement.titleEn,
+                    text = when (lang) {
+                        AppLanguage.GREEK -> announcement.title
+                        AppLanguage.ALBANIAN -> announcement.titleSq.ifEmpty { announcement.titleEn.ifEmpty { announcement.title } }
+                        else -> announcement.titleEn.ifEmpty { announcement.title }
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )
