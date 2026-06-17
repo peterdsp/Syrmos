@@ -139,9 +139,7 @@ struct StationDetailView: View {
                             Spacer()
 
                             VStack(alignment: .trailing, spacing: 2) {
-                                Text(departure.minutesAway <= 1
-                                    ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
-                                    : "\(departure.minutesAway) min")
+                                Text(departure.minutesAwayDisplay(language: loc.language))
                                     .font(.headline)
                                     .foregroundStyle(arrivalColor(departure.minutesAway))
                                 Text(departure.time)

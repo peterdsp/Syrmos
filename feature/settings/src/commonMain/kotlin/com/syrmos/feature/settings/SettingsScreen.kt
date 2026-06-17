@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.rememberCoroutineScope
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
@@ -52,7 +51,6 @@ fun SettingsScreen() {
     val fares = koinInject<com.syrmos.core.data.sync.FaresRepository>()
     val visualOverrides = koinInject<com.syrmos.core.data.sync.VisualOverridesRepository>()
     val lastSync by scheduleSync.lastSyncAt.collectAsState()
-    val offlineOnly by scheduleSync.offlineOnly.collectAsState()
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
     var showContact by remember { mutableStateOf(false) }
@@ -143,27 +141,6 @@ fun SettingsScreen() {
                             else -> "Never"
                         },
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = when (lang) {
-                            AppLanguage.GREEK -> "Μόνο εκτός σύνδεσης"
-                            AppLanguage.ALBANIAN -> "Vetëm pa internet"
-                            else -> "Offline-only mode"
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Switch(
-                        checked = offlineOnly,
-                        onCheckedChange = { scheduleSync.setOfflineOnly(it) },
-                    )
-                }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 Row(
                     modifier = Modifier

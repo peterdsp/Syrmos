@@ -858,9 +858,7 @@ struct DepartureRowView: View {
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 1) {
-                Text(departure.minutesAway <= 1
-                    ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
-                    : "\(departure.minutesAway) min")
+                Text(departure.minutesAwayDisplay(language: loc.language))
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundStyle(arrivalColor)
