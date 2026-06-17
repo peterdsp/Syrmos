@@ -177,8 +177,11 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = if (lang == AppLanguage.GREEK && product.titleEl.isNotEmpty())
-                        product.titleEl else product.titleEn,
+                    text = when (lang) {
+                        AppLanguage.GREEK -> if (product.titleEl.isNotEmpty()) product.titleEl else product.titleEn
+                        AppLanguage.ALBANIAN -> if (product.titleSq.isNotEmpty()) product.titleSq else product.titleEn
+                        else -> product.titleEn
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -231,9 +234,21 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
 @Composable
 private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
     val uriHandler = LocalUriHandler.current
-    val target = if (lang == AppLanguage.GREEK) link.urlEl.ifEmpty { link.urlEn } else link.urlEn
-    val title = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn
-    val summary = if (lang == AppLanguage.GREEK) link.summaryEl else link.summaryEn
+    val target = when (lang) {
+        AppLanguage.GREEK -> link.urlEl.ifEmpty { link.urlEn }
+        AppLanguage.ALBANIAN -> link.urlSq.ifEmpty { link.urlEn }
+        else -> link.urlEn
+    }
+    val title = when (lang) {
+        AppLanguage.GREEK -> link.titleEl
+        AppLanguage.ALBANIAN -> link.titleSq.ifEmpty { link.titleEn }
+        else -> link.titleEn
+    }
+    val summary = when (lang) {
+        AppLanguage.GREEK -> link.summaryEl
+        AppLanguage.ALBANIAN -> link.summarySq.ifEmpty { link.summaryEn }
+        else -> link.summaryEn
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -265,7 +280,11 @@ private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
             if (link.bullets.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     link.bullets.forEach { bullet ->
-                        val text = if (lang == AppLanguage.GREEK) bullet.el else bullet.en
+                        val text = when (lang) {
+                            AppLanguage.GREEK -> bullet.el
+                            AppLanguage.ALBANIAN -> bullet.sq.ifEmpty { bullet.en }
+                            else -> bullet.en
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
