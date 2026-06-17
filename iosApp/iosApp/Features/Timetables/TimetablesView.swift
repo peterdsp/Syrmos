@@ -13,9 +13,14 @@ import SwiftUI
 struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
+    @StateObject private var locationService = LocationService()
     @State private var selectedStationId: String = AirportData.defaultStationId
+    @State private var dayOffset: Int = 0
     @State private var departures: [Departure] = []
     @State private var nowTick = Date()
+    /// Once the user manually picks a station we stop auto-snapping
+    /// to the nearest one on every location ping; respect their choice.
+    @State private var didAutoPickNearest: Bool = false
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
@@ -23,8 +28,22 @@ struct TimetablesView: View {
         NavigationStack {
             List {
                 Section {
+                    DayPickerRow(selectedOffset: $dayOffset)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                        .listRowBackground(Color.clear)
+                } header: {
+                    Text(loc.language == .greek ? "Ημέρα" : loc.language == .albanian ? "Dita" : "Day")
+                }
+
+                Section {
                     StationPickerRow(
-                        selectedStationId: $selectedStationId
+                        selectedStationId: Binding(
+                            get: { selectedStationId },
+                            set: { newValue in
+                                selectedStationId = newValue
+                                didAutoPickNearest = true  // lock in user choice
+                            }
+                        )
                     )
                 } header: {
                     Text(loc.language == .greek ? "Σταθμός" : loc.language == .albanian ? "Stacioni" : "Station")
@@ -75,12 +94,41 @@ struct TimetablesView: View {
                 )
             }
             .toolbar(.hidden, for: .navigationBar)
-            .onAppear(perform: reload)
+            .onAppear {
+                locationService.requestIfNeeded()
+                reload()
+            }
             .onReceive(refreshTimer) { _ in
                 nowTick = Date()
                 reload()
             }
             .onChange(of: selectedStationId) { _, _ in reload() }
+            .onChange(of: dayOffset) { _, _ in reload() }
+            .onChange(of: locationService.nearbyStations.first?.id) { _, _ in
+                autoSelectNearest()
+            }
+        }
+    }
+
+    private func autoSelectNearest() {
+        guard !didAutoPickNearest else { return }
+        // Pick the closest airport-serving stop. The nearest station in
+        // LocationService might be e.g. a tram-only stop that has no
+        // airport service; in that case fall back to the next-nearest
+        // one that does.
+        let nearest = locationService.nearbyStations.first { ns in
+            ns.station.lineIds.contains { AirportData.airportLines.contains($0) }
+        }
+        if let target = nearest {
+            // node.stationIds is the cluster's per-line ids; pick whichever
+            // one our AirportData groups know about so the picker can
+            // display it without resorting to fallback formatting.
+            let candidate = target.station.stationIds.first { AirportData.knows(id: $0) }
+                ?? target.station.id
+            if AirportData.knows(id: candidate) {
+                selectedStationId = candidate
+                didAutoPickNearest = true
+            }
         }
     }
 
@@ -116,12 +164,78 @@ struct TimetablesView: View {
     private func reload() {
         let station = AirportData.station(for: selectedStationId)
         let lineIds = station.lineIds.filter { AirportData.airportLines.contains($0) }
+        let offset = dayOffset
         Task { @MainActor in
             departures = ScheduleProjector.nextDepartures(
                 for: selectedStationId,
                 lineIds: lineIds,
-                limit: 20
+                limit: offset == 0 ? 20 : 60,
+                dayOffset: offset
             )
+        }
+    }
+}
+
+private struct DayPickerRow: View {
+    @Binding var selectedOffset: Int
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(0..<7, id: \.self) { offset in
+                    let isSelected = selectedOffset == offset
+                    Button {
+                        selectedOffset = offset
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(dayName(offset))
+                                .font(.caption2)
+                                .foregroundStyle(isSelected ? .white : .secondary)
+                            Text(dayNumber(offset))
+                                .font(.headline)
+                                .foregroundStyle(isSelected ? .white : .primary)
+                        }
+                        .frame(width: 50, height: 50)
+                        .background(
+                            Circle()
+                                .fill(isSelected ? Color.metroBlue : Color(uiColor: .secondarySystemGroupedBackground))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+
+    private func dayName(_ offset: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        if offset == 0 {
+            switch loc.language {
+            case .greek: return "ΣΗΜ"
+            case .albanian: return "SOT"
+            case .english: return "TODAY"
+            }
+        }
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: localeCode)
+        fmt.dateFormat = "EEE"
+        return fmt.string(from: date).uppercased()
+    }
+
+    private func dayNumber(_ offset: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "d"
+        return fmt.string(from: date)
+    }
+
+    private var localeCode: String {
+        switch loc.language {
+        case .greek: return "el_GR"
+        case .albanian: return "sq_AL"
+        case .english: return "en_US"
         }
     }
 }
@@ -324,5 +438,12 @@ enum AirportData {
 
     static func station(for id: String) -> Station {
         byId[id] ?? Station(id: id, name: id, nameEl: id, lineIds: [])
+    }
+
+    /// Whether the picker has a known entry for this id. Used by the
+    /// nearest-station auto-pick to filter cluster station ids down to
+    /// one the picker can actually display.
+    static func knows(id: String) -> Bool {
+        byId[id] != nil
     }
 }
