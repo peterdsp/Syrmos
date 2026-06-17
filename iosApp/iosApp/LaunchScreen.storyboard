@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22155" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="NO" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Launch View Controller-->
+        <scene sceneID="EHf-IW-A2E">
+            <objects>
+                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <!--
+                                Fullscreen launch image. contentMode = scaleAspectFill so
+                                the image always covers the entire screen on any device
+                                (cropping overflow rather than letterboxing). The previous
+                                Info.plist UILaunchScreen.UIImageName path used a
+                                centered-fit treatment which produced black bars whenever
+                                the bundled artwork was smaller than the device's native
+                                pixel dimensions (e.g. our 1290x2796 image on the iPhone
+                                17 Pro Max's 1320x2868 screen).
+                            -->
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="StartScreen" translatesAutoresizingMaskIntoConstraints="NO" id="lXg-Lk-FUS">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                            </imageView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Bcu-3y-aBp"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstAttribute="trailing" secondItem="lXg-Lk-FUS" secondAttribute="trailing" id="9Hh-Cf-Tnj"/>
+                            <constraint firstItem="lXg-Lk-FUS" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="LE7-3J-mYy"/>
+                            <constraint firstItem="lXg-Lk-FUS" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="Pkz-4n-fOJ"/>
+                            <constraint firstAttribute="bottom" secondItem="lXg-Lk-FUS" secondAttribute="bottom" id="oWE-8H-2km"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="53.435114503816796" y="375.35211267605635"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="StartScreen" width="430" height="932"/>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>
