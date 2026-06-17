@@ -57,8 +57,8 @@ struct TimetablesView: View {
                     if toAirport.isEmpty {
                         emptyRow
                     } else {
-                        ForEach(toAirport.prefix(8)) { dep in
-                            AirportRow(departure: dep, loc: loc)
+                        ForEach(toAirport) { dep in
+                            AirportRow(departure: dep, loc: loc, isToday: dayOffset == 0)
                         }
                     }
                 } header: {
@@ -73,8 +73,8 @@ struct TimetablesView: View {
                     if fromAirport.isEmpty {
                         emptyRow
                     } else {
-                        ForEach(fromAirport.prefix(8)) { dep in
-                            AirportRow(departure: dep, loc: loc)
+                        ForEach(fromAirport) { dep in
+                            AirportRow(departure: dep, loc: loc, isToday: dayOffset == 0)
                         }
                     }
                 } header: {
@@ -162,14 +162,10 @@ struct TimetablesView: View {
     }
 
     private func reload() {
-        let station = AirportData.station(for: selectedStationId)
-        let lineIds = station.lineIds.filter { AirportData.airportLines.contains($0) }
         let offset = dayOffset
         Task { @MainActor in
-            departures = ScheduleProjector.nextDepartures(
-                for: selectedStationId,
-                lineIds: lineIds,
-                limit: offset == 0 ? 20 : 60,
+            departures = ScheduleProjector.airportDeparturesForDay(
+                stationId: selectedStationId,
                 dayOffset: offset
             )
         }
@@ -309,6 +305,9 @@ private struct SectionHeader: View {
 private struct AirportRow: View {
     let departure: Departure
     let loc: LocalizationManager
+    /// On future days "5 min" is meaningless (the train isn't 5 minutes
+    /// from now). Show clock time only and skip the minutes-away tile.
+    let isToday: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -341,14 +340,20 @@ private struct AirportRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(departure.minutesAway <= 1
-                     ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
-                     : "\(departure.minutesAway) min")
-                    .font(.headline)
-                    .foregroundStyle(color(for: departure.minutesAway))
-                Text(departure.time)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                if isToday {
+                    Text(departure.minutesAway <= 1
+                         ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
+                         : "\(departure.minutesAway) min")
+                        .font(.headline)
+                        .foregroundStyle(color(for: departure.minutesAway))
+                    Text(departure.time)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(departure.time)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                }
             }
         }
         .padding(.vertical, 2)
