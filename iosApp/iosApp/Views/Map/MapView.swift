@@ -115,6 +115,7 @@ enum PreloadedData {
     }
     static let stationIconMap: [String: String] = {
         var map: [String: String] = [:]
+        // Metro + tram lines: index-aligned arrays (station N -> image N).
         let lineImageNames: [(stations: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)], images: [String])] = [
             (StationCoords.line1, StationIconNames.m1),
             (StationCoords.line2, StationIconNames.m2),
@@ -129,6 +130,22 @@ enum PreloadedData {
                     map[station.id] = config.images[index]
                 }
             }
+        }
+        // Suburban A1-A4: explicit dictionaries because the asset
+        // ordering and the timetable's stop ordering diverge (A1
+        // skips Ano Liosia + SKA that exist in the legacy "p1" set,
+        // etc). station_id -> asset name.
+        for (stationId, assetName) in StationIconNames.a1 where map[stationId] == nil {
+            map[stationId] = assetName
+        }
+        for (stationId, assetName) in StationIconNames.a2 where map[stationId] == nil {
+            map[stationId] = assetName
+        }
+        for (stationId, assetName) in StationIconNames.a3 where map[stationId] == nil {
+            map[stationId] = assetName
+        }
+        for (stationId, assetName) in StationIconNames.a4 where map[stationId] == nil {
+            map[stationId] = assetName
         }
         // Per athens_transit_icons_and_rules_package/RULES.md, at major
         // interchanges show the combined icon with every connecting line
@@ -188,6 +205,15 @@ enum VehicleIcons {
             return isInbound ? "metro_m3_left_to_dimotiko_theatro" : "metro_m3_right_to_doukissis_plakentias"
         case "T6": return isInbound ? "tram_t6_left_to_syntagma" : "tram_t6_right_to_pikrodafni"
         case "T7": return isInbound ? "tram_t7_left_to_akti_posidonos" : "tram_t7_right_to_asklipiio_voulas"
+        // Suburban sprites ship under OASA's legacy naming:
+        //   A1 -> "p1" (Piraeus <-> Airport)
+        //   A3 -> "p3" (Athens <-> Chalkida)
+        //   A4 -> "p2" (Piraeus <-> Kiato)
+        // A2 has no left/right sprite in the asset catalogue yet, so
+        // it falls through to the coloured teardrop fallback.
+        case "A1": return isInbound ? "train_p1_left_to_piraeus" : "train_p1_right_to_airport"
+        case "A3": return isInbound ? "train_p3_left_to_athens" : "train_p3_right_to_chalkida"
+        case "A4": return isInbound ? "train_p2_left_to_piraeus" : "train_p2_right_to_kiato"
         default: return nil
         }
     }

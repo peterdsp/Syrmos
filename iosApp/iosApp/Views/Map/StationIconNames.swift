@@ -132,4 +132,94 @@ enum StationIconNames {
         "tram_t7_36_kolymvitirio_ko",
         "tram_t7_37_asklipiio_voulas_av",
     ]
+
+    /// Suburban A1 (Piraeus to Airport). Asset catalogue ships the
+    /// legacy OASA naming "train_p1_*" for this route. We map by
+    /// station id rather than by sequence because the published
+    /// asset list includes Ano Liosia + SKA stops that aren't on the
+    /// current A1 timetable; a strict zip would mis-align everything
+    /// after Kato Acharnai.
+    static let a1: [String: String] = [
+        "A1_PIR": "train_p1_01_piraeus_pi",
+        "A1_LEF": "train_p1_02_lefka_le",
+        "A1_REN": "train_p1_03_rentis_re",
+        "A1_TAV": "train_p1_04_tavros_ta",
+        "A1_ROU": "train_p1_05_rouf_ro",
+        "A1_ATH": "train_p1_06_athens_at",
+        "A1_AAN": "train_p1_07_ag_anargyroi_aa",
+        "A1_PYR": "train_p1_08_pyrgos_vasilissis_pv",
+        "A1_KAC": "train_p1_09_kato_acharnai_ka",
+        "A1_MET": "train_p1_12_metamorfosi_me",
+        "A1_IRK": "train_p1_13_irakleio_ir",
+        "A1_NER": "train_p1_14_neratziotissa_ne",
+        "A1_KIF": "train_p1_15_kifisias_ki",
+        "A1_PEN": "train_p1_16_pentelis_pe",
+        "A1_DPL": "train_p1_17_doukissis_plakentias_dp",
+        "A1_PAL": "train_p1_18_pallini_pa",
+        "A1_PEK": "train_p1_19_paiania_kantza_pk",
+        "A1_KRP": "train_p1_20_koropi_ko",
+        "A1_AER": "train_p1_21_airport_ai",
+    ]
+
+    /// Suburban A2 (Ano Liosia to Airport). Assets ship under their
+    /// canonical "train_a2_*" prefix and align 1:1 with the timetable.
+    static let a2: [String: String] = [
+        "A2_ANL": "train_a2_01_ano_liosia_al",
+        "A2_ACH": "train_a2_02_acharnai_railway_center_ac",
+        "A2_MET": "train_a2_04_metamorfosi_me",
+        "A2_IRK": "train_a2_05_irakleio_ir",
+        "A2_NER": "train_a2_06_neratziotissa_ne",
+        "A2_KIF": "train_a2_07_kifisias_ki",
+        "A2_PEN": "train_a2_08_pentelis_pe",
+        "A2_DPL": "train_a2_09_doukissis_plakentias_dp",
+        "A2_PAL": "train_a2_10_pallini_pa",
+        "A2_PEK": "train_a2_11_peania_kantza_pk",
+        "A2_KRP": "train_a2_12_koropi_ko",
+        "A2_AER": "train_a2_13_airport_ai",
+    ]
+
+    /// Suburban A3 (Athens to Chalcis). Asset prefix "train_p3_*".
+    static let a3: [String: String] = [
+        "A3_ATH": "train_p3_01_athens_at",
+        "A3_AAN": "train_p3_02_ag_anargyroi_aa",
+        "A3_ACH": "train_p3_03_ska_sk",
+        "A3_AXN": "train_p3_04_acharnes_ac",
+        "A3_DEK": "train_p3_05_dekeleia_de",
+        "A3_AST": "train_p3_06_agios_stefanos_as",
+        "A3_AFI": "train_p3_07_afidnes_af",
+        "A3_SFE": "train_p3_08_sfendali_sf",
+        "A3_AVL": "train_p3_09_avlonas_av",
+        "A3_ATH2": "train_p3_10_agios_thomas_at",
+        "A3_OIN": "train_p3_11_oinofyta_oi",
+        "A3_OIN2": "train_p3_12_oinoi_oi",
+        "A3_DIL": "train_p3_13_dilesi_di",
+        "A3_AGE": "train_p3_14_agios_georgios_ag",
+        "A3_KAL": "train_p3_15_kalochori_panteichi_kp",
+        "A3_AUL": "train_p3_16_avlida_av",
+        "A3_CHA": "train_p3_17_chalkida_ch",
+    ]
+
+    /// Suburban A4 (Piraeus to Kiato). Asset prefix "train_p2_*".
+    static let a4: [String: String] = [
+        "A4_PIR": "train_p2_01_piraeus_pi",
+        "A4_LEF": "train_p2_02_lefka_le",
+        "A4_REN": "train_p2_03_rentis_re",
+        "A4_TAV": "train_p2_04_tavros_ta",
+        "A4_ROU": "train_p2_05_rouf_ro",
+        "A4_ATH": "train_p2_06_athens_at",
+        "A4_AAN": "train_p2_07_ag_anargyroi_aa",
+        "A4_PYR": "train_p2_08_pyrgos_vasilissis_pv",
+        "A4_KAC": "train_p2_09_kato_acharnai_ka",
+        "A4_ZEF": "train_p2_10_zefyri_ze",
+        "A4_ANL": "train_p2_11_ano_liosia_al",
+        "A4_ASP": "train_p2_12_aspropyrgos_as",
+        "A4_MAG": "train_p2_13_magoula_ma",
+        "A4_NEP": "train_p2_14_nea_peramos_np",
+        "A4_MEG": "train_p2_15_megara_me",
+        "A4_KIN": "train_p2_16_kineta_ki",
+        "A4_AGT": "train_p2_17_ag_theodoroi_th",
+        "A4_KOR": "train_p2_18_korinthos_ko",
+        "A4_ZEV": "train_p2_19_zevgolatio_ze",
+        "A4_KIA": "train_p2_20_kiato_ki",
+    ]
 }
