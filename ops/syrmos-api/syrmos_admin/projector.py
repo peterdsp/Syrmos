@@ -774,9 +774,33 @@ def active_trains(
                 open_min = _minutes_of_day(rule["openTime"])
                 close_min = _minutes_of_day(rule["closeTime"])
                 if open_min is not None and close_min is not None:
-                    effective_close = close_min + 24 * 60 if close_min <= open_min else close_min
-                    effective_now = now_minutes + shift
-                    # Allow some slack on either side so a train that departed
+                    rule_close = close_min + 24 * 60 if close_min <= open_min else close_min
+                    # OASA publishes rule.closeTime as "station shuts"; the
+                    # bands themselves describe when trains actually run and
+                    # commonly extend past close (M1 mon_thu bands go to
+                    # 01:30 even though the rule says 00:30). Honour the
+                    # bands so any train still in transit is counted.
+                    band_max_end = rule_close
+                    for b in bundle["bands"]:
+                        if b["dayType"] != dt:
+                            continue
+                        rs = _minutes_of_day(b["timeStart"])
+                        re = _minutes_of_day(b["timeEnd"])
+                        if rs is None or re is None:
+                            continue
+                        band_end = re + (24 * 60 if re < rs else 0)
+                        if band_end > band_max_end:
+                            band_max_end = band_end
+                    effective_close = max(rule_close, band_max_end)
+                    # Convert today's wall-clock minute back into the rule's
+                    # clock domain. For yesterday's descriptor shift = -1440
+                    # (yesterday_clock = today_clock + 1440), so we *subtract*
+                    # the shift. The previous formula used `+ shift`, which
+                    # mapped today's 00:35 to yesterday's -1405 and threw
+                    # away every late-night M1 / M2 / M3 train still in
+                    # transit right after midnight.
+                    effective_now = now_minutes - shift
+                    # 2-hour slack on either side so a train that departed
                     # right before service open or right after close is still
                     # found when interpolating its tail end.
                     if effective_now < open_min - 120 or effective_now > effective_close + 120:
