@@ -132,6 +132,23 @@ class SyrmosSchedulesService(
         @SerialName("lineId") val lineId: String,
         val rules: List<RuleEntry> = emptyList(),
         val bands: List<BandEntry> = emptyList(),
+        /// Per-(direction, fromStation, time) endpoint scraped from
+        /// stasy.gr. When a band's emitted slot matches one of these
+        /// rows, the projector overrides the displayed destination —
+        /// e.g. M1 outbound 00:30 from Piraeus actually terminates at
+        /// Omonia, not Kifissia. Empty when the line has no short-turn
+        /// data published yet (most lines other than M1).
+        @SerialName("lastTrains") val lastTrains: List<LastTrainEntry> = emptyList(),
+    )
+
+    @Serializable
+    data class LastTrainEntry(
+        @SerialName("dayType") val dayType: String,
+        @SerialName("direction") val direction: String,
+        @SerialName("fromStationId") val fromStationId: String,
+        @SerialName("time") val time: String,
+        @SerialName("endStationId") val endStationId: String,
+        @SerialName("label") val label: String = "",
     )
 
     @Serializable
