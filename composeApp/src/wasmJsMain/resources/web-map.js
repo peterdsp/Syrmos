@@ -41,6 +41,8 @@
             live: "Live",
             unknown: "unknown",
             next: "next",
+            reduced: "Reduced",
+            verify_on: "Verify on {op} ↗",
         },
         el: {
             brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
@@ -73,6 +75,8 @@
             live: "Ζωντανά",
             unknown: "άγνωστο",
             next: "επόμενος",
+            reduced: "Μειωμένο",
+            verify_on: "Επιβεβαίωση στο {op} ↗",
         },
         sq: {
             brand_subtitle: "Harta e hekurudhave të Athinës",
@@ -105,6 +109,8 @@
             live: "Drejtpërdrejt",
             unknown: "i panjohur",
             next: "tjetër",
+            reduced: "Me zbritje",
+            verify_on: "Verifiko në {op} ↗",
         },
     };
 
@@ -342,6 +348,7 @@
             const r = await fetch("https://api-syrmos.peterdsp.dev/api/fares");
             if (!r.ok) throw new Error("fares fetch failed");
             const payload = await r.json();
+            lastFaresPayload = payload;
             renderFaresPanel(payload);
             renderInfoLinksPanel(payload);
         } catch (_) {
@@ -349,6 +356,30 @@
             if (infoLinksList) infoLinksList.innerHTML = "";
         }
     })();
+
+    /// Pick the localised value of a {baseKey}En / {baseKey}El pair.
+    /// Greek users get the El field when present, every other language
+    /// (including Albanian) falls back to En. Bullets use plain `en` /
+    /// `el` keys and are handled by pickLocalisedBullet().
+    function pickLocalised(obj, baseKey) {
+        if (!obj) return "";
+        const el = obj[baseKey + "El"];
+        const en = obj[baseKey + "En"];
+        if (currentLang === "el" && el) return el;
+        return en || el || "";
+    }
+
+    function pickLocalisedBullet(b) {
+        if (!b) return "";
+        if (currentLang === "el" && b.el) return b.el;
+        return b.en || b.el || "";
+    }
+
+    // Cache the last /api/fares payload so we can re-render fares and
+    // info-links when the user flips the language without re-hitting the
+    // network. The fetch fires once on load; the cache holds whatever
+    // came back.
+    let lastFaresPayload = null;
 
     function renderFaresPanel(payload) {
         if (!faresList) return;
@@ -364,11 +395,11 @@
         faresList.innerHTML = top.map((p) => {
             const eur = p.fullPriceEur != null ? `€${p.fullPriceEur.toFixed(2)}` : "";
             const sub = p.discountedPriceEur != null
-                ? `Reduced €${p.discountedPriceEur.toFixed(2)}`
+                ? `${t("reduced")} €${p.discountedPriceEur.toFixed(2)}`
                 : (p.validity || "");
             return `
                 <div class="panel-item">
-                    <div class="panel-item__title">${escapeHtml(p.titleEn || p.titleEl || "")}</div>
+                    <div class="panel-item__title">${escapeHtml(pickLocalised(p, "title"))}</div>
                     <div class="panel-item__meta">${escapeHtml(sub)}</div>
                     <div class="panel-item__count">${eur}</div>
                 </div>
@@ -385,22 +416,34 @@
         }
         infoLinksList.innerHTML = links.map((link) => {
             const bullets = (link.bullets || []).map((b) =>
-                `<li>${escapeHtml(b.en || b.el)}</li>`
+                `<li>${escapeHtml(pickLocalisedBullet(b))}</li>`
             ).join("");
-            const summary = link.summaryEn ? `<p class="info-link__summary">${escapeHtml(link.summaryEn)}</p>` : "";
+            const localisedSummary = pickLocalised(link, "summary");
+            const summary = localisedSummary ? `<p class="info-link__summary">${escapeHtml(localisedSummary)}</p>` : "";
+            const localisedUrl = pickLocalised(link, "url") || "#";
+            const op = (link.operator || link.operatorId || "").toUpperCase();
             return `
                 <article class="info-link">
                     <header class="info-link__head">
-                        <h4 class="info-link__title">${escapeHtml(link.titleEn || "")}</h4>
-                        <span class="info-link__op">${escapeHtml((link.operator || "").toUpperCase())}</span>
+                        <h4 class="info-link__title">${escapeHtml(pickLocalised(link, "title"))}</h4>
+                        <span class="info-link__op">${escapeHtml(op)}</span>
                     </header>
                     ${summary}
                     <ul class="info-link__bullets">${bullets}</ul>
-                    <a class="info-link__verify" href="${escapeAttr(link.urlEn || link.urlEl || "#")}" target="_blank" rel="noopener">Verify on ${escapeHtml((link.operator || "").toUpperCase())} ↗</a>
+                    <a class="info-link__verify" href="${escapeAttr(localisedUrl)}" target="_blank" rel="noopener">${escapeHtml(t("verify_on", { op }))}</a>
                 </article>
             `;
         }).join("");
     }
+
+    // Re-render fares + info links when the language flips, using the
+    // cached payload so Greek bullets snap in instantly without a refetch.
+    onLanguageChange(() => {
+        if (lastFaresPayload) {
+            renderFaresPanel(lastFaresPayload);
+            renderInfoLinksPanel(lastFaresPayload);
+        }
+    });
 
     function escapeHtml(s) {
         return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
