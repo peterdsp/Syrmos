@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Syrmos" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Cold-start splash. Set on the launcher Activity in
+         AndroidManifest.xml; MainActivity.onCreate calls setTheme()
+         back to Theme.Syrmos before super.onCreate to swap out the
+         splash background once Compose can paint. Mirrors iOS
+         LaunchScreen.storyboard exactly so the first frame on Android
+         is the same StartScreen artwork. -->
+    <style name="Theme.Syrmos.Launch" parent="android:Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@drawable/syrmos_launch</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
 </resources>

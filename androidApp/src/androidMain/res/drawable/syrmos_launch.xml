@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cold-start launch background. Mirrors iOS' LaunchScreen.storyboard:
+  full-screen bitmap centerCrop so the same StartScreen image fills the
+  screen on every device without letterboxing or black borders.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap
+            android:src="@drawable/syrmos_splash"
+            android:gravity="fill"
+            android:tileMode="disabled"/>
+    </item>
+</layer-list>
