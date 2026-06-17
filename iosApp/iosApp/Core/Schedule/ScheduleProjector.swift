@@ -71,15 +71,47 @@ enum ScheduleProjector {
             .prefix(limit)
             .map { $0 }
 
-        // 12-hour horizon: keep rolling into the next day until we hit
-        // `limit` entries or the horizon. Powers the station-detail
-        // page reached from Lines tab / Home nearest-stations — the
-        // user wants the whole night's worth of departures, including
-        // tomorrow's first morning train when today's last has already
-        // run. The roll honours each line's day_type so a Friday
-        // late-night band rolls into Saturday's 24/7 set correctly.
-        if timeHorizonMinutes > 0 && sorted.count < limit {
-            for tomorrowOffset in 1..<7 {
+        // Rollover into the next service days until we have something
+        // to show. timeHorizonMinutes is a SOFT cap on filling the
+        // 12-hour window — once we have at least one entry per
+        // (line, direction) we stop honouring the cap so the screen
+        // never falls back to "no service" when the next train is
+        // genuinely findable, even if it's 14 hours away (e.g. at
+        // 02:00 the next M3 train is 05:30, 3.5h in the user's head
+        // but 27.5h in absolute terms when "today" already rolled
+        // past midnight).
+        if timeHorizonMinutes > 0 && sorted.isEmpty {
+            outer: for tomorrowOffset in 1..<8 {
+                let extra = ScheduleProjector.nextDepartures(
+                    for: stationId,
+                    lineIds: lineIds,
+                    limit: limit,
+                    dayOffset: tomorrowOffset,
+                    timeHorizonMinutes: 0
+                )
+                let shifted = extra.map { dep -> Departure in
+                    let absolute = dep.minutesAway + tomorrowOffset * 24 * 60 - nowMinutes
+                    return Departure(
+                        time: dep.time,
+                        lineId: dep.lineId,
+                        direction: dep.direction,
+                        minutesAway: max(0, absolute),
+                        serviceType: dep.serviceType
+                    )
+                }
+                if shifted.isEmpty { continue }
+                sorted.append(contentsOf: shifted)
+                break outer
+            }
+            sorted = sorted.sorted { $0.minutesAway < $1.minutesAway }
+            if sorted.count > limit {
+                sorted = Array(sorted.prefix(limit))
+            }
+        } else if timeHorizonMinutes > 0 && sorted.count < limit {
+            // We have today's entries already — top off with tomorrow's
+            // morning trains within the 12-hour window so the long-list
+            // (station-detail) view shows a continuous timeline.
+            for tomorrowOffset in 1..<8 {
                 if sorted.count >= limit { break }
                 let extra = ScheduleProjector.nextDepartures(
                     for: stationId,
@@ -88,10 +120,6 @@ enum ScheduleProjector {
                     dayOffset: tomorrowOffset,
                     timeHorizonMinutes: 0
                 )
-                // Re-anchor minutesAway: nested call returned values
-                // relative to that day's 00:00. Add tomorrowOffset × 24h
-                // minus today's nowMinutes to make them honest
-                // wall-clock deltas the UI can sort and display.
                 let shifted = extra.map { dep -> Departure in
                     let absolute = dep.minutesAway + tomorrowOffset * 24 * 60 - nowMinutes
                     return Departure(
@@ -500,7 +528,15 @@ enum ScheduleProjector {
                 // -1437 and threw away every late-night band on M1/M2
                 // mon_thu (open 05:00 close 00:30) right after midnight.
                 let effectiveNow = nowMinutes - shift
-                if effectiveNow < openM || effectiveNow > effectiveClose { continue }
+                // 2-hour slack on both sides so trains DOWNSTREAM of the
+                // origin terminal still emit after the last slot leaves
+                // origin. M1 mon_thu last slot leaves Piraeus at 01:30;
+                // Tavros offset is 11 min so the last train passes
+                // Tavros at 01:41. Without slack we'd reject the band at
+                // 01:38 and Tavros would show nothing even though a
+                // train is 3 minutes away. Mirrors the slack the Pi
+                // projector has been shipping for months.
+                if effectiveNow < openM - 120 || effectiveNow > effectiveClose + 120 { continue }
             }
 
             let bands = bundle.bands
