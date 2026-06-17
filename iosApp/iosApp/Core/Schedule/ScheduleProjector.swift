@@ -156,6 +156,129 @@ enum ScheduleProjector {
         return nil
     }
 
+    // MARK: - Airport-focused full-day projection
+    //
+    // The airport tab needs the *complete* day's airport schedule from
+    // a given station, both "to airport" (outbound) and "from airport"
+    // (inbound). The general nextDepartures path is optimised for
+    // "next N from now" with per-line limits + a lookahead fallback,
+    // which collapses to ~1 visible airport entry once city-line slots
+    // fill the prefix cap. This method bypasses all of that: walks
+    // M3_AIR and A1 bundles directly for the target day_type, emits
+    // every slot, and applies station offsets so a stop mid-line
+    // displays its actual arrival time rather than the line's origin
+    // time.
+
+    static func airportDeparturesForDay(
+        stationId: String,
+        dayOffset: Int
+    ) -> [Departure] {
+        let store = SyrmosSchedulesStore.shared
+        let bundles = store.service.bundles
+        if bundles.isEmpty { return [] }
+
+        let athens = TimeZone(identifier: "Europe/Athens")!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = athens
+        let targetDate = cal.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+        let comp = cal.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: targetDate)
+        let weekday = comp.weekday ?? 1
+        let holiday = resolveHolidayDayType(month: comp.month ?? 1, day: comp.day ?? 1)
+        let dt = dayType(for: weekday, holiday: holiday)
+        let cutoffMinutes = dayOffset == 0
+            ? (comp.hour ?? 0) * 60 + (comp.minute ?? 0)
+            : 0
+
+        var out: [Departure] = []
+
+        if let bundle = bundles["M3_AIR"] {
+            emitAirportSlots(
+                bundle: bundle,
+                dayType: dt,
+                cutoffMinutes: cutoffMinutes,
+                stationId: stationId,
+                lineId: "M3",
+                outboundDirectionLabel: "Airport",
+                inboundDirectionLabel: "Dimotiko Theatro",
+                into: &out
+            )
+        }
+
+        // A1 bands carry direction = "both"; we emit a pair (one per
+        // direction) for each slot so the picker can split them into
+        // To Airport / From Airport sections.
+        if let bundle = bundles["A1"] {
+            emitAirportSlots(
+                bundle: bundle,
+                dayType: dt,
+                cutoffMinutes: cutoffMinutes,
+                stationId: stationId,
+                lineId: "A1",
+                outboundDirectionLabel: "Airport",
+                inboundDirectionLabel: "Piraeus",
+                into: &out
+            )
+        }
+
+        return out.sorted { $0.minutesAway < $1.minutesAway }
+    }
+
+    private static func emitAirportSlots(
+        bundle: SyrmosSchedulesService.LineSchedule,
+        dayType dt: String,
+        cutoffMinutes: Int,
+        stationId: String,
+        lineId: String,
+        outboundDirectionLabel: String,
+        inboundDirectionLabel: String,
+        into out: inout [Departure]
+    ) {
+        let outOffset = SyrmosStationOffsetsStore.shared.offsetMinutes(
+            lineId: bundle.lineId, direction: "outbound", stationId: stationId
+        )
+        let inOffset = SyrmosStationOffsetsStore.shared.offsetMinutes(
+            lineId: bundle.lineId, direction: "inbound", stationId: stationId
+        )
+
+        for band in bundle.bands where band.dayType == dt {
+            guard let rawStart = minutesOfDay(band.timeStart),
+                  let rawEnd = minutesOfDay(band.timeEnd),
+                  band.headwayMinutes > 0 else { continue }
+            let end = rawEnd + (rawEnd < rawStart ? 24 * 60 : 0)
+            let dir = (band.direction ?? "both").lowercased()
+            let directionsToEmit: [(label: String, offset: Int)]
+            switch dir {
+            case "outbound":
+                directionsToEmit = [(outboundDirectionLabel, outOffset)]
+            case "inbound":
+                directionsToEmit = [(inboundDirectionLabel, inOffset)]
+            default:
+                directionsToEmit = [
+                    (outboundDirectionLabel, outOffset),
+                    (inboundDirectionLabel, inOffset),
+                ]
+            }
+
+            for (label, stationOffset) in directionsToEmit {
+                var slot = Double(rawStart)
+                while slot <= Double(end) {
+                    let timeMin = Int(slot.rounded()) + stationOffset
+                    if timeMin >= cutoffMinutes {
+                        let display = ((timeMin % (24 * 60)) + 24 * 60) % (24 * 60)
+                        out.append(Departure(
+                            time: String(format: "%02d:%02d", display / 60, display % 60),
+                            lineId: lineId,
+                            direction: label,
+                            minutesAway: max(0, timeMin - cutoffMinutes),
+                            serviceType: "airport"
+                        ))
+                    }
+                    slot += band.headwayMinutes
+                }
+            }
+        }
+    }
+
     // MARK: - M3 airport branch handling
 
     private static let line3AirportOnlyStations: Set<String> = [
