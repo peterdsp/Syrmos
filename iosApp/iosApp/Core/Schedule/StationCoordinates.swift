@@ -276,11 +276,11 @@ enum StationCoords {
         "M3_DPL": ["M3", "P1"], "M3_AER": ["M3", "P1"],
         "T6_SYN": ["T6", "M2", "M3"], "T6_EDE": ["T6", "T7"], "T6_PIK": ["T6", "T7"],
         "T7_EDE": ["T7", "T6"], "T7_PIK": ["T7", "T6"],
-        "A1_PIR": ["A1", "M1"], "A1_ATH": ["A1", "M2"], "A1_NER": ["A1", "M1"],
+        "A1_PIR": ["A1", "M1", "M3"], "A1_ATH": ["A1", "M2"], "A1_NER": ["A1", "M1"],
         "A1_DPL": ["A1", "M3"], "A1_AER": ["A1", "M3"],
         "A2_NER": ["A2", "M1"], "A2_DPL": ["A2", "M3"], "A2_AER": ["A2", "M3"],
         "A3_ATH": ["A3", "M2"], "A3_AAN": ["A3"],
-        "A4_PIR": ["A4", "M1"], "A4_ATH": ["A4", "M2"],
+        "A4_PIR": ["A4", "M1", "M3"], "A4_ATH": ["A4", "M2"],
     ]
 
     static var allStations: [TransitStation] {
