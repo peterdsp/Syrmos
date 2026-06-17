@@ -123,7 +123,7 @@
     <header class="top-bar">
         <div class="brand-block">
             <div class="brand">Syrmos</div>
-            <div class="subtitle">Athens rail map</div>
+            <div class="subtitle" data-i18n="brand_subtitle">Athens rail map</div>
             <div class="store-badges">
                 <a href="https://apps.apple.com/app/id6777650671"
                    target="_blank" rel="noopener"
@@ -141,36 +141,41 @@
         <section class="search-card">
             <div class="search-input-shell">
                 <span class="search-icon" aria-hidden="true">⌕</span>
-                <input id="stationSearch" class="search-input" type="search" placeholder="Search station, Syntagma, Piraeus, Airport" aria-label="Search station">
+                <input id="stationSearch" class="search-input" type="search" placeholder="Search station, Syntagma, Piraeus, Airport" data-i18n-placeholder="search_placeholder" data-i18n-aria="search_aria" aria-label="Search station">
             </div>
             <div id="searchResults" class="search-results"></div>
         </section>
         <div class="map-controls">
+            <div id="languagePicker" class="language-picker" role="group" aria-label="Language">
+                <button class="language-pill" type="button" data-lang="en" aria-pressed="false">EN</button>
+                <button class="language-pill" type="button" data-lang="el" aria-pressed="false">EL</button>
+                <button class="language-pill" type="button" data-lang="sq" aria-pressed="false">SQ</button>
+            </div>
             <div class="zoom-controls" aria-label="Map zoom controls">
                 <button id="zoomOutButton" class="control-button" type="button" aria-label="Zoom out">−</button>
                 <button id="zoomInButton" class="control-button" type="button" aria-label="Zoom in">+</button>
             </div>
             <button id="themeToggle" class="control-button" type="button" aria-label="Toggle dark mode">☾</button>
-            <button id="vehiclesToggle" class="control-button" type="button" aria-label="Hide vehicles" title="Hide vehicles">🚇</button>
-            <button id="locateButton" class="ghost-button" type="button">Locate me</button>
+            <button id="vehiclesToggle" class="control-button" type="button" data-i18n-aria="hide_vehicles" data-i18n-title="hide_vehicles" aria-label="Hide vehicles" title="Hide vehicles">🚇</button>
+            <button id="locateButton" class="ghost-button" type="button" data-i18n="locate_me">Locate me</button>
         </div>
     </header>
 
     <aside class="insight-panel" id="insightPanel">
         <div class="panel-peek" id="panelPeek">
             <span class="panel-peek__icon">●</span>
-            <span id="panelPeekText" class="panel-peek__text">Live trains</span>
+            <span id="panelPeekText" class="panel-peek__text" data-i18n="live_trains">Live trains</span>
             <span class="panel-peek__chevron">▲</span>
         </div>
 
         <div class="panel-cards-wrap">
             <div class="panel-card">
-                <div class="panel-card__title">Live trains</div>
+                <div class="panel-card__title" data-i18n="live_trains">Live trains</div>
                 <div id="liveTrainList" class="panel-list"></div>
             </div>
 
             <div class="panel-card">
-                <div class="panel-card__title">Nearby stations</div>
+                <div class="panel-card__title" data-i18n="nearby_stations">Nearby stations</div>
                 <div id="nearbyStationList" class="panel-list"></div>
             </div>
 
@@ -178,18 +183,18 @@
                  visually hoisted into the right-hand desktop panel via
                  .insight-panel--right CSS when the viewport is wide. -->
             <div class="panel-card panel-card--right-on-desktop">
-                <div class="panel-card__title">Popular stations</div>
+                <div class="panel-card__title" data-i18n="popular_stations">Popular stations</div>
                 <div id="popularStationList" class="panel-list"></div>
             </div>
 
             <div class="panel-card panel-card--right-on-desktop">
-                <div class="panel-card__title">OASA tickets</div>
+                <div class="panel-card__title" data-i18n="oasa_tickets">OASA tickets</div>
                 <div id="faresList" class="panel-list"></div>
-                <a id="faresLink" class="panel-link" href="https://www.oasa.gr/en/tickets/prices-of-products/" target="_blank" rel="noopener">View on OASA ↗</a>
+                <a id="faresLink" class="panel-link" href="https://www.oasa.gr/en/tickets/prices-of-products/" target="_blank" rel="noopener" data-i18n="view_on_oasa">View on OASA ↗</a>
             </div>
 
             <div class="panel-card panel-card--right-on-desktop">
-                <div class="panel-card__title">Useful information</div>
+                <div class="panel-card__title" data-i18n="useful_information">Useful information</div>
                 <div id="infoLinksList" class="info-links-list"></div>
             </div>
         </div>
@@ -207,15 +212,15 @@
         <div class="sheet-handle"></div>
         <div class="sheet-header">
             <div>
-                <h2 id="stationName">Select a station</h2>
+                <h2 id="stationName" data-i18n="select_a_station">Select a station</h2>
                 <p id="stationNameEl" class="station-alt"></p>
             </div>
-            <button id="sheetClose" class="ghost-button" type="button">Done</button>
+            <button id="sheetClose" class="ghost-button" type="button" data-i18n="done">Done</button>
         </div>
 
         <div class="sheet-content">
             <div class="sheet-block">
-                <div class="sheet-label">Lines at this station</div>
+                <div class="sheet-label" data-i18n="lines_at_this_station">Lines at this station</div>
                 <div id="lineBadges" class="badge-row"></div>
             </div>
 
@@ -224,12 +229,12 @@
             </div>
 
             <div class="sheet-block">
-                <div class="sheet-label">Next departures</div>
+                <div class="sheet-label" data-i18n="next_departures">Next departures</div>
                 <div id="stationDepartures" class="departure-list"></div>
             </div>
         </div>
 
-        <a id="directionsLink" class="primary-button sheet-footer-action" href="#" target="_blank" rel="noreferrer">
+        <a id="directionsLink" class="primary-button sheet-footer-action" href="#" target="_blank" rel="noreferrer" data-i18n="get_directions">
             Get directions
         </a>
     </section>

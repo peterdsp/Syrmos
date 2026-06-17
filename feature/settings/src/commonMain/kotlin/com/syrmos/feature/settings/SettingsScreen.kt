@@ -128,9 +128,17 @@ fun SettingsScreen() {
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 SettingsRow(
-                    title = if (lang == AppLanguage.GREEK) "Τελευταία ενημέρωση" else "Last updated",
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Τελευταία ενημέρωση"
+                        AppLanguage.ALBANIAN -> "Përditësimi i fundit"
+                        else -> "Last updated"
+                    },
                     value = lastSync?.toString()?.replace("T", " ")?.substringBefore(".")
-                        ?: if (lang == AppLanguage.GREEK) "Ποτέ" else "Never",
+                        ?: when (lang) {
+                            AppLanguage.GREEK -> "Ποτέ"
+                            AppLanguage.ALBANIAN -> "Asnjëherë"
+                            else -> "Never"
+                        },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 Row(
@@ -141,7 +149,11 @@ fun SettingsScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = if (lang == AppLanguage.GREEK) "Μόνο εκτός σύνδεσης" else "Offline-only mode",
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Μόνο εκτός σύνδεσης"
+                            AppLanguage.ALBANIAN -> "Vetëm pa internet"
+                            else -> "Offline-only mode"
+                        },
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Switch(
@@ -161,7 +173,11 @@ fun SettingsScreen() {
                         enabled = !isRefreshing && !offlineOnly,
                         onClick = { scope.launch { scheduleSync.refresh() } },
                     ) {
-                        Text(if (lang == AppLanguage.GREEK) "Έλεγχος τώρα" else "Check now")
+                        Text(when (lang) {
+                            AppLanguage.GREEK -> "Έλεγχος τώρα"
+                            AppLanguage.ALBANIAN -> "Kontrollo tani"
+                            else -> "Check now"
+                        })
                     }
                     if (isRefreshing) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -171,30 +187,66 @@ fun SettingsScreen() {
         }
 
         item {
-            SettingsSection(title = if (lang == AppLanguage.GREEK) "Εισιτήρια" else "Tickets") {
+            SettingsSection(title = when (lang) {
+                AppLanguage.GREEK -> "Εισιτήρια"
+                AppLanguage.ALBANIAN -> "Bileta"
+                else -> "Tickets"
+            }) {
                 SettingsRow(
-                    title = if (lang == AppLanguage.GREEK) "Τιμοκατάλογος OASA" else "Ticket prices (OASA)",
-                    value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Τιμοκατάλογος OASA"
+                        AppLanguage.ALBANIAN -> "Çmimet e biletave OASA"
+                        else -> "Ticket prices (OASA)"
+                    },
+                    value = when (lang) {
+                        AppLanguage.GREEK -> "Άνοιγμα →"
+                        AppLanguage.ALBANIAN -> "Hap →"
+                        else -> "Open →"
+                    },
                     onClick = { showFares = true },
                 )
             }
         }
 
         item {
-            SettingsSection(title = if (lang == AppLanguage.GREEK) "Χάρτης" else "Map") {
+            SettingsSection(title = when (lang) {
+                AppLanguage.GREEK -> "Χάρτης"
+                AppLanguage.ALBANIAN -> "Harta"
+                else -> "Map"
+            }) {
                 SettingsRow(
-                    title = if (lang == AppLanguage.GREEK) "Σιδηροδρομικό δίκτυο Αθήνας" else "Athens metropolitan area railways",
-                    value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Σιδηροδρομικό δίκτυο Αθήνας"
+                        AppLanguage.ALBANIAN -> "Hekurudhat e zonës metropolitane të Athinës"
+                        else -> "Athens metropolitan area railways"
+                    },
+                    value = when (lang) {
+                        AppLanguage.GREEK -> "Άνοιγμα →"
+                        AppLanguage.ALBANIAN -> "Hap →"
+                        else -> "Open →"
+                    },
                     onClick = { openStasyMap() },
                 )
             }
         }
 
         item {
-            SettingsSection(title = if (lang == AppLanguage.GREEK) "Επικοινωνία" else "Contact") {
+            SettingsSection(title = when (lang) {
+                AppLanguage.GREEK -> "Επικοινωνία"
+                AppLanguage.ALBANIAN -> "Kontakt"
+                else -> "Contact"
+            }) {
                 SettingsRow(
-                    title = if (lang == AppLanguage.GREEK) "Επικοινωνία με τον μηχανικό" else "Contact engineer",
-                    value = if (lang == AppLanguage.GREEK) "Άνοιγμα →" else "Open →",
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Επικοινωνία με τον μηχανικό"
+                        AppLanguage.ALBANIAN -> "Kontakto zhvilluesin"
+                        else -> "Contact engineer"
+                    },
+                    value = when (lang) {
+                        AppLanguage.GREEK -> "Άνοιγμα →"
+                        AppLanguage.ALBANIAN -> "Hap →"
+                        else -> "Open →"
+                    },
                     onClick = { showContact = true },
                 )
             }

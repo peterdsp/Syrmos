@@ -10,8 +10,11 @@ fun initLocalization(context: Context) {
 }
 
 actual fun detectSystemLanguage(): AppLanguage {
-    val locale = Locale.getDefault().language
-    return if (locale == "el") AppLanguage.GREEK else AppLanguage.ENGLISH
+    return when (Locale.getDefault().language) {
+        "el" -> AppLanguage.GREEK
+        "sq" -> AppLanguage.ALBANIAN
+        else -> AppLanguage.ENGLISH
+    }
 }
 
 actual fun persistLanguage(lang: AppLanguage) {

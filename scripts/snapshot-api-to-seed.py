@@ -65,6 +65,16 @@ def main() -> None:
     icons = fetch("/api/icons")
     line_display = fetch("/api/line-display")
     fares = fetch("/api/fares")
+    # STASY service-status badge + announcement feed. Required for the
+    # offline-first promise: on a cold install with no network the home
+    # screen still needs to render today's "Trains until 21:40" pill and
+    # any active alerts. The Pi scrapes this every 5 minutes; we snapshot
+    # whatever's current so the bundle never starts empty.
+    announcements: dict | None = None
+    try:
+        announcements = fetch("/api/announcements")
+    except Exception as e:  # noqa: BLE001
+        print(f"  WARN: /api/announcements fetch failed: {e}")
     # Per-station minutes-from-origin scraped from STASY HTML. Apps need
     # this on cold start so M1/M2/M3/T6/T7 station detail screens render
     # the right HH:MM for every stop, not just the line origin. Optional:
@@ -127,6 +137,8 @@ def main() -> None:
         total += write(dest / "fares.json", fares)
         if station_offsets is not None:
             total += write(dest / "station-offsets.json", station_offsets)
+        if announcements is not None:
+            total += write(dest / "announcements.json", announcements)
         (dest / "shapes.json").write_bytes(shapes_bytes)
         total += len(shapes_bytes)
         for lid, payload in bundles.items():
@@ -135,6 +147,7 @@ def main() -> None:
             len(bundles)
             + 7
             + (1 if station_offsets is not None else 0)
+            + (1 if announcements is not None else 0)
         )
         print(f"wrote {n_files} files ({total} bytes) -> {dest.relative_to(ROOT)}")
 

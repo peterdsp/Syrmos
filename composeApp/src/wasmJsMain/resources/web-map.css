@@ -372,6 +372,55 @@ body {
     border-color: rgba(0, 114, 206, 0.6);
 }
 
+/* Three-pill language selector. Sits in the top-bar map-controls strip;
+   each pill is roughly half the height of .control-button so the row of
+   EN/EL/SQ pills doesn't dominate visually. */
+.language-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #1f2937;
+    border-radius: 13px;
+    padding: 3px;
+}
+
+.language-pill {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.language-pill:hover {
+    color: #f8fafc;
+}
+
+.language-pill[aria-pressed="true"] {
+    background: rgba(0, 114, 206, 0.85);
+    color: #ffffff;
+}
+
+.dark-mode .language-picker {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.dark-mode .language-pill {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.dark-mode .language-pill[aria-pressed="true"] {
+    background: rgba(0, 114, 206, 0.9);
+    color: #ffffff;
+}
+
 .search-card {
     position: relative;
     flex: 1 1 520px;

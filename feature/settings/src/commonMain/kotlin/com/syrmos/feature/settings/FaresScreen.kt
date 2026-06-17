@@ -62,7 +62,11 @@ fun FaresScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (lang == AppLanguage.GREEK) "Εισιτήρια" else "Tickets",
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Εισιτήρια"
+                            AppLanguage.ALBANIAN -> "Bileta"
+                            else -> "Tickets"
+                        },
                         fontWeight = FontWeight.Bold,
                     )
                 },
@@ -101,7 +105,11 @@ fun FaresScreen(onBack: () -> Unit) {
             if (infoLinks.isNotEmpty()) {
                 item {
                     Text(
-                        text = if (lang == AppLanguage.GREEK) "Χρήσιμες πληροφορίες" else "Useful information",
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Χρήσιμες πληροφορίες"
+                            AppLanguage.ALBANIAN -> "Informacione të dobishme"
+                            else -> "Useful information"
+                        },
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
@@ -121,21 +129,30 @@ fun FaresScreen(onBack: () -> Unit) {
 private fun Header(lang: AppLanguage, updatedAt: String) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            text = if (lang == AppLanguage.GREEK) "Τιμές εισιτηρίων OASA" else "OASA ticket prices",
+            text = when (lang) {
+                AppLanguage.GREEK -> "Τιμές εισιτηρίων OASA"
+                AppLanguage.ALBANIAN -> "Çmimet e biletave OASA"
+                else -> "OASA ticket prices"
+            },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
-            text = if (lang == AppLanguage.GREEK)
-                "Συγχρονισμένο από τη επίσημη σελίδα τιμών της OASA. Οι ενημερώσεις γίνονται καθημερινά."
-            else
-                "Synced from OASA's official prices page. Updated daily.",
+            text = when (lang) {
+                AppLanguage.GREEK -> "Συγχρονισμένο από τη επίσημη σελίδα τιμών της OASA. Οι ενημερώσεις γίνονται καθημερινά."
+                AppLanguage.ALBANIAN -> "Sinkronizuar nga faqja zyrtare e çmimeve të OASA. Përditësohet çdo ditë."
+                else -> "Synced from OASA's official prices page. Updated daily."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (updatedAt.isNotEmpty()) {
             Text(
-                text = (if (lang == AppLanguage.GREEK) "Ενημέρωση: " else "Updated: ") + updatedAt,
+                text = (when (lang) {
+                    AppLanguage.GREEK -> "Ενημέρωση: "
+                    AppLanguage.ALBANIAN -> "Përditësuar: "
+                    else -> "Updated: "
+                }) + updatedAt,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
@@ -177,7 +194,11 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
             }
             product.discountedPriceEur?.let { disc ->
                 Text(
-                    text = (if (lang == AppLanguage.GREEK) "Μειωμένο: " else "Discounted: ") + formatEur(disc),
+                    text = (when (lang) {
+                        AppLanguage.GREEK -> "Μειωμένο: "
+                        AppLanguage.ALBANIAN -> "Me zbritje: "
+                        else -> "Discounted: "
+                    }) + formatEur(disc),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -270,7 +291,11 @@ private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = (if (lang == AppLanguage.GREEK) "Επιβεβαίωση στο " else "Verify on ") + link.operatorId.uppercase(),
+                    text = (when (lang) {
+                        AppLanguage.GREEK -> "Επιβεβαίωση στο "
+                        AppLanguage.ALBANIAN -> "Verifiko në "
+                        else -> "Verify on "
+                    }) + link.operatorId.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -289,10 +314,11 @@ private fun Footer(lang: AppLanguage) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(
-            text = if (lang == AppLanguage.GREEK)
-                "Οι τιμές παρέχονται από την OASA. Για την οριστική τιμή ελέγξτε την επίσημη σελίδα."
-            else
-                "Prices are provided by OASA. For the authoritative figure, check the official page.",
+            text = when (lang) {
+                AppLanguage.GREEK -> "Οι τιμές παρέχονται από την OASA. Για την οριστική τιμή ελέγξτε την επίσημη σελίδα."
+                AppLanguage.ALBANIAN -> "Çmimet ofrohen nga OASA. Për çmimin përfundimtar, kontrollo faqen zyrtare."
+                else -> "Prices are provided by OASA. For the authoritative figure, check the official page."
+            },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -300,7 +326,11 @@ private fun Footer(lang: AppLanguage) {
             onClick = { uriHandler.openUri("https://www.oasa.gr/en/tickets/prices-of-products/") },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (lang == AppLanguage.GREEK) "Άνοιγμα στην OASA" else "View on OASA")
+            Text(when (lang) {
+                AppLanguage.GREEK -> "Άνοιγμα στην OASA"
+                AppLanguage.ALBANIAN -> "Hap në OASA"
+                else -> "View on OASA"
+            })
         }
     }
 }

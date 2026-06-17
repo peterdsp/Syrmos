@@ -87,16 +87,35 @@ STASY_OFFSETS: dict[tuple[str, str], dict[str, int]] = {
         "M3_EGA": 30, "M3_AG2": 32, "M3_AGI": 34, "M3_KOR": 36, "M3_NIK": 38,
         "M3_MAN": 40, "M3_PIR": 42, "M3_DIM": 44,
     },
-    # M3_AIR is the airport extension only. Physically the airport train
-    # is one of the M3 city trains continuing past Doukissis Plakentias,
-    # so we render it only on the DPL <-> Airport stretch. The city
-    # section (Dim. Theatro <-> DPL) is owned exclusively by M3 to avoid
-    # double-rendering the same physical train on the map.
+    # M3_AIR is the full airport-route train. Physically each airport train
+    # IS one of the M3 city trains continuing past Doukissis Plakentias all
+    # the way to the Airport (1 physical train per slot, not 2). To render
+    # the airport-bound train at every station it passes through (not only
+    # past DPL), offsets cover the whole route. The projector's _dedupe()
+    # collapses the simultaneous M3 city row at minute X in favor of the
+    # M3_AIR row at the same minute, so users at e.g. Syntagma see "Airport"
+    # on the right minutes and "Doukissis Plakentias" on the rest.
+    # Outbound: Dim. Theatro -> Airport (65 min). Inbound: Airport ->
+    # Dim. Theatro (62 min). Numbers traced from the STASY PDFs
+    # AIRPORT-TRAIN-SCHEDULES-from-Dim_Theatro-to-Airport_valid-from-24-6-24
+    # and ...-from-Airport-to-Dimotiko-Theatro_valid-from-24-6-24 (train 332
+    # / train 331 respectively, the earliest run of the day so headway-drift
+    # to later trips is bounded by ±1 minute).
     ("M3_AIR", "outbound"): {
-        "M3_DOY": 0, "M3_PAL": 6, "M3_PEA": 8, "M3_KO2": 14, "M3_AER": 19,
+        "M3_DIM": 0, "M3_PIR": 1, "M3_MAN": 3, "M3_NIK": 5, "M3_KOR": 7,
+        "M3_AGI": 9, "M3_AG2": 11, "M3_EGA": 13, "M3_ELE": 16, "M3_KER": 19,
+        "M3_MON": 21, "M3_SYN": 23, "M3_EVA": 25, "M3_MEG": 26, "M3_AMB": 28,
+        "M3_PAN": 30, "M3_KAT": 32, "M3_ETH": 34, "M3_CHO": 36, "M3_NOM": 38,
+        "M3_AG3": 39, "M3_CHA": 41, "M3_DOY": 44, "M3_PAL": 50, "M3_PEA": 53,
+        "M3_KO2": 59, "M3_AER": 65,
     },
     ("M3_AIR", "inbound"): {
-        "M3_AER": 0, "M3_KO2": 6, "M3_PEA": 12, "M3_PAL": 14, "M3_DOY": 20,
+        "M3_AER": 0, "M3_KO2": 5, "M3_PEA": 11, "M3_PAL": 13, "M3_DOY": 20,
+        "M3_CHA": 21, "M3_AG3": 23, "M3_NOM": 25, "M3_CHO": 26, "M3_ETH": 28,
+        "M3_KAT": 30, "M3_PAN": 32, "M3_AMB": 34, "M3_MEG": 36, "M3_EVA": 37,
+        "M3_SYN": 39, "M3_MON": 41, "M3_KER": 43, "M3_ELE": 46, "M3_EGA": 48,
+        "M3_AG2": 51, "M3_AGI": 53, "M3_KOR": 55, "M3_NIK": 57, "M3_MAN": 59,
+        "M3_PIR": 61, "M3_DIM": 62,
     },
     ("T6", "outbound"): {
         "T6_SYN": 0, "T6_ZAP": 2, "T6_VOU": 5, "T6_FIX": 7, "T6_KAS": 9,

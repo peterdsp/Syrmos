@@ -18,6 +18,8 @@ struct LineDetailView: View {
                             .foregroundStyle(.secondary)
                         Text(loc.language == .greek
                             ? "\(stations.count) σταθμοί"
+                            : loc.language == .albanian
+                            ? "\(stations.count) stacione"
                             : "\(stations.count) stations")
                             .font(.caption)
                             .foregroundStyle(.tertiary)

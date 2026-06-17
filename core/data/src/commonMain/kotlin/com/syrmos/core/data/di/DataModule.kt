@@ -6,6 +6,7 @@ import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.repository.TransitPatternRepositoryImpl
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
@@ -19,6 +20,7 @@ val dataModule = module {
     single { StationOffsetsRepository(schedulesService = get(), resourceReader = get()) }
     single { FaresRepository(schedulesService = get(), resourceReader = get()) }
     single { VisualOverridesRepository(service = get(), resourceReader = get()) }
+    single { AnnouncementsRepository(service = get(), resourceReader = get()) }
     single { LineRepositoryImpl(database = get(), resourceReader = get()) }
     single { StationRepositoryImpl(database = get(), resourceReader = get()) }
     single { ScheduleRepositoryImpl(database = get()) }

@@ -97,7 +97,11 @@ fun HomeScreen(
         }
 
         val status = uiState.serviceStatus
-        if (status != null) {
+        // Hide the pill when an alert is already represented in the
+        // serviceAlert cards above — otherwise the same banner text
+        // renders twice on the home screen.
+        val pillRedundant = status?.isAlert == true && alerts.isNotEmpty()
+        if (status != null && !pillRedundant) {
             item {
                 ServiceStatusPill(status = status, lang = lang)
             }
@@ -335,7 +339,11 @@ private fun NearbyStationsSection(
         ) {
             Text(text = "📍", style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.width(8.dp))
-            SectionTitle(text = if (lang == AppLanguage.GREEK) "Κοντά μου" else "Near me")
+            SectionTitle(text = when (lang) {
+                AppLanguage.GREEK -> "Κοντά μου"
+                AppLanguage.ALBANIAN -> "Pranë meje"
+                else -> "Near me"
+            })
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = if (expanded) "▲" else "▼",

@@ -28,7 +28,7 @@ struct FaresView: View {
         }
         .background(Color.syrmosBackground)
         .scrollContentBackground(.hidden)
-        .navigationTitle(loc.language == .greek ? "Εισιτήρια" : "Tickets")
+        .navigationTitle(loc.language == .greek ? "Εισιτήρια" : loc.language == .albanian ? "Bileta" : "Tickets")
         .navigationBarTitleDisplayMode(.large)
         .inAppSafari(url: $safariURL)
         .task {
@@ -38,16 +38,18 @@ struct FaresView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(loc.language == .greek ? "Τιμές εισιτηρίων OASA" : "OASA ticket prices")
+            Text(loc.language == .greek ? "Τιμές εισιτηρίων OASA" : loc.language == .albanian ? "Çmimet e biletave OASA" : "OASA ticket prices")
                 .font(.title3)
                 .fontWeight(.semibold)
             Text(loc.language == .greek
                  ? "Συγχρονισμένο από τη επίσημη σελίδα τιμών της OASA. Οι ενημερώσεις γίνονται καθημερινά."
+                 : loc.language == .albanian
+                 ? "Sinkronizuar nga faqja zyrtare e çmimeve të OASA. Përditësohet çdo ditë."
                  : "Synced from OASA's official prices page. Updated daily.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if !store.updatedAt.isEmpty {
-                Text((loc.language == .greek ? "Ενημέρωση: " : "Updated: ") + formattedUpdatedAt)
+                Text((loc.language == .greek ? "Ενημέρωση: " : loc.language == .albanian ? "Përditësuar: " : "Updated: ") + formattedUpdatedAt)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -60,6 +62,8 @@ struct FaresView: View {
         VStack(spacing: 10) {
             Text(loc.language == .greek
                  ? "Οι τιμές παρέχονται από την OASA. Για την οριστική τιμή ελέγξτε την επίσημη σελίδα."
+                 : loc.language == .albanian
+                 ? "Çmimet ofrohen nga OASA. Për çmimin përfundimtar, kontrollo faqen zyrtare."
                  : "Prices are provided by OASA. For the authoritative figure, check the official page.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -71,7 +75,7 @@ struct FaresView: View {
             } label: {
                 HStack {
                     Image(systemName: "safari")
-                    Text(loc.language == .greek ? "Άνοιγμα στην OASA" : "View on OASA")
+                    Text(loc.language == .greek ? "Άνοιγμα στην OASA" : loc.language == .albanian ? "Hap në OASA" : "View on OASA")
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -86,7 +90,7 @@ struct FaresView: View {
 
     private var infoLinksSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(loc.language == .greek ? "Χρήσιμες πληροφορίες" : "Useful information")
+            Text(loc.language == .greek ? "Χρήσιμες πληροφορίες" : loc.language == .albanian ? "Informacione të dobishme" : "Useful information")
                 .font(.headline)
                 .padding(.horizontal, 16)
             VStack(spacing: 12) {
@@ -127,15 +131,19 @@ struct FaresView: View {
 
     private func sectionTitle(_ key: String) -> String {
         switch (key, loc.language) {
-        case ("single",  .english): return "Single tickets"
-        case ("single",  .greek):   return "Μονά εισιτήρια"
-        case ("offers",  .english): return "Packs and offers"
-        case ("offers",  .greek):   return "Πακέτα και προσφορές"
-        case ("airport", .english): return "Airport tickets"
-        case ("airport", .greek):   return "Εισιτήρια αεροδρομίου"
-        case ("passes",  .english): return "Day passes"
-        case ("passes",  .greek):   return "Ημερήσια εισιτήρια"
-        default:                    return key.capitalized
+        case ("single",  .english):  return "Single tickets"
+        case ("single",  .greek):    return "Μονά εισιτήρια"
+        case ("single",  .albanian): return "Bileta të vetme"
+        case ("offers",  .english):  return "Packs and offers"
+        case ("offers",  .greek):    return "Πακέτα και προσφορές"
+        case ("offers",  .albanian): return "Paketa dhe oferta"
+        case ("airport", .english):  return "Airport tickets"
+        case ("airport", .greek):    return "Εισιτήρια αεροδρομίου"
+        case ("airport", .albanian): return "Bileta për aeroportin"
+        case ("passes",  .english):  return "Day passes"
+        case ("passes",  .greek):    return "Ημερήσια εισιτήρια"
+        case ("passes",  .albanian): return "Abone ditore"
+        default:                     return key.capitalized
         }
     }
 
@@ -202,6 +210,8 @@ private struct InfoLinkCard: View {
                         .font(.caption2)
                     Text(loc.language == .greek
                          ? "Επιβεβαίωση στο \(link.operator_.uppercased())"
+                         : loc.language == .albanian
+                         ? "Verifiko në \(link.operator_.uppercased())"
                          : "Verify on \(link.operator_.uppercased())")
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -248,7 +258,7 @@ private struct FareCard: View {
                     Image(systemName: "tag.fill")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Text((loc.language == .greek ? "Μειωμένο: " : "Discounted: ")
+                    Text((loc.language == .greek ? "Μειωμένο: " : loc.language == .albanian ? "Me zbritje: " : "Discounted: ")
                          + String(format: "€%.2f", disc))
                         .font(.caption)
                         .foregroundStyle(.secondary)

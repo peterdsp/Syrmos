@@ -27,7 +27,7 @@ struct TimetablesView: View {
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
-                CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : "Timetables")
+                CompactTabHeader(loc.language == .greek ? "Δρομολόγια" : loc.language == .albanian ? "Oraret" : "Timetables")
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -126,6 +126,8 @@ struct TimetablesView: View {
             TextField(
                 loc.language == .greek
                     ? "Αναζήτηση προορισμού (Αεροδρόμιο, Σύνταγμα...)"
+                    : loc.language == .albanian
+                    ? "Kërko destinacion (Aeroporti, Syntagma...)"
                     : "Search destination (Airport, Syntagma...)",
                 text: $searchText
             )
@@ -151,6 +153,8 @@ struct TimetablesView: View {
                     if filtered.isEmpty {
                         Text(loc.language == .greek
                              ? "Δεν υπάρχουν διαθέσιμα δρομολόγια για την επιλογή σας."
+                             : loc.language == .albanian
+                             ? "Nuk ka nisje në dispozicion për këtë përzgjedhje."
                              : "No departures available for this selection.")
                             .foregroundStyle(.secondary)
                             .padding(40)
@@ -229,7 +233,7 @@ struct TimetablesView: View {
     private func dayShortName(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
-        formatter.locale = Locale(identifier: loc.language == .greek ? "el_GR" : "en_GB")
+        formatter.locale = Locale(identifier: loc.language == .greek ? "el_GR" : loc.language == .albanian ? "sq_AL" : "en_GB")
         return formatter.string(from: date).uppercased()
     }
 
@@ -394,6 +398,8 @@ struct TimetablesView: View {
                 lineId: selectedLineId,
                 direction: loc.language == .greek
                     ? "από \(originLabel) προς \(direction)"
+                    : loc.language == .albanian
+                    ? "nga \(originLabel) drejt \(direction)"
                     : "from \(originLabel) to \(direction)",
                 minutesAway: idx,
                 serviceType: train.direction == "outbound" ? "outbound" : "inbound"

@@ -46,16 +46,18 @@ struct HomeView: View {
                     .presentationDragIndicator(.visible)
             }
             .alert(
-                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
                 isPresented: $showLocationDeniedAlert
             ) {
-                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : "Open Settings") {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : loc.language == .albanian ? "Hap Cilësimet" : "Open Settings") {
                     locationService.openSystemSettings()
                 }
-                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {}
+                Button(loc.language == .greek ? "Άκυρο" : loc.language == .albanian ? "Anulo" : "Cancel", role: .cancel) {}
             } message: {
                 Text(loc.language == .greek
                     ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
+                    : loc.language == .albanian
+                    ? "Nuk i ke dhënë Syrmos leje për vendndodhjen. Dëshiron të hapësh Cilësimet për ta aktivizuar?"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
             // The legacy "New data available" alert was removed — schedule
@@ -88,11 +90,11 @@ struct HomeView: View {
                         .font(.title2)
                         .foregroundStyle(.blue)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(loc.language == .greek ? "Κοντά μου" : "Near me")
+                        Text(loc.language == .greek ? "Κοντά μου" : loc.language == .albanian ? "Pranë meje" : "Near me")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
-                        Text(loc.language == .greek ? "Ενεργοποιήστε την τοποθεσία για να δείτε κοντινούς σταθμούς" : "Enable location to see nearby stations")
+                        Text(loc.language == .greek ? "Ενεργοποιήστε την τοποθεσία για να δείτε κοντινούς σταθμούς" : loc.language == .albanian ? "Aktivizo vendndodhjen për të parë stacionet afër" : "Enable location to see nearby stations")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -117,7 +119,7 @@ struct HomeView: View {
                     HStack {
                         Image(systemName: "location.fill")
                             .foregroundStyle(.blue)
-                        Text(loc.language == .greek ? "Κοντά μου" : "Near me")
+                        Text(loc.language == .greek ? "Κοντά μου" : loc.language == .albanian ? "Pranë meje" : "Near me")
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
@@ -199,7 +201,7 @@ struct HomeView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "tram.fill")
                         .foregroundStyle(Color.suburbanPurple)
-                    Text(loc.language == .greek ? "Ζωντανά τρένα" : "Live trains")
+                    Text(loc.language == .greek ? "Ζωντανά τρένα" : loc.language == .albanian ? "Trenat aktiv" : "Live trains")
                         .font(.title3)
                         .fontWeight(.semibold)
                 }
@@ -226,7 +228,7 @@ struct HomeView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                                 if train.delayMinutes > 0 {
-                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : "+\(train.delayMinutes)′ delay")
+                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
                                         .font(.caption2)
                                         .foregroundStyle(.orange)
                                 }
@@ -300,6 +302,11 @@ struct HomeView: View {
     private var serviceStatusPill: some View {
         let status = stasyService.serviceStatus
         let isAlert = status?.status == "alert"
+        // When an active alert is also surfaced as a serviceAlert card
+        // above, the pill would just repeat the same text. Hide it in
+        // that case — the card already conveys the message in full.
+        let hasOverlappingAlertCard = isAlert
+            && stasyService.announcements.contains { $0.category == .serviceAlert }
         let message: String? = {
             if let s = status {
                 let localized = s.displayMessage(language: loc.language)
@@ -307,7 +314,7 @@ struct HomeView: View {
             }
             return fallbackServiceHours()
         }()
-        if let message {
+        if let message, !hasOverlappingAlertCard {
             HStack(spacing: 8) {
                 Image(systemName: isAlert
                       ? "exclamationmark.triangle.fill"
@@ -357,12 +364,16 @@ struct HomeView: View {
             if rule.is247 {
                 return loc.language == .greek
                     ? "Λειτουργία 24/7 σήμερα"
+                    : loc.language == .albanian
+                    ? "Shërbim 24/7 sot"
                     : "24/7 service today"
             }
         }
         if latest.isEmpty { return nil }
         return loc.language == .greek
             ? "Δρομολόγια έως \(latest)"
+            : loc.language == .albanian
+            ? "Trena deri në \(latest)"
             : "Trains until \(latest)"
     }
 
@@ -421,6 +432,8 @@ struct NearbyStationDestination: View {
                         .fontWeight(.bold)
                     Text(loc.language == .greek
                          ? "Ο σταθμός δεν είναι ακόμη διαθέσιμος"
+                         : loc.language == .albanian
+                         ? "Ky stacion ende nuk është i disponueshëm"
                          : "This station isn't available yet.")
                         .foregroundStyle(.secondary)
                 }

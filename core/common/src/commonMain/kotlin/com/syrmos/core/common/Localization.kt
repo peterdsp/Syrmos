@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class AppLanguage(val code: String, val displayName: String) {
     ENGLISH("en", "English"),
     GREEK("el", "Ελληνικά"),
+    ALBANIAN("sq", "Shqip"),
 }
 
 expect fun detectSystemLanguage(): AppLanguage
@@ -45,72 +46,220 @@ enum class L {
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP;
 
     fun text(lang: AppLanguage): String = when (this) {
-        APP_SUBTITLE -> if (lang == AppLanguage.GREEK) "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας" else "Live Athens rail times"
-        METRO -> if (lang == AppLanguage.GREEK) "Μετρό" else "Metro"
-        TRAM -> if (lang == AppLanguage.GREEK) "Τραμ" else "Tram"
-        SUBURBAN -> if (lang == AppLanguage.GREEK) "Προαστιακός" else "Suburban"
-        SERVICE_ALERTS -> if (lang == AppLanguage.GREEK) "Έκτακτες Ανακοινώσεις" else "Service Alerts"
-        LATEST_FROM_STASY -> if (lang == AppLanguage.GREEK) "Ενημέρωση Μετρό & Τραμ" else "Metro & Tram updates"
-        READ_MORE -> if (lang == AppLanguage.GREEK) "Διαβάστε περισσότερα" else "Read more"
-        SHOW_MORE -> if (lang == AppLanguage.GREEK) "Δείτε περισσότερα" else "Show more"
-        SHOW_LESS -> if (lang == AppLanguage.GREEK) "Δείτε λιγότερα" else "Show less"
-        LINES -> if (lang == AppLanguage.GREEK) "Γραμμές" else "Lines"
-        SETTINGS -> if (lang == AppLanguage.GREEK) "Ρυθμίσεις" else "Settings"
-        HOME -> if (lang == AppLanguage.GREEK) "Αρχική" else "Home"
-        MAP -> if (lang == AppLanguage.GREEK) "Χάρτης" else "Map"
-        LANGUAGE -> if (lang == AppLanguage.GREEK) "Γλώσσα" else "Language"
-        THEME -> if (lang == AppLanguage.GREEK) "Θέμα" else "Theme"
-        SYSTEM_DEFAULT -> if (lang == AppLanguage.GREEK) "Σύστημα" else "System"
-        PREFERENCES -> if (lang == AppLanguage.GREEK) "Προτιμήσεις" else "Preferences"
-        DATA -> if (lang == AppLanguage.GREEK) "Δεδομένα" else "Data"
-        SCHEDULE_VERSION -> if (lang == AppLanguage.GREEK) "Έκδοση δρομολογίων" else "Schedule version"
-        STATIONS -> if (lang == AppLanguage.GREEK) "Σταθμοί" else "Stations"
-        ABOUT -> if (lang == AppLanguage.GREEK) "Σχετικά" else "About"
-        ABOUT_TEXT -> if (lang == AppLanguage.GREEK) {
-            "Δεδομένα δρομολογίων από τα επίσημα προγράμματα ΣΤΑΣΥ και Hellenic Train. Η εφαρμογή δεν σχετίζεται με ΣΤΑΣΥ, Hellenic Train ή ΟΑΣΑ."
-        } else {
-            "Schedule data from STASY and Hellenic Train official timetables. This app is not affiliated with STASY, Hellenic Train or OASA."
+        APP_SUBTITLE -> when (lang) {
+            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας"
+            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta të hekurudhave të Athinës"
+            else -> "Live Athens rail times"
         }
-        COULD_NOT_REACH -> if (lang == AppLanguage.GREEK) "Δεν ήταν δυνατή η σύνδεση με stasy.gr" else "Could not reach stasy.gr"
-        LIVE_TRACKER -> if (lang == AppLanguage.GREEK) "Ζωντανός εντοπισμός" else "Live tracker"
-        ACTIVE_TRAINS -> if (lang == AppLanguage.GREEK) "ενεργά τρένα" else "active trains"
-        NO_LIVE_TRAINS -> if (lang == AppLanguage.GREEK) {
-            "Δεν υπάρχουν ζωντανές θέσεις για αυτή τη γραμμή αυτή τη στιγμή"
-        } else {
-            "No live train positions are available for this line right now"
+        METRO -> when (lang) {
+            AppLanguage.GREEK -> "Μετρό"
+            AppLanguage.ALBANIAN -> "Metro"
+            else -> "Metro"
         }
-        NEXT_STOP -> if (lang == AppLanguage.GREEK) "Επόμενη στάση" else "Next stop"
-        UPDATED -> if (lang == AppLanguage.GREEK) "Ενημερώθηκε" else "Updated"
-        SPEED -> if (lang == AppLanguage.GREEK) "Ταχύτητα" else "Speed"
-        ON_TIME -> if (lang == AppLanguage.GREEK) "Στην ώρα του" else "On time"
-        DELAYED -> if (lang == AppLanguage.GREEK) "Καθυστέρηση" else "Delayed"
-        ONBOARD_WELCOME_TITLE -> if (lang == AppLanguage.GREEK) "Καλώς ήρθες στο Syrmos" else "Welcome to Syrmos"
-        ONBOARD_WELCOME_BODY -> if (lang == AppLanguage.GREEK) {
-            "Ζωντανές αφίξεις για Μετρό, Τραμ και Προαστιακό της Αθήνας, στην τσέπη σου."
-        } else {
-            "Live arrivals for the Athens Metro, Tram and Suburban network, in your pocket."
+        TRAM -> when (lang) {
+            AppLanguage.GREEK -> "Τραμ"
+            AppLanguage.ALBANIAN -> "Tramvaj"
+            else -> "Tram"
         }
-        ONBOARD_LIVE_TITLE -> if (lang == AppLanguage.GREEK) "Συρμοί σε πραγματικό χρόνο" else "Trains in real time"
-        ONBOARD_LIVE_BODY -> if (lang == AppLanguage.GREEK) {
-            "Δες τις επόμενες αναχωρήσεις και πού βρίσκεται κάθε συρμός στον χάρτη, με δεδομένα από ΣΤΑΣΥ και Hellenic Train."
-        } else {
-            "See the next departures and where every train is on the map, refreshed from STASY and Hellenic Train."
+        SUBURBAN -> when (lang) {
+            AppLanguage.GREEK -> "Προαστιακός"
+            AppLanguage.ALBANIAN -> "Treni periferik"
+            else -> "Suburban"
         }
-        ONBOARD_LOCATION_TITLE -> if (lang == AppLanguage.GREEK) "Πιο κοντά σε σένα" else "Closest to you"
-        ONBOARD_LOCATION_BODY -> if (lang == AppLanguage.GREEK) {
-            "Επίτρεψε την τοποθεσία για να βλέπεις τους πιο κοντινούς σταθμούς. Χρησιμοποιείται μόνο στη συσκευή."
-        } else {
-            "Allow location so we can show the nearest stations and arrivals first. Used only on device."
+        SERVICE_ALERTS -> when (lang) {
+            AppLanguage.GREEK -> "Έκτακτες Ανακοινώσεις"
+            AppLanguage.ALBANIAN -> "Njoftime urgjente"
+            else -> "Service Alerts"
         }
-        ONBOARD_LOCATION_CTA -> if (lang == AppLanguage.GREEK) "Επίτρεψε την τοποθεσία" else "Allow location"
-        ONBOARD_PRIVACY_TITLE -> if (lang == AppLanguage.GREEK) "Χωρίς λογαριασμό. Χωρίς παρακολούθηση." else "No accounts. No tracking."
-        ONBOARD_PRIVACY_BODY -> if (lang == AppLanguage.GREEK) {
-            "Το Syrmos δεν ζητάει σύνδεση και δεν αποθηκεύει προσωπικά δεδομένα. Μόνο συρμούς."
-        } else {
-            "Syrmos doesn't ask you to sign in and doesn't store personal data. Just trains."
+        LATEST_FROM_STASY -> when (lang) {
+            AppLanguage.GREEK -> "Ενημέρωση Μετρό & Τραμ"
+            AppLanguage.ALBANIAN -> "Përditësime Metro & Tramvaj"
+            else -> "Metro & Tram updates"
         }
-        ONBOARD_CONTINUE -> if (lang == AppLanguage.GREEK) "Συνέχεια" else "Continue"
-        ONBOARD_GET_STARTED -> if (lang == AppLanguage.GREEK) "Ξεκίνα" else "Get started"
-        ONBOARD_SKIP -> if (lang == AppLanguage.GREEK) "Παράλειψη" else "Skip"
+        READ_MORE -> when (lang) {
+            AppLanguage.GREEK -> "Διαβάστε περισσότερα"
+            AppLanguage.ALBANIAN -> "Lexo më shumë"
+            else -> "Read more"
+        }
+        SHOW_MORE -> when (lang) {
+            AppLanguage.GREEK -> "Δείτε περισσότερα"
+            AppLanguage.ALBANIAN -> "Trego më shumë"
+            else -> "Show more"
+        }
+        SHOW_LESS -> when (lang) {
+            AppLanguage.GREEK -> "Δείτε λιγότερα"
+            AppLanguage.ALBANIAN -> "Trego më pak"
+            else -> "Show less"
+        }
+        LINES -> when (lang) {
+            AppLanguage.GREEK -> "Γραμμές"
+            AppLanguage.ALBANIAN -> "Linjat"
+            else -> "Lines"
+        }
+        SETTINGS -> when (lang) {
+            AppLanguage.GREEK -> "Ρυθμίσεις"
+            AppLanguage.ALBANIAN -> "Cilësimet"
+            else -> "Settings"
+        }
+        HOME -> when (lang) {
+            AppLanguage.GREEK -> "Αρχική"
+            AppLanguage.ALBANIAN -> "Kryesore"
+            else -> "Home"
+        }
+        MAP -> when (lang) {
+            AppLanguage.GREEK -> "Χάρτης"
+            AppLanguage.ALBANIAN -> "Harta"
+            else -> "Map"
+        }
+        LANGUAGE -> when (lang) {
+            AppLanguage.GREEK -> "Γλώσσα"
+            AppLanguage.ALBANIAN -> "Gjuha"
+            else -> "Language"
+        }
+        THEME -> when (lang) {
+            AppLanguage.GREEK -> "Θέμα"
+            AppLanguage.ALBANIAN -> "Tema"
+            else -> "Theme"
+        }
+        SYSTEM_DEFAULT -> when (lang) {
+            AppLanguage.GREEK -> "Σύστημα"
+            AppLanguage.ALBANIAN -> "Sistemi"
+            else -> "System"
+        }
+        PREFERENCES -> when (lang) {
+            AppLanguage.GREEK -> "Προτιμήσεις"
+            AppLanguage.ALBANIAN -> "Preferencat"
+            else -> "Preferences"
+        }
+        DATA -> when (lang) {
+            AppLanguage.GREEK -> "Δεδομένα"
+            AppLanguage.ALBANIAN -> "Të dhënat"
+            else -> "Data"
+        }
+        SCHEDULE_VERSION -> when (lang) {
+            AppLanguage.GREEK -> "Έκδοση δρομολογίων"
+            AppLanguage.ALBANIAN -> "Versioni i orarit"
+            else -> "Schedule version"
+        }
+        STATIONS -> when (lang) {
+            AppLanguage.GREEK -> "Σταθμοί"
+            AppLanguage.ALBANIAN -> "Stacionet"
+            else -> "Stations"
+        }
+        ABOUT -> when (lang) {
+            AppLanguage.GREEK -> "Σχετικά"
+            AppLanguage.ALBANIAN -> "Rreth"
+            else -> "About"
+        }
+        ABOUT_TEXT -> when (lang) {
+            AppLanguage.GREEK -> "Δεδομένα δρομολογίων από τα επίσημα προγράμματα ΣΤΑΣΥ και Hellenic Train. Η εφαρμογή δεν σχετίζεται με ΣΤΑΣΥ, Hellenic Train ή ΟΑΣΑ."
+            AppLanguage.ALBANIAN -> "Të dhënat e orareve nga oraret zyrtare STASY dhe Hellenic Train. Ky aplikacion nuk është i lidhur me STASY, Hellenic Train ose OASA."
+            else -> "Schedule data from STASY and Hellenic Train official timetables. This app is not affiliated with STASY, Hellenic Train or OASA."
+        }
+        COULD_NOT_REACH -> when (lang) {
+            AppLanguage.GREEK -> "Δεν ήταν δυνατή η σύνδεση με stasy.gr"
+            AppLanguage.ALBANIAN -> "Nuk arritëm të lidhemi me stasy.gr"
+            else -> "Could not reach stasy.gr"
+        }
+        LIVE_TRACKER -> when (lang) {
+            AppLanguage.GREEK -> "Ζωντανός εντοπισμός"
+            AppLanguage.ALBANIAN -> "Gjurmim i drejtpërdrejtë"
+            else -> "Live tracker"
+        }
+        ACTIVE_TRAINS -> when (lang) {
+            AppLanguage.GREEK -> "ενεργά τρένα"
+            AppLanguage.ALBANIAN -> "trena aktiv"
+            else -> "active trains"
+        }
+        NO_LIVE_TRAINS -> when (lang) {
+            AppLanguage.GREEK -> "Δεν υπάρχουν ζωντανές θέσεις για αυτή τη γραμμή αυτή τη στιγμή"
+            AppLanguage.ALBANIAN -> "Nuk ka pozicione të drejtpërdrejta për këtë linjë në këtë moment"
+            else -> "No live train positions are available for this line right now"
+        }
+        NEXT_STOP -> when (lang) {
+            AppLanguage.GREEK -> "Επόμενη στάση"
+            AppLanguage.ALBANIAN -> "Stacioni tjetër"
+            else -> "Next stop"
+        }
+        UPDATED -> when (lang) {
+            AppLanguage.GREEK -> "Ενημερώθηκε"
+            AppLanguage.ALBANIAN -> "Përditësuar"
+            else -> "Updated"
+        }
+        SPEED -> when (lang) {
+            AppLanguage.GREEK -> "Ταχύτητα"
+            AppLanguage.ALBANIAN -> "Shpejtësia"
+            else -> "Speed"
+        }
+        ON_TIME -> when (lang) {
+            AppLanguage.GREEK -> "Στην ώρα του"
+            AppLanguage.ALBANIAN -> "Në kohë"
+            else -> "On time"
+        }
+        DELAYED -> when (lang) {
+            AppLanguage.GREEK -> "Καθυστέρηση"
+            AppLanguage.ALBANIAN -> "Me vonesë"
+            else -> "Delayed"
+        }
+        ONBOARD_WELCOME_TITLE -> when (lang) {
+            AppLanguage.GREEK -> "Καλώς ήρθες στο Syrmos"
+            AppLanguage.ALBANIAN -> "Mirëserdhe në Syrmos"
+            else -> "Welcome to Syrmos"
+        }
+        ONBOARD_WELCOME_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Ζωντανές αφίξεις για Μετρό, Τραμ και Προαστιακό της Αθήνας, στην τσέπη σου."
+            AppLanguage.ALBANIAN -> "Mbërritjet e drejtpërdrejta për Metron, Tramvajin dhe Trenin periferik të Athinës, në xhepin tënd."
+            else -> "Live arrivals for the Athens Metro, Tram and Suburban network, in your pocket."
+        }
+        ONBOARD_LIVE_TITLE -> when (lang) {
+            AppLanguage.GREEK -> "Συρμοί σε πραγματικό χρόνο"
+            AppLanguage.ALBANIAN -> "Trena në kohë reale"
+            else -> "Trains in real time"
+        }
+        ONBOARD_LIVE_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Δες τις επόμενες αναχωρήσεις και πού βρίσκεται κάθε συρμός στον χάρτη, με δεδομένα από ΣΤΑΣΥ και Hellenic Train."
+            AppLanguage.ALBANIAN -> "Shih nisjet e ardhshme dhe ku ndodhet çdo tren në hartë, përditësuar nga STASY dhe Hellenic Train."
+            else -> "See the next departures and where every train is on the map, refreshed from STASY and Hellenic Train."
+        }
+        ONBOARD_LOCATION_TITLE -> when (lang) {
+            AppLanguage.GREEK -> "Πιο κοντά σε σένα"
+            AppLanguage.ALBANIAN -> "Më pranë teje"
+            else -> "Closest to you"
+        }
+        ONBOARD_LOCATION_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Επίτρεψε την τοποθεσία για να βλέπεις τους πιο κοντινούς σταθμούς. Χρησιμοποιείται μόνο στη συσκευή."
+            AppLanguage.ALBANIAN -> "Lejo vendndodhjen që të shohësh stacionet më të afërta dhe mbërritjet të parat. Përdoret vetëm në pajisje."
+            else -> "Allow location so we can show the nearest stations and arrivals first. Used only on device."
+        }
+        ONBOARD_LOCATION_CTA -> when (lang) {
+            AppLanguage.GREEK -> "Επίτρεψε την τοποθεσία"
+            AppLanguage.ALBANIAN -> "Lejo vendndodhjen"
+            else -> "Allow location"
+        }
+        ONBOARD_PRIVACY_TITLE -> when (lang) {
+            AppLanguage.GREEK -> "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."
+            AppLanguage.ALBANIAN -> "Pa llogari. Pa gjurmim."
+            else -> "No accounts. No tracking."
+        }
+        ONBOARD_PRIVACY_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Το Syrmos δεν ζητάει σύνδεση και δεν αποθηκεύει προσωπικά δεδομένα. Μόνο συρμούς."
+            AppLanguage.ALBANIAN -> "Syrmos nuk kërkon hyrje dhe nuk ruan të dhëna personale. Vetëm trena."
+            else -> "Syrmos doesn't ask you to sign in and doesn't store personal data. Just trains."
+        }
+        ONBOARD_CONTINUE -> when (lang) {
+            AppLanguage.GREEK -> "Συνέχεια"
+            AppLanguage.ALBANIAN -> "Vazhdo"
+            else -> "Continue"
+        }
+        ONBOARD_GET_STARTED -> when (lang) {
+            AppLanguage.GREEK -> "Ξεκίνα"
+            AppLanguage.ALBANIAN -> "Fillo"
+            else -> "Get started"
+        }
+        ONBOARD_SKIP -> when (lang) {
+            AppLanguage.GREEK -> "Παράλειψη"
+            AppLanguage.ALBANIAN -> "Anashkalo"
+            else -> "Skip"
+        }
     }
 }

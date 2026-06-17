@@ -12,12 +12,15 @@ enum AppTheme: String, CaseIterable, Identifiable {
 
     func localizedName(_ lang: AppLanguage) -> String {
         switch (self, lang) {
-        case (.system, .english): return "System"
-        case (.system, .greek):   return "Σύστημα"
-        case (.light, .english):  return "Light"
-        case (.light, .greek):    return "Φωτεινό"
-        case (.dark, .english):   return "Dark"
-        case (.dark, .greek):     return "Σκοτεινό"
+        case (.system, .english):  return "System"
+        case (.system, .greek):    return "Σύστημα"
+        case (.system, .albanian): return "Sistemi"
+        case (.light, .english):   return "Light"
+        case (.light, .greek):     return "Φωτεινό"
+        case (.light, .albanian):  return "E ndritshme"
+        case (.dark, .english):    return "Dark"
+        case (.dark, .greek):      return "Σκοτεινό"
+        case (.dark, .albanian):   return "E errët"
         }
     }
 

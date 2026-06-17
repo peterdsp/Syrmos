@@ -222,16 +222,18 @@ struct TransitMapView: View {
                     .presentationContentInteraction(.scrolls)
             }
             .alert(
-                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : "Location is disabled",
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
                 isPresented: $showLocationDeniedAlert
             ) {
-                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : "Open Settings") {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : loc.language == .albanian ? "Hap Cilësimet" : "Open Settings") {
                     locationManager.openSystemSettings()
                 }
-                Button(loc.language == .greek ? "Άκυρο" : "Cancel", role: .cancel) {}
+                Button(loc.language == .greek ? "Άκυρο" : loc.language == .albanian ? "Anulo" : "Cancel", role: .cancel) {}
             } message: {
                 Text(loc.language == .greek
                     ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
+                    : loc.language == .albanian
+                    ? "Nuk i ke dhënë Syrmos leje për vendndodhjen. Dëshiron të hapësh Cilësimet për ta aktivizuar?"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
         }
@@ -354,8 +356,8 @@ struct TransitMapView: View {
                     }
                     .accessibilityLabel(
                         vehiclesHidden
-                            ? (loc.language == .greek ? "Εμφάνιση οχημάτων" : "Show vehicles")
-                            : (loc.language == .greek ? "Απόκρυψη οχημάτων" : "Hide vehicles")
+                            ? (loc.language == .greek ? "Εμφάνιση οχημάτων" : loc.language == .albanian ? "Shfaq mjetet" : "Show vehicles")
+                            : (loc.language == .greek ? "Απόκρυψη οχημάτων" : loc.language == .albanian ? "Fshih mjetet" : "Hide vehicles")
                     )
 
                     Button {
@@ -495,7 +497,7 @@ struct StationSheetView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(loc.language == .greek ? "Κλείσιμο" : "Close")
+            .accessibilityLabel(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : "Close")
         }
     }
 
@@ -526,14 +528,14 @@ struct StationSheetView: View {
         if station.isInterchange {
             HStack(spacing: 6) {
                 FactChip(icon: "arrow.left.arrow.right",
-                         label: loc.language == .greek ? "Ανταπόκριση" : "Interchange")
+                         label: loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : "Interchange")
             }
         }
     }
 
     private var departuresList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next departures")
+            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next departures")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
@@ -557,7 +559,7 @@ struct StationSheetView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                Text(loc.language == .greek ? "Οδηγίες" : "Get directions")
+                Text(loc.language == .greek ? "Οδηγίες" : loc.language == .albanian ? "Udhëzime" : "Get directions")
                     .fontWeight(.semibold)
             }
             .frame(maxWidth: .infinity)
@@ -888,7 +890,7 @@ struct DepartureRowView: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     if departure.serviceType == "airport" {
-                        Text(loc.language == .greek ? "Αεροδρόμιο" : "Airport")
+                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : "Airport")
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 6)
@@ -900,6 +902,8 @@ struct DepartureRowView: View {
                 }
                 Text(loc.language == .greek
                     ? "προς \(departure.direction)"
+                    : loc.language == .albanian
+                    ? "drejt \(departure.direction)"
                     : "to \(departure.direction)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -908,7 +912,7 @@ struct DepartureRowView: View {
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 1) {
                 Text(departure.minutesAway <= 1
-                    ? (loc.language == .greek ? "Τώρα" : "Now")
+                    ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
                     : "\(departure.minutesAway) min")
                     .font(.subheadline)
                     .fontWeight(.bold)

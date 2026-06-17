@@ -47,9 +47,17 @@ final class STASYService: ObservableObject {
     private let apiURL = URL(string: "https://api-syrmos.peterdsp.dev/api/announcements")!
     private let cacheKey = "stasy_announcements_cache"
     private let cacheTimeKey = "stasy_announcements_cache_time"
+    private let statusCacheKey = "stasy_service_status_cache"
 
     init() {
         loadCachedAnnouncements()
+        loadCachedStatus()
+        // If both the UserDefaults cache and the live API are unavailable
+        // (first cold launch with no network), fall back to the bundled
+        // snapshot shipped at build time. Keeps the home screen non-empty.
+        if announcements.isEmpty && serviceStatus == nil {
+            hydrateFromBundleIfNeeded()
+        }
     }
 
     private struct APIPayload: Decodable {
@@ -108,6 +116,7 @@ final class STASYService: ObservableObject {
 
             let payload = try JSONDecoder().decode(APIPayload.self, from: data)
             serviceStatus = payload.status
+            cacheStatus(payload.status)
             let parsed: [STASYAnnouncement] = payload.announcements.map { item in
                 STASYAnnouncement(
                     id: item.id,
@@ -170,6 +179,61 @@ final class STASYService: ObservableObject {
         }
         if let cached = UserDefaults.standard.object(forKey: cacheTimeKey) as? TimeInterval {
             lastUpdated = Date(timeIntervalSince1970: cached)
+        }
+    }
+
+    private func cacheStatus(_ status: APIStatus?) {
+        guard let status else {
+            UserDefaults.standard.removeObject(forKey: statusCacheKey)
+            return
+        }
+        let dict: [String: String] = [
+            "status": status.status,
+            "rawMessage": status.rawMessage,
+            "rawMessageEn": status.rawMessageEn ?? "",
+            "serviceUntil": status.serviceUntil ?? "",
+            "scrapedAt": status.scrapedAt ?? "",
+        ]
+        UserDefaults.standard.set(dict, forKey: statusCacheKey)
+    }
+
+    private func loadCachedStatus() {
+        guard let dict = UserDefaults.standard.dictionary(forKey: statusCacheKey) as? [String: String],
+              let status = dict["status"], let rawMessage = dict["rawMessage"]
+        else { return }
+        serviceStatus = APIStatus(
+            status: status,
+            rawMessage: rawMessage,
+            rawMessageEn: dict["rawMessageEn"],
+            serviceUntil: (dict["serviceUntil"]?.isEmpty == false) ? dict["serviceUntil"] : nil,
+            scrapedAt: dict["scrapedAt"]
+        )
+    }
+
+    /// First-cold-launch fallback: load the snapshot baked at build time
+    /// (`Resources/seed-schedules-v2/announcements.json`). Matches the
+    /// same offline-first pattern used for SyrmosSchedulesStore.
+    private func hydrateFromBundleIfNeeded() {
+        guard let url = Bundle.main.url(
+            forResource: "announcements",
+            withExtension: "json",
+            subdirectory: "seed-schedules-v2"
+        ),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(APIPayload.self, from: data)
+        else { return }
+        serviceStatus = payload.status
+        announcements = payload.announcements.map { item in
+            STASYAnnouncement(
+                id: item.id,
+                title: item.title,
+                titleEn: item.titleEn ?? "",
+                date: item.date,
+                summary: item.summary,
+                summaryEn: item.summaryEn ?? "",
+                url: URL(string: item.url),
+                category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general
+            )
         }
     }
 }

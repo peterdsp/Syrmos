@@ -120,10 +120,10 @@ private fun LineRow(
         }
 
         Text(
-            text = if (lang == AppLanguage.GREEK) {
-                "${line.stationCount} σταθμοί"
-            } else {
-                "${line.stationCount} stations"
+            text = when (lang) {
+                AppLanguage.GREEK -> "${line.stationCount} σταθμοί"
+                AppLanguage.ALBANIAN -> "${line.stationCount} stacione"
+                else -> "${line.stationCount} stations"
             },
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -137,12 +137,20 @@ private fun Line.localizedName(lang: AppLanguage): String {
 
 private fun LineType.localizedName(lang: AppLanguage): String {
     return when (this) {
-        LineType.METRO -> if (lang == AppLanguage.GREEK) "Μετρό" else "Metro"
-        LineType.TRAM -> if (lang == AppLanguage.GREEK) "Τραμ" else "Tram"
-        LineType.SUBURBAN -> if (lang == AppLanguage.GREEK) {
-            "Προαστιακός Σιδηρόδρομος"
-        } else {
-            "Suburban Railway"
+        LineType.METRO -> when (lang) {
+            AppLanguage.GREEK -> "Μετρό"
+            AppLanguage.ALBANIAN -> "Metro"
+            else -> "Metro"
+        }
+        LineType.TRAM -> when (lang) {
+            AppLanguage.GREEK -> "Τραμ"
+            AppLanguage.ALBANIAN -> "Tramvaj"
+            else -> "Tram"
+        }
+        LineType.SUBURBAN -> when (lang) {
+            AppLanguage.GREEK -> "Προαστιακός Σιδηρόδρομος"
+            AppLanguage.ALBANIAN -> "Hekurudha periferike"
+            else -> "Suburban Railway"
         }
     }
 }

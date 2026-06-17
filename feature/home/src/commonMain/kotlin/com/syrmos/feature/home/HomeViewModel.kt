@@ -1,5 +1,6 @@
 package com.syrmos.feature.home
 
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
@@ -10,7 +11,6 @@ import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.network.STASYAnnouncement
-import com.syrmos.core.network.STASYAnnouncementService
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +40,7 @@ class HomeViewModel(
     private val findNearestStation: FindNearestStationUseCase,
     private val getNextDepartures: GetNextDeparturesUseCase,
     private val getLinesUseCase: GetLinesUseCase,
-    private val stasyService: STASYAnnouncementService,
+    private val announcementsRepository: AnnouncementsRepository,
     private val liveTrackerService: RailwayGovLiveTrackerService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -49,8 +49,25 @@ class HomeViewModel(
 
     init {
         loadLines()
-        loadAnnouncements()
+        observeAnnouncements()
+        refreshAnnouncements()
         observeLiveTrains()
+    }
+
+    private fun observeAnnouncements() {
+        scope.launch {
+            // Hydrate from the bundled snapshot first so a cold-launch with
+            // no network still has a status pill + alert list to render.
+            announcementsRepository.hydrateFromBundleIfNeeded()
+            announcementsRepository.feed.collect { feed ->
+                _uiState.update {
+                    it.copy(
+                        announcements = feed.announcements,
+                        serviceStatus = feed.status,
+                    )
+                }
+            }
+        }
     }
 
     private fun loadLines() {
@@ -59,21 +76,6 @@ class HomeViewModel(
                 .catch { /* ignore */ }
                 .collect { lines ->
                     _uiState.update { it.copy(lines = lines) }
-                }
-        }
-    }
-
-    private fun loadAnnouncements() {
-        scope.launch {
-            stasyService.fetchFeed()
-                .catch { /* ignore */ }
-                .collect { feed ->
-                    _uiState.update {
-                        it.copy(
-                            announcements = feed.announcements,
-                            serviceStatus = feed.status,
-                        )
-                    }
                 }
         }
     }
@@ -89,7 +91,9 @@ class HomeViewModel(
     }
 
     fun refreshAnnouncements() {
-        loadAnnouncements()
+        scope.launch {
+            runCatching { announcementsRepository.refresh() }
+        }
     }
 
     fun onLocationUpdate(latitude: Double, longitude: Double) {
