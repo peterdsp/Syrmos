@@ -50,6 +50,8 @@ fun SettingsScreen() {
     val stationOffsets = koinInject<com.syrmos.core.data.sync.StationOffsetsRepository>()
     val fares = koinInject<com.syrmos.core.data.sync.FaresRepository>()
     val visualOverrides = koinInject<com.syrmos.core.data.sync.VisualOverridesRepository>()
+    val announcements = koinInject<com.syrmos.core.data.sync.AnnouncementsRepository>()
+    val linesRefresher = koinInject<com.syrmos.core.data.seed.LinesRefresher>()
     val lastSync by scheduleSync.lastSyncAt.collectAsState()
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
@@ -159,13 +161,21 @@ fun SettingsScreen() {
                         enabled = !isRefreshing,
                         onClick = {
                             scope.launch {
-                                // Refresh every store in one tap. Sequential
-                                // so we don't fan out 4 concurrent requests
-                                // to the Pi on a flaky mobile link.
+                                // Refresh every store the app reads from
+                                // the Pi. Sequential so a flaky mobile
+                                // link doesn't fan out 6 simultaneous
+                                // requests. Mirrors the iOS runRefresh
+                                // sequence so both platforms come out of
+                                // a single Check now tap with the same
+                                // surface: schedules + manifest, lines,
+                                // station offsets, fares, visual
+                                // overrides, announcements.
                                 runCatching { scheduleSync.refresh() }
+                                runCatching { linesRefresher.refresh() }
                                 runCatching { stationOffsets.refresh() }
                                 runCatching { fares.refresh() }
                                 runCatching { visualOverrides.refresh() }
+                                runCatching { announcements.refresh() }
                             }
                         },
                     ) {
