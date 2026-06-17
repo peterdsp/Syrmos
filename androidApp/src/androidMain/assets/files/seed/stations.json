@@ -1680,7 +1680,8 @@
     "longitude": 23.6434156,
     "line_ids": [
       "A1",
-      "M1"
+      "M1",
+      "M3"
     ],
     "is_interchange": true,
     "accessibility": true,
@@ -2313,7 +2314,8 @@
     "longitude": 23.6434156,
     "line_ids": [
       "A4",
-      "M1"
+      "M1",
+      "M3"
     ],
     "is_interchange": true,
     "accessibility": true,

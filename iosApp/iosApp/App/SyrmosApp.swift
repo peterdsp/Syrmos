@@ -22,6 +22,23 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         guard let windowScene = scene as? UIWindowScene else { return }
         configureWindows(windowScene)
+        // iOS 26 / iOS 18 window-blank workaround. After a screenshot,
+        // lock/unlock, control-center swipe, or app-switcher cycle the
+        // UIWindow's CAMetalLayer can come back unbacked: SwiftUI keeps
+        // running, the view tree is alive, but the screen shows a solid
+        // black or white canvas until the user cold-restarts. Forcing
+        // isHidden = true -> false on the active window re-binds the
+        // backing layer; layoutIfNeeded + setNeedsDisplay nudge SwiftUI's
+        // host view to redraw into the fresh layer.
+        for window in windowScene.windows where window.isKeyWindow || window.windowLevel == .normal {
+            let wasHidden = window.isHidden
+            window.isHidden = true
+            window.isHidden = wasHidden
+            window.rootViewController?.view.setNeedsLayout()
+            window.rootViewController?.view.layoutIfNeeded()
+            window.layer.setNeedsDisplay()
+            window.rootViewController?.view.layer.setNeedsDisplay()
+        }
     }
 
     private func configureWindows(_ windowScene: UIWindowScene) {
