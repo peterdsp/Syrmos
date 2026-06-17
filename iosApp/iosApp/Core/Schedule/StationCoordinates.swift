@@ -268,12 +268,12 @@ enum StationCoords {
     // MARK: - Line associations
 
     static let lineAssociations: [String: [String]] = [
-        "M1_PIR": ["M1", "M3", "P1"], "M1_MON": ["M1", "M3"], "M1_OMO": ["M1", "M2"],
-        "M1_ATT": ["M1", "M2"], "M1_NER": ["M1", "P1"],
+        "M1_PIR": ["M1", "M3"], "M1_MON": ["M1", "M3"], "M1_OMO": ["M1", "M2"],
+        "M1_ATT": ["M1", "M2"], "M1_NER": ["M1"],
         "M2_ATT": ["M2", "M1"], "M2_OMO": ["M2", "M1"], "M2_SYN": ["M2", "M3"],
-        "M2_LAR": ["M2", "P1"],
-        "M3_PIR": ["M3", "M1", "P1"], "M3_MON": ["M3", "M1"], "M3_SYN": ["M3", "M2"],
-        "M3_DPL": ["M3", "P1"], "M3_AER": ["M3", "P1"],
+        "M2_LAR": ["M2"],
+        "M3_PIR": ["M3", "M1"], "M3_MON": ["M3", "M1"], "M3_SYN": ["M3", "M2"],
+        "M3_DPL": ["M3"], "M3_AER": ["M3"],
         "T6_SYN": ["T6", "M2", "M3"], "T6_EDE": ["T6", "T7"], "T6_PIK": ["T6", "T7"],
         "T7_EDE": ["T7", "T6"], "T7_PIK": ["T7", "T6"],
         "A1_PIR": ["A1", "M1", "M3"], "A1_ATH": ["A1", "M2"], "A1_NER": ["A1", "M1"],
