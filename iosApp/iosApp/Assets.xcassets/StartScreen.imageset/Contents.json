@@ -1,9 +1,21 @@
 {
   "images" : [
     {
+      "idiom" : "iphone",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "iphone",
+      "scale" : "2x"
+    },
+    {
       "filename" : "StartScreen-iPhone.jpeg",
       "idiom" : "iphone",
       "scale" : "3x"
+    },
+    {
+      "idiom" : "ipad",
+      "scale" : "1x"
     },
     {
       "filename" : "StartScreen-iPad.jpeg",

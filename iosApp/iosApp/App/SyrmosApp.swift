@@ -44,6 +44,15 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
+    /// `true` when the scene has been backgrounded since the last time
+    /// we replaced the hosting controller. We only rebuild on a real
+    /// background -> foreground edge, NOT on every active transition,
+    /// because system-presented modals (location permission alert,
+    /// camera, share sheet, app-switcher peek, etc.) briefly inactivate
+    /// the scene and the rebuild was throwing away SwiftUI @State —
+    /// most painfully it sent the onboarding flow back to page 1 the
+    /// moment the user granted location access on page 3.
+    private var didBackgroundSinceLastRebuild = false
 
     func scene(
         _ scene: UIScene,
@@ -59,14 +68,27 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
     }
 
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        didBackgroundSinceLastRebuild = true
+    }
+
     func sceneDidBecomeActive(_ scene: UIScene) {
         guard let window = window else { return }
-        // Replace the hosting controller wholesale. This is the only
-        // sequence that reliably recovers from the blank-window bug:
-        // a fresh UIHostingController instantiates a fresh UIView,
-        // gets a fresh backing layer, and SwiftUI lays out into it.
-        window.rootViewController = makeHostingController()
-        window.makeKeyAndVisible()
+        // Only replace the hosting controller after a real background
+        // cycle. Modal interruptions (location prompt, share sheet,
+        // app-switcher swipe-and-cancel) fire sceneDidBecomeActive
+        // without sceneDidEnterBackground; rebuilding there resets
+        // SwiftUI state in views the user is actively interacting with.
+        // For those, the cheap window.isHidden cycle is enough to
+        // refresh the CAMetalLayer without losing state.
+        if didBackgroundSinceLastRebuild {
+            didBackgroundSinceLastRebuild = false
+            window.rootViewController = makeHostingController()
+            window.makeKeyAndVisible()
+        } else {
+            window.isHidden = true
+            window.isHidden = false
+        }
     }
 
     private func makeHostingController() -> UIHostingController<AnyView> {
