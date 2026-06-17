@@ -717,6 +717,36 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
             "departureTime": r["departure_time"],
         })
 
+    # Per-station last-train endpoints scraped from stasy.gr (migration
+    # 0017). When the very last train of the night terminates at an
+    # intermediate station (M1 00:30 only goes to Omonia rather than
+    # Kifissia), this table is the only source of truth — the band
+    # aggregates always emit the line terminal. The client uses these
+    # rows to override the displayed destination on matching slots.
+    last_trains: list = []
+    try:
+        last_train_rows = conn.execute(
+            "SELECT day_type, direction, from_station_id, time, end_station_id, label"
+            " FROM last_train_endpoints WHERE line_id=?"
+            " ORDER BY day_type, direction, time",
+            (line_id,),
+        ).fetchall()
+        last_trains = [
+            {
+                "dayType": r["day_type"],
+                "direction": r["direction"],
+                "fromStationId": r["from_station_id"],
+                "time": r["time"],
+                "endStationId": r["end_station_id"],
+                "label": r["label"] or "",
+            }
+            for r in last_train_rows
+        ]
+    except sqlite3.OperationalError:
+        # Pi hasn't applied migration 0017 yet; skip silently so older
+        # deployments keep generating without error.
+        last_trains = []
+
     return {
         "lineId": line_id,
         "rules": [
@@ -745,6 +775,7 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
             for b in bands
         ],
         "trips": list(trips_by_key.values()),
+        "lastTrains": last_trains,
     }
 
 
