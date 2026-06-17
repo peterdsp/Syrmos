@@ -11,6 +11,7 @@ struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
     @StateObject private var locationService = LocationService()
+    @State private var selectedLineId: String = "M3"
     @State private var selectedStationId: String = AirportData.defaultStationId
     @State private var dayOffset: Int = 0
     @State private var departures: [Departure] = []
@@ -26,7 +27,24 @@ struct TimetablesView: View {
                     DayPickerRow(selectedOffset: $dayOffset)
                         .padding(.top, 4)
 
+                    LinePickerCard(
+                        selectedLineId: Binding(
+                            get: { selectedLineId },
+                            set: { newLine in
+                                selectedLineId = newLine
+                                // Snap station to first stop on the new
+                                // line; never leave the previous line's
+                                // station id dangling on a foreign line.
+                                if let first = AirportData.stations(for: newLine).first {
+                                    selectedStationId = first.id
+                                }
+                                didAutoPickNearest = true
+                            }
+                        )
+                    )
+
                     StationPickerCard(
+                        lineId: selectedLineId,
                         selectedStationId: Binding(
                             get: { selectedStationId },
                             set: { newValue in
@@ -90,7 +108,12 @@ struct TimetablesView: View {
         if let target = nearest {
             let candidate = target.station.stationIds.first { AirportData.knows(id: $0) }
                 ?? target.station.id
-            if AirportData.knows(id: candidate) {
+            if let station = AirportData.optional(id: candidate) {
+                // Set the line first so the station picker is already
+                // filtered to the right line when the station snaps in.
+                if let line = station.lineIds.first(where: { AirportData.airportLines.contains($0) }) {
+                    selectedLineId = line
+                }
                 selectedStationId = candidate
                 didAutoPickNearest = true
             }
@@ -130,25 +153,103 @@ struct TimetablesView: View {
 
 // MARK: - Glass cards
 
-private struct StationPickerCard: View {
-    @Binding var selectedStationId: String
+private struct LinePickerCard: View {
+    @Binding var selectedLineId: String
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         Menu {
             ForEach(AirportData.stationsByGroup, id: \.line) { group in
-                Section(group.label(loc.language)) {
-                    ForEach(group.stations, id: \.id) { st in
-                        Button {
-                            selectedStationId = st.id
-                        } label: {
-                            HStack {
-                                Text(loc.language == .greek ? st.nameEl : st.name)
-                                if st.id == selectedStationId {
-                                    Spacer()
-                                    Image(systemName: "checkmark")
-                                }
-                            }
+                Button {
+                    selectedLineId = group.line
+                } label: {
+                    HStack {
+                        Text(group.label(loc.language))
+                        if group.line == selectedLineId {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(alignment: .center) {
+                Image(systemName: iconName)
+                    .font(.title3)
+                    .foregroundStyle(tint)
+                    .frame(width: 36, height: 36)
+                    .background(tint.opacity(0.15), in: Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label(.line).uppercased())
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .tracking(0.6)
+                    Text(currentGroupLabel)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .glassCardBackground()
+            .contentShape(RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var currentGroupLabel: String {
+        AirportData.group(for: selectedLineId)?.label(loc.language) ?? selectedLineId
+    }
+
+    private var iconName: String {
+        switch selectedLineId {
+        case "M3", "M3_AIR": return "tram.tunnel.fill"
+        default: return "train.side.front.car"
+        }
+    }
+
+    private var tint: Color {
+        SyrmosData.lineColor(for: selectedLineId)
+    }
+
+    private enum CardLabel { case line, station }
+    private func label(_ which: CardLabel) -> String {
+        switch (which, loc.language) {
+        case (.line, .greek): return "Γραμμή"
+        case (.line, .albanian): return "Linja"
+        case (.line, .english): return "Line"
+        case (.station, .greek): return "Σταθμός"
+        case (.station, .albanian): return "Stacioni"
+        case (.station, .english): return "Station"
+        }
+    }
+}
+
+private struct StationPickerCard: View {
+    let lineId: String
+    @Binding var selectedStationId: String
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        Menu {
+            ForEach(AirportData.stations(for: lineId), id: \.id) { st in
+                Button {
+                    selectedStationId = st.id
+                } label: {
+                    HStack {
+                        Text(loc.language == .greek ? st.nameEl : st.name)
+                        if st.id == selectedStationId {
+                            Spacer()
+                            Image(systemName: "checkmark")
                         }
                     }
                 }
@@ -156,16 +257,14 @@ private struct StationPickerCard: View {
         } label: {
             let current = AirportData.station(for: selectedStationId)
             HStack(alignment: .center) {
-                Image(systemName: "tram.fill")
+                Image(systemName: "mappin.circle.fill")
                     .font(.title3)
                     .foregroundStyle(.tint)
                     .frame(width: 36, height: 36)
                     .background(.tint.opacity(0.12), in: Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(loc.language == .greek
-                         ? (loc.language == .greek ? "Σταθμός" : "Station").uppercased()
-                         : (loc.language == .albanian ? "STACIONI" : "STATION"))
+                    Text(stationLabel.uppercased())
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
@@ -186,6 +285,14 @@ private struct StationPickerCard: View {
             .contentShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
+    }
+
+    private var stationLabel: String {
+        switch loc.language {
+        case .greek: return "Σταθμός"
+        case .albanian: return "Stacioni"
+        case .english: return "Station"
+        }
     }
 }
 
@@ -680,5 +787,21 @@ enum AirportData {
         byId[id] ?? Station(id: id, name: id, nameEl: id, lineIds: [])
     }
 
+    /// Optional variant: returns nil when the picker has no entry,
+    /// used by the nearest-station auto-pick to refuse a candidate
+    /// whose id wouldn't show in the menu.
+    static func optional(id: String) -> Station? { byId[id] }
+
     static func knows(id: String) -> Bool { byId[id] != nil }
+
+    /// Stations belonging to a given airport line, in the line's
+    /// natural order. Drives the second-step picker once the user has
+    /// chosen which line they want to ride.
+    static func stations(for lineId: String) -> [Station] {
+        stationsByGroup.first(where: { $0.line == lineId })?.stations ?? []
+    }
+
+    static func group(for lineId: String) -> Group? {
+        stationsByGroup.first { $0.line == lineId }
+    }
 }
