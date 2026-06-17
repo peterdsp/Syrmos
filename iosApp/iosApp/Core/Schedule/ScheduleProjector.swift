@@ -528,15 +528,18 @@ enum ScheduleProjector {
                 // -1437 and threw away every late-night band on M1/M2
                 // mon_thu (open 05:00 close 00:30) right after midnight.
                 let effectiveNow = nowMinutes - shift
-                // 2-hour slack on both sides so trains DOWNSTREAM of the
-                // origin terminal still emit after the last slot leaves
-                // origin. M1 mon_thu last slot leaves Piraeus at 01:30;
-                // Tavros offset is 11 min so the last train passes
-                // Tavros at 01:41. Without slack we'd reject the band at
-                // 01:38 and Tavros would show nothing even though a
-                // train is 3 minutes away. Mirrors the slack the Pi
-                // projector has been shipping for months.
-                if effectiveNow < openM - 120 || effectiveNow > effectiveClose + 120 { continue }
+                // Only reject bands that are entirely in the past. 2-hour
+                // upper slack lets trains DOWNSTREAM of the origin still
+                // emit after the last slot leaves the terminus. We do NOT
+                // gate on the lower bound: a future band of today's day-
+                // type produces future slots naturally (slot loop emits
+                // start..end), so at 02:09 Thursday with mon_thu open at
+                // 05:30 we still need to enumerate the band and emit the
+                // 05:30 first train. Past behavior reject-when-before-open
+                // forced the projector to roll into next-day fallback,
+                // which spat out "1.315 min" for Friday's 00:03 slot while
+                // Thursday's morning service was sitting right there.
+                if effectiveNow > effectiveClose + 120 { continue }
             }
 
             let bands = bundle.bands

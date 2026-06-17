@@ -36,10 +36,6 @@ struct SyrmosSettingsView: View {
                     LabeledContent(loc[.stations], value: "90+")
                     LabeledContent(loc[.lines], value: "9")
                     LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
-                    Toggle(offlineOnlyLabel, isOn: Binding(
-                        get: { schedules.offlineOnly },
-                        set: { schedules.offlineOnly = $0 }
-                    ))
                     Button {
                         Task { await runRefresh() }
                     } label: {
@@ -220,16 +216,6 @@ struct SyrmosSettingsView: View {
                     : "Schedules synced with the latest version.",
                 isSuccess: true
             )
-        } else if schedules.offlineOnly {
-            refreshAlert = RefreshAlert(
-                title: lang == .greek ? "Λειτουργία εκτός σύνδεσης" : lang == .albanian ? "Modaliteti vetëm pa internet" : "Offline-only mode",
-                message: lang == .greek
-                    ? "Απενεργοποιήστε την για να συγχρονίσετε με τον διακομιστή."
-                    : lang == .albanian
-                    ? "Çaktivizoje për t'u sinkronizuar me serverin."
-                    : "Turn it off to sync with the server.",
-                isSuccess: false
-            )
         } else {
             refreshAlert = RefreshAlert(
                 title: lang == .greek ? "Δεν ήταν δυνατή η ενημέρωση" : lang == .albanian ? "Përditësimi dështoi" : "Update failed",
@@ -260,10 +246,6 @@ struct SyrmosSettingsView: View {
 
     private var lastUpdatedLabel: String {
         loc.language == .greek ? "Τελευταία ενημέρωση" : loc.language == .albanian ? "Përditësimi i fundit" : "Last updated"
-    }
-
-    private var offlineOnlyLabel: String {
-        loc.language == .greek ? "Μόνο εκτός σύνδεσης" : loc.language == .albanian ? "Vetëm pa internet" : "Offline-only mode"
     }
 
     private var checkNowLabel: String {

@@ -36,6 +36,27 @@ struct Departure: Identifiable {
     let direction: String
     let minutesAway: Int
     let serviceType: String
+
+    /// Human-friendly arrival countdown. "Now" for the train that's
+    /// already at the platform, "5 min" for the close ones, and
+    /// "3h 21min" when the next service is hours away (typical for
+    /// late-night views or stations far downstream of a terminus).
+    func minutesAwayDisplay(language: AppLanguage) -> String {
+        if minutesAway <= 1 {
+            switch language {
+            case .greek: return "Τώρα"
+            case .albanian: return "Tani"
+            default: return "Now"
+            }
+        }
+        if minutesAway < 60 {
+            return "\(minutesAway) min"
+        }
+        let h = minutesAway / 60
+        let m = minutesAway % 60
+        if m == 0 { return "\(h)h" }
+        return "\(h)h \(m)min"
+    }
 }
 
 // MARK: - Service patterns from official STASY/Hellenic Train timetables

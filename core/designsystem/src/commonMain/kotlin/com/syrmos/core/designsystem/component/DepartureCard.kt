@@ -78,11 +78,7 @@ fun DepartureCard(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = when {
-                        minutesAway <= 0 -> "Now"
-                        minutesAway == 1 -> "1 min"
-                        else -> "$minutesAway min"
-                    },
+                    text = formatMinutesAway(minutesAway),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = when {
@@ -99,4 +95,16 @@ fun DepartureCard(
             }
         }
     }
+}
+
+/** Countdown formatter shared across Departure/Schedule UI surfaces.
+ * "Now" once the train is at the platform, "Xh Ymin" past one hour so
+ * late-night views like Nikaia M3 at 02:09 show "3h 21min" instead of
+ * the unreadable "201 min" the bare number used to render. */
+fun formatMinutesAway(minutesAway: Int): String = when {
+    minutesAway <= 0 -> "Now"
+    minutesAway == 1 -> "1 min"
+    minutesAway < 60 -> "$minutesAway min"
+    minutesAway % 60 == 0 -> "${minutesAway / 60}h"
+    else -> "${minutesAway / 60}h ${minutesAway % 60}min"
 }

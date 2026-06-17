@@ -559,7 +559,7 @@ private fun FeaturedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
         Column(horizontalAlignment = Alignment.End) {
             if (isToday) {
                 Text(
-                    text = if (minsAway <= 1) nowLabel(lang) else "$minsAway min",
+                    text = if (minsAway <= 1) nowLabel(lang) else com.syrmos.core.designsystem.component.formatMinutesAway(minsAway),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = accent,
@@ -616,7 +616,7 @@ private fun ExpandedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (isToday && minsAway > 0) {
                 Text(
-                    text = "$minsAway min",
+                    text = com.syrmos.core.designsystem.component.formatMinutesAway(minsAway),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
