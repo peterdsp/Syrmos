@@ -72,8 +72,18 @@ private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
+    /// Root-level rebuild trigger. iOS 26 has a SwiftUI bug where the
+    /// entire window's CAMetalLayer can come back blank after a
+    /// screenshot, lock/unlock, control-center swipe, or app-switcher
+    /// cycle. Per user reports the black screen affects every tab, not
+    /// just the Map tab, so a Map-only rebuild key isn't enough. Bumping
+    /// this id on every active-state edge forces SwiftUI to discard and
+    /// recreate the entire TabView subtree, which re-establishes a
+    /// healthy backing layer.
+    @State private var rootRebuildKey: Int = 0
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -111,8 +121,35 @@ struct ContentView: View {
                     .tag(SyrmosTab.settings)
             }
             .tint(.syrmosPrimary)
+            .id(rootRebuildKey)
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.didBecomeActiveNotification
+        )) { _ in
+            rootRebuildKey &+= 1
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.willEnterForegroundNotification
+        )) { _ in
+            rootRebuildKey &+= 1
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.userDidTakeScreenshotNotification
+        )) { _ in
+            rootRebuildKey &+= 1
+            // The system overlay animation finishes ~400ms after the
+            // notification; bump again so the rebuild lands AFTER the
+            // overlay is fully gone and the window can repaint cleanly.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                rootRebuildKey &+= 1
+            }
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if oldPhase != .active && newPhase == .active {
+                rootRebuildKey &+= 1
+            }
+        }
         // Fire-and-forget refresh of the offline-first lines cache. Doesn't
         // block UI; failure is silent. We do not propagate the service via
         // EnvironmentObject because a missing object on a presented sheet/

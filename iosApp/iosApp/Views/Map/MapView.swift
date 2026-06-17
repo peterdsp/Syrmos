@@ -391,9 +391,14 @@ struct StationSheetView: View {
                 Text(loc.language == .greek ? station.nameEl : station.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
-                Text(loc.language == .greek ? station.displayName : station.nameEl)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                // Subtitle only when in Greek mode (Latin underneath the
+                // Greek title). Non-Greek modes get a single Latin name —
+                // Albanian and English users don't expect a Greek subtitle.
+                if loc.language == .greek {
+                    Text(station.displayName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Button {

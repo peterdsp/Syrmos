@@ -20,7 +20,12 @@ struct StationDetailView: View {
                 } label: {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(loc.language == .greek ? station.name : station.nameEl)
+                            // Show Latin name in non-Greek modes. The original
+                            // logic painted Greek text underneath the Latin nav
+                            // title for English+Albanian, which surprised Albanian
+                            // users who expect zero Greek when their app language
+                            // is not Greek.
+                            Text(loc.language == .greek ? station.name : station.name)
                                 .font(.title3)
                                 .foregroundStyle(.secondary)
 
