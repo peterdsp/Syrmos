@@ -25,12 +25,38 @@ import com.syrmos.core.model.transit.SimulatedTrain
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.ITileSource
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+
+/// Carto Voyager raster: OSM data rendered with name:en preferred over the
+/// local language. Used for English + Albanian app modes (Albanian-specific
+/// label rendering isn't a free public tile service as of 2026). Greek mode
+/// uses the default OSM Mapnik tiles which carry Greek labels in Greece.
+private val CARTO_VOYAGER: ITileSource = XYTileSource(
+    "CartoVoyager",
+    0,
+    20,
+    256,
+    ".png",
+    arrayOf(
+        "https://a.basemaps.cartocdn.com/voyager/",
+        "https://b.basemaps.cartocdn.com/voyager/",
+        "https://c.basemaps.cartocdn.com/voyager/",
+        "https://d.basemaps.cartocdn.com/voyager/",
+    ),
+    "© OpenStreetMap, © CARTO",
+)
+
+private fun tileSourceFor(lang: com.syrmos.core.common.AppLanguage): ITileSource = when (lang) {
+    com.syrmos.core.common.AppLanguage.GREEK -> TileSourceFactory.MAPNIK
+    else -> CARTO_VOYAGER
+}
 
 /**
  * OSM-derived rail route geometry shipped at `assets/files/seed/schedules-v2/shapes.json`.
@@ -136,6 +162,8 @@ internal actual fun PlatformMapView(
     // 0 = country, 1 = city, 2 = district, 3 = street. Mirrors web + iOS buckets.
     var zoomBucket by remember { mutableStateOf(2) }
 
+    val appLang by com.syrmos.core.common.LocalizationManager.language.collectAsState()
+
     DisposableEffect(context) {
         Configuration.getInstance().userAgentValue = context.packageName
         onDispose { }
@@ -145,7 +173,7 @@ internal actual fun PlatformMapView(
         modifier = modifier,
         factory = { ctx ->
             MapView(ctx).apply {
-                setTileSource(TileSourceFactory.MAPNIK)
+                setTileSource(tileSourceFor(appLang))
                 setMultiTouchControls(true)
                 controller.setZoom(12.0)
                 controller.setCenter(GeoPoint(37.98, 23.73))
@@ -174,6 +202,17 @@ internal actual fun PlatformMapView(
                     }
                 })
                 mapViewRef.value = this
+            }
+        },
+        update = { mv ->
+            // Re-apply tile source when the active language flips so the
+            // Map tab picks up the localised labels without a process
+            // restart. osmdroid handles the swap and invalidates the
+            // tile cache for us.
+            val desired = tileSourceFor(appLang)
+            if (mv.tileProvider.tileSource !== desired) {
+                mv.setTileSource(desired)
+                mv.invalidate()
             }
         },
     )
