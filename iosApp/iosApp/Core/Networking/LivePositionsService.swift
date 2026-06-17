@@ -48,28 +48,23 @@ final class LivePositionsService: ObservableObject {
     private let projectedLineIds = ["M1", "M2", "M3", "M3_AIR", "T6", "T7"]
 
     private init() {
-        pollTask = Task { [weak self] in
-            await self?.runLoop()
-        }
+        // Offline-first: the live-positions feed is ONLY hit when the
+        // user explicitly taps Check now in Settings. No auto-poll on
+        // app launch. Map dots stay empty (the polylines + stations are
+        // bundled so the map still renders fully) until a refresh is
+        // requested. Once a refresh fires, `trains` stays populated for
+        // the rest of the session — the per-frame interpolation already
+        // advances each dot from its own originDepartureEpoch so the
+        // dots keep moving smoothly without re-hitting the API.
     }
 
     deinit { pollTask?.cancel() }
 
-    private func runLoop() async {
-        // Offsets are cheap to fetch and almost-static. Refresh hourly.
+    /// Public entry. Settings' Check now calls this; the in-app
+    /// schedule of polling is the user, not a timer.
+    func refresh() async {
         await ensureOffsets()
         await fetchActiveTrains()
-        while !Task.isCancelled {
-            // 15s matches Departures' refresh cadence. Between fetches the
-            // map uses elapsedMinutes derived from wall-clock to advance
-            // each dot smoothly.
-            try? await Task.sleep(nanoseconds: 15_000_000_000)
-            if Task.isCancelled { return }
-            if let last = lastOffsetsFetch, Date().timeIntervalSince(last) > 3600 {
-                await ensureOffsets()
-            }
-            await fetchActiveTrains()
-        }
     }
 
     private func ensureOffsets() async {

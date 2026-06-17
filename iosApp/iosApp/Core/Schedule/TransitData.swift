@@ -337,44 +337,47 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
     }
 
     init() {
-        task = Task.detached(priority: .utility) { @Sendable [weak self] in
-            await LiveTrainService.pollLoop(self)
-        }
+        // Offline-first: no auto-poll. The suburban live-trains feed is
+        // refreshed only when the user taps Check now in Settings.
     }
 
     deinit {
         task?.cancel()
     }
 
-    private static func pollLoop(_ instance: LiveTrainService?) async {
+    /// Public single-shot refresh — Settings -> Check now wires this up.
+    func refresh() async {
+        await LiveTrainService.fetchOnce(self)
+    }
+
+    private static func fetchOnce(_ instance: LiveTrainService?) async {
         let url = URL(string: "https://api-syrmos.peterdsp.dev/api/trains")!
-        while !Task.isCancelled {
-            do {
-                var req = URLRequest(url: url)
-                req.timeoutInterval = 10
-                req.cachePolicy = .reloadIgnoringLocalCacheData
-                let (data, response) = try await URLSession.shared.data(for: req)
-                guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                    throw URLError(.badServerResponse)
-                }
-                let payload = try JSONDecoder().decode(TrainsPayload.self, from: data)
-                let parsed: [LiveTrain] = payload.trains.map { t in
-                    LiveTrain(
-                        id: t.id,
-                        lineId: t.lineId,
-                        trainNumber: t.trainNumber,
-                        origin: t.origin,
-                        destination: t.destination,
-                        nextStation: t.nextStation,
-                        delayMinutes: t.delayMinutes,
-                        coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng)
-                    )
-                }
-                await MainActor.run { instance?.trains = parsed }
-            } catch {
-                // ignore — keep showing previous trains until next poll succeeds
+        do {
+            var req = URLRequest(url: url)
+            req.timeoutInterval = 10
+            req.cachePolicy = .reloadIgnoringLocalCacheData
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                throw URLError(.badServerResponse)
             }
-            try? await Task.sleep(nanoseconds: 10_000_000_000)  // 10s
+            let payload = try JSONDecoder().decode(TrainsPayload.self, from: data)
+            let parsed: [LiveTrain] = payload.trains.map { t in
+                LiveTrain(
+                    id: t.id,
+                    lineId: t.lineId,
+                    trainNumber: t.trainNumber,
+                    origin: t.origin,
+                    destination: t.destination,
+                    nextStation: t.nextStation,
+                    delayMinutes: t.delayMinutes,
+                    coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng)
+                )
+            }
+            await MainActor.run { instance?.trains = parsed }
+        } catch {
+            // Silent — the user's previous Check now still has whatever
+            // the last poll returned. Map keeps rendering bundled
+            // polylines + stations regardless.
         }
     }
 }

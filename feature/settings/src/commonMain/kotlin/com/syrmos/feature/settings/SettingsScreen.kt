@@ -48,6 +48,9 @@ fun SettingsScreen() {
     var showLanguagePicker by remember { mutableStateOf(false) }
     var showFares by remember { mutableStateOf(false) }
     val scheduleSync = koinInject<ScheduleSyncRepository>()
+    val stationOffsets = koinInject<com.syrmos.core.data.sync.StationOffsetsRepository>()
+    val fares = koinInject<com.syrmos.core.data.sync.FaresRepository>()
+    val visualOverrides = koinInject<com.syrmos.core.data.sync.VisualOverridesRepository>()
     val lastSync by scheduleSync.lastSyncAt.collectAsState()
     val offlineOnly by scheduleSync.offlineOnly.collectAsState()
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
@@ -170,8 +173,24 @@ fun SettingsScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Button(
-                        enabled = !isRefreshing && !offlineOnly,
-                        onClick = { scope.launch { scheduleSync.refresh() } },
+                        // Always enabled. Check now is the ONLY way the
+                        // app talks to the Pi — there's no background
+                        // poll, no auto-refresh on launch, no implicit
+                        // network call elsewhere. Disabling this when
+                        // offlineOnly is on locked the user out of the
+                        // only refresh path Syrmos has.
+                        enabled = !isRefreshing,
+                        onClick = {
+                            scope.launch {
+                                // Refresh every store in one tap. Sequential
+                                // so we don't fan out 4 concurrent requests
+                                // to the Pi on a flaky mobile link.
+                                runCatching { scheduleSync.refresh() }
+                                runCatching { stationOffsets.refresh() }
+                                runCatching { fares.refresh() }
+                                runCatching { visualOverrides.refresh() }
+                            }
+                        },
                     ) {
                         Text(when (lang) {
                             AppLanguage.GREEK -> "Έλεγχος τώρα"
