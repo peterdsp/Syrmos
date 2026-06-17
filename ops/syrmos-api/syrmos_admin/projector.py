@@ -451,7 +451,14 @@ def _project_line(
                 # threw away every late-night M1 / M2 / M3 train still
                 # in transit right after midnight.
                 effective_now = now_minutes - shift
-                if effective_now < open_min or effective_now > effective_close:
+                # 2-hour slack on both sides so trains in transit through
+                # stations DOWNSTREAM of the band's origin still emit
+                # after the last slot leaves the terminus. M1 last slot
+                # leaves Piraeus at 01:30; Tavros offset is 11 min so the
+                # last train passes Tavros at 01:41. Without slack the
+                # band is rejected at 01:38 and Tavros shows nothing
+                # even though a train is 3 minutes away.
+                if effective_now < open_min - 120 or effective_now > effective_close + 120:
                     continue
 
         # Filter bands by dayType plus next-day-extension rule
