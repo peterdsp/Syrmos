@@ -243,6 +243,11 @@ struct TransitMapView: View {
                         tappedStation = stations.first(where: { $0.id == stationId })
                     }
                 )
+                // Extend the map underneath the CompactTabHeader at the
+                // top and the system tab bar at the bottom. Without this,
+                // the safe-area inset paints solid black bars above and
+                // below the map, which read as a layout glitch.
+                .ignoresSafeArea(.container, edges: [.top, .bottom])
 
                 VStack(spacing: 12) {
                     Button {
