@@ -29,21 +29,7 @@ struct StationDetailView: View {
                                 .font(.title3)
                                 .foregroundStyle(.secondary)
 
-                            HStack(spacing: 8) {
-                                ForEach(station.lineIds, id: \.self) { lineId in
-                                    HStack(spacing: 4) {
-                                        Circle()
-                                            .fill(SyrmosData.lineColor(for: lineId))
-                                            .frame(width: 10, height: 10)
-                                        Text(SyrmosData.line(for: lineId)?.name ?? lineId)
-                                            .font(.caption)
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
-                                    .clipShape(Capsule())
-                                }
-                            }
+                            LinePillsRow(lineIds: station.lineIds)
                         }
                         Spacer()
                         Image(systemName: "map.fill")
@@ -207,6 +193,111 @@ struct StationDetailView: View {
         case 0...2: return .arrivalSoon
         case 3...5: return .arrivalModerate
         default: return .arrivalFar
+        }
+    }
+}
+
+// MARK: - Line pills
+
+/// Wrapping row of glass-capsule line pills. Short label per pill
+/// (M1 / M3 / A1 / A4 / T6 etc.) so nothing ever hyphenates or
+/// wraps inside the capsule itself, and a coloured dot keyed to
+/// the line tint. Pills flow onto a second row when they overflow.
+private struct LinePillsRow: View {
+    let lineIds: [String]
+
+    var body: some View {
+        FlowLayout(spacing: 6) {
+            ForEach(lineIds, id: \.self) { lineId in
+                LinePill(lineId: lineId)
+            }
+        }
+    }
+}
+
+private struct LinePill: View {
+    let lineId: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(SyrmosData.lineColor(for: lineId))
+                .frame(width: 7, height: 7)
+            Text(shortLabel)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Capsule().strokeBorder(SyrmosData.lineColor(for: lineId).opacity(0.4), lineWidth: 0.8)
+                )
+        )
+    }
+
+    /// Short, never-wrapping label. Strip the verbose suburban suffix
+    /// ("A1 Piraeus-Airport" -> "A1") and just keep the line id; users
+    /// recognise it from the legend / map.
+    private var shortLabel: String {
+        switch lineId {
+        case "M1": return "M1"
+        case "M2": return "M2"
+        case "M3", "M3_AIR": return "M3"
+        case "T6": return "T6"
+        case "T7": return "T7"
+        case "A1": return "A1"
+        case "A2": return "A2"
+        case "A3": return "A3"
+        case "A4": return "A4"
+        default:   return lineId
+        }
+    }
+}
+
+/// Compact flow layout: lays children left-to-right, wraps when they
+/// exceed the proposed width. Avoids the hyphenated mess HStack
+/// produced when a long pill label hit the screen edge.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        let maxX = bounds.maxX
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
         }
     }
 }
