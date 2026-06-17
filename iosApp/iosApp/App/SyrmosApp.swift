@@ -1,7 +1,36 @@
 import SwiftUI
 import UIKit
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+// iOS 26 / iOS 18 SwiftUI WindowGroup has a long-standing bug where the
+// underlying UIWindow's CAMetalLayer ends up in an unrenderable state after
+// a lock/unlock, screenshot, control-center swipe, or app-switcher cycle.
+// The app keeps running, SwiftUI keeps emitting updates, but the user sees
+// a solid black (dark mode) or white (light mode) screen until the app is
+// force-quit.
+//
+// We tried, in escalating order:
+//   1. mapRebuildKey on the Map tab only — bug also happens on Home etc
+//   2. rootRebuildKey .id() on the TabView — SwiftUI rebuilt the tree
+//      but reused the dead backing layer
+//   3. SceneDelegate window.isHidden cycle + setNeedsDisplay — partial,
+//      still reproduced on iPhone 17 Pro Max with iOS 26
+//
+// This file drops SwiftUI's WindowGroup lifecycle entirely. We own the
+// UIWindow inside SceneDelegate and host the SwiftUI ContentView in a
+// UIHostingController. On every active-state edge we replace the
+// rootViewController with a brand new UIHostingController — that forces
+// UIKit to allocate a fresh UIView hierarchy on top of a fresh layer,
+// which the OS happily re-binds to a healthy CAMetalLayer.
+
+@main
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        return true
+    }
+
     func application(
         _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
@@ -13,50 +42,41 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 
-class SceneDelegate: NSObject, UIWindowSceneDelegate {
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
         guard let windowScene = scene as? UIWindowScene else { return }
-        configureWindows(windowScene)
+        configureAppearance()
+        let window = UIWindow(windowScene: windowScene)
+        window.rootViewController = makeHostingController()
+        window.backgroundColor = .systemBackground
+        self.window = window
+        window.makeKeyAndVisible()
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
-        guard let windowScene = scene as? UIWindowScene else { return }
-        configureWindows(windowScene)
-        // iOS 26 / iOS 18 window-blank workaround. After a screenshot,
-        // lock/unlock, control-center swipe, or app-switcher cycle the
-        // UIWindow's CAMetalLayer can come back unbacked: SwiftUI keeps
-        // running, the view tree is alive, but the screen shows a solid
-        // black or white canvas until the user cold-restarts. Forcing
-        // isHidden = true -> false on the active window re-binds the
-        // backing layer; layoutIfNeeded + setNeedsDisplay nudge SwiftUI's
-        // host view to redraw into the fresh layer.
-        // Hit every window in the scene, not just the key one. On iOS 18+
-        // the key-window assignment can lag behind sceneDidBecomeActive,
-        // and filtering by windowLevel skipped the SwiftUI host window in
-        // some build configurations. Cycling every window is cheap and
-        // catches whichever one is currently dead.
-        for window in windowScene.windows {
-            let wasHidden = window.isHidden
-            window.isHidden = true
-            window.isHidden = wasHidden
-            window.rootViewController?.view.setNeedsLayout()
-            window.rootViewController?.view.layoutIfNeeded()
-            window.layer.setNeedsDisplay()
-            window.rootViewController?.view.layer.setNeedsDisplay()
-            // Recursively dirty every backing layer so SwiftUI's
-            // host hierarchy repaints into the fresh window layer.
-            window.rootViewController?.view.subviews.forEach { v in
-                v.setNeedsDisplay()
-                v.layer.setNeedsDisplay()
-            }
-        }
+        guard let window = window else { return }
+        // Replace the hosting controller wholesale. This is the only
+        // sequence that reliably recovers from the blank-window bug:
+        // a fresh UIHostingController instantiates a fresh UIView,
+        // gets a fresh backing layer, and SwiftUI lays out into it.
+        window.rootViewController = makeHostingController()
+        window.makeKeyAndVisible()
     }
 
-    private func configureWindows(_ windowScene: UIWindowScene) {
-        for window in windowScene.windows {
-            window.backgroundColor = .systemGroupedBackground
-        }
-        // Stop UITabBarController and UINavigationController from flashing black during transitions
+    private func makeHostingController() -> UIHostingController<AnyView> {
+        let root = AnyView(RootView())
+        let host = UIHostingController(rootView: root)
+        host.view.backgroundColor = .systemBackground
+        return host
+    }
+
+    private func configureAppearance() {
         UITabBar.appearance().isTranslucent = true
         UINavigationBar.appearance().isTranslucent = true
         let appearance = UITabBarAppearance()
@@ -67,29 +87,20 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
     }
 }
 
-@main
-struct SyrmosApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
+/// The SwiftUI root. Replaces what `WindowGroup { ... }` used to host.
+/// Reads onboarding state on every instantiation so a re-mounted scene
+/// picks up the latest flag without a stale @State capture.
+struct RootView: View {
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: kOnboardingCompletedKey)
 
-    var body: some Scene {
-        WindowGroup {
-            // Note: a SwiftUI LaunchSplashView used to overlay this ZStack
-            // for 1.4s after the system splash handed off. It caused a
-            // window-blank regression on background-to-foreground because
-            // the .task re-fired and the overlay could re-mount on top of
-            // a not-yet-redrawn ContentView. The system launch screen
-            // (Info.plist UILaunchScreen) already covers the cold-start
-            // visual; SwiftUI doesn't need to repeat that.
-            if hasCompletedOnboarding {
-                ContentView()
-            } else {
-                OnboardingView {
-                    UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        hasCompletedOnboarding = true
-                    }
+    var body: some View {
+        if hasCompletedOnboarding {
+            ContentView()
+        } else {
+            OnboardingView {
+                UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    hasCompletedOnboarding = true
                 }
             }
         }
@@ -100,18 +111,8 @@ private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
-    /// Root-level rebuild trigger. iOS 26 has a SwiftUI bug where the
-    /// entire window's CAMetalLayer can come back blank after a
-    /// screenshot, lock/unlock, control-center swipe, or app-switcher
-    /// cycle. Per user reports the black screen affects every tab, not
-    /// just the Map tab, so a Map-only rebuild key isn't enough. Bumping
-    /// this id on every active-state edge forces SwiftUI to discard and
-    /// recreate the entire TabView subtree, which re-establishes a
-    /// healthy backing layer.
-    @State private var rootRebuildKey: Int = 0
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -149,44 +150,9 @@ struct ContentView: View {
                     .tag(SyrmosTab.settings)
             }
             .tint(.syrmosPrimary)
-            .id(rootRebuildKey)
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
-        .onReceive(NotificationCenter.default.publisher(
-            for: UIApplication.didBecomeActiveNotification
-        )) { _ in
-            rootRebuildKey &+= 1
-        }
-        .onReceive(NotificationCenter.default.publisher(
-            for: UIApplication.willEnterForegroundNotification
-        )) { _ in
-            rootRebuildKey &+= 1
-        }
-        .onReceive(NotificationCenter.default.publisher(
-            for: UIApplication.userDidTakeScreenshotNotification
-        )) { _ in
-            rootRebuildKey &+= 1
-            // The system overlay animation finishes ~400ms after the
-            // notification; bump again so the rebuild lands AFTER the
-            // overlay is fully gone and the window can repaint cleanly.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                rootRebuildKey &+= 1
-            }
-        }
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            if oldPhase != .active && newPhase == .active {
-                rootRebuildKey &+= 1
-            }
-        }
-        // Fire-and-forget refresh of the offline-first lines cache. Doesn't
-        // block UI; failure is silent. We do not propagate the service via
-        // EnvironmentObject because a missing object on a presented sheet/
-        // navigation destination silently freezes SwiftUI to a black screen
-        // on iOS 18.
         .task {
-            // Boot the diagnostics center first so its watchdog catches
-            // even the earliest hang. Idempotent — calling .shared touches
-            // the lazy singleton.
             _ = DiagnosticsCenter.shared
             DiagnosticsCenter.shared.leaveBreadcrumb("app", "ContentView appeared")
 
