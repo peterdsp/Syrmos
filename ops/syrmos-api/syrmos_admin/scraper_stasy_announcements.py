@@ -172,16 +172,40 @@ def _translate_gr_en(text: str) -> str:
     Returns the original text on any failure so the scraper never errors
     out a whole run because translation hiccups. Safe to call even when
     deep-translator is missing — the import is wrapped."""
+    return _translate_gr_to(text, "en")
+
+
+def _translate_gr_sq(text: str) -> str:
+    """Greek -> Albanian translation for the inline alert banner so the
+    home screen status pill renders the right language for sq users.
+    Same failure semantics as _translate_gr_en."""
+    return _translate_gr_to(text, "sq")
+
+
+def _translate_gr_to(text: str, target_lang: str) -> str:
     text = text.strip()
     if not text or not _has_greek(text):
         return text
     try:
         from deep_translator import GoogleTranslator
-        translated = GoogleTranslator(source="el", target="en").translate(text)
+        translated = GoogleTranslator(source="el", target=target_lang).translate(text)
         translated = (translated or "").strip() or text
-        return _canonicalise_station_names(translated)
+        if target_lang == "en":
+            return _canonicalise_station_names(translated)
+        return _canonicalise_station_names_sq(translated)
     except Exception:
-        return _canonicalise_station_names(text)
+        return text
+
+
+def _canonicalise_station_names_sq(text: str) -> str:
+    """Apply the same canonical-station-name rewrites for Albanian
+    output. Google's Albanian translation transliterates Greek station
+    names with varying conventions; pin the common offenders so the
+    app shows the same spellings everywhere."""
+    out = text
+    for bad, good in _STATION_NAME_CANONICAL:
+        out = out.replace(bad, good)
+    return out
 
 
 # Google Translate either translates Greek station names literally
@@ -248,6 +272,8 @@ class AnnouncementItem:
     url: str
     title_en: str = ""
     summary_en: str = ""
+    title_sq: str = ""
+    summary_sq: str = ""
     publish_date: str = ""
     affected_lines: list[str] = field(default_factory=list)
     severity: str = "info"
@@ -405,6 +431,7 @@ def parse_homepage_status(html: str) -> dict:
             "status": "alert",
             "raw_message": alert_text,
             "raw_message_en": _translate_gr_en(alert_text),
+            "raw_message_sq": _translate_gr_sq(alert_text),
             "service_until": service_until,
         }
     if _NORMAL_BADGE_RE.search(text):
@@ -412,9 +439,10 @@ def parse_homepage_status(html: str) -> dict:
             "status": "normal",
             "raw_message": "Κανονική Λειτουργία",
             "raw_message_en": "Normal operation",
+            "raw_message_sq": "Funksionim normal",
             "service_until": None,
         }
-    return {"status": "unknown", "raw_message": "", "raw_message_en": "", "service_until": None}
+    return {"status": "unknown", "raw_message": "", "raw_message_en": "", "raw_message_sq": "", "service_until": None}
 
 
 def _extract_alert_banner(text: str) -> str:
@@ -460,24 +488,38 @@ def _strip_nav_tail(text: str) -> str:
 
 
 def upsert_homepage_status(conn: sqlite3.Connection, status: dict) -> None:
-    """Write the singleton stasy_status row. Idempotent — uses INSERT OR
-    REPLACE so a missing migration 0010 (raw_message_en column) still
-    works after a fallback to the legacy column set."""
-    try:
-        conn.execute(
+    """Write the singleton stasy_status row. Walks newest schema (with
+    raw_message_sq, migration 0016) backwards through 0010 (raw_message_en)
+    to the bare schema, so a Pi behind on migrations still gets a row."""
+    sq = status.get("raw_message_sq", "")
+    en = status.get("raw_message_en", "")
+    for sql, params in (
+        (
+            "INSERT OR REPLACE INTO stasy_status"
+            "(id, status, raw_message, raw_message_en, raw_message_sq,"
+            " service_until, scraped_at)"
+            " VALUES(1, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+            (status["status"], status["raw_message"], en, sq,
+             status["service_until"]),
+        ),
+        (
             "INSERT OR REPLACE INTO stasy_status"
             "(id, status, raw_message, raw_message_en, service_until, scraped_at)"
             " VALUES(1, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
-            (status["status"], status["raw_message"],
-             status["raw_message_en"], status["service_until"]),
-        )
-    except sqlite3.OperationalError:
-        conn.execute(
+            (status["status"], status["raw_message"], en, status["service_until"]),
+        ),
+        (
             "INSERT OR REPLACE INTO stasy_status"
             "(id, status, raw_message, service_until, scraped_at)"
             " VALUES(1, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
             (status["status"], status["raw_message"], status["service_until"]),
-        )
+        ),
+    ):
+        try:
+            conn.execute(sql, params)
+            return
+        except sqlite3.OperationalError:
+            continue
 
 
 def parse_index(html: str) -> list[tuple[str, str]]:
@@ -699,11 +741,19 @@ def build_announcement(
     if _has_greek(raw_title) or _has_greek(raw_summary):
         title_translated = _translate_gr_en(raw_title)
         summary_translated = _translate_gr_en(raw_summary)
+        title_sq = _translate_gr_sq(raw_title)
+        summary_sq = _translate_gr_sq(raw_summary)
         title_native = raw_title
         summary_native = raw_summary
     else:
         title_translated = raw_title
         summary_translated = raw_summary
+        # Source was already English. Albanian rendering on the client
+        # falls back to title_en when title_sq is blank, so leaving these
+        # empty is the right behaviour rather than re-translating EN-to-SQ
+        # (Google's reverse translation often inverts meaning).
+        title_sq = ""
+        summary_sq = ""
         title_native = raw_title
         summary_native = raw_summary
 
@@ -714,6 +764,8 @@ def build_announcement(
         url=english_url,
         title_en=title_translated,
         summary_en=summary_translated,
+        title_sq=title_sq,
+        summary_sq=summary_sq,
         affected_lines=affected,
         severity=severity,
         valid_from=valid_from,
@@ -734,27 +786,51 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
     cur.execute("BEGIN")
     try:
         for idx, item in enumerate(items):
-            cur.execute(
-                "INSERT INTO announcements"
-                "(id, title, title_en, summary, summary_en, url, date, category, sort_order,"
-                " affected_lines, severity, valid_from, valid_until)"
-                " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
-                " ON CONFLICT(id) DO UPDATE SET"
-                " title=excluded.title, title_en=excluded.title_en,"
-                " summary=excluded.summary, summary_en=excluded.summary_en,"
-                " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
-                " affected_lines=excluded.affected_lines, severity=excluded.severity,"
-                " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
-                (
-                    item.slug, item.title, item.title_en, item.summary, item.summary_en,
-                    item.url, item.publish_date,
-                    "serviceAlert" if item.severity in ("warning", "closure") else "general",
-                    idx,
-                    json.dumps(item.affected_lines, ensure_ascii=False),
-                    item.severity,
-                    item.valid_from, item.valid_until,
-                ),
-            )
+            category = "serviceAlert" if item.severity in ("warning", "closure") else "general"
+            affected_json = json.dumps(item.affected_lines, ensure_ascii=False)
+            # Try the schema with title_sq + summary_sq (migration 0016)
+            # first; fall back to the pre-Sq column set so an older Pi
+            # behind on migrations still ingests rows.
+            try:
+                cur.execute(
+                    "INSERT INTO announcements"
+                    "(id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+                    " url, date, category, sort_order,"
+                    " affected_lines, severity, valid_from, valid_until)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                    " ON CONFLICT(id) DO UPDATE SET"
+                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
+                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq,"
+                    " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
+                    " affected_lines=excluded.affected_lines, severity=excluded.severity,"
+                    " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
+                    (
+                        item.slug, item.title, item.title_en, item.title_sq,
+                        item.summary, item.summary_en, item.summary_sq,
+                        item.url, item.publish_date, category, idx,
+                        affected_json, item.severity,
+                        item.valid_from, item.valid_until,
+                    ),
+                )
+            except sqlite3.OperationalError:
+                cur.execute(
+                    "INSERT INTO announcements"
+                    "(id, title, title_en, summary, summary_en, url, date, category, sort_order,"
+                    " affected_lines, severity, valid_from, valid_until)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                    " ON CONFLICT(id) DO UPDATE SET"
+                    " title=excluded.title, title_en=excluded.title_en,"
+                    " summary=excluded.summary, summary_en=excluded.summary_en,"
+                    " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
+                    " affected_lines=excluded.affected_lines, severity=excluded.severity,"
+                    " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
+                    (
+                        item.slug, item.title, item.title_en, item.summary, item.summary_en,
+                        item.url, item.publish_date, category, idx,
+                        affected_json, item.severity,
+                        item.valid_from, item.valid_until,
+                    ),
+                )
             # Closure overrides: one (line, date) row per affected line per date.
             for d in item.closure_dates:
                 for line_id in item.affected_lines:
@@ -817,6 +893,7 @@ def run_once(now: date | None = None) -> int:
     if homepage_status and homepage_status["status"] == "alert" and homepage_status["raw_message"]:
         banner_gr = homepage_status["raw_message"]
         banner_en = homepage_status["raw_message_en"] or banner_gr
+        banner_sq = homepage_status.get("raw_message_sq") or ""
         affected = detect_affected_lines(banner_gr + " " + banner_en)
         vf_detected, vu_detected, _ = detect_dates(banner_gr + " " + banner_en, today=now)
         # The generator's _is_fresh() gate drops anything without a parseable
@@ -830,6 +907,8 @@ def run_once(now: date | None = None) -> int:
             url=GREEK_HOMEPAGE_URL,
             title_en=banner_en,
             summary_en=banner_en,
+            title_sq=banner_sq,
+            summary_sq=banner_sq,
             affected_lines=affected,
             severity="warning",
             valid_from=vf_detected or now.isoformat(),

@@ -133,6 +133,7 @@ final class SyrmosFaresStore: ObservableObject {
         let fullPriceEur: Double?
         let discountedPriceEur: Double?
         let validity: String
+        let validitySq: String?
         let notes: String
         let notesSq: String?
         let tags: [String]
@@ -145,6 +146,13 @@ final class SyrmosFaresStore: ObservableObject {
             case .greek: return titleEl.isEmpty ? titleEn : titleEl
             case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
             case .english: return titleEn
+            }
+        }
+
+        func localizedValidity(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .albanian: return (validitySq?.isEmpty == false) ? validitySq! : validity
+            default: return validity
             }
         }
 

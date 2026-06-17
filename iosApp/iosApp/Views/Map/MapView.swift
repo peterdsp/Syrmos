@@ -325,12 +325,32 @@ struct TransitMapView: View {
                     // genuinely fresh MKMapView instead of the silently reused
                     // one MapKit-for-SwiftUI hands back on `.id()` on Map alone.
                     mapRebuildKey &+= 1
+                    // Some iOS versions show the dead layer only after the
+                    // screenshot animation finishes; bump again half a
+                    // second later so the second rebuild lands AFTER the
+                    // system finishes its overlay transition.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        mapRebuildKey &+= 1
+                    }
+                }
+                // Belt-and-braces: didBecomeActive fires on both first launch
+                // and every foregrounding (lock screen unlock, control center
+                // dismiss, app switcher return, screen recording stop), which
+                // covers paths scenePhase missed in user reports.
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIApplication.didBecomeActiveNotification
+                )) { _ in
+                    mapRebuildKey &+= 1
+                }
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIApplication.willEnterForegroundNotification
+                )) { _ in
+                    mapRebuildKey &+= 1
                 }
                 .onChange(of: scenePhase) { oldPhase, newPhase in
-                    // Same protection on lock/unlock, control-center swipe, app
-                    // switcher, notification banners. Rebuild only on the
-                    // background/inactive → active edge so we don't churn the
-                    // map every time a `.onChange` fires with the same phase.
+                    // Original scenePhase trigger kept as backstop. Rebuild
+                    // only on background/inactive -> active so we don't
+                    // churn the map every render.
                     if oldPhase != .active && newPhase == .active {
                         mapRebuildKey &+= 1
                     }
