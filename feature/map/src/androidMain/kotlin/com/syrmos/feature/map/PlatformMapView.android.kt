@@ -45,10 +45,10 @@ private val CARTO_VOYAGER: ITileSource = XYTileSource(
     256,
     ".png",
     arrayOf(
-        "https://a.basemaps.cartocdn.com/voyager/",
-        "https://b.basemaps.cartocdn.com/voyager/",
-        "https://c.basemaps.cartocdn.com/voyager/",
-        "https://d.basemaps.cartocdn.com/voyager/",
+        "https://a.basemaps.cartocdn.com/rastertiles/voyager/",
+        "https://b.basemaps.cartocdn.com/rastertiles/voyager/",
+        "https://c.basemaps.cartocdn.com/rastertiles/voyager/",
+        "https://d.basemaps.cartocdn.com/rastertiles/voyager/",
     ),
     "© OpenStreetMap, © CARTO",
 )

@@ -477,7 +477,7 @@
         }
         // English + Albanian + any unknown future code
         return {
-            url: "https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png",
+            url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
             subdomains: "abcd",
             attribution: "&copy; OpenStreetMap, &copy; CARTO",
             maxZoom: 19,
