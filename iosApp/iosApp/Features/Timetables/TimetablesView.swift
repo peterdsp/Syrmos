@@ -24,8 +24,7 @@ struct TimetablesView: View {
             List {
                 Section {
                     StationPickerRow(
-                        selectedStationId: $selectedStationId,
-                        loc: loc
+                        selectedStationId: $selectedStationId
                     )
                 } header: {
                     Text(loc.language == .greek ? "Σταθμός" : loc.language == .albanian ? "Stacioni" : "Station")
@@ -129,7 +128,13 @@ struct TimetablesView: View {
 
 private struct StationPickerRow: View {
     @Binding var selectedStationId: String
-    let loc: LocalizationManager
+    /// MUST be @ObservedObject locally. Receiving loc as a plain `let`
+    /// reference from the parent does not subscribe this child to its
+    /// changes, so the Menu label kept rendering whichever name the
+    /// view was first built with (Greek "Σύνταγμα" persisting after a
+    /// switch to Albanian). Re-observing here triggers a body recompute
+    /// the moment loc.language flips.
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         Menu {
