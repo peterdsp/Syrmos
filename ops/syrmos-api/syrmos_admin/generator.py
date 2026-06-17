@@ -434,22 +434,42 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
     # on older Pis until migration 0008 runs.
     try:
         product_rows = conn.execute(
-            "SELECT section, title_en, title_el, full_price_eur,"
-            " discounted_price_eur, validity, notes, tags, source_url,"
+            "SELECT section, title_en, title_el, title_sq, full_price_eur,"
+            " discounted_price_eur, validity, notes, notes_sq, tags, source_url,"
             " sort_order, fetched_at"
             " FROM fare_products ORDER BY section, sort_order"
         ).fetchall()
     except sqlite3.OperationalError:
-        product_rows = []
+        # Migration 0015 (Albanian columns) may not have run yet on an
+        # older Pi; fall back to the pre-Sq column set and emit empty
+        # Albanian strings.
+        try:
+            product_rows = conn.execute(
+                "SELECT section, title_en, title_el, full_price_eur,"
+                " discounted_price_eur, validity, notes, tags, source_url,"
+                " sort_order, fetched_at"
+                " FROM fare_products ORDER BY section, sort_order"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            product_rows = []
+
+    def _opt(row, key):
+        try:
+            return row[key]
+        except (IndexError, KeyError):
+            return None
+
     products = [
         {
             "section":            r["section"],
             "titleEn":            r["title_en"],
             "titleEl":            r["title_el"] or "",
+            "titleSq":            _opt(r, "title_sq") or "",
             "fullPriceEur":       r["full_price_eur"],
             "discountedPriceEur": r["discounted_price_eur"],
             "validity":           r["validity"] or "",
             "notes":              r["notes"] or "",
+            "notesSq":            _opt(r, "notes_sq") or "",
             "tags":               [t for t in (r["tags"] or "").split(",") if t],
             "sourceUrl":          r["source_url"],
             "fetchedAt":          r["fetched_at"],
@@ -467,22 +487,30 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "icon": "mappin.and.ellipse",
             "titleEn": "Points of supply for tickets and cards",
             "titleEl": "Σημεία πώλησης εισιτηρίων και καρτών",
+            "titleSq": "Pikat e shitjes së biletave dhe kartave",
             "summaryEn": "Where to buy or top up an Athena Card and where to pick up paper tickets.",
             "summaryEl": "Πού αγοράζεις ή φορτίζεις Athena Card και πού βρίσκεις χάρτινα εισιτήρια.",
+            "summarySq": "Ku të blesh ose të mbushësh një Athena Card dhe ku të marrësh bileta letre.",
             "bullets": [
                 {"en": "Automatic vending machines at every metro and tram station (cash and card).",
-                 "el": "Αυτόματα μηχανήματα σε κάθε σταθμό μετρό και τραμ (μετρητά και κάρτα)."},
+                 "el": "Αυτόματα μηχανήματα σε κάθε σταθμό μετρό και τραμ (μετρητά και κάρτα).",
+                 "sq": "Aparate automatike në çdo stacion metroje dhe tramvaji (kesh dhe kartë)."},
                 {"en": "Manned OASA ticket offices at Syntagma, Monastiraki, Omonia, Piraeus and the Airport.",
-                 "el": "Στελεχωμένα εκδοτήρια OASA σε Σύνταγμα, Μοναστηράκι, Ομόνοια, Πειραιά και Αεροδρόμιο."},
+                 "el": "Στελεχωμένα εκδοτήρια OASA σε Σύνταγμα, Μοναστηράκι, Ομόνοια, Πειραιά και Αεροδρόμιο.",
+                 "sq": "Sportele OASA me staf në Syntagma, Monastiraki, Omonia, Piraeus dhe Aeroport."},
                 {"en": "Authorised kiosks and convenience stores (περίπτερα) carrying the OASA logo.",
-                 "el": "Εξουσιοδοτημένα περίπτερα και καταστήματα με το σήμα του OASA."},
+                 "el": "Εξουσιοδοτημένα περίπτερα και καταστήματα με το σήμα του OASA.",
+                 "sq": "Kioska dhe dyqane të autorizuara (περίπτερα) që mbajnë logon e OASA."},
                 {"en": "Online top-up at athenacard.gr — register the card once, then reload any time.",
-                 "el": "Online ανανέωση στο athenacard.gr — εγγραφή κάρτας μία φορά, μετά φορτίζεις όποτε θες."},
+                 "el": "Online ανανέωση στο athenacard.gr — εγγραφή κάρτας μία φορά, μετά φορτίζεις όποτε θες.",
+                 "sq": "Mbushje online në athenacard.gr — regjistro kartën një herë, pastaj mbushe kur të duash."},
                 {"en": "OASA Telematics app for single tickets bought from the phone.",
-                 "el": "OASA Telematics εφαρμογή για μονά εισιτήρια από το κινητό."},
+                 "el": "OASA Telematics εφαρμογή για μονά εισιτήρια από το κινητό.",
+                 "sq": "Aplikacioni OASA Telematics për bileta të vetme nga telefoni."},
             ],
             "urlEn": "https://www.oasa.gr/en/tickets/points-of-sale-reloading/points-of-supply-for-tickets-and-cards/",
             "urlEl": "https://www.oasa.gr/εισιτήρια/σημεία-πώλησης-επαναφόρτισης/σημεία-έκδοσης-προσωποποιημένων-καρ/",
+            "urlSq": "https://www.oasa.gr/en/tickets/points-of-sale-reloading/points-of-supply-for-tickets-and-cards/",
         },
         {
             "id": "oasa-validation-info",
@@ -490,24 +518,33 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "icon": "checkmark.seal",
             "titleEn": "Ticket validation rules",
             "titleEl": "Κανόνες ακύρωσης εισιτηρίων",
+            "titleSq": "Rregullat e validimit të biletës",
             "summaryEn": "How and when to validate so a ticket counts as legally paid.",
             "summaryEl": "Πώς και πότε ακυρώνεις ώστε ένα εισιτήριο να μετράει νόμιμα.",
+            "summarySq": "Si dhe kur ta validosh që një biletë të llogaritet si e paguar ligjërisht.",
             "bullets": [
                 {"en": "Validate once at entry — the 90-minute window starts from the first validation.",
-                 "el": "Ακύρωσε μία φορά στην είσοδο — τα 90 λεπτά μετράνε από την πρώτη ακύρωση."},
+                 "el": "Ακύρωσε μία φορά στην είσοδο — τα 90 λεπτά μετράνε από την πρώτη ακύρωση.",
+                 "sq": "Validoje një herë në hyrje — periudha 90-minutëshe nis nga validimi i parë."},
                 {"en": "Tap contactless (Apple Pay, Google Wallet, Visa/Mastercard) at metro and tram gates instead of buying a paper ticket.",
-                 "el": "Ανέπαφη χρέωση (Apple Pay, Google Wallet, Visa/Mastercard) στις πύλες μετρό και τραμ αντί για χάρτινο εισιτήριο."},
+                 "el": "Ανέπαφη χρέωση (Apple Pay, Google Wallet, Visa/Mastercard) στις πύλες μετρό και τραμ αντί για χάρτινο εισιτήριο.",
+                 "sq": "Paguaj pa kontakt (Apple Pay, Google Wallet, Visa/Mastercard) në portat e metros dhe tramvajit në vend që të blesh biletë letre."},
                 {"en": "Inside trams and Hellenic Train suburban trains, tap the on-board contactless validators if you didn't tap at a gate.",
-                 "el": "Μέσα σε τραμ και προαστιακό, σάρωσε στα τερματικά μέσα στο όχημα αν δεν σάρωσες σε πύλη."},
+                 "el": "Μέσα σε τραμ και προαστιακό, σάρωσε στα τερματικά μέσα στο όχημα αν δεν σάρωσες σε πύλη.",
+                 "sq": "Brenda tramvajeve dhe trenave periferikë të Hellenic Train, prek validatorët pa kontakt brenda mjetit nëse nuk preku në portë."},
                 {"en": "Free transfers between metro, tram and bus inside the 90-minute window (Airport routes are excluded).",
-                 "el": "Δωρεάν μετεπιβίβαση μετρό-τραμ-λεωφορείο μέσα στα 90 λεπτά (εκτός Αεροδρομίου)."},
+                 "el": "Δωρεάν μετεπιβίβαση μετρό-τραμ-λεωφορείο μέσα στα 90 λεπτά (εκτός Αεροδρομίου).",
+                 "sq": "Transferime falas mes metros, tramvajit dhe autobusit brenda periudhës 90-minutëshe (linjat e Aeroportit përjashtohen)."},
                 {"en": "Reduced-fare riders must carry student / senior / disability ID and show it on inspection.",
-                 "el": "Όσοι ταξιδεύουν με μειωμένο πρέπει να φέρουν φοιτητική / 65+ / αναπηρίας ταυτότητα στον έλεγχο."},
+                 "el": "Όσοι ταξιδεύουν με μειωμένο πρέπει να φέρουν φοιτητική / 65+ / αναπηρίας ταυτότητα στον έλεγχο.",
+                 "sq": "Udhëtarët me tarifë të reduktuar duhet të mbajnë kartën e studentit / 65+ / aftësive të kufizuara dhe ta tregojnë në kontroll."},
                 {"en": "Penalty for non-validation: 60× the basic single fare, payable on the spot or via OASA.",
-                 "el": "Πρόστιμο μη ακύρωσης: 60× την τιμή του απλού εισιτηρίου, στον έλεγχο ή στον OASA."},
+                 "el": "Πρόστιμο μη ακύρωσης: 60× την τιμή του απλού εισιτηρίου, στον έλεγχο ή στον OASA.",
+                 "sq": "Gjoba për mosvalidim: 60× tarifën bazë të biletës së vetme, e pagueshme në vend ose përmes OASA."},
             ],
             "urlEn": "https://www.oasa.gr/en/tickets/useful-information/#validation_ticket_info",
             "urlEl": "https://www.oasa.gr/εισιτήρια/χρήσιμες-πληροφορίες/#validation_ticket_info",
+            "urlSq": "https://www.oasa.gr/en/tickets/useful-information/#validation_ticket_info",
         },
         {
             "id": "stasy-general-instructions",
@@ -515,22 +552,30 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "icon": "info.circle",
             "titleEn": "STASY general ticket instructions",
             "titleEl": "Γενικές οδηγίες STASY",
+            "titleSq": "Udhëzime të përgjithshme të STASY për biletat",
             "summaryEn": "Rules that apply to every STASY-operated line: M1, M2, M3, T6, T7.",
             "summaryEl": "Κανόνες που ισχύουν σε κάθε γραμμή STASY: Μ1, Μ2, Μ3, Τ6, Τ7.",
+            "summarySq": "Rregulla që zbatohen për çdo linjë të operuar nga STASY: M1, M2, M3, T6, T7.",
             "bullets": [
                 {"en": "Buy or activate the ticket before boarding — there are no on-train or on-tram sales.",
-                 "el": "Αγόρασε ή ενεργοποίησε το εισιτήριο πριν επιβιβαστείς — δεν υπάρχει πώληση μέσα στο όχημα."},
+                 "el": "Αγόρασε ή ενεργοποίησε το εισιτήριο πριν επιβιβαστείς — δεν υπάρχει πώληση μέσα στο όχημα.",
+                 "sq": "Bli ose aktivizo biletën para se të hipësh — nuk ka shitje brenda trenit ose tramvajit."},
                 {"en": "Reduced fare: under 18, over 65 with proof, students with a Greek academic ID, persons with disability.",
-                 "el": "Μειωμένο: κάτω των 18, άνω των 65 με δικαιολογητικό, φοιτητές με ακαδημαϊκή ταυτότητα, ΑμεΑ."},
+                 "el": "Μειωμένο: κάτω των 18, άνω των 65 με δικαιολογητικό, φοιτητές με ακαδημαϊκή ταυτότητα, ΑμεΑ.",
+                 "sq": "Tarifë e reduktuar: nën 18 vjeç, mbi 65 vjeç me dëshmi, studentët me kartë akademike greke, personat me aftësi të kufizuara."},
                 {"en": "Free travel: children under 6, persons with disability above 67% (and accompanying carer where required).",
-                 "el": "Δωρεάν: παιδιά κάτω των 6, ΑμεΑ με αναπηρία άνω του 67% (και συνοδός όπου απαιτείται)."},
+                 "el": "Δωρεάν: παιδιά κάτω των 6, ΑμεΑ με αναπηρία άνω του 67% (και συνοδός όπου απαιτείται).",
+                 "sq": "Udhëtim falas: fëmijë nën 6 vjeç, persona me aftësi të kufizuara mbi 67% (dhe kujdestari shoqërues kur kërkohet)."},
                 {"en": "Keep the ticket or contactless receipt visible until you exit the station.",
-                 "el": "Φύλαξε το εισιτήριο ή την απόδειξη ανέπαφης χρέωσης μέχρι να βγεις από τον σταθμό."},
+                 "el": "Φύλαξε το εισιτήριο ή την απόδειξη ανέπαφης χρέωσης μέχρι να βγεις από τον σταθμό.",
+                 "sq": "Mbaj biletën ose faturën pa kontakt të dukshme derisa të dalësh nga stacioni."},
                 {"en": "Refunds and lost-card replacements go through the OASA central office, not the station.",
-                 "el": "Επιστροφές και αντικατάσταση χαμένης κάρτας γίνονται στα κεντρικά γραφεία OASA, όχι στον σταθμό."},
+                 "el": "Επιστροφές και αντικατάσταση χαμένης κάρτας γίνονται στα κεντρικά γραφεία OASA, όχι στον σταθμό.",
+                 "sq": "Rimbursimet dhe zëvendësimi i kartave të humbura kalojnë përmes zyrës qendrore të OASA, jo në stacion."},
             ],
             "urlEn": "https://www.stasy.gr/en/tickets-cards/general-instructions/",
             "urlEl": "https://www.stasy.gr/eisitiria-kartes/genikes-odhgies/",
+            "urlSq": "https://www.stasy.gr/en/tickets-cards/general-instructions/",
         },
     ]
     return {

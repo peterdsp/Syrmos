@@ -173,7 +173,7 @@ private struct InfoLinkCard: View {
                     .foregroundStyle(Color.syrmosPrimary)
                     .frame(width: 26)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(loc.language == .greek ? link.titleEl : link.titleEn)
+                    Text(link.localizedTitle(loc.language))
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Text(link.operator_.uppercased())
@@ -193,7 +193,7 @@ private struct InfoLinkCard: View {
                             Text("•")
                                 .font(.caption)
                                 .foregroundStyle(Color.syrmosPrimary)
-                            Text(loc.language == .greek ? bullet.el : bullet.en)
+                            Text(bullet.localized(loc.language))
                                 .font(.caption)
                                 .foregroundStyle(.primary)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -202,7 +202,7 @@ private struct InfoLinkCard: View {
                 }
             }
             Button {
-                let raw = loc.language == .greek ? link.urlEl : link.urlEn
+                let raw = link.localizedUrl(loc.language)
                 onVerify(raw)
             } label: {
                 HStack(spacing: 6) {
@@ -231,7 +231,7 @@ private struct InfoLinkCard: View {
     }
 
     private var displaySummary: String? {
-        loc.language == .greek ? link.summaryEl : link.summaryEn
+        link.localizedSummary(loc.language)
     }
 }
 
@@ -274,8 +274,9 @@ private struct FareCard: View {
                     .foregroundStyle(badgeColor)
                     .clipShape(Capsule())
             }
-            if !product.notes.isEmpty {
-                Text(product.notes)
+            let displayNotes = product.localizedNotes(loc.language)
+            if !displayNotes.isEmpty {
+                Text(displayNotes)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(4)
@@ -298,9 +299,6 @@ private struct FareCard: View {
     }
 
     private var displayTitle: String {
-        if loc.language == .greek && !product.titleEl.isEmpty {
-            return product.titleEl
-        }
-        return product.titleEn
+        return product.localizedTitle(loc.language)
     }
 }

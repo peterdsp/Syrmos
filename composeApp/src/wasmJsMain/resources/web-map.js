@@ -357,22 +357,25 @@
         }
     })();
 
-    /// Pick the localised value of a {baseKey}En / {baseKey}El pair.
-    /// Greek users get the El field when present, every other language
-    /// (including Albanian) falls back to En. Bullets use plain `en` /
-    /// `el` keys and are handled by pickLocalisedBullet().
+    /// Pick the localised value of a {baseKey}En / {baseKey}El / {baseKey}Sq
+    /// triplet. Returns the active-language field when populated, otherwise
+    /// falls back to English, then to whichever variant exists. Lets the
+    /// data layer ship partial translations without breaking renders.
     function pickLocalised(obj, baseKey) {
         if (!obj) return "";
-        const el = obj[baseKey + "El"];
         const en = obj[baseKey + "En"];
+        const el = obj[baseKey + "El"];
+        const sq = obj[baseKey + "Sq"];
         if (currentLang === "el" && el) return el;
-        return en || el || "";
+        if (currentLang === "sq" && sq) return sq;
+        return en || el || sq || "";
     }
 
     function pickLocalisedBullet(b) {
         if (!b) return "";
         if (currentLang === "el" && b.el) return b.el;
-        return b.en || b.el || "";
+        if (currentLang === "sq" && b.sq) return b.sq;
+        return b.en || b.el || b.sq || "";
     }
 
     // Cache the last /api/fares payload so we can re-render fares and

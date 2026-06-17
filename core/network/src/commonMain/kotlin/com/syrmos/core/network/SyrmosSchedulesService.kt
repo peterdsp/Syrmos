@@ -188,10 +188,12 @@ class SyrmosSchedulesService(
         val section: String,
         @SerialName("titleEn") val titleEn: String,
         @SerialName("titleEl") val titleEl: String = "",
+        @SerialName("titleSq") val titleSq: String = "",
         @SerialName("fullPriceEur") val fullPriceEur: Double? = null,
         @SerialName("discountedPriceEur") val discountedPriceEur: Double? = null,
         val validity: String = "",
         val notes: String = "",
+        @SerialName("notesSq") val notesSq: String = "",
         val tags: List<String> = emptyList(),
         @SerialName("sourceUrl") val sourceUrl: String = "",
     )
@@ -203,17 +205,21 @@ class SyrmosSchedulesService(
         val icon: String,
         @SerialName("titleEn") val titleEn: String,
         @SerialName("titleEl") val titleEl: String,
+        @SerialName("titleSq") val titleSq: String = "",
         @SerialName("summaryEn") val summaryEn: String = "",
         @SerialName("summaryEl") val summaryEl: String = "",
+        @SerialName("summarySq") val summarySq: String = "",
         val bullets: List<InfoBullet> = emptyList(),
         @SerialName("urlEn") val urlEn: String,
         @SerialName("urlEl") val urlEl: String,
+        @SerialName("urlSq") val urlSq: String = "",
     )
 
     @Serializable
     data class InfoBullet(
         val en: String,
         val el: String,
+        val sq: String = "",
     )
 
     @Serializable

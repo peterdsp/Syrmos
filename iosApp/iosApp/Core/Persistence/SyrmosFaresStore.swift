@@ -67,35 +67,92 @@ final class SyrmosFaresStore: ObservableObject {
         let icon: String
         let titleEn: String
         let titleEl: String
+        let titleSq: String?
         let summaryEn: String?
         let summaryEl: String?
+        let summarySq: String?
         let bullets: [Bullet]?
         let urlEn: String
         let urlEl: String
+        let urlSq: String?
 
         enum CodingKeys: String, CodingKey {
-            case id, icon, titleEn, titleEl, summaryEn, summaryEl, bullets, urlEn, urlEl
+            case id, icon
+            case titleEn, titleEl, titleSq
+            case summaryEn, summaryEl, summarySq
+            case bullets
+            case urlEn, urlEl, urlSq
             case operator_ = "operator"
+        }
+
+        func localizedTitle(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .greek: return titleEl.isEmpty ? titleEn : titleEl
+            case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
+            case .english: return titleEn
+            }
+        }
+
+        func localizedSummary(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .greek: return summaryEl ?? summaryEn ?? ""
+            case .albanian: return summarySq ?? summaryEn ?? ""
+            case .english: return summaryEn ?? ""
+            }
+        }
+
+        func localizedUrl(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .greek: return urlEl.isEmpty ? urlEn : urlEl
+            case .albanian: return (urlSq?.isEmpty == false) ? urlSq! : urlEn
+            case .english: return urlEn
+            }
         }
     }
 
     struct Bullet: Decodable, Identifiable {
         let en: String
         let el: String
+        let sq: String?
         var id: String { en }
+
+        func localized(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .greek: return el.isEmpty ? en : el
+            case .albanian: return (sq?.isEmpty == false) ? sq! : en
+            case .english: return en
+            }
+        }
     }
 
     struct Product: Decodable, Identifiable {
         let section: String
         let titleEn: String
         let titleEl: String
+        let titleSq: String?
         let fullPriceEur: Double?
         let discountedPriceEur: Double?
         let validity: String
         let notes: String
+        let notesSq: String?
         let tags: [String]
         let sourceUrl: String
 
         var id: String { "\(section)-\(titleEn)" }
+
+        func localizedTitle(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .greek: return titleEl.isEmpty ? titleEn : titleEl
+            case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
+            case .english: return titleEn
+            }
+        }
+
+        func localizedNotes(_ lang: AppLanguage) -> String {
+            switch lang {
+            case .albanian: return (notesSq?.isEmpty == false) ? notesSq! : notes
+            default: return notes
+            }
+        }
     }
 }
