@@ -179,31 +179,15 @@ struct TransitMapView: View {
     @ObservedObject private var liveTrainService = LiveTrainService.shared
     @ObservedObject private var trainSimulator = TrainSimulatorService.shared
     @StateObject private var locationManager = MapLocationManager()
-    @State private var position: MapCameraPosition = .region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
-            span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
-        )
-    )
-    @State private var selectedId: String?
     @State private var tappedStation: MapStationNode?
     @State private var showLocationDeniedAlert = false
-    /// 0 = country view (huge span), 1 = city, 2 = district, 3 = street.
-    /// Mirrors the web buckets so pins look consistent across platforms.
-    @State private var zoomBucket: Int = 2
     /// When true, hide all moving train/tram annotations so the user can see
     /// just the lines + stations. Persists across navigation but resets on
     /// cold launch (deliberate: it's a quick toggle, not a setting).
     @State private var vehiclesHidden = false
-    /// Force-rebuild key for the SwiftUI Map. iOS 18's Map(position:) has a
-    /// CAMetalLayer lifecycle bug where the layer stops rendering after the
-    /// system intercepts the app (screenshot, control center, lock/unlock),
-    /// leaving the user staring at a black canvas. Incrementing this id on
-    /// every screenshot + scenePhase resume forces SwiftUI to discard the
-    /// broken view and instantiate a fresh one - hundreds of times cheaper
-    /// than the full UIViewRepresentable rewrite.
-    @State private var mapRebuildKey: Int = 0
-    @Environment(\.scenePhase) private var scenePhase
+    /// The map asks us to recenter via this trigger. UIViewRepresentable
+    /// reads it in update() and calls setRegion on the wrapped MKMapView.
+    @State private var recenterToUserPing: Int = 0
 
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
@@ -215,7 +199,7 @@ struct TransitMapView: View {
                     CompactTabHeader(loc[.map])
                 }
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(item: $tappedStation, onDismiss: { selectedId = nil }) { station in
+            .sheet(item: $tappedStation) { station in
                 StationSheetView(station: station)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
@@ -241,120 +225,24 @@ struct TransitMapView: View {
 
     private var mapContent: some View {
         ZStack(alignment: .bottomTrailing) {
-                // Wrapping the Map in a Group with `.id()` on the Group (not on
-                // Map itself) is what actually forces SwiftUI to dispose of the
-                // underlying MKMapView on iOS 18. Putting `.id()` directly on
-                // Map(position:) is silently no-op'd by MapKit-for-SwiftUI's
-                // internal view reuse, so the dead Metal layer survives. The
-                // Group wrapper bypasses that reuse and gives us a guaranteed
-                // fresh instance after screenshot or scenePhase resume.
-                Group {
-                    Map(position: $position, selection: $selectedId) {
-                        UserAnnotation()
-
-                        ForEach(routeLines) { route in
-                            MapPolyline(coordinates: route.coordinates)
-                                .stroke(route.color, lineWidth: route.lineWeight)
-                        }
-
-                        ForEach(stations) { station in
-                            Annotation(station.displayName, coordinate: station.coordinate) {
-                                StationDot(
-                                    station: station,
-                                    isSelected: selectedId == station.id,
-                                    zoomBucket: zoomBucket
-                                )
-                                    .onTapGesture {
-                                        selectedId = station.id
-                                    }
-                            }
-                            .tag(station.id)
-                        }
-
-                        if !vehiclesHidden {
-                            ForEach(trainSimulator.trains) { train in
-                                Annotation(
-                                    "\(train.lineName) → \(train.destinationName)",
-                                    coordinate: train.coordinate
-                                ) {
-                                    SimulatedTrainDot(train: train)
-                                }
-                            }
-
-                            ForEach(liveTrainService.trains) { train in
-                                Annotation(train.trainNumber, coordinate: train.coordinate) {
-                                    LiveTrainMarker(lineId: train.lineId)
-                                }
-                            }
-                        }
+                // UIViewRepresentable wrapping MKMapView directly. SwiftUI's
+                // Map(position:) had a CAMetalLayer lifecycle bug on iOS 18
+                // and 26 where the metal layer would come back dead after a
+                // screenshot, lock/unlock, control center swipe, or app
+                // switcher cycle, leaving the user on a black canvas. Bumping
+                // a .id() trigger only papered over some paths; an explicit
+                // UIViewRepresentable is the only thing that survives all of
+                // them, because we own the MKMapView lifecycle deterministically.
+                SyrmosMKMapView(
+                    stations: stations,
+                    routeLines: routeLines,
+                    simulatedTrains: vehiclesHidden ? [] : trainSimulator.trains,
+                    liveTrains: vehiclesHidden ? [] : liveTrainService.trains,
+                    recenterToUserPing: recenterToUserPing,
+                    onStationTap: { stationId in
+                        tappedStation = stations.first(where: { $0.id == stationId })
                     }
-                    .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll, showsTraffic: false))
-                    .mapControls {
-                        MapCompass()
-                        MapScaleView()
-                    }
-                    .onMapCameraChange(frequency: .onEnd) { ctx in
-                        // Span thresholds match the web's zoom buckets:
-                        //   z >= 14 (street)   => bucket 3 = full SVG
-                        //   z >= 12 (district) => bucket 2 = SVG slightly smaller
-                        //   z >= 10 (city)     => bucket 1 = colored mode-pin
-                        //   else (country)     => bucket 0 = tiny colored dot
-                        let span = ctx.region.span.latitudeDelta
-                        let next: Int
-                        switch span {
-                        case ..<0.05: next = 3
-                        case ..<0.18: next = 2
-                        case ..<0.6:  next = 1
-                        default:      next = 0
-                        }
-                        if next != zoomBucket { zoomBucket = next }
-                    }
-                }
-                .id(mapRebuildKey)
-                .onChange(of: selectedId) { _, newId in
-                    guard let id = newId,
-                          let station = stations.first(where: { $0.id == id }) else { return }
-                    tappedStation = station
-                }
-                .onReceive(NotificationCenter.default.publisher(
-                    for: UIApplication.userDidTakeScreenshotNotification
-                )) { _ in
-                    // Screenshot (volume-up + side-button) briefly resigns the
-                    // app; the SwiftUI Map's CAMetalLayer can come back dead.
-                    // Bumping the rebuild key on the Group wrapper forces a
-                    // genuinely fresh MKMapView instead of the silently reused
-                    // one MapKit-for-SwiftUI hands back on `.id()` on Map alone.
-                    mapRebuildKey &+= 1
-                    // Some iOS versions show the dead layer only after the
-                    // screenshot animation finishes; bump again half a
-                    // second later so the second rebuild lands AFTER the
-                    // system finishes its overlay transition.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        mapRebuildKey &+= 1
-                    }
-                }
-                // Belt-and-braces: didBecomeActive fires on both first launch
-                // and every foregrounding (lock screen unlock, control center
-                // dismiss, app switcher return, screen recording stop), which
-                // covers paths scenePhase missed in user reports.
-                .onReceive(NotificationCenter.default.publisher(
-                    for: UIApplication.didBecomeActiveNotification
-                )) { _ in
-                    mapRebuildKey &+= 1
-                }
-                .onReceive(NotificationCenter.default.publisher(
-                    for: UIApplication.willEnterForegroundNotification
-                )) { _ in
-                    mapRebuildKey &+= 1
-                }
-                .onChange(of: scenePhase) { oldPhase, newPhase in
-                    // Original scenePhase trigger kept as backstop. Rebuild
-                    // only on background/inactive -> active so we don't
-                    // churn the map every render.
-                    if oldPhase != .active && newPhase == .active {
-                        mapRebuildKey &+= 1
-                    }
-                }
+                )
 
                 VStack(spacing: 12) {
                     Button {
@@ -384,7 +272,7 @@ struct TransitMapView: View {
                         let result = locationManager.requestOrPrompt()
                         switch result {
                         case .authorized, .promptShown:
-                            position = .userLocation(followsHeading: false, fallback: .automatic)
+                            recenterToUserPing &+= 1
                         case .denied:
                             showLocationDeniedAlert = true
                         }
@@ -951,5 +839,231 @@ struct DepartureRowView: View {
         if departure.minutesAway <= 2 { return Color.arrivalSoon }
         if departure.minutesAway <= 5 { return Color.arrivalModerate }
         return Color.arrivalFar
+    }
+}
+
+// MARK: - MKMapView wrapper
+
+/// UIKit-backed map. Wraps MKMapView in UIViewRepresentable so the
+/// CAMetalLayer is owned by a stable UIView whose lifecycle SwiftUI can't
+/// destabilise on screenshot / scenePhase transitions. Same approach the
+/// StationMapSheet already uses successfully — see that file's header
+/// comment for the rationale.
+struct SyrmosMKMapView: UIViewRepresentable {
+    let stations: [MapStationNode]
+    let routeLines: [RouteLine]
+    let simulatedTrains: [SimulatedTrain]
+    let liveTrains: [LiveTrain]
+    /// Bumped from the parent's "Locate me" button to re-center on the
+    /// user. Reading it in updateUIView() lets us tell a fresh request
+    /// apart from the no-op redraws triggered by annotation churn.
+    let recenterToUserPing: Int
+    let onStationTap: (String) -> Void
+
+    func makeUIView(context: Context) -> MKMapView {
+        let mv = MKMapView()
+        mv.delegate = context.coordinator
+        mv.pointOfInterestFilter = .excludingAll
+        mv.showsUserLocation = true
+        mv.isPitchEnabled = false
+        mv.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
+            span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
+        )
+
+        // Route polylines. ColoredPolyline carries colour + weight so the
+        // renderer can pick them without an external lookup table.
+        for route in routeLines {
+            let poly = SyrmosColoredPolyline(coordinates: route.coordinates, count: route.coordinates.count)
+            poly.color = UIColor(route.color)
+            poly.weight = route.lineWeight
+            mv.addOverlay(poly)
+        }
+
+        for station in stations {
+            mv.addAnnotation(SyrmosStationAnnotation(station: station))
+        }
+
+        return mv
+    }
+
+    func updateUIView(_ mv: MKMapView, context: Context) {
+        // Re-center on user when the ping changes. MKMapView already
+        // tracks userLocation when showsUserLocation = true so we just
+        // animate to it.
+        if context.coordinator.lastRecenterPing != recenterToUserPing {
+            context.coordinator.lastRecenterPing = recenterToUserPing
+            let loc = mv.userLocation.location?.coordinate
+                ?? mv.region.center
+            mv.setRegion(
+                MKCoordinateRegion(
+                    center: loc,
+                    span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+                ),
+                animated: true
+            )
+        }
+
+        // Sync simulated + live trains. Build a desired set and reconcile
+        // against existing annotations so we move existing markers rather
+        // than tearing them down each tick (smooth motion, less GPU churn).
+        let wantSim = Dictionary(uniqueKeysWithValues: simulatedTrains.map { ($0.id, $0) })
+        let wantLive = Dictionary(uniqueKeysWithValues: liveTrains.map { ($0.id, $0) })
+        let existing = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
+        var seenSim: Set<String> = []
+        var seenLive: Set<String> = []
+        for ann in existing {
+            switch ann.kind {
+            case .simulated:
+                if let train = wantSim[ann.id] {
+                    ann.coordinate = train.coordinate
+                    seenSim.insert(ann.id)
+                } else {
+                    mv.removeAnnotation(ann)
+                }
+            case .live:
+                if let train = wantLive[ann.id] {
+                    ann.coordinate = train.coordinate
+                    seenLive.insert(ann.id)
+                } else {
+                    mv.removeAnnotation(ann)
+                }
+            }
+        }
+        for train in simulatedTrains where !seenSim.contains(train.id) {
+            mv.addAnnotation(SyrmosTrainAnnotation(simulated: train))
+        }
+        for train in liveTrains where !seenLive.contains(train.id) {
+            mv.addAnnotation(SyrmosTrainAnnotation(live: train))
+        }
+    }
+
+    static func dismantleUIView(_ mv: MKMapView, coordinator: Coordinator) {
+        mv.delegate = nil
+        mv.removeOverlays(mv.overlays)
+        mv.removeAnnotations(mv.annotations)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        let parent: SyrmosMKMapView
+        var lastRecenterPing: Int = -1
+        init(_ parent: SyrmosMKMapView) { self.parent = parent }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let p = overlay as? SyrmosColoredPolyline {
+                let r = MKPolylineRenderer(polyline: p)
+                r.strokeColor = p.color
+                r.lineWidth = p.weight
+                r.lineCap = .round
+                r.lineJoin = .round
+                return r
+            }
+            return MKOverlayRenderer(overlay: overlay)
+        }
+
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            if annotation is MKUserLocation { return nil }
+            if let station = annotation as? SyrmosStationAnnotation {
+                let id = "station"
+                let v = mapView.dequeueReusableAnnotationView(withIdentifier: id)
+                    ?? MKAnnotationView(annotation: annotation, reuseIdentifier: id)
+                v.annotation = annotation
+                v.canShowCallout = false
+                let primary = station.station.lineIds.first ?? "M3"
+                v.image = stationImage(for: station.station, primaryLineId: primary)
+                v.frame.size = CGSize(width: 24, height: 24)
+                return v
+            }
+            if let train = annotation as? SyrmosTrainAnnotation {
+                let id = "train"
+                let v = mapView.dequeueReusableAnnotationView(withIdentifier: id)
+                    ?? MKAnnotationView(annotation: annotation, reuseIdentifier: id)
+                v.annotation = annotation
+                v.canShowCallout = false
+                v.image = trainImage(for: train)
+                v.frame.size = CGSize(width: 28, height: 22)
+                return v
+            }
+            return nil
+        }
+
+        func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+            guard let station = view.annotation as? SyrmosStationAnnotation else { return }
+            mapView.deselectAnnotation(view.annotation, animated: false)
+            parent.onStationTap(station.station.id)
+        }
+
+        private func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
+            let size = CGSize(width: 24, height: 24)
+            let renderer = UIGraphicsImageRenderer(size: size)
+            let color = UIColor(SyrmosData.lineColor(for: primaryLineId))
+            return renderer.image { ctx in
+                let cg = ctx.cgContext
+                let rect = CGRect(origin: .zero, size: size).insetBy(dx: 2, dy: 2)
+                cg.setFillColor(UIColor.white.cgColor)
+                cg.fillEllipse(in: CGRect(origin: .zero, size: size))
+                cg.setFillColor(color.cgColor)
+                cg.fillEllipse(in: rect)
+            }
+        }
+
+        private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
+            let size = CGSize(width: 28, height: 22)
+            let color: UIColor
+            switch train.kind {
+            case .simulated(let t): color = UIColor(SyrmosData.lineColor(for: t.lineId))
+            case .live(let t):      color = UIColor(SyrmosData.lineColor(for: t.lineId))
+            }
+            let renderer = UIGraphicsImageRenderer(size: size)
+            return renderer.image { ctx in
+                let cg = ctx.cgContext
+                let outer = CGRect(origin: .zero, size: size)
+                let path = UIBezierPath(roundedRect: outer, cornerRadius: 6)
+                cg.setFillColor(UIColor.white.cgColor)
+                cg.addPath(path.cgPath); cg.fillPath()
+                let inner = outer.insetBy(dx: 2, dy: 2)
+                let innerPath = UIBezierPath(roundedRect: inner, cornerRadius: 5)
+                cg.setFillColor(color.cgColor)
+                cg.addPath(innerPath.cgPath); cg.fillPath()
+            }
+        }
+    }
+}
+
+/// Polyline that carries its render colour + weight so the
+/// MKOverlayRenderer can pick them without an extra lookup. Mirrors the
+/// helper StationMapSheet uses; we keep it local to MapView.swift to avoid
+/// reaching across files for a 4-line class.
+final class SyrmosColoredPolyline: MKPolyline {
+    var color: UIColor = .systemBlue
+    var weight: CGFloat = 4
+}
+
+final class SyrmosStationAnnotation: NSObject, MKAnnotation {
+    let station: MapStationNode
+    init(station: MapStationNode) { self.station = station }
+    var coordinate: CLLocationCoordinate2D { station.coordinate }
+    var title: String? { station.displayName }
+}
+
+final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
+    enum Kind { case simulated(SimulatedTrain); case live(LiveTrain) }
+    let kind: Kind
+    @objc dynamic var coordinate: CLLocationCoordinate2D
+    var id: String {
+        switch kind {
+        case .simulated(let t): return "sim:\(t.id)"
+        case .live(let t):      return "live:\(t.id)"
+        }
+    }
+    init(simulated: SimulatedTrain) {
+        self.kind = .simulated(simulated)
+        self.coordinate = simulated.coordinate
+    }
+    init(live: LiveTrain) {
+        self.kind = .live(live)
+        self.coordinate = live.coordinate
     }
 }
