@@ -178,9 +178,53 @@ def _translate_gr_en(text: str) -> str:
     try:
         from deep_translator import GoogleTranslator
         translated = GoogleTranslator(source="el", target="en").translate(text)
-        return (translated or "").strip() or text
+        translated = (translated or "").strip() or text
+        return _canonicalise_station_names(translated)
     except Exception:
-        return text
+        return _canonicalise_station_names(text)
+
+
+# Google Translate either translates Greek station names literally
+# ("Εθνική Άμυνα" → "National Defense") or hallucinates transliterations
+# ("Νομισματοκοπείο" → "Nimismatokopio"). The app uses canonical English
+# spellings (the ones in lines.json), so any banner/alert that names a
+# station should use those exact strings — otherwise users see two
+# different spellings for the same station depending on the surface.
+# Keep the list narrow: only names where Google's output diverges from
+# the canonical. Plain transliterations (Piraeus, Syntagma, Monastiraki,
+# Egaleo, Kerameikos, Eleonas, Korydallos, Panormou, Katechaki, Cholargos,
+# Chalandri, Ambelokipi, Megaro Mousikis, Evangelismos, Maniatika, Nikaia,
+# Agia Varvara, Agia Marina, Peania-Kantza, Pallini, Koropi, Airport,
+# Doukissis Plakentias, Dimotiko Theatro) already round-trip correctly.
+_STATION_NAME_CANONICAL: list[tuple[str, str]] = [
+    # M3 stations Google gets wrong
+    ("National Defense", "Ethniki Amyna"),  # Εθνική Άμυνα
+    ("National defense", "Ethniki Amyna"),
+    ("Nimismatokopio", "Nomismatokopio"),   # Νομισματοκοπείο (transliteration miss)
+    ("Mint", "Nomismatokopio"),              # alternative literal translation
+    # M2 stations Google translates literally
+    ("Acropolis", "Akropoli"),               # Ακρόπολη
+    ("Daphne", "Dafni"),                     # Δάφνη
+    ("Saint Demetrios", "Agios Dimitrios"),
+    ("Saint Dimitrios", "Agios Dimitrios"),
+    ("Saint Antonios", "Agios Antonios"),
+    ("Holy Antonios", "Agios Antonios"),
+    # M1 stations Google often softens
+    ("Saint Nicholas", "Agios Nikolaos"),
+    ("Saint Nikolaos", "Agios Nikolaos"),
+    ("Holy Nicholas", "Agios Nikolaos"),
+]
+
+
+def _canonicalise_station_names(text: str) -> str:
+    """Replace Google-Translate-isms with the canonical English station
+    names used everywhere else in the app. Order-sensitive: longer
+    phrases first so "Holy Antonios" isn't half-replaced before the
+    longer rule fires."""
+    out = text
+    for bad, good in _STATION_NAME_CANONICAL:
+        out = out.replace(bad, good)
+    return out
 
 
 def is_transit_relevant(text: str) -> bool:
@@ -303,6 +347,137 @@ def parse_greek_homepage(html: str) -> list[str]:
         seen.add(url)
         out.append(url)
     return out
+
+
+# --- Homepage status badge + inline emergency banner -----------------------
+#
+# STASY's Greek homepage exposes two things the apps' Home pill cares about
+# that DON'T appear in /en/announcements/:
+#
+#  1. A "Κανονική Λειτουργία" / alert badge near the header.
+#  2. An inline emergency banner (e.g. the rolling Line 3 21:40 closure)
+#     that is plain text in the page body, NOT a separate permalink.
+#
+# Without this parser the stasy_status row never gets written, so
+# /api/announcements.status stays "unknown" and the in-app pill silently
+# falls back to "Trains until 00:50" derived from the bundled schedule
+# rules — which masks the real per-line restriction.
+
+_NORMAL_BADGE_RE = re.compile(r"Κανονικ[ηή]\s+Λειτουργ[ιί]α", re.IGNORECASE)
+# Match HH:MM after any of the closure keywords STASY uses: "έως 21:40",
+# "μέχρι τις 21:40", "θα κλείνουν στις 21:40", "αναστέλλονται στις 23:00".
+# The keyword acts as a guard so we don't pick up unrelated times that
+# happen to appear earlier in the page (e.g. operating-hour ranges).
+_SERVICE_UNTIL_RE = re.compile(
+    r"(?:έως|μ[εέ]χρι|στις|κλείνουν|αναστ[εέ]λλονται|διακ[οό]πτονται)"
+    r"\s+(?:τις\s+)?(\d{1,2}[:.]\d{2})"
+)
+# Strong-signal alert openers used by STASY on the homepage banner.
+_ALERT_OPENER_RE = re.compile(
+    r"(Κυκλοφοριακ[έε]ς\s+ρυθμ[ίι]σεις|"
+    r"[ΈΕ]κτακτη\s+[ΑA]νακο[ίι]νωση|"
+    r"Διακοπ[ήη]\s+δρομολογ[ίι]ων|"
+    r"Αναστολ[ήη]\s+δρομολογ[ίι]ων)",
+    re.IGNORECASE,
+)
+
+
+def parse_homepage_status(html: str) -> dict:
+    """Distill the STASY Greek homepage down to one of:
+
+      {"status": "alert",  "raw_message": "...", "raw_message_en": "...",
+       "service_until": "21:40"}
+      {"status": "normal", "raw_message": "Κανονική Λειτουργία",
+       "raw_message_en": "Normal operation", "service_until": None}
+      {"status": "unknown", "raw_message": "", "raw_message_en": "",
+       "service_until": None}
+
+    Alert wins over normal when both are present (an active banner means a
+    restriction exists even if the badge still says "Κανονική Λειτουργία").
+    service_until is parsed from the banner only — never from the badge.
+    """
+    text = strip_html(html)
+    alert_text = _extract_alert_banner(text)
+    if alert_text:
+        m = _SERVICE_UNTIL_RE.search(alert_text)
+        service_until = m.group(1).replace(".", ":") if m else None
+        return {
+            "status": "alert",
+            "raw_message": alert_text,
+            "raw_message_en": _translate_gr_en(alert_text),
+            "service_until": service_until,
+        }
+    if _NORMAL_BADGE_RE.search(text):
+        return {
+            "status": "normal",
+            "raw_message": "Κανονική Λειτουργία",
+            "raw_message_en": "Normal operation",
+            "service_until": None,
+        }
+    return {"status": "unknown", "raw_message": "", "raw_message_en": "", "service_until": None}
+
+
+def _extract_alert_banner(text: str) -> str:
+    """Pull the first sentence-ish chunk of the homepage starting at an
+    alert opener like 'Κυκλοφοριακές ρυθμίσεις…'. STASY phrases its
+    inline banners as one long sentence ending at a period, so we cut at
+    the next period or 350 chars, whichever comes first, to keep the pill
+    short. Returns empty string when no opener is found."""
+    m = _ALERT_OPENER_RE.search(text)
+    if not m:
+        return ""
+    tail = text[m.start():]
+    # End at the first period (Greek text uses .) or after a hard cap.
+    end = tail.find(".")
+    if end == -1 or end > 350:
+        end = min(len(tail), 350)
+    else:
+        end += 1  # include the period
+    result = " ".join(tail[:end].split()).strip()
+    return _strip_nav_tail(result)
+
+
+# Language-switcher and footer-nav tokens that bleed into the extracted
+# banner because the homepage has no period between the alert sentence
+# and the nav block. We cut the banner at the FIRST occurrence of any
+# of these — they're distinctive enough that they should never appear
+# inside a real service alert sentence.
+_NAV_CUT_TOKENS = (
+    "Ελληνικά", "ΕΛΛΗΝΙΚΑ", "English", "ENGLISH",
+    "Δείτε περισσότερα", "Read more",
+)
+
+
+def _strip_nav_tail(text: str) -> str:
+    """Drop everything from the first language-switcher / footer nav
+    token onwards. Returns the input unchanged if no token is found."""
+    cut = len(text)
+    for token in _NAV_CUT_TOKENS:
+        idx = text.find(token)
+        if 0 < idx < cut:
+            cut = idx
+    return text[:cut].rstrip(" ,;:·-")
+
+
+def upsert_homepage_status(conn: sqlite3.Connection, status: dict) -> None:
+    """Write the singleton stasy_status row. Idempotent — uses INSERT OR
+    REPLACE so a missing migration 0010 (raw_message_en column) still
+    works after a fallback to the legacy column set."""
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO stasy_status"
+            "(id, status, raw_message, raw_message_en, service_until, scraped_at)"
+            " VALUES(1, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+            (status["status"], status["raw_message"],
+             status["raw_message_en"], status["service_until"]),
+        )
+    except sqlite3.OperationalError:
+        conn.execute(
+            "INSERT OR REPLACE INTO stasy_status"
+            "(id, status, raw_message, service_until, scraped_at)"
+            " VALUES(1, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+            (status["status"], status["raw_message"], status["service_until"]),
+        )
 
 
 def parse_index(html: str) -> list[tuple[str, str]]:
@@ -625,13 +800,44 @@ def run_once(now: date | None = None) -> int:
     # https://www.stasy.gr/ as permalinks. Without this path, fresh active
     # alerts go silently missing from the app.
     greek_links: list[str] = []
+    homepage_status: dict | None = None
+    greek_homepage_html = ""
     try:
         greek_homepage_html = fetch_text(GREEK_HOMEPAGE_URL)
         greek_links = parse_greek_homepage(greek_homepage_html)
+        homepage_status = parse_homepage_status(greek_homepage_html)
     except (URLError, TimeoutError):
         greek_links = []
     items: list[AnnouncementItem] = []
     seen_slugs: set[str] = set()
+    # Surface the inline emergency banner as a synthetic serviceAlert so
+    # the home alert card renders it even when STASY doesn't link a
+    # separate article. Lines + dates are best-effort from the banner
+    # text using the same detectors the normal path uses.
+    if homepage_status and homepage_status["status"] == "alert" and homepage_status["raw_message"]:
+        banner_gr = homepage_status["raw_message"]
+        banner_en = homepage_status["raw_message_en"] or banner_gr
+        affected = detect_affected_lines(banner_gr + " " + banner_en)
+        vf_detected, vu_detected, _ = detect_dates(banner_gr + " " + banner_en, today=now)
+        # The generator's _is_fresh() gate drops anything without a parseable
+        # valid_from or valid_until. The inline banner usually has no date,
+        # so anchor valid_from to today — the banner only exists while STASY
+        # publishes it, so "fresh as of today" is the right semantics.
+        synthetic = AnnouncementItem(
+            slug="stasy-homepage-alert",
+            title=banner_gr,
+            summary=banner_gr,
+            url=GREEK_HOMEPAGE_URL,
+            title_en=banner_en,
+            summary_en=banner_en,
+            affected_lines=affected,
+            severity="warning",
+            valid_from=vf_detected or now.isoformat(),
+            valid_until=vu_detected,
+        )
+        if synthetic.slug not in seen_slugs:
+            items.append(synthetic)
+            seen_slugs.add(synthetic.slug)
     for url, title in links[:30]:  # cap so a runaway page doesn't tarpit the cron
         item = build_announcement(url, title, today=now)
         if item is not None:
@@ -647,6 +853,8 @@ def run_once(now: date | None = None) -> int:
             seen_slugs.add(item.slug)
     with dbmod.connect() as conn:
         count = upsert(conn, items)
+        if homepage_status is not None:
+            upsert_homepage_status(conn, homepage_status)
         conn.execute(
             "INSERT INTO scrape_log(source, ok, rows_written)"
             " VALUES('stasy_announcements', 1, ?)",

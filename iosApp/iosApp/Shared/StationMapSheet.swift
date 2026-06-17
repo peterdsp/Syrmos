@@ -67,7 +67,7 @@ struct StationMapSheet: View {
                 Button(action: openDirections) {
                     HStack {
                         Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
-                        Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : "Get directions")
+                        Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : loc.language == .albanian ? "Udhëzime navigimi" : "Get directions")
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)

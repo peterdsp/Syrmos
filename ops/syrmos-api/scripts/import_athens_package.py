@@ -94,13 +94,17 @@ WEEKLY_HOURS = [
     ("M3", "sat",     "00:00", "23:59", 1, "Saturday 24/7 (city only)"),
     ("M3", "sun",     "05:30", "00:01", 0, None),
 
-    # M3_AIR — airport extension. Excluded from 24-hour Saturday and from
-    # Fri late-night extensions per STASY note. Last origin departures:
-    # DT→AIR 22:54, AIR→DT 23:34 → close 23:34 (Airport-origin latest).
-    ("M3_AIR", "mon_thu", "06:10", "23:34", 0, None),
-    ("M3_AIR", "fri",     "06:10", "23:34", 0, None),
-    ("M3_AIR", "sat",     "06:10", "23:34", 0, None),
-    ("M3_AIR", "sun",     "06:10", "23:34", 0, None),
+    # M3_AIR — full airport route (Dim Theatro <-> Airport, 65 min). Excluded
+    # from 24-hour Saturday and from Fri late-night extensions per STASY note.
+    # First/last per the STASY PDFs (valid from 24-6-24):
+    #   outbound (DT origin): first 05:30, last 22:54
+    #   inbound  (AER origin): first 06:10, last 23:34
+    # openTime is the earliest origin departure of the day across both
+    # directions (05:30); closeTime is the latest origin departure (23:34).
+    ("M3_AIR", "mon_thu", "05:30", "23:34", 0, None),
+    ("M3_AIR", "fri",     "05:30", "23:34", 0, None),
+    ("M3_AIR", "sat",     "05:30", "23:34", 0, None),
+    ("M3_AIR", "sun",     "05:30", "23:34", 0, None),
 
     # T6 / T7. Last origin per STASY First/Last table (later of two
     # directions). Mon-Thu/Sun: T6 Syntagma 00:50, T7 Akti Posidonos
@@ -269,21 +273,23 @@ FREQUENCY_BANDS = [
     ("M3", "sun", "20:30", "21:30", 8.5,     "sunday_evening",  "both"),
     ("M3", "sun", "21:30", "00:20", 10.0,    "sunday_late",     "both"),
 
-    # ---------------- M3_AIR (airport extension, per-direction) ----------------
-    # Airport trains physically share the city section (Dim. Theatro <->
-    # Doukissis Plakentias) with regular M3 trains, so we render them only
-    # on the airport extension to avoid double-counting on the map. The
-    # band time_start is now the DPL-origin departure time outbound (= the
-    # Dim. Theatro departure shifted by the 44-min city travel: first
-    # 05:30+44 = 06:14, last 22:54+43 = 23:37). Inbound origin is Airport
-    # so the values stay 06:10 / 23:34.
-    ("M3_AIR", "mon_thu", "06:14", "23:37", 36.0, "airport_daily", "outbound"),
+    # ---------------- M3_AIR (full airport route, per-direction) ----------------
+    # Bands now anchored at the line origin for each direction so the
+    # projector renders the airport train at every station it passes
+    # through (Dim. Theatro included), not only past DPL. Per STASY PDFs:
+    #   outbound: Dim. Theatro 05:30 -> Airport 06:35, 36-min headway,
+    #             last origin departure 22:54
+    #   inbound : Airport 06:10 -> Dim. Theatro 07:12, 36-min headway,
+    #             last origin departure 23:34
+    # The dedupe pass in the projector collapses the simultaneous M3 city
+    # row at each minute so users see exactly one entry per train.
+    ("M3_AIR", "mon_thu", "05:30", "22:54", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "mon_thu", "06:10", "23:34", 36.0, "airport_daily", "inbound"),
-    ("M3_AIR", "fri",     "06:14", "23:37", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "fri",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "fri",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
-    ("M3_AIR", "sat",     "06:14", "23:37", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "sat",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "sat",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
-    ("M3_AIR", "sun",     "06:14", "23:37", 36.0, "airport_daily", "outbound"),
+    ("M3_AIR", "sun",     "05:30", "22:54", 36.0, "airport_daily", "outbound"),
     ("M3_AIR", "sun",     "06:10", "23:34", 36.0, "airport_daily", "inbound"),
 
     # ---------------- T6 (Syntagma ↔ Pikrodafni) ----------------

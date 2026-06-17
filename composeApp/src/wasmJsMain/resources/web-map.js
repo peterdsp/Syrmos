@@ -4,6 +4,187 @@
     const DIRECTION_OUTBOUND = "outbound";
     const DIRECTION_INBOUND = "inbound";
 
+    // --- i18n -----------------------------------------------------------
+    // Three-language UI for the web build. Mirrors the iOS / KMP enum so
+    // a Greek or Albanian user sees the same vocabulary across every
+    // platform. Strings are organised by key; t(key) looks up the active
+    // language with English as the fallback.
+    const I18N = {
+        en: {
+            brand_subtitle: "Athens rail map",
+            search_placeholder: "Search station, Syntagma, Piraeus, Airport",
+            search_aria: "Search station",
+            locate_me: "Locate me",
+            location_unavailable: "Location unavailable",
+            show_vehicles: "Show vehicles",
+            hide_vehicles: "Hide vehicles",
+            live_trains: "Live trains",
+            trains_active: "{n} trains active",
+            nearby_stations: "Nearby stations",
+            popular_stations: "Popular stations",
+            oasa_tickets: "OASA tickets",
+            view_on_oasa: "View on OASA ↗",
+            useful_information: "Useful information",
+            tickets_unavailable: "Tickets unavailable",
+            no_fare_data: "No fare data",
+            select_a_station: "Select a station",
+            done: "Done",
+            lines_at_this_station: "Lines at this station",
+            next_departures: "Next departures",
+            no_departures: "No departures available for this station right now.",
+            get_directions: "Get directions",
+            now: "Now",
+            interchange: "Interchange",
+            accessible: "Accessible",
+            airport: "Airport",
+            train: "Train",
+            live: "Live",
+            unknown: "unknown",
+            next: "next",
+        },
+        el: {
+            brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
+            search_placeholder: "Αναζήτηση σταθμού (Σύνταγμα, Πειραιάς, Αεροδρόμιο)",
+            search_aria: "Αναζήτηση σταθμού",
+            locate_me: "Η τοποθεσία μου",
+            location_unavailable: "Η τοποθεσία δεν είναι διαθέσιμη",
+            show_vehicles: "Εμφάνιση οχημάτων",
+            hide_vehicles: "Απόκρυψη οχημάτων",
+            live_trains: "Ζωντανά τρένα",
+            trains_active: "{n} ενεργά τρένα",
+            nearby_stations: "Κοντινοί σταθμοί",
+            popular_stations: "Δημοφιλείς σταθμοί",
+            oasa_tickets: "Εισιτήρια OASA",
+            view_on_oasa: "Άνοιγμα στην OASA ↗",
+            useful_information: "Χρήσιμες πληροφορίες",
+            tickets_unavailable: "Τα εισιτήρια δεν είναι διαθέσιμα",
+            no_fare_data: "Δεν υπάρχουν τιμές",
+            select_a_station: "Επιλέξτε σταθμό",
+            done: "Τέλος",
+            lines_at_this_station: "Γραμμές αυτού του σταθμού",
+            next_departures: "Επόμενα δρομολόγια",
+            no_departures: "Δεν υπάρχουν διαθέσιμα δρομολόγια για αυτόν τον σταθμό αυτή τη στιγμή.",
+            get_directions: "Οδηγίες",
+            now: "Τώρα",
+            interchange: "Ανταπόκριση",
+            accessible: "Προσβάσιμος",
+            airport: "Αεροδρόμιο",
+            train: "Συρμός",
+            live: "Ζωντανά",
+            unknown: "άγνωστο",
+            next: "επόμενος",
+        },
+        sq: {
+            brand_subtitle: "Harta e hekurudhave të Athinës",
+            search_placeholder: "Kërko stacion (Syntagma, Piraeus, Aeroporti)",
+            search_aria: "Kërko stacion",
+            locate_me: "Vendndodhja ime",
+            location_unavailable: "Vendndodhja s'është e disponueshme",
+            show_vehicles: "Shfaq mjetet",
+            hide_vehicles: "Fshih mjetet",
+            live_trains: "Trenat aktiv",
+            trains_active: "{n} trena aktiv",
+            nearby_stations: "Stacionet pranë",
+            popular_stations: "Stacionet kryesore",
+            oasa_tickets: "Biletat OASA",
+            view_on_oasa: "Hap në OASA ↗",
+            useful_information: "Informacione të dobishme",
+            tickets_unavailable: "Biletat s'janë të disponueshme",
+            no_fare_data: "Pa të dhëna çmimesh",
+            select_a_station: "Zgjidh një stacion",
+            done: "U krye",
+            lines_at_this_station: "Linjat në këtë stacion",
+            next_departures: "Nisjet e ardhshme",
+            no_departures: "Nuk ka nisje në dispozicion për këtë stacion në këtë moment.",
+            get_directions: "Udhëzime",
+            now: "Tani",
+            interchange: "Korrespondencë",
+            accessible: "I aksesueshëm",
+            airport: "Aeroporti",
+            train: "Tren",
+            live: "Drejtpërdrejt",
+            unknown: "i panjohur",
+            next: "tjetër",
+        },
+    };
+
+    const LANG_STORAGE_KEY = "syrmos_lang";
+
+    function detectInitialLanguage() {
+        const saved = (() => {
+            try { return localStorage.getItem(LANG_STORAGE_KEY); } catch (_) { return null; }
+        })();
+        if (saved && I18N[saved]) return saved;
+        const browser = (navigator.languages || [navigator.language || "en"])
+            .map((s) => (s || "").toLowerCase());
+        if (browser.some((s) => s.startsWith("el"))) return "el";
+        if (browser.some((s) => s.startsWith("sq"))) return "sq";
+        return "en";
+    }
+
+    let currentLang = detectInitialLanguage();
+
+    function t(key, vars) {
+        const table = I18N[currentLang] || I18N.en;
+        let s = table[key] != null ? table[key] : (I18N.en[key] != null ? I18N.en[key] : key);
+        if (vars) {
+            for (const k of Object.keys(vars)) {
+                s = s.split("{" + k + "}").join(String(vars[k]));
+            }
+        }
+        return s;
+    }
+
+    /// Re-applies translations to every [data-i18n*] element in the DOM.
+    /// Called once on init and again on every language change.
+    function applyTranslationsToDom() {
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+            el.textContent = t(el.getAttribute("data-i18n"));
+        });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+            el.placeholder = t(el.getAttribute("data-i18n-placeholder"));
+        });
+        document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+            el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
+        });
+        document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+            el.title = t(el.getAttribute("data-i18n-title"));
+        });
+        document.documentElement.lang = currentLang;
+        const picker = document.getElementById("languagePicker");
+        if (picker) {
+            picker.querySelectorAll(".language-pill").forEach((btn) => {
+                const pressed = btn.getAttribute("data-lang") === currentLang;
+                btn.setAttribute("aria-pressed", String(pressed));
+            });
+        }
+    }
+
+    // Listener list for code paths that hand-render dynamic strings
+    // (live trains panel, station sheet, departures list). Each listener
+    // is called after the language flips so they re-render with the new
+    // strings instead of waiting for a natural refresh tick.
+    const langChangeListeners = [];
+    function onLanguageChange(fn) { langChangeListeners.push(fn); }
+    function setLanguage(next) {
+        if (!I18N[next] || next === currentLang) return;
+        currentLang = next;
+        try { localStorage.setItem(LANG_STORAGE_KEY, next); } catch (_) {}
+        applyTranslationsToDom();
+        langChangeListeners.forEach((fn) => { try { fn(next); } catch (_) {} });
+    }
+
+    // Wire the picker as soon as the DOM is ready (this script runs at the
+    // end of <body> so the elements already exist).
+    (function wireLanguagePicker() {
+        const picker = document.getElementById("languagePicker");
+        if (!picker) return;
+        picker.querySelectorAll(".language-pill").forEach((btn) => {
+            btn.addEventListener("click", () => setLanguage(btn.getAttribute("data-lang")));
+        });
+        applyTranslationsToDom();
+    })();
+
     const stationSheet = document.getElementById("stationSheet");
     const stationName = document.getElementById("stationName");
     const stationNameEl = document.getElementById("stationNameEl");
@@ -164,7 +345,7 @@
             renderFaresPanel(payload);
             renderInfoLinksPanel(payload);
         } catch (_) {
-            if (faresList) faresList.innerHTML = "<div class=\"panel-item__meta\">Tickets unavailable</div>";
+            if (faresList) faresList.innerHTML = `<div class="panel-item__meta">${t("tickets_unavailable")}</div>`;
             if (infoLinksList) infoLinksList.innerHTML = "";
         }
     })();
@@ -173,7 +354,7 @@
         if (!faresList) return;
         const products = (payload && payload.products) || [];
         if (!products.length) {
-            faresList.innerHTML = "<div class=\"panel-item__meta\">No fare data</div>";
+            faresList.innerHTML = `<div class="panel-item__meta">${t("no_fare_data")}</div>`;
             return;
         }
         // Show top 6 in a compact "title — €price" list so the panel doesn't
@@ -750,13 +931,13 @@
             ? apiDepartures
             : buildStationDepartures(station);
         if (!departures.length) {
-            stationDepartures.innerHTML = '<div class="departure-empty">No departures available for this station right now.</div>';
+            stationDepartures.innerHTML = `<div class="departure-empty">${t("no_departures")}</div>`;
             return;
         }
 
         stationDepartures.innerHTML = departures.map((departure) => {
             const minutesLabel = departure.minutesAway <= 0
-                ? "Now"
+                ? t("now")
                 : departure.minutesAway === 1
                     ? "1 min"
                     : `${departure.minutesAway} min`;
@@ -829,10 +1010,10 @@
         // information that's actually useful at this station.
         const chips = [];
         if (station.isInterchange) {
-            chips.push({ icon: "↔", label: "Interchange" });
+            chips.push({ icon: "↔", label: t("interchange") });
         }
         if (station.accessibility) {
-            chips.push({ icon: "♿", label: "Accessible" });
+            chips.push({ icon: "♿", label: t("accessible") });
         }
         if (station.zone > 1) {
             chips.push({ icon: "📍", label: `Zone ${station.zone}` });
@@ -937,9 +1118,9 @@
                 updateNearbyPanel();
             },
             () => {
-                locateButton.textContent = "Location unavailable";
+                locateButton.textContent = t("location_unavailable");
                 setTimeout(() => {
-                    locateButton.textContent = "Locate me";
+                    locateButton.textContent = t("locate_me");
                 }, 1800);
             },
             { enableHighAccuracy: true, timeout: 10000 },
@@ -965,9 +1146,9 @@
             vehiclesHidden = !vehiclesHidden;
             vehiclesToggle.classList.toggle("control-button--active", vehiclesHidden);
             vehiclesToggle.setAttribute(
-                "aria-label", vehiclesHidden ? "Show vehicles" : "Hide vehicles"
+                "aria-label", vehiclesHidden ? t("show_vehicles") : t("hide_vehicles")
             );
-            vehiclesToggle.title = vehiclesHidden ? "Show vehicles" : "Hide vehicles";
+            vehiclesToggle.title = vehiclesHidden ? t("show_vehicles") : t("hide_vehicles");
             window.__syrmosVehiclesHidden = vehiclesHidden;
             if (vehiclesHidden) {
                 liveTrainMarkers.forEach((marker) => marker.remove());
@@ -1099,7 +1280,7 @@
             .map((t) => ({
                 id: t.id || t.trainNumber,
                 lineId: t.lineId,
-                trainNumber: t.trainNumber || "Train",
+                trainNumber: t.trainNumber || I18N[currentLang].train,
                 origin: t.origin || "",
                 destination: t.destination || "",
                 nextStation: t.nextStation || "",
@@ -1123,7 +1304,7 @@
                 return `
                     <div class="panel-item" data-live-suburban>
                         <div class="panel-item__title">🚆 ${line ? line.name : train.lineId} ${train.trainNumber}</div>
-                        <div class="panel-item__meta">${train.origin || "Live"} to ${train.destination || "unknown"}${train.nextStation ? `, next ${train.nextStation}` : ""}</div>
+                        <div class="panel-item__meta">${train.origin || t("live")} ${currentLang === "el" ? "προς" : currentLang === "sq" ? "drejt" : "to"} ${train.destination || t("unknown")}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}</div>
                     </div>
                 `;
             }).join("");
@@ -1371,7 +1552,7 @@
 
         window._updatePeekText = function (count) {
             if (peekText) {
-                peekText.textContent = count > 0 ? `${count} trains active` : "Live trains";
+                peekText.textContent = count > 0 ? t("trains_active", { n: count }) : t("live_trains");
             }
         };
     }
@@ -1592,7 +1773,7 @@
         const display = [...perLine.values()].slice(0, 10);
 
         const panelHtml =
-            `<div class="panel-item"><div class="panel-item__count">${trains.length} trains active</div></div>` +
+            `<div class="panel-item"><div class="panel-item__count">${t("trains_active", { n: trains.length })}</div></div>` +
             display.map((train) => {
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 return `

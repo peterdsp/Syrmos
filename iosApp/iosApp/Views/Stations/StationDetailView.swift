@@ -50,9 +50,9 @@ struct StationDetailView: View {
             }
 
             if station.isInterchange {
-                Section(loc.language == .greek ? "Ανταπόκριση" : "Interchange") {
+                Section(loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : "Interchange") {
                     Label(
-                        loc.language == .greek ? "Σταθμός ανταπόκρισης" : "Transfer station",
+                        loc.language == .greek ? "Σταθμός ανταπόκρισης" : loc.language == .albanian ? "Stacion korrespondence" : "Transfer station",
                         systemImage: "arrow.triangle.2.circlepath"
                     )
                     .font(.subheadline)
@@ -66,21 +66,23 @@ struct StationDetailView: View {
                         safariURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")
                     } label: {
                         Label(
-                            loc.language == .greek ? "Αγορά εισιτηρίου στην Hellenic Train" : "Buy ticket on Hellenic Train",
+                            loc.language == .greek ? "Αγορά εισιτηρίου στην Hellenic Train" : loc.language == .albanian ? "Bli biletë në Hellenic Train" : "Buy ticket on Hellenic Train",
                             systemImage: "ticket"
                         )
                     }
                 } footer: {
                     Text(loc.language == .greek
                          ? "Η πληρωμή και η έκδοση εισιτηρίου γίνονται 100% στον ιστότοπο της Hellenic Train. Το Syrmos απλώς παρέχει τον σύνδεσμο, δεν συλλέγει στοιχεία πληρωμής και δεν έχει καμία ευθύνη για την κράτηση."
+                         : loc.language == .albanian
+                         ? "Pagesa dhe lëshimi i biletës bëhen 100% në faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh të dhëna pagesash dhe nuk ka asnjë përgjegjësi për rezervimin."
                          : "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking.")
                         .font(.caption2)
                 }
             }
 
-            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : "Next Departures") {
+            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
                 if departures.isEmpty {
-                    Text(loc.language == .greek ? "Φόρτωση δρομολογίων..." : "Loading departures...")
+                    Text(loc.language == .greek ? "Φόρτωση δρομολογίων..." : loc.language == .albanian ? "Duke ngarkuar oraret..." : "Loading departures...")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(departures.prefix(10)) { departure in
@@ -109,7 +111,7 @@ struct StationDetailView: View {
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     if departure.serviceType == "airport" {
-                                        Text(loc.language == .greek ? "Αεροδρόμιο" : "Airport")
+                                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : "Airport")
                                             .font(.caption2)
                                             .fontWeight(.semibold)
                                             .padding(.horizontal, 5)
@@ -120,6 +122,8 @@ struct StationDetailView: View {
                                 }
                                 Text(loc.language == .greek
                                     ? "προς \(departure.direction)"
+                                    : loc.language == .albanian
+                                    ? "drejt \(departure.direction)"
                                     : "towards \(departure.direction)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -129,7 +133,7 @@ struct StationDetailView: View {
 
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text(departure.minutesAway <= 1
-                                    ? (loc.language == .greek ? "Τώρα" : "Now")
+                                    ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Now")
                                     : "\(departure.minutesAway) min")
                                     .font(.headline)
                                     .foregroundStyle(arrivalColor(departure.minutesAway))

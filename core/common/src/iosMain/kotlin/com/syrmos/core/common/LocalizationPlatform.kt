@@ -6,8 +6,11 @@ import platform.Foundation.currentLocale
 import platform.Foundation.languageCode
 
 actual fun detectSystemLanguage(): AppLanguage {
-    val locale = NSLocale.currentLocale.languageCode
-    return if (locale == "el") AppLanguage.GREEK else AppLanguage.ENGLISH
+    return when (NSLocale.currentLocale.languageCode) {
+        "el" -> AppLanguage.GREEK
+        "sq" -> AppLanguage.ALBANIAN
+        else -> AppLanguage.ENGLISH
+    }
 }
 
 actual fun persistLanguage(lang: AppLanguage) {

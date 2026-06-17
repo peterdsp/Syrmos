@@ -40,10 +40,13 @@ extension TransitType {
         switch (self, lang) {
         case (.metro, .greek): return "Μετρό"
         case (.metro, .english): return "Metro"
+        case (.metro, .albanian): return "Metro"
         case (.tram, .greek): return "Τραμ"
         case (.tram, .english): return "Tram"
+        case (.tram, .albanian): return "Tramvaj"
         case (.suburban, .greek): return "Προαστιακός Σιδηρόδρομος"
         case (.suburban, .english): return "Suburban Railway"
+        case (.suburban, .albanian): return "Hekurudha periferike"
         }
     }
 }
@@ -70,6 +73,8 @@ struct LineRow: View {
 
             Text(loc.language == .greek
                 ? "\(line.stationCount) σταθμοί"
+                : loc.language == .albanian
+                ? "\(line.stationCount) stacione"
                 : "\(line.stationCount) stations")
                 .font(.caption)
                 .foregroundStyle(.secondary)

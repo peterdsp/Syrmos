@@ -99,7 +99,7 @@ struct ContentView: View {
 
                 TimetablesView()
                     .tabItem {
-                        Label(loc.language == .greek ? "Δρομολόγια" : "Timetables",
+                        Label(loc.language == .greek ? "Δρομολόγια" : loc.language == .albanian ? "Oraret" : "Timetables",
                               systemImage: "clock")
                     }
                     .tag(SyrmosTab.timetables)

@@ -17,7 +17,7 @@ val featureModule = module {
             findNearestStation = get(),
             getNextDepartures = get(),
             getLinesUseCase = get(),
-            stasyService = get(),
+            announcementsRepository = get(),
             liveTrackerService = get(),
         )
     }

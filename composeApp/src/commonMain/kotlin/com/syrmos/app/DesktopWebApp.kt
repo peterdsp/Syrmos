@@ -258,6 +258,10 @@ private fun DesktopSidebar(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            LanguageSwitcher()
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Surface(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
                 shape = RoundedCornerShape(12.dp),
@@ -275,6 +279,52 @@ private fun DesktopSidebar(
                         text = "Metro, tram and suburban data loaded for planning.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// Three-pill language selector for the desktop/web sidebar. The mobile
+/// surface reaches the picker through Settings → Language, but the
+/// desktop layout (≥900dp) renders DesktopWebApp() which skips the tab
+/// navigator entirely. Without this row, web users have no way to
+/// switch from English to Greek or Albanian.
+@Composable
+private fun LanguageSwitcher() {
+    val current by LocalizationManager.language.collectAsState()
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = L.LANGUAGE.text(current),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            AppLanguage.entries.forEach { lang ->
+                val selected = lang == current
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { LocalizationManager.setLanguage(lang) },
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                    } else {
+                        MaterialTheme.colorScheme.background
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Text(
+                        text = lang.code.uppercase(),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                     )
                 }
             }
@@ -696,7 +746,11 @@ private fun TicketsCard(
     lang: AppLanguage,
     onBuy: (String) -> Unit,
 ) {
-    DashboardCard(title = if (lang == AppLanguage.GREEK) "Εισιτήρια OASA" else "OASA tickets") {
+    DashboardCard(title = when (lang) {
+        AppLanguage.GREEK -> "Εισιτήρια OASA"
+        AppLanguage.ALBANIAN -> "Biletat e OASA"
+        else -> "OASA tickets"
+    }) {
         val featured = products.take(6)
         featured.forEach { product ->
             val title = if (lang == AppLanguage.GREEK && product.titleEl.isNotBlank()) product.titleEl else product.titleEn
@@ -728,13 +782,17 @@ private fun TicketsCard(
             onClick = { onBuy("https://www.athenacard.gr/") },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (lang == AppLanguage.GREEK) "Αγορά μέσω Athena Card ↗" else "Buy on Athena Card ↗")
+            Text(when (lang) {
+                AppLanguage.GREEK -> "Αγορά μέσω Athena Card ↗"
+                AppLanguage.ALBANIAN -> "Bli përmes Athena Card ↗"
+                else -> "Buy on Athena Card ↗"
+            })
         }
         Text(
-            text = if (lang == AppLanguage.GREEK) {
-                "Τιμές από επίσημες πηγές OASA. Η αγορά γίνεται απευθείας στο athenacard.gr."
-            } else {
-                "Prices from official OASA sources. Purchase happens directly on athenacard.gr."
+            text = when (lang) {
+                AppLanguage.GREEK -> "Τιμές από επίσημες πηγές OASA. Η αγορά γίνεται απευθείας στο athenacard.gr."
+                AppLanguage.ALBANIAN -> "Çmimet nga burimet zyrtare të OASA. Blerja bëhet drejtpërdrejt në athenacard.gr."
+                else -> "Prices from official OASA sources. Purchase happens directly on athenacard.gr."
             },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -748,7 +806,11 @@ private fun InfoLinksCard(
     lang: AppLanguage,
     onOpen: (String) -> Unit,
 ) {
-    DashboardCard(title = if (lang == AppLanguage.GREEK) "Χρήσιμες πληροφορίες" else "Useful information") {
+    DashboardCard(title = when (lang) {
+        AppLanguage.GREEK -> "Χρήσιμες πληροφορίες"
+        AppLanguage.ALBANIAN -> "Informacione të dobishme"
+        else -> "Useful information"
+    }) {
         links.forEach { link ->
             val target = if (lang == AppLanguage.GREEK) link.urlEl.ifEmpty { link.urlEn } else link.urlEn
             val title = if (lang == AppLanguage.GREEK) link.titleEl else link.titleEn
@@ -786,8 +848,11 @@ private fun InfoLinksCard(
                     onClick = { onOpen(target) },
                 ) {
                     Text(
-                        text = (if (lang == AppLanguage.GREEK) "Επιβεβαίωση στο " else "Verify on ") + link.operatorId.uppercase()
-                                + "  ↗",
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Επιβεβαίωση στο "
+                            AppLanguage.ALBANIAN -> "Verifiko në "
+                            else -> "Verify on "
+                        } + link.operatorId.uppercase() + "  ↗",
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
@@ -804,10 +869,10 @@ private fun HellenicTrainCard(
 ) {
     DashboardCard(title = if (lang == AppLanguage.GREEK) "Hellenic Train" else "Hellenic Train") {
         Text(
-            text = if (lang == AppLanguage.GREEK) {
-                "Εισιτήρια Προαστιακού (A1–A4), InterCity και υπεραστικών αμαξοστοιχιών απευθείας από την Hellenic Train."
-            } else {
-                "Tickets for Suburban (A1–A4), InterCity and intercity trains directly from Hellenic Train."
+            text = when (lang) {
+                AppLanguage.GREEK -> "Εισιτήρια Προαστιακού (A1–A4), InterCity και υπεραστικών αμαξοστοιχιών απευθείας από την Hellenic Train."
+                AppLanguage.ALBANIAN -> "Bileta për Trenat periferik (A1–A4), InterCity dhe ndërqytetës direkt nga Hellenic Train."
+                else -> "Tickets for Suburban (A1–A4), InterCity and intercity trains directly from Hellenic Train."
             },
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -817,13 +882,21 @@ private fun HellenicTrainCard(
                 onClick = { onBuy("https://tickets.hellenictrain.gr/") },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (lang == AppLanguage.GREEK) "Αγορά εισιτηρίου ↗" else "Buy ticket ↗")
+                Text(when (lang) {
+                    AppLanguage.GREEK -> "Αγορά εισιτηρίου ↗"
+                    AppLanguage.ALBANIAN -> "Bli biletë ↗"
+                    else -> "Buy ticket ↗"
+                })
             }
             OutlinedButton(
                 onClick = { onBuy("https://www.hellenictrain.gr/") },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (lang == AppLanguage.GREEK) "Πληροφορίες ↗" else "Info ↗")
+                Text(when (lang) {
+                    AppLanguage.GREEK -> "Πληροφορίες ↗"
+                    AppLanguage.ALBANIAN -> "Informacione ↗"
+                    else -> "Info ↗"
+                })
             }
         }
     }

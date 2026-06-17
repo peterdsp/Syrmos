@@ -50,14 +50,14 @@ struct ContactDeveloperView: View {
     var body: some View {
         Form {
             Section {
-                Picker(loc.language == .greek ? "Κατηγορία" : "Category", selection: $category) {
+                Picker(loc.language == .greek ? "Κατηγορία" : loc.language == .albanian ? "Kategoria" : "Category", selection: $category) {
                     ForEach(Category.allCases) { c in
                         Text(c.label(loc.language)).tag(c)
                     }
                 }
-                TextField(loc.language == .greek ? "Θέμα" : "Subject", text: $subject)
+                TextField(loc.language == .greek ? "Θέμα" : loc.language == .albanian ? "Tema" : "Subject", text: $subject)
                 TextField(
-                    loc.language == .greek ? "Email για απάντηση (προαιρετικό)" : "Reply email (optional)",
+                    loc.language == .greek ? "Email για απάντηση (προαιρετικό)" : loc.language == .albanian ? "Email për përgjigje (opsionale)" : "Reply email (optional)",
                     text: $contactEmail
                 )
                 .keyboardType(.emailAddress)
@@ -65,19 +65,19 @@ struct ContactDeveloperView: View {
                 .autocorrectionDisabled()
             }
 
-            Section(loc.language == .greek ? "Μήνυμα" : "Message") {
+            Section(loc.language == .greek ? "Μήνυμα" : loc.language == .albanian ? "Mesazhi" : "Message") {
                 TextEditor(text: $message)
                     .frame(minHeight: 140)
             }
 
-            Section(loc.language == .greek ? "Συνημμένο" : "Attachment") {
+            Section(loc.language == .greek ? "Συνημμένο" : loc.language == .albanian ? "Bashkëngjitje" : "Attachment") {
                 PhotosPicker(
                     selection: $pickerItem,
                     matching: .any(of: [.images, .videos])
                 ) {
                     Label(
                         attachmentName.isEmpty
-                            ? (loc.language == .greek ? "Επιλογή φωτογραφίας ή βίντεο" : "Pick a photo or video")
+                            ? (loc.language == .greek ? "Επιλογή φωτογραφίας ή βίντεο" : loc.language == .albanian ? "Zgjidh foto ose video" : "Pick a photo or video")
                             : attachmentName,
                         systemImage: attachmentName.isEmpty ? "paperclip" : "checkmark.circle"
                     )
@@ -89,7 +89,7 @@ struct ContactDeveloperView: View {
                         pickerItem = nil
                     } label: {
                         Label(
-                            loc.language == .greek ? "Αφαίρεση συνημμένου" : "Remove attachment",
+                            loc.language == .greek ? "Αφαίρεση συνημμένου" : loc.language == .albanian ? "Hiq bashkëngjitjen" : "Remove attachment",
                             systemImage: "trash"
                         )
                     }
@@ -104,7 +104,7 @@ struct ContactDeveloperView: View {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                     } else {
-                        Text(loc.language == .greek ? "Αποστολή" : "Send")
+                        Text(loc.language == .greek ? "Αποστολή" : loc.language == .albanian ? "Dërgo" : "Send")
                             .frame(maxWidth: .infinity)
                             .bold()
                     }
@@ -112,7 +112,7 @@ struct ContactDeveloperView: View {
                 .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || sending)
             }
         }
-        .navigationTitle(loc.language == .greek ? "Επικοινωνία" : "Contact")
+        .navigationTitle(loc.language == .greek ? "Επικοινωνία" : loc.language == .albanian ? "Kontakt" : "Contact")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: pickerItem) { _, newItem in
             guard let newItem else { return }
@@ -190,9 +190,11 @@ struct ContactDeveloperView: View {
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let id = json["id"] as? Int {
                 resultAlert = ResultAlert(
-                    title: loc.language == .greek ? "Στάλθηκε" : "Sent",
+                    title: loc.language == .greek ? "Στάλθηκε" : loc.language == .albanian ? "U dërgua" : "Sent",
                     body: loc.language == .greek
                         ? "Ευχαριστούμε. Αναφορά #\(id)."
+                        : loc.language == .albanian
+                        ? "Faleminderit. Referenca #\(id)."
                         : "Thanks. Reference #\(id).",
                     success: true
                 )
@@ -209,14 +211,14 @@ struct ContactDeveloperView: View {
             } else {
                 let detail = String(data: data, encoding: .utf8) ?? "Unknown error"
                 resultAlert = ResultAlert(
-                    title: loc.language == .greek ? "Σφάλμα" : "Couldn't send",
+                    title: loc.language == .greek ? "Σφάλμα" : loc.language == .albanian ? "Nuk u dërgua" : "Couldn't send",
                     body: detail.prefix(300).description,
                     success: false
                 )
             }
         } catch {
             resultAlert = ResultAlert(
-                title: loc.language == .greek ? "Σφάλμα δικτύου" : "Network error",
+                title: loc.language == .greek ? "Σφάλμα δικτύου" : loc.language == .albanian ? "Gabim rrjeti" : "Network error",
                 body: error.localizedDescription,
                 success: false
             )
