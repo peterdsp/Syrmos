@@ -664,11 +664,21 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
         " FROM schedule_rules WHERE line_id=? ORDER BY day_type",
         (line_id,),
     ).fetchall()
-    bands = conn.execute(
-        "SELECT day_type, time_start, time_end, headway_minutes, label"
-        " FROM frequency_bands WHERE line_id=? ORDER BY day_type, time_start",
-        (line_id,),
-    ).fetchall()
+    # Migration 0012 added a per-band direction so the Timetables view can
+    # tell an M3_AIR outbound run from an inbound one. SELECT it with a
+    # fallback for older Pis where the column doesn't exist yet.
+    try:
+        bands = conn.execute(
+            "SELECT day_type, time_start, time_end, headway_minutes, label, direction"
+            " FROM frequency_bands WHERE line_id=? ORDER BY day_type, time_start",
+            (line_id,),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        bands = conn.execute(
+            "SELECT day_type, time_start, time_end, headway_minutes, label"
+            " FROM frequency_bands WHERE line_id=? ORDER BY day_type, time_start",
+            (line_id,),
+        ).fetchall()
     # Suburban lines (A1/A2/A3/A4) have an explicit trip timetable in
     # addition to (or instead of) the headway bands. Surface trips so
     # clients can render the Hellenic-Train-style "next departures" list.
@@ -720,13 +730,18 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
             for r in rules
         ],
         "bands": [
-            {
+            (lambda b: {
                 "dayType": b["day_type"],
                 "timeStart": b["time_start"],
                 "timeEnd": b["time_end"],
                 "headwayMinutes": b["headway_minutes"],
                 "label": b["label"] or "",
-            }
+                # Only emit `direction` when the row actually carries one
+                # (M3_AIR is per-direction; M3 city + most other lines
+                # ship a single band per dayType and the client treats
+                # absent direction as "both").
+                **({"direction": b["direction"]} if "direction" in b.keys() and b["direction"] else {}),
+            })(b)
             for b in bands
         ],
         "trips": list(trips_by_key.values()),
