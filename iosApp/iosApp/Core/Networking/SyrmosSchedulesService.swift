@@ -153,6 +153,13 @@ final class SyrmosSchedulesService: ObservableObject {
         let lineId: String
         let rules: [RuleEntry]
         let bands: [BandEntry]
+        /// Per-(direction, fromStation, time) endpoint scraped from
+        /// stasy.gr. When a band's emitted slot matches one of these
+        /// rows, the projector overrides the displayed destination
+        /// (M1 inbound 00:30 from Kifissia terminates at Omonia, not
+        /// the line's normal Piraeus terminal). Empty when the line
+        /// has no published short-turn data yet.
+        let lastTrains: [LastTrainEntry]
         var etag: String = ""
 
         func withETag(_ hash: String) -> LineSchedule {
@@ -161,7 +168,24 @@ final class SyrmosSchedulesService: ObservableObject {
             return copy
         }
 
-        private enum CodingKeys: String, CodingKey { case lineId, rules, bands }
+        private enum CodingKeys: String, CodingKey { case lineId, rules, bands, lastTrains }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            lineId = try c.decode(String.self, forKey: .lineId)
+            rules = try c.decode([RuleEntry].self, forKey: .rules)
+            bands = try c.decode([BandEntry].self, forKey: .bands)
+            lastTrains = (try? c.decode([LastTrainEntry].self, forKey: .lastTrains)) ?? []
+        }
+    }
+
+    struct LastTrainEntry: Decodable {
+        let dayType: String
+        let direction: String
+        let fromStationId: String
+        let time: String
+        let endStationId: String
+        let label: String
     }
 
     struct RuleEntry: Decodable {

@@ -492,6 +492,9 @@ enum ScheduleProjector {
                         directionKey: stream.key,
                         directionLabel: stream.label,
                         limit: limit,
+                        lastTrainsForDirection: bundle.lastTrains.filter {
+                            $0.dayType == dt && $0.direction == stream.key
+                        },
                         into: &lineOut
                     )
                 }
@@ -531,6 +534,13 @@ enum ScheduleProjector {
         directionKey: String,
         directionLabel: String,
         limit: Int,
+        /// Pre-filtered subset of bundle.lastTrains matching this dayType
+        /// + direction. Empty when the bundle ships no short-turn data
+        /// (M2 / M3 / trams / suburban as of writing). Looked up
+        /// per-slot by (fromStationId, time) to override the displayed
+        /// destination when the emitted slot is one of the short-turn
+        /// or last-train rows STASY publishes.
+        lastTrainsForDirection: [SyrmosSchedulesService.LastTrainEntry],
         into out: inout [Departure]
     ) {
         guard let rawStart = minutesOfDay(band.timeStart),
@@ -572,16 +582,57 @@ enum ScheduleProjector {
             let h = display / 60
             let m = display % 60
             let mins = max(0, slotMin - nowMinutes)
+            let displayTime = String(format: "%02d:%02d", h, m)
+            // Override the direction label when the slot we're about to
+            // emit matches a STASY-scraped last-train row for this
+            // station. ±1 min tolerance handles minor rounding drift
+            // between the band's headway projection and STASY's
+            // published clock times.
+            let resolvedDirection = lastTrainOverride(
+                lastTrains: lastTrainsForDirection,
+                fromStationId: stationId,
+                slotTime: displayTime
+            ) ?? directionLabel
             out.append(Departure(
-                time: String(format: "%02d:%02d", h, m),
+                time: displayTime,
                 lineId: displayLineId(for: lineId),
-                direction: directionLabel,
+                direction: resolvedDirection,
                 minutesAway: mins,
                 serviceType: serviceTypeLabel(for: lineId, label: band.label)
             ))
             slot += band.headwayMinutes
             added += 1
         }
+    }
+
+    /// Returns the human-readable terminal name to display for this
+    /// slot when STASY publishes a short-turn / explicit last-train
+    /// row for it, otherwise nil. We compare with a ±1 min window so
+    /// the projector's per-station offset rounding doesn't make us
+    /// miss the override.
+    private static func lastTrainOverride(
+        lastTrains: [SyrmosSchedulesService.LastTrainEntry],
+        fromStationId: String,
+        slotTime: String
+    ) -> String? {
+        guard !lastTrains.isEmpty else { return nil }
+        let slotMin = minutesOfDay(slotTime) ?? 0
+        for entry in lastTrains where entry.fromStationId == fromStationId {
+            guard let entryMin = minutesOfDay(entry.time) else { continue }
+            if abs(entryMin - slotMin) <= 1 {
+                // Translate the endStation id to its localized human
+                // name. We bias to the English name since the
+                // direction label inside Departure is rendered as
+                // "towards X" / "drejt X" / "προς X" with the X
+                // already coming out as a station label downstream.
+                let coords = StationCoordinateLookup.shared
+                if let label = coords.englishName(for: entry.endStationId) {
+                    return label
+                }
+                return entry.endStationId
+            }
+        }
+        return nil
     }
 
     private static func dayType(for weekday: Int, holiday: String?) -> String {
