@@ -458,10 +458,52 @@
         attributionControl: true,
     }).setView(ATHENS_CENTER, INITIAL_ZOOM);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap",
-    }).addTo(map);
+    // --- Localised tile layer --------------------------------------------
+    // Tile labels follow OpenStreetMap's "name" / "name:en" / "name:sq" tags;
+    // each tile renderer picks a different language to bake into the raster.
+    // Greek users want Greek place names (default OSM), English / Albanian
+    // users want Latin-script labels (Carto Voyager renders name:en in
+    // preference to local name). Albanian-specific rendering isn't a free
+    // public service in 2026, so Albanian falls back to the English raster.
+    function tileSourceFor(lang) {
+        if (lang === "el") {
+            return {
+                url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                subdomains: "abc",
+                attribution: "&copy; OpenStreetMap",
+                maxZoom: 19,
+            };
+        }
+        // English + Albanian + any unknown future code
+        return {
+            url: "https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png",
+            subdomains: "abcd",
+            attribution: "&copy; OpenStreetMap, &copy; CARTO",
+            maxZoom: 19,
+        };
+    }
+
+    let activeTileLayer = null;
+    function applyTileLayer(lang) {
+        const cfg = tileSourceFor(lang);
+        const next = L.tileLayer(cfg.url, {
+            maxZoom: cfg.maxZoom,
+            attribution: cfg.attribution,
+            subdomains: cfg.subdomains,
+        });
+        next.addTo(map);
+        if (activeTileLayer) {
+            // Remove the previous layer only after the new one has had a
+            // chance to start fetching, so the user doesn't see a brief
+            // blank canvas while tiles swap.
+            const prev = activeTileLayer;
+            setTimeout(() => map.removeLayer(prev), 250);
+        }
+        activeTileLayer = next;
+    }
+
+    applyTileLayer(currentLang);
+    onLanguageChange((next) => applyTileLayer(next));
 
     // Drop Leaflet's default "Leaflet | " prefix once the map is fully
     // wired up. Guarded because a Leaflet version mismatch could expose
