@@ -587,8 +587,25 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
 
             let segDuration = to.minutesFromOrigin - from.minutesFromOrigin
             let frac = segDuration > 0 ? min(max((elapsed - from.minutesFromOrigin) / segDuration, 0), 1) : 0
-            let lat = fromCoord.lat + (toCoord.lat - fromCoord.lat) * frac
-            let lon = fromCoord.lon + (toCoord.lon - fromCoord.lon) * frac
+
+            // Walk along the OSM-derived polyline arc between the two
+            // stations instead of straight-lerping their coordinates.
+            // The straight lerp cuts the chord of every track curve,
+            // which is exactly why trains were drawn alongside the
+            // blue M3 line rather than on it. The polyline already
+            // hugs the real track so a polyline-relative interpolation
+            // keeps the moving icon on the rails.
+            let polylineLineId = train.lineId == "M3_AIR" ? "M3_AIR" : train.lineId
+            let polyline = SyrmosRouteShapesStore.shared.coordinates(for: polylineLineId)
+                ?? SyrmosRouteShapesStore.shared.coordinates(for: offsetsLineKey)
+            let arcPosition = pointOnPolylineArc(
+                polyline: polyline,
+                from: CLLocationCoordinate2D(latitude: fromCoord.lat, longitude: fromCoord.lon),
+                to: CLLocationCoordinate2D(latitude: toCoord.lat, longitude: toCoord.lon),
+                fraction: frac
+            )
+            let lat = arcPosition.latitude
+            let lon = arcPosition.longitude
 
             let destination = train.directionKey == "outbound" ? meta.terminalB : meta.terminalA
             let displayLineId = train.lineId == "M3_AIR" ? "M3" : train.lineId
@@ -612,4 +629,77 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
         return result
     }
 
+    /// Interpolate a point along the polyline arc between two station
+    /// anchors. Finds the closest polyline vertex to each anchor,
+    /// measures cumulative haversine distance along the polyline
+    /// between those vertices, then walks `fraction` of that arc
+    /// distance from the `from` end. Falls back to a straight chord
+    /// lerp when the polyline is empty or both anchors snap to the
+    /// same vertex (very short inter-station spacing).
+    fileprivate static func pointOnPolylineArc(
+        polyline: [CLLocationCoordinate2D]?,
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D,
+        fraction: Double
+    ) -> CLLocationCoordinate2D {
+        let f = min(max(fraction, 0), 1)
+        guard let line = polyline, line.count >= 2 else {
+            return CLLocationCoordinate2D(
+                latitude: from.latitude + (to.latitude - from.latitude) * f,
+                longitude: from.longitude + (to.longitude - from.longitude) * f
+            )
+        }
+        let fromIdx = closestPolylineIndex(line, to: from)
+        let toIdx = closestPolylineIndex(line, to: to)
+        if fromIdx == toIdx {
+            return CLLocationCoordinate2D(
+                latitude: from.latitude + (to.latitude - from.latitude) * f,
+                longitude: from.longitude + (to.longitude - from.longitude) * f
+            )
+        }
+        let reversed = fromIdx > toIdx
+        let start = min(fromIdx, toIdx)
+        let end = max(fromIdx, toIdx)
+        var cumulative: [Double] = [0]
+        cumulative.reserveCapacity(end - start + 1)
+        for i in start..<end {
+            cumulative.append(cumulative.last! + haversineMeters(line[i], line[i + 1]))
+        }
+        guard let total = cumulative.last, total > 0 else { return line[start] }
+        let target = total * (reversed ? (1 - f) : f)
+        for i in 0..<(cumulative.count - 1) {
+            if cumulative[i + 1] >= target {
+                let segLen = cumulative[i + 1] - cumulative[i]
+                let segFrac = segLen > 0 ? (target - cumulative[i]) / segLen : 0
+                let a = line[start + i]
+                let b = line[start + i + 1]
+                return CLLocationCoordinate2D(
+                    latitude: a.latitude + (b.latitude - a.latitude) * segFrac,
+                    longitude: a.longitude + (b.longitude - a.longitude) * segFrac
+                )
+            }
+        }
+        return line[end]
+    }
+
+    private static func closestPolylineIndex(_ line: [CLLocationCoordinate2D], to point: CLLocationCoordinate2D) -> Int {
+        var bestIdx = 0
+        var bestDist = Double.greatestFiniteMagnitude
+        for (i, p) in line.enumerated() {
+            let d = haversineMeters(p, point)
+            if d < bestDist { bestDist = d; bestIdx = i }
+        }
+        return bestIdx
+    }
+
+    private static func haversineMeters(_ a: CLLocationCoordinate2D, _ b: CLLocationCoordinate2D) -> Double {
+        let r = 6371000.0
+        let dLat = (b.latitude - a.latitude) * .pi / 180
+        let dLon = (b.longitude - a.longitude) * .pi / 180
+        let lat1 = a.latitude * .pi / 180
+        let lat2 = b.latitude * .pi / 180
+        let h = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+        return 2 * r * asin(min(1, sqrt(h)))
+    }
 }
