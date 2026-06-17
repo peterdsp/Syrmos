@@ -231,9 +231,37 @@ class ComputeDeparturesFromBandsUseCase(
                 val openMin = rule.openTime.toMinutesOfDay()
                 val closeMin = rule.closeTime.toMinutesOfDay()
                 if (openMin != null && closeMin != null) {
-                    val effectiveClose = if (closeMin <= openMin) closeMin + 24 * 60 else closeMin
-                    val effectiveNow = nowMinutes + shiftMinutes
-                    if (effectiveNow < openMin || effectiveNow > effectiveClose) continue
+                    // OASA's published rule.closeTime is when the station
+                    // officially shuts; bands often extend past it because
+                    // trains that left origin before close are still running.
+                    // M2 mon_thu rule closes 00:06 but the late_night band
+                    // runs until 00:20; M3 mon_thu rule closes 00:01 but the
+                    // band reaches 00:20. Take the max so the late-night
+                    // entries between rule close and band end aren't thrown
+                    // away. Mirrors the iOS / Pi projector fix.
+                    val bandMaxEnd = bundle.bands
+                        .filter { it.dayType == dayType }
+                        .mapNotNull { b ->
+                            val rs = b.timeStart.toMinutesOfDay() ?: return@mapNotNull null
+                            val re = b.timeEnd.toMinutesOfDay() ?: return@mapNotNull null
+                            re + (if (re < rs) 24 * 60 else 0)
+                        }
+                        .maxOrNull() ?: closeMin
+                    val ruleClose = if (closeMin <= openMin) closeMin + 24 * 60 else closeMin
+                    val effectiveClose = maxOf(ruleClose, bandMaxEnd)
+                    // Subtract the shift so today's nowMinutes lands inside
+                    // the descriptor's clock domain (shift = -1440 for the
+                    // yesterday overnight pass). The previous formula used
+                    // `+ shift`, mapping today's 00:03 to yesterday's -1437
+                    // and throwing every late-night band away. Then ONLY
+                    // reject when fully past effectiveClose + 120 min slack
+                    // — a future band of today's day-type emits future
+                    // slots naturally, so at 02:09 Thursday with mon_thu
+                    // open 05:30 we still need to enumerate the band and
+                    // emit today's 05:30 first train (3h 21min) instead of
+                    // rolling to Friday's 00:03 (21h 55min away).
+                    val effectiveNow = nowMinutes - shiftMinutes
+                    if (effectiveNow > effectiveClose + 120) continue
                 }
             }
 
