@@ -30,7 +30,12 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
         // isHidden = true -> false on the active window re-binds the
         // backing layer; layoutIfNeeded + setNeedsDisplay nudge SwiftUI's
         // host view to redraw into the fresh layer.
-        for window in windowScene.windows where window.isKeyWindow || window.windowLevel == .normal {
+        // Hit every window in the scene, not just the key one. On iOS 18+
+        // the key-window assignment can lag behind sceneDidBecomeActive,
+        // and filtering by windowLevel skipped the SwiftUI host window in
+        // some build configurations. Cycling every window is cheap and
+        // catches whichever one is currently dead.
+        for window in windowScene.windows {
             let wasHidden = window.isHidden
             window.isHidden = true
             window.isHidden = wasHidden
@@ -38,6 +43,12 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
             window.rootViewController?.view.layoutIfNeeded()
             window.layer.setNeedsDisplay()
             window.rootViewController?.view.layer.setNeedsDisplay()
+            // Recursively dirty every backing layer so SwiftUI's
+            // host hierarchy repaints into the fresh window layer.
+            window.rootViewController?.view.subviews.forEach { v in
+                v.setNeedsDisplay()
+                v.layer.setNeedsDisplay()
+            }
         }
     }
 
