@@ -214,22 +214,32 @@ enum ScheduleProjector {
             }
         }
 
-        // A1 bands carry direction = "both"; we emit a pair (one per
-        // direction) for each slot so the picker can split them into
-        // To Airport / From Airport sections.
-        if stationLineIds.contains("A1") {
-            if let bundle = bundles["A1"] {
-                emitAirportSlots(
-                    bundle: bundle,
-                    dayType: dt,
-                    cutoffMinutes: cutoffMinutes,
-                    stationId: stationId,
-                    lineId: "A1",
-                    outboundDirectionLabel: "Airport",
-                    inboundDirectionLabel: "Piraeus",
-                    into: &out
-                )
-            }
+        // A1 + A2 bands carry direction = "both"; we emit a pair (one
+        // per direction) for each slot so the picker can split them
+        // into To Airport / From Airport sections.
+        if stationLineIds.contains("A1"), let bundle = bundles["A1"] {
+            emitAirportSlots(
+                bundle: bundle,
+                dayType: dt,
+                cutoffMinutes: cutoffMinutes,
+                stationId: stationId,
+                lineId: "A1",
+                outboundDirectionLabel: "Airport",
+                inboundDirectionLabel: "Piraeus",
+                into: &out
+            )
+        }
+        if stationLineIds.contains("A2"), let bundle = bundles["A2"] {
+            emitAirportSlots(
+                bundle: bundle,
+                dayType: dt,
+                cutoffMinutes: cutoffMinutes,
+                stationId: stationId,
+                lineId: "A2",
+                outboundDirectionLabel: "Airport",
+                inboundDirectionLabel: "Ano Liosia",
+                into: &out
+            )
         }
 
         return out.sorted { $0.minutesAway < $1.minutesAway }
