@@ -982,8 +982,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.annotation = annotation
                 v.canShowCallout = false
                 let primary = station.station.lineIds.first ?? "M3"
-                v.image = stationImage(for: station.station, primaryLineId: primary)
-                v.frame.size = CGSize(width: 24, height: 24)
+                let image = stationImage(for: station.station, primaryLineId: primary)
+                v.image = image
+                v.frame.size = image.size
+                v.centerOffset = .zero
                 return v
             }
             if let train = annotation as? SyrmosTrainAnnotation {
@@ -1006,16 +1008,40 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         private func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
-            let size = CGSize(width: 24, height: 24)
+            // Try the bundled per-station artwork first (M1_PIR -> the
+            // ISAP Piraeus icon, M3_SYN -> the Syntagma multi-line icon,
+            // T7_DIM -> the Dimotiko Theatro tram artwork etc). The
+            // mapping table lives on PreloadedData.stationIconMap and
+            // covers every M1/M2/M3/T6/T7 stop plus the curated multi-
+            // mode interchanges. Asset catalog supplies @1x/@2x/@3x.
+            let primaryStationId = station.stationIds.first ?? station.id
+            if let assetName = PreloadedData.stationIconMap[primaryStationId],
+               let raw = UIImage(named: assetName) {
+                let target = CGSize(width: 28, height: 28)
+                let renderer = UIGraphicsImageRenderer(size: target)
+                return renderer.image { _ in
+                    raw.draw(in: CGRect(origin: .zero, size: target))
+                }
+            }
+            // Fallback for suburban (A1-A4) and any station without a
+            // bundled SVG: a coloured teardrop pin with the line tint
+            // and a white outline so it reads on light + dark map tiles.
+            let size = CGSize(width: 22, height: 22)
             let renderer = UIGraphicsImageRenderer(size: size)
             let color = UIColor(SyrmosData.lineColor(for: primaryLineId))
             return renderer.image { ctx in
                 let cg = ctx.cgContext
-                let rect = CGRect(origin: .zero, size: size).insetBy(dx: 2, dy: 2)
+                let outer = CGRect(origin: .zero, size: size)
+                let inner = outer.insetBy(dx: 3, dy: 3)
                 cg.setFillColor(UIColor.white.cgColor)
-                cg.fillEllipse(in: CGRect(origin: .zero, size: size))
+                cg.fillEllipse(in: outer)
                 cg.setFillColor(color.cgColor)
-                cg.fillEllipse(in: rect)
+                cg.fillEllipse(in: inner)
+                if station.isInterchange {
+                    cg.setStrokeColor(UIColor.white.cgColor)
+                    cg.setLineWidth(1.5)
+                    cg.strokeEllipse(in: inner.insetBy(dx: 3, dy: 3))
+                }
             }
         }
 
