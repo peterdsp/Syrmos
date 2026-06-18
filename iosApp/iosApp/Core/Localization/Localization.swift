@@ -29,10 +29,18 @@ final class LocalizationManager: ObservableObject {
            let lang = AppLanguage(rawValue: saved) {
             self.language = lang
         } else {
-            let systemLangs = Locale.preferredLanguages
-            if systemLangs.first(where: { $0.hasPrefix("el") }) != nil {
+            // Use the device's PRIMARY language only. The previous logic
+            // walked the whole preferredLanguages list and picked Greek
+            // (or Albanian) if it appeared anywhere, which meant a user
+            // with Shqip as their primary language still got Greek as
+            // long as Greek sat in slot 2 or 3 — and vice versa, a Greek
+            // primary user with Shqip added during translation testing
+            // could land on Shqip if Greek had been removed. The product
+            // wants device-primary-or-English, full stop.
+            let primary = Locale.preferredLanguages.first ?? "en"
+            if primary.hasPrefix("el") {
                 self.language = .greek
-            } else if systemLangs.first(where: { $0.hasPrefix("sq") }) != nil {
+            } else if primary.hasPrefix("sq") {
                 self.language = .albanian
             } else {
                 self.language = .english

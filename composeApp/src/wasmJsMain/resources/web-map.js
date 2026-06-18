@@ -121,10 +121,19 @@
             try { return localStorage.getItem(LANG_STORAGE_KEY); } catch (_) { return null; }
         })();
         if (saved && I18N[saved]) return saved;
-        const browser = (navigator.languages || [navigator.language || "en"])
-            .map((s) => (s || "").toLowerCase());
-        if (browser.some((s) => s.startsWith("el"))) return "el";
-        if (browser.some((s) => s.startsWith("sq"))) return "sq";
+        // Use only the browser's PRIMARY language. The previous `.some(...)`
+        // pass matched if the language appeared anywhere in the navigator
+        // list, which on Athens-resident laptops with Shqip added for
+        // translation testing landed on Albanian (or vice versa). The
+        // product wants device-primary-or-English, full stop. Mirrors the
+        // iOS native + Android Kotlin actuals.
+        const primary = (
+            (navigator.languages && navigator.languages[0]) ||
+            navigator.language ||
+            "en"
+        ).toLowerCase();
+        if (primary.startsWith("el")) return "el";
+        if (primary.startsWith("sq")) return "sq";
         return "en";
     }
 
