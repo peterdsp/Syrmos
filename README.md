@@ -273,6 +273,8 @@ The non-code materials may **also** be used under BSD 3-Clause if that suits you
 
 A short legal summary lives in [NOTICE](NOTICE). For contributors, [CONTRIBUTING.md](CONTRIBUTING.md) makes the dual-license arrangement clear up front. For security issues, see [SECURITY.md](SECURITY.md). For interpersonal expectations, see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
+The Syrmos app logo was created by Petros Dhespollari, inspired by original designs of art conservator **Amalia Boura**.
+
 The repository has been registered on:
 - **FSF Free Software Directory** (pending review) -- for the BSD 3-Clause code path
 - **Creative Commons Licensed Works** (registered via the CC chooser) -- for the CC BY-SA 4.0 content path
