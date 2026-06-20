@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
@@ -44,15 +46,12 @@ import com.syrmos.core.designsystem.theme.SuburbanPurple
 import com.syrmos.core.designsystem.theme.TramOrange
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
-import com.syrmos.core.model.transit.LiveSuburbanTrain
-import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    simulatedTrains: List<SimulatedTrain> = emptyList(),
     onStationClick: (String) -> Unit = {},
     onLineClick: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
@@ -60,20 +59,17 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 28.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+    ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item {
-            com.syrmos.core.designsystem.component.CompactTabHeader(
-                title = "Syrmos",
-                subtitle = L.APP_SUBTITLE.text(lang),
-            )
-        }
-
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
@@ -122,17 +118,6 @@ fun HomeScreen(
             }
         }
 
-        if (simulatedTrains.isNotEmpty() || uiState.liveTrains.isNotEmpty()) {
-            item {
-                LiveTrainsSection(
-                    trains = uiState.liveTrains,
-                    simulatedTrains = simulatedTrains,
-                    lines = uiState.lines,
-                    lang = lang,
-                )
-            }
-        }
-
         if (uiState.error != null) {
             item {
                 Text(
@@ -160,6 +145,15 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    com.syrmos.core.designsystem.component.CompactTabHeader(
+        title = "Syrmos",
+        subtitle = L.APP_SUBTITLE.text(lang),
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .zIndex(1f),
+    )
     }
 }
 
@@ -405,140 +399,6 @@ private fun NearbyStationsSection(
                 }
             }
         }
-        }
-    }
-}
-
-@Composable
-private fun LiveTrainsSection(
-    trains: List<LiveSuburbanTrain>,
-    simulatedTrains: List<SimulatedTrain>,
-    lines: List<Line>,
-    lang: AppLanguage,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(text = "●", style = MaterialTheme.typography.titleMedium, color = Color(0xFFE14B4B))
-            SectionTitle(text = L.LIVE_TRACKER.text(lang))
-        }
-
-        val displayTrains = simulatedTrains
-            .groupBy { "${it.lineId}_${it.direction}" }
-            .flatMap { (_, group) -> group.take(1) }
-            .take(8)
-        displayTrains.forEach { train ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = train.lineName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = train.lineColor.toComposeColor(),
-                            )
-                            Text(
-                                text = "${train.originName} to ${train.destinationName}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = L.ON_TIME.text(lang),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color(0xFF1E8E3E),
-                            )
-                        }
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = "${L.NEXT_STOP.text(lang)}: ${train.nextStationName}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-
-        trains.take(4).forEach { train ->
-            val line = lines.firstOrNull { it.id == train.lineId }
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = line?.name ?: train.lineId,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = "${train.origin.orEmpty()} to ${train.destination.orEmpty()}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = if (train.delayMinutes > 0) "+${train.delayMinutes} min" else L.ON_TIME.text(lang),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (train.delayMinutes > 0) Color(0xFFC46A12) else Color(0xFF1E8E3E),
-                            )
-                            Text(
-                                text = train.trainNumber,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (!train.nextStation.isNullOrBlank()) {
-                            Text(
-                                text = "${L.NEXT_STOP.text(lang)}: ${train.nextStation}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (train.speedKph != null) {
-                            Text(
-                                text = "${L.SPEED.text(lang)}: ${train.speedKph?.toInt() ?: 0} km/h",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }

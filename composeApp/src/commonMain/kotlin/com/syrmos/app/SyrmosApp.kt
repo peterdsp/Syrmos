@@ -62,6 +62,7 @@ import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
+import com.syrmos.core.designsystem.component.liquidGlassOverlay
 import com.syrmos.core.designsystem.theme.SyrmosTheme
 import org.koin.compose.koinInject
 
@@ -154,11 +155,11 @@ private fun BootSplash() {
 @Composable
 private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().liquidGlassOverlay(),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
         shadowElevation = 10.dp,
-        tonalElevation = 0.dp,
+        tonalElevation = 2.dp,
     ) {
         Row(
             modifier = Modifier

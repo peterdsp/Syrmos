@@ -18,10 +18,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
@@ -40,25 +43,23 @@ fun LinesScreen(
     val grouped = uiState.lines.groupBy { it.type }
     val orderedTypes = listOf(LineType.METRO, LineType.TRAM, LineType.SUBURBAN)
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 28.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+    ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 76.dp, end = 16.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item {
-            com.syrmos.core.designsystem.component.CompactTabHeader(
-                title = L.LINES.text(lang),
-            )
-        }
-
         orderedTypes.forEach { type ->
             val linesForType = grouped[type] ?: return@forEach
 
             item {
                 Text(
-                    text = type.localizedName(lang),
+                    text = type.localizedName(lang).uppercase(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -68,6 +69,8 @@ fun LinesScreen(
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(14.dp),
+                    tonalElevation = 1.dp,
+                    shadowElevation = 2.dp,
                 ) {
                     Column {
                         linesForType.forEachIndexed { index, line ->
@@ -87,6 +90,14 @@ fun LinesScreen(
                 }
             }
         }
+    }
+
+    com.syrmos.core.designsystem.component.CompactTabHeader(
+        title = L.LINES.text(lang),
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .zIndex(1f),
+    )
     }
 }
 

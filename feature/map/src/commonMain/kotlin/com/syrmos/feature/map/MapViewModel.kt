@@ -50,6 +50,7 @@ data class MapUiState(
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val simulatedTrains: List<SimulatedTrain> = emptyList(),
+    val showTrains: Boolean = true,
     val isLoading: Boolean = true,
     val locateUserRequest: Long = 0L,
 )
@@ -127,6 +128,10 @@ class MapViewModel(
 
     fun requestLocateUser() {
         _uiState.update { it.copy(locateUserRequest = it.locateUserRequest + 1) }
+    }
+
+    fun toggleTrainVisibility() {
+        _uiState.update { it.copy(showTrains = !it.showTrains) }
     }
 
     fun clearSelection() {

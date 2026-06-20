@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.syrmos.app.SyrmosApp
 import com.syrmos.app.platform.setLocationPermissionRequester
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
         // Compose tree as normal.
         setTheme(R.style.Theme_Syrmos)
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         // Permission is requested from the onboarding flow now, not on launch.
         setLocationPermissionRequester {

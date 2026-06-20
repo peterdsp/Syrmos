@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -39,10 +41,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
@@ -125,25 +126,15 @@ fun ScheduleScreen() {
     val fromAirport = departures.filter { !it.isAirportBound }
     val isToday = dayOffset == 0
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = {
-                Text(when (lang) {
-                    AppLanguage.GREEK -> "Αεροδρόμιο"
-                    AppLanguage.ALBANIAN -> "Aeroporti"
-                    else -> "Airport"
-                })
-            })
-        },
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(top = 76.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Spacer(Modifier.height(4.dp))
             DayPickerRow(selected = dayOffset, onSelect = { dayOffset = it }, lang = lang)
             LinePickerCard(
                 selectedLineId = selectedLineId,
@@ -174,6 +165,17 @@ fun ScheduleScreen() {
                 lang = lang,
             )
         }
+
+        com.syrmos.core.designsystem.component.CompactTabHeader(
+            title = when (lang) {
+                AppLanguage.GREEK -> "Αεροδρόμιο"
+                AppLanguage.ALBANIAN -> "Aeroporti"
+                else -> "Airport"
+            },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .zIndex(1f),
+        )
     }
 }
 
@@ -391,9 +393,8 @@ private fun GlassCard(content: @Composable () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         tonalElevation = 2.dp,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-        border = androidx.compose.foundation.BorderStroke(
-            0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        shadowElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
     ) {
         Box(modifier = Modifier.padding(16.dp)) { content() }
     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -69,19 +71,17 @@ fun SettingsScreen() {
         ContactDeveloperSheet(onDismiss = { showContact = false })
     }
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 28.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+    ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 76.dp, end = 16.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item {
-            com.syrmos.core.designsystem.component.CompactTabHeader(
-                title = L.SETTINGS.text(lang),
-            )
-        }
-
         item {
             SettingsSection(title = L.PREFERENCES.text(lang)) {
                 Box {
@@ -115,11 +115,6 @@ fun SettingsScreen() {
 
         item {
             SettingsSection(title = L.DATA.text(lang)) {
-                SettingsRow(
-                    title = L.SCHEDULE_VERSION.text(lang),
-                    value = scheduleVersion?.let { "v$it" } ?: "3.0",
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 SettingsRow(
                     title = L.STATIONS.text(lang),
                     value = "90+",
@@ -269,6 +264,14 @@ fun SettingsScreen() {
             }
         }
     }
+
+    com.syrmos.core.designsystem.component.CompactTabHeader(
+        title = L.SETTINGS.text(lang),
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .zIndex(1f),
+    )
+    }
 }
 
 @Composable
@@ -285,6 +288,8 @@ private fun SettingsSection(
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(14.dp),
+            tonalElevation = 1.dp,
+            shadowElevation = 2.dp,
         ) {
             Column(content = { content() })
         }
