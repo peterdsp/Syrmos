@@ -28,7 +28,8 @@ def make_conn() -> sqlite3.Connection:
             time_start TEXT NOT NULL,
             time_end TEXT NOT NULL,
             headway_minutes REAL NOT NULL,
-            label TEXT
+            label TEXT,
+            direction TEXT DEFAULT 'both'
         );
         CREATE TABLE station_offsets (
             line_id TEXT NOT NULL,
@@ -49,9 +50,9 @@ def make_conn() -> sqlite3.Connection:
         "INSERT INTO schedule_rules(line_id, day_type, open_time, close_time, is_24_7)"
         " VALUES (?, ?, ?, ?, ?)",
         [
-            ("M2", "sat", "00:00", "23:59", 1),
+            ("M2", "sat", "05:30", "05:28", 0),
             ("M2", "sun", "05:30", "00:30", 0),
-            ("M3", "sat", "00:00", "23:59", 1),
+            ("M3", "sat", "05:30", "05:28", 0),
             ("M3", "sun", "05:30", "00:30", 0),
             ("M3_AIR", "sun", "05:30", "23:00", 0),
         ],

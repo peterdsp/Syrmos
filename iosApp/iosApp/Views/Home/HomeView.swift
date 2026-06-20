@@ -361,7 +361,13 @@ struct HomeView: View {
             guard let bundle = bundles[lineId] else { continue }
             guard let rule = bundle.rules.first(where: { $0.dayType == dayType }) else { continue }
             if rule.closeTime > latest { latest = rule.closeTime }
-            if rule.is247 {
+            let is24h = rule.is247 || (
+                dayType == "sat"
+                && rule.closeTime < rule.openTime
+                && rule.openTime >= "05:00"
+                && rule.closeTime >= "05:00"
+            )
+            if is24h {
                 return loc.language == .greek
                     ? "Λειτουργία 24/7 σήμερα"
                     : loc.language == .albanian

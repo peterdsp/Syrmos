@@ -265,11 +265,15 @@ class ComputeDeparturesFromBandsUseCase(
                 }
             }
 
+            val openMinRule = rule.openTime.toMinutesOfDay()
             val bands = bundle.bands.filter { band ->
                 if (band.dayType != dayType) return@filter false
                 if (descriptor.nextDayOnly) {
                     val rs = band.timeStart.toMinutesOfDay() ?: return@filter false
                     rs < nextDayExtensionCutoffMinutes
+                } else if (descriptor.shift == 0 && !rule.is247 && openMinRule != null) {
+                    val rs = band.timeStart.toMinutesOfDay() ?: return@filter true
+                    !(rs < openMinRule && rs < nextDayExtensionCutoffMinutes)
                 } else {
                     true
                 }

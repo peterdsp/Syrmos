@@ -468,6 +468,7 @@ def _project_line(
                     continue
 
         # Filter bands by dayType plus next-day-extension rule
+        open_min_rule = _minutes_of_day(rule["openTime"]) if rule else None
         bands = []
         for b in bundle["bands"]:
             if b["dayType"] != dt:
@@ -475,6 +476,12 @@ def _project_line(
             if next_day_only:
                 rs = _minutes_of_day(b["timeStart"])
                 if rs is None or rs >= NEXT_DAY_EXTENSION_CUTOFF_MIN:
+                    continue
+            elif shift == 0 and rule is not None and not rule["is247"]:
+                rs = _minutes_of_day(b["timeStart"])
+                if (rs is not None and open_min_rule is not None
+                        and rs < open_min_rule
+                        and rs < NEXT_DAY_EXTENSION_CUTOFF_MIN):
                     continue
             bands.append(b)
         bands.sort(key=lambda b: _minutes_of_day(b["timeStart"]) or 0)
@@ -845,7 +852,18 @@ def active_trains(
                     if effective_now < open_min - 120 or effective_now > effective_close + 120:
                         continue
 
-            bands = [b for b in bundle["bands"] if b["dayType"] == dt]
+            open_min_rule_at = _minutes_of_day(rule["openTime"]) if rule else None
+            bands = []
+            for b in bundle["bands"]:
+                if b["dayType"] != dt:
+                    continue
+                if shift == 0 and rule is not None and not rule["is247"]:
+                    rs = _minutes_of_day(b["timeStart"])
+                    if (rs is not None and open_min_rule_at is not None
+                            and rs < open_min_rule_at
+                            and rs < NEXT_DAY_EXTENSION_CUTOFF_MIN):
+                        continue
+                bands.append(b)
             for band in bands:
                 raw_start = _minutes_of_day(band["timeStart"])
                 raw_end = _minutes_of_day(band["timeEnd"])
