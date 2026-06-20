@@ -1,8 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+}
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 kotlin {
@@ -37,10 +44,10 @@ android {
     }
     signingConfigs {
         create("release") {
-            storeFile = file("syrmos-release.keystore")
-            storePassword = "REDACTED"
-            keyAlias = "syrmos"
-            keyPassword = "REDACTED"
+            storeFile = file(localProps.getProperty("RELEASE_STORE_FILE", "syrmos-release.keystore"))
+            storePassword = localProps.getProperty("RELEASE_STORE_PASSWORD", "")
+            keyAlias = localProps.getProperty("RELEASE_KEY_ALIAS", "syrmos")
+            keyPassword = localProps.getProperty("RELEASE_KEY_PASSWORD", "")
         }
     }
     buildTypes {
