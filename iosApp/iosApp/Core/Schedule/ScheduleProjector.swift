@@ -542,6 +542,7 @@ enum ScheduleProjector {
                 if effectiveNow > effectiveClose + 120 { continue }
             }
 
+            let openMinRule = minutesOfDay(rule.openTime)
             let bands = bundle.bands
                 .filter { band in
                     guard band.dayType == dt else { return false }
@@ -554,6 +555,16 @@ enum ScheduleProjector {
                     if descriptor.nextDayOnly {
                         guard let rs = minutesOfDay(band.timeStart) else { return false }
                         return rs < nextDayExtensionCutoffMinutes
+                    }
+                    // Today's own next-day extension bands (e.g. sat 00:20-05:30)
+                    // belong to tonight going into tomorrow morning. Exclude them
+                    // from today's descriptor so they don't project onto today's
+                    // early morning. They'll be picked up by descriptor 3 on the
+                    // next calendar day.
+                    if shift == 0, !rule.is247, let openM = openMinRule,
+                       let rs = minutesOfDay(band.timeStart),
+                       rs < openM, rs < nextDayExtensionCutoffMinutes {
+                        return false
                     }
                     return true
                 }

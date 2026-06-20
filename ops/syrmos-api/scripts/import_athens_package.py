@@ -83,7 +83,7 @@ WEEKLY_HOURS = [
     # Anthoupoli 01:43, Elliniko 01:40 → close 01:43. Sat 24-hour.
     ("M2", "mon_thu", "05:30", "00:06", 0, None),
     ("M2", "fri",     "05:30", "01:43", 0, "Friday late extension: last Anthoupoli 01:43"),
-    ("M2", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
+    ("M2", "sat",     "05:30", "05:28", 0, "Saturday 24h: city service extends overnight into Sunday 05:30"),
     ("M2", "sun",     "05:30", "00:06", 0, None),
 
     # M3 — city service (Dim. Theatro / Doukissis Plakentias). Last origin
@@ -91,7 +91,7 @@ WEEKLY_HOURS = [
     # DPL 01:38 → close 01:38. Sat 24-hour (city only).
     ("M3", "mon_thu", "05:30", "00:01", 0, "City service; airport branch closes earlier (M3_AIR)"),
     ("M3", "fri",     "05:30", "01:38", 0, "Friday late extension: last DPL→DT 01:38"),
-    ("M3", "sat",     "00:00", "23:59", 1, "Saturday 24/7 (city only)"),
+    ("M3", "sat",     "05:30", "05:28", 0, "Saturday 24h: city service extends overnight into Sunday 05:30"),
     ("M3", "sun",     "05:30", "00:01", 0, None),
 
     # M3_AIR — full airport route (Dim Theatro <-> Airport, 65 min). Excluded
@@ -112,12 +112,12 @@ WEEKLY_HOURS = [
     # Sat 24-hour.
     ("T6", "mon_thu", "05:30", "00:50", 0, None),
     ("T6", "fri",     "05:30", "01:40", 0, None),
-    ("T6", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
+    ("T6", "sat",     "05:30", "05:28", 0, "Saturday 24h: tram extends overnight into Sunday 05:30"),
     ("T6", "sun",     "05:30", "00:50", 0, None),
 
     ("T7", "mon_thu", "05:30", "00:40", 0, None),
     ("T7", "fri",     "05:30", "01:50", 0, None),
-    ("T7", "sat",     "00:00", "23:59", 1, "Saturday 24/7"),
+    ("T7", "sat",     "05:30", "05:28", 0, "Saturday 24h: tram extends overnight into Sunday 05:30"),
     ("T7", "sun",     "05:30", "00:40", 0, None),
 
     # Suburban / Hellenic Train. Source PDFs in assets/hellenic-train-timetables/
