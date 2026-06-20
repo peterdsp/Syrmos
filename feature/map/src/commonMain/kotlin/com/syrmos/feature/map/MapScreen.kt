@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,19 +24,20 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,13 +46,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.syrmos.core.designsystem.component.DepartureCard
+import androidx.compose.ui.zIndex
+import com.syrmos.core.common.L
+import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.LineColorIndicator
+import com.syrmos.core.designsystem.component.formatMinutesAway
+import com.syrmos.core.designsystem.theme.ArrivalFar
+import com.syrmos.core.designsystem.theme.ArrivalModerate
+import com.syrmos.core.designsystem.theme.ArrivalSoon
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     viewModel: MapViewModel = koinInject(),
@@ -58,48 +65,68 @@ fun MapScreen(
     initialScale: Float = 1f,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lang by LocalizationManager.language.collectAsState()
 
-    Scaffold(
-        topBar = {
-            if (showTopBar) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "Transit map",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    },
-                )
-            }
-        },
-    ) { padding ->
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        if (uiState.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = MaterialTheme.colorScheme.primary,
+            )
+        } else {
+            PlatformMapView(
+                uiState = if (uiState.showTrains) uiState else uiState.copy(
+                    simulatedTrains = emptyList(),
+                    liveTrains = emptyList(),
+                ),
+                onStationSelected = viewModel::selectStation,
+                modifier = Modifier.fillMaxSize(),
+                initialScale = initialScale,
+            )
+        }
+
+        if (showTopBar) {
+            com.syrmos.core.designsystem.component.CompactTabHeader(
+                title = L.MAP.text(lang),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .zIndex(1f),
+            )
+        }
+
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background),
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 72.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.End,
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            } else {
-                PlatformMapView(
-                    uiState = uiState,
-                    onStationSelected = viewModel::selectStation,
-                    modifier = Modifier.fillMaxSize(),
-                    initialScale = initialScale,
+            SmallFloatingActionButton(
+                onClick = { viewModel.toggleTrainVisibility() },
+                containerColor = if (uiState.showTrains)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = if (uiState.showTrains)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                shape = CircleShape,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Train,
+                    contentDescription = "Toggle trains",
                 )
             }
 
             FloatingActionButton(
                 onClick = { viewModel.requestLocateUser() },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 16.dp),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape,
@@ -109,18 +136,18 @@ fun MapScreen(
                     contentDescription = "Locate me",
                 )
             }
+        }
 
-            uiState.selectedStation?.let {
-                StationSheetCard(
-                    uiState = uiState,
-                    onClose = viewModel::clearSelection,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(16.dp),
-                )
-            }
+        uiState.selectedStation?.let {
+            StationSheetCard(
+                uiState = uiState,
+                onClose = viewModel::clearSelection,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+            )
         }
     }
 }
@@ -211,31 +238,79 @@ private fun StationSheetCard(
             }
 
             if (uiState.selectedStationDepartures.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val departures = uiState.selectedStationDepartures.take(4)
+                Column {
                     Text(
-                        text = "Next departures",
-                        style = MaterialTheme.typography.titleMedium,
+                        text = "NEXT DEPARTURES",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    uiState.selectedStationDepartures.forEach { departure ->
-                        DepartureCard(
-                            lineName = departure.line.name,
-                            lineColor = departure.line.color,
-                            direction = departure.destinationLabel,
-                            minutesAway = departure.minutesAway,
-                            departureTime = departure.time,
-                        )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    departures.forEachIndexed { index, departure ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LineColorIndicator(lineColor = departure.line.color, size = 10.dp)
+                                Column {
+                                    Text(
+                                        text = departure.line.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        text = "to ${departure.destinationLabel}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = formatMinutesAway(departure.minutesAway),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = when {
+                                        departure.minutesAway <= 2 -> ArrivalSoon
+                                        departure.minutesAway <= 5 -> ArrivalModerate
+                                        else -> ArrivalFar
+                                    },
+                                )
+                                Text(
+                                    text = departure.time,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (index < departures.lastIndex) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            )
+                        }
                     }
                 }
             }
 
-            TextButton(
+            Button(
                 onClick = {
                     uriHandler.openUri(
                         "https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}&travelmode=transit"
                     )
                 },
-                modifier = Modifier.align(Alignment.End),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
             ) {
                 Icon(
                     imageVector = Icons.Filled.NearMe,
