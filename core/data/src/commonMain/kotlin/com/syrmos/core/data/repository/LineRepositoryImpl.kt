@@ -47,7 +47,7 @@ class LineRepositoryImpl(
                 name = seed.name,
                 nameEl = seed.nameEl,
                 type = LineType.valueOf(seed.type.uppercase()),
-                color = LineColor.entries.first { it.hex == seed.color },
+                color = LineColor.fromHexOrType(seed.color, seed.type),
                 terminalA = seed.terminalA,
                 terminalB = seed.terminalB,
                 stationCount = seed.stationCount,

@@ -7,12 +7,12 @@ import kotlinx.serialization.Serializable
 data class SeedLine(
     val id: String,
     val name: String,
-    @SerialName("name_el") val nameEl: String,
+    val nameEl: String,
     val type: String,
     val color: String,
-    @SerialName("terminal_a") val terminalA: String,
-    @SerialName("terminal_b") val terminalB: String,
-    @SerialName("station_count") val stationCount: Int,
+    val terminalA: String,
+    val terminalB: String,
+    val stationCount: Int,
 )
 
 @Serializable

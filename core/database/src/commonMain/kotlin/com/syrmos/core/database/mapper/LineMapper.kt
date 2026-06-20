@@ -10,7 +10,7 @@ fun Line_entity.toDomain(): Line = Line(
     name = name,
     nameEl = name_el,
     type = LineType.valueOf(type.uppercase()),
-    color = LineColor.entries.first { it.hex == color },
+    color = LineColor.fromHexOrType(color, type),
     terminalA = terminal_a,
     terminalB = terminal_b,
     stationCount = station_count.toInt(),
