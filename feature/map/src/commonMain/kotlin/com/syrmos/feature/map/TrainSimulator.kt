@@ -2,7 +2,6 @@ package com.syrmos.feature.map
 
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
-import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.SyrmosLivePositionsService
@@ -43,7 +42,6 @@ fun simulateTrains(
 
         val displayLineId = if (raw.lineId == "M3_AIR") "M3" else raw.lineId
         val line = lineById[displayLineId] ?: continue
-        if (line.type == LineType.SUBURBAN) continue
 
         // Recover this train's absolute origin-departure epoch second from
         // the API-reported "elapsedMinutes" at the snapshot's generatedAt.

@@ -132,7 +132,7 @@ fun ScheduleScreen() {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 76.dp, bottom = 100.dp),
+                .padding(top = 76.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             DayPickerRow(selected = dayOffset, onSelect = { dayOffset = it }, lang = lang)

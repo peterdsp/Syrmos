@@ -285,7 +285,17 @@ struct TransitMapView: View {
                 SyrmosMKMapView(
                     stations: stations,
                     routeLines: routeLines,
-                    simulatedTrains: vehiclesHidden ? [] : trainSimulator.trains,
+                    // Per-line suburban dedupe: railway.gov.gr SSE carries
+                    // raw GPS, our projector carries schedule-based positions
+                    // for the SAME physical train. Whenever the live feed has
+                    // ANY train for a line, hide the projected dots for that
+                    // line so we don't draw two markers. If the live feed is
+                    // empty (offline mode or feed dropped) the projected
+                    // dots keep moving — which is the entire point.
+                    simulatedTrains: vehiclesHidden ? [] : {
+                        let coveredLines = Set(liveTrainService.trains.map(\.lineId))
+                        return trainSimulator.trains.filter { !coveredLines.contains($0.lineId) }
+                    }(),
                     liveTrains: vehiclesHidden ? [] : liveTrainService.trains,
                     recenterToUserPing: recenterToUserPing,
                     onStationTap: { stationId in
