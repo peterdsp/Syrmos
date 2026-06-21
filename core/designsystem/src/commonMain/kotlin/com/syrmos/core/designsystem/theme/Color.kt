@@ -25,6 +25,7 @@ val SyrmosBackgroundDark = Color(0xFF000000)
 val SyrmosSurfaceDark = Color(0xFF1C1C1E)
 val SyrmosOnSurfaceDark = Color(0xFFE2E2E6)
 val SyrmosOnSurfaceVariantDark = Color(0xFFAEAEB2)
+val SyrmosOutlineDark = Color(0xFF38383A)
 
 // Functional
 val ArrivalSoon = Color(0xFF2E7D32)
