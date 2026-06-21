@@ -22,6 +22,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,6 +69,7 @@ class MapViewModel(
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
     private var livePositionsSnapshot: LivePositionsSnapshot? = null
+    private var departureRefreshJob: Job? = null
 
     init {
         loadMapData()
@@ -112,16 +114,20 @@ class MapViewModel(
             )
         }
 
-        scope.launch {
-            val departures = buildDeparturesForStation(
-                station = station,
-                stationLines = stationLines,
-                lineStations = state.lineStations,
-            )
-            _uiState.update { current ->
-                if (current.selectedStation?.id != stationId) current else current.copy(
-                    selectedStationDepartures = departures,
+        departureRefreshJob?.cancel()
+        departureRefreshJob = scope.launch {
+            while (isActive) {
+                val departures = buildDeparturesForStation(
+                    station = station,
+                    stationLines = stationLines,
+                    lineStations = state.lineStations,
                 )
+                _uiState.update { current ->
+                    if (current.selectedStation?.id != stationId) current else current.copy(
+                        selectedStationDepartures = departures,
+                    )
+                }
+                delay(30_000)
             }
         }
     }
@@ -135,6 +141,8 @@ class MapViewModel(
     }
 
     fun clearSelection() {
+        departureRefreshJob?.cancel()
+        departureRefreshJob = null
         _uiState.update {
             it.copy(
                 selectedStation = null,
@@ -206,13 +214,8 @@ class MapViewModel(
         stationLines.forEach { line ->
             val orderedStations = lineStations[line.id].orEmpty()
             val stationId = station.stationIdByLineId[line.id] ?: station.stationIds.firstOrNull() ?: return@forEach
-            val servicePatterns = transitPatternRepository.getPatternsFor(line.id, stationId)
 
-            if (servicePatterns.isNotEmpty()) {
-                departures += patternDepartures(line, servicePatterns)
-                return@forEach
-            }
-
+            var hasBandResults = false
             Direction.entries.forEach { direction ->
                 val liveDepartures = getNextDepartures.invoke(
                     stationId = stationId,
@@ -222,6 +225,7 @@ class MapViewModel(
                 ).first()
 
                 if (liveDepartures.isNotEmpty()) {
+                    hasBandResults = true
                     liveDepartures.forEach { departure ->
                         departures += StationDepartureUi(
                             line = line,
@@ -230,9 +234,18 @@ class MapViewModel(
                             minutesAway = departure.minutesAway,
                         )
                     }
-                } else {
-                    departures += fallbackDepartures(stationId, line, direction, orderedStations)
                 }
+            }
+            if (hasBandResults) return@forEach
+
+            val servicePatterns = transitPatternRepository.getPatternsFor(line.id, stationId)
+            if (servicePatterns.isNotEmpty()) {
+                departures += patternDepartures(line, servicePatterns)
+                return@forEach
+            }
+
+            Direction.entries.forEach { direction ->
+                departures += fallbackDepartures(stationId, line, direction, orderedStations)
             }
         }
 
