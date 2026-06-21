@@ -35,8 +35,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.rememberCoroutineScope
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.AppThemeMode
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.ThemeManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.launch
@@ -46,7 +48,9 @@ import org.koin.compose.koinInject
 @Composable
 fun SettingsScreen() {
     val lang by LocalizationManager.language.collectAsState()
+    val themeMode by ThemeManager.theme.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
+    var showThemePicker by remember { mutableStateOf(false) }
     var showFares by remember { mutableStateOf(false) }
     val scheduleSync = koinInject<ScheduleSyncRepository>()
     val stationOffsets = koinInject<com.syrmos.core.data.sync.StationOffsetsRepository>()
@@ -106,10 +110,27 @@ fun SettingsScreen() {
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                SettingsRow(
-                    title = L.THEME.text(lang),
-                    value = L.SYSTEM_DEFAULT.text(lang),
-                )
+                Box {
+                    SettingsRow(
+                        title = L.THEME.text(lang),
+                        value = themeMode.localizedName(lang),
+                        onClick = { showThemePicker = true },
+                    )
+                    DropdownMenu(
+                        expanded = showThemePicker,
+                        onDismissRequest = { showThemePicker = false },
+                    ) {
+                        AppThemeMode.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.localizedName(lang)) },
+                                onClick = {
+                                    ThemeManager.setTheme(option)
+                                    showThemePicker = false
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -321,5 +342,23 @@ private fun SettingsRow(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+private fun AppThemeMode.localizedName(lang: AppLanguage): String = when (this) {
+    AppThemeMode.SYSTEM -> when (lang) {
+        AppLanguage.GREEK -> "Σύστημα"
+        AppLanguage.ALBANIAN -> "Sistemi"
+        else -> "System"
+    }
+    AppThemeMode.LIGHT -> when (lang) {
+        AppLanguage.GREEK -> "Φωτεινό"
+        AppLanguage.ALBANIAN -> "E ndritshme"
+        else -> "Light"
+    }
+    AppThemeMode.DARK -> when (lang) {
+        AppLanguage.GREEK -> "Σκοτεινό"
+        AppLanguage.ALBANIAN -> "E errët"
+        else -> "Dark"
     }
 }

@@ -375,7 +375,7 @@ private fun NearbyStationsSection(
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                text = "${station.distanceMeters} m away",
+                                text = formatDistance(station.distanceMeters),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -541,4 +541,12 @@ private fun LineCard(
 
 private fun Line.localizedName(lang: AppLanguage): String {
     return if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) nameEl else name
+}
+
+private fun formatDistance(meters: Int): String = when {
+    meters < 1000 -> "$meters m away"
+    else -> {
+        val tenths = meters / 100
+        "${tenths / 10}.${tenths % 10} km away"
+    }
 }
