@@ -16,6 +16,7 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLivePositionsService
 import kotlinx.datetime.Instant
@@ -64,6 +65,7 @@ class MapViewModel(
     private val transitPatternRepository: TransitPatternRepositoryImpl,
     private val liveTrackerService: RailwayGovLiveTrackerService,
     private val livePositionsService: SyrmosLivePositionsService,
+    private val stationOffsetsRepo: StationOffsetsRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
@@ -180,12 +182,17 @@ class MapViewModel(
     private fun pollLivePositions() {
         scope.launch {
             val targetLines = listOf("M1", "M2", "M3", "M3_AIR", "T6", "T7")
-            // Offsets are essentially static; pull once at start and reuse.
             val offsetsResponse = livePositionsService.fetchStationOffsets()
-            val offsetsMap = offsetsResponse?.lines
+            var offsetsMap = offsetsResponse?.lines
                 ?.associate { (it.lineId to it.direction) to it.stops.sortedBy { s -> s.stopSequence } }
                 .orEmpty()
+            if (offsetsMap.isEmpty()) {
+                offsetsMap = bundledOffsets()
+            }
             while (isActive) {
+                if (offsetsMap.isEmpty()) {
+                    offsetsMap = bundledOffsets()
+                }
                 val active = livePositionsService.fetchActiveTrains(targetLines)
                 if (active != null) {
                     val generatedAtEpoch = runCatching {
@@ -200,6 +207,24 @@ class MapViewModel(
                     )
                 }
                 delay(15_000)
+            }
+        }
+    }
+
+    private fun bundledOffsets(): Map<Pair<String, String>, List<SyrmosLivePositionsService.OffsetStop>> {
+        val repoData = stationOffsetsRepo.offsets.value
+        if (repoData.isEmpty()) return emptyMap()
+        return repoData.entries.associate { (key, stops) ->
+            val parts = key.split("|", limit = 2)
+            val lineId = parts[0]
+            val direction = parts.getOrElse(1) { "outbound" }
+            (lineId to direction) to stops.map {
+                SyrmosLivePositionsService.OffsetStop(
+                    stationId = it.stationId,
+                    stationEn = it.stationEn,
+                    stopSequence = it.stopSequence,
+                    minutesFromOrigin = it.minutesFromOrigin,
+                )
             }
         }
     }
