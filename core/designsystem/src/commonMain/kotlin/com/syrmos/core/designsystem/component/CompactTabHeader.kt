@@ -26,6 +26,7 @@ fun CompactTabHeader(
             .liquidGlassOverlay(),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shadowElevation = 8.dp,
         tonalElevation = 2.dp,
     ) {
@@ -37,6 +38,7 @@ fun CompactTabHeader(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
             )
             if (!subtitle.isNullOrBlank()) {

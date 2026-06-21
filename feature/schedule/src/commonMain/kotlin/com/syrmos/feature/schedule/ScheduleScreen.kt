@@ -197,7 +197,7 @@ private fun DayPickerRow(selected: Int, onSelect: (Int) -> Unit, lang: AppLangua
             Surface(
                 shape = CircleShape,
                 color = tint,
-                tonalElevation = if (isSelected) 0.dp else 1.dp,
+                contentColor = fg,
                 modifier = Modifier
                     .size(54.dp)
                     .clip(CircleShape)
@@ -392,9 +392,9 @@ private fun GlassCard(content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        tonalElevation = 2.dp,
         shadowElevation = 4.dp,
         color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Box(modifier = Modifier.padding(16.dp)) { content() }
     }
