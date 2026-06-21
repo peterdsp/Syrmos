@@ -170,6 +170,7 @@ private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth().liquidGlassOverlay(),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shadowElevation = 10.dp,
         tonalElevation = 2.dp,
     ) {
