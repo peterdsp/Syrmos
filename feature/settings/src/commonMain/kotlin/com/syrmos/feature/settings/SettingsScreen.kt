@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.rememberCoroutineScope
@@ -97,6 +96,7 @@ fun SettingsScreen() {
                         title = L.LANGUAGE.text(lang),
                         value = lang.displayName,
                         onClick = { showLanguagePicker = true },
+                        interactive = true,
                     )
                     DropdownMenu(
                         expanded = showLanguagePicker,
@@ -119,6 +119,7 @@ fun SettingsScreen() {
                         title = L.THEME.text(lang),
                         value = themeMode.localizedName(lang),
                         onClick = { showThemePicker = true },
+                        interactive = true,
                     )
                     DropdownMenu(
                         expanded = showThemePicker,
@@ -167,29 +168,8 @@ fun SettingsScreen() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Button(
-                        // Always enabled. Check now is the ONLY way the
-                        // app talks to the Pi — there's no background
-                        // poll, no auto-refresh on launch, no implicit
-                        // network call elsewhere. Disabling this when
-                        // offlineOnly is on locked the user out of the
-                        // only refresh path Syrmos has.
-                        enabled = !isRefreshing,
-                        onClick = {
+                        .clickable(enabled = !isRefreshing) {
                             scope.launch {
-                                // Refresh every store the app reads from
-                                // the Pi. Sequential so a flaky mobile
-                                // link doesn't fan out 6 simultaneous
-                                // requests. Mirrors the iOS runRefresh
-                                // sequence so both platforms come out of
-                                // a single Check now tap with the same
-                                // surface: schedules + manifest, lines,
-                                // station offsets, fares, visual
-                                // overrides, announcements.
                                 runCatching { scheduleSync.refresh() }
                                 runCatching { linesRefresher.refresh() }
                                 runCatching { stationOffsets.refresh() }
@@ -197,45 +177,100 @@ fun SettingsScreen() {
                                 runCatching { visualOverrides.refresh() }
                                 runCatching { announcements.refresh() }
                             }
-                        },
-                    ) {
+                        }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
                         Icon(
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
-                        Spacer(modifier = Modifier.size(6.dp))
-                        Text(when (lang) {
+                    }
+                    Text(
+                        text = when (lang) {
                             AppLanguage.GREEK -> "Έλεγχος τώρα"
                             AppLanguage.ALBANIAN -> "Kontrollo tani"
                             else -> "Check now"
-                        })
-                    }
-                    if (isRefreshing) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                    }
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }
 
         item {
-            SettingsSection(title = when (lang) {
-                AppLanguage.GREEK -> "Εισιτήρια"
-                AppLanguage.ALBANIAN -> "Bileta"
-                else -> "Tickets"
-            }) {
-                SettingsRow(
-                    title = when (lang) {
-                        AppLanguage.GREEK -> "Τιμοκατάλογος OASA"
-                        AppLanguage.ALBANIAN -> "Çmimet e biletave OASA"
-                        else -> "Ticket prices (OASA)"
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SettingsSection(title = when (lang) {
+                    AppLanguage.GREEK -> "Εισιτήρια"
+                    AppLanguage.ALBANIAN -> "Bileta"
+                    else -> "Tickets"
+                }) {
+                    SettingsRow(
+                        title = when (lang) {
+                            AppLanguage.GREEK -> "Τιμοκατάλογος OASA"
+                            AppLanguage.ALBANIAN -> "Çmimet e biletave OASA"
+                            else -> "Ticket prices (OASA)"
+                        },
+                        value = "›",
+                        onClick = { showFares = true },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = when (lang) {
+                                AppLanguage.GREEK -> "Ανέπαφη πληρωμή"
+                                AppLanguage.ALBANIAN -> "Pagesa pa kontakt"
+                                else -> "Contactless payment"
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = when (lang) {
+                                AppLanguage.GREEK -> "Πληρώστε στις πύλες μετρό/τραμ ή μέσα σε τραμ και τρένα με Apple Pay, Google Wallet ή ανέπαφη κάρτα."
+                                AppLanguage.ALBANIAN -> "Paguaj në portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose çdo kartë pa kontakt."
+                                else -> "Tap to pay at metro/tram gates and onboard trams and trains with Apple Pay, Google Wallet, or any contactless card."
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Text(
+                    text = when (lang) {
+                        AppLanguage.GREEK -> "Οι τιμές και η διαθεσιμότητα διαχειρίζονται από τον ΟΑΣΑ. Το Syrmos δεν αποθηκεύει τιμές, απλώς ανοίγει την επίσημη σελίδα."
+                        AppLanguage.ALBANIAN -> "Çmimet dhe disponueshmëria menaxhohen nga OASA. Syrmos nuk ruan çmime, thjesht hap faqen zyrtare."
+                        else -> "Prices and availability are managed by OASA. Syrmos does not store prices, it just opens the official page."
                     },
-                    value = when (lang) {
-                        AppLanguage.GREEK -> "Άνοιγμα →"
-                        AppLanguage.ALBANIAN -> "Hap →"
-                        else -> "Open →"
-                    },
-                    onClick = { showFares = true },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+        }
+
+        item {
+            SettingsSection(title = L.ABOUT.text(lang)) {
+                Text(
+                    text = L.ABOUT_TEXT.text(lang),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }
@@ -283,17 +318,6 @@ fun SettingsScreen() {
                 )
             }
         }
-
-        item {
-            SettingsSection(title = L.ABOUT.text(lang)) {
-                Text(
-                    text = L.ABOUT_TEXT.text(lang),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
-        }
     }
 
     com.syrmos.core.designsystem.component.CompactTabHeader(
@@ -332,6 +356,7 @@ private fun SettingsRow(
     title: String,
     value: String,
     onClick: (() -> Unit)? = null,
+    interactive: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -350,7 +375,7 @@ private fun SettingsRow(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
