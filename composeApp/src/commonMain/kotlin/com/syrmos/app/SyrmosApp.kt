@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -47,6 +48,7 @@ import org.jetbrains.compose.resources.painterResource
 import syrmos.composeapp.generated.resources.Res
 import syrmos.composeapp.generated.resources.start_screen
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.CurrentTab
@@ -87,11 +89,9 @@ fun SyrmosApp() {
             dataSeeder.seedIfNeeded()
         } catch (_: Exception) {
         }
-        // Hold the launch image for at least 1.4s so users actually see
-        // it on warm starts where the seed step finishes in tens of ms.
         val held = startedAt.elapsedNow().inWholeMilliseconds
-        if (held < 1400L) {
-            kotlinx.coroutines.delay(1400L - held)
+        if (held < 3500L) {
+            kotlinx.coroutines.delay(3500L - held)
         }
         isSeeded = true
         // Hydrate from bundled snapshot first so the projector + visuals have
@@ -153,7 +153,7 @@ private fun BootSplash() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color(0xFF0A1628)),
     ) {
         Image(
             painter = painterResource(Res.drawable.start_screen),
