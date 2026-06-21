@@ -25,7 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -183,7 +183,7 @@ private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
             LiquidGlassTabItem(HomeTab, Icons.Filled.Home)
             LiquidGlassTabItem(LinesTab, Icons.Filled.DirectionsTransit)
             LiquidGlassTabItem(MapTab, Icons.Filled.Map)
-            LiquidGlassTabItem(TimetablesTab, Icons.Filled.AccessTime)
+            LiquidGlassTabItem(TimetablesTab, Icons.Filled.FlightTakeoff)
             LiquidGlassTabItem(SettingsTab, Icons.Filled.Settings)
         }
     }

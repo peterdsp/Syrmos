@@ -126,7 +126,7 @@ fun ScheduleScreen() {
     val fromAirport = departures.filter { !it.isAirportBound }
     val isToday = dayOffset == 0
 
-    Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -192,7 +192,7 @@ private fun DayPickerRow(selected: Int, onSelect: (Int) -> Unit, lang: AppLangua
         for (offset in 0..6) {
             val isSelected = offset == selected
             val tint = if (isSelected) Color(0xFF0083C9)
-            else MaterialTheme.colorScheme.surfaceVariant
+            else MaterialTheme.colorScheme.surface
             val fg = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
             Surface(
                 shape = CircleShape,
@@ -394,7 +394,7 @@ private fun GlassCard(content: @Composable () -> Unit) {
         shape = RoundedCornerShape(20.dp),
         tonalElevation = 2.dp,
         shadowElevation = 4.dp,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = MaterialTheme.colorScheme.surface,
     ) {
         Box(modifier = Modifier.padding(16.dp)) { content() }
     }
