@@ -3,6 +3,7 @@ package com.syrmos.app
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +64,8 @@ import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
+import com.syrmos.core.common.AppThemeMode
+import com.syrmos.core.common.ThemeManager
 import com.syrmos.core.designsystem.component.liquidGlassOverlay
 import com.syrmos.core.designsystem.theme.SyrmosTheme
 import org.koin.compose.koinInject
@@ -106,7 +110,15 @@ fun SyrmosApp() {
         runCatching { visualOverrides.hydrateFromBundleIfNeeded() }
     }
 
-    SyrmosTheme {
+    val themeMode by ThemeManager.theme.collectAsState()
+    val systemDark = isSystemInDarkTheme()
+    val darkTheme = when (themeMode) {
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+        AppThemeMode.SYSTEM -> systemDark
+    }
+
+    SyrmosTheme(darkTheme = darkTheme) {
         if (!isSeeded) {
             BootSplash()
         } else if (!hasCompletedOnboarding) {

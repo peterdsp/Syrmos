@@ -28,11 +28,9 @@ import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
@@ -51,6 +49,7 @@ import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.formatMinutesAway
+import com.syrmos.core.designsystem.component.liquidGlassOverlay
 import com.syrmos.core.designsystem.theme.ArrivalFar
 import com.syrmos.core.designsystem.theme.ArrivalModerate
 import com.syrmos.core.designsystem.theme.ArrivalSoon
@@ -107,34 +106,44 @@ fun MapScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.End,
         ) {
-            SmallFloatingActionButton(
+            Surface(
                 onClick = { viewModel.toggleTrainVisibility() },
-                containerColor = if (uiState.showTrains)
+                modifier = Modifier.size(56.dp).liquidGlassOverlay(),
+                shape = CircleShape,
+                color = if (uiState.showTrains)
                     MaterialTheme.colorScheme.primary
                 else
-                    MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (uiState.showTrains)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                shape = CircleShape,
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+                shadowElevation = 6.dp,
+                tonalElevation = 2.dp,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Train,
-                    contentDescription = "Toggle trains",
-                )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.Train,
+                        contentDescription = "Toggle trains",
+                        tint = if (uiState.showTrains)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
-            FloatingActionButton(
+            Surface(
                 onClick = { viewModel.requestLocateUser() },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(56.dp).liquidGlassOverlay(),
                 shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                shadowElevation = 6.dp,
+                tonalElevation = 2.dp,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.MyLocation,
-                    contentDescription = "Locate me",
-                )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.MyLocation,
+                        contentDescription = "Locate me",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
             }
         }
 

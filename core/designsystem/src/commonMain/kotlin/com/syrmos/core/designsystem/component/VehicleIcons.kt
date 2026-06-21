@@ -24,7 +24,7 @@ import syrmos.core.designsystem.generated.resources.tram_t7_right_to_asklipiio_v
 
 /**
  * Maps a (lineId, destination text) pair to the matching directional vehicle
- * SVG bundled in commonMain/composeResources/drawable. Mirrors the iOS
+ * PNG bundled in commonMain/composeResources/drawable. Mirrors the iOS
  * TimetablesIcons helper so both platforms pick the same artwork.
  *
  * Returns null when no asset matches; the caller falls back to the
