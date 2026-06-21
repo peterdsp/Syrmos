@@ -15,22 +15,9 @@ import XCTest
 /// `SyrmosData.stations(for: "A1").first(where: { $0.id == "M1_PIR" })`
 /// returned nil, so the destination view collapsed to an empty View —
 /// which SwiftUI renders as black inside a NavigationStack push.
-///
-/// Fix: `NearbyStationDestination.resolveTransitStation()` now walks
-/// every (lineId, stationId) pair until it finds a match, and falls back
-/// to a visible placeholder view if nothing matches.
-///
-/// To wire this file into Xcode: File > Add Files… select this file and
-/// the target "Syrmos - Athens Rail TimesTests". Or create a new Unit
-/// Testing Bundle target if one doesn't exist yet.
 final class NearbyStationDestinationTests: XCTestCase {
 
-    // MARK: - Helpers
-
-    /// Reaches inside the resolver using the same algorithm as production
-    /// code. Kept here as the contract for the test to exercise.
     private func resolve(_ node: MapStationNode) -> TransitStation? {
-        // Mirror of NearbyStationDestination.resolveTransitStation().
         for lineId in node.lineIds {
             if let stationId = node.stationIdByLineId[lineId],
                let match = SyrmosData.stations(for: lineId).first(where: { $0.id == stationId }) {
@@ -55,74 +42,63 @@ final class NearbyStationDestinationTests: XCTestCase {
         return nil
     }
 
-    // MARK: - Tests
-
-    /// The canonical Piraeus case from the user's bug report.
-    /// Piraeus is an interchange with M1, M3, A1, A4 — 4 lines.
     func testPiraeusInterchangeResolvesToATransitStation() throws {
         let piraeus = MapStationNode(
             id: "merged_piraeus",
-            displayName: "Piraeus",
-            nameEl: "Πειραιάς",
-            coordinate: .init(latitude: 37.9490, longitude: 23.6434),
             stationIds: ["M1_PIR", "M3_PIR", "A1_PIR", "A4_PIR"],
-            lineIds: ["M1", "M3", "A1", "A4"],
-            isInterchange: true,
             stationIdByLineId: [
                 "M1": "M1_PIR",
                 "M3": "M3_PIR",
                 "A1": "A1_PIR",
                 "A4": "A4_PIR",
-            ]
+            ],
+            name: "Piraeus",
+            nameEl: "Πειραιάς",
+            coordinate: .init(latitude: 37.9490, longitude: 23.6434),
+            lineIds: ["M1", "M3", "A1", "A4"],
+            isInterchange: true
         )
-        let resolved = resolve(piraeus)
-        XCTAssertNotNil(resolved, "Piraeus must resolve — otherwise the destination is empty and we get the black-screen bug.")
+        XCTAssertNotNil(resolve(piraeus), "Piraeus must resolve — otherwise the destination is empty and we get the black-screen bug.")
     }
 
-    /// The pathological case: stationIds and lineIds are in different orders.
     func testMisalignedStationAndLineIdsStillResolve() throws {
         let node = MapStationNode(
             id: "merged_bad_order",
-            displayName: "Piraeus",
+            stationIds: ["A4_PIR", "M1_PIR"],
+            stationIdByLineId: [:],
+            name: "Piraeus",
             nameEl: "Πειραιάς",
             coordinate: .init(latitude: 37.9490, longitude: 23.6434),
-            stationIds: ["A4_PIR", "M1_PIR"],
             lineIds: ["M1", "A4"],
-            isInterchange: true,
-            // Note: dictionary missing — forces the algorithm to use the
-            // cross-product fallback rather than the happy-path lookup.
-            stationIdByLineId: [:]
+            isInterchange: true
         )
         XCTAssertNotNil(resolve(node), "Cross-product fallback must find a TransitStation even when the dictionary is missing.")
     }
 
-    /// Single-line non-interchange stations (most stations in the network).
     func testSingleLineStationResolves() throws {
         let omonoia = MapStationNode(
             id: "M1_OMO",
-            displayName: "Omonoia",
+            stationIds: ["M1_OMO"],
+            stationIdByLineId: ["M1": "M1_OMO"],
+            name: "Omonoia",
             nameEl: "Ομόνοια",
             coordinate: .init(latitude: 37.9837, longitude: 23.7283),
-            stationIds: ["M1_OMO"],
             lineIds: ["M1"],
-            isInterchange: false,
-            stationIdByLineId: ["M1": "M1_OMO"]
+            isInterchange: false
         )
         XCTAssertNotNil(resolve(omonoia))
     }
 
-    /// Garbage input must return nil — the production code then renders the
-    /// fallback placeholder view, not a black screen.
     func testTotallyUnknownStationReturnsNil() throws {
         let bogus = MapStationNode(
             id: "BOGUS",
-            displayName: "Nonexistent",
+            stationIds: ["TOTALLY_FAKE_ID"],
+            stationIdByLineId: [:],
+            name: "Nonexistent",
             nameEl: "Ανύπαρκτος",
             coordinate: .init(latitude: 0, longitude: 0),
-            stationIds: ["TOTALLY_FAKE_ID"],
             lineIds: ["FAKE"],
-            isInterchange: false,
-            stationIdByLineId: [:]
+            isInterchange: false
         )
         XCTAssertNil(resolve(bogus))
     }
