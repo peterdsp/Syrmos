@@ -178,17 +178,17 @@ struct ContentView: View {
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
         .task {
-            // 100% OFFLINE on app start. The previous code refreshed six
-            // stores from the API on every ContentView appearance, which
-            // meant the app silently talked to the Pi every cold start
-            // (and every backgrounding edge that re-fired .task). That
-            // contradicts the product promise — Syrmos is an offline app
-            // that ships every schedule, fare, icon and offset in the
-            // bundled JSON. Network refreshes are now driven exclusively
-            // by the user tapping "Check now" in Settings; this .task
-            // body is reserved for diagnostics breadcrumbs only.
             _ = DiagnosticsCenter.shared
             DiagnosticsCenter.shared.leaveBreadcrumb("app", "ContentView appeared")
+            // Live train positions are runtime data by nature, not bundled —
+            // the whole point is "where are the trains RIGHT NOW". Skipping
+            // these refreshes on launch left the map with zero moving dots
+            // until the user tapped Settings → Check now. Schedules / fares /
+            // station-offsets / visual overrides stay bundled-only; only the
+            // two LIVE feeds fire here.
+            await LivePositionsService.shared.refresh()
+            await LiveTrainService.shared.refresh()
+            DiagnosticsCenter.shared.leaveBreadcrumb("app", "Initial live refresh done")
         }
         .onChange(of: selectedTab) { _, newTab in
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")

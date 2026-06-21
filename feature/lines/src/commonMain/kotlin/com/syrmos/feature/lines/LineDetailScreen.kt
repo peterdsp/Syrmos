@@ -165,7 +165,7 @@ fun LineDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(vertical = 8.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 140.dp),
             ) {
                 item {
                     LineDetailHeader(

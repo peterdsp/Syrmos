@@ -43,9 +43,14 @@ final class LivePositionsService: ObservableObject {
     private var pollTask: Task<Void, Never>?
 
     private let base = "https://api-syrmos.peterdsp.dev"
-    /// Lines we project ourselves. A1-A4 come from the live SSE feed
-    /// (railway.gov.gr) so they're rendered by LiveTrainService instead.
-    private let projectedLineIds = ["M1", "M2", "M3", "M3_AIR", "T6", "T7"]
+    /// Lines we project ourselves. Suburban A1-A4 were originally excluded
+    /// because they had raw GPS from railway.gov.gr (LiveTrainService). They
+    /// are now ALSO projected so they keep moving when the SSE feed is
+    /// offline or empty. The TransitMapView dedupes per line: whenever
+    /// LiveTrainService emits ANY suburban train for line X, the projected
+    /// dots for line X are hidden so we never draw two markers for the
+    /// same physical train.
+    let projectedLineIds = ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"]
 
     private init() {
         // Offline-first: the live-positions feed is ONLY hit when the
