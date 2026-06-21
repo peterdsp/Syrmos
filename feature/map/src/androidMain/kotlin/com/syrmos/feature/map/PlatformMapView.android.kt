@@ -313,6 +313,7 @@ internal actual fun PlatformMapView(
     }
 
     LaunchedEffect(uiState.simulatedTrains) {
+        val res = context.resources
         val activeIds = uiState.simulatedTrains.map { it.id }.toSet()
         val staleIds = trainMarkers.keys - activeIds
         staleIds.forEach { id ->
@@ -332,9 +333,9 @@ internal actual fun PlatformMapView(
                     position = GeoPoint(train.latitude, train.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = vehicleIcon ?: when {
-                        train.isAirportService -> buildAirportTrainBitmap()
-                        train.lineType == LineType.TRAM -> buildTramTrainBitmap(lineColor, train.lineId)
-                        else -> buildMetroTrainBitmap(lineColor, train.lineId)
+                        train.isAirportService -> buildAirportTrainBitmap(res)
+                        train.lineType == LineType.TRAM -> buildTramTrainBitmap(res, lineColor, train.lineId)
+                        else -> buildMetroTrainBitmap(res, lineColor, train.lineId)
                     }
                     title = "${train.lineName} → ${train.destinationName}"
                     snippet = "Near ${train.currentStationName}"
@@ -347,6 +348,7 @@ internal actual fun PlatformMapView(
     }
 
     LaunchedEffect(uiState.liveTrains) {
+        val res = context.resources
         val activeIds = uiState.liveTrains.map { it.id }.toSet()
         val staleIds = liveTrainMarkers.keys - activeIds
         staleIds.forEach { id ->
@@ -360,12 +362,12 @@ internal actual fun PlatformMapView(
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
                 existing.position = GeoPoint(train.latitude, train.longitude)
-                existing.icon = buildLiveTrainBitmap(color = color, lineId = train.lineId)
+                existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
             } else {
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(train.latitude, train.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = buildLiveTrainBitmap(color = color, lineId = train.lineId)
+                    icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
                     title = "${train.lineId} ${train.trainNumber}"
                 }
                 liveTrainMarkers[train.id] = marker
@@ -546,7 +548,7 @@ private fun buildMarkerBitmap(color: Int, interchange: Boolean, selected: Boolea
     return BitmapDrawable(null, bitmap)
 }
 
-private fun buildMetroTrainBitmap(color: Int, lineLabel: String = ""): android.graphics.drawable.Drawable {
+private fun buildMetroTrainBitmap(res: android.content.res.Resources, color: Int, lineLabel: String = ""): android.graphics.drawable.Drawable {
     val width = 56
     val height = 64
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -575,10 +577,10 @@ private fun buildMetroTrainBitmap(color: Int, lineLabel: String = ""): android.g
     val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xB3FFFFFF.toInt() }
     canvas.drawCircle(cx - 4f, cy + 4f, 1.5f, dot)
     canvas.drawCircle(cx + 4f, cy + 4f, 1.5f, dot)
-    return BitmapDrawable(null, bitmap)
+    return BitmapDrawable(res, bitmap)
 }
 
-private fun buildTramTrainBitmap(color: Int, lineLabel: String = ""): android.graphics.drawable.Drawable {
+private fun buildTramTrainBitmap(res: android.content.res.Resources, color: Int, lineLabel: String = ""): android.graphics.drawable.Drawable {
     val width = 56
     val height = 56
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -608,10 +610,10 @@ private fun buildTramTrainBitmap(color: Int, lineLabel: String = ""): android.gr
     val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xB3FFFFFF.toInt() }
     canvas.drawCircle(cx - 3f, cy, 1.5f, dot)
     canvas.drawCircle(cx + 3f, cy, 1.5f, dot)
-    return BitmapDrawable(null, bitmap)
+    return BitmapDrawable(res, bitmap)
 }
 
-private fun buildAirportTrainBitmap(): android.graphics.drawable.Drawable {
+private fun buildAirportTrainBitmap(res: android.content.res.Resources): android.graphics.drawable.Drawable {
     val width = 56
     val height = 64
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -644,10 +646,10 @@ private fun buildAirportTrainBitmap(): android.graphics.drawable.Drawable {
     canvas.drawLine(cx - s, cy + s * 0.2f, cx + s, cy + s * 0.2f, linePaint)
     canvas.drawLine(cx, cy - s * 0.6f, cx, cy + s * 0.6f, Paint(linePaint).apply { strokeWidth = 1.5f })
     canvas.drawLine(cx - s * 0.6f, cy - s * 0.3f, cx + s * 0.6f, cy - s * 0.3f, Paint(linePaint).apply { strokeWidth = 1.5f })
-    return BitmapDrawable(null, bitmap)
+    return BitmapDrawable(res, bitmap)
 }
 
-private fun buildLiveTrainBitmap(color: Int, lineId: String): android.graphics.drawable.Drawable {
+private fun buildLiveTrainBitmap(res: android.content.res.Resources, color: Int, lineId: String): android.graphics.drawable.Drawable {
     // Bigger marker with halo, line-color core, and a line-id badge underneath
     // so suburban trains stand out clearly against the simulated metro/tram
     // dots. Static (no animation here — osmdroid markers don't redraw on tick)
@@ -684,5 +686,5 @@ private fun buildLiveTrainBitmap(color: Int, lineId: String): android.graphics.d
     )
     canvas.drawRoundRect(badgeRect, 13f, 13f, badge)
     canvas.drawText(lineId, cx, badgeTop + 19f, badgeText)
-    return BitmapDrawable(null, bitmap)
+    return BitmapDrawable(res, bitmap)
 }
