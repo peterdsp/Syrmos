@@ -1,6 +1,11 @@
 package com.syrmos.feature.map
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -39,10 +45,16 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.L
@@ -53,6 +65,7 @@ import com.syrmos.core.designsystem.component.liquidGlassOverlay
 import com.syrmos.core.designsystem.theme.ArrivalFar
 import com.syrmos.core.designsystem.theme.ArrivalModerate
 import com.syrmos.core.designsystem.theme.ArrivalSoon
+import kotlin.math.roundToInt
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import org.koin.compose.koinInject
@@ -147,15 +160,49 @@ fun MapScreen(
             }
         }
 
-        uiState.selectedStation?.let {
+        AnimatedVisibility(
+            visible = uiState.selectedStation != null,
+            enter = slideInVertically(
+                animationSpec = tween(350),
+                initialOffsetY = { it },
+            ),
+            exit = slideOutVertically(
+                animationSpec = tween(300),
+                targetOffsetY = { it },
+            ),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .zIndex(2f),
+        ) {
+            val density = LocalDensity.current
+            var offsetY by remember { mutableStateOf(0f) }
+            val dismissThreshold = with(density) { 100.dp.toPx() }
+
             StationSheetCard(
                 uiState = uiState,
                 onClose = viewModel::clearSelection,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(16.dp),
+                    .offset { IntOffset(0, offsetY.coerceAtLeast(0f).roundToInt()) }
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragEnd = {
+                                if (offsetY > dismissThreshold) {
+                                    viewModel.clearSelection()
+                                }
+                                offsetY = 0f
+                            },
+                            onDragCancel = { offsetY = 0f },
+                            onVerticalDrag = { change, dragAmount ->
+                                if (dragAmount > 0 || offsetY > 0) {
+                                    change.consume()
+                                    offsetY += dragAmount
+                                }
+                            },
+                        )
+                    }
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
             )
         }
     }
@@ -172,14 +219,28 @@ private fun StationSheetCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
     ) {
         Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .background(
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        RoundedCornerShape(2.dp),
+                    ),
+            )
+        }
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(
