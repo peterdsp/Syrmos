@@ -30,9 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.rememberCoroutineScope
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.AppThemeMode
@@ -195,6 +199,12 @@ fun SettingsScreen() {
                             }
                         },
                     ) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
                         Text(when (lang) {
                             AppLanguage.GREEK -> "Έλεγχος τώρα"
                             AppLanguage.ALBANIAN -> "Kontrollo tani"
