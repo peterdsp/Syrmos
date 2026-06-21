@@ -15,16 +15,6 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <!--
-                                Fullscreen launch image. contentMode = scaleAspectFill so
-                                the image always covers the entire screen on any device
-                                (cropping overflow rather than letterboxing). The previous
-                                Info.plist UILaunchScreen.UIImageName path used a
-                                centered-fit treatment which produced black bars whenever
-                                the bundled artwork was smaller than the device's native
-                                pixel dimensions (e.g. our 1290x2796 image on the iPhone
-                                17 Pro Max's 1320x2868 screen).
-                            -->
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="StartScreen" translatesAutoresizingMaskIntoConstraints="NO" id="lXg-Lk-FUS">
                                 <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                             </imageView>
