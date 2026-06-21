@@ -27,7 +27,7 @@ private val DarkColorScheme = darkColorScheme(
     surface = SyrmosSurfaceDark,
     onSurface = SyrmosOnSurfaceDark,
     onSurfaceVariant = SyrmosOnSurfaceVariantDark,
-    outline = SyrmosOutline,
+    outline = SyrmosOutlineDark,
 )
 
 @Composable
