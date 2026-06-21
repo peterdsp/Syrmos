@@ -1204,44 +1204,6 @@ body {
     }
 }
 
-/* Disabled Google Play badge — Android isn't published yet. Keep the
-   visual weight of the real button (so the row stays balanced) but
-   strip the link, grey it out and stamp a "Coming soon" caption. */
-.store-badge--disabled {
-    position: relative;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    cursor: not-allowed;
-    pointer-events: none;
-    user-select: none;
-}
-.store-badge--disabled img {
-    display: block;
-    height: 36px;
-    width: auto;
-    filter: grayscale(1);
-    opacity: 0.55;
-}
-.store-badge__caption {
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: rgba(26, 26, 46, 0.55);
-}
-.dark-mode .store-badge__caption {
-    color: rgba(226, 232, 240, 0.7);
-}
-@media (max-width: 720px) {
-    .store-badge--disabled img {
-        height: 32px;
-    }
-    .store-badge__caption {
-        font-size: 8px;
-    }
-}
 
 /* Live suburban-train marker: pulsing ring + glyph + line-id badge so users
    can tell apart real trains from the simulated metro/tram dots. */
