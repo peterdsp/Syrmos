@@ -20,6 +20,9 @@
 
 set -euo pipefail
 
+# Always operate from the project root regardless of caller CWD.
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 BANNER="\033[36m▌ Syrmos · iOS\033[0m"
 log() { printf "%b  %s\n" "$BANNER" "$*"; }
 die() { printf "\033[31m!!\033[0m %s\n" "$*" >&2; exit 1; }

@@ -3,7 +3,7 @@ SPDX-PackageName = "Syrmos"
 SPDX-PackageSupplier = "Petros Dhespollari <info@peterdsp.dev>"
 SPDX-PackageDownloadLocation = "https://github.com/peterdsp/Syrmos"
 
-# Source code — BSD 3-Clause
+# Source code, BSD 3-Clause
 [[annotations]]
 path = [
     "**.kt",
@@ -32,11 +32,11 @@ path = [
 SPDX-FileCopyrightText = "2026 Petros Dhespollari"
 SPDX-License-Identifier = "BSD-3-Clause"
 
-# Documentation + screenshots + reference package — CC BY-SA 4.0
+# Documentation, screenshots, reference package, CC BY-SA 4.0
 [[annotations]]
 path = [
     "README.md",
-    "NOTICE",
+    "CHANGELOG.md",
     ".github/CONTRIBUTING.md",
     ".github/CODE_OF_CONDUCT.md",
     ".github/SECURITY.md",
