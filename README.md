@@ -27,9 +27,9 @@
 
 ---
 
-Syrmos is a transit companion for the Athens metro, tram and suburban railway. Pick a station or let GPS find the nearest one and get a live countdown to your next departure. Works offline, underground, with no signal.
+A transit companion for the Athens metro, tram, and suburban railway. Pick a station or let GPS find the nearest one and get a live countdown to your next departure. Works offline, underground, with no signal.
 
-> *Syrmos (συρmos)* is the Greek word for the carriages that form a metro train.
+> *Syrmos (συρμός)* is the Greek word for the carriages that form a metro train.
 
 <table align="center">
   <tr>
@@ -46,238 +46,97 @@ Syrmos is a transit companion for the Athens metro, tram and suburban railway. P
   </tr>
 </table>
 
-## Features
+## Highlights
 
-- **Instant departures** at any station, any line, any direction
-- **GPS nearest station** detection sorted by walking distance
-- **Live train map** with simulated metro/tram positions and real-time suburban tracking
-- **Realistic movement** with station dwell, acceleration and deceleration curves
-- **Custom station and vehicle icons** shared across all three platforms
-- **Line browser** grouped by Metro, Tram, and Suburban with station counts
-- **Station detail** with connecting lines, interchange info, and next departures
-- **Full timetable viewer** with weekday, Friday, Saturday, and Sunday schedules
-- **Frequency-band projector** computes next departures from operator rules -- correctly closes M3 Airport at 23:00, opens Friday's 02:00 late extension, switches to the Saturday 24/7 overnight grid, etc.
-- **Bilingual** interface in English and Greek
-- **Light and dark theme** with Metro Blue branding
-- **Offline-first**: every release ships a full snapshot of the live API; the app launches with correct data even on airplane mode and silently catches up when a connection appears
-- **Live schedule updates without a release** via a self-hosted API at `api-syrmos.peterdsp.dev` -- fix a wrong frequency and every installed app sees the change on the next cold start
-- **External ticket purchase link** for Hellenic Train (suburban) stations -- opens `newtickets.hellenictrain.gr` in the browser. Syrmos collects nothing; the purchase happens entirely on Hellenic Train's site, under their own terms
-- **Contactless tap-and-go info** in Settings -- links to OASA's official ticket-price page and explains that Apple Pay, Google Wallet, or any contactless Visa/Mastercard works at metro and tram gates, and also on the validators inside trams and trains. Syrmos doesn't store prices; it links to the operator's source of truth
-- **Zoom-aware map pins** on all three platforms -- at country zoom you see colored mode-glyph pins; at street zoom you see the per-station smart-code SVG. The web uses Leaflet `divIcon` + emoji glyphs, iOS uses SF Symbols inside a teardrop, Android draws a custom bitmap. Replaces the old "white egg" look at low zoom
-- **Real OSM track geometry** for every line polyline. Pulled per route relation, stitched in member order with reversal handling, bundled offline in all three apps plus served at `/line-geometry/{id}.geojson` so the Pi can push shape corrections without an app release. The T7 Piraeus loop, M3 airport branch and A4 Megara curve render along actual rail, not as straight zigzags between station coordinates. Data © OpenStreetMap contributors, ODbL.
-- **Live-arrivals infrastructure**, ready for the day Athens operators publish real-time feeds. A `LiveArrivalsProvider` interface in `core/domain` is implemented as no-op stubs for STASY, OASA Telematics, and Hellenic Train. The use case prefers live data when available and falls back to the rule-based projector when not. Currently every stub returns `null`, so projector remains the answer -- but the wiring is in place
+- **Offline-first.** Every release bundles a full snapshot of the API; the app launches with correct data on airplane mode and syncs silently when online.
+- **Live train map** with simulated metro/tram positions and real-time suburban tracking from the Hellenic Train SSE feed.
+- **Frequency-band projector** computes next departures from operator rules, so schedules stay correct without a client release.
+- **Real OSM track geometry** for every line: T7 Piraeus loop, M3 airport branch, A4 Megara curve render along actual rail.
+- **GPS nearest station**, bilingual EN/EL, light/dark theme, full timetables, station details, line browser.
+- **Hot-patchable schedules** via `api-syrmos.peterdsp.dev`: fix a band on the Pi, every installed app sees it on next cold start.
 
-## Transit coverage
+## Coverage
 
 | Mode | Lines | Stations | Operator |
 |------|-------|----------|----------|
-| Metro | Line 1 (Green), Line 2 (Red), Line 3 (Blue) | 71 | STASY |
-| Tram | T6 (Syntagma-Pikrodafni), T7 (Akti Poseidonos-Voula) | 62 | STASY |
-| Suburban | A1, A2 (Airport), A3 (Chalcis), A4 (Kiato) | 68 | Hellenic Train |
-
-## Platforms
-
-All three platforms run from a single Kotlin Multiplatform codebase and share the same train simulation engine, schedule logic, data layer, and icon assets.
-
-| Platform | UI | Map |
-|----------|-------|-----|
-| **iOS** | SwiftUI + MapKit | Apple Maps with polylines and train annotations |
-| **Android** | Compose + osmdroid | OpenStreetMap with PNG vehicle/station markers |
-| **Web** | Compose for Web (Wasm) + Leaflet | OpenStreetMap with SVG directional train icons |
-
-## Getting started
-
-### Prerequisites
-
-- JDK 17+
-- Android Studio Ladybug or later
-- Xcode 16+ (for iOS)
-
-### Android
-
-```bash
-./gradlew :androidApp:installDebug
-```
-
-### iOS
-
-```bash
-./simulator.sh
-```
-
-The script auto-detects the Xcode project, picks the latest simulator, builds, installs, and streams logs.
-
-```bash
-./simulator.sh --device "iPhone 16 Pro" --clean    # specific device
-./simulator.sh --release                            # release build
-./simulator.sh --list                               # show devices
-```
-
-### Web
-
-```bash
-./gradlew :composeApp:wasmJsBrowserRun
-```
-
-Production deploy:
-
-```bash
-./gradlew :composeApp:stageWebRelease
-# Output: composeApp/build/web-release/
-
-# Or deploy directly to syrmos.peterdsp.dev:
-./scripts/deploy-web-to-pi.sh
-```
-
-### Tests
-
-```bash
-./gradlew allTests
-```
+| Metro | Line 1, 2, 3 | 71 | STASY |
+| Tram | T6, T7 | 62 | STASY |
+| Suburban | A1, A2, A3, A4 | 68 | Hellenic Train |
 
 ## Architecture
 
-Multi-module MVI with unidirectional data flow. 15+ Gradle modules managed by convention plugins in `build-logic/`.
+One Kotlin Multiplatform codebase. iOS uses SwiftUI + MapKit, Android uses Compose + osmdroid, web uses Compose for Wasm + Leaflet. Shared train simulation, schedule logic, data layer, and icons.
 
 ```
-iosApp (SwiftUI, MapKit, native iOS experience)
-androidApp (Compose Activity shell)
-    |
-composeApp (KMP composition root, tab navigator, Koin wiring)
-    |
-feature/ -- home, lines, stations, schedule, map, settings
-    |        each: Screen + ViewModel + UiState
-    |
-core/ -- domain    (use cases -- incl. ComputeDeparturesFromBandsUseCase)
-      -- data      (repositories, DataSeeder, ScheduleSyncRepository)
-      -- database  (SQLDelight, platform drivers)
-      -- network   (Ktor, SyrmosLinesService, SyrmosSchedulesService)
-      -- designsystem (theme, shared components)
-      -- navigation (Voyager tabs and routes)
-      -- model     (domain data classes)
-      -- common    (Result type, datetime, geo distance)
+iosApp/         SwiftUI shell (Apple Maps)
+androidApp/     Compose Activity shell (osmdroid)
+composeApp/     KMP composition root, navigator, Koin wiring
+feature/        home, lines, stations, schedule, map, settings
+core/
+  domain/       use cases, projector, LiveArrivalsProvider
+  data/         repositories, DataSeeder, ScheduleSync
+  database/     SQLDelight + platform drivers
+  network/      Ktor services
+  designsystem/ theme, shared components
+  navigation/   Voyager tabs and routes
+  model/        domain data classes
+  common/       Result, datetime, geo
+build-logic/    convention plugins for the 15+ modules
+ops/            Pi-hosted FastAPI service + importers (syrmos-api, syrmos-web)
+docs/           contribution workflow, case study, privacy, badges, screenshots
+scripts/        importers, deployers, seed snapshotters
+assets/         icon packs, line geometry, timetable PDFs
 ```
 
-### Backend (Raspberry Pi)
+Backend lives on a Raspberry Pi behind Cloudflare Tunnel at `api-syrmos.peterdsp.dev`. It serves `/api/lines`, `/api/schedules`, `/api/holidays`, `/api/fares`, `/api/announcements`, `/api/trains` (SSE relay), and `/line-geometry/{id}.geojson`, all ETag-driven. Source of truth is SQLite, edited through a gated `/admin` UI.
 
+**Stack:** Kotlin 2.1, Compose Multiplatform 1.8, SwiftUI, SQLDelight 2.1, Koin 4.1, Ktor 3.1, Voyager 1.1, osmdroid, Leaflet, kotlinx-datetime.
+
+## Build and run
+
+Prereqs: JDK 17+, Android Studio Ladybug+, Xcode 16+ (iOS).
+
+```bash
+# Android
+./gradlew :androidApp:installDebug
+
+# iOS — auto-detects project, picks latest simulator, builds, installs, streams logs
+./simulator.sh
+./simulator.sh --device "iPhone 16 Pro" --clean
+./simulator.sh --release
+./simulator.sh --list
+
+# Web dev
+./gradlew :composeApp:wasmJsBrowserRun
+
+# Web release
+./gradlew :composeApp:stageWebRelease
+./scripts/deploy-web-to-pi.sh
+
+# Tests
+./gradlew allTests
 ```
-api-syrmos.peterdsp.dev (Cloudflare Tunnel)
-    |
-    +-- /api/lines                       -- canonical line + station snapshot
-    +-- /api/schedules                   -- full frequency-band snapshot
-    +-- /api/schedules/manifest          -- version + per-line hashes (ETag-driven)
-    +-- /api/schedules/{lineId}          -- single-line bundle
-    +-- /api/holidays                    -- holiday rules (Aug 15, Dec 24/31, etc.)
-    +-- /api/overrides                   -- per-date overrides
-    +-- /api/fares                       -- OASA fare-page link + contactless tap-and-go metadata
-    +-- /api/announcements               -- STASY service alerts
-    +-- /api/trains                      -- Hellenic Train SSE relay (positions only, no per-stop ETAs)
-    +-- /line-geometry/{lineId}.geojson  -- OSM-derived polyline geometry per line (ODbL)
-    +-- /admin/                          -- FastAPI UI, gated by Cloudflare Access
-
-ops/syrmos-api/
-    syrmos_admin/      FastAPI service + SQLite-backed source of truth
-    scripts/           Importer + snapshotter
-    pkg/               Athens transit reference package (rules + coords)
-    systemd/           Service + timer units (admin, 24mmm scrape, daily backup, upstream watcher)
-```
-
-### Tech stack
-
-| Dependency | Role |
-|------------|------|
-| Kotlin 2.1 | Language (Android, iOS, Web) |
-| Compose Multiplatform 1.8 | Shared UI |
-| SwiftUI + MapKit | Native iOS app |
-| SQLDelight 2.1 | Local database (all platforms) |
-| Koin 4.1 | Dependency injection |
-| Ktor 3.1 | HTTP client (live train feed) |
-| Voyager 1.1 | Multiplatform navigation |
-| osmdroid | Android map tiles |
-| Leaflet.js | Web map tiles |
-| kotlinx-datetime | Athens timezone calculations |
 
 ## Data sources
 
-Schedule data is encoded as operator rules (operating hours + frequency bands by daypart), not as pre-computed minute-by-minute departure lists, so it stays accurate when the user's clock disagrees with the build clock. Sources:
+Schedule data is encoded as operator rules (operating hours + frequency bands by daypart), not as pre-computed departure lists, so it stays accurate when the user's clock disagrees with the build clock.
 
-- [STASY](https://www.stasy.gr) -- Metro Lines 1, 2, 3 and Tram T6/T7
-- [Hellenic Train](https://www.hellenictrain.gr) -- Suburban Railway A1/A2/A3/A4 (timetable PDFs effective 2025-11-22 archived in [assets/hellenic-train-timetables/](assets/hellenic-train-timetables/))
-- [OASA 24mmm](https://www.oasa.gr/en/24mmm/) -- Saturday 24-hour service grid, scraped daily
+- [STASY](https://www.stasy.gr) — Metro 1/2/3 and Tram T6/T7
+- [Hellenic Train](https://www.hellenictrain.gr) — Suburban A1/A2/A3/A4 (PDFs archived in [assets/hellenic-train-timetables/](assets/hellenic-train-timetables/))
+- [OASA 24mmm](https://www.oasa.gr/en/24mmm/) — Saturday 24-hour grid, scraped daily
 
-Live train positions from the [Hellenic Train API](https://railway.gov.gr) and STASY announcements scraped every 5 minutes. The Pi-hosted API at `api-syrmos.peterdsp.dev` re-publishes everything with content-hash ETags so the apps can short-circuit a sync when nothing changed.
+A daily Pi timer hashes upstream PDFs; when anything changes, the admin UI surfaces the diff before the next snapshot ships. Reference data (coords, icon rules, holidays, M3 split, T7 loop) lives in [ops/syrmos-api/pkg/](ops/syrmos-api/pkg/).
 
-A daily timer on the Pi (`syrmos-watcher.timer`) hashes the upstream PDFs and pages; when any of them changes, the admin UI surfaces the diff so frequency bands can be re-verified before the next snapshot ships.
-
-Reference data -- station coordinates, icon priority rules, M3 city/airport split, holiday calendar, T7 Piraeus loop -- lives in [ops/syrmos-api/pkg/](ops/syrmos-api/pkg/).
-
-Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket purchase links open Hellenic Train's official site; Syrmos collects nothing from that flow (details in the privacy policy).
+Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket purchases open Hellenic Train's official site under their own terms.
 
 ## Roadmap
 
-### Pending for the next release (1.0.2 / Android 7)
+In flight for the next release: tap-a-station mini-map with directions handoff, admin UI polish, TestFlight automation. Next, no operator API needed: favorites, home-screen widgets, departure notifications, Live Activities, trip planner, fare estimator, Apple Watch and Wear OS, App Clip, CarPlay/Android Auto, offline tile pre-cache, on-device AI helper, InterCity coverage, Thessaloniki/Patras forks. Quality: iOS XCUITest, Compose snapshot tests, Playwright web smoke.
 
-These are all in-flight or sitting in a branch waiting for the same release window:
+## Contributing, privacy, license
 
-- **Tap-a-station → bottom-sheet mini-map** showing only that line drawn, only that station highlighted, with a "Get Directions" button that hands off to Apple Maps / Google Maps. iOS + Android + web. Already designed; the multi-platform UI plumbing is the work.
-- **Admin UI polish.** The FastAPI `/admin` page is functional but plain -- sortable tables, inline editing, diff preview before save, scrape_log inline.
-- **iOS TestFlight upload automation.** Build artifact is ready; CI workflow needs Apple Developer secrets (`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, `APP_STORE_CONNECT_API_KEY`) before the upload job can run.
+- **Contributing:** PR-first workflow with a CI guard on `main`. See [contribution workflow](docs/CONTRIBUTING_WORKFLOW.md) and [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md).
+- **Privacy:** no data collection, no analytics, no tracking; location stays on-device. [Privacy Policy](docs/PRIVACY_POLICY.md).
+- **License:** code is **BSD 3-Clause** ([LICENSE](LICENSE)), docs and assets are **CC BY-SA 4.0** ([docs/LICENSE-docs.md](docs/LICENSE-docs.md)) and may also be used under BSD 3-Clause. Summary in [NOTICE](NOTICE). Security: [.github/SECURITY.md](.github/SECURITY.md). Conduct: [.github/CODE_OF_CONDUCT.md](.github/CODE_OF_CONDUCT.md).
 
-### Solo-shippable next, no operator API needed
-
-The list below is realistic to ship without anyone at STASY, OASA, or Hellenic Train picking up the phone:
-
-- **Favorites & home shortcuts** -- tap a star on a station, it pins to a Favorites tab. Local persistence only.
-- **Home Screen widgets** -- iOS WidgetKit + Android Glance, showing the next 3 departures at the user's favorited station. Uses the projector already in `core/domain`, no server call.
-- **Local notification departure alerts** -- "alert me 10 min before my morning M3 from Syntagma." All client-side, scheduled from the projector's bands.
-- **Live Activities (iOS)** -- Dynamic Island countdown to the next train when the user explicitly starts a "Departure" activity.
-- **Trip planner** -- offline graph routing over station topology + bands. Returns next-train shortest path with transfers and walking time at interchanges.
-- **Fare estimator** -- using `/api/fares` + route segments, show "this trip costs €X" with the explicit caveat that prices are managed by OASA. Hard-disclaimer pattern matching the existing Hellenic Train ticket link.
-- **Apple Watch / Wear OS companions** -- independent app (no companion-pairing dance) that opens on the nearest station with the next 3 departures already on screen. Complication on the watch face shows the single next train at the user's favorited station. Pulls directly from `api-syrmos.peterdsp.dev` over Wi-Fi or LTE so the phone doesn't have to be in range. Glance-friendly UI: line dot, terminus, minutes-away. Tap a row to start a Live Activity that mirrors to the phone.
-- **App Clip / Instant App at metro stations** -- one-tap "trains from here right now" with no install. Each station gets an NFC tag (or QR sticker) on the platform pole linking to `https://syrmos.peterdsp.dev/clip?station=M3_SYN`. iOS surfaces the App Clip Card with the station name, the next 3 departures pre-rendered, and an "Open in Syrmos" CTA that hands off to the full app if the user wants more. Android Instant App equivalent via Google Play. Zero login, zero account, ~10 MB clip bundle. Same projector path as the full app, so no separate data plumbing.
-- **CarPlay / Android Auto** -- "Hey Siri, when's the next Line 3 from Syntagma?" -- surfaces the projector through native voice intents.
-- **Step-free routing** -- already have `accessibility` on each station; surface "this route has 2 elevators broken" in the trip planner.
-- **Open the Syrmos API** -- documentation site for `api-syrmos.peterdsp.dev`, rate-limited public access for other transit nerds. Free CDN cache covers the load.
-- **Offline tile pre-cache** -- Athens area pre-rendered OSM tiles bundled at small zoom, larger zoom downloaded once. True zero-network UX even for the map.
-- **AI chat helper** -- on-device LLM (Apple Intelligence / Gemini Nano) answers "I'm at Piraeus, fastest way to Airport?" using the projector + topology graph as ground truth.
-- **National InterCity coverage** -- Athens-Thessaloniki, Athens-Patras. Same Hellenic Train PDFs we already parse for suburban.
-- **Thessaloniki + Patras suburban** -- same pattern, different city. Repository-template fork is feasible since the data layer is operator-agnostic.
-
-### Quality
-
-- **iOS XCUITest target** so the CI iOS job stops being build-only. Currently `continue-on-error: true` placeholder.
-- **Compose snapshot tests** for the station detail screen + station list rows. Catches the kind of visual regression that the projector's data correctness can't.
-- **End-to-end web test** with Playwright running against the live web bundle. One smoke run per push: load the page, search "Syntagma", click a result, assert departures rendered.
-
-## Contributing
-
-PR-first workflow with a CI guard on `main`. See
-[Contribution workflow](docs/CONTRIBUTING_WORKFLOW.md) for the branching
-model, status checks, and the auto-revert behaviour that opens a draft
-PR + tracking issue when something does land broken.
-
-## Privacy
-
-Syrmos does not collect, store, or transmit personal data. Location is processed on-device only. No analytics, no ads, no tracking. See [Privacy Policy](docs/PRIVACY_POLICY.md).
-
-## License
-
-Dual-licensed to make reuse unambiguous for both code and content.
-
-| What | License | File |
-|---|---|---|
-| Source code (Kotlin, Swift, Python, JS, all gradle/build config) | **BSD 3-Clause** | [LICENSE](LICENSE) |
-| Documentation (`docs/`, `README.md`, `NOTICE`, this file), case study, screenshots, icon pack at `assets/athens-transit-package/` | **CC BY-SA 4.0** | [LICENSE-docs](LICENSE-docs) |
-
-The non-code materials may **also** be used under BSD 3-Clause if that suits you better.
-
-A short legal summary lives in [NOTICE](NOTICE). For contributors, [CONTRIBUTING.md](CONTRIBUTING.md) makes the dual-license arrangement clear up front. For security issues, see [SECURITY.md](SECURITY.md). For interpersonal expectations, see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
-The Syrmos app logo was created by Petros Dhespollari, inspired by original designs of art conservator **Amalia Boura**.
-
-The repository has been registered on:
-- **FSF Free Software Directory** (pending review) -- for the BSD 3-Clause code path
-- **Creative Commons Licensed Works** (registered via the CC chooser) -- for the CC BY-SA 4.0 content path
-- **REUSE Software** specification -- every file carries an SPDX header where practical, see `REUSE.toml` (next release)
-
-Schedule data is derived from publicly available timetables by STASY, OASA, and Hellenic Train. Live positions from the Hellenic Train SSE feed at `railway.gov.gr`. Trademarks of the named operators remain their own property. Syrmos is not affiliated with any Greek transport authority and does not resell, broker, or process tickets -- suburban ticket purchase links open Hellenic Train's official site, which is solely responsible for that flow (privacy details in `docs/PRIVACY_POLICY.md`).
+Logo by Petros Dhespollari, inspired by designs of art conservator **Amalia Boura**. Map data © OpenStreetMap contributors (ODbL). Live positions via Hellenic Train at `railway.gov.gr`. Trademarks remain with their owners.
