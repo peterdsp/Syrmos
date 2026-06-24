@@ -30,22 +30,42 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-Third-party data notice:
+Documentation and reference package:
 
-Schedule data in this application is derived from publicly available
-timetables published by STASY S.A. (stasy.gr) and Hellenic Train S.A.
+Documentation under docs/, the README, and the Athens transit reference
+package under assets/athens-transit-package/ are dual-licensed under the
+BSD 3-Clause License above and the Creative Commons Attribution-ShareAlike
+4.0 International License (CC BY-SA 4.0), available at
+https://creativecommons.org/licenses/by-sa/4.0/. You may choose either
+license when reusing those materials. The full CC BY-SA 4.0 text is in
+docs/LICENSE-docs.md.
+
+Attribution to "Athens Transit Icon Pack, by Petros Dhespollari" is
+expected when reusing the icon pack outside Syrmos.
+
+---
+
+Third-party data:
+
+Schedule data is derived from publicly available timetables published by
+STASY S.A. (stasy.gr), OASA (oasa.gr), and Hellenic Train S.A.
 (hellenictrain.gr). Live train positions are obtained from the Hellenic
-Train public API (railway.gov.gr).
+Train public API at railway.gov.gr, consumed in good faith for
+non-commercial display under Hellenic Train's published terms.
 
 Syrmos is an independent project and is not affiliated with, endorsed by,
-or officially connected to STASY, Hellenic Train, OASA, or any Greek
-public transport authority. All trademarks, service marks, and trade names
-referenced in this application are the property of their respective owners.
+or officially connected to STASY, OASA, Hellenic Train, or any Greek
+public transport authority. All trademarks, service marks, and trade
+names referenced in this application are the property of their respective
+owners. Re-publishing schedule data here is done in good faith as a
+derived factual compilation.
 
 The schedule data and live position feeds are used for informational
 purposes only and may not reflect real-time service conditions. The
 developer makes no guarantees regarding the accuracy or completeness of
 transit information displayed in this application.
+
+No personal data is collected by Syrmos. See docs/PRIVACY_POLICY.md.
 
 ---
 

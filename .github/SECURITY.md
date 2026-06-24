@@ -37,8 +37,8 @@ In scope:
 - Issues that allow bypassing the offline-first guarantee in a way that risks user privacy
 
 Out of scope:
-- Issues against operator websites (STASY, OASA, Hellenic Train) — report directly to those operators
-- Cloudflare or GitHub Pages infrastructure — report to those vendors via their channels
+- Issues against operator websites (STASY, OASA, Hellenic Train); report directly to those operators
+- Cloudflare or GitHub Pages infrastructure; report to those vendors via their channels
 - Theoretical concerns without a reproducible attack
 - Best-practice suggestions (open a regular PR instead)
 
