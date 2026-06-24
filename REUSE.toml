@@ -37,9 +37,9 @@ SPDX-License-Identifier = "BSD-3-Clause"
 path = [
     "README.md",
     "NOTICE",
-    "CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md",
-    "SECURITY.md",
+    ".github/CONTRIBUTING.md",
+    ".github/CODE_OF_CONDUCT.md",
+    ".github/SECURITY.md",
     "docs/**",
     "assets/athens-transit-package/**",
 ]
