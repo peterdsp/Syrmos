@@ -18,7 +18,7 @@ Syrmos is a transit companion for Athens (metro, tram, suburban). Contributions 
 
 Contributions outside scope:
 
-- Operator features Syrmos does not own (do not add ticket booking, payment processing, or account management — link to the operator's own site instead, see the Hellenic Train ticket button pattern)
+- Operator features Syrmos does not own (do not add ticket booking, payment processing, or account management; link to the operator's own site instead, see the Hellenic Train ticket button pattern)
 - Trackers, analytics SDKs, ads, or any code that exfiltrates user data
 - Soft-blocking dependencies (network calls on the cold-start path that don't gracefully fall through to offline mode)
 - Schedule rules without an authoritative source link
@@ -26,10 +26,10 @@ Contributions outside scope:
 ## Process
 
 1. Open an issue first for anything larger than a one-file change. Sketch the change in 100 words and we agree on the approach before code lands.
-2. Branch from `main` with a descriptive name (`fix/m3-airport-23-cutoff`, `feat/widget-android-glance`).
+2. Branch from `master` with a descriptive name (`fix/m3-airport-23-cutoff`, `feat/widget-android-glance`).
 3. Write or update tests for behavioural changes. The CI workflow in `.github/workflows/tests.yml` is the gate.
 4. Run `./gradlew :core:domain:test :core:common:test` locally before pushing.
-5. Open a pull request against `main`. Describe what changed, why, and how you tested it.
+5. Open a pull request against `master`. Describe what changed, why, and how you tested it.
 
 ## Code style
 
@@ -46,7 +46,7 @@ By submitting a pull request, you agree that your contribution is licensed under
 
 If you cannot agree to both, please open an issue first so we can discuss.
 
-You retain copyright on your contribution. The dual-licensing arrangement is identical to what is already in [LICENSE](LICENSE) and [NOTICE](NOTICE).
+You retain copyright on your contribution. The dual-licensing arrangement is identical to what is already in [LICENSE](LICENSE).
 
 ## Reporting security issues
 
@@ -58,4 +58,4 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Treat collaborators with the same 
 
 ## Contact
 
-Project owner: Petros Dhespollari — info@peterdsp.dev — https://github.com/peterdsp/Syrmos
+Project owner: Petros Dhespollari, info@peterdsp.dev, https://github.com/peterdsp/Syrmos

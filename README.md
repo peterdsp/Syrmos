@@ -100,11 +100,11 @@ Prereqs: JDK 17+, Android Studio Ladybug+, Xcode 16+ (iOS).
 # Android
 ./gradlew :androidApp:installDebug
 
-# iOS — auto-detects project, picks latest simulator, builds, installs, streams logs
-./simulator.sh
-./simulator.sh --device "iPhone 16 Pro" --clean
-./simulator.sh --release
-./simulator.sh --list
+# iOS: auto-detects project, picks latest simulator, builds, installs, streams logs
+./scripts/simulator.sh
+./scripts/simulator.sh --device "iPhone 16 Pro" --clean
+./scripts/simulator.sh --release
+./scripts/simulator.sh --list
 
 # Web dev
 ./gradlew :composeApp:wasmJsBrowserRun
@@ -121,22 +121,22 @@ Prereqs: JDK 17+, Android Studio Ladybug+, Xcode 16+ (iOS).
 
 Schedule data is encoded as operator rules (operating hours + frequency bands by daypart), not as pre-computed departure lists, so it stays accurate when the user's clock disagrees with the build clock.
 
-- [STASY](https://www.stasy.gr) — Metro 1/2/3 and Tram T6/T7
-- [Hellenic Train](https://www.hellenictrain.gr) — Suburban A1/A2/A3/A4 (PDFs archived in [assets/hellenic-train-timetables/](assets/hellenic-train-timetables/))
-- [OASA 24mmm](https://www.oasa.gr/en/24mmm/) — Saturday 24-hour grid, scraped daily
+- [STASY](https://www.stasy.gr): Metro 1/2/3 and Tram T6/T7
+- [Hellenic Train](https://www.hellenictrain.gr): Suburban A1/A2/A3/A4 (PDFs archived in [assets/hellenic-train-timetables/](assets/hellenic-train-timetables/))
+- [OASA 24mmm](https://www.oasa.gr/en/24mmm/): Saturday 24-hour grid, scraped daily
 
 A daily Pi timer hashes upstream PDFs; when anything changes, the admin UI surfaces the diff before the next snapshot ships. Reference data (coords, icon rules, holidays, M3 split, T7 loop) lives in [ops/syrmos-api/pkg/](ops/syrmos-api/pkg/).
 
 Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket purchases open Hellenic Train's official site under their own terms.
 
-## Roadmap
+## Releases and roadmap
 
-In flight for the next release: tap-a-station mini-map with directions handoff, admin UI polish, TestFlight automation. Next, no operator API needed: favorites, home-screen widgets, departure notifications, Live Activities, trip planner, fare estimator, Apple Watch and Wear OS, App Clip, CarPlay/Android Auto, offline tile pre-cache, on-device AI helper, InterCity coverage, Thessaloniki/Patras forks. Quality: iOS XCUITest, Compose snapshot tests, Playwright web smoke.
+Shipping: **iOS 1.0.5**, **Android 1.0.4**, **Web** (rolling). See [CHANGELOG.md](CHANGELOG.md) for what landed in each release and what is planned next. The changelog is the source of truth, kept in sync at every release.
 
 ## Contributing, privacy, license
 
-- **Contributing:** PR-first workflow with a CI guard on `main`. See [contribution workflow](docs/CONTRIBUTING_WORKFLOW.md) and [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md).
+- **Contributing:** PR-first workflow with a CI guard on `master`. See [contribution workflow](docs/CONTRIBUTING_WORKFLOW.md) and [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md).
 - **Privacy:** no data collection, no analytics, no tracking; location stays on-device. [Privacy Policy](docs/PRIVACY_POLICY.md).
-- **License:** code is **BSD 3-Clause** ([LICENSE](LICENSE)), docs and assets are **CC BY-SA 4.0** ([docs/LICENSE-docs.md](docs/LICENSE-docs.md)) and may also be used under BSD 3-Clause. Summary in [NOTICE](NOTICE). Security: [.github/SECURITY.md](.github/SECURITY.md). Conduct: [.github/CODE_OF_CONDUCT.md](.github/CODE_OF_CONDUCT.md).
+- **License:** code is **BSD 3-Clause** ([LICENSE](LICENSE)), docs and assets are **CC BY-SA 4.0** ([docs/LICENSE-docs.md](docs/LICENSE-docs.md)) and may also be used under BSD 3-Clause. Security: [.github/SECURITY.md](.github/SECURITY.md). Conduct: [.github/CODE_OF_CONDUCT.md](.github/CODE_OF_CONDUCT.md).
 
 Logo by Petros Dhespollari, inspired by designs of art conservator **Amalia Boura**. Map data © OpenStreetMap contributors (ODbL). Live positions via Hellenic Train at `railway.gov.gr`. Trademarks remain with their owners.

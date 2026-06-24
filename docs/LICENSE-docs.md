@@ -2,11 +2,11 @@ Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 
 This license applies to all DOCUMENTATION, SCREENSHOTS, DESIGN NOTES,
 and the ATHENS TRANSIT REFERENCE PACKAGE included in this repository
-(specifically: the contents of docs/, README.md, NOTICE, the icon pack
-under assets/athens-transit-package/, and any other non-source-code
-asset in this repository).
+(specifically: the contents of docs/, README.md, the icon pack under
+assets/athens-transit-package/, and any other non-source-code asset in
+this repository).
 
-Source code remains licensed under the BSD 3-Clause License — see LICENSE.
+Source code remains licensed under the BSD 3-Clause License. See LICENSE.
 
 You may, at your option, also use any of the materials covered by this
 file under the BSD 3-Clause License.
@@ -29,20 +29,20 @@ Full license text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
 Summary (not a substitute for the full license):
 
 You are free to:
-- Share — copy and redistribute the material in any medium or format
-- Adapt — remix, transform, and build upon the material for any
+- Share: copy and redistribute the material in any medium or format
+- Adapt: remix, transform, and build upon the material for any
   purpose, even commercially.
 
 Under the following terms:
-- Attribution — You must give appropriate credit, provide a link to
+- Attribution: you must give appropriate credit, provide a link to
   the license, and indicate if changes were made. You may do so in
   any reasonable manner, but not in any way that suggests the
   licensor endorses you or your use.
-- ShareAlike — If you remix, transform, or build upon the material,
+- ShareAlike: if you remix, transform, or build upon the material,
   you must distribute your contributions under the same license as
   the original.
 
-No additional restrictions — You may not apply legal terms or
+No additional restrictions: you may not apply legal terms or
 technological measures that legally restrict others from doing
 anything the license permits.
 
