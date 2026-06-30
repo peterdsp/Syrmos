@@ -9,14 +9,18 @@ struct HomeView: View {
     @StateObject private var locationService = LocationService()
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
+    @ObservedObject private var freshnessStore = LiveDataFreshness.shared
+    @ObservedObject private var tracking = DepartureTracking.shared
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
+    @State private var showAriadne = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    answerSection
                     alertsSection
                     networkOverview
                     nearMeSection
@@ -28,6 +32,27 @@ struct HomeView: View {
                 .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    showAriadne = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "safari.fill")
+                        Text(askAriadneLabel).fontWeight(.semibold)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.syrmosPrimary, in: Capsule())
+                    .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                }
+                .padding(.trailing, 16)
+                .padding(.bottom, 24)
+            }
+            .sheet(isPresented: $showAriadne) {
+                AriadneView()
+            }
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
             }
@@ -73,6 +98,218 @@ struct HomeView: View {
             StatCard(value: "2", label: loc[.tram], color: .tramOrange)
             StatCard(value: "4", label: loc[.suburban], color: .suburbanPurple)
         }
+    }
+
+    // MARK: - Answer-first home
+    //
+    // The lead block on Home: one actionable line ("Next M3 to Airport,
+    // 4 min") with a freshness pill above it and the night's last-train
+    // teaser below. Everything else (alerts, network tiles, nearby, lines)
+    // is demoted underneath so the screen reads like a companion, not a
+    // schedule. All three pieces are pure surfacing of data the projector
+    // and live services already produce.
+
+    @ViewBuilder
+    private var answerSection: some View {
+        let next = nearestNextDeparture()
+        let last = nearestLastTrain(anchoredTo: next)
+        VStack(spacing: 12) {
+            if let tracked = tracking.active {
+                trackingCard(tracked)
+            }
+            freshnessPill
+            answerHero(next: next)
+            if let last {
+                lastTrainTeaser(last)
+            }
+        }
+    }
+
+    /// Tier 2 in-app surface: a live countdown for the tracked departure that
+    /// ticks every second and keeps the Live Activity in step. Mirrors the
+    /// Compose TrackingCard.
+    private func trackingCard(_ tracked: TrackedDeparture) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let now = context.date.timeIntervalSince1970
+            let remaining = tracked.minutesRemaining(now)
+            let due = tracked.isDue(now)
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((loc.language == .greek ? "ΠΑΡΑΚΟΛΟΥΘΗΣΗ ΣΥΡΜΟΥ" : loc.language == .albanian ? "PO NDIQET TRENI" : "TRACKING YOUR TRAIN"))
+                        .font(.caption2).fontWeight(.semibold).foregroundStyle(Color.metroBlue)
+                    Text("\(tracked.lineId) · \(tracked.stationName)")
+                        .font(.headline)
+                    if !tracked.destination.isEmpty {
+                        Text("\(loc[.to]) \(tracked.destination) · \(tracked.scheduledTime)")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(due ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Due") : "\(remaining) min")
+                        .font(.title).fontWeight(.bold).foregroundStyle(Color.metroBlue)
+                    Button(loc.language == .greek ? "Διακοπή" : loc.language == .albanian ? "Ndalo" : "Stop") {
+                        tracking.stop()
+                    }
+                    .font(.caption).fontWeight(.semibold).foregroundStyle(.red)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(Color.metroBlue.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .onChange(of: remaining) { _, _ in tracking.refresh(now: now) }
+        }
+    }
+
+    private func trackNext(_ next: Departure) {
+        guard let nearest = locationService.nearbyStations.first else { return }
+        let node = nearest.station
+        let stationId = node.stationIdByLineId[next.lineId] ?? node.stationIds.first ?? node.id
+        DepartureTracking.shared.track(
+            TrackedDeparture(
+                lineId: next.lineId,
+                stationId: stationId,
+                stationName: loc.language == .greek ? node.nameEl : node.displayName,
+                destination: next.direction,
+                scheduledTime: next.time,
+                targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60
+            )
+        )
+    }
+
+    private var freshnessPill: some View {
+        let isLive = freshnessStore.freshness == .live
+        let tint: Color = isLive ? .green : .orange
+        let label = isLive
+            ? loc[.live]
+            : "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
+        return HStack {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 8, height: 8)
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(tint.opacity(0.12))
+            .clipShape(Capsule())
+            Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder
+    private func answerHero(next: Departure?) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(loc[.nextTrain].uppercased())
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            if let next {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(next.lineId)
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(SyrmosData.lineColor(for: next.lineId))
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            Text("\(loc[.to]) \(next.direction)")
+                                .font(.headline)
+                                .lineLimit(1)
+                                .foregroundStyle(.primary)
+                        }
+                        Text(next.time)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    Text(next.minutesAwayDisplay(language: loc.language))
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundStyle(SyrmosData.lineColor(for: next.lineId))
+                }
+                let isTracked = tracking.active != nil
+                Button {
+                    if !isTracked { trackNext(next) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: isTracked ? "location.fill" : "bell.fill")
+                        Text(isTracked
+                            ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : "Tracking")
+                            : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : "Track"))
+                            .fontWeight(.semibold)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(isTracked ? Color.secondary : SyrmosData.lineColor(for: next.lineId))
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background((isTracked ? Color.gray : SyrmosData.lineColor(for: next.lineId)).opacity(0.14))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(isTracked)
+            } else {
+                Text(locationService.hasPermission ? loc[.serviceOver] : loc[.enableLocationForNext])
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.syrmosSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func lastTrainTeaser(_ last: Departure) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "moon.stars.fill")
+                .font(.caption)
+                .foregroundStyle(.indigo)
+            Text("\(loc[.lastTrain]) \(last.lineId) · \(loc[.leaveBy]) \(last.time)")
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.syrmosSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// Soonest departure across the nearest station's lines. Each line resolves
+    /// its own per-line station id (interchange platforms carry one id per
+    /// line) before the projector applies station offsets.
+    private func nearestNextDeparture() -> Departure? {
+        guard let nearest = locationService.nearbyStations.first else { return nil }
+        let node = nearest.station
+        var best: Departure?
+        for lineId in node.lineIds {
+            let stationId = node.stationIdByLineId[lineId] ?? node.stationIds.first ?? node.id
+            let deps = ScheduleProjector.nextDepartures(for: stationId, lineIds: [lineId], limit: 2)
+            if let first = deps.first, best == nil || first.minutesAway < best!.minutesAway {
+                best = first
+            }
+        }
+        return best
+    }
+
+    /// Tonight's last train on the same line the next departure is on, so the
+    /// hero answer and the teaser describe the line the user is about to ride.
+    private func nearestLastTrain(anchoredTo next: Departure?) -> Departure? {
+        guard let nearest = locationService.nearbyStations.first, let next else { return nil }
+        let node = nearest.station
+        let stationId = node.stationIdByLineId[next.lineId] ?? node.stationIds.first ?? node.id
+        return ScheduleProjector.lastTrainTonight(for: stationId, lineIds: [next.lineId])
     }
 
     @ViewBuilder
@@ -180,6 +417,14 @@ struct HomeView: View {
                 }
                 }
             }
+        }
+    }
+
+    private var askAriadneLabel: String {
+        switch loc.language {
+        case .greek: return "Ρώτα την Αριάδνη"
+        case .albanian: return "Pyet Ariadne"
+        default: return "Ask Ariadne"
         }
     }
 

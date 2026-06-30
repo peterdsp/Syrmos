@@ -7,10 +7,12 @@ import com.syrmos.core.domain.live.OasaLiveArrivalsProvider
 import com.syrmos.core.domain.live.StasyLiveArrivalsProvider
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
+import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.GetStationDetailUseCase
+import com.syrmos.core.domain.usecase.PlanJourneyUseCase
 import com.syrmos.core.domain.usecase.SearchStationsUseCase
 import org.koin.dsl.module
 
@@ -20,8 +22,10 @@ val domainModule = module {
     factory { GetStationDetailUseCase(stationRepository = get(), lineRepository = get()) }
     factory { ComputeDeparturesFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
     factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get()) }
+    factory { GetLastTrainUseCase(bandProjector = get()) }
     factory { SearchStationsUseCase(stationRepository = get()) }
     factory { FindNearestStationUseCase(stationRepository = get()) }
+    factory { PlanJourneyUseCase(stationRepository = get(), lineRepository = get()) }
 
     // Live arrivals infrastructure. All providers return null today (no
     // operator publishes a real-time arrivals feed for Athens). When any

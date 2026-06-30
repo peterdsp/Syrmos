@@ -126,6 +126,9 @@ final class LivePositionsService: ObservableObject {
                 )
             }
             trains = mapped
+            // Live positions came back from the API: we're online. Surface
+            // it on the home offline-alive pill.
+            LiveDataFreshness.shared.markLive()
         } catch {
             // Leave the existing trains in place so animation continues
             // smoothly through a brief network glitch.

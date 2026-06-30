@@ -5,6 +5,7 @@ import com.syrmos.core.database.di.databaseModule
 import com.syrmos.core.domain.di.domainModule
 import com.syrmos.core.network.di.networkModule
 import com.syrmos.feature.home.HomeViewModel
+import com.syrmos.feature.home.assistant.AssistantViewModel
 import com.syrmos.feature.lines.LineDetailViewModel
 import com.syrmos.feature.lines.LinesViewModel
 import com.syrmos.feature.map.MapViewModel
@@ -16,9 +17,21 @@ val featureModule = module {
         HomeViewModel(
             findNearestStation = get(),
             getNextDepartures = get(),
+            getLastTrain = get(),
             getLinesUseCase = get(),
             announcementsRepository = get(),
             liveTrackerService = get(),
+        )
+    }
+    factory {
+        AssistantViewModel(
+            stationRepository = get(),
+            getLinesUseCase = get(),
+            getNextDepartures = get(),
+            getLastTrain = get(),
+            planJourney = get(),
+            searchStations = get(),
+            announcementsRepository = get(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
