@@ -120,6 +120,40 @@ class AthensTransitParserTest {
     }
 
     @Test
+    fun fare_query_airport() {
+        val intent = parser.parse("how much is a ticket to the Airport")
+        val fare = assertIs<AssistantIntent.ExplainFare>(intent)
+        assertTrue(fare.airport)
+    }
+
+    @Test
+    fun fare_query_standard() {
+        val intent = parser.parse("what's the ticket price")
+        val fare = assertIs<AssistantIntent.ExplainFare>(intent)
+        assertEquals(false, fare.airport)
+    }
+
+    @Test
+    fun greek_fare_query() {
+        assertIs<AssistantIntent.ExplainFare>(parser.parse("πόσο κάνει το εισιτήριο"))
+    }
+
+    @Test
+    fun favorite_station() {
+        val intent = parser.parse("favorite Syntagma")
+        val fav = assertIs<AssistantIntent.ToggleFavorite>(intent)
+        assertEquals("M2_SYN", fav.stationId)
+    }
+
+    @Test
+    fun favorite_without_station_asks_for_station() {
+        val intent = parser.parse("save this station")
+        val clar = assertIs<AssistantIntent.NeedsClarification>(intent)
+        assertIs<AssistantIntent.ToggleFavorite>(clar.base)
+        assertEquals(MissingSlot.STATION, clar.missing)
+    }
+
+    @Test
     fun out_of_scope_weather_elsewhere() {
         assertIs<AssistantIntent.OutOfScope>(parser.parse("what's the weather in London"))
     }

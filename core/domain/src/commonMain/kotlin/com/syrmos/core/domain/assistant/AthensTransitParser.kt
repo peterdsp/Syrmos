@@ -38,7 +38,9 @@ class AthensTransitParser(
             containsAny(text, MAP_WORDS) ||
             containsAny(text, LAST_TRAIN_PHRASES) ||
             containsAny(text, PLAN_PHRASES) ||
-            containsAny(text, FIND_WORDS)
+            containsAny(text, FIND_WORDS) ||
+            containsAny(text, FARE_WORDS) ||
+            containsAny(text, FAVORITE_WORDS)
 
         // Weather is allowed ONLY as a routing constraint, never as a topic.
         // "weather in london" stays out of scope; "raining, get me to X" routes
@@ -48,6 +50,25 @@ class AthensTransitParser(
 
         // Nothing transit-related at all: decline.
         if (!strongTransit && !intentSignal && !weather) return AssistantIntent.OutOfScope
+
+        // 0a. Fares. Checked before planning so "how much to the airport" is a
+        //     fare question, not a trip. The airport flag surfaces the airport
+        //     ticket specifically.
+        if (containsAny(text, FARE_WORDS)) {
+            return AssistantIntent.ExplainFare(airport = containsAny(text, AIRPORT_WORDS))
+        }
+
+        // 0b. Favorites. Needs a station to act on.
+        if (containsAny(text, FAVORITE_WORDS)) {
+            return AssistantIntent.ToggleFavorite(stationId = mentionedStations.firstOrNull())
+                .let { intent ->
+                    if (intent.stationId == null) {
+                        AssistantIntent.NeedsClarification(intent, MissingSlot.STATION)
+                    } else {
+                        intent
+                    }
+                }
+        }
 
         // 1. Plan a trip. Triggered by an explicit "how do I get" phrase, an
         //    explicit "to" frame with a station, weather routing, or two
@@ -291,6 +312,19 @@ class AthensTransitParser(
             "line", "about", "tell me about",
             "γραμμη", "σχετικα",
             "linja", "rreth",
+        )
+        private val FARE_WORDS = listOf(
+            "fare", "fares", "ticket", "tickets", "how much", "price", "cost", "cheap",
+            "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος",
+            "bilete", "sa kushton", "kushton", "cmim", "cmimi",
+        )
+        private val FAVORITE_WORDS = listOf(
+            "favorite", "favourite", "save this", "bookmark", "add to favorites", "pin",
+            "αγαπημεν", "αποθηκευσ", "προσθεσε στα αγαπημενα", "σημειωσε",
+            "i preferuar", "te preferuarat", "ruaj", "shto te te preferuarat",
+        )
+        private val AIRPORT_WORDS = listOf(
+            "airport", "αεροδρομιο", "aeroport",
         )
         private val ALERT_WORDS = listOf(
             "alert", "alerts", "status", "disruption", "delay", "delays", "problem", "closed", "closure",
