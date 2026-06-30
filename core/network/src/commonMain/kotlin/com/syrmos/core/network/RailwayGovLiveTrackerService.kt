@@ -1,5 +1,6 @@
 package com.syrmos.core.network
 
+import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -50,6 +51,10 @@ class RailwayGovLiveTrackerService(
                             .thenBy { it.trainNumber },
                     )
                     .toList()
+                // A poll came back from the API, so we're online and the
+                // suburban positions are live. Record it so the home
+                // offline-alive pill flips to "live".
+                LiveDataFreshness.markLive()
                 emit(trains)
             } catch (_: Exception) {
                 // Keep the last known UI state and retry on next poll.

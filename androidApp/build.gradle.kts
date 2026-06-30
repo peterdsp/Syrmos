@@ -26,6 +26,7 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(projects.composeApp)
+            implementation(projects.core.common)
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
         }

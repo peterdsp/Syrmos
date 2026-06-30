@@ -1,5 +1,6 @@
 package com.syrmos.core.data.sync
 
+import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.data.seed.ResourceReader
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYAnnouncementService
@@ -57,6 +58,9 @@ class AnnouncementsRepository(
     /** Live refresh from /api/announcements. Silent on network failure. */
     suspend fun refresh() {
         val latest = service.fetchFeed().firstOrNull() ?: return
+        // The feed came back from the network, so something reached the API.
+        // Record it so the home offline-alive pill flips to "live".
+        LiveDataFreshness.markLive()
         if (latest.status != null || latest.announcements.isNotEmpty()) {
             _feed.value = latest
         }

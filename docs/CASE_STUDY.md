@@ -615,16 +615,20 @@ This is intentional. Syrmos is a civic project and we want the architecture in a
 
 ## Appendix K — Product Roadmap
 
+The roadmap is now organised around a single product principle: **Syrmos is a companion, not a schedule** (see [PRODUCT_PRINCIPLES.md](PRODUCT_PRINCIPLES.md)). The job is less "add features" and more "let the offline-prediction intelligence already in the app show through the surface." Most of the companion features below are UI on top of data Syrmos already has. The trip planner (1.2) is the one true unlock: the journey confidence score and the multi-leg "last train home" both become trivial the moment routing exists, which is the argument for keeping 1.2 on track.
+
 | Version | Features | Target |
 |---|---|---|
 | **1.0** | Current state. Metro, tram, Athens suburban. Live trains. STASY announcements. GPS Near me. Bilingual. | June - July 2026 |
-| **1.0.x** | Bug-fix hotfixes responding to App Review and early user feedback. | July - August 2026 |
-| **1.1** | iOS Home Screen widget. Wear OS / WatchOS companion. Improved accessibility. | Q4 2026 |
-| **1.2** | Trip planner (point-to-point routing using the embedded line topology). | Q1 2027 |
+| **1.0.x** | Bug-fix hotfixes responding to App Review and early user feedback. Companion surfacing pass: answer-first home (lead with the next actionable departure, table demoted to detail), offline-alive indicator (make the existing offline prediction visible when signal drops), single-line "last train home" teaser. | July - August 2026 |
+| **1.1** | iOS Home Screen widget. Lock Screen Live Activity + Dynamic Island (next train, transfer countdown, destination progress), sharing the widget's departure-timeline pipeline. Wear OS / watchOS companion (glanceable next departure). Platform-direction slice ("trains to X depart from the left platform"). Improved accessibility. | Q4 2026 |
+| **1.2** | Trip planner (point-to-point routing using the embedded line topology). Live journey confidence score ("you'll make it" / "tight transfer" / "take the next one") as the face of the planner. Multi-leg "last train home" (must-leave-by time across transfers). | Q1 2027 |
 | **1.3** | National InterCity rail (E85 corridor). Greek diaspora unlock. | Q2 2027 |
 | **1.4** | Thessaloniki suburban (THESLAR corridor). | Q3 2027 |
 | **1.5** | AI chat helper for natural-language schedule queries. | Q4 2027 |
 | **2.0** | TBD. Either a redesign or a regional expansion (Patras, Heraklion). | 2028+ |
+
+**Considered and deferred:** full station-anxiety dataset (exits, elevator availability, live accessibility status) is a per-station data-sourcing burden with no current feed, so it is parked behind an operator feed; only the platform-direction slice ships near-term. An explicit tourist vs local *mode* is rejected in favour of smart defaults and progressive disclosure, with the existing bilingual support quietly adjusting density rather than a user-facing toggle.
 
 ## Revision Log
 

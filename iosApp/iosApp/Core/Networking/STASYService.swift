@@ -152,6 +152,9 @@ final class STASYService: ObservableObject {
             }
             announcements = parsed
             lastUpdated = Date()
+            // The feed came back from the API, so we're online. Flip the
+            // home offline-alive pill to "live".
+            LiveDataFreshness.shared.markLive()
             cacheAnnouncements(parsed)
         } catch {
             self.error = "Could not reach Syrmos API"
