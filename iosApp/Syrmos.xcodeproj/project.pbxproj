@@ -38,6 +38,7 @@
 		DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */; };
 		DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */; };
 		DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */; };
+		DA7A0130F00D0130F00D0130 /* iosApp/Features/Assistant/JourneyPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */; };
 		AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */; };
 		AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
 		B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */; };
@@ -117,6 +118,7 @@
 		DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyPlanner.swift; sourceTree = SOURCE_ROOT; };
 		AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingMeshBackground.swift; sourceTree = SOURCE_ROOT; };
 		AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
 		B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NearbyStationDestinationTests.swift; sourceTree = "<group>"; };
@@ -415,6 +417,7 @@
 				DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */,
 				DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */,
 				DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */,
+				DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */,
 				AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */,
 			);
 			name = Onboarding;
@@ -590,6 +593,7 @@
 				DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */,
 				DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */,
 				DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */,
+				DA7A0130F00D0130F00D0130 /* iosApp/Features/Assistant/JourneyPlanner.swift in Sources */,
 				AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */,
 				03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */,
 				8218D06AFB1A4111BBE6A6BA /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift in Sources */,

@@ -114,6 +114,54 @@ class ComputeDeparturesFromBandsUseCase(
         return sorted
     }
 
+    /**
+     * Projects a whole future service day from 00:00, for the assistant's
+     * "this weekend / tomorrow / Saturday" questions. [dayOffset] is days from
+     * today (0 = today from midnight). Returns the day's earliest [limit]
+     * departures at [stationId]; empty when bundles aren't loaded yet.
+     */
+    fun invokeForDay(
+        lineIds: List<String>,
+        direction: Direction,
+        dayOffset: Int,
+        limit: Int = 8,
+        stationId: String? = null,
+    ): List<UpcomingDeparture> {
+        val bundles = scheduleSync.lineBundles.value
+        if (bundles.isEmpty()) return emptyList()
+
+        val zone = TimeZone.of("Europe/Athens")
+        val today = Clock.System.now().toLocalDateTime(zone).date
+        val targetDate = today.plusDays(dayOffset)
+        val holidayDayType = resolveHolidayDayType(targetDate)
+
+        val results = mutableListOf<UpcomingDeparture>()
+        for (lineId in lineIds) {
+            val bundle = bundles[lineId] ?: continue
+            val offsetMinutes = if (stationId != null) {
+                stationOffsets?.offsetFor(
+                    lineId = lineId,
+                    direction = direction.name.lowercase(),
+                    stationId = stationId,
+                )?.minutesFromOrigin ?: 0
+            } else {
+                0
+            }
+            projectForLine(
+                bundle = bundle,
+                today = targetDate,
+                nowMinutes = 0,
+                holidayDayType = holidayDayType,
+                lineId = lineId,
+                direction = direction,
+                limit = limit,
+                offsetMinutes = offsetMinutes,
+                out = results,
+            )
+        }
+        return results.sortedBy { it.minutesAway }.take(limit)
+    }
+
     private fun nextAirportLookahead(
         bundle: SyrmosSchedulesService.LineSchedule,
         today: LocalDate,

@@ -42,6 +42,12 @@ sealed interface AssistantIntent {
     /** Line overview (terminals, span, stations). */
     data class ExplainLine(val lineId: String) : AssistantIntent
 
+    /** Ticket prices. [airport] surfaces the airport fare specifically. */
+    data class ExplainFare(val airport: Boolean = false) : AssistantIntent
+
+    /** Add/remove a station from favorites. */
+    data class ToggleFavorite(val stationId: String?) : AssistantIntent
+
     /** Current service alerts / status, optionally for one line. */
     data class ShowAlerts(val lineId: String? = null) : AssistantIntent
 

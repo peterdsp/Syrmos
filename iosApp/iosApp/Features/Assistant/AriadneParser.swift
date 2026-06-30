@@ -15,6 +15,8 @@ indirect enum AssistantIntent: Equatable {
     case findStation(query: String)
     case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool)
     case explainLine(lineId: String)
+    case explainFare(airport: Bool)
+    case toggleFavorite(stationId: String?)
     case showAlerts(lineId: String?)
     case openMap(stationId: String?)
     case help
@@ -80,11 +82,24 @@ struct AthensTransitParser {
             containsAny(text, Self.mapWords) ||
             containsAny(text, Self.lastTrainPhrases) ||
             containsAny(text, Self.planPhrases) ||
-            containsAny(text, Self.findWords)
+            containsAny(text, Self.findWords) ||
+            containsAny(text, Self.fareWords) ||
+            containsAny(text, Self.favoriteWords)
 
         let weather = containsAny(text, Self.weatherWords)
         if weather && !strongTransit { return .outOfScope }
         if !strongTransit && !intentSignal && !weather { return .outOfScope }
+
+        // 0a. Fares (before planning, so "how much to the airport" is a fare).
+        if containsAny(text, Self.fareWords) {
+            return .explainFare(airport: containsAny(text, Self.airportWords))
+        }
+
+        // 0b. Favorites.
+        if containsAny(text, Self.favoriteWords) {
+            let base = AssistantIntent.toggleFavorite(stationId: stations.first)
+            return stations.first == nil ? .needsClarification(base: base, missing: .station) : base
+        }
 
         // 1. Plan a trip.
         let hasToMarker = Self.toMarkers.contains { text.contains($0) }
@@ -248,6 +263,12 @@ struct AthensTransitParser {
     private static let findWords = ["where is", "find", "locate", "nearest", "near me", "closest",
         "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ku eshte", "gjej", "me afert", "afer meje"]
     private static let lineWords = ["line", "about", "tell me about", "γραμμη", "σχετικα", "linja", "rreth"]
+    private static let fareWords = ["fare", "fares", "ticket", "tickets", "how much", "price", "cost", "cheap",
+        "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος", "bilete", "sa kushton", "kushton", "cmim", "cmimi"]
+    private static let favoriteWords = ["favorite", "favourite", "save this", "bookmark", "add to favorites", "pin",
+        "αγαπημεν", "αποθηκευσ", "προσθεσε στα αγαπημενα", "σημειωσε",
+        "i preferuar", "te preferuarat", "ruaj", "shto te te preferuarat"]
+    private static let airportWords = ["airport", "αεροδρομιο", "aeroport"]
     private static let alertWords = ["alert", "alerts", "status", "disruption", "delay", "delays", "problem", "closed", "closure",
         "ειδοποι", "κατασταση", "καθυστερη", "προβλημα", "κλειστ", "διακοπη", "njoftim", "vonese", "mbyll"]
     private static let mapWords = ["map", "show on map", "on the map", "χαρτη", "στον χαρτη", "harta", "ne harte"]
