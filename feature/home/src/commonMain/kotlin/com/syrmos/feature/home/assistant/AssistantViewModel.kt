@@ -2,13 +2,17 @@ package com.syrmos.feature.home.assistant
 
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.repository.FavoritesRepository
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.domain.assistant.AssistantIntent
 import com.syrmos.core.domain.assistant.AssistantVocabularyBuilder
 import com.syrmos.core.domain.assistant.AthensTransitParser
 import com.syrmos.core.domain.assistant.DayContext
+import com.syrmos.core.domain.assistant.DayContextResolver
 import com.syrmos.core.domain.assistant.MissingSlot
+import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
@@ -61,10 +65,13 @@ class AssistantViewModel(
     private val stationRepository: StationRepositoryImpl,
     private val getLinesUseCase: GetLinesUseCase,
     private val getNextDepartures: GetNextDeparturesUseCase,
+    private val bandProjector: ComputeDeparturesFromBandsUseCase,
     private val getLastTrain: GetLastTrainUseCase,
     private val planJourney: PlanJourneyUseCase,
     private val searchStations: SearchStationsUseCase,
     private val announcementsRepository: AnnouncementsRepository,
+    private val faresRepository: FaresRepository,
+    private val favoritesRepository: FavoritesRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(AssistantUiState())
@@ -107,6 +114,8 @@ class AssistantViewModel(
         is AssistantIntent.PlanTrip -> resolvePlanTrip(intent)
         is AssistantIntent.FindStation -> resolveFindStation(intent)
         is AssistantIntent.ExplainLine -> resolveExplainLine(intent)
+        is AssistantIntent.ExplainFare -> resolveFare(intent)
+        is AssistantIntent.ToggleFavorite -> resolveFavorite(intent)
         is AssistantIntent.ShowAlerts -> resolveAlerts(intent)
         is AssistantIntent.OpenMap -> resolveOpenMap(intent)
         AssistantIntent.Help -> botMessage(helpText())
@@ -117,6 +126,11 @@ class AssistantViewModel(
     private suspend fun resolveDepartures(intent: AssistantIntent.ShowDepartures): AssistantMessage {
         val station = resolveStation(intent.stationId, intent.lineId) ?: return botMessage(clarify(MissingSlot.STATION))
         val lineIds = intent.lineId?.let { listOf(it) } ?: station.lineIds
+
+        if (intent.day != DayContext.TODAY) {
+            return resolveDeparturesForDay(intent.day, station, lineIds)
+        }
+
         val departures = mutableListOf<UpcomingDeparture>()
         for (lineId in lineIds) {
             for (direction in Direction.entries) {
@@ -129,23 +143,57 @@ class AssistantViewModel(
                 "Δεν υπάρχουν άλλα δρομολόγια από ${stationName(station)} τώρα.",
                 "Nuk ka më trena nga ${stationName(station)} tani."))
         }
-        val header = t("Next from ${stationName(station)}:",
-            "Επόμενα από ${stationName(station)}:",
-            "Të ardhshmet nga ${stationName(station)}:")
-        val dayNote = if (intent.day != DayContext.TODAY) {
-            "\n" + t("Showing today. Open the line for the full ${intent.day.name.lowercase()} timetable.",
-                "Εμφανίζεται σήμερα. Άνοιξε τη γραμμή για όλο το πρόγραμμα.",
-                "Po shfaqet sot. Hap linjën për orarin e plotë.")
-        } else ""
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
-            text = header + dayNote,
+            text = t("Next from ${stationName(station)}:",
+                "Επόμενα από ${stationName(station)}:",
+                "Të ardhshmet nga ${stationName(station)}:"),
             departures = sorted,
             action = intent.lineId?.let { AssistantAction.OpenLine(normalizeLine(it)) }
                 ?: AssistantAction.OpenStation(station.id),
             actionLabel = t("Open", "Άνοιγμα", "Hap"),
         )
+    }
+
+    /** "this weekend / tomorrow / Saturday": project that whole service day from 00:00. */
+    private fun resolveDeparturesForDay(day: DayContext, station: Station, lineIds: List<String>): AssistantMessage {
+        val dayOffset = DayContextResolver.dayOffset(day)
+        val expanded = lineIds.flatMap { if (it == "M3") listOf("M3", "M3_AIR") else listOf(it) }
+        val departures = mutableListOf<UpcomingDeparture>()
+        for (lineId in expanded) {
+            for (direction in Direction.entries) {
+                departures += bandProjector.invokeForDay(listOf(lineId), direction, dayOffset, limit = 3, stationId = station.id)
+            }
+        }
+        // Day-projection times are clock times (countdown from midnight is
+        // meaningless for a future day), so surface them as text, not as the
+        // live "X min" chips the today path uses.
+        val sorted = departures.distinctBy { it.time + it.lineId }.sortedBy { it.minutesAway }.take(4)
+        val label = dayLabel(day)
+        if (sorted.isEmpty()) {
+            return botMessage(t("I don't have $label's schedule for ${stationName(station)} offline.",
+                "Δεν έχω το πρόγραμμα του $label για ${stationName(station)} εκτός σύνδεσης.",
+                "Nuk e kam orarin e $label për ${stationName(station)} pa internet."))
+        }
+        val times = sorted.joinToString(", ") { "${it.lineId} ${it.time}" }
+        return AssistantMessage(
+            id = nextId++,
+            fromUser = false,
+            text = t("First trains $label from ${stationName(station)}: $times.",
+                "Πρώτα δρομολόγια $label από ${stationName(station)}: $times.",
+                "Trenat e parë $label nga ${stationName(station)}: $times."),
+            action = AssistantAction.OpenStation(station.id),
+            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+        )
+    }
+
+    private fun dayLabel(day: DayContext): String = when (day) {
+        DayContext.TOMORROW -> t("tomorrow", "αύριο", "nesër")
+        DayContext.WEEKEND -> t("this weekend", "το Σαββατοκύριακο", "këtë fundjavë")
+        DayContext.SATURDAY -> t("Saturday", "το Σάββατο", "të shtunën")
+        DayContext.SUNDAY -> t("Sunday", "την Κυριακή", "të dielën")
+        DayContext.TODAY -> t("today", "σήμερα", "sot")
     }
 
     private suspend fun resolveLastTrain(intent: AssistantIntent.LastTrain): AssistantMessage {
@@ -225,6 +273,60 @@ class AssistantViewModel(
         )
     }
 
+    private suspend fun resolveFare(intent: AssistantIntent.ExplainFare): AssistantMessage {
+        faresRepository.hydrateFromBundleIfNeeded()
+        val products = faresRepository.products.value
+        if (products.isEmpty()) {
+            return botMessage(t("I don't have fare prices available offline right now.",
+                "Δεν έχω διαθέσιμες τιμές εισιτηρίων εκτός σύνδεσης τώρα.",
+                "Nuk kam çmime biletash të disponueshme pa internet tani."))
+        }
+        val picks = if (intent.airport) {
+            products.filter { it.tags.any { tag -> tag.contains("airport") } }
+                .sortedBy { it.fullPriceEur ?: Double.MAX_VALUE }.take(2)
+        } else {
+            products.filter { it.section == "single" }
+                .sortedBy { it.fullPriceEur ?: Double.MAX_VALUE }.take(2)
+        }.ifEmpty { products.take(2) }
+        val lines = picks.joinToString(" · ") { "${fareTitle(it)} ${money(it.fullPriceEur)}" }
+        return botMessage(lines)
+    }
+
+    private fun resolveFavorite(intent: AssistantIntent.ToggleFavorite): AssistantMessage {
+        val stationId = intent.stationId ?: return botMessage(clarify(MissingSlot.STATION))
+        val station = stations.firstOrNull { it.id == stationId }
+        val name = station?.let { stationName(it) } ?: stationId
+        val nowFavorite = favoritesRepository.toggleStation(stationId)
+        val text = if (nowFavorite) {
+            t("Added $name to your favorites.", "Πρόσθεσα τον $name στα αγαπημένα σου.",
+                "Shtova $name te të preferuarat e tua.")
+        } else {
+            t("Removed $name from your favorites.", "Αφαίρεσα τον $name από τα αγαπημένα σου.",
+                "Hoqa $name nga të preferuarat e tua.")
+        }
+        return AssistantMessage(
+            id = nextId++,
+            fromUser = false,
+            text = text,
+            action = station?.let { AssistantAction.OpenStation(it.id) },
+            actionLabel = station?.let { t("Open", "Άνοιγμα", "Hap") },
+        )
+    }
+
+    private fun fareTitle(product: com.syrmos.core.network.SyrmosSchedulesService.FareProduct): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> product.titleEl.ifBlank { product.titleEn }
+            AppLanguage.ALBANIAN -> product.titleSq.ifBlank { product.titleEn }
+            else -> product.titleEn
+        }
+
+    /** Formats a euro amount without depending on platform String.format. */
+    private fun money(amount: Double?): String {
+        if (amount == null) return ""
+        val cents = kotlin.math.round(amount * 100).toLong()
+        return "€${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
+    }
+
     private suspend fun resolveAlerts(intent: AssistantIntent.ShowAlerts): AssistantMessage {
         val feed = announcementsRepository.feed.first()
         val alerts = feed.announcements.filter { it.isServiceAlert }
@@ -281,9 +383,9 @@ class AssistantViewModel(
     )
 
     private fun helpText(): String = t(
-        "I can show next departures, the last train home, plan a trip between two stations, explain a line, and show service alerts. I only cover Syrmos and Athens public transport, fully offline.",
-        "Μπορώ να δείξω επόμενες αναχωρήσεις, το τελευταίο τρένο, διαδρομή μεταξύ δύο σταθμών, να εξηγήσω μια γραμμή και ειδοποιήσεις. Καλύπτω μόνο το Syrmos και τις συγκοινωνίες της Αθήνας, εκτός σύνδεσης.",
-        "Mund të tregoj nisjet, trenin e fundit, një udhëtim mes dy stacioneve, të shpjegoj një linjë dhe njoftimet. Mbuloj vetëm Syrmos dhe transportin e Athinës, pa internet.",
+        "I can show next departures (today or a future day), the last train home, plan a trip, explain a line, ticket prices, service alerts, and favorite a station. I only cover Syrmos and Athens public transport, fully offline.",
+        "Μπορώ να δείξω επόμενες αναχωρήσεις (σήμερα ή άλλη μέρα), το τελευταίο τρένο, διαδρομή, να εξηγήσω μια γραμμή, τιμές εισιτηρίων, ειδοποιήσεις και να προσθέσω σταθμό στα αγαπημένα. Καλύπτω μόνο το Syrmos και τις συγκοινωνίες της Αθήνας, εκτός σύνδεσης.",
+        "Mund të tregoj nisjet (sot ose një ditë tjetër), trenin e fundit, një udhëtim, të shpjegoj një linjë, çmimet e biletave, njoftimet dhe të ruaj një stacion. Mbuloj vetëm Syrmos dhe transportin e Athinës, pa internet.",
     )
 
     private fun outOfScopeText(): String = t(

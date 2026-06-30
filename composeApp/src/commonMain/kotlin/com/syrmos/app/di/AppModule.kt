@@ -28,10 +28,13 @@ val featureModule = module {
             stationRepository = get(),
             getLinesUseCase = get(),
             getNextDepartures = get(),
+            bandProjector = get(),
             getLastTrain = get(),
             planJourney = get(),
             searchStations = get(),
             announcementsRepository = get(),
+            faresRepository = get(),
+            favoritesRepository = get(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
