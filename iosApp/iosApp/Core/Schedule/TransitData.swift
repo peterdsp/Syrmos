@@ -394,7 +394,12 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng)
                 )
             }
-            await MainActor.run { instance?.trains = parsed }
+            await MainActor.run {
+                instance?.trains = parsed
+                // Live suburban positions came back from the API: we're
+                // online. Surface it on the home offline-alive pill.
+                LiveDataFreshness.shared.markLive()
+            }
         } catch {
             // Silent — the user's previous Check now still has whatever
             // the last poll returned. Map keeps rendering bundled
