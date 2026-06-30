@@ -43,7 +43,9 @@ enum class L {
     ONBOARD_LIVE_TITLE, ONBOARD_LIVE_BODY,
     ONBOARD_LOCATION_TITLE, ONBOARD_LOCATION_BODY, ONBOARD_LOCATION_CTA,
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
-    ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP;
+    ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
+    NEXT_TRAIN, TO, LIVE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE,
+    LAST_TRAIN, LEAVE_BY, SERVICE_OVER, ENABLE_LOCATION_FOR_NEXT;
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> when (lang) {
@@ -260,6 +262,51 @@ enum class L {
             AppLanguage.GREEK -> "Παράλειψη"
             AppLanguage.ALBANIAN -> "Anashkalo"
             else -> "Skip"
+        }
+        NEXT_TRAIN -> when (lang) {
+            AppLanguage.GREEK -> "Επόμενος συρμός"
+            AppLanguage.ALBANIAN -> "Treni i ardhshëm"
+            else -> "Next train"
+        }
+        TO -> when (lang) {
+            AppLanguage.GREEK -> "προς"
+            AppLanguage.ALBANIAN -> "drejt"
+            else -> "to"
+        }
+        LIVE -> when (lang) {
+            AppLanguage.GREEK -> "Ζωντανά"
+            AppLanguage.ALBANIAN -> "Drejtpërdrejt"
+            else -> "Live"
+        }
+        RUNNING_OFFLINE -> when (lang) {
+            AppLanguage.GREEK -> "Εκτός σύνδεσης"
+            AppLanguage.ALBANIAN -> "Pa internet"
+            else -> "Running offline"
+        }
+        PREDICTED_FROM_SCHEDULE -> when (lang) {
+            AppLanguage.GREEK -> "Πρόβλεψη από το πρόγραμμα"
+            AppLanguage.ALBANIAN -> "Parashikuar nga orari"
+            else -> "Predicted from schedule"
+        }
+        LAST_TRAIN -> when (lang) {
+            AppLanguage.GREEK -> "Τελευταίος συρμός"
+            AppLanguage.ALBANIAN -> "Treni i fundit"
+            else -> "Last train"
+        }
+        LEAVE_BY -> when (lang) {
+            AppLanguage.GREEK -> "φύγε έως"
+            AppLanguage.ALBANIAN -> "nisu deri në"
+            else -> "leave by"
+        }
+        SERVICE_OVER -> when (lang) {
+            AppLanguage.GREEK -> "Δεν υπάρχουν άλλα δρομολόγια απόψε"
+            AppLanguage.ALBANIAN -> "Nuk ka më trena sonte"
+            else -> "No more trains tonight"
+        }
+        ENABLE_LOCATION_FOR_NEXT -> when (lang) {
+            AppLanguage.GREEK -> "Ενεργοποίησε την τοποθεσία για τον επόμενο συρμό σου"
+            AppLanguage.ALBANIAN -> "Aktivizo vendndodhjen për trenin tënd të ardhshëm"
+            else -> "Enable location to see your next train"
         }
     }
 }

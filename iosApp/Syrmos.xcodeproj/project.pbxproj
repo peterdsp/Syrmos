@@ -18,6 +18,8 @@
 		28B86D763BF517E19CF4DB5D /* SuburbanProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */; };
 		2FDAB04CAE6E25AD392B1E99 /* iosApp/Core/Schedule/StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */; };
 		3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */; };
+		DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */; };
+		DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */; };
 		3F12F021ECD240BE97B74BB9 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */; };
 		470A39F895004D4CB8BC04D4 /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA99E493B0C4CA48ECE53BD /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift */; };
 		4DFE1212D427449286398220 /* iosApp/Shared/StationMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAE5D2E14B71AFAB3C2F /* iosApp/Shared/StationMapSheet.swift */; };
@@ -33,6 +35,9 @@
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
 		AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */; };
+		DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */; };
+		DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */; };
+		DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */; };
 		AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */; };
 		AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
 		B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */; };
@@ -40,6 +45,13 @@
 		B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */; };
 		BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */; };
 		C5D4C72817CA43BA90F02ADB /* iosApp/Core/Schedule/ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */; };
+		DA7A0001F00D0001F00D0001 /* iosApp/Core/Schedule/DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */; };
+		DA7A0021F00D0021F00D0021 /* iosApp/Core/Schedule/DepartureTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */; };
+		DA7A0120F00D0120F00D0120 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */; };
+		DA7A0121F00D0121F00D0121 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */; };
+		DA7A0122F00D0122F00D0122 /* SyrmosWidget/SyrmosLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0111F00D0111F00D0111 /* SyrmosWidget/SyrmosLiveActivity.swift */; };
+		DA7A0123F00D0123F00D0123 /* SyrmosWidget/SyrmosWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0112F00D0112F00D0112 /* SyrmosWidget/SyrmosWidgetBundle.swift */; };
+		DA7A010BF00D010BF00D010B /* SyrmosWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C5D6E7F8A9B0C1D2E3F40506 /* iosApp/Core/Networking/SyrmosLinesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D6E7F8A9B0C1D2E3F40507 /* iosApp/Core/Networking/SyrmosLinesService.swift */; };
 		D4A0E928208E4D84AD520D51 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */; };
 		D4A0E928208E4D84AD520D52 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */; };
@@ -61,6 +73,13 @@
 			remoteGlobalIDString = 66F1C02D0159EDB3DE71E2EF;
 			remoteInfo = "Syrmos - Athens Rail Times";
 		};
+		DA7A010AF00D010AF00D010A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 34F80E7D1A8AF2790098AF88 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DA7A0100F00D0100F00D0100;
+			remoteInfo = SyrmosWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +92,13 @@
 		2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/StationCoordinates.swift; sourceTree = SOURCE_ROOT; };
 		37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/ThemeManager.swift; sourceTree = SOURCE_ROOT; };
 		395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/ScheduleProjector.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureTracking.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SyrmosTrackingAttributes.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0111F00D0111F00D0111 /* SyrmosWidget/SyrmosLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosLiveActivity.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0112F00D0112F00D0112 /* SyrmosWidget/SyrmosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0113F00D0113F00D0113 /* SyrmosWidget/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SyrmosWidget/Info.plist; sourceTree = SOURCE_ROOT; };
+		DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SyrmosWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		51972231C37146A79B5760E4 /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift; sourceTree = SOURCE_ROOT; };
 		5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosSchedulesStore.swift; sourceTree = SOURCE_ROOT; };
 		551315413AD2438B8C7F5FF0 /* iosApp/Shared/SafariSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Shared/SafariSheet.swift; sourceTree = SOURCE_ROOT; };
@@ -83,9 +109,14 @@
 		836DE84E99C06ABA19E71805 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/CompactTabHeader.swift; sourceTree = SOURCE_ROOT; };
 		87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScheduleProjectorTests.swift; sourceTree = "<group>"; };
+		DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeFeaturesTests.swift; sourceTree = "<group>"; };
+		DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AriadneParserTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
 		AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
 		AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingMeshBackground.swift; sourceTree = SOURCE_ROOT; };
 		AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
 		B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NearbyStationDestinationTests.swift; sourceTree = "<group>"; };
@@ -113,12 +144,33 @@
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		DA7A0108F00D0108F00D0108 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DA7A010BF00D010BF00D010B /* SyrmosWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		13599E823702BCCB5825D984 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				9412470679966D24ED107169 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DA7A0105F00D0105F00D0105 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,6 +181,8 @@
 			isa = PBXGroup;
 			children = (
 				87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */,
+				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
+				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
 				B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */,
 				BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */,
 			);
@@ -139,6 +193,7 @@
 			isa = PBXGroup;
 			children = (
 				71CEE17732FDEEE09CD923DC /* iosApp */,
+				DA7A010CF00D010CF00D010C /* SyrmosWidget */,
 				BB06A92CF039223743BFB2C2 /* Products */,
 				1A5D059E1D0EC95C67466E53 /* Frameworks */,
 				0E05CD2D65F51E3B7C19E908 /* iosAppTests */,
@@ -297,6 +352,8 @@
 			isa = PBXGroup;
 			children = (
 				395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */,
+				DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */,
+				DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */,
 				748CC40BCBDC9D468CD371B8 /* iosApp/Core/Schedule/TransitData.swift */,
 				2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */,
 			);
@@ -355,6 +412,9 @@
 			isa = PBXGroup;
 			children = (
 				AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */,
+				DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */,
+				DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */,
+				DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */,
 				AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */,
 			);
 			name = Onboarding;
@@ -365,8 +425,20 @@
 			children = (
 				D19BB18628D05A667A4BD6B8 /* Syrmos.app */,
 				F43D88E4E6775ADB265D3D56 /* iosAppTests.xctest */,
+				DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DA7A010CF00D010CF00D010C /* SyrmosWidget */ = {
+			isa = PBXGroup;
+			children = (
+				DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */,
+				DA7A0112F00D0112F00D0112 /* SyrmosWidget/SyrmosWidgetBundle.swift */,
+				DA7A0111F00D0111F00D0111 /* SyrmosWidget/SyrmosLiveActivity.swift */,
+				DA7A0113F00D0113F00D0113 /* SyrmosWidget/Info.plist */,
+			);
+			name = SyrmosWidget;
 			sourceTree = "<group>";
 		};
 		D86A94D82859CC3CC2167D28 /* Lines */ = {
@@ -395,15 +467,34 @@
 			buildPhases = (
 				0A42AFD8C41125D573DC1B3C /* Resources */,
 				123D21FB8A24EE726D99E5D7 /* Sources */,
+				DA7A0108F00D0108F00D0108 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DA7A0109F00D0109F00D0109 /* PBXTargetDependency */,
 			);
 			name = "Syrmos - Athens Rail Times";
 			productName = iosApp;
 			productReference = D19BB18628D05A667A4BD6B8 /* Syrmos.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DA7A0100F00D0100F00D0100 /* SyrmosWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DA7A0101F00D0101F00D0101 /* Build configuration list for PBXNativeTarget "SyrmosWidgetExtension" */;
+			buildPhases = (
+				DA7A0104F00D0104F00D0104 /* Sources */,
+				DA7A0105F00D0105F00D0105 /* Frameworks */,
+				DA7A0106F00D0106F00D0106 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SyrmosWidgetExtension;
+			productName = SyrmosWidgetExtension;
+			productReference = DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		82D69F8AD066BB340078619B /* iosAppTests */ = {
 			isa = PBXNativeTarget;
@@ -447,6 +538,7 @@
 			projectRoot = "";
 			targets = (
 				66F1C02D0159EDB3DE71E2EF /* Syrmos - Athens Rail Times */,
+				DA7A0100F00D0100F00D0100 /* SyrmosWidgetExtension */,
 				82D69F8AD066BB340078619B /* iosAppTests */,
 			);
 		};
@@ -464,6 +556,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		9F9AD6CF1FD7B758EE5C2535 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DA7A0106F00D0106F00D0106 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -488,10 +587,16 @@
 				4DFE1212D427449286398220 /* iosApp/Shared/StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */,
 				AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */,
+				DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */,
+				DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */,
+				DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */,
 				AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */,
 				03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */,
 				8218D06AFB1A4111BBE6A6BA /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift in Sources */,
 				C5D4C72817CA43BA90F02ADB /* iosApp/Core/Schedule/ScheduleProjector.swift in Sources */,
+				DA7A0001F00D0001F00D0001 /* iosApp/Core/Schedule/DataFreshness.swift in Sources */,
+				DA7A0021F00D0021F00D0021 /* iosApp/Core/Schedule/DepartureTracking.swift in Sources */,
+				DA7A0120F00D0120F00D0120 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */,
 				3F12F021ECD240BE97B74BB9 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */,
 				002709A0C1454019B429939D /* iosApp/Core/Networking/SyrmosSchedulesService.swift in Sources */,
 				E1A2B3C4D5E60718293A4B5C /* iosApp/Core/Networking/SyrmosDeparturesService.swift in Sources */,
@@ -517,11 +622,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA7A0104F00D0104F00D0104 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA7A0121F00D0121F00D0121 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */,
+				DA7A0122F00D0122F00D0122 /* SyrmosWidget/SyrmosLiveActivity.swift in Sources */,
+				DA7A0123F00D0123F00D0123 /* SyrmosWidget/SyrmosWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B5888FDE0AB4B1E7DC7B7680 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */,
+				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
+				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,
 				ECAA824BE3E518277AB18AB6 /* NearbyStationDestinationTests.swift in Sources */,
 				28B86D763BF517E19CF4DB5D /* SuburbanProjectionTests.swift in Sources */,
 			);
@@ -530,6 +647,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		DA7A0109F00D0109F00D0109 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DA7A0100F00D0100F00D0100 /* SyrmosWidgetExtension */;
+			targetProxy = DA7A010AF00D010AF00D010A /* PBXContainerItemProxy */;
+		};
 		F29B43489D4E716840D8D613 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "Syrmos - Athens Rail Times";
@@ -743,6 +865,62 @@
 			};
 			name = Release;
 		};
+		DA7A0102F00D0102F00D0102 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 29;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SyrmosWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Syrmos;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DA7A0103F00D0103F00D0103 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 29;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SyrmosWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Syrmos;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -769,6 +947,15 @@
 			buildConfigurations = (
 				91D7D353F320A7C5B0F3FDAC /* Debug */,
 				BFF757E8F0FFB48C82662AB5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DA7A0101F00D0101F00D0101 /* Build configuration list for PBXNativeTarget "SyrmosWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA7A0102F00D0102F00D0102 /* Debug */,
+				DA7A0103F00D0103F00D0103 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

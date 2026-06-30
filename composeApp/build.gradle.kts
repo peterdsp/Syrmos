@@ -87,6 +87,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    lint {
+        // composeApp configures its android block directly rather than through
+        // SyrmosKmpLibraryPlugin, so it doesn't inherit that plugin's lint
+        // disables. Mirror them here: these detectors crash with
+        // IncompatibleClassChangeError under the current Kotlin/AGP combo
+        // (NonNullableMutableLiveDataDetector blew up on PlatformModule.kt and
+        // failed `./gradlew check`). Re-enable once the AGP fix ships.
+        disable += setOf(
+            "NullSafeMutableLiveData",
+            "RememberInComposition",
+            "FrequentlyChangingValue",
+            "AutoboxingStateCreation",
+        )
+    }
 }
 
 tasks.register<Sync>("stageWebRelease") {
