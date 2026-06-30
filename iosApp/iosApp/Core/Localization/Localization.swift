@@ -95,6 +95,15 @@ enum LocalizedKey {
     case onboardContinue
     case onboardGetStarted
     case onboardSkip
+    case nextTrain
+    case to
+    case live
+    case runningOffline
+    case predictedFromSchedule
+    case lastTrain
+    case leaveBy
+    case serviceOver
+    case enableLocationForNext
 
     func text(for lang: AppLanguage) -> String {
         switch (self, lang) {
@@ -206,6 +215,33 @@ enum LocalizedKey {
         case (.onboardSkip, .english): return "Skip"
         case (.onboardSkip, .greek): return "Παράλειψη"
         case (.onboardSkip, .albanian): return "Anashkalo"
+        case (.nextTrain, .english): return "Next train"
+        case (.nextTrain, .greek): return "Επόμενος συρμός"
+        case (.nextTrain, .albanian): return "Treni i ardhshëm"
+        case (.to, .english): return "to"
+        case (.to, .greek): return "προς"
+        case (.to, .albanian): return "drejt"
+        case (.live, .english): return "Live"
+        case (.live, .greek): return "Ζωντανά"
+        case (.live, .albanian): return "Drejtpërdrejt"
+        case (.runningOffline, .english): return "Running offline"
+        case (.runningOffline, .greek): return "Εκτός σύνδεσης"
+        case (.runningOffline, .albanian): return "Pa internet"
+        case (.predictedFromSchedule, .english): return "Predicted from schedule"
+        case (.predictedFromSchedule, .greek): return "Πρόβλεψη από το πρόγραμμα"
+        case (.predictedFromSchedule, .albanian): return "Parashikuar nga orari"
+        case (.lastTrain, .english): return "Last train"
+        case (.lastTrain, .greek): return "Τελευταίος συρμός"
+        case (.lastTrain, .albanian): return "Treni i fundit"
+        case (.leaveBy, .english): return "leave by"
+        case (.leaveBy, .greek): return "φύγε έως"
+        case (.leaveBy, .albanian): return "nisu deri në"
+        case (.serviceOver, .english): return "No more trains tonight"
+        case (.serviceOver, .greek): return "Δεν υπάρχουν άλλα δρομολόγια απόψε"
+        case (.serviceOver, .albanian): return "Nuk ka më trena sonte"
+        case (.enableLocationForNext, .english): return "Enable location to see your next train"
+        case (.enableLocationForNext, .greek): return "Ενεργοποίησε την τοποθεσία για τον επόμενο συρμό σου"
+        case (.enableLocationForNext, .albanian): return "Aktivizo vendndodhjen për trenin tënd të ardhshëm"
         }
     }
 }

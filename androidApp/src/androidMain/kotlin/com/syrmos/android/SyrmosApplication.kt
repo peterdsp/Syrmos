@@ -18,5 +18,8 @@ class SyrmosApplication : Application() {
             androidContext(this@SyrmosApplication)
             modules(androidPlatformModule + appModules)
         }
+        // Mirror the iOS Live Activity on Android: an ongoing count-down
+        // notification driven by the shared DepartureTracking primitive.
+        DepartureTrackingNotifier(this).start()
     }
 }

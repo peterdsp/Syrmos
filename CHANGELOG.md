@@ -6,7 +6,32 @@ Current shipping: **iOS 1.0.5**, **Android 1.0.4**, **Web** (rolling).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
-## Unreleased (1.0.x hotfix window, planned)
+Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## Unreleased (1.0.x hotfix window)
+
+Companion surfacing, implemented on iOS, Android and Web (UI on top of data the app already has):
+
+- Answer-first home: the lead element is now one actionable line ("Next M2 to Syntagma, 4 min") with the timetable grid demoted below it. Compose (`feature/home`) and SwiftUI (`HomeView`) both compute the soonest departure across the nearest station's lines via the existing projector.
+- Offline-alive indicator: a small pill surfaces whether arrivals are live or "Running offline · predicted from schedule". Driven by a shared freshness rule (`core/common` `FreshnessEvaluator`, mirrored in iOS `DataFreshness`); live network success paths mark the data fresh, and it ages back to predicted after the window.
+- Single-line "last train home" teaser: inverts tonight's last departure into "Last M2 · leave by 00:14" for a single line, no transfers. New `GetLastTrainUseCase` (Kotlin) and `ScheduleProjector.lastTrainTonight` (iOS), ahead of the multi-leg version in 1.2.
+
+Ariadne, the offline transit assistant (a constrained, tool-only intent router, implemented on iOS, Android and Web; brought forward from the 1.5 roadmap slot in constrained form):
+
+- "Ask Ariadne" from the Home screen opens a chat that parses natural language fully offline and dispatches to the deterministic use cases the app already ships (departures, last train, trip planning, line info, alerts, find station). It never generates a transit fact; it picks an approved action and the projector/planner answers.
+- Trilingual by design (EN/EL/SQ) via a rule parser, so no supported language degrades. Shared brain in `core/domain/assistant` (`AthensTransitParser`, `AssistantIntent`), mirrored in Swift under `iosApp/.../Features/Assistant`. Scope is fenced to Syrmos and Athens public transport; weather is accepted only as a routing constraint, everything else is declined.
+- This also wired `PlanJourneyUseCase` (Dijkstra routing that already existed but was never in the DI graph) into the Compose app; iOS uses a compact 0/1-transfer planner over the bundled network.
+
+Track this departure (Tier 2 primitive, shared `core/common` `TrackedDeparture` / `DepartureTracking`):
+
+- "Track" on the Home hero pins a live countdown card that ticks offline on all three platforms.
+- iOS: full Live Activity. ActivityKit integration in `DepartureTracking.swift` (`SyrmosTrackingAttributes` + start/update/end), `NSSupportsLiveActivities` set, and a real `SyrmosWidgetExtension` target (`iosApp/SyrmosWidget/`) that renders the Lock Screen + Dynamic Island. The extension is built and embedded into the app by the normal scheme build.
+- Android: the parallel surfacing is an ongoing count-down notification (`DepartureTrackingNotifier`), driven by the same shared `DepartureTracking` primitive, with a live chronometer and a `POST_NOTIFICATIONS` request on Android 13+.
+- Web: the in-app pinned countdown card is the surface; there is no OS-level equivalent.
+
+Tooling:
+
+- Fixed `./gradlew check`: `composeApp` configured its `android {}` block directly and never inherited `SyrmosKmpLibraryPlugin`'s lint disables, so Google's `NonNullableMutableLiveDataDetector` crashed lint on `PlatformModule.kt`. Mirrored the lint-disable block into `composeApp`.
 
 Quality:
 
@@ -23,12 +48,16 @@ Infrastructure:
 Per [Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap):
 
 - iOS Home Screen widget (WidgetKit, next 3 departures at a favorited station)
-- Wear OS / watchOS companion (independent app, nearest station + complication)
+- Lock Screen Live Activity + Dynamic Island (next train, transfer countdown, destination progress), sharing the widget's departure-timeline pipeline
+- Wear OS / watchOS companion (independent app, glanceable next departure + complication)
+- Platform-direction slice ("trains to X depart from the left platform")
 - Accessibility improvements
 
 ## 1.2 (target Q1 2027)
 
 - Trip planner: point-to-point routing using the embedded line topology
+- Live journey confidence score ("you'll make it" / "tight transfer" / "take the next one"), the face of the planner
+- Multi-leg "last train home": must-leave-by time across transfers
 
 ## 1.3 (target Q2 2027)
 

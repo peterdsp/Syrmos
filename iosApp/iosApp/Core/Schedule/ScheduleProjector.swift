@@ -233,6 +233,25 @@ enum ScheduleProjector {
         return nil
     }
 
+    /// Tonight's final departure for the given lines at this station.
+    ///
+    /// Inverts `nextDepartures`: instead of "the next few from now", it returns
+    /// the latest slot still running tonight, so HomeView can say "last train
+    /// on this line, leave by HH:MM". Single line, no transfers, so no routing.
+    /// Returns nil when service is over for the night. `maxLookaheadMinutes`
+    /// bounds the "tonight" window so the M3_AIR look-ahead row (which can scan
+    /// up to a week out) never masquerades as tonight's last airport train.
+    static func lastTrainTonight(
+        for stationId: String,
+        lineIds: [String],
+        maxLookaheadMinutes: Int = 12 * 60
+    ) -> Departure? {
+        let all = nextDepartures(for: stationId, lineIds: lineIds, limit: 400)
+        return all
+            .filter { $0.minutesAway >= 0 && $0.minutesAway <= maxLookaheadMinutes }
+            .max { $0.minutesAway < $1.minutesAway }
+    }
+
     // MARK: - Airport-focused full-day projection
     //
     // The airport tab needs the *complete* day's airport schedule from

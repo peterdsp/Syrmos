@@ -1,6 +1,8 @@
 package com.syrmos.android
 
 import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +23,13 @@ class MainActivity : ComponentActivity() {
         pending = null
     }
 
+    // Lets the departure-tracking ongoing notification show on Android 13+.
+    // Asked once on launch; declining just means no Lock Screen countdown, the
+    // in-app card still works.
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Drop the launch theme (full-screen StartScreen image set on
         // the activity in AndroidManifest.xml) BEFORE super so the
@@ -30,6 +39,13 @@ class MainActivity : ComponentActivity() {
         setTheme(R.style.Theme_Syrmos)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         // Permission is requested from the onboarding flow now, not on launch.
         setLocationPermissionRequester {
