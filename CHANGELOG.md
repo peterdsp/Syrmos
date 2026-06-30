@@ -18,7 +18,10 @@ Companion surfacing, implemented on iOS, Android and Web (UI on top of data the 
 
 Ariadne, the offline transit assistant (a constrained, tool-only intent router, implemented on iOS, Android and Web; brought forward from the 1.5 roadmap slot in constrained form):
 
-- "Ask Ariadne" from the Home screen opens a chat that parses natural language fully offline and dispatches to the deterministic use cases the app already ships (departures, last train, trip planning, line info, alerts, find station). It never generates a transit fact; it picks an approved action and the projector/planner answers.
+- "Ask Ariadne" from the Home screen opens a chat that parses natural language fully offline and dispatches to the deterministic use cases the app already ships (departures, last train, trip planning, line info, ticket prices, service alerts, find station, favorite a station). It never generates a transit fact; it picks an approved action and the projector/planner answers.
+- Day-aware departures: "M3 from Syntagma this weekend / tomorrow / Saturday" projects that whole service day from 00:00 (`ComputeDeparturesFromBandsUseCase.invokeForDay`, the projector dayOffset path on iOS), not just today.
+- Fares: surfaces the relevant ticket products with prices (standard single vs the airport ticket). Favorites: a real `FavoritesRepository` (Kotlin, SQLDelight) + UserDefaults store on iOS persist the toggle.
+- iOS trip planning now runs a full Dijkstra (`JourneyPlanner.swift`, with transfer edges between co-located interchange ids) so iOS matches the Android/Web `PlanJourneyUseCase` for any number of transfers.
 - Trilingual by design (EN/EL/SQ) via a rule parser, so no supported language degrades. Shared brain in `core/domain/assistant` (`AthensTransitParser`, `AssistantIntent`), mirrored in Swift under `iosApp/.../Features/Assistant`. Scope is fenced to Syrmos and Athens public transport; weather is accepted only as a routing constraint, everything else is declined.
 - This also wired `PlanJourneyUseCase` (Dijkstra routing that already existed but was never in the DI graph) into the Compose app; iOS uses a compact 0/1-transfer planner over the bundled network.
 

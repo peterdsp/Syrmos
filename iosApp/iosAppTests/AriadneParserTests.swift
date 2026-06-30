@@ -77,6 +77,35 @@ final class AriadneParserTests: XCTestCase {
         guard case .help = parser.parse("what can you do?") else { return XCTFail("expected help") }
     }
 
+    func test_fareAirport() {
+        guard case let .explainFare(airport) = parser.parse("how much is a ticket to the Airport") else {
+            return XCTFail("expected fare")
+        }
+        XCTAssertTrue(airport)
+    }
+
+    func test_fareStandard() {
+        guard case let .explainFare(airport) = parser.parse("what's the ticket price") else {
+            return XCTFail("expected fare")
+        }
+        XCTAssertFalse(airport)
+    }
+
+    func test_favoriteStation() {
+        guard case let .toggleFavorite(stationId) = parser.parse("favorite Syntagma") else {
+            return XCTFail("expected favorite")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_favoriteWithoutStationAsksStation() {
+        guard case let .needsClarification(base, missing) = parser.parse("save this station") else {
+            return XCTFail("expected clarification")
+        }
+        XCTAssertEqual(missing, .station)
+        guard case .toggleFavorite = base else { return XCTFail("expected toggleFavorite base") }
+    }
+
     func test_outOfScopeWeatherElsewhere() {
         guard case .outOfScope = parser.parse("what's the weather in London") else {
             return XCTFail("expected out of scope")
