@@ -24,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,16 +39,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.DataFreshness
+import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.TrackedDeparture
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.designsystem.theme.MetroBlue
 import com.syrmos.core.designsystem.theme.SuburbanPurple
 import com.syrmos.core.designsystem.theme.TramOrange
+import com.syrmos.core.domain.usecase.GetLastTrainUseCase
+import com.syrmos.core.domain.usecase.UpcomingDeparture
+import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
+import org.koin.compose.koinInject
 
 @Composable
 fun HomeScreen(
@@ -58,6 +68,15 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
+    var showAriadne by remember { mutableStateOf(false) }
+    val tracked by DepartureTracking.active.collectAsState()
+    var nowEpoch by remember { mutableStateOf(Clock.System.now().epochSeconds) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            nowEpoch = Clock.System.now().epochSeconds
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -70,6 +89,69 @@ fun HomeScreen(
         contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        // Answer-first: the lead element is one actionable line ("Next M2 to
+        // Syntagma, 4 min"). Everything else (timetable tiles, alerts, lines)
+        // is demoted below it so the screen reads like a companion, not a
+        // schedule. The offline-alive pill rides in the hero's eyebrow row so
+        // the user always knows whether the countdown is live or predicted.
+        val activeTrack = tracked
+        if (activeTrack != null) {
+            item {
+                TrackingCard(
+                    tracked = activeTrack,
+                    nowEpoch = nowEpoch,
+                    lang = lang,
+                    onStop = { DepartureTracking.stop() },
+                )
+            }
+        }
+
+        item {
+            FreshnessPill(freshness = uiState.freshness, lang = lang)
+        }
+
+        item {
+            AnswerHero(
+                next = uiState.nextDeparture,
+                line = uiState.nextDepartureLine,
+                hasLocation = uiState.nearestStations.isNotEmpty(),
+                isTracked = activeTrack != null,
+                lang = lang,
+                onStationClick = {
+                    uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
+                },
+                onTrack = {
+                    val next = uiState.nextDeparture
+                    val station = uiState.nearestStations.firstOrNull()
+                    if (next != null && station != null) {
+                        DepartureTracking.track(
+                            TrackedDeparture(
+                                lineId = uiState.nextDepartureLine?.id ?: next.lineId,
+                                stationId = station.stationId,
+                                stationName = station.stationName,
+                                destination = uiState.nextDepartureLine?.let {
+                                    destinationName(it, next.direction, lang)
+                                } ?: "",
+                                scheduledTime = next.time,
+                                targetEpochSeconds = nowEpoch + next.minutesAway * 60L,
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+
+        val lastTrain = uiState.lastTrain
+        if (lastTrain != null) {
+            item {
+                LastTrainTeaser(
+                    lastTrain = lastTrain,
+                    line = uiState.lastTrainLine,
+                    lang = lang,
+                )
+            }
+        }
+
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
@@ -154,7 +236,324 @@ fun HomeScreen(
             .align(Alignment.TopCenter)
             .zIndex(1f),
     )
+
+    // Ask Ariadne launcher. Sits above the tab bar; opens the offline
+    // assistant overlay. Hidden while the overlay is open.
+    if (!showAriadne) {
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 150.dp)
+                .zIndex(2f)
+                .clip(RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable { showAriadne = true }
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(text = "🧭", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = askAriadneLabel(lang),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
     }
+
+    if (showAriadne) {
+        val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
+        Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
+            com.syrmos.feature.home.assistant.AssistantScreen(
+                viewModel = assistantViewModel,
+                onClose = { showAriadne = false },
+                onOpenStation = { showAriadne = false; onStationClick(it) },
+                onOpenLine = { showAriadne = false; onLineClick(it) },
+            )
+        }
+    }
+    }
+}
+
+private fun askAriadneLabel(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Ρώτα την Αριάδνη"
+    AppLanguage.ALBANIAN -> "Pyet Ariadne"
+    else -> "Ask Ariadne"
+}
+
+// MARK: Answer-first hero
+
+@Composable
+private fun AnswerHero(
+    next: UpcomingDeparture?,
+    line: Line?,
+    hasLocation: Boolean,
+    isTracked: Boolean,
+    lang: AppLanguage,
+    onStationClick: () -> Unit,
+    onTrack: () -> Unit,
+) {
+    val accent = line?.color?.toComposeColor() ?: MetroBlue
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (next != null) Modifier.clickable(onClick = onStationClick) else Modifier),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = L.NEXT_TRAIN.text(lang).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (next != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LineBadge(line = line, fallbackId = next.lineId, accent = accent)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${L.TO.text(lang)} ${destinationName(line, next.direction, lang)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = next.time,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = formatCountdown(next.minutesAway, lang),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = accent,
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            if (isTracked) MaterialTheme.colorScheme.surfaceVariant else accent.copy(alpha = 0.14f),
+                        )
+                        .clickable(enabled = !isTracked, onClick = onTrack)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(text = if (isTracked) "📍" else "🔔", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = if (isTracked) trackingOnLabel(lang) else trackLabel(lang),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isTracked) MaterialTheme.colorScheme.onSurfaceVariant else accent,
+                    )
+                }
+            } else {
+                Text(
+                    text = if (!hasLocation) {
+                        L.ENABLE_LOCATION_FOR_NEXT.text(lang)
+                    } else {
+                        L.SERVICE_OVER.text(lang)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
+    val label = line?.id ?: fallbackId
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(accent)
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+        )
+    }
+}
+
+@Composable
+private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
+    val live = freshness == DataFreshness.LIVE
+    val dot = if (live) Color(0xFF2E7D32) else Color(0xFFB26A00)
+    val bg = if (live) Color(0x1A2E7D32) else Color(0x1AB26A00)
+    val label = if (live) {
+        L.LIVE.text(lang)
+    } else {
+        "${L.RUNNING_OFFLINE.text(lang)} · ${L.PREDICTED_FROM_SCHEDULE.text(lang)}"
+    }
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(bg)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .width(8.dp)
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(dot),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun LastTrainTeaser(
+    lastTrain: GetLastTrainUseCase.LastTrain,
+    line: Line?,
+    lang: AppLanguage,
+) {
+    val lineLabel = line?.id ?: lastTrain.lineId
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text = "🌙", style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = "${L.LAST_TRAIN.text(lang)} $lineLabel · ${L.LEAVE_BY.text(lang)} ${lastTrain.time}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+private fun destinationName(line: Line?, direction: Direction, lang: AppLanguage): String {
+    line ?: return ""
+    return when (direction) {
+        Direction.OUTBOUND -> line.terminalB
+        Direction.INBOUND -> line.terminalA
+    }
+}
+
+// MARK: Track-this-departure (Tier 2 in-app surface)
+
+@Composable
+private fun TrackingCard(
+    tracked: TrackedDeparture,
+    nowEpoch: Long,
+    lang: AppLanguage,
+    onStop: () -> Unit,
+) {
+    val remaining = tracked.minutesRemaining(nowEpoch)
+    val due = tracked.isDue(nowEpoch)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MetroBlue.copy(alpha = 0.12f)),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = trackingHeader(lang).uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MetroBlue,
+                )
+                Text(
+                    text = "${tracked.lineId} · ${tracked.stationName}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (tracked.destination.isNotBlank()) {
+                    Text(
+                        text = "${L.TO.text(lang)} ${tracked.destination} · ${tracked.scheduledTime}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = if (due) dueLabel(lang) else "$remaining min",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MetroBlue,
+                )
+                Text(
+                    text = stopLabel(lang),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.clickable(onClick = onStop),
+                )
+            }
+        }
+    }
+}
+
+private fun trackLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Παρακολούθηση"; AppLanguage.ALBANIAN -> "Ndiq"; else -> "Track"
+}
+private fun trackingOnLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Παρακολουθείται"; AppLanguage.ALBANIAN -> "Po ndiqet"; else -> "Tracking"
+}
+private fun trackingHeader(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Παρακολούθηση συρμού"; AppLanguage.ALBANIAN -> "Po ndiqet treni"; else -> "Tracking your train"
+}
+private fun stopLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Διακοπή"; AppLanguage.ALBANIAN -> "Ndalo"; else -> "Stop"
+}
+private fun dueLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Τώρα"; AppLanguage.ALBANIAN -> "Tani"; else -> "Due"
+}
+
+/** Mirrors iOS Departure.minutesAwayDisplay: "Now", "5 min", "3h 21min". */
+private fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
+    if (minutesAway <= 1) {
+        return when (lang) {
+            AppLanguage.GREEK -> "Τώρα"
+            AppLanguage.ALBANIAN -> "Tani"
+            else -> "Now"
+        }
+    }
+    if (minutesAway < 60) return "$minutesAway min"
+    val h = minutesAway / 60
+    val m = minutesAway % 60
+    return if (m == 0) "${h}h" else "${h}h ${m}min"
 }
 
 @Composable
