@@ -23,7 +23,14 @@ Ariadne, the offline transit assistant (a constrained, tool-only intent router, 
 - Fares: surfaces the relevant ticket products with prices (standard single vs the airport ticket). Favorites: a real `FavoritesRepository` (Kotlin, SQLDelight) + UserDefaults store on iOS persist the toggle.
 - iOS trip planning now runs a full Dijkstra (`JourneyPlanner.swift`, with transfer edges between co-located interchange ids) so iOS matches the Android/Web `PlanJourneyUseCase` for any number of transfers.
 - Trilingual by design (EN/EL/SQ) via a rule parser, so no supported language degrades. Shared brain in `core/domain/assistant` (`AthensTransitParser`, `AssistantIntent`), mirrored in Swift under `iosApp/.../Features/Assistant`. Scope is fenced to Syrmos and Athens public transport; weather is accepted only as a routing constraint, everything else is declined.
-- This also wired `PlanJourneyUseCase` (Dijkstra routing that already existed but was never in the DI graph) into the Compose app; iOS uses a compact 0/1-transfer planner over the bundled network.
+- This also wired `PlanJourneyUseCase` (Dijkstra routing that already existed but was never in the DI graph) into the Compose app.
+
+Weather and on-device intelligence:
+
+- Weather card on Home (iOS + Android + Web): current conditions from Open-Meteo (free, no key, CORS-friendly), styled as an immersive condition-tinted gradient with the temperature, today's high/low, a next-six-hours forecast strip, and feels-like / humidity / wind. `WeatherService`/`WeatherRepository` in KMP, `WeatherStore` on iOS; central-Athens default so Web and no-location launches still show something. (Visual language inspired by the shared weather-app design; the Figma community file couldn't be extracted over MCP due to the plan's rate limit.)
+- Weather-aware routing: Ariadne's rainy-day trip answers now read the cached weather snapshot and the route's exposure (metro underground/sheltered, tram open-air) via `StationComfort`, and give real advice instead of a generic disclaimer. Degrades honestly with no cached weather.
+- Journey-specific fares: `ExplainFare` carries the trip endpoints, so an airport fare is derived from an actual airport-station endpoint, not just the keyword.
+- Ariadne on-device LLM front-end: on Apple Intelligence devices (iOS 26+), `AriadneBrain` uses Apple Foundation Models to rewrite fuzzy input before the deterministic parser classifies it; the model never picks intents or invents facts, and older devices/Simulator fall straight through to the rule parser. KMP has the matching `AssistantQueryNormalizer` seam (no-op default) for a future Android Gemini Nano backer.
 
 Track this departure (Tier 2 primitive, shared `core/common` `TrackedDeparture` / `DepartureTracking`):
 

@@ -12,6 +12,7 @@ import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
+import com.syrmos.core.data.sync.WeatherRepository
 import org.koin.dsl.module
 
 val dataModule = module {
@@ -22,6 +23,7 @@ val dataModule = module {
     single { FaresRepository(schedulesService = get(), resourceReader = get()) }
     single { VisualOverridesRepository(service = get(), resourceReader = get()) }
     single { AnnouncementsRepository(service = get(), resourceReader = get()) }
+    single { WeatherRepository(weatherService = get()) }
     single { LineRepositoryImpl(database = get(), resourceReader = get()) }
     single { StationRepositoryImpl(database = get(), resourceReader = get()) }
     single { ScheduleRepositoryImpl(database = get()) }

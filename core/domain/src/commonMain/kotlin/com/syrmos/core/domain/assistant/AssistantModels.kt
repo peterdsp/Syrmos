@@ -42,8 +42,16 @@ sealed interface AssistantIntent {
     /** Line overview (terminals, span, stations). */
     data class ExplainLine(val lineId: String) : AssistantIntent
 
-    /** Ticket prices. [airport] surfaces the airport fare specifically. */
-    data class ExplainFare(val airport: Boolean = false) : AssistantIntent
+    /**
+     * Ticket prices. [airport] is the keyword hint; [fromStationId]/[toStationId]
+     * let the resolver derive an airport fare from the actual journey (either
+     * endpoint being an airport station) rather than the word alone.
+     */
+    data class ExplainFare(
+        val airport: Boolean = false,
+        val fromStationId: String? = null,
+        val toStationId: String? = null,
+    ) : AssistantIntent
 
     /** Add/remove a station from favorites. */
     data class ToggleFavorite(val stationId: String?) : AssistantIntent
