@@ -21,6 +21,7 @@ val featureModule = module {
             getLinesUseCase = get(),
             announcementsRepository = get(),
             liveTrackerService = get(),
+            weatherRepository = get(),
         )
     }
     factory {
@@ -35,6 +36,7 @@ val featureModule = module {
             announcementsRepository = get(),
             faresRepository = get(),
             favoritesRepository = get(),
+            weatherRepository = get(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
