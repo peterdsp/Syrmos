@@ -6,8 +6,13 @@ import com.syrmos.core.data.repository.FavoritesRepository
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.FaresRepository
+import com.syrmos.core.data.sync.WeatherRepository
+import com.syrmos.core.domain.assistant.Exposure
+import com.syrmos.core.domain.assistant.StationComfort
 import com.syrmos.core.domain.assistant.AssistantIntent
+import com.syrmos.core.domain.assistant.AssistantQueryNormalizer
 import com.syrmos.core.domain.assistant.AssistantVocabularyBuilder
+import com.syrmos.core.domain.assistant.NoOpQueryNormalizer
 import com.syrmos.core.domain.assistant.AthensTransitParser
 import com.syrmos.core.domain.assistant.DayContext
 import com.syrmos.core.domain.assistant.DayContextResolver
@@ -72,6 +77,12 @@ class AssistantViewModel(
     private val announcementsRepository: AnnouncementsRepository,
     private val faresRepository: FaresRepository,
     private val favoritesRepository: FavoritesRepository,
+    private val weatherRepository: WeatherRepository,
+    /**
+     * Optional on-device LLM front-end. No-op by default (rule parser only);
+     * an Android build can inject a Gemini Nano-backed normalizer here.
+     */
+    private val queryNormalizer: AssistantQueryNormalizer = NoOpQueryNormalizer,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(AssistantUiState())
@@ -101,7 +112,10 @@ class AssistantViewModel(
             it.copy(messages = it.messages + userMessage(text), thinking = true)
         }
         scope.launch {
-            val reply = resolve(p.parse(text))
+            // On-device LLM (when supplied) rewrites fuzzy input; the
+            // deterministic parser still classifies and validates it.
+            val cleaned = queryNormalizer.normalize(text) ?: text
+            val reply = resolve(p.parse(cleaned))
             _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
         }
     }
@@ -229,16 +243,45 @@ class AssistantViewModel(
         } else {
             t("${result.transferCount} change(s)", "${result.transferCount} αλλαγή/ές", "${result.transferCount} ndërrim(e)")
         }
-        val exposure = if (intent.lowExposure) {
-            "\n" + t("I can't check live weather offline, but this is the fewest-transfer route.",
-                "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά αυτή έχει τις λιγότερες αλλαγές.",
-                "Nuk e kontrolloj dot motin pa internet, por kjo ka më pak ndërrime.")
-        } else ""
+        val exposure = if (intent.lowExposure) "\n" + weatherAdvice(result) else ""
         return botMessage(
             t("$lines. About ${result.totalMinutes} min, $transfers.",
                 "$lines. Περίπου ${result.totalMinutes} λεπτά, $transfers.",
                 "$lines. Rreth ${result.totalMinutes} min, $transfers.") + exposure,
         )
+    }
+
+    /**
+     * Real weather-aware advice for a rainy-day route: reads the cached weather
+     * snapshot and the route's exposure (metro is underground/sheltered, tram
+     * is open-air). Degrades honestly when there's no cached weather.
+     */
+    private fun weatherAdvice(result: com.syrmos.core.model.planner.JourneyResult): String {
+        val types = result.segments.filter { !it.isTransfer }
+            .mapNotNull { seg -> lines.firstOrNull { it.id == normalizeLine(seg.lineId) }?.type }
+        val exposure = StationComfort.forRoute(types)
+        val shelter = when (exposure) {
+            Exposure.SHELTERED -> t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
+                "kryesisht nëntokë dhe e mbrojtur")
+            Exposure.MIXED -> t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
+            Exposure.EXPOSED -> t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
+                "në ajër të hapur (tram/sipërfaqe)")
+        }
+        val weather = weatherRepository.cached
+        return when {
+            weather != null && weather.current.condition.isWet ->
+                t("It's wet in ${weather.placeName} right now, and this route is $shelter.",
+                    "Έχει βροχή στην ${weather.placeName} τώρα, και η διαδρομή είναι $shelter.",
+                    "Ka shi në ${weather.placeName} tani, dhe kjo rrugë është $shelter.")
+            weather != null ->
+                t("It's dry in ${weather.placeName} right now; this route is $shelter.",
+                    "Δεν βρέχει στην ${weather.placeName} τώρα· η διαδρομή είναι $shelter.",
+                    "S'ka shi në ${weather.placeName} tani; kjo rrugë është $shelter.")
+            else ->
+                t("I can't check live weather offline, but this route is $shelter.",
+                    "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι $shelter.",
+                    "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është $shelter.")
+        }
     }
 
     private suspend fun resolveFindStation(intent: AssistantIntent.FindStation): AssistantMessage {
@@ -281,7 +324,11 @@ class AssistantViewModel(
                 "Δεν έχω διαθέσιμες τιμές εισιτηρίων εκτός σύνδεσης τώρα.",
                 "Nuk kam çmime biletash të disponueshme pa internet tani."))
         }
-        val picks = if (intent.airport) {
+        // Journey-derived: an airport fare if the word was used OR either
+        // endpoint is actually an airport station.
+        val airport = intent.airport ||
+            isAirportStation(intent.fromStationId) || isAirportStation(intent.toStationId)
+        val picks = if (airport) {
             products.filter { it.tags.any { tag -> tag.contains("airport") } }
                 .sortedBy { it.fullPriceEur ?: Double.MAX_VALUE }.take(2)
         } else {
@@ -311,6 +358,12 @@ class AssistantViewModel(
             action = station?.let { AssistantAction.OpenStation(it.id) },
             actionLabel = station?.let { t("Open", "Άνοιγμα", "Hap") },
         )
+    }
+
+    private fun isAirportStation(stationId: String?): Boolean {
+        val st = stations.firstOrNull { it.id == stationId } ?: return false
+        val name = (st.name + " " + st.nameEl).lowercase()
+        return "airport" in name || "αεροδρ" in name
     }
 
     private fun fareTitle(product: com.syrmos.core.network.SyrmosSchedulesService.FareProduct): String =

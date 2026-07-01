@@ -55,7 +55,12 @@ class AthensTransitParser(
         //     fare question, not a trip. The airport flag surfaces the airport
         //     ticket specifically.
         if (containsAny(text, FARE_WORDS)) {
-            return AssistantIntent.ExplainFare(airport = containsAny(text, AIRPORT_WORDS))
+            val (from, to) = resolveTripEndpoints(text, mentionedStations)
+            return AssistantIntent.ExplainFare(
+                airport = containsAny(text, AIRPORT_WORDS),
+                fromStationId = from,
+                toStationId = to,
+            )
         }
 
         // 0b. Favorites. Needs a station to act on.

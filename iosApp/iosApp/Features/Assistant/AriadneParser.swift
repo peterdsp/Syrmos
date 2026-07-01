@@ -15,7 +15,7 @@ indirect enum AssistantIntent: Equatable {
     case findStation(query: String)
     case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool)
     case explainLine(lineId: String)
-    case explainFare(airport: Bool)
+    case explainFare(airport: Bool, fromStationId: String?, toStationId: String?)
     case toggleFavorite(stationId: String?)
     case showAlerts(lineId: String?)
     case openMap(stationId: String?)
@@ -92,7 +92,8 @@ struct AthensTransitParser {
 
         // 0a. Fares (before planning, so "how much to the airport" is a fare).
         if containsAny(text, Self.fareWords) {
-            return .explainFare(airport: containsAny(text, Self.airportWords))
+            let (from, to) = resolveTripEndpoints(text, stations)
+            return .explainFare(airport: containsAny(text, Self.airportWords), fromStationId: from, toStationId: to)
         }
 
         // 0b. Favorites.

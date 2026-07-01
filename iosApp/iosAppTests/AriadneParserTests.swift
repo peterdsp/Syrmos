@@ -78,14 +78,15 @@ final class AriadneParserTests: XCTestCase {
     }
 
     func test_fareAirport() {
-        guard case let .explainFare(airport) = parser.parse("how much is a ticket to the Airport") else {
+        guard case let .explainFare(airport, _, toId) = parser.parse("how much is a ticket to the Airport") else {
             return XCTFail("expected fare")
         }
         XCTAssertTrue(airport)
+        XCTAssertEqual(toId, "M3_AER")
     }
 
     func test_fareStandard() {
-        guard case let .explainFare(airport) = parser.parse("what's the ticket price") else {
+        guard case let .explainFare(airport, _, _) = parser.parse("what's the ticket price") else {
             return XCTFail("expected fare")
         }
         XCTAssertFalse(airport)

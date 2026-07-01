@@ -3,6 +3,8 @@ package com.syrmos.feature.home
 import com.syrmos.core.common.DataFreshness
 import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.data.sync.WeatherRepository
+import com.syrmos.core.model.weather.WeatherSnapshot
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
@@ -41,6 +43,8 @@ data class HomeUiState(
     val lastTrainLine: Line? = null,
     /** Whether arrivals are live or predicted from the bundled schedule. */
     val freshness: DataFreshness = DataFreshness.PREDICTED,
+    /** Current weather for the travel-context card; null until first fetch. */
+    val weather: WeatherSnapshot? = null,
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val selectedStationId: String? = null,
     val lines: List<Line> = emptyList(),
@@ -57,6 +61,7 @@ class HomeViewModel(
     private val getLinesUseCase: GetLinesUseCase,
     private val announcementsRepository: AnnouncementsRepository,
     private val liveTrackerService: RailwayGovLiveTrackerService,
+    private val weatherRepository: WeatherRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -68,6 +73,17 @@ class HomeViewModel(
         refreshAnnouncements()
         observeLiveTrains()
         observeFreshness()
+        observeWeather()
+    }
+
+    private fun observeWeather() {
+        scope.launch {
+            weatherRepository.snapshot.collect { snap ->
+                _uiState.update { it.copy(weather = snap) }
+            }
+        }
+        // Athens default so Web and no-location launches still show weather.
+        scope.launch { runCatching { weatherRepository.refresh() } }
     }
 
     /**
@@ -139,6 +155,8 @@ class HomeViewModel(
             val location = UserLocation(latitude, longitude)
             val nearest = findNearestStation.invoke(location, limit = 3).first()
             _uiState.update { it.copy(nearestStations = nearest, isLoading = false) }
+            // Refresh weather for the user's actual location.
+            launch { runCatching { weatherRepository.refresh(latitude, longitude, placeName = "Here") } }
 
             if (nearest.isNotEmpty()) {
                 loadDeparturesForStation(nearest.first().stationId, nearest.first().lineIds)

@@ -152,6 +152,11 @@ fun HomeScreen(
             }
         }
 
+        val weather = uiState.weather
+        if (weather != null) {
+            item { WeatherCard(snapshot = weather, lang = lang) }
+        }
+
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
