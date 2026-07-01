@@ -31,7 +31,10 @@ final class AriadneModel: ObservableObject {
         messages.append(AriadneMessage(fromUser: true, text: text))
         thinking = true
         Task {
-            let reply = await resolve(parser.parse(text))
+            // On-device LLM (when available) rewrites fuzzy input; the
+            // deterministic parser still classifies and validates it.
+            let cleaned = await AriadneBrain.normalize(text) ?? text
+            let reply = await resolve(parser.parse(cleaned))
             messages.append(reply)
             thinking = false
         }
@@ -51,8 +54,8 @@ final class AriadneModel: ObservableObject {
             return resolveFindStation(query)
         case let .explainLine(lineId):
             return resolveExplainLine(lineId)
-        case let .explainFare(airport):
-            return resolveFare(airport: airport)
+        case let .explainFare(airport, from, to):
+            return resolveFare(airport: airport, from: from, to: to)
         case let .toggleFavorite(stationId):
             return resolveFavorite(stationId: stationId)
         case let .showAlerts(lineId):
@@ -133,15 +136,18 @@ final class AriadneModel: ObservableObject {
         }
     }
 
-    private func resolveFare(airport: Bool) -> AriadneMessage {
+    private func resolveFare(airport: Bool, from: String?, to: String?) -> AriadneMessage {
         let products = SyrmosFaresStore.shared.products
         if products.isEmpty {
             return bot(t("I don't have fare prices available offline right now.",
                 "Δεν έχω διαθέσιμες τιμές εισιτηρίων εκτός σύνδεσης τώρα.",
                 "Nuk kam çmime biletash të disponueshme pa internet tani."))
         }
+        // Journey-derived: airport fare if the word was used OR either endpoint
+        // is actually an airport station.
+        let isAirport = airport || isAirportStation(from) || isAirportStation(to)
         let picks: [SyrmosFaresStore.Product]
-        if airport {
+        if isAirport {
             picks = products.filter { $0.tags.contains { $0.contains("airport") } }
                 .sorted { ($0.fullPriceEur ?? .greatestFiniteMagnitude) < ($1.fullPriceEur ?? .greatestFiniteMagnitude) }
         } else {
@@ -151,6 +157,12 @@ final class AriadneModel: ObservableObject {
         let chosen = (picks.isEmpty ? Array(products.prefix(2)) : Array(picks.prefix(2)))
         let line = chosen.map { "\($0.localizedTitle(loc.language)) \(money($0.fullPriceEur))" }.joined(separator: " · ")
         return bot(line)
+    }
+
+    private func isAirportStation(_ stationId: String?) -> Bool {
+        guard let id = stationId, let st = station(id) else { return false }
+        let name = (st.name + " " + st.nameEl).lowercased()
+        return name.contains("airport") || name.contains("αεροδρ")
     }
 
     private func resolveFavorite(stationId: String?) -> AriadneMessage {
@@ -211,12 +223,47 @@ final class AriadneModel: ObservableObject {
         let transfers = plan.transfers == 0
             ? t("no change", "χωρίς αλλαγή", "pa ndërrim")
             : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
-        let exposure = lowExposure ? "\n" + t("I can't check live weather offline, but this is the fewest-transfer route.",
-            "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά αυτή έχει τις λιγότερες αλλαγές.",
-            "Nuk e kontrolloj dot motin pa internet, por kjo ka më pak ndërrime.") : ""
+        let exposure = lowExposure ? "\n" + weatherAdvice(plan) : ""
         return bot(t("\(legs). About \(plan.totalMinutes) min, \(transfers).",
             "\(legs). Περίπου \(plan.totalMinutes) λεπτά, \(transfers).",
             "\(legs). Rreth \(plan.totalMinutes) min, \(transfers).") + exposure)
+    }
+
+    private enum RouteExposure { case sheltered, mixed, exposed }
+
+    /// Real weather-aware advice: cached weather + route exposure (metro is
+    /// underground/sheltered, tram is open-air). Mirrors the KMP StationComfort.
+    private func weatherAdvice(_ plan: JourneyPlanner.Plan) -> String {
+        let types = plan.legs.compactMap { SyrmosData.line(for: $0.lineId)?.type }
+        let shelter: String
+        switch routeExposure(types) {
+        case .sheltered: shelter = t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη", "kryesisht nëntokë dhe e mbrojtur")
+        case .mixed: shelter = t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
+        case .exposed: shelter = t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)", "në ajër të hapur (tram/sipërfaqe)")
+        }
+        if let snap = WeatherStore.shared.snapshot {
+            if snap.current.condition.isWet {
+                return t("It's wet in \(snap.placeName) right now, and this route is \(shelter).",
+                    "Έχει βροχή στην \(snap.placeName) τώρα, και η διαδρομή είναι \(shelter).",
+                    "Ka shi në \(snap.placeName) tani, dhe kjo rrugë është \(shelter).")
+            }
+            return t("It's dry in \(snap.placeName) right now; this route is \(shelter).",
+                "Δεν βρέχει στην \(snap.placeName) τώρα· η διαδρομή είναι \(shelter).",
+                "S'ka shi në \(snap.placeName) tani; kjo rrugë është \(shelter).")
+        }
+        return t("I can't check live weather offline, but this route is \(shelter).",
+            "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι \(shelter).",
+            "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është \(shelter).")
+    }
+
+    private func routeExposure(_ types: [TransitType]) -> RouteExposure {
+        func e(_ type: TransitType) -> RouteExposure {
+            switch type { case .metro: return .sheltered; case .tram: return .exposed; case .suburban: return .mixed }
+        }
+        let es = types.map(e)
+        if es.contains(.exposed) { return .exposed }
+        if es.contains(.mixed) { return .mixed }
+        return .sheltered
     }
 
     private func resolveFindStation(_ query: String) -> AriadneMessage {

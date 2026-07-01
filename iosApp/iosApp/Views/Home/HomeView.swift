@@ -11,6 +11,7 @@ struct HomeView: View {
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
     @ObservedObject private var freshnessStore = LiveDataFreshness.shared
     @ObservedObject private var tracking = DepartureTracking.shared
+    @ObservedObject private var weather = WeatherStore.shared
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
@@ -63,6 +64,7 @@ struct HomeView: View {
             }
             .task {
                 locationService.requestIfNeeded()
+                await weather.refresh()
                 await stasyService.fetchAnnouncements()
             }
             .sheet(item: $webViewURL) { url in
@@ -121,6 +123,9 @@ struct HomeView: View {
             answerHero(next: next)
             if let last {
                 lastTrainTeaser(last)
+            }
+            if let snap = weather.snapshot {
+                WeatherCard(snapshot: snap)
             }
         }
     }
