@@ -31,3 +31,11 @@ version_asset() {
 version_asset "composeApp.js"
 version_asset "web-map.js"
 version_asset "web-map.css"
+
+if [[ -f "$ROOT_DIR/docs/press.html" ]]; then
+    cp "$ROOT_DIR/docs/press.html" "$TARGET_DIR/press.html"
+    mkdir -p "$TARGET_DIR/assets" "$TARGET_DIR/screenshots"
+    cp "$ROOT_DIR"/docs/assets/*.png "$TARGET_DIR/assets/" 2>/dev/null || true
+    cp "$ROOT_DIR"/docs/assets/*.zip "$TARGET_DIR/assets/" 2>/dev/null || true
+    cp "$ROOT_DIR"/docs/screenshots/*.png "$TARGET_DIR/screenshots/" 2>/dev/null || true
+fi

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <title>Syrmos press kit</title>
+    <meta name="description" content="Press and media kit for Syrmos, the offline-first companion for the Athens metro, tram, and suburban railway. Boilerplate, fact sheet, screenshots, logos, and press contact.">
+    <meta name="author" content="Petros Dhespollari">
+    <link rel="canonical" href="https://syrmos.peterdsp.dev/press.html">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="index, follow">
+
+    <link rel="icon" type="image/png" href="assets/favicon-512.png">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Syrmos">
+    <meta property="og:title" content="Syrmos press kit">
+    <meta property="og:description" content="Boilerplate, fact sheet, screenshots, and logos for Syrmos, the Athens transit companion.">
+    <meta property="og:url" content="https://syrmos.peterdsp.dev/press.html">
+    <meta property="og:image" content="https://syrmos.peterdsp.dev/favicon.png">
+    <meta property="og:locale" content="en_GB">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Syrmos press kit">
+    <meta name="twitter:description" content="Boilerplate, fact sheet, screenshots, and logos for Syrmos, the Athens transit companion.">
+    <meta name="twitter:image" content="https://syrmos.peterdsp.dev/favicon.png">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --surface: rgba(0, 0, 0, 0.94);
+            --surface-2: #0a0a0a;
+            --surface-3: #141414;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-soft: rgba(255, 255, 255, 0.06);
+            --text: #f1f5f9;
+            --text-2: #cbd5e1;
+            --text-muted: #94a3b8;
+            --accent: #0072CE;
+            --accent-soft: rgba(0, 114, 206, 0.16);
+            --accent-hover: rgba(0, 114, 206, 0.28);
+            --radius-sm: 6px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            -webkit-font-smoothing: antialiased;
+            font-feature-settings: "ss01", "cv11";
+        }
+
+        body {
+            background-image:
+                radial-gradient(1200px 600px at 15% -10%, rgba(0, 114, 206, 0.18), transparent 60%),
+                radial-gradient(900px 500px at 100% 0%, rgba(0, 114, 206, 0.08), transparent 65%);
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+
+        a { color: var(--text); text-decoration: none; }
+        a:hover { color: #ffffff; }
+        a:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: var(--radius-sm);
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        header.site {
+            padding: 28px 0 8px;
+        }
+        header.site .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .wordmark {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+        .wordmark img {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .top-nav {
+            display: inline-flex;
+            gap: 6px;
+        }
+        .top-nav a {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .top-nav a:hover { color: var(--text); background: var(--surface-2); }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(0, 114, 206, 0.10);
+            color: #7DB8EA;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .eyebrow::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+        }
+
+        .hero {
+            padding: 56px 0 40px;
+        }
+        .hero h1 {
+            font-size: clamp(40px, 6vw, 64px);
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            margin: 20px 0 20px;
+            font-weight: 700;
+        }
+        .hero .lede {
+            font-size: 19px;
+            line-height: 1.5;
+            color: var(--text-2);
+            max-width: 640px;
+            margin: 0 0 32px;
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            transition: background 120ms ease, border-color 120ms ease;
+        }
+        .btn:hover { background: var(--surface-3); }
+        .btn--primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+        }
+        .btn--primary:hover {
+            background: #0083ea;
+            border-color: #0083ea;
+            color: #ffffff;
+        }
+        .btn__meta {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 500;
+        }
+        .btn--primary .btn__meta { color: rgba(255,255,255,0.8); }
+
+        .chip-nav {
+            margin-top: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chip-nav a {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            font-size: 13px;
+            color: var(--text-2);
+        }
+        .chip-nav a:hover {
+            border-color: rgba(0, 114, 206, 0.5);
+            color: var(--text);
+            background: var(--accent-soft);
+        }
+
+        section.block {
+            padding: 72px 0;
+            border-top: 1px solid var(--border-soft);
+        }
+        .section-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 0 0 20px;
+        }
+        h2.section-title {
+            font-size: clamp(28px, 4vw, 36px);
+            line-height: 1.15;
+            letter-spacing: -0.015em;
+            margin: 0 0 28px;
+            font-weight: 700;
+            max-width: 720px;
+        }
+        .prose p {
+            font-size: 17px;
+            line-height: 1.65;
+            color: var(--text-2);
+            max-width: 680px;
+            margin: 0 0 18px;
+        }
+
+        dl.facts {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 0;
+            margin: 0;
+            border-top: 1px solid var(--border-soft);
+        }
+        dl.facts > div {
+            display: contents;
+        }
+        dl.facts dt, dl.facts dd {
+            padding: 18px 0;
+            border-bottom: 1px solid var(--border-soft);
+            margin: 0;
+        }
+        dl.facts dt {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding-right: 24px;
+        }
+        dl.facts dd {
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.55;
+        }
+        dl.facts dd a {
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+        }
+        dl.facts dd a:hover {
+            color: #7DB8EA;
+            border-bottom-color: #7DB8EA;
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+        .tile {
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 160ms ease, border-color 160ms ease;
+        }
+        .tile:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 114, 206, 0.35);
+        }
+        .tile__thumb {
+            aspect-ratio: 4 / 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(120% 100% at 50% 0%, rgba(0, 114, 206, 0.10), transparent 70%),
+                #050505;
+            border-bottom: 1px solid var(--border-soft);
+            overflow: hidden;
+        }
+        .tile__thumb img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .tile__thumb--screen img {
+            width: 62%;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .tile__thumb--icon img {
+            width: 60%;
+            border-radius: 22%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .tile__body {
+            padding: 14px 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .tile__name {
+            font-size: 14px;
+            font-weight: 650;
+            color: var(--text);
+        }
+        .tile__meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+        .tile__actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .tile__link {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: var(--accent-soft);
+            color: #7DB8EA;
+        }
+        .tile__link:hover {
+            background: var(--accent-hover);
+            color: #ffffff;
+        }
+
+        .contact-card {
+            background: var(--surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 28px;
+            display: grid;
+            grid-template-columns: 72px 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        .avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(140deg, #0072CE 0%, #003E71 100%);
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: -0.01em;
+        }
+        .contact-card__name {
+            font-size: 17px;
+            font-weight: 650;
+            margin: 0 0 4px;
+        }
+        .contact-card__role {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 0 0 8px;
+        }
+        .contact-card__note {
+            font-size: 13px;
+            color: var(--text-2);
+            margin: 0;
+        }
+
+        footer.site {
+            padding: 40px 0 56px;
+            border-top: 1px solid var(--border-soft);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        footer.site .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        footer.site a { color: var(--text-2); }
+        footer.site a:hover { color: var(--text); }
+
+        @media (max-width: 720px) {
+            dl.facts {
+                grid-template-columns: 1fr;
+            }
+            dl.facts dt {
+                padding-bottom: 4px;
+                border-bottom: none;
+            }
+            dl.facts dd {
+                padding-top: 4px;
+                padding-bottom: 20px;
+            }
+            .contact-card {
+                grid-template-columns: 56px 1fr;
+            }
+            .contact-card .btn {
+                grid-column: 1 / -1;
+                justify-content: center;
+            }
+            .avatar { width: 56px; height: 56px; font-size: 20px; }
+            .hero { padding: 32px 0; }
+            section.block { padding: 56px 0; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site">
+    <div class="container">
+        <a class="wordmark" href="https://syrmos.peterdsp.dev/" aria-label="Syrmos home">
+            <img src="assets/favicon-512.png" alt="" aria-hidden="true">
+            <span>Syrmos</span>
+        </a>
+        <nav class="top-nav" aria-label="Site">
+            <a href="https://syrmos.peterdsp.dev/">Web app</a>
+            <a href="https://github.com/peterdsp/Syrmos">Source</a>
+            <a href="PRIVACY_POLICY.md">Privacy</a>
+        </nav>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="container">
+        <span class="eyebrow">Press &nbsp;/&nbsp; Media kit</span>
+        <h1>Syrmos press kit</h1>
+        <p class="lede">
+            Everything a writer, editor, or reviewer needs to cover Syrmos:
+            the boilerplate, the fact sheet, native screenshots at store
+            resolution, and the app icon in every variant.
+        </p>
+
+        <div class="cta-row">
+            <a class="btn btn--primary" href="assets/syrmos-press-kit.zip" download>
+                Download press kit
+                <span class="btn__meta">ZIP</span>
+            </a>
+            <a class="btn" href="mailto:info@peterdsp.dev?subject=Syrmos%20press%20enquiry">
+                Email press contact
+                <span class="btn__meta">info@peterdsp.dev</span>
+            </a>
+        </div>
+
+        <nav class="chip-nav" aria-label="Press kit sections">
+            <a href="#about">About</a>
+            <a href="#facts">Fact sheet</a>
+            <a href="#media">Media &amp; brand</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </div>
+</section>
+
+<section class="block" id="about" aria-labelledby="about-title">
+    <div class="container">
+        <p class="section-label">About</p>
+        <h2 class="section-title" id="about-title">A companion for every ride in Athens.</h2>
+        <div class="prose">
+            <p>
+                Syrmos is a free, offline-first companion for the Athens public
+                transit network. It bundles a full snapshot of every metro, tram,
+                and suburban schedule inside the release itself, so it launches
+                with the right data underground, on airplane mode, or in a
+                station with no signal, and syncs quietly when a connection
+                returns.
+            </p>
+            <p>
+                Built as a single Kotlin Multiplatform codebase, Syrmos ships as
+                a native iOS app, a native Android app, and a WebAssembly web app
+                from the same shared logic. It covers Metro lines 1, 2, and 3,
+                Tram T6 and T7, and Suburban lines A1 through A4, with live train
+                positions, a GPS nearest-station lookup, and a bilingual English
+                and Greek interface. It is developed independently by Petros
+                Dhespollari in Athens, and is not affiliated with STASY, OASA, or
+                Hellenic Train.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="block" id="facts" aria-labelledby="facts-title">
+    <div class="container">
+        <p class="section-label">Fact sheet</p>
+        <h2 class="section-title" id="facts-title">At a glance.</h2>
+        <dl class="facts">
+            <div><dt>Product</dt><dd>Syrmos (συρμός), Athens transit companion.</dd></div>
+            <div><dt>Category</dt><dd>Travel and navigation. Public transit.</dd></div>
+            <div><dt>Platforms</dt><dd>iOS 17 and later, Android 8 and later, any modern browser with WebAssembly.</dd></div>
+            <div><dt>Availability</dt><dd>Worldwide. App Store, Google Play, and the web app.</dd></div>
+            <div><dt>Pricing</dt><dd>Free. No subscriptions, no in-app purchases, no advertising.</dd></div>
+            <div><dt>License</dt><dd>Source code under BSD 3-Clause. Documentation and assets under CC BY-SA 4.0.</dd></div>
+            <div><dt>Privacy</dt><dd>No accounts, no analytics, no telemetry. Location stays on the device.</dd></div>
+            <div><dt>Languages</dt><dd>English, Greek, and Albanian (for the on-device assistant).</dd></div>
+            <div><dt>Coverage</dt><dd>3 metro lines, 2 tram lines, 4 suburban lines. Around 200 stations across Attica.</dd></div>
+            <div><dt>Stack</dt><dd>Kotlin Multiplatform, Compose Multiplatform, SwiftUI, SQLDelight, Ktor.</dd></div>
+            <div><dt>Website</dt><dd><a href="https://syrmos.peterdsp.dev/">syrmos.peterdsp.dev</a></dd></div>
+            <div><dt>Source</dt><dd><a href="https://github.com/peterdsp/Syrmos">github.com/peterdsp/Syrmos</a></dd></div>
+            <div><dt>App Store</dt><dd><a href="https://apps.apple.com/app/id6777650671">apps.apple.com/app/id6777650671</a></dd></div>
+            <div><dt>Play Store</dt><dd><a href="https://play.google.com/store/apps/details?id=com.syrmos.android">play.google.com/store/apps/details?id=com.syrmos.android</a></dd></div>
+            <div><dt>Built by</dt><dd>Petros Dhespollari, Athens, Greece.</dd></div>
+        </dl>
+    </div>
+</section>
+
+<section class="block" id="media" aria-labelledby="media-title">
+    <div class="container">
+        <p class="section-label">Media &amp; brand assets</p>
+        <h2 class="section-title" id="media-title">Screenshots and icons.</h2>
+        <p class="prose" style="margin-bottom: 32px;">
+            <span style="display:block; color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 640px;">
+                Click a thumbnail to open the full-resolution file, or use the
+                Download link to save it locally. Everything below is included
+                in the ZIP.
+            </span>
+        </p>
+
+        <div class="media-grid">
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--screen" href="screenshots/ios_home.png" aria-label="Open full-resolution Home screenshot">
+                    <img src="screenshots/ios_home.png" alt="Syrmos Home screen on iPhone showing the next departure hero card, weather, and nearest station" loading="lazy" width="1206" height="2622">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">Home screen</div>
+                    <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="screenshots/ios_home.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--screen" href="screenshots/ios_map.png" aria-label="Open full-resolution live map screenshot">
+                    <img src="screenshots/ios_map.png" alt="Syrmos live map on iPhone showing metro, tram, and suburban trains moving across Athens" loading="lazy" width="1206" height="2622">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">Live train map</div>
+                    <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="screenshots/ios_map.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--screen" href="screenshots/ios_lines.png" aria-label="Open full-resolution Lines screenshot">
+                    <img src="screenshots/ios_lines.png" alt="Syrmos Lines browser on iPhone listing every metro, tram, and suburban route" loading="lazy" width="1206" height="2622">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">Lines browser</div>
+                    <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="screenshots/ios_lines.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--screen" href="screenshots/ios_settings.png" aria-label="Open full-resolution Settings screenshot">
+                    <img src="screenshots/ios_settings.png" alt="Syrmos Settings on iPhone showing language, appearance, and data controls" loading="lazy" width="1206" height="2622">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">Settings</div>
+                    <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="screenshots/ios_settings.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--icon" href="assets/icon-default-1024.png" aria-label="Open full-resolution default app icon">
+                    <img src="assets/icon-default-1024.png" alt="Syrmos app icon, default variant" loading="lazy" width="1024" height="1024">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">App icon &middot; Default</div>
+                    <div class="tile__meta">PNG &middot; 1024 &times; 1024</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="assets/icon-default-1024.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--icon" href="assets/icon-dark-1024.png" aria-label="Open full-resolution dark app icon">
+                    <img src="assets/icon-dark-1024.png" alt="Syrmos app icon, iOS dark variant" loading="lazy" width="1024" height="1024">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">App icon &middot; Dark</div>
+                    <div class="tile__meta">PNG &middot; 1024 &times; 1024</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="assets/icon-dark-1024.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--icon" href="assets/icon-tinted-1024.png" aria-label="Open full-resolution tinted app icon">
+                    <img src="assets/icon-tinted-1024.png" alt="Syrmos app icon, iOS tinted variant" loading="lazy" width="1024" height="1024">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">App icon &middot; Tinted</div>
+                    <div class="tile__meta">PNG &middot; 1024 &times; 1024</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="assets/icon-tinted-1024.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tile">
+                <a class="tile__thumb tile__thumb--icon" href="assets/favicon-512.png" aria-label="Open full-resolution favicon">
+                    <img src="assets/favicon-512.png" alt="Syrmos favicon at 512 by 512" loading="lazy" width="512" height="512">
+                </a>
+                <div class="tile__body">
+                    <div class="tile__name">Favicon</div>
+                    <div class="tile__meta">PNG &middot; 512 &times; 512</div>
+                    <div class="tile__actions">
+                        <a class="tile__link" href="assets/favicon-512.png" download>Download</a>
+                    </div>
+                </div>
+            </article>
+
+        </div>
+    </div>
+</section>
+
+<section class="block" id="contact" aria-labelledby="contact-title">
+    <div class="container">
+        <p class="section-label">Press contact</p>
+        <h2 class="section-title" id="contact-title">Get in touch.</h2>
+
+        <div class="contact-card">
+            <div class="avatar" aria-hidden="true">PD</div>
+            <div>
+                <p class="contact-card__name">Petros Dhespollari</p>
+                <p class="contact-card__role">Creator and maintainer</p>
+                <p class="contact-card__note">
+                    Replies within a working day, in English or Greek.
+                    Interview requests and review copies welcome.
+                </p>
+            </div>
+            <a class="btn btn--primary" href="mailto:info@peterdsp.dev?subject=Syrmos%20press%20enquiry">
+                Email
+                <span class="btn__meta">info@peterdsp.dev</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<footer class="site">
+    <div class="container">
+        <div>&copy; 2026 Petros Dhespollari. Assets licensed CC BY-SA 4.0.</div>
+        <div>
+            <a href="https://syrmos.peterdsp.dev/">syrmos.peterdsp.dev</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://github.com/peterdsp/Syrmos">GitHub</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
