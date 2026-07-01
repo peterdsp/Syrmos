@@ -78,7 +78,7 @@ class PlanJourneyUseCase(
 
         while (queue.isNotEmpty()) {
             queue.sortBy { it.second }
-            val (current, dist) = queue.removeFirst()
+            val (current, dist) = queue.removeAt(0)
 
             if (current in visited) continue
             visited.add(current)
