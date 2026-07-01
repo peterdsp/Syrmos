@@ -2,7 +2,7 @@ name: Pages
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - ".github/workflows/pages.yml"
       - "composeApp/**"
@@ -13,6 +13,9 @@ on:
       - "gradle.properties"
       - "settings.gradle.kts"
       - "build.gradle.kts"
+      - "docs/press.html"
+      - "docs/assets/**"
+      - "docs/screenshots/**"
   workflow_dispatch:
 
 permissions:
