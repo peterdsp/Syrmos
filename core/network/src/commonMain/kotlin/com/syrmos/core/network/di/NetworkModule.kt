@@ -7,6 +7,7 @@ import com.syrmos.core.network.SyrmosContactService
 import com.syrmos.core.network.SyrmosLivePositionsService
 import com.syrmos.core.network.SyrmosSchedulesService
 import com.syrmos.core.network.SyrmosVisualOverridesService
+import com.syrmos.core.network.WeatherService
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
@@ -33,4 +34,5 @@ val networkModule = module {
     single { SyrmosLivePositionsService(httpClient = get()) }
     single { SyrmosContactService(httpClient = get()) }
     single { SyrmosVisualOverridesService(httpClient = get()) }
+    single { WeatherService(httpClient = get()) }
 }
