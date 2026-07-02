@@ -16,6 +16,7 @@ struct HomeView: View {
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showAriadne = false
+    @State private var showTrackPicker = false
 
     var body: some View {
         NavigationStack {
@@ -53,6 +54,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showAriadne) {
                 AriadneView()
+            }
+            .sheet(isPresented: $showTrackPicker) {
+                TrackPickerSheet(onDismiss: { showTrackPicker = false })
             }
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
@@ -115,12 +119,22 @@ struct HomeView: View {
     private var answerSection: some View {
         let next = nearestNextDeparture()
         let last = nearestLastTrain(anchoredTo: next)
+        let isTracking = tracking.active != nil
         VStack(spacing: 12) {
             if let tracked = tracking.active {
                 trackingCard(tracked)
             }
-            freshnessPill
-            answerHero(next: next)
+            HStack(spacing: 8) {
+                freshnessPill
+                Spacer(minLength: 0)
+                trackAnyTrainChip
+            }
+            // When a train is being tracked, the countdown lives in the
+            // TrackingCard above and the "next train" hero duplicates it.
+            // Hide the hero so there is exactly one countdown on screen.
+            if !isTracking {
+                answerHero(next: next)
+            }
             if let last {
                 lastTrainTeaser(last)
             }
@@ -132,37 +146,24 @@ struct HomeView: View {
 
     /// Tier 2 in-app surface: a live countdown for the tracked departure that
     /// ticks every second and keeps the Live Activity in step. Mirrors the
-    /// Compose TrackingCard.
+    /// Compose TrackingCard: LIVE pulse + "Arriving <Station>" header, huge
+    /// countdown, progress bar filling as time elapses, line badge row, and
+    /// a single Stop tracking button at the bottom.
     private func trackingCard(_ tracked: TrackedDeparture) -> some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
+        let accent = SyrmosData.lineColor(for: tracked.lineId)
+        return TimelineView(.periodic(from: .now, by: 1)) { context in
             let now = context.date.timeIntervalSince1970
             let remaining = tracked.minutesRemaining(now)
             let due = tracked.isDue(now)
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text((loc.language == .greek ? "ΠΑΡΑΚΟΛΟΥΘΗΣΗ ΣΥΡΜΟΥ" : loc.language == .albanian ? "PO NDIQET TRENI" : "TRACKING YOUR TRAIN"))
-                        .font(.caption2).fontWeight(.semibold).foregroundStyle(Color.metroBlue)
-                    Text("\(tracked.lineId) · \(tracked.stationName)")
-                        .font(.headline)
-                    if !tracked.destination.isEmpty {
-                        Text("\(loc[.to]) \(tracked.destination) · \(tracked.scheduledTime)")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(due ? (loc.language == .greek ? "Τώρα" : loc.language == .albanian ? "Tani" : "Due") : "\(remaining) min")
-                        .font(.title).fontWeight(.bold).foregroundStyle(Color.metroBlue)
-                    Button(loc.language == .greek ? "Διακοπή" : loc.language == .albanian ? "Ndalo" : "Stop") {
-                        tracking.stop()
-                    }
-                    .font(.caption).fontWeight(.semibold).foregroundStyle(.red)
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity)
-            .background(Color.metroBlue.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            TrackingCardBody(
+                tracked: tracked,
+                accent: accent,
+                remaining: remaining,
+                due: due,
+                now: now,
+                lang: loc.language,
+                onStop: { tracking.stop() }
+            )
             .onChange(of: remaining) { _, _ in tracking.refresh(now: now) }
         }
     }
@@ -171,6 +172,20 @@ struct HomeView: View {
         guard let nearest = locationService.nearbyStations.first else { return }
         let node = nearest.station
         let stationId = node.stationIdByLineId[next.lineId] ?? node.stationIds.first ?? node.id
+        let stations = SyrmosData.stations(for: next.lineId)
+        let terminal = SyrmosData.line(for: next.lineId).map { line in
+            // Direction on iOS is a free-form label ("to Airport"); take the
+            // matching terminal so route slicing goes in the right direction.
+            line.terminalB.localizedCaseInsensitiveContains(next.direction)
+                ? TransitDirection.outbound
+                : TransitDirection.inbound
+        } ?? TransitDirection.outbound
+        let route = TrackedDeparture.computeRouteStations(
+            stations: stations,
+            targetStationId: stationId,
+            direction: terminal,
+            language: loc.language
+        )
         DepartureTracking.shared.track(
             TrackedDeparture(
                 lineId: next.lineId,
@@ -178,7 +193,8 @@ struct HomeView: View {
                 stationName: loc.language == .greek ? node.nameEl : node.displayName,
                 destination: next.direction,
                 scheduledTime: next.time,
-                targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60
+                targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60,
+                routeStations: route
             )
         )
     }
@@ -189,21 +205,49 @@ struct HomeView: View {
         let label = isLive
             ? loc[.live]
             : "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
-        return HStack {
+        return HStack(spacing: 6) {
+            Circle()
+                .fill(tint)
+                .frame(width: 8, height: 8)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(tint.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
+    /// Chip that opens the TrackPickerSheet. Always visible alongside the
+    /// freshness pill so users can pick any train (not just the nearest
+    /// one) at any time. When something is already tracked, picking a new
+    /// departure replaces it, matching DepartureTracking's single-slot
+    /// semantics.
+    private var trackAnyTrainChip: some View {
+        Button {
+            showTrackPicker = true
+        } label: {
             HStack(spacing: 6) {
-                Circle()
-                    .fill(tint)
-                    .frame(width: 8, height: 8)
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+                Image(systemName: "scope")
+                Text(trackAnyTrainLabel).fontWeight(.semibold)
             }
+            .font(.caption)
+            .foregroundStyle(Color.metroBlue)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(tint.opacity(0.12))
+            .background(Color.metroBlue.opacity(0.14))
             .clipShape(Capsule())
-            Spacer(minLength: 0)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var trackAnyTrainLabel: String {
+        switch loc.language {
+        case .greek: return "Παρακολούθηση συρμού"
+        case .albanian: return "Ndiq një tren"
+        case .english: return "Track a train"
         }
     }
 

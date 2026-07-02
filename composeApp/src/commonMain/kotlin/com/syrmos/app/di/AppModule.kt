@@ -19,6 +19,7 @@ val featureModule = module {
             getNextDepartures = get(),
             getLastTrain = get(),
             getLinesUseCase = get(),
+            getLineDetail = get(),
             announcementsRepository = get(),
             liveTrackerService = get(),
             weatherRepository = get(),
