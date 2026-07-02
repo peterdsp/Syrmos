@@ -23,6 +23,9 @@ indirect enum AssistantIntent: Equatable {
     case help
     case needsClarification(base: AssistantIntent, missing: MissingSlot)
     case outOfScope
+    /// Easter egg: fires on "liepur" / "λιεπ" / close variants. Ariadne
+    /// answers with a random cat joke. See catJoke() in AriadneModel.
+    case easterEggLiepur
 }
 
 struct StationVocab { let id: String; let names: [String]; let lineIds: [String] }
@@ -71,6 +74,12 @@ struct AthensTransitParser {
     func parse(_ rawInput: String) -> AssistantIntent {
         let text = Self.fold(rawInput)
         if text.trimmingCharacters(in: .whitespaces).isEmpty { return .outOfScope }
+
+        // Easter egg check runs first so a legitimate transit intent that
+        // happens to share substrings never masks the trigger.
+        if Self.liepurTriggers.contains(where: { text.contains($0) }) {
+            return .easterEggLiepur
+        }
 
         let stations = matchStations(text)
         let line = matchLine(text)
@@ -363,6 +372,10 @@ struct AthensTransitParser {
     private static let weekendWords = ["weekend", "σαββατοκυριακο", "fundjave"]
     private static let saturdayWords = ["saturday", "σαββατο", "te shtune", "shtune"]
     private static let sundayWords = ["sunday", "κυριακη", "te diel", "diel"]
+
+    // Easter egg triggers. Substring match on folded text so "Liepuras",
+    // "λιεπουρας", "λιεπ", "liepurashi" all resolve.
+    private static let liepurTriggers = ["liepur", "λιεπ"]
 
     // Single-word vocabulary tokens the fuzzy matcher must never "correct" into
     // a station (so "trains" stays a departures cue, not a nearby-sounding stop).

@@ -2182,6 +2182,36 @@
             return `${t("ariadne_next_from", { station: name })} ${top.join(", ")}.`;
         }
 
+        // Easter egg: random cat joke in the current language. Called from
+        // respond() when parser returns kind: "easterEggLiepur".
+        function catJoke(lang) {
+            const jokes = {
+                el: [
+                    "Γιατί οι γάτες δεν παίζουν πόκερ στη ζούγκλα; Έχει πολλά τσιτάχ.",
+                    "Πώς λέγεται μια στοίβα γατάκια; Μιαοβούνο.",
+                    "Τι κάνει ένας γάτος στον υπολογιστή; Προσέχει το ποντίκι.",
+                    "Γιατί ο γάτος πήγε στο νοσοκομείο; Είχε πυρετό αγέλας.",
+                    "Πώς τελειώνει η μάχη δύο γάτων; Με ένα σφύριγμα και ένα μιάου.",
+                ],
+                sq: [
+                    "Pse macet nuk luajnë poker në xhungël? Sepse ka shumë çita.",
+                    "Si e quajnë një grumbull macesh të vogla? Një mjaumal.",
+                    "Pse ishte macja ulur mbi kompjuter? Për të vëzhguar miun.",
+                    "Cila është ëmbëlsira e preferuar e maces? Muslet me çokollatë.",
+                    "Si e mbyllin macet një grindje? Me një fshirje dhe një mjau.",
+                ],
+                en: [
+                    "Why don't cats play poker in the jungle? Too many cheetahs.",
+                    "What do you call a pile of kittens? A meowntain.",
+                    "Why was the cat sitting on the computer? To keep an eye on the mouse.",
+                    "What's a cat's favourite dessert? Chocolate mousse.",
+                    "How do two cats end a fight? They hiss and make up.",
+                ],
+            };
+            const pool = jokes[lang] || jokes.en;
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
         function respond(intent) {
             switch (intent.kind) {
                 case "help":
@@ -2190,6 +2220,8 @@
                     return { text: window.SyrmosAriadne.outOfScope(currentLang) };
                 case "needsClarification":
                     return { text: window.SyrmosAriadne.clarify(intent.missing, currentLang) };
+                case "easterEggLiepur":
+                    return { text: catJoke(currentLang) };
                 case "departures":
                     if (intent.stationId) {
                         return {
