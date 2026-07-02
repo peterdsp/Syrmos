@@ -13,8 +13,8 @@ struct SyrmosWidgetBundle: WidgetBundle {
         if #available(iOS 16.2, *) {
             SyrmosLiveActivity()
         }
-        // NextDeparturesWidget() is added once TransitData is decoupled from the
-        // live-train layer so the widget target can link it (see scripts/
-        // add-next-departures-widget.py + NextDeparturesWidget.swift).
+        if #available(iOS 17.0, *) {
+            NextDeparturesWidget()
+        }
     }
 }
