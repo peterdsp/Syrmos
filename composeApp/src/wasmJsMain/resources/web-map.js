@@ -2045,6 +2045,20 @@
             body.dark-mode .ariadne-panel__input { border-color: rgba(255,255,255,0.15); }
             .ariadne-panel__input:focus { border-color: #0072CE; }
             .ariadne-panel__send { padding: 8px 14px; }
+            /* On wide desktop the right column is taken by the STASY /
+               OASA info panels, so anchor Ariadne to the LEFT side below
+               the Live-trains / Nearby-stations cards where there is
+               real estate. Mobile keeps the default bottom-right so the
+               pill sits away from the panel peek. */
+            @media (min-width: 721px) {
+                .ariadne-launcher {
+                    right: auto; left: 16px; bottom: 16px;
+                }
+                .ariadne-panel {
+                    right: auto; left: 16px; bottom: 16px;
+                    width: min(320px, calc(100vw - 32px));
+                }
+            }
         `;
         document.head.appendChild(ariadneStyle);
 
