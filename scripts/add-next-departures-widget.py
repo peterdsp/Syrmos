@@ -54,6 +54,9 @@ SHARED_SOURCES = [
     "AirportData.swift",
     "Localization.swift",
     "SyrmosColors.swift",
+    "DataFreshness.swift",
+    "LivePositionsService.swift",
+    "SyrmosRouteShapesStore.swift",
 ]
 
 
