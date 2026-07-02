@@ -133,6 +133,7 @@ private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
+    @State private var showAriadne = false
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var themeManager = ThemeManager.shared
 
@@ -175,6 +176,32 @@ struct ContentView: View {
                     .tag(SyrmosTab.settings)
             }
             .tint(.syrmosPrimary)
+
+            // Ariadne launcher lives at the app level so it's available on
+            // Home / Lines / Map / Airport. Hidden on Settings so the
+            // settings screen doesn't get a chat pill sitting on top of
+            // its own scrolling controls. The pill fades and slides on
+            // tab change so it never abruptly appears mid-transition.
+            if selectedTab != .settings {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        AriadneLauncherPill(
+                            label: askAriadneLabel,
+                            onTap: { showAriadne = true }
+                        )
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 90)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .allowsHitTesting(true)
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
+        .sheet(isPresented: $showAriadne) {
+            AriadneView()
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
         .task {
@@ -194,8 +221,53 @@ struct ContentView: View {
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")
         }
     }
+
+    private var askAriadneLabel: String {
+        switch loc.language {
+        case .greek: return "Ρώτα την Αριάδνη"
+        case .albanian: return "Pyet Ariadne"
+        default: return "Ask Ariadne"
+        }
+    }
 }
 
 enum SyrmosTab {
     case home, lines, map, timetables, settings
+}
+
+/// The launcher pill users tap to open Ariadne. Springs on press so the
+/// gesture feels physical, matches the sheet's slide-up entrance. Owl
+/// glyph is the Athenian mythology tie (Athena's owl, symbol of wisdom).
+private struct AriadneLauncherPill: View {
+    let label: String
+    let onTap: () -> Void
+    @State private var pressed = false
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
+                pressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    pressed = false
+                }
+                onTap()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Text("🦉")
+                    .font(.system(size: 18))
+                Text(label).fontWeight(.semibold)
+            }
+            .font(.subheadline)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(Color.syrmosPrimary, in: Capsule())
+            .shadow(color: Color.syrmosPrimary.opacity(0.35), radius: 12, y: 6)
+            .scaleEffect(pressed ? 0.92 : 1.0)
+        }
+        .buttonStyle(.plain)
+    }
 }
