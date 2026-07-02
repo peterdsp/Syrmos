@@ -14,6 +14,7 @@ indirect enum AssistantIntent: Equatable {
     case lastTrain(stationId: String?, lineId: String?)
     case findStation(query: String)
     case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool)
+    case travelTime(toStationId: String?, fromStationId: String?)
     case explainLine(lineId: String)
     case explainFare(airport: Bool, fromStationId: String?, toStationId: String?)
     case toggleFavorite(stationId: String?)
@@ -84,11 +85,26 @@ struct AthensTransitParser {
             containsAny(text, Self.planPhrases) ||
             containsAny(text, Self.findWords) ||
             containsAny(text, Self.fareWords) ||
-            containsAny(text, Self.favoriteWords)
+            containsAny(text, Self.favoriteWords) ||
+            containsAny(text, Self.timePhrases)
 
         let weather = containsAny(text, Self.weatherWords)
         if weather && !strongTransit { return .outOfScope }
         if !strongTransit && !intentSignal && !weather { return .outOfScope }
+
+        // 0. Travel time / ETA ("how long to X"). Before fares ("how much time"
+        //    shares the fare cue) and planning ("how long to get to X" shares
+        //    the plan cue). Origin defaults to the user's location, resolved by
+        //    the caller; only an explicit origin fills fromStationId.
+        if containsAny(text, Self.timePhrases) {
+            let (from, to) = resolveTripEndpoints(text, stations)
+            let destination = to ?? from
+            let origin = stations.count >= 2 ? from : nil
+            if let destination {
+                return .travelTime(toStationId: destination, fromStationId: origin)
+            }
+            return .needsClarification(base: .travelTime(toStationId: nil, fromStationId: nil), missing: .destinationStation)
+        }
 
         // 0a. Fares (before planning, so "how much to the airport" is a fare).
         if containsAny(text, Self.fareWords) {
@@ -167,7 +183,69 @@ struct AthensTransitParser {
                 scratch = scratch.replacingOccurrences(of: name, with: String(repeating: " ", count: name.count))
             }
         }
+        // Typo fallback: only when nothing matched exactly, so a clean query is
+        // never overridden. Resolves "nikea" / "nkiea" / "sintagma".
+        if found.isEmpty, let fuzzy = fuzzyMatchStation(text) {
+            found.append(fuzzy)
+        }
         return found
+    }
+
+    /// Best-effort typo correction of a query to a single station. Compares each
+    /// 4+ char input token (that isn't a known vocabulary word) against every
+    /// station-name word and returns the closest station id, or nil. Kept tight
+    /// to avoid mapping gibberish onto a stop: up to 2 edits always, a 3rd only
+    /// when the first letter matches on a 6+ char word (the "nkiea" case).
+    private func fuzzyMatchStation(_ text: String) -> String? {
+        let tokens = text
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
+            .filter { $0.count >= 4 && !Self.stopwords.contains($0) }
+        if tokens.isEmpty { return nil }
+
+        var bestId: String?
+        var bestDist = Int.max
+        for token in tokens {
+            let tokenChars = Array(token)
+            for st in vocabulary.stations {
+                for rawName in st.names {
+                    for word in Self.fold(rawName).split(separator: " ").map(String.init)
+                    where word.count >= 4 && !Self.stopwords.contains(word) {
+                        if abs(word.count - token.count) > 3 { continue }
+                        let dist = Self.editDistance(tokenChars, Array(word))
+                        let maxLen = max(token.count, word.count)
+                        let accept = dist <= 2 ||
+                            (dist == 3 && token.first == word.first && maxLen >= 6)
+                        if accept && dist < bestDist {
+                            bestDist = dist
+                            bestId = st.id
+                        }
+                    }
+                }
+            }
+        }
+        return bestId
+    }
+
+    /// Optimal string alignment (Damerau-Levenshtein with adjacent
+    /// transpositions), so a swap like "nkiea" counts as a single edit.
+    static func editDistance(_ a: [Character], _ b: [Character]) -> Int {
+        let al = a.count, bl = b.count
+        if al == 0 { return bl }
+        if bl == 0 { return al }
+        var d = Array(repeating: Array(repeating: 0, count: bl + 1), count: al + 1)
+        for i in 0...al { d[i][0] = i }
+        for j in 0...bl { d[0][j] = j }
+        for i in 1...al {
+            for j in 1...bl {
+                let cost = a[i - 1] == b[j - 1] ? 0 : 1
+                d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+                if i > 1, j > 1, a[i - 1] == b[j - 2], a[i - 2] == b[j - 1] {
+                    d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1)
+                }
+            }
+        }
+        return d[al][bl]
     }
 
     private func matchLine(_ text: String) -> String? {
@@ -277,10 +355,24 @@ struct AthensTransitParser {
         "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι", "si funksionon", "ndihme", "cfare mund", "kush je"]
     private static let weatherWords = ["rain", "raining", "rainy", "weather", "storm", "wet",
         "βροχη", "βρεχει", "καιρο", "κακοκαιρ", "shi", "moti", "stuhi"]
+    private static let timePhrases = ["how long", "how many minutes", "how many hours",
+        "how long does it take", "how long to get", "how much time", "minutes away", "how far",
+        "ποση ωρα", "ποσα λεπτα", "ποσες ωρες", "ποσο θελει", "ποση ωρα κανει",
+        "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe"]
     private static let tomorrowWords = ["tomorrow", "αυριο", "neser"]
     private static let weekendWords = ["weekend", "σαββατοκυριακο", "fundjave"]
     private static let saturdayWords = ["saturday", "σαββατο", "te shtune", "shtune"]
     private static let sundayWords = ["sunday", "κυριακη", "te diel", "diel"]
+
+    // Single-word vocabulary tokens the fuzzy matcher must never "correct" into
+    // a station (so "trains" stays a departures cue, not a nearby-sounding stop).
+    private static let stopwords: Set<String> = Set(
+        (transitNouns + departureWords + findWords + lineWords + fareWords + favoriteWords +
+         airportWords + alertWords + mapWords + weatherWords +
+         tomorrowWords + weekendWords + saturdayWords + sundayWords)
+            .map { fold($0) }
+            .filter { $0.count >= 4 && !$0.contains(" ") }
+    )
 }
 
 private extension Character {

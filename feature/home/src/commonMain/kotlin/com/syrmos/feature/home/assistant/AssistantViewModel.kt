@@ -18,10 +18,12 @@ import com.syrmos.core.domain.assistant.DayContext
 import com.syrmos.core.domain.assistant.DayContextResolver
 import com.syrmos.core.domain.assistant.MissingSlot
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
+import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
+import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.domain.usecase.SearchStationsUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
@@ -74,6 +76,7 @@ class AssistantViewModel(
     private val getLastTrain: GetLastTrainUseCase,
     private val planJourney: PlanJourneyUseCase,
     private val searchStations: SearchStationsUseCase,
+    private val findNearestStation: FindNearestStationUseCase,
     private val announcementsRepository: AnnouncementsRepository,
     private val faresRepository: FaresRepository,
     private val favoritesRepository: FavoritesRepository,
@@ -92,6 +95,16 @@ class AssistantViewModel(
     private var stations: List<Station> = emptyList()
     private var lines: List<Line> = emptyList()
     private var nextId = 0L
+    private var lastLocation: UserLocation? = null
+
+    /**
+     * Latest device location, pushed by the host when the assistant opens.
+     * Used as the origin for travel-time ("how long to X") answers; when it's
+     * null the resolver asks the user for an origin station instead.
+     */
+    fun onLocationUpdate(latitude: Double, longitude: Double) {
+        lastLocation = UserLocation(latitude, longitude)
+    }
 
     init {
         scope.launch {
@@ -126,6 +139,7 @@ class AssistantViewModel(
         is AssistantIntent.ShowDepartures -> resolveDepartures(intent)
         is AssistantIntent.LastTrain -> resolveLastTrain(intent)
         is AssistantIntent.PlanTrip -> resolvePlanTrip(intent)
+        is AssistantIntent.TravelTime -> resolveTravelTime(intent)
         is AssistantIntent.FindStation -> resolveFindStation(intent)
         is AssistantIntent.ExplainLine -> resolveExplainLine(intent)
         is AssistantIntent.ExplainFare -> resolveFare(intent)
@@ -283,6 +297,38 @@ class AssistantViewModel(
                     "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është $shelter.")
         }
     }
+
+    /**
+     * "How long to X". Origin is the user's nearest station (from the pushed
+     * location) or an explicitly named origin; with neither it asks for one.
+     */
+    private suspend fun resolveTravelTime(intent: AssistantIntent.TravelTime): AssistantMessage {
+        val toId = intent.toStationId ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
+        val fromId = intent.fromStationId
+            ?: lastLocation?.let { findNearestStation.invoke(it, limit = 1).first().firstOrNull()?.stationId }
+        if (fromId == null) return botMessage(clarify(MissingSlot.ORIGIN_STATION))
+        if (fromId == toId) {
+            return botMessage(t("You're already at ${stationNameById(toId)}.",
+                "Είσαι ήδη στον ${stationNameById(toId)}.",
+                "Je tashmë te ${stationNameById(toId)}."))
+        }
+        val result = planJourney.invoke(fromId, toId).first()
+            ?: return botMessage(t("I couldn't find a rail route between those.",
+                "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
+                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+        val transfers = if (result.transferCount == 0) {
+            t("no change", "χωρίς αλλαγή", "pa ndërrim")
+        } else {
+            t("${result.transferCount} change(s)", "${result.transferCount} αλλαγή/ές", "${result.transferCount} ndërrim(e)")
+        }
+        return botMessage(t(
+            "About ${result.totalMinutes} min from ${stationNameById(fromId)} to ${stationNameById(toId)}, $transfers.",
+            "Περίπου ${result.totalMinutes} λεπτά από ${stationNameById(fromId)} προς ${stationNameById(toId)}, $transfers.",
+            "Rreth ${result.totalMinutes} min nga ${stationNameById(fromId)} te ${stationNameById(toId)}, $transfers."))
+    }
+
+    private fun stationNameById(id: String): String =
+        stations.firstOrNull { it.id == id }?.let { stationName(it) } ?: id
 
     private suspend fun resolveFindStation(intent: AssistantIntent.FindStation): AssistantMessage {
         val matches = searchStations.invoke(intent.query).first()

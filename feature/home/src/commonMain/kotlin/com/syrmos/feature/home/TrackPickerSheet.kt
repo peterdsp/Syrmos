@@ -76,7 +76,7 @@ fun TrackPickerSheet(
 
     var step by remember { mutableStateOf(PickStep.LINE) }
     var selectedLine by remember { mutableStateOf<Line?>(null) }
-    var selectedDirection by remember { mutableStateOf<Direction?>(null) }
+    var selectedDirection by remember { mutableStateOf<TrackDir?>(null) }
     var selectedStation by remember { mutableStateOf<Station?>(null) }
     var stations by remember { mutableStateOf<List<Station>>(emptyList()) }
     var departures by remember { mutableStateOf<List<UpcomingDeparture>>(emptyList()) }
@@ -92,12 +92,25 @@ fun TrackPickerSheet(
         val dir = selectedDirection
         val station = selectedStation
         if (line != null && dir != null && station != null) {
+            // Airport trains (M3_AIR) travel outbound, so query OUTBOUND and
+            // then split by service type: the Airport option keeps only airport
+            // trains; the regular outbound option drops them so they don't leak.
+            val queryDir = if (dir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
             getNextDepartures.invoke(
                 stationId = station.id,
                 lineId = line.id,
-                direction = dir,
+                direction = queryDir,
                 limit = 8,
-            ).collectLatest { departures = it }
+            ).collectLatest { list ->
+                departures = list.filter { d ->
+                    val isAirport = d.lineId == "M3_AIR" || d.serviceType == "airport"
+                    when (dir) {
+                        TrackDir.AIRPORT -> isAirport
+                        TrackDir.OUTBOUND -> !isAirport
+                        TrackDir.INBOUND -> true
+                    }
+                }
+            }
         }
     }
 
@@ -168,10 +181,15 @@ fun TrackPickerSheet(
                         val line = selectedLine ?: return@DepartureList
                         val station = selectedStation ?: return@DepartureList
                         val nowEpoch = Clock.System.now().epochSeconds
-                        val destination = when (dep.direction) {
-                            Direction.OUTBOUND -> line.terminalB
-                            Direction.INBOUND -> line.terminalA
+                        val pickDir = selectedDirection ?: TrackDir.OUTBOUND
+                        val destination = when (pickDir) {
+                            TrackDir.OUTBOUND -> line.terminalB
+                            TrackDir.INBOUND -> line.terminalA
+                            TrackDir.AIRPORT -> airportLabel(lang)
                         }
+                        // Airport trains share the outbound corridor, so route
+                        // the preview outbound toward the tracked station.
+                        val routeDir = if (pickDir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
                         DepartureTracking.track(
                             TrackedDeparture(
                                 lineId = line.id,
@@ -183,7 +201,7 @@ fun TrackPickerSheet(
                                 routeStations = computeRouteStations(
                                     stations = stations,
                                     targetStationId = station.id,
-                                    direction = dep.direction,
+                                    direction = routeDir,
                                     lang = lang,
                                 ),
                             ),
@@ -197,6 +215,11 @@ fun TrackPickerSheet(
 }
 
 private enum class PickStep { LINE, DIRECTION, STATION, DEPARTURE }
+
+/** UI-level track direction. AIRPORT is M3's airport branch (queried as
+ *  outbound, then filtered to airport service); the shared Direction model
+ *  stays binary. */
+private enum class TrackDir { OUTBOUND, INBOUND, AIRPORT }
 
 @Composable
 private fun PickHeader(
@@ -280,20 +303,28 @@ private fun LineList(
 private fun DirectionList(
     line: Line,
     lang: AppLanguage,
-    onSelect: (Direction) -> Unit,
+    onSelect: (TrackDir) -> Unit,
 ) {
     val accent = line.color.toComposeColor()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DirectionRow(
             label = "${L.TO.text(lang)} ${line.terminalB}",
             accent = accent,
-            onClick = { onSelect(Direction.OUTBOUND) },
+            onClick = { onSelect(TrackDir.OUTBOUND) },
         )
         DirectionRow(
             label = "${L.TO.text(lang)} ${line.terminalA}",
             accent = accent,
-            onClick = { onSelect(Direction.INBOUND) },
+            onClick = { onSelect(TrackDir.INBOUND) },
         )
+        // M3 also runs the airport branch (M3_AIR); let the user track it.
+        if (line.id == "M3") {
+            DirectionRow(
+                label = "${L.TO.text(lang)} ${airportLabel(lang)}",
+                accent = accent,
+                onClick = { onSelect(TrackDir.AIRPORT) },
+            )
+        }
     }
 }
 
@@ -451,4 +482,9 @@ private fun trackVerbLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Παρακολούθηση"
     AppLanguage.ALBANIAN -> "Ndiq"
     else -> "Track"
+}
+private fun airportLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Αεροδρόμιο"
+    AppLanguage.ALBANIAN -> "Aeroporti"
+    else -> "Airport"
 }

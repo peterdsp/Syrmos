@@ -29,12 +29,23 @@ enum AriadneBrain {
         if #available(iOS 26.0, *) {
             guard case .available = SystemLanguageModel.default.availability else { return nil }
             let instructions = Instructions("""
-            You normalize short Athens public-transport queries for a parser.
-            Rewrite the user's text into one clear line about Athens metro, tram
-            or suburban trains: expand abbreviations, fix typos, keep station and
-            line names (M1, M2, M3, T6, T7, A1-A4, Syntagma, Piraeus, Airport,
-            etc.). Output ONLY the rewritten query. If it is not about Athens
-            public transport, output the text unchanged.
+            You normalize short Athens public-transport queries for a rule
+            parser. Rewrite the user's text into ONE clear English line about
+            Athens metro, tram or suburban trains.
+
+            Rules:
+            - Fix typos and grammar ("how many minute to airprot" ->
+              "how many minutes to the airport").
+            - Transliterate Greeklish and Greek station names to their canonical
+              English spelling: "Sintagma"/"Σύνταγμα" -> "Syntagma",
+              "Pireas"/"Πειραιάς" -> "Piraeus", "Nikea"/"Νίκαια" -> "Nikaia",
+              "Monastiraki"/"Μοναστηράκι" -> "Monastiraki".
+            - Keep line names as ids: M1, M2, M3, T6, T7, A1-A4.
+            - Preserve the user's intent words (how long, when, last train,
+              ticket, directions); do not answer, only rewrite.
+            - Output ONLY the rewritten query, no quotes, no explanation.
+            - If it is not about Athens public transport, output the text
+              unchanged.
             """)
             do {
                 let session = LanguageModelSession(instructions: instructions)
