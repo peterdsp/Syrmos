@@ -237,6 +237,33 @@
             Get directions
         </a>
     </section>
+
+    <!-- Ariadne: offline assistant. Floating pill opens a slide-in panel
+         with a text input. Answers are canned templates that call the
+         same web-map.js hooks the panels already use (open station sheet,
+         open Google Maps directions, show alerts). No LLM, no network for
+         parsing. -->
+    <button id="ariadneLauncher" class="ariadne-launcher" type="button" aria-label="Ask Ariadne" title="Ask Ariadne">
+        <span class="ariadne-launcher__icon" aria-hidden="true">🧭</span>
+        <span class="ariadne-launcher__text" data-i18n="ask_ariadne">Ask Ariadne</span>
+    </button>
+
+    <aside id="ariadnePanel" class="ariadne-panel ariadne-panel--hidden" aria-hidden="true">
+        <header class="ariadne-panel__head">
+            <div class="ariadne-panel__title">
+                <span aria-hidden="true">🧭</span>
+                <span data-i18n="ariadne_title">Ariadne</span>
+            </div>
+            <button id="ariadneClose" class="ghost-button" type="button" data-i18n="done">Done</button>
+        </header>
+        <div id="ariadneMessages" class="ariadne-panel__messages" aria-live="polite"></div>
+        <form id="ariadneForm" class="ariadne-panel__composer">
+            <input id="ariadneInput" class="ariadne-panel__input" type="text" autocomplete="off"
+                   placeholder="Ask Ariadne..." data-i18n-placeholder="ariadne_placeholder"
+                   aria-label="Ask Ariadne">
+            <button type="submit" class="primary-button ariadne-panel__send" data-i18n="send">Send</button>
+        </form>
+    </aside>
 </div>
 
 <script
@@ -244,6 +271,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
 ></script>
+<script src="web-ariadne.js"></script>
 <script src="web-map.js"></script>
 </body>
 </html>

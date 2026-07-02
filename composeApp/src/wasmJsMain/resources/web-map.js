@@ -43,6 +43,18 @@
             next: "next",
             reduced: "Reduced",
             verify_on: "Verify on {op} ↗",
+            ask_ariadne: "Ask Ariadne",
+            ariadne_title: "Ariadne",
+            ariadne_placeholder: "Ask Ariadne...",
+            send: "Send",
+            ariadne_greeting: "Hi, I'm Ariadne. Ask me about Athens transit — next departures, last train tonight, a trip A to B, service alerts, or ticket prices.",
+            ariadne_looking_up: "Looking up {station}...",
+            ariadne_no_station: "I couldn't match that to an Athens station. Try Syntagma, Piraeus, Airport.",
+            ariadne_open_map: "Opening {station} on the map.",
+            ariadne_open_alerts: "Showing service alerts.",
+            ariadne_open_route: "Opening directions from {from} to {to}.",
+            ariadne_line: "Line {id} runs between {a} and {b}. Tap the line on the map to see all stations.",
+            ariadne_fare: "Standard OASA single is €0.90 (Metro/Tram). Airport metro single is €9. See OASA tickets in the side panel for the full list.",
         },
         el: {
             brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
@@ -77,6 +89,18 @@
             next: "επόμενος",
             reduced: "Μειωμένο",
             verify_on: "Επιβεβαίωση στο {op} ↗",
+            ask_ariadne: "Ρώτα την Αριάδνη",
+            ariadne_title: "Αριάδνη",
+            ariadne_placeholder: "Ρώτα την Αριάδνη...",
+            send: "Αποστολή",
+            ariadne_greeting: "Γεια, είμαι η Αριάδνη. Ρώτα με για τις συγκοινωνίες της Αθήνας — επόμενες αναχωρήσεις, τελευταίο τρένο, διαδρομή Α σε Β, ειδοποιήσεις ή τιμές εισιτηρίων.",
+            ariadne_looking_up: "Αναζήτηση για {station}...",
+            ariadne_no_station: "Δεν αναγνώρισα σταθμό. Δοκίμασε Σύνταγμα, Πειραιά ή Αεροδρόμιο.",
+            ariadne_open_map: "Άνοιγμα του {station} στον χάρτη.",
+            ariadne_open_alerts: "Εμφάνιση ειδοποιήσεων.",
+            ariadne_open_route: "Άνοιγμα διαδρομής από {from} προς {to}.",
+            ariadne_line: "Η Γραμμή {id} συνδέει {a} και {b}. Πάτα τη γραμμή στον χάρτη για όλους τους σταθμούς.",
+            ariadne_fare: "Το βασικό εισιτήριο OASA είναι €0,90 (Μετρό/Τραμ). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τα εισιτήρια OASA στο πλαϊνό πάνελ.",
         },
         sq: {
             brand_subtitle: "Harta e hekurudhave të Athinës",
@@ -111,6 +135,18 @@
             next: "tjetër",
             reduced: "Me zbritje",
             verify_on: "Verifiko në {op} ↗",
+            ask_ariadne: "Pyet Ariadnen",
+            ariadne_title: "Ariadne",
+            ariadne_placeholder: "Pyet Ariadnen...",
+            send: "Dërgo",
+            ariadne_greeting: "Përshëndetje, unë jam Ariadne. Më pyet për transportin publik të Athinës — nisjet e ardhshme, treni i fundit, udhëtim A në B, njoftime ose çmime biletash.",
+            ariadne_looking_up: "Po kërkoj për {station}...",
+            ariadne_no_station: "S'e njoha stacionin. Provo Syntagma, Piraeus ose Aeroporti.",
+            ariadne_open_map: "Po hap {station} në hartë.",
+            ariadne_open_alerts: "Po tregoj njoftimet.",
+            ariadne_open_route: "Po hap udhëzimet nga {from} te {to}.",
+            ariadne_line: "Linja {id} lidh {a} me {b}. Prek linjën në hartë për të gjitha stacionet.",
+            ariadne_fare: "Bileta standarde OASA është €0,90 (Metro/Tram). Bileta metro për aeroport është €9. Shiko biletat OASA në panelin anësor.",
         },
     };
 
@@ -1941,6 +1977,195 @@
             const isDark = document.body.classList.toggle("dark-mode");
             themeToggle.textContent = isDark ? "☀" : "☾";
             localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
+        });
+    }
+
+    // Ariadne panel wiring. The parser (window.SyrmosAriadne) is offline and
+    // deterministic; this block just routes its intents into the same web
+    // primitives the map already uses (selectStation, Google Maps directions,
+    // OASA fare panel).
+    if (window.SyrmosAriadne) {
+        window.SyrmosAriadne.init({ stations: stations, lines: lines });
+
+        const ariadneStyle = document.createElement("style");
+        ariadneStyle.textContent = `
+            .ariadne-launcher {
+                position: fixed; z-index: 900;
+                right: 16px; bottom: 16px;
+                display: inline-flex; align-items: center; gap: 8px;
+                padding: 10px 16px; border: none; cursor: pointer;
+                border-radius: 999px; font: inherit; font-weight: 600;
+                background: #0072CE; color: #fff;
+                box-shadow: 0 6px 20px rgba(0,114,206,0.35);
+            }
+            .ariadne-launcher:hover { filter: brightness(1.05); }
+            .ariadne-launcher__icon { font-size: 18px; line-height: 1; }
+            .ariadne-panel {
+                position: fixed; z-index: 950;
+                right: 16px; bottom: 16px;
+                width: min(360px, calc(100vw - 32px));
+                max-height: min(560px, calc(100vh - 32px));
+                display: flex; flex-direction: column;
+                background: #fff; color: #111;
+                border-radius: 20px;
+                box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+                overflow: hidden;
+                transition: transform 180ms ease, opacity 180ms ease;
+            }
+            body.dark-mode .ariadne-panel { background: #1a1a1e; color: #f4f4f5; }
+            .ariadne-panel--hidden { transform: translateY(12px); opacity: 0; pointer-events: none; }
+            .ariadne-panel__head {
+                display: flex; align-items: center; justify-content: space-between;
+                padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,0.08);
+            }
+            body.dark-mode .ariadne-panel__head { border-bottom-color: rgba(255,255,255,0.08); }
+            .ariadne-panel__title { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+            .ariadne-panel__messages {
+                flex: 1 1 auto; overflow-y: auto;
+                padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;
+            }
+            .ariadne-msg {
+                max-width: 85%; padding: 8px 12px; border-radius: 14px;
+                font-size: 14px; line-height: 1.35;
+            }
+            .ariadne-msg--assistant { align-self: flex-start; background: rgba(0,114,206,0.10); }
+            body.dark-mode .ariadne-msg--assistant { background: rgba(120,170,255,0.15); }
+            .ariadne-msg--user { align-self: flex-end; background: #0072CE; color: #fff; }
+            .ariadne-panel__composer {
+                display: flex; gap: 8px; padding: 12px 16px;
+                border-top: 1px solid rgba(0,0,0,0.08);
+            }
+            body.dark-mode .ariadne-panel__composer { border-top-color: rgba(255,255,255,0.08); }
+            .ariadne-panel__input {
+                flex: 1 1 auto; padding: 10px 14px;
+                border: 1px solid rgba(0,0,0,0.15); border-radius: 999px;
+                background: transparent; color: inherit; font: inherit;
+                outline: none;
+            }
+            body.dark-mode .ariadne-panel__input { border-color: rgba(255,255,255,0.15); }
+            .ariadne-panel__input:focus { border-color: #0072CE; }
+            .ariadne-panel__send { padding: 8px 14px; }
+        `;
+        document.head.appendChild(ariadneStyle);
+
+        const launcher = document.getElementById("ariadneLauncher");
+        const panel = document.getElementById("ariadnePanel");
+        const closeBtn = document.getElementById("ariadneClose");
+        const messages = document.getElementById("ariadneMessages");
+        const form = document.getElementById("ariadneForm");
+        const input = document.getElementById("ariadneInput");
+
+        function appendMessage(text, from) {
+            const el = document.createElement("div");
+            el.className = "ariadne-msg " + (from === "user" ? "ariadne-msg--user" : "ariadne-msg--assistant");
+            el.textContent = text;
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function openPanel() {
+            panel.classList.remove("ariadne-panel--hidden");
+            panel.setAttribute("aria-hidden", "false");
+            launcher.style.display = "none";
+            if (!messages.dataset.greeted) {
+                appendMessage(t("ariadne_greeting"), "assistant");
+                messages.dataset.greeted = "1";
+            }
+            setTimeout(() => input.focus(), 100);
+        }
+
+        function closePanel() {
+            panel.classList.add("ariadne-panel--hidden");
+            panel.setAttribute("aria-hidden", "true");
+            launcher.style.display = "";
+        }
+
+        function stationName(id) {
+            const s = stationMap.get(id);
+            if (!s) return id;
+            return currentLang === "el" && s.nameEl ? s.nameEl : s.name;
+        }
+
+        function lineById(id) {
+            return lines.find((l) => l.id === id) || null;
+        }
+
+        function respond(intent) {
+            switch (intent.kind) {
+                case "help":
+                    return { text: window.SyrmosAriadne.help(currentLang) };
+                case "outOfScope":
+                    return { text: window.SyrmosAriadne.outOfScope(currentLang) };
+                case "needsClarification":
+                    return { text: window.SyrmosAriadne.clarify(intent.missing, currentLang) };
+                case "departures":
+                case "lastTrain":
+                    if (intent.stationId) {
+                        return {
+                            text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
+                            act: () => selectStation(intent.stationId, true),
+                        };
+                    }
+                    return { text: t("ariadne_no_station") };
+                case "openMap":
+                    if (intent.stationId) {
+                        return {
+                            text: t("ariadne_open_map", { station: stationName(intent.stationId) }),
+                            act: () => selectStation(intent.stationId, true),
+                        };
+                    }
+                    return { text: t("ariadne_no_station") };
+                case "alerts": {
+                    return {
+                        text: t("ariadne_open_alerts"),
+                        act: () => window.open("https://www.stasy.gr/en/news/", "_blank", "noopener"),
+                    };
+                }
+                case "plan": {
+                    const from = stationMap.get(intent.from);
+                    const to = stationMap.get(intent.to);
+                    if (!from || !to) return { text: t("ariadne_no_station") };
+                    const url = `https://www.google.com/maps/dir/?api=1&origin=${from.latitude},${from.longitude}&destination=${to.latitude},${to.longitude}&travelmode=transit`;
+                    return {
+                        text: t("ariadne_open_route", {
+                            from: stationName(from.id),
+                            to: stationName(to.id),
+                        }),
+                        act: () => window.open(url, "_blank", "noopener"),
+                    };
+                }
+                case "explainLine": {
+                    const line = lineById(intent.lineId);
+                    if (!line) return { text: t("ariadne_no_station") };
+                    return {
+                        text: t("ariadne_line", {
+                            id: line.id,
+                            a: line.terminalA || line.terminal_a || "",
+                            b: line.terminalB || line.terminal_b || "",
+                        }),
+                    };
+                }
+                case "explainFare":
+                    return { text: t("ariadne_fare") };
+                case "find":
+                    return { text: t("ariadne_no_station") };
+                default:
+                    return { text: window.SyrmosAriadne.outOfScope(currentLang) };
+            }
+        }
+
+        launcher.addEventListener("click", openPanel);
+        closeBtn.addEventListener("click", closePanel);
+        form.addEventListener("submit", (ev) => {
+            ev.preventDefault();
+            const value = (input.value || "").trim();
+            if (!value) return;
+            appendMessage(value, "user");
+            input.value = "";
+            const intent = window.SyrmosAriadne.parse(value);
+            const reply = respond(intent);
+            appendMessage(reply.text, "assistant");
+            if (reply.act) setTimeout(reply.act, 400);
         });
     }
 })();
