@@ -184,9 +184,19 @@ fun SyrmosApp() {
                                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                                 ),
                                 exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+                                // Lift the pill above the system navigation
+                                // bar (three-button / gesture bar) AND above
+                                // the LiquidGlassTabBar. The tab bar itself
+                                // uses windowInsetsPadding + ~64dp of visual
+                                // height + 4dp margin, so we need ~96dp of
+                                // clearance ON TOP of the nav-bar inset. On
+                                // devices with a tall three-button nav bar
+                                // (Xiaomi HyperOS etc) the previous fixed
+                                // 90dp overlapped the tab bar.
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(end = 16.dp, bottom = 90.dp)
+                                    .windowInsetsPadding(WindowInsets.navigationBars)
+                                    .padding(end = 16.dp, bottom = 96.dp)
                                     .zIndex(2f),
                             ) {
                                 AriadneLauncherPill(

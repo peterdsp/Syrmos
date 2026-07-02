@@ -221,7 +221,16 @@ class HomeViewModel(
         // ("Last M2: leave by 00:14") describe the same line the user is
         // most likely about to ride. Falls back to the nearest station's
         // first line when nothing is upcoming.
-        val teaserLineId = next?.lineId?.let { normalizeLineId(it) } ?: lineIds.firstOrNull()
+        //
+        // Only render the teaser when service is currently running (next
+        // departure within an hour). Between 02:00 and the first morning
+        // train the projector's 12-hour look-ahead would otherwise pick
+        // tomorrow's late-afternoon last train ("leave by 14:15") and
+        // dress it up as "tonight", which reads as broken to the user.
+        val nextIsSoon = (next?.minutesAway ?: Int.MAX_VALUE) <= 60
+        val teaserLineId = if (nextIsSoon) {
+            next?.lineId?.let { normalizeLineId(it) } ?: lineIds.firstOrNull()
+        } else null
         val lastTrain = teaserLineId?.let { getLastTrain.latestEitherDirection(stationId, it) }
         val lastTrainLine = lastTrain?.let { resolveLine(it.lineId) }
 
