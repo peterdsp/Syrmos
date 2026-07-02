@@ -1987,6 +1987,26 @@
     if (window.SyrmosAriadne) {
         window.SyrmosAriadne.init({ stations: stations, lines: lines });
 
+        // stationMap keys off the raw station ids from stations.json
+        // ("M3_NIK", "M2_SYN"), which is what SyrmosAriadne returns
+        // in its intents. selectStation() however keys off the composite
+        // stationNode ids ("NIKAIA_0_37966_23648") because it clusters
+        // nearby platforms into one map marker. Build a reverse map so
+        // an Ariadne raw station id resolves to the correct node id.
+        const rawIdToNodeId = new Map();
+        for (const node of stationNodes) {
+            for (const rawId of node.stationIds) {
+                rawIdToNodeId.set(rawId, node.id);
+            }
+        }
+        function nodeIdFor(rawId) {
+            return rawIdToNodeId.get(rawId) || null;
+        }
+        function openStation(rawId) {
+            const nodeId = nodeIdFor(rawId);
+            if (nodeId) selectStation(nodeId, true);
+        }
+
         const ariadneStyle = document.createElement("style");
         ariadneStyle.textContent = `
             .ariadne-launcher {
@@ -2120,7 +2140,7 @@
                     if (intent.stationId) {
                         return {
                             text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
-                            act: () => selectStation(intent.stationId, true),
+                            act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
                         };
                     }
                     return { text: t("ariadne_no_station") };
@@ -2128,7 +2148,7 @@
                     if (intent.stationId) {
                         return {
                             text: t("ariadne_open_map", { station: stationName(intent.stationId) }),
-                            act: () => selectStation(intent.stationId, true),
+                            act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
                         };
                     }
                     return { text: t("ariadne_no_station") };
