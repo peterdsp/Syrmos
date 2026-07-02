@@ -51,6 +51,9 @@ SHARED_SOURCES = [
     "SyrmosSchedulesService.swift",
     "SyrmosSchedulesStore.swift",
     "SyrmosStationOffsetsStore.swift",
+    "AirportData.swift",
+    "Localization.swift",
+    "SyrmosColors.swift",
 ]
 
 

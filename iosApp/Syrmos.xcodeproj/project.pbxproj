@@ -69,6 +69,8 @@
 		E1A2B3C4D5E60718293A4E90 /* StasyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */; };
 		ECAA824BE3E518277AB18AB6 /* NearbyStationDestinationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
+		020B9BA01E714B238FC04496 /* iosApp/Features/WhatsNew/WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */; };
+		CA564E5B6224431DAC6CC3E2 /* iosApp/Core/Schedule/AirportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -168,6 +170,8 @@
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingCardBody.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPickerSheet.swift; sourceTree = "<group>"; };
+		2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/WhatsNew/WhatsNewView.swift; sourceTree = SOURCE_ROOT; };
+		571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/AirportData.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -363,6 +367,7 @@
 		AAAA000000000000000000C6 /* Schedule */ = {
 			isa = PBXGroup;
 			children = (
+				571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */,
 				395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */,
 				DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */,
 				DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */,
@@ -396,6 +401,7 @@
 		AAAA000000000000000000F0 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */,
 				AAAA111111111111111111B0 /* Onboarding */,
 				AAAA000000000000000000F2 /* Timetables */,
 				AAAA000000000000000000F1 /* Fares */,
@@ -594,6 +600,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA564E5B6224431DAC6CC3E2 /* iosApp/Core/Schedule/AirportData.swift in Sources */,
+				020B9BA01E714B238FC04496 /* iosApp/Features/WhatsNew/WhatsNewView.swift in Sources */,
 				0658B8596FD64D0EB5BE30A0 /* iosApp/Features/Fares/FaresView.swift in Sources */,
 				DF3C6FE39FA544239D09EE50 /* iosApp/Core/Persistence/SyrmosFaresStore.swift in Sources */,
 				D4A0E928208E4D84AD520D51 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */,
