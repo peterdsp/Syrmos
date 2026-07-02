@@ -31,6 +31,8 @@
 		A1B2C3D4E5F60718192A3B4C /* iosApp/Core/Networking/STASYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6071829304142 /* iosApp/Core/Networking/STASYService.swift */; };
 		A1B2C3D4E5F60718293A4B01 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */; };
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
+		AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */; };
+		AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
 		AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */; };
 		AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */; };
@@ -164,6 +166,8 @@
 		F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift; sourceTree = SOURCE_ROOT; };
 		F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosRouteShapesStore.swift; sourceTree = SOURCE_ROOT; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingCardBody.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPickerSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -466,6 +470,8 @@
 			isa = PBXGroup;
 			children = (
 				F9632839850F8DA49BA56324 /* HomeView.swift */,
+				AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */,
+				AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -618,6 +624,8 @@
 				E1A2B3C4D5E60718293A4B5C /* iosApp/Core/Networking/SyrmosDeparturesService.swift in Sources */,
 				E1A2B3C4D5E60718293A4B6E /* iosApp/Core/Networking/LivePositionsService.swift in Sources */,
 				A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */,
+				AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */,
+				AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */,
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
@@ -782,7 +790,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -790,7 +798,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
@@ -805,7 +813,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -813,7 +821,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
@@ -886,7 +894,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
@@ -898,7 +906,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -914,7 +922,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
@@ -926,7 +934,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

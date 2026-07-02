@@ -1,6 +1,13 @@
 package com.syrmos.feature.home
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,9 +25,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +53,7 @@ import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.common.TrackedDeparture
+import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import com.syrmos.core.designsystem.component.toComposeColor
@@ -55,6 +65,7 @@ import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
+import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import org.koin.compose.koinInject
@@ -69,6 +80,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     var showAriadne by remember { mutableStateOf(false) }
+    var showTrackPicker by remember { mutableStateOf(false) }
     val tracked by DepartureTracking.active.collectAsState()
     var nowEpoch by remember { mutableStateOf(Clock.System.now().epochSeconds) }
     LaunchedEffect(Unit) {
@@ -97,48 +109,77 @@ fun HomeScreen(
         val activeTrack = tracked
         if (activeTrack != null) {
             item {
+                val trackedLine = uiState.lines.firstOrNull { it.id == activeTrack.lineId }
+                val accent = trackedLine?.color?.toComposeColor() ?: MetroBlue
                 TrackingCard(
                     tracked = activeTrack,
                     nowEpoch = nowEpoch,
                     lang = lang,
+                    lineAccent = accent,
                     onStop = { DepartureTracking.stop() },
                 )
             }
         }
 
         item {
-            FreshnessPill(freshness = uiState.freshness, lang = lang)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FreshnessPill(freshness = uiState.freshness, lang = lang)
+                Spacer(modifier = Modifier.weight(1f))
+                TrackAnyTrainChip(
+                    lang = lang,
+                    onClick = { showTrackPicker = true },
+                )
+            }
         }
 
-        item {
-            AnswerHero(
-                next = uiState.nextDeparture,
-                line = uiState.nextDepartureLine,
-                hasLocation = uiState.nearestStations.isNotEmpty(),
-                isTracked = activeTrack != null,
-                lang = lang,
-                onStationClick = {
-                    uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
-                },
-                onTrack = {
-                    val next = uiState.nextDeparture
-                    val station = uiState.nearestStations.firstOrNull()
-                    if (next != null && station != null) {
-                        DepartureTracking.track(
-                            TrackedDeparture(
-                                lineId = uiState.nextDepartureLine?.id ?: next.lineId,
-                                stationId = station.stationId,
-                                stationName = station.stationName,
-                                destination = uiState.nextDepartureLine?.let {
-                                    destinationName(it, next.direction, lang)
-                                } ?: "",
-                                scheduledTime = next.time,
-                                targetEpochSeconds = nowEpoch + next.minutesAway * 60L,
-                            ),
-                        )
-                    }
-                },
-            )
+        // Answer-hero shows the "next train" for the nearest station. When
+        // the user is already tracking a specific train, the countdown lives
+        // in the TrackingCard above and this card duplicates it. Hide it
+        // while tracking is active so there is exactly one countdown on
+        // screen. If the user wants a different next train, they can stop
+        // tracking or use the Lines tab.
+        if (activeTrack == null) {
+            item {
+                AnswerHero(
+                    next = uiState.nextDeparture,
+                    line = uiState.nextDepartureLine,
+                    hasLocation = uiState.nearestStations.isNotEmpty(),
+                    isTracked = false,
+                    lang = lang,
+                    onStationClick = {
+                        uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
+                    },
+                    onTrack = {
+                        val next = uiState.nextDeparture
+                        val station = uiState.nearestStations.firstOrNull()
+                        if (next != null && station != null) {
+                            val lineId = uiState.nextDepartureLine?.id ?: next.lineId
+                            val stationsOnLine = uiState.stationsByLine[lineId].orEmpty()
+                            DepartureTracking.track(
+                                TrackedDeparture(
+                                    lineId = lineId,
+                                    stationId = station.stationId,
+                                    stationName = station.stationName,
+                                    destination = uiState.nextDepartureLine?.let {
+                                        destinationName(it, next.direction, lang)
+                                    } ?: "",
+                                    scheduledTime = next.time,
+                                    targetEpochSeconds = nowEpoch + next.minutesAway * 60L,
+                                    routeStations = computeRouteStations(
+                                        stations = stationsOnLine,
+                                        targetStationId = station.stationId,
+                                        direction = next.direction,
+                                        lang = lang,
+                                    ),
+                                ),
+                            )
+                        }
+                    },
+                )
+            }
         }
 
         val lastTrain = uiState.lastTrain
@@ -278,7 +319,42 @@ fun HomeScreen(
             )
         }
     }
+
+    if (showTrackPicker) {
+        TrackPickerSheet(
+            lines = uiState.lines,
+            lang = lang,
+            onDismiss = { showTrackPicker = false },
+        )
     }
+    }
+}
+
+@Composable
+private fun TrackAnyTrainChip(lang: AppLanguage, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(MetroBlue.copy(alpha = 0.14f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(text = "🎯", style = MaterialTheme.typography.labelMedium)
+        Text(
+            text = trackAnyLabel(lang),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MetroBlue,
+        )
+    }
+}
+
+private fun trackAnyLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Παρακολούθηση συρμού"
+    AppLanguage.ALBANIAN -> "Ndiq një tren"
+    else -> "Track a train"
 }
 
 private fun askAriadneLabel(lang: AppLanguage): String = when (lang) {
@@ -472,62 +548,326 @@ private fun destinationName(line: Line?, direction: Direction, lang: AppLanguage
 }
 
 // MARK: Track-this-departure (Tier 2 in-app surface)
+//
+// Uber-style tracking card. One card, one countdown, one big Stop button.
+// Layout:
+//   [ ● LIVE                     Arriving <Station> ]
+//   [                                        1 min  ]
+//   [ ──────────────────────  63%  progress bar ]
+//   [ M3 · to Doukissis Plakentias · 13:12          ]
+//   [ [        ◼  Stop tracking                  ]  ]
+// The progress bar fills as the countdown ticks down, using the moment the
+// user tapped Track as the "0%" anchor. No persistence needed: if the card
+// leaves the composition we simply restart the anchor, which matches user
+// intuition ("I opened it just now, so the bar is fresh").
 
 @Composable
 private fun TrackingCard(
     tracked: TrackedDeparture,
     nowEpoch: Long,
     lang: AppLanguage,
+    lineAccent: Color,
     onStop: () -> Unit,
 ) {
     val remaining = tracked.minutesRemaining(nowEpoch)
     val due = tracked.isDue(nowEpoch)
+    val startedAt = remember(tracked.targetEpochSeconds) { nowEpoch }
+    val totalSecs = (tracked.targetEpochSeconds - startedAt).coerceAtLeast(1L)
+    val elapsedSecs = (nowEpoch - startedAt).coerceAtLeast(0L)
+    val rawProgress = (elapsedSecs.toFloat() / totalSecs.toFloat()).coerceIn(0f, 1f)
+    val progress by animateFloatAsState(
+        targetValue = rawProgress,
+        animationSpec = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+        label = "trackProgress",
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MetroBlue.copy(alpha = 0.12f)),
-        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = lineAccent.copy(alpha = 0.10f)),
+        shape = RoundedCornerShape(20.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LivePulseDot(color = lineAccent)
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = trackingHeader(lang).uppercase(),
+                    text = L.LIVE.text(lang).uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MetroBlue,
+                    fontWeight = FontWeight.Bold,
+                    color = lineAccent,
                 )
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = "${tracked.lineId} · ${tracked.stationName}",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = arrivingLabel(lang, tracked.stationName),
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                if (tracked.destination.isNotBlank()) {
+            }
+
+            Text(
+                text = if (due) dueLabel(lang) else "$remaining min",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = lineAccent,
+            )
+
+            if (tracked.routeStations.size >= 2) {
+                StationStrip(
+                    stops = tracked.routeStations,
+                    progress = progress,
+                    accent = lineAccent,
+                )
+            } else {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = lineAccent,
+                    trackColor = lineAccent.copy(alpha = 0.20f),
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(lineAccent)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                ) {
                     Text(
-                        text = "${L.TO.text(lang)} ${tracked.destination} · ${tracked.scheduledTime}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = tracked.lineId,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
                     )
                 }
-            }
-            Column(horizontalAlignment = Alignment.End) {
+                if (tracked.destination.isNotBlank()) {
+                    Text(
+                        text = "${L.TO.text(lang)} ${tracked.destination}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = if (due) dueLabel(lang) else "$remaining min",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MetroBlue,
+                    text = tracked.scheduledTime,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onStop)
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
                 Text(
-                    text = stopLabel(lang),
+                    text = "◼",
                     style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stopTrackingLabel(lang),
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.clickable(onClick = onStop),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
     }
+}
+
+/**
+ * Horizontal strip of station dots with a train marker interpolating from
+ * the first dot to the last as [progress] goes 0 -> 1. The last stop is the
+ * tracked station and is always highlighted. Dots the train has already
+ * "passed" (index proportional to progress) get the full accent colour;
+ * upcoming dots dim to a 30% wash so the eye reads left-to-right movement
+ * even between minute boundaries.
+ */
+@Composable
+private fun StationStrip(
+    stops: List<TrackedRouteStop>,
+    progress: Float,
+    accent: Color,
+) {
+    val safeProgress = progress.coerceIn(0f, 1f)
+    val lastIndex = stops.lastIndex
+    val trainIndex = safeProgress * lastIndex
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().height(28.dp)) {
+            // Connector line behind the dots.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(accent.copy(alpha = 0.20f)),
+            )
+            // Filled portion of the connector up to the train.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth(safeProgress)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(accent),
+            )
+            // Station dots evenly distributed across the strip.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                stops.forEachIndexed { index, _ ->
+                    val passed = index <= trainIndex
+                    val isTarget = index == lastIndex
+                    val dotSize = if (isTarget) 14.dp else 10.dp
+                    val fill = if (passed) accent else accent.copy(alpha = 0.30f)
+                    Box(
+                        modifier = Modifier
+                            .width(dotSize)
+                            .height(dotSize)
+                            .clip(CircleShape)
+                            .background(fill),
+                    )
+                }
+            }
+            // Train marker positioned by interpolating between dots.
+            TrainMarker(
+                accent = accent,
+                progress = safeProgress,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            stops.forEachIndexed { index, stop ->
+                if (index == 0 || index == lastIndex) {
+                    Text(
+                        text = stop.stationName,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (index == lastIndex) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (index == lastIndex) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrainMarker(accent: Color, progress: Float) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 0.dp),
+        horizontalArrangement = Arrangement.Start,
+    ) {
+        // Reserve leading whitespace = progress * (fullWidth - markerWidth).
+        // Simplest is a Spacer sized by weight() using a Row split.
+        if (progress > 0f) {
+            Spacer(modifier = Modifier.weight(progress.coerceAtLeast(0.001f)))
+        }
+        Text(
+            text = "🚆",
+            style = MaterialTheme.typography.titleSmall,
+        )
+        if (progress < 1f) {
+            Spacer(modifier = Modifier.weight((1f - progress).coerceAtLeast(0.001f)))
+        }
+    }
+}
+
+/**
+ * Slice up to [maxStops] stations approaching the target station in the
+ * direction of travel. Result is ordered target-last so the strip reads
+ * left-to-right, with earlier stops on the left and the tracked station
+ * on the right.
+ */
+internal fun computeRouteStations(
+    stations: List<Station>,
+    targetStationId: String,
+    direction: Direction,
+    lang: AppLanguage,
+    maxStops: Int = 6,
+): List<TrackedRouteStop> {
+    if (stations.isEmpty() || maxStops < 2) return emptyList()
+    val targetIndex = stations.indexOfFirst { it.id == targetStationId }
+    if (targetIndex < 0) return emptyList()
+
+    fun label(s: Station): String =
+        if (lang == AppLanguage.GREEK && s.nameEl.isNotBlank()) s.nameEl else s.name
+
+    return when (direction) {
+        Direction.OUTBOUND -> {
+            val start = (targetIndex - (maxStops - 1)).coerceAtLeast(0)
+            (start..targetIndex).map { i ->
+                TrackedRouteStop(stations[i].id, label(stations[i]))
+            }
+        }
+        Direction.INBOUND -> {
+            val end = (targetIndex + (maxStops - 1)).coerceAtMost(stations.size - 1)
+            (end downTo targetIndex).map { i ->
+                TrackedRouteStop(stations[i].id, label(stations[i]))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LivePulseDot(color: Color) {
+    val infinite = rememberInfiniteTransition(label = "livePulse")
+    val alpha by infinite.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "livePulseAlpha",
+    )
+    Box(
+        modifier = Modifier
+            .width(10.dp)
+            .height(10.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = alpha)),
+    )
 }
 
 private fun trackLabel(lang: AppLanguage) = when (lang) {
@@ -536,11 +876,15 @@ private fun trackLabel(lang: AppLanguage) = when (lang) {
 private fun trackingOnLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Παρακολουθείται"; AppLanguage.ALBANIAN -> "Po ndiqet"; else -> "Tracking"
 }
-private fun trackingHeader(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Παρακολούθηση συρμού"; AppLanguage.ALBANIAN -> "Po ndiqet treni"; else -> "Tracking your train"
+private fun stopTrackingLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Διακοπή παρακολούθησης"
+    AppLanguage.ALBANIAN -> "Ndalo ndjekjen"
+    else -> "Stop tracking"
 }
-private fun stopLabel(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Διακοπή"; AppLanguage.ALBANIAN -> "Ndalo"; else -> "Stop"
+private fun arrivingLabel(lang: AppLanguage, station: String) = when (lang) {
+    AppLanguage.GREEK -> "Φτάνει $station"
+    AppLanguage.ALBANIAN -> "Po arrin $station"
+    else -> "Arriving $station"
 }
 private fun dueLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Τώρα"; AppLanguage.ALBANIAN -> "Tani"; else -> "Due"
