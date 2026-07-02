@@ -87,6 +87,14 @@ sealed interface AssistantIntent {
 
     /** Outside Athens transit and the app. Ariadne politely declines. */
     data object OutOfScope : AssistantIntent
+
+    /**
+     * Easter egg: someone said "liepur" / "λιεπ" / "liepuras" or a close
+     * variant. Ariadne answers with a random cat joke. Deliberately opaque
+     * from the outside — the trigger words aren't documented anywhere the
+     * user could stumble onto them.
+     */
+    data object EasterEggLiepur : AssistantIntent
 }
 
 enum class DayContext { TODAY, TOMORROW, WEEKEND, SATURDAY, SUNDAY }

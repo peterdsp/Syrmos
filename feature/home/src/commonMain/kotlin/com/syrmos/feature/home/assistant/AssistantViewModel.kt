@@ -149,6 +149,34 @@ class AssistantViewModel(
         AssistantIntent.Help -> botMessage(helpText())
         is AssistantIntent.NeedsClarification -> botMessage(clarify(intent.missing))
         AssistantIntent.OutOfScope -> botMessage(outOfScopeText())
+        AssistantIntent.EasterEggLiepur -> botMessage(catJoke())
+    }
+
+    private fun catJoke(): String {
+        val jokes = when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> listOf(
+                "Γιατί οι γάτες δεν παίζουν πόκερ στη ζούγκλα; Έχει πολλά τσιτάχ.",
+                "Πώς λέγεται μια στοίβα γατάκια; Μιαοβούνο.",
+                "Τι κάνει ένας γάτος στον υπολογιστή; Προσέχει το ποντίκι.",
+                "Γιατί ο γάτος πήγε στο νοσοκομείο; Είχε πυρετό αγέλας.",
+                "Πώς τελειώνει η μάχη δύο γάτων; Με ένα σφύριγμα και ένα μιάου.",
+            )
+            AppLanguage.ALBANIAN -> listOf(
+                "Pse macet nuk luajnë poker në xhungël? Sepse ka shumë çita.",
+                "Si e quajnë një grumbull macesh të vogla? Një mjaumal.",
+                "Pse ishte macja ulur mbi kompjuter? Për të vëzhguar miun.",
+                "Cila është ëmbëlsira e preferuar e maces? Muslet me çokollatë.",
+                "Si e mbyllin macet një grindje? Me një fshirje dhe një mjau.",
+            )
+            else -> listOf(
+                "Why don't cats play poker in the jungle? Too many cheetahs.",
+                "What do you call a pile of kittens? A meowntain.",
+                "Why was the cat sitting on the computer? To keep an eye on the mouse.",
+                "What's a cat's favourite dessert? Chocolate mousse.",
+                "How do two cats end a fight? They hiss and make up.",
+            )
+        }
+        return jokes.random()
     }
 
     private suspend fun resolveDepartures(intent: AssistantIntent.ShowDepartures): AssistantMessage {

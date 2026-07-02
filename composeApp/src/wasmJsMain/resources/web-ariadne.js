@@ -367,9 +367,19 @@
 
     // MARK: - Public parse
 
+    // Easter egg triggers. Substring match on folded text so "Liepuras",
+    // "λιεπουρας", "λιεπ", "liepurashi" all resolve.
+    const LIEPUR_TRIGGERS = ['liepur', 'λιεπ'];
+
     function parse(rawInput) {
         const text = fold(rawInput || '');
         if (!text.trim()) return { kind: 'outOfScope' };
+
+        // Easter egg runs before anything else so a transit intent that
+        // happens to share substrings never masks it.
+        for (const trig of LIEPUR_TRIGGERS) {
+            if (text.indexOf(trig) >= 0) return { kind: 'easterEggLiepur' };
+        }
 
         const mentionedStations = matchStations(text);
         const mentionedLine = matchLine(text);

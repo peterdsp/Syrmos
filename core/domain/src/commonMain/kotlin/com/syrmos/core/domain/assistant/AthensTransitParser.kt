@@ -24,6 +24,13 @@ class AthensTransitParser(
         val text = fold(rawInput)
         if (text.isBlank()) return AssistantIntent.OutOfScope
 
+        // Easter egg check runs before anything else so the trigger words
+        // aren't accidentally masked by a legitimate transit intent that
+        // happens to share substrings. See EasterEggLiepur for the story.
+        if (LIEPUR_TRIGGERS.any { text.contains(it) }) {
+            return AssistantIntent.EasterEggLiepur
+        }
+
         val mentionedStations = matchStations(text)
         val mentionedLine = matchLine(text)
         val day = matchDay(text)
@@ -461,6 +468,11 @@ class AthensTransitParser(
         private val WEEKEND_WORDS = listOf("weekend", "σαββατοκυριακο", "fundjave")
         private val SATURDAY_WORDS = listOf("saturday", "σαββατο", "te shtune", "shtune")
         private val SUNDAY_WORDS = listOf("sunday", "κυριακη", "te diel", "diel")
+
+        // Easter egg triggers. Substring match on folded text — "Liepuras",
+        // "λιεπουρας", "Λιεπ", "liepurashi" all resolve. Kept as substrings
+        // (not word-boundary) so silly variants still fire.
+        private val LIEPUR_TRIGGERS = listOf("liepur", "λιεπ")
 
         // Single-word vocabulary tokens the fuzzy matcher must never "correct"
         // into a station (so "trains" stays a departures cue, not a stop).
