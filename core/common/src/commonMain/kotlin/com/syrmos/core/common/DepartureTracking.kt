@@ -13,6 +13,17 @@ import kotlinx.coroutines.flow.asStateFlow
  * Pure and offline: the countdown is just arithmetic against the device clock,
  * so it keeps ticking with no network, exactly like the projector it came from.
  */
+/**
+ * One stop on the tracked train's route. Ordered lists of these on a
+ * [TrackedDeparture] drive the station-strip visualisation in the tracking
+ * card, where the train icon interpolates between dots as the countdown
+ * ticks down.
+ */
+data class TrackedRouteStop(
+    val stationId: String,
+    val stationName: String,
+)
+
 data class TrackedDeparture(
     val lineId: String,
     val stationId: String,
@@ -22,6 +33,15 @@ data class TrackedDeparture(
     val scheduledTime: String,
     /** Unix epoch second the train is expected, used for the live countdown. */
     val targetEpochSeconds: Long,
+    /**
+     * Ordered stops on the way to the tracked departure, ordered in the
+     * direction of travel with the tracked station always last. Up to six
+     * items in practice (target plus up to five upstream stations) so the
+     * strip stays readable. Empty when the caller couldn't resolve the
+     * line's stations; the tracking card falls back to a plain progress
+     * bar in that case.
+     */
+    val routeStations: List<TrackedRouteStop> = emptyList(),
 ) {
     /** Whole minutes left until the train, floored at 0. Null once it's due. */
     fun minutesRemaining(nowEpochSeconds: Long): Int {

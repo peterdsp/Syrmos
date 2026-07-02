@@ -7,6 +7,7 @@ import com.syrmos.core.data.sync.WeatherRepository
 import com.syrmos.core.model.weather.WeatherSnapshot
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
+import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
@@ -15,6 +16,7 @@ import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.RailwayGovLiveTrackerService
@@ -48,6 +50,13 @@ data class HomeUiState(
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val selectedStationId: String? = null,
     val lines: List<Line> = emptyList(),
+    /**
+     * Ordered station list per line id, loaded once at boot from
+     * [GetLineDetailUseCase]. Feeds the tracking card's station strip so
+     * callers can populate [com.syrmos.core.common.TrackedDeparture.routeStations]
+     * without another round-trip to the repository at track time.
+     */
+    val stationsByLine: Map<String, List<Station>> = emptyMap(),
     val announcements: List<STASYAnnouncement> = emptyList(),
     val serviceStatus: STASYServiceStatus? = null,
     val isLoading: Boolean = false,
@@ -59,6 +68,7 @@ class HomeViewModel(
     private val getNextDepartures: GetNextDeparturesUseCase,
     private val getLastTrain: GetLastTrainUseCase,
     private val getLinesUseCase: GetLinesUseCase,
+    private val getLineDetail: GetLineDetailUseCase,
     private val announcementsRepository: AnnouncementsRepository,
     private val liveTrackerService: RailwayGovLiveTrackerService,
     private val weatherRepository: WeatherRepository,
@@ -129,6 +139,24 @@ class HomeViewModel(
                 .catch { /* ignore */ }
                 .collect { lines ->
                     _uiState.update { it.copy(lines = lines) }
+                    // Warm the per-line station cache so the tracking card's
+                    // station strip has data ready the moment the user taps
+                    // Track. Small fixed data set (9 lines), fire-and-forget.
+                    lines.forEach { line -> loadStationsForLine(line.id) }
+                }
+        }
+    }
+
+    private fun loadStationsForLine(lineId: String) {
+        scope.launch {
+            getLineDetail.invoke(lineId)
+                .catch { /* ignore */ }
+                .collect { detail ->
+                    val stations = detail?.stations.orEmpty()
+                    if (stations.isEmpty()) return@collect
+                    _uiState.update { state ->
+                        state.copy(stationsByLine = state.stationsByLine + (lineId to stations))
+                    }
                 }
         }
     }

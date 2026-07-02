@@ -13,6 +13,12 @@ struct SyrmosTrackingAttributes: ActivityAttributes {
         var minutesRemaining: Int
         var scheduledTime: String
         var isDue: Bool
+        // 0.0 at the moment tracking started, 1.0 when the train is due.
+        // The Lock Screen renders this as a progress bar under the countdown
+        // so the widget shows visible movement between minute-boundary
+        // updates. Optional so decoding still works if an in-flight activity
+        // pushed an older state shape.
+        var progress: Double? = 0
     }
 
     var lineId: String

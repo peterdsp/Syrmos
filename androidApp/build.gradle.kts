@@ -40,8 +40,8 @@ android {
         applicationId = "com.syrmos.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 35
-        versionName = "1.1.0"
+        versionCode = 36
+        versionName = "1.1.1"
     }
     signingConfigs {
         create("release") {
