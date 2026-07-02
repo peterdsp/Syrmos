@@ -19,10 +19,15 @@ final class AriadneModel: ObservableObject {
 
     private let parser = AthensTransitParser(vocabulary: .fromSyrmosData())
     private let alertsService = STASYService()
+    // Own location source for travel-time ("how long to X") answers. Started
+    // early so a fix is usually ready by the time the user asks; when it isn't
+    // (or permission is off) the ETA resolver asks for an origin instead.
+    private let location = LocationService()
     private var loc: LocalizationManager { LocalizationManager.shared }
 
     init() {
         messages = [greeting()]
+        location.requestIfNeeded()
     }
 
     func ask(_ input: String) {
@@ -50,6 +55,8 @@ final class AriadneModel: ObservableObject {
             return resolveLastTrain(stationId: stationId, lineId: lineId)
         case let .planTrip(from, to, lowExposure):
             return resolvePlanTrip(from: from, to: to, lowExposure: lowExposure)
+        case let .travelTime(to, from):
+            return resolveTravelTime(to: to, from: from)
         case let .findStation(query):
             return resolveFindStation(query)
         case let .explainLine(lineId):
@@ -227,6 +234,47 @@ final class AriadneModel: ObservableObject {
         return bot(t("\(legs). About \(plan.totalMinutes) min, \(transfers).",
             "\(legs). Περίπου \(plan.totalMinutes) λεπτά, \(transfers).",
             "\(legs). Rreth \(plan.totalMinutes) min, \(transfers).") + exposure)
+    }
+
+    /// "How long to X". Origin is the user's nearest station from GPS, or an
+    /// explicitly named origin. With no explicit origin and no location fix (or
+    /// permission off), it asks for the origin instead of guessing.
+    private func resolveTravelTime(to: String?, from: String?) -> AriadneMessage {
+        guard let toId = to else { return bot(clarify(.destinationStation)) }
+
+        let originId: String?
+        if let from {
+            originId = from
+        } else if location.hasPermission, let nearest = location.nearbyStations.first {
+            originId = nearest.id
+        } else {
+            originId = nil
+        }
+        guard let fromId = originId else {
+            // No explicit origin and no usable location: ask which station.
+            return bot(clarify(.originStation))
+        }
+        if fromId == toId {
+            return bot(t("You're already at \(stationName(toId)).",
+                "Είσαι ήδη στον \(stationName(toId)).",
+                "Je tashmë te \(stationName(toId))."))
+        }
+        guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
+            return bot(t("I couldn't find a rail route between those.",
+                "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
+                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+        }
+        let transfers = plan.transfers == 0
+            ? t("no change", "χωρίς αλλαγή", "pa ndërrim")
+            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
+        return bot(t("About \(plan.totalMinutes) min from \(stationName(fromId)) to \(stationName(toId)), \(transfers).",
+            "Περίπου \(plan.totalMinutes) λεπτά από \(stationName(fromId)) προς \(stationName(toId)), \(transfers).",
+            "Rreth \(plan.totalMinutes) min nga \(stationName(fromId)) te \(stationName(toId)), \(transfers)."))
+    }
+
+    private func stationName(_ id: String) -> String {
+        guard let s = allStations().first(where: { $0.id == id }) else { return id }
+        return name(s)
     }
 
     private enum RouteExposure { case sheltered, mixed, exposed }

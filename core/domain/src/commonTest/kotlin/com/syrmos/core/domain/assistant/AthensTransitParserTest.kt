@@ -163,6 +163,60 @@ class AthensTransitParserTest {
         assertIs<AssistantIntent.OutOfScope>(parser.parse("who won the election"))
     }
 
+    // Travel time / ETA
+
+    @Test
+    fun travel_time_to_single_station_defaults_origin_to_location() {
+        val intent = parser.parse("how long to the Airport")
+        val eta = assertIs<AssistantIntent.TravelTime>(intent)
+        assertEquals("M3_AER", eta.toStationId)
+        assertEquals(null, eta.fromStationId)
+    }
+
+    @Test
+    fun travel_time_with_explicit_origin_and_destination() {
+        val intent = parser.parse("how many minutes from Piraeus to Syntagma")
+        val eta = assertIs<AssistantIntent.TravelTime>(intent)
+        assertEquals("M1_PIR", eta.fromStationId)
+        assertEquals("M2_SYN", eta.toStationId)
+    }
+
+    @Test
+    fun travel_time_without_destination_asks_for_destination() {
+        val intent = parser.parse("how long does it take")
+        val clar = assertIs<AssistantIntent.NeedsClarification>(intent)
+        assertIs<AssistantIntent.TravelTime>(clar.base)
+        assertEquals(MissingSlot.DESTINATION_STATION, clar.missing)
+    }
+
+    // Fuzzy / typo tolerance
+
+    @Test
+    fun fuzzy_typo_resolves_station() {
+        val intent = parser.parse("next trains from Sintagna")
+        val dep = assertIs<AssistantIntent.ShowDepartures>(intent)
+        assertEquals("M2_SYN", dep.stationId)
+    }
+
+    @Test
+    fun fuzzy_bare_typo_is_departures() {
+        val intent = parser.parse("Monastraki")
+        val dep = assertIs<AssistantIntent.ShowDepartures>(intent)
+        assertEquals("M1_MON", dep.stationId)
+    }
+
+    @Test
+    fun fuzzy_does_not_match_gibberish() {
+        assertIs<AssistantIntent.OutOfScope>(parser.parse("qwertyuiop"))
+    }
+
+    @Test
+    fun clean_query_is_not_overridden_by_fuzzy() {
+        val intent = parser.parse("Piraeus")
+        val dep = assertIs<AssistantIntent.ShowDepartures>(intent)
+        assertEquals("M1_PIR", dep.stationId)
+    }
+
     // Greek
 
     @Test

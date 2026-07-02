@@ -118,6 +118,7 @@ struct RootView: View {
     var body: some View {
         if hasCompletedOnboarding {
             ContentView()
+                .modifier(WhatsNewPresenter())
         } else {
             OnboardingView {
                 UserDefaults.standard.set(true, forKey: kOnboardingCompletedKey)

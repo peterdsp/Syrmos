@@ -108,7 +108,21 @@ struct TrackPickerSheet: View {
         VStack(spacing: 8) {
             directionRow(line: line, target: line.terminalB, direction: .outbound)
             directionRow(line: line, target: line.terminalA, direction: .inbound)
+            // M3 also runs the airport branch (M3_AIR); let the user track it.
+            if lineHasAirport(line) {
+                directionRow(line: line, target: airportLabel, direction: .airport)
+            }
             Spacer()
+        }
+    }
+
+    private func lineHasAirport(_ line: TransitLine) -> Bool { line.id == "M3" }
+
+    private var airportLabel: String {
+        switch loc.language {
+        case .greek: return "Αεροδρόμιο"
+        case .albanian: return "Aeroporti"
+        case .english: return "Airport"
         }
     }
 
@@ -168,13 +182,25 @@ struct TrackPickerSheet: View {
     }
 
     private func departureList(line: TransitLine, station: TransitStation, direction: TransitDirection) -> some View {
-        let departures = SyrmosData.sampleDepartures(
+        // Same real projector the station sheet and Home "next train" use, so
+        // the track flow shows live data instead of the old sample set. The
+        // 12-hour horizon rolls into tomorrow's first trains overnight.
+        let departures = ScheduleProjector.nextDepartures(
             for: station.id,
-            lineIds: [line.id]
+            lineIds: [line.id],
+            limit: 100,
+            timeHorizonMinutes: 12 * 60
         ).filter { dep in
-            let terminal = direction == .outbound ? line.terminalB : line.terminalA
-            return dep.direction.localizedCaseInsensitiveContains(terminal)
-                || dep.direction.isEmpty
+            switch direction {
+            case .airport:
+                return dep.serviceType == "airport"
+            case .outbound:
+                return dep.serviceType != "airport"
+                    && (dep.direction.localizedCaseInsensitiveContains(line.terminalB) || dep.direction.isEmpty)
+            case .inbound:
+                return dep.serviceType != "airport"
+                    && (dep.direction.localizedCaseInsensitiveContains(line.terminalA) || dep.direction.isEmpty)
+            }
         }
         return ScrollView {
             VStack(spacing: 6) {
@@ -187,7 +213,12 @@ struct TrackPickerSheet: View {
                 } else {
                     ForEach(departures) { dep in
                         Button {
-                            let terminal = direction == .outbound ? line.terminalB : line.terminalA
+                            let terminal: String
+                            switch direction {
+                            case .outbound: terminal = line.terminalB
+                            case .inbound: terminal = line.terminalA
+                            case .airport: terminal = airportLabel
+                            }
                             let stationName = loc.language == .greek ? station.nameEl : station.name
                             let route = TrackedDeparture.computeRouteStations(
                                 stations: SyrmosData.stations(for: line.id),
@@ -307,4 +338,4 @@ struct TrackPickerSheet: View {
 }
 
 enum PickStep { case line, direction, station, departure }
-enum TransitDirection { case outbound, inbound }
+enum TransitDirection { case outbound, inbound, airport }

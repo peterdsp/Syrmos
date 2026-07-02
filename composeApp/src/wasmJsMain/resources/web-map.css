@@ -1272,3 +1272,57 @@ body {
     0%   { width: 24px; height: 24px; opacity: 0.85; }
     100% { width: 56px; height: 56px; opacity: 0;    }
 }
+
+/* First-visit "what's new" card ---------------------------------------- */
+.whatsnew-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(6, 10, 20, 0.62);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: whatsnew-fade 0.25s ease both;
+}
+.whatsnew-card {
+    width: min(420px, 100%);
+    background: #12161f;
+    color: #f4f6fb;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 22px 22px 18px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    animation: whatsnew-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.whatsnew-owl { font-size: 34px; line-height: 1; }
+.whatsnew-title { margin: 8px 0 12px; font-size: 20px; font-weight: 700; }
+.whatsnew-list { margin: 0 0 18px; padding-left: 18px; display: grid; gap: 8px; }
+.whatsnew-list li { font-size: 14px; line-height: 1.4; color: #cdd4e2; }
+.whatsnew-actions { display: flex; gap: 10px; align-items: center; }
+.whatsnew-cta {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+    background: #2f6bff;
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 12px 14px;
+    border-radius: 12px;
+}
+.whatsnew-dismiss {
+    background: transparent;
+    color: #aab3c5;
+    border: 0;
+    font-size: 14px;
+    padding: 12px 10px;
+    cursor: pointer;
+}
+.whatsnew-stores { margin-top: 12px; text-align: center; font-size: 12px; color: #8b93a7; }
+.whatsnew-stores a { color: #8b93a7; text-decoration: none; }
+.whatsnew-stores a:hover { color: #cdd4e2; }
+@keyframes whatsnew-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes whatsnew-pop { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }

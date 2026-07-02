@@ -81,7 +81,9 @@ struct TrackedDeparture: Equatable {
             language == .greek ? s.nameEl : s.name
         }
         switch direction {
-        case .outbound:
+        case .outbound, .airport:
+            // Airport (M3_AIR) trains share the M3 corridor toward Doukissis
+            // Plakentias before branching, so their approach is outbound.
             let start = max(targetIndex - (maxStops - 1), 0)
             return (start...targetIndex).map { i in
                 TrackedRouteStop(stationId: stations[i].id, stationName: label(stations[i]))

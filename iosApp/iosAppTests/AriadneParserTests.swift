@@ -119,6 +119,61 @@ final class AriadneParserTests: XCTestCase {
         }
     }
 
+    // MARK: - Travel time / ETA
+
+    func test_travelTimeSingleStationDefaultsOrigin() {
+        guard case let .travelTime(toId, fromId) = parser.parse("how long to the Airport") else {
+            return XCTFail("expected travel time")
+        }
+        XCTAssertEqual(toId, "M3_AER")
+        XCTAssertNil(fromId)
+    }
+
+    func test_travelTimeExplicitOriginDestination() {
+        guard case let .travelTime(toId, fromId) = parser.parse("how many minutes from Piraeus to Syntagma") else {
+            return XCTFail("expected travel time")
+        }
+        XCTAssertEqual(fromId, "M1_PIR")
+        XCTAssertEqual(toId, "M2_SYN")
+    }
+
+    func test_travelTimeWithoutDestinationAsksDestination() {
+        guard case let .needsClarification(base, missing) = parser.parse("how long does it take") else {
+            return XCTFail("expected clarification")
+        }
+        XCTAssertEqual(missing, .destinationStation)
+        guard case .travelTime = base else { return XCTFail("expected travelTime base") }
+    }
+
+    // MARK: - Fuzzy / typo tolerance
+
+    func test_fuzzyTypoResolvesStation() {
+        guard case let .showDepartures(stationId, _, _) = parser.parse("next trains from Sintagna") else {
+            return XCTFail("expected departures")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_fuzzyBareTypoIsDepartures() {
+        guard case let .showDepartures(stationId, _, _) = parser.parse("Monastraki") else {
+            return XCTFail("expected departures")
+        }
+        XCTAssertEqual(stationId, "M1_MON")
+    }
+
+    func test_fuzzyDoesNotMatchGibberish() {
+        guard case .outOfScope = parser.parse("qwertyuiop") else {
+            return XCTFail("expected out of scope")
+        }
+    }
+
+    func test_cleanQueryNotOverriddenByFuzzy() {
+        guard case let .showDepartures(stationId, _, _) = parser.parse("Piraeus") else {
+            return XCTFail("expected departures")
+        }
+        XCTAssertEqual(stationId, "M1_PIR")
+    }
+
     func test_greekDepartures() {
         guard case let .showDepartures(stationId, _, _) = parser.parse("επόμενα δρομολόγια από Σύνταγμα") else {
             return XCTFail("expected departures")

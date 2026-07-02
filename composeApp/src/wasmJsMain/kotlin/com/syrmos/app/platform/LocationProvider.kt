@@ -21,3 +21,13 @@ actual fun readOnboardingCompleted(): Boolean =
 actual fun markOnboardingCompleted() {
     localStorage.setItem(ONBOARDING_KEY, "1")
 }
+
+private const val WHATS_NEW_KEY = "syrmos.whatsnew.version"
+
+// The web build shows its own what's-new card (web-map.js); this stays wired
+// for API parity.
+actual fun readLastWhatsNewVersion(): String? = localStorage.getItem(WHATS_NEW_KEY)
+
+actual fun markWhatsNewSeen(version: String) {
+    localStorage.setItem(WHATS_NEW_KEY, version)
+}

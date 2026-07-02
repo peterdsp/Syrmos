@@ -34,10 +34,12 @@ val featureModule = module {
             getLastTrain = get(),
             planJourney = get(),
             searchStations = get(),
+            findNearestStation = get(),
             announcementsRepository = get(),
             faresRepository = get(),
             favoritesRepository = get(),
             weatherRepository = get(),
+            queryNormalizer = com.syrmos.app.platform.provideQueryNormalizer(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
