@@ -2171,6 +2171,56 @@
             }
         }
 
+        // Conversation state: when Ariadne returns NeedsClarification we
+        // stash the pending intent so the next user turn can fill the
+        // missing slot (e.g. "How do I go to Nikaia" -> "From which
+        // station?" -> "Syntagma" now resolves as the trip's origin
+        // rather than as a fresh Syntagma-departures query). The state
+        // clears once the user asks anything unrelated.
+        let pendingIntent = null;
+        let pendingMissing = null;
+
+        function mergePending(rawInput) {
+            // Try to fill the missing slot with a station matched from
+            // the bare input. Requires SyrmosAriadne.parse to expose
+            // parseStation, which we approximate here by delegating a
+            // whole parse and picking a station if one shows up.
+            const asStationOnly = window.SyrmosAriadne.parse(rawInput);
+            let stationId = null;
+            // A bare station name usually resolves to a Departures intent
+            // with a stationId slot. Pull that out.
+            if (asStationOnly && asStationOnly.kind === "departures" && asStationOnly.stationId) {
+                stationId = asStationOnly.stationId;
+            } else if (asStationOnly && asStationOnly.kind === "needsClarification" &&
+                asStationOnly.base && asStationOnly.base.stationId) {
+                stationId = asStationOnly.base.stationId;
+            }
+            if (!stationId) return null;
+
+            if (pendingIntent.kind === "plan") {
+                const patched = Object.assign({}, pendingIntent);
+                if (pendingMissing === "ORIGIN_STATION") patched.from = stationId;
+                else if (pendingMissing === "DESTINATION_STATION") patched.to = stationId;
+                else return null;
+                if (!patched.from || !patched.to) {
+                    return {
+                        kind: "needsClarification",
+                        base: patched,
+                        missing: !patched.from ? "ORIGIN_STATION" : "DESTINATION_STATION",
+                    };
+                }
+                return patched;
+            }
+            if (pendingIntent.kind === "lastTrain" || pendingIntent.kind === "departures") {
+                const patched = Object.assign({}, pendingIntent, { stationId: stationId });
+                return patched;
+            }
+            if (pendingIntent.kind === "toggleFavorite") {
+                return Object.assign({}, pendingIntent, { stationId: stationId });
+            }
+            return null;
+        }
+
         launcher.addEventListener("click", openPanel);
         closeBtn.addEventListener("click", closePanel);
         form.addEventListener("submit", (ev) => {
@@ -2179,7 +2229,35 @@
             if (!value) return;
             appendMessage(value, "user");
             input.value = "";
-            const intent = window.SyrmosAriadne.parse(value);
+
+            let intent;
+            if (pendingIntent && pendingMissing) {
+                const merged = mergePending(value);
+                if (merged && merged.kind !== "needsClarification") {
+                    intent = merged;
+                    pendingIntent = null;
+                    pendingMissing = null;
+                } else if (merged && merged.kind === "needsClarification") {
+                    intent = merged;
+                    pendingIntent = merged.base;
+                    pendingMissing = merged.missing;
+                } else {
+                    intent = window.SyrmosAriadne.parse(value);
+                    pendingIntent = null;
+                    pendingMissing = null;
+                }
+            } else {
+                intent = window.SyrmosAriadne.parse(value);
+            }
+
+            if (intent.kind === "needsClarification") {
+                pendingIntent = intent.base;
+                pendingMissing = intent.missing;
+            } else {
+                pendingIntent = null;
+                pendingMissing = null;
+            }
+
             const reply = respond(intent);
             appendMessage(reply.text, "assistant");
             if (reply.act) setTimeout(reply.act, 400);

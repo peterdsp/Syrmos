@@ -15,7 +15,6 @@ struct HomeView: View {
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
-    @State private var showAriadne = false
     @State private var showTrackPicker = false
 
     var body: some View {
@@ -34,27 +33,6 @@ struct HomeView: View {
                 .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
-            .overlay(alignment: .bottomTrailing) {
-                Button {
-                    showAriadne = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "safari.fill")
-                        Text(askAriadneLabel).fontWeight(.semibold)
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.syrmosPrimary, in: Capsule())
-                    .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
-                }
-                .padding(.trailing, 16)
-                .padding(.bottom, 24)
-            }
-            .sheet(isPresented: $showAriadne) {
-                AriadneView()
-            }
             .sheet(isPresented: $showTrackPicker) {
                 TrackPickerSheet(onDismiss: { showTrackPicker = false })
             }
@@ -469,13 +447,6 @@ struct HomeView: View {
         }
     }
 
-    private var askAriadneLabel: String {
-        switch loc.language {
-        case .greek: return "Ρώτα την Αριάδνη"
-        case .albanian: return "Pyet Ariadne"
-        default: return "Ask Ariadne"
-        }
-    }
 
     private func formatDistance(_ meters: Double) -> String {
         if meters < 1000 {
