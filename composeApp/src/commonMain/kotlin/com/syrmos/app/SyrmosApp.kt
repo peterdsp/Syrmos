@@ -19,7 +19,20 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.zIndex
+import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LocalizationManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
@@ -132,6 +145,11 @@ fun SyrmosApp() {
                     DesktopWebApp()
                 } else {
                     TabNavigator(HomeTab) {
+                        var showAriadne by remember { mutableStateOf(false) }
+                        val lang by LocalizationManager.language.collectAsState()
+                        val tabNavigator = LocalTabNavigator.current
+                        val onNonSettingsTab = tabNavigator.current != SettingsTab
+
                         Box(modifier = Modifier.fillMaxSize()) {
                             CurrentTab()
                             LiquidGlassTabBar(
@@ -140,6 +158,47 @@ fun SyrmosApp() {
                                     .padding(horizontal = 16.dp, vertical = 4.dp)
                                     .windowInsetsPadding(WindowInsets.navigationBars),
                             )
+
+                            // App-level Ariadne launcher pill: floats above
+                            // the tab bar on Home / Lines / Map / Airport.
+                            // Hidden on Settings so the settings scroll
+                            // isn't obstructed by a chat pill. Slides in
+                            // with a spring so tab changes feel physical.
+                            AnimatedVisibility(
+                                visible = onNonSettingsTab && !showAriadne,
+                                enter = fadeIn() + slideInVertically(
+                                    initialOffsetY = { it / 2 },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                ),
+                                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 16.dp, bottom = 90.dp)
+                                    .zIndex(2f),
+                            ) {
+                                AriadneLauncherPill(
+                                    label = askAriadneLabel(lang),
+                                    onClick = { showAriadne = true },
+                                )
+                            }
+
+                            if (showAriadne) {
+                                val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
+                                Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
+                                    com.syrmos.feature.home.assistant.AssistantScreen(
+                                        viewModel = assistantViewModel,
+                                        onClose = { showAriadne = false },
+                                        // Cross-tab navigation from Ariadne
+                                        // is deferred: for now we close the
+                                        // overlay so the user can navigate
+                                        // themselves. Full deep-link into
+                                        // the correct tab's Navigator is a
+                                        // 1.1.2 follow-up.
+                                        onOpenStation = { showAriadne = false },
+                                        onOpenLine = { showAriadne = false },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -213,4 +272,42 @@ private fun LiquidGlassTabItem(
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         )
     }
+}
+
+/**
+ * App-level Ariadne launcher. Owl glyph (Athena's owl -> wisdom /
+ * Athens) matches the branding on the web. Sits above the tab bar
+ * across Home / Lines / Map / Airport; hidden on Settings.
+ */
+@Composable
+private fun AriadneLauncherPill(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text = "🦉", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimary,
+        )
+    }
+}
+
+private fun askAriadneLabel(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Ρώτα την Αριάδνη"
+    AppLanguage.ALBANIAN -> "Pyet Ariadne"
+    else -> "Ask Ariadne"
 }

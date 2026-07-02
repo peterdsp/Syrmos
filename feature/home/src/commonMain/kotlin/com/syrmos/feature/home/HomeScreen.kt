@@ -79,7 +79,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
-    var showAriadne by remember { mutableStateOf(false) }
     var showTrackPicker by remember { mutableStateOf(false) }
     val tracked by DepartureTracking.active.collectAsState()
     var nowEpoch by remember { mutableStateOf(Clock.System.now().epochSeconds) }
@@ -283,43 +282,6 @@ fun HomeScreen(
             .zIndex(1f),
     )
 
-    // Ask Ariadne launcher. Sits above the tab bar; opens the offline
-    // assistant overlay. Hidden while the overlay is open.
-    if (!showAriadne) {
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 150.dp)
-                .zIndex(2f)
-                .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable { showAriadne = true }
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(text = "🧭", style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = askAriadneLabel(lang),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        }
-    }
-
-    if (showAriadne) {
-        val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
-        Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
-            com.syrmos.feature.home.assistant.AssistantScreen(
-                viewModel = assistantViewModel,
-                onClose = { showAriadne = false },
-                onOpenStation = { showAriadne = false; onStationClick(it) },
-                onOpenLine = { showAriadne = false; onLineClick(it) },
-            )
-        }
-    }
-
     if (showTrackPicker) {
         TrackPickerSheet(
             lines = uiState.lines,
@@ -357,11 +319,6 @@ private fun trackAnyLabel(lang: AppLanguage) = when (lang) {
     else -> "Track a train"
 }
 
-private fun askAriadneLabel(lang: AppLanguage): String = when (lang) {
-    AppLanguage.GREEK -> "Ρώτα την Αριάδνη"
-    AppLanguage.ALBANIAN -> "Pyet Ariadne"
-    else -> "Ask Ariadne"
-}
 
 // MARK: Answer-first hero
 
