@@ -11,3 +11,8 @@ expect suspend fun requestLocationPermission()
 /** Persistent first-launch gate shared by all platforms. */
 expect fun readOnboardingCompleted(): Boolean
 expect fun markOnboardingCompleted()
+
+/** Last app version whose "what's new" card the user has seen, or null. Used to
+ *  show the highlights once per release after an install or update. */
+expect fun readLastWhatsNewVersion(): String?
+expect fun markWhatsNewSeen(version: String)

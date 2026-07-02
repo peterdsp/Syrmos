@@ -28,6 +28,9 @@ fun initLocationProvider(context: Context) {
     appContext = context.applicationContext
 }
 
+/** The stored application context, once [initLocationProvider] has run. */
+internal fun androidPlatformContext(): Context? = appContext
+
 /** Called from MainActivity so the Compose layer can trigger the
  *  ActivityResultLauncher without holding a direct Activity reference. */
 fun setLocationPermissionRequester(requester: (suspend () -> Unit)?) {
@@ -60,6 +63,16 @@ actual fun markOnboardingCompleted() {
         .edit()
         .putBoolean(ONBOARDING_KEY, true)
         .apply()
+}
+
+private const val WHATS_NEW_KEY = "syrmos.whatsnew.version"
+
+actual fun readLastWhatsNewVersion(): String? =
+    appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)?.getString(WHATS_NEW_KEY, null)
+
+actual fun markWhatsNewSeen(version: String) {
+    appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        ?.edit()?.putString(WHATS_NEW_KEY, version)?.apply()
 }
 
 @SuppressLint("MissingPermission")

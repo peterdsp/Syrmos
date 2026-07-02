@@ -73,6 +73,11 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.koin.android)
+            // On-device text proofreading (Gemini Nano via AICore) for the
+            // Ariadne query normalizer. Runtime-gated to capable devices;
+            // falls back to the deterministic parser everywhere else.
+            implementation(libs.mlkit.genai.proofreading)
+            implementation(libs.kotlinx.coroutines.guava)
         }
     }
 }

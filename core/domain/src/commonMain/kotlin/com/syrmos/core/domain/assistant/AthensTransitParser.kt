@@ -1,5 +1,7 @@
 package com.syrmos.core.domain.assistant
 
+import kotlin.math.abs
+
 /**
  * Pure, offline, trilingual (EN / EL / SQ) rule parser that turns a user
  * utterance into an [AssistantIntent]. No model, no network, no per-call state.
@@ -40,7 +42,8 @@ class AthensTransitParser(
             containsAny(text, PLAN_PHRASES) ||
             containsAny(text, FIND_WORDS) ||
             containsAny(text, FARE_WORDS) ||
-            containsAny(text, FAVORITE_WORDS)
+            containsAny(text, FAVORITE_WORDS) ||
+            containsAny(text, TIME_PHRASES)
 
         // Weather is allowed ONLY as a routing constraint, never as a topic.
         // "weather in london" stays out of scope; "raining, get me to X" routes
@@ -50,6 +53,26 @@ class AthensTransitParser(
 
         // Nothing transit-related at all: decline.
         if (!strongTransit && !intentSignal && !weather) return AssistantIntent.OutOfScope
+
+        // 0. Travel time / ETA ("how long to X", "how many minutes to X").
+        //    Placed before fares because "how much time" shares the fare
+        //    "how much" cue, and before planning because "how long to get to X"
+        //    shares the plan "get to" cue. The origin defaults to the user's
+        //    location, resolved by the caller (GPS → nearest station); only an
+        //    explicitly named origin fills fromStationId here.
+        if (containsAny(text, TIME_PHRASES)) {
+            val (from, to) = resolveTripEndpoints(text, mentionedStations)
+            val destination = to ?: from
+            val origin = if (mentionedStations.size >= 2) from else null
+            return if (destination == null) {
+                AssistantIntent.NeedsClarification(
+                    AssistantIntent.TravelTime(toStationId = null),
+                    MissingSlot.DESTINATION_STATION,
+                )
+            } else {
+                AssistantIntent.TravelTime(toStationId = destination, fromStationId = origin)
+            }
+        }
 
         // 0a. Fares. Checked before planning so "how much to the airport" is a
         //     fare question, not a trip. The airport flag surfaces the airport
@@ -173,7 +196,57 @@ class AthensTransitParser(
                 scratch = scratch.replace(name, " ".repeat(name.length))
             }
         }
+        // Typo fallback: only when nothing matched exactly, so a clean query is
+        // never overridden. Resolves "nikea" / "nkiea" / "sintagma".
+        if (found.isEmpty()) {
+            fuzzyMatchStation(text)?.let { found.add(it) }
+        }
         return found.toList()
+    }
+
+    /**
+     * Best-effort typo correction of a query to a single station. Compares each
+     * 4+ char input token (that isn't a known vocabulary word) against every
+     * station-name word and returns the closest station id, or null. Kept tight
+     * to avoid mapping gibberish onto a stop: up to 2 edits always, a 3rd only
+     * when the first letter matches on a 6+ char word (the "nkiea" case).
+     */
+    private fun fuzzyMatchStation(text: String): String? {
+        val tokens = text.split(NON_ALNUM)
+            .filter { it.length >= 4 && it !in STOPWORDS }
+        if (tokens.isEmpty()) return null
+
+        var bestId: String? = null
+        var bestDist = Int.MAX_VALUE
+        for (token in tokens) {
+            for ((id, word) in stationWords) {
+                if (abs(word.length - token.length) > 3) continue
+                val dist = editDistance(token, word)
+                val maxLen = maxOf(token.length, word.length)
+                val accept = dist <= 2 || (dist == 3 && token[0] == word[0] && maxLen >= 6)
+                if (accept && dist < bestDist) {
+                    bestDist = dist
+                    bestId = id
+                }
+            }
+        }
+        return bestId
+    }
+
+    /** Folded station-name words (4+ chars, excluding vocabulary words) for fuzzy. */
+    private val stationWords: List<Pair<String, String>> by lazy {
+        buildList {
+            for (st in vocabulary.stations) {
+                val seen = HashSet<String>()
+                for (name in st.names) {
+                    for (word in fold(name).split(' ')) {
+                        if (word.length >= 4 && word !in STOPWORDS && seen.add(word)) {
+                            add(st.id to word)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun matchLine(text: String): String? {
@@ -258,6 +331,31 @@ class AthensTransitParser(
 
     companion object {
         private val WHITESPACE = Regex("\\s+")
+        private val NON_ALNUM = Regex("[^\\p{L}\\p{N}]+")
+
+        /**
+         * Optimal string alignment (Damerau-Levenshtein with adjacent
+         * transpositions), so a swap like "nkiea" counts as a single edit.
+         */
+        fun editDistance(a: String, b: String): Int {
+            val al = a.length
+            val bl = b.length
+            if (al == 0) return bl
+            if (bl == 0) return al
+            val d = Array(al + 1) { IntArray(bl + 1) }
+            for (i in 0..al) d[i][0] = i
+            for (j in 0..bl) d[0][j] = j
+            for (i in 1..al) {
+                for (j in 1..bl) {
+                    val cost = if (a[i - 1] == b[j - 1]) 0 else 1
+                    d[i][j] = minOf(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+                    if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1]) {
+                        d[i][j] = minOf(d[i][j], d[i - 2][j - 2] + 1)
+                    }
+                }
+            }
+            return d[al][bl]
+        }
 
         // Accent-fold Greek + Latin diacritics and lowercase, so EL/SQ/EN
         // converge. Greek tonos/dialytika are stripped; Latin accents too.
@@ -351,9 +449,25 @@ class AthensTransitParser(
             "βροχη", "βρεχει", "καιρο", "κακοκαιρ",
             "shi", "moti", "stuhi",
         )
+        // Duration / ETA cues. Folded (accent-stripped, lowercase) at match
+        // time, so Greek tonos and Latin accents converge.
+        private val TIME_PHRASES = listOf(
+            "how long", "how many minutes", "how many hours", "how long does it take",
+            "how long to get", "how much time", "minutes away", "how far",
+            "ποση ωρα", "ποσα λεπτα", "ποσες ωρες", "ποσο θελει", "ποση ωρα κανει",
+            "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe",
+        )
         private val TOMORROW_WORDS = listOf("tomorrow", "αυριο", "neser")
         private val WEEKEND_WORDS = listOf("weekend", "σαββατοκυριακο", "fundjave")
         private val SATURDAY_WORDS = listOf("saturday", "σαββατο", "te shtune", "shtune")
         private val SUNDAY_WORDS = listOf("sunday", "κυριακη", "te diel", "diel")
+
+        // Single-word vocabulary tokens the fuzzy matcher must never "correct"
+        // into a station (so "trains" stays a departures cue, not a stop).
+        private val STOPWORDS: Set<String> = (
+            TRANSIT_NOUNS + DEPARTURE_WORDS + FIND_WORDS + LINE_WORDS + FARE_WORDS +
+                FAVORITE_WORDS + AIRPORT_WORDS + ALERT_WORDS + MAP_WORDS + WEATHER_WORDS +
+                TOMORROW_WORDS + WEEKEND_WORDS + SATURDAY_WORDS + SUNDAY_WORDS
+            ).map { fold(it) }.filter { it.length >= 4 && !it.contains(' ') }.toSet()
     }
 }

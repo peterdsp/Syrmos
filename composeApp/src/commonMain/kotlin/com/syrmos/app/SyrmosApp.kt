@@ -56,7 +56,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.syrmos.app.platform.markOnboardingCompleted
 import com.syrmos.app.platform.readOnboardingCompleted
+import com.syrmos.app.platform.readLastWhatsNewVersion
+import com.syrmos.app.platform.markWhatsNewSeen
 import com.syrmos.app.screen.OnboardingScreen
+import com.syrmos.app.screen.WhatsNewDialog
 import org.jetbrains.compose.resources.painterResource
 import syrmos.composeapp.generated.resources.Res
 import syrmos.composeapp.generated.resources.start_screen
@@ -140,6 +143,16 @@ fun SyrmosApp() {
                 hasCompletedOnboarding = true
             })
         } else {
+            // One-time highlights after an install/update. The web build shows
+            // its own card (web-map.js), so this is effectively the native path.
+            val whatsNewVersion = "1.1.1"
+            var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
+            if (showWhatsNew) {
+                WhatsNewDialog(onDismiss = {
+                    markWhatsNewSeen(whatsNewVersion)
+                    showWhatsNew = false
+                })
+            }
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 if (isWebPlatform && maxWidth >= 900.dp) {
                     DesktopWebApp()
@@ -184,6 +197,15 @@ fun SyrmosApp() {
 
                             if (showAriadne) {
                                 val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
+                                // Feed the assistant the current location so
+                                // "how long to X" uses the nearest station as
+                                // the origin; if unavailable the ETA resolver
+                                // falls back to asking for an origin station.
+                                androidx.compose.runtime.LaunchedEffect(Unit) {
+                                    com.syrmos.app.platform.requestUserLocation()?.let {
+                                        assistantViewModel.onLocationUpdate(it.latitude, it.longitude)
+                                    }
+                                }
                                 Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
                                     com.syrmos.feature.home.assistant.AssistantScreen(
                                         viewModel = assistantViewModel,

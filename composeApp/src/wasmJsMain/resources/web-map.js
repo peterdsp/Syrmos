@@ -49,12 +49,23 @@
             send: "Send",
             ariadne_greeting: "Hi, I'm Ariadne. Ask me about Athens transit — next departures, last train tonight, a trip A to B, service alerts, or ticket prices.",
             ariadne_looking_up: "Looking up {station}...",
+            ariadne_next_from: "Next from {station}:",
+            ariadne_none_now: "No more trains from {station} right now.",
             ariadne_no_station: "I couldn't match that to an Athens station. Try Syntagma, Piraeus, Airport.",
             ariadne_open_map: "Opening {station} on the map.",
             ariadne_open_alerts: "Showing service alerts.",
             ariadne_open_route: "Opening directions from {from} to {to}.",
+            ariadne_eta_locating: "Getting your location to estimate the trip to {station}…",
+            ariadne_eta_ask_origin: "I couldn't get your location. Which station are you starting from?",
             ariadne_line: "Line {id} runs between {a} and {b}. Tap the line on the map to see all stations.",
             ariadne_fare: "Standard OASA single is €0.90 (Metro/Tram). Airport metro single is €9. See OASA tickets in the side panel for the full list.",
+            whatsnew_title: "What's new in Syrmos",
+            whatsnew_i1: "Ask Ariadne — the offline assistant for departures, trips and last trains",
+            whatsnew_i2: "Smarter search that understands typos (nikea → Nikaia)",
+            whatsnew_i3: "\"How long to…\" travel-time answers from your location",
+            whatsnew_i4: "Track any train, and get live times on your Home Screen",
+            whatsnew_get_app: "Get the app",
+            whatsnew_stay: "Continue on web",
         },
         el: {
             brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
@@ -95,12 +106,23 @@
             send: "Αποστολή",
             ariadne_greeting: "Γεια, είμαι η Αριάδνη. Ρώτα με για τις συγκοινωνίες της Αθήνας — επόμενες αναχωρήσεις, τελευταίο τρένο, διαδρομή Α σε Β, ειδοποιήσεις ή τιμές εισιτηρίων.",
             ariadne_looking_up: "Αναζήτηση για {station}...",
+            ariadne_next_from: "Επόμενα από {station}:",
+            ariadne_none_now: "Δεν υπάρχουν άλλα δρομολόγια από {station} τώρα.",
             ariadne_no_station: "Δεν αναγνώρισα σταθμό. Δοκίμασε Σύνταγμα, Πειραιά ή Αεροδρόμιο.",
             ariadne_open_map: "Άνοιγμα του {station} στον χάρτη.",
             ariadne_open_alerts: "Εμφάνιση ειδοποιήσεων.",
             ariadne_open_route: "Άνοιγμα διαδρομής από {from} προς {to}.",
+            ariadne_eta_locating: "Εντοπίζω την τοποθεσία σου για τον χρόνο προς {station}…",
+            ariadne_eta_ask_origin: "Δεν βρήκα την τοποθεσία σου. Από ποιον σταθμό ξεκινάς;",
             ariadne_line: "Η Γραμμή {id} συνδέει {a} και {b}. Πάτα τη γραμμή στον χάρτη για όλους τους σταθμούς.",
             ariadne_fare: "Το βασικό εισιτήριο OASA είναι €0,90 (Μετρό/Τραμ). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τα εισιτήρια OASA στο πλαϊνό πάνελ.",
+            whatsnew_title: "Τι νέο υπάρχει στο Syrmos",
+            whatsnew_i1: "Ρώτα την Αριάδνη — τον offline βοηθό για αναχωρήσεις, διαδρομές και τελευταία τρένα",
+            whatsnew_i2: "Πιο έξυπνη αναζήτηση που καταλαβαίνει τα λάθη (nikea → Νίκαια)",
+            whatsnew_i3: "Απαντήσεις χρόνου \"Πόση ώρα για…\" από την τοποθεσία σου",
+            whatsnew_i4: "Παρακολούθησε κάθε τρένο και δες ζωντανούς χρόνους στην Αρχική οθόνη",
+            whatsnew_get_app: "Κατέβασε την εφαρμογή",
+            whatsnew_stay: "Συνέχεια στο web",
         },
         sq: {
             brand_subtitle: "Harta e hekurudhave të Athinës",
@@ -141,12 +163,23 @@
             send: "Dërgo",
             ariadne_greeting: "Përshëndetje, unë jam Ariadne. Më pyet për transportin publik të Athinës — nisjet e ardhshme, treni i fundit, udhëtim A në B, njoftime ose çmime biletash.",
             ariadne_looking_up: "Po kërkoj për {station}...",
+            ariadne_next_from: "Të ardhshmet nga {station}:",
+            ariadne_none_now: "Nuk ka më trena nga {station} tani.",
             ariadne_no_station: "S'e njoha stacionin. Provo Syntagma, Piraeus ose Aeroporti.",
             ariadne_open_map: "Po hap {station} në hartë.",
             ariadne_open_alerts: "Po tregoj njoftimet.",
             ariadne_open_route: "Po hap udhëzimet nga {from} te {to}.",
+            ariadne_eta_locating: "Po marr vendndodhjen tënde për kohën te {station}…",
+            ariadne_eta_ask_origin: "S'e mora dot vendndodhjen. Nga cili stacion po nisesh?",
             ariadne_line: "Linja {id} lidh {a} me {b}. Prek linjën në hartë për të gjitha stacionet.",
             ariadne_fare: "Bileta standarde OASA është €0,90 (Metro/Tram). Bileta metro për aeroport është €9. Shiko biletat OASA në panelin anësor.",
+            whatsnew_title: "Çfarë ka të re në Syrmos",
+            whatsnew_i1: "Pyet Ariadnen — asistenti offline për nisjet, udhëtimet dhe trenat e fundit",
+            whatsnew_i2: "Kërkim më i zgjuar që kupton gabimet (nikea → Nikaia)",
+            whatsnew_i3: "Përgjigje kohe \"Sa gjatë te…\" nga vendndodhja jote",
+            whatsnew_i4: "Ndiq çdo tren dhe merr kohët live në Ekranin Kryesor",
+            whatsnew_get_app: "Merr aplikacionin",
+            whatsnew_stay: "Vazhdo në web",
         },
     };
 
@@ -2127,6 +2160,28 @@
             return lines.find((l) => l.id === id) || null;
         }
 
+        // Builds the one-line "Next from X: Line 3 now, Line 3 in 2 min, ..."
+        // reply. Uses the same projector the station sheet uses, so the chat
+        // and the panel never disagree. Returns null on no station.
+        async function departuresSummary(station) {
+            if (!station) return null;
+            const apiDepartures = await fetchApiDepartures(station);
+            const list = (apiDepartures && apiDepartures.length)
+                ? apiDepartures
+                : buildStationDepartures(station);
+            const name = stationName(station.id);
+            if (!list || !list.length) {
+                return t("ariadne_none_now", { station: name });
+            }
+            const top = list.slice(0, 3).map((dep) => {
+                const lineLabel = (dep.line && dep.line.name) || (dep.line && dep.line.id) || "";
+                const when = formatMinutesAway(dep.minutesAway);
+                const clock = dep.time ? ` (${dep.time})` : "";
+                return `${lineLabel} ${when}${clock}`;
+            });
+            return `${t("ariadne_next_from", { station: name })} ${top.join(", ")}.`;
+        }
+
         function respond(intent) {
             switch (intent.kind) {
                 case "help":
@@ -2136,6 +2191,14 @@
                 case "needsClarification":
                     return { text: window.SyrmosAriadne.clarify(intent.missing, currentLang) };
                 case "departures":
+                    if (intent.stationId) {
+                        return {
+                            text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
+                            departuresFor: stationMap.get(intent.stationId) || null,
+                            act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
+                        };
+                    }
+                    return { text: t("ariadne_no_station") };
                 case "lastTrain":
                     if (intent.stationId) {
                         return {
@@ -2169,6 +2232,36 @@
                             to: stationName(to.id),
                         }),
                         act: () => window.open(url, "_blank", "noopener"),
+                    };
+                }
+                case "travelTime": {
+                    const to = intent.to ? stationMap.get(intent.to) : null;
+                    if (!to) return { text: t("ariadne_no_station") };
+                    const from = intent.from ? stationMap.get(intent.from) : null;
+                    // Explicit origin: open transit directions station → station.
+                    if (from) {
+                        const url = `https://www.google.com/maps/dir/?api=1&origin=${from.latitude},${from.longitude}&destination=${to.latitude},${to.longitude}&travelmode=transit`;
+                        return {
+                            text: t("ariadne_open_route", { from: stationName(from.id), to: stationName(to.id) }),
+                            act: () => window.open(url, "_blank", "noopener"),
+                        };
+                    }
+                    // No named origin: use the browser location, else ask.
+                    return {
+                        text: t("ariadne_eta_locating", { station: stationName(to.id) }),
+                        act: () => {
+                            if (!navigator.geolocation) {
+                                appendMessage(t("ariadne_eta_ask_origin"), "assistant");
+                                return;
+                            }
+                            navigator.geolocation.getCurrentPosition(
+                                (pos) => {
+                                    const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${to.latitude},${to.longitude}&travelmode=transit`;
+                                    window.open(url, "_blank", "noopener");
+                                },
+                                () => appendMessage(t("ariadne_eta_ask_origin"), "assistant"),
+                            );
+                        },
                     };
                 }
                 case "explainLine": {
@@ -2238,6 +2331,11 @@
             if (pendingIntent.kind === "toggleFavorite") {
                 return Object.assign({}, pendingIntent, { stationId: stationId });
             }
+            if (pendingIntent.kind === "travelTime") {
+                // The only travelTime clarification is a missing destination;
+                // the origin defaults to the user's location.
+                return Object.assign({}, pendingIntent, { to: stationId });
+            }
             return null;
         }
 
@@ -2280,7 +2378,59 @@
 
             const reply = respond(intent);
             appendMessage(reply.text, "assistant");
+            // For a departures answer, follow the "Looking up X..." line with
+            // the actual next trains in a second bubble once the projector
+            // resolves, so the chat itself carries the times.
+            if (reply.departuresFor) {
+                departuresSummary(reply.departuresFor).then((summary) => {
+                    if (summary) appendMessage(summary, "assistant");
+                });
+            }
             if (reply.act) setTimeout(reply.act, 400);
         });
     }
+
+    // First-visit "what's new" card. Shows once per release (keyed in
+    // localStorage), highlights the new features, and nudges the app install
+    // with store links. Never blocks the map if anything is unavailable.
+    function maybeShowWhatsNew() {
+        const VERSION = "1.1.1";
+        const KEY = "syrmos.whatsnew.seen";
+        try {
+            if (localStorage.getItem(KEY) === VERSION) return;
+        } catch (_) { /* private mode: still show, just don't persist */ }
+
+        const overlay = document.createElement("div");
+        overlay.className = "whatsnew-overlay";
+        const items = [t("whatsnew_i1"), t("whatsnew_i2"), t("whatsnew_i3"), t("whatsnew_i4")]
+            .map((it) => `<li>${it}</li>`).join("");
+        overlay.innerHTML = `
+            <div class="whatsnew-card" role="dialog" aria-modal="true" aria-label="${t("whatsnew_title")}">
+                <div class="whatsnew-owl">🦉</div>
+                <h2 class="whatsnew-title">${t("whatsnew_title")}</h2>
+                <ul class="whatsnew-list">${items}</ul>
+                <div class="whatsnew-actions">
+                    <a class="whatsnew-cta" href="https://apps.apple.com/app/id6777650671" target="_blank" rel="noopener">${t("whatsnew_get_app")}</a>
+                    <button type="button" class="whatsnew-dismiss">${t("whatsnew_stay")}</button>
+                </div>
+                <div class="whatsnew-stores">
+                    <a href="https://apps.apple.com/app/id6777650671" target="_blank" rel="noopener">App Store</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="https://play.google.com/store/apps/details?id=com.syrmos.android" target="_blank" rel="noopener">Google Play</a>
+                </div>
+            </div>`;
+        const close = () => {
+            overlay.remove();
+            try { localStorage.setItem(KEY, VERSION); } catch (_) {}
+        };
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+        overlay.querySelector(".whatsnew-dismiss").addEventListener("click", close);
+        overlay.querySelector(".whatsnew-cta").addEventListener("click", () => {
+            try { localStorage.setItem(KEY, VERSION); } catch (_) {}
+        });
+        document.body.appendChild(overlay);
+    }
+
+    // Defer so it never competes with first paint of the map.
+    setTimeout(maybeShowWhatsNew, 900);
 })();

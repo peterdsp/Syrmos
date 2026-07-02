@@ -39,6 +39,17 @@ sealed interface AssistantIntent {
         val lowExposure: Boolean = false,
     ) : AssistantIntent
 
+    /**
+     * "How long / how many minutes to reach X". Duration of a trip whose origin
+     * defaults to the user's current location (resolved by the caller via GPS →
+     * nearest station). [fromStationId] is only set when the user named an
+     * explicit origin; otherwise the caller uses location or asks for it.
+     */
+    data class TravelTime(
+        val toStationId: String?,
+        val fromStationId: String? = null,
+    ) : AssistantIntent
+
     /** Line overview (terminals, span, stations). */
     data class ExplainLine(val lineId: String) : AssistantIntent
 

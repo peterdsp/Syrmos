@@ -20,3 +20,12 @@ actual fun readOnboardingCompleted(): Boolean =
 actual fun markOnboardingCompleted() {
     NSUserDefaults.standardUserDefaults.setBool(true, ONBOARDING_KEY)
 }
+
+private const val WHATS_NEW_KEY = "syrmos.whatsnew.version"
+
+actual fun readLastWhatsNewVersion(): String? =
+    NSUserDefaults.standardUserDefaults.stringForKey(WHATS_NEW_KEY)
+
+actual fun markWhatsNewSeen(version: String) {
+    NSUserDefaults.standardUserDefaults.setObject(version, WHATS_NEW_KEY)
+}

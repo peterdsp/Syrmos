@@ -118,15 +118,34 @@
         'βροχη', 'βρεχει', 'καιρο', 'κακοκαιρ',
         'shi', 'moti', 'stuhi',
     ];
+    const TIME_PHRASES = [
+        'how long', 'how many minutes', 'how many hours', 'how long does it take',
+        'how long to get', 'how much time', 'minutes away', 'how far',
+        'ποση ωρα', 'ποσα λεπτα', 'ποσες ωρες', 'ποσο θελει', 'ποση ωρα κανει',
+        'sa gjate', 'sa minuta', 'sa ore', 'sa larg', 'sa kohe',
+    ];
     const TOMORROW_WORDS = ['tomorrow', 'αυριο', 'neser'];
     const WEEKEND_WORDS = ['weekend', 'σαββατοκυριακο', 'fundjave'];
     const SATURDAY_WORDS = ['saturday', 'σαββατο', 'te shtune', 'shtune'];
     const SUNDAY_WORDS = ['sunday', 'κυριακη', 'te diel', 'diel'];
 
+    // Single-word vocabulary tokens the fuzzy station matcher must never try
+    // to "correct" into a station name (so "trains" stays a departures cue and
+    // never gets nudged onto a similarly-spelled stop).
+    const STOPWORDS = new Set(
+        []
+            .concat(TRANSIT_NOUNS, DEPARTURE_WORDS, FIND_WORDS, LINE_WORDS,
+                FARE_WORDS, FAVORITE_WORDS, AIRPORT_WORDS, ALERT_WORDS, MAP_WORDS,
+                WEATHER_WORDS, TOMORROW_WORDS, WEEKEND_WORDS, SATURDAY_WORDS, SUNDAY_WORDS)
+            .map(fold)
+            .filter(function (w) { return w.length >= 4 && w.indexOf(' ') < 0; }),
+    );
+
     // MARK: - Vocab builder (mirrors AssistantVocabularyBuilder)
 
     let stationVocab = [];   // [{ id, names: [folded], lineIds }]
     let lineVocab = [];      // [{ id, aliases: [folded] }]
+    let stationWords = [];   // [{ id, word }] folded name words >= 4 chars, for fuzzy
 
     function init(opts) {
         const stations = (opts && opts.stations) || [];
@@ -142,6 +161,22 @@
                 lineIds: st.lineIds || st.line_ids || [],
             };
         });
+
+        // Flatten station names into their individual folded words for the
+        // fuzzy fallback. Only words of 4+ chars are indexed; shorter tokens
+        // are too collision-prone to correct safely.
+        stationWords = [];
+        for (const st of stationVocab) {
+            const seen = new Set();
+            for (const name of st.names) {
+                for (const w of name.split(' ')) {
+                    if (w.length >= 4 && !STOPWORDS.has(w) && !seen.has(w)) {
+                        seen.add(w);
+                        stationWords.push({ id: st.id, word: w });
+                    }
+                }
+            }
+        }
 
         lineVocab = lines.map(function (line) {
             const aliases = [line.id];
@@ -210,7 +245,75 @@
                 scratch = scratch.split(entry.name).join(' '.repeat(entry.name.length));
             }
         }
+        // Typo fallback: only when nothing matched exactly, so a clean query
+        // is never overridden. Resolves "nikea" / "nkiea" -> Nikaia.
+        if (found.length === 0) {
+            const fuzzy = fuzzyMatchStation(text);
+            if (fuzzy) found.push(fuzzy);
+        }
         return found;
+    }
+
+    /**
+     * Optimal string alignment (Damerau-Levenshtein with adjacent
+     * transpositions) between two short folded strings. Adjacent transposition
+     * is counted as one edit so "nkiea" is close to "nikaia".
+     */
+    function editDistance(a, b) {
+        const al = a.length;
+        const bl = b.length;
+        if (al === 0) return bl;
+        if (bl === 0) return al;
+        const d = [];
+        for (let i = 0; i <= al; i++) d[i] = [i];
+        for (let j = 0; j <= bl; j++) d[0][j] = j;
+        for (let i = 1; i <= al; i++) {
+            for (let j = 1; j <= bl; j++) {
+                const cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+                d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+                if (i > 1 && j > 1 &&
+                    a.charAt(i - 1) === b.charAt(j - 2) &&
+                    a.charAt(i - 2) === b.charAt(j - 1)) {
+                    d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+                }
+            }
+        }
+        return d[al][bl];
+    }
+
+    /**
+     * Best-effort typo correction of a query to a single station. Compares each
+     * 4+ char input token (that isn't a known vocabulary word) against every
+     * indexed station-name word and returns the closest station id, or null.
+     *
+     * Acceptance is deliberately tight to avoid mapping gibberish onto a stop:
+     * up to 2 edits always, a 3rd edit only when the first letter matches and
+     * the word is 6+ chars (the transposition-heavy "nkiea" case). The globally
+     * closest candidate wins, so within Athens' closed station set a real typo
+     * lands on the intended stop.
+     */
+    function fuzzyMatchStation(text) {
+        const tokens = text
+            .split(/[^\p{L}\p{N}]+/u)
+            .filter(function (tok) { return tok.length >= 4 && !STOPWORDS.has(tok); });
+        if (tokens.length === 0) return null;
+
+        let best = null; // { id, dist }
+        for (const tok of tokens) {
+            for (const entry of stationWords) {
+                const word = entry.word;
+                if (Math.abs(word.length - tok.length) > 3) continue;
+                const dist = editDistance(tok, word);
+                const maxLen = Math.max(tok.length, word.length);
+                const accept = dist <= 2 ||
+                    (dist === 3 && tok.charAt(0) === word.charAt(0) && maxLen >= 6);
+                if (!accept) continue;
+                if (best === null || dist < best.dist) {
+                    best = { id: entry.id, dist: dist };
+                }
+            }
+        }
+        return best ? best.id : null;
     }
 
     function matchLine(text) {
@@ -283,11 +386,26 @@
             containsAny(text, PLAN_PHRASES) ||
             containsAny(text, FIND_WORDS) ||
             containsAny(text, FARE_WORDS) ||
-            containsAny(text, FAVORITE_WORDS);
+            containsAny(text, FAVORITE_WORDS) ||
+            containsAny(text, TIME_PHRASES);
 
         const weather = containsAny(text, WEATHER_WORDS);
         if (weather && !strongTransit) return { kind: 'outOfScope' };
         if (!strongTransit && !intentSignal && !weather) return { kind: 'outOfScope' };
+
+        // Travel time / ETA ("how long to X"). Before fares ("how much time"
+        // shares the fare cue) and planning ("how long to get to X" shares the
+        // plan cue). Origin defaults to the user's location (resolved by the
+        // caller via geolocation); only an explicit origin fills `from`.
+        if (containsAny(text, TIME_PHRASES)) {
+            const ep = resolveTripEndpoints(text, mentionedStations);
+            const destination = ep.to || ep.from;
+            const origin = mentionedStations.length >= 2 ? ep.from : null;
+            if (!destination) {
+                return { kind: 'needsClarification', base: { kind: 'travelTime', to: null, from: null }, missing: 'DESTINATION_STATION' };
+            }
+            return { kind: 'travelTime', to: destination, from: origin };
+        }
 
         // Fares first, so "how much to the airport" is a fare, not a trip.
         if (containsAny(text, FARE_WORDS)) {
