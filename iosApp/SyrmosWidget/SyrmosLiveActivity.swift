@@ -7,10 +7,11 @@ import SwiftUI
 /// renders it. `SyrmosTrackingAttributes` is shared with the app target.
 ///
 /// Layout mirrors the in-app TrackingCard (see feature/home TrackingCard):
-/// LIVE eyebrow, huge countdown, progress bar filling as time elapses, and
-/// a station -> destination trailer. The Dynamic Island expanded region
-/// gets the same treatment; compact/minimal stay a bare number so the
-/// pill doesn't overflow.
+/// LIVE eyebrow that pulses, huge countdown, progress bar filling as time
+/// elapses, and a station -> destination trailer. The countdown uses
+/// `.contentTransition(.numericText())` so minute changes ease in place
+/// rather than flip; the LIVE dot uses `.symbolEffect(.pulse)` so the
+/// widget feels alive between minute-boundary state pushes.
 @available(iOS 16.2, *)
 struct SyrmosLiveActivity: Widget {
     var body: some WidgetConfiguration {
@@ -22,23 +23,41 @@ struct SyrmosLiveActivity: Widget {
             let tint = accent(for: context.attributes.lineId)
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.attributes.lineId, systemImage: "tram.fill")
-                        .font(.headline)
-                        .foregroundStyle(tint)
+                    HStack(spacing: 6) {
+                        Image(systemName: "tram.fill")
+                            .foregroundStyle(tint)
+                        Text(context.attributes.lineId)
+                            .font(.headline)
+                            .foregroundStyle(tint)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     Text(context.state.isDue ? "Now" : "\(context.state.minutesRemaining) min")
                         .font(.title3).bold().monospacedDigit()
                         .foregroundStyle(tint)
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    ProgressView(value: context.state.progress ?? 0)
-                        .tint(tint)
+                        .contentTransition(.numericText())
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("\(context.attributes.stationName) → \(context.attributes.destination)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 6) {
+                            Text(context.attributes.stationName)
+                                .font(.caption).fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Text("→")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(context.attributes.destination)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        ProgressView(value: context.state.progress ?? 0)
+                            .tint(tint)
+                    }
+                    .padding(.top, 2)
                 }
             } compactLeading: {
                 Image(systemName: "tram.fill")
@@ -47,10 +66,12 @@ struct SyrmosLiveActivity: Widget {
                 Text(context.state.isDue ? "now" : "\(context.state.minutesRemaining)m")
                     .monospacedDigit()
                     .foregroundStyle(tint)
+                    .contentTransition(.numericText())
             } minimal: {
                 Text(context.state.isDue ? "•" : "\(context.state.minutesRemaining)")
                     .monospacedDigit()
                     .foregroundStyle(tint)
+                    .contentTransition(.numericText())
             }
         }
     }
@@ -74,7 +95,10 @@ private struct LockScreenView: View {
         let tint = accentFor(context.attributes.lineId)
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Circle().fill(tint).frame(width: 8, height: 8)
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(tint)
+                    .symbolEffect(.pulse.wholeSymbol, options: .repeating)
                 Text("LIVE")
                     .font(.caption).fontWeight(.bold)
                     .foregroundStyle(tint)
@@ -91,6 +115,7 @@ private struct LockScreenView: View {
                     .font(.system(size: 36, weight: .bold, design: .rounded))
                     .foregroundStyle(tint)
                     .monospacedDigit()
+                    .contentTransition(.numericText())
                 Spacer()
                 Text(context.state.scheduledTime)
                     .font(.caption)
