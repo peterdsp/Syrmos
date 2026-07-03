@@ -43,3 +43,18 @@ struct WatchSnapshot: Codable, Equatable {
         updatedEpoch: 0
     )
 }
+
+/// Shared snapshot store persisted to the watch App Group, written by the watch
+/// app's WatchConnectivityProvider and read by the complications. In
+/// WatchModels (a member of both watch targets) so both sides see it.
+enum WatchComplicationStore {
+    static let suite = "group.com.syrmosApp.watch"
+    static func read() -> WatchSnapshot? {
+        guard let d = UserDefaults(suiteName: suite)?.data(forKey: "snapshot") else { return nil }
+        return try? JSONDecoder().decode(WatchSnapshot.self, from: d)
+    }
+    static func write(_ snapshot: WatchSnapshot) {
+        guard let d = try? JSONEncoder().encode(snapshot) else { return }
+        UserDefaults(suiteName: suite)?.set(d, forKey: "snapshot")
+    }
+}
