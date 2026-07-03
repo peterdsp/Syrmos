@@ -1,0 +1,64 @@
+name: iOS
+
+# Build-only CI for the native iOS app. The app scheme now embeds the watchOS
+# app (SyrmosWatch) + its complication extension, so the watchOS simulator
+# runtime must be installed before building the iOS scheme — otherwise the build
+# fails with "watchOS <ver> must be installed in order to run the scheme".
+#
+# The iOS app is pure Swift (no Kotlin/Native framework is linked), so no JDK or
+# Gradle is needed here. No code signing: this is a compile/link smoke test.
+#
+# Requires Xcode 26.2+ on the runner (watchOS 26.2 SDK, project objectVersion 77).
+
+on:
+  push:
+    paths:
+      - "iosApp/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "iosApp/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build app scheme (embeds watch app)
+    # Newest macOS image so a recent Xcode (26.x) is available. macos-15 tops out
+    # at Xcode 16 and cannot open this project.
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest installed Xcode
+        run: |
+          latest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest"; fi
+          xcodebuild -version
+
+      # The iOS scheme embeds the watch app, so the watchOS runtime is required.
+      - name: Install watchOS simulator runtime
+        run: xcodebuild -downloadPlatform watchOS
+
+      - name: Build watch scheme (SDK only, fast sanity check)
+        run: |
+          xcodebuild build \
+            -project iosApp/Syrmos.xcodeproj \
+            -target "SyrmosWatch" \
+            -configuration Debug \
+            -sdk watchsimulator \
+            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO
+
+      - name: Build iOS app scheme (embeds watch app)
+        run: |
+          xcodebuild build \
+            -project iosApp/Syrmos.xcodeproj \
+            -scheme "Syrmos - Athens Rail Times" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
