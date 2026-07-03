@@ -90,6 +90,16 @@ Per [Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap):
 
 ---
 
+## In progress: 1.2 "Widgets Everywhere" (branch `feat/1.2-widgets`, iOS build 100 / Android code 100)
+
+Putting the offline-prediction intelligence on every home screen, lock screen, and wrist. Measured against the widget philosophy in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md) (single-glance, no-scroll, line-tinted, dark-first).
+
+- Shared widget design system (`iosApp/iosApp/DesignSystem/WidgetKit/`): `SyrmosLineTokens` (single source of truth for line colors + labels), `LiquidGlassTile`, `LinePill`, `StationStripCompact` / `StationStripFull`, `DepartureRowCompact` — all usable by both the app and the widget extension.
+- iOS widget families (`SyrmosWidgets.swift`): Next Train (small + medium), Live Departures (large), Near Me (large), All Lines Status (extra-large), Weather + Alerts (extra-large), and an iPad medium trio. All share one `WidgetConfigurationIntent` (primary station + primary line, nearest-mode overrides both).
+- Live Activity redesign: full-width Lock Screen card, Dynamic Island tri-lane expanded view (next three trains on the tracked line), line-pill leading / minutes trailing / line-dot minimal, `widgetAccentable` for StandBy tinting.
+- Android Glance widgets: migration of the RemoteViews departures widget to Compose Glance, plus Next Train / Live Departures / Line Status / Near Me families, fed by a WorkManager snapshot.
+- Apple Watch companion: next-three departures view, complications (corner / circular / rectangular), WatchConnectivity handoff from the phone with a bundled-schedule fallback.
+
 ## Shipped
 
 ### 1.1.1 (iOS build 41 / Android code 50)

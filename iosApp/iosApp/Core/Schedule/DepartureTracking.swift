@@ -129,6 +129,31 @@ final class DepartureTracking: ObservableObject {
         return min(max(elapsed / total, 0), 1)
     }
 
+    /// The next few trains on the tracked line, for the Dynamic Island expanded
+    /// tri-lane. Best-effort and offline: projects from the same bundled
+    /// schedule the tracked departure came from. Empty is fine (the expanded
+    /// view falls back to the route strip).
+    private func upcomingTrains(for d: TrackedDeparture) -> [SyrmosTrackingAttributes.UpcomingTrain] {
+        #if canImport(ActivityKit)
+        let deps = ScheduleProjector.nextDepartures(
+            for: d.stationId, lineIds: [d.lineId], limit: 6, timeHorizonMinutes: 3 * 60
+        )
+        return deps.prefix(3).map {
+            SyrmosTrackingAttributes.UpcomingTrain(
+                lineId: SyrmosLineTokens.label(for: $0.lineId),
+                minutes: $0.minutesAway,
+                destination: $0.direction
+            )
+        }
+        #else
+        return []
+        #endif
+    }
+
+    private func lastTrainTonight(for d: TrackedDeparture) -> String? {
+        ScheduleProjector.lastTrainTonight(for: d.stationId, lineIds: [d.lineId])?.time
+    }
+
     /// Push the latest countdown into the Live Activity. The in-app card ticks
     /// itself; this keeps the Lock Screen / Dynamic Island in step and clears
     /// the track once the train is due.
@@ -158,7 +183,9 @@ final class DepartureTracking: ObservableObject {
                 isDue: false,
                 progress: progress(for: d, now: now),
                 routeStations: d.routeStations.map { $0.stationName },
-                targetEpoch: d.targetEpoch
+                targetEpoch: d.targetEpoch,
+                upcoming: upcomingTrains(for: d),
+                lastTrain: lastTrainTonight(for: d)
             )
             do {
                 let activity = try Activity.request(
@@ -184,7 +211,9 @@ final class DepartureTracking: ObservableObject {
                 isDue: d.isDue(now),
                 progress: progress(for: d, now: now),
                 routeStations: d.routeStations.map { $0.stationName },
-                targetEpoch: d.targetEpoch
+                targetEpoch: d.targetEpoch,
+                upcoming: upcomingTrains(for: d),
+                lastTrain: lastTrainTonight(for: d)
             )
             Task {
                 for activity in Activity<SyrmosTrackingAttributes>.activities where activity.id == id {

@@ -14,7 +14,12 @@ struct SyrmosWidgetBundle: WidgetBundle {
             SyrmosLiveActivity()
         }
         if #available(iOS 17.0, *) {
-            NextDeparturesWidget()
+            NextTrainWidget()
+            LiveDeparturesWidget()
+            NearMeWidget()
+            AllLinesStatusWidget()
+            WeatherAlertsWidget()
+            TrioWidget()
         }
     }
 }

@@ -221,13 +221,13 @@ private struct LinePillsRow: View {
     var body: some View {
         FlowLayout(spacing: 6) {
             ForEach(lineIds, id: \.self) { lineId in
-                LinePill(lineId: lineId)
+                StationLinePill(lineId: lineId)
             }
         }
     }
 }
 
-private struct LinePill: View {
+private struct StationLinePill: View {
     let lineId: String
 
     var body: some View {

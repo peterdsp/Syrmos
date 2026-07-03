@@ -9,6 +9,14 @@ import ActivityKit
 /// Live Activity template shares its ActivityAttributes file.
 @available(iOS 16.2, *)
 struct SyrmosTrackingAttributes: ActivityAttributes {
+    /// One upcoming train on the tracked line, for the Dynamic Island expanded
+    /// tri-lane. Optional in ContentState so older in-flight states still decode.
+    public struct UpcomingTrain: Codable, Hashable {
+        var lineId: String
+        var minutes: Int
+        var destination: String
+    }
+
     public struct ContentState: Codable, Hashable {
         var minutesRemaining: Int
         var scheduledTime: String
@@ -30,6 +38,13 @@ struct SyrmosTrackingAttributes: ActivityAttributes {
         // between state pushes instead of freezing on the last minute
         // value. Optional so decoding of older shapes still succeeds.
         var targetEpoch: Double? = nil
+        // Next few trains on the tracked line, for the Dynamic Island expanded
+        // tri-lane. Optional + defaulted so older state shapes still decode; the
+        // expanded view falls back to the route strip when this is empty.
+        var upcoming: [UpcomingTrain]? = nil
+        // Tonight's last train on the tracked line ("01:23"), for the Lock
+        // Screen footer. Optional so older shapes decode.
+        var lastTrain: String? = nil
     }
 
     var lineId: String
