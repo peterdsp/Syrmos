@@ -186,11 +186,12 @@ struct ContentView: View {
             .tint(.syrmosPrimary)
 
             // Ariadne launcher lives at the app level so it's available on
-            // Home / Lines / Map / Airport. Hidden on Settings so the
-            // settings screen doesn't get a chat pill sitting on top of
-            // its own scrolling controls. The pill fades and slides on
-            // tab change so it never abruptly appears mid-transition.
-            if selectedTab != .settings {
+            // Home / Lines / Airport. Hidden on Settings (the pill would
+            // sit on top of the settings scroll controls) AND on Map
+            // (the Locate + Vehicles buttons already own that bottom-
+            // right corner). The pill fades and slides on tab change so
+            // it never abruptly appears mid-transition.
+            if selectedTab != .settings && selectedTab != .map {
                 VStack {
                     Spacer()
                     HStack {

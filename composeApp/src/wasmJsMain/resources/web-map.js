@@ -2467,10 +2467,13 @@
                 case "easterEggLiepur":
                     return { text: catJoke(currentLang) };
                 case "planByArrival": {
-                    // Cheap "backward" plan: subtract a rough transit time
-                    // estimate (10 min per leg + 25 min baseline) from the
-                    // target arrival. Real per-leg schedule walk lives in
-                    // the KMP planner; web keeps this lightweight.
+                    // Backward plan grounded in the live schedule: we look
+                    // up the departures at the boarding station node and
+                    // pick the LATEST one whose HH:MM is at or before the
+                    // target-minus-rough-duration boundary. When the
+                    // schedule doesn't have anything to offer we fall
+                    // back to the previous "subtract duration" estimate
+                    // so the answer is still useful offline.
                     const from = intent.from ? stationMap.get(intent.from) : null;
                     const to = intent.to ? stationMap.get(intent.to) : null;
                     if (!from || !to) return { text: window.SyrmosAriadne.outOfScope(currentLang) };
@@ -2483,14 +2486,47 @@
                     if (targetMin == null) return { text: window.SyrmosAriadne.outOfScope(currentLang) };
                     const effective = (targetMin < nowMin && intent.arriveByMinutes != null)
                         ? targetMin + 24 * 60 : targetMin;
-                    const leaveBy = effective - roughDuration;
-                    const slack = leaveBy - nowMin;
                     const pad = (n) => String(n).padStart(2, "0");
                     const clockOf = (mins) => `${pad(Math.floor((mins / 60) % 24))}:${pad(mins % 60)}`;
                     const fromName = stationName(from.id);
                     const toName = stationName(to.id);
-                    const leaveLabel = clockOf(((leaveBy % (24 * 60)) + 24 * 60) % (24 * 60));
                     const arriveLabel = clockOf(effective % (24 * 60));
+
+                    // Boarding node (raw id -> clustered node).
+                    const boardNodeId = rawIdToNodeId.get(from.id) || nodeIdFor(from.id);
+                    const boardNode = boardNodeId ? stationNodeMap.get(boardNodeId) : null;
+
+                    let leaveByExact = null;
+                    let leaveLegLine = null;
+                    if (boardNode && typeof buildStationDepartures === "function") {
+                        try {
+                            const deps = buildStationDepartures(boardNode) || [];
+                            const boardBy = effective - roughDuration;
+                            // Pick the latest scheduled departure at the
+                            // boarding station whose time is <= boardBy.
+                            let best = null;
+                            for (const d of deps) {
+                                const t = d.time || "";
+                                const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+                                if (!m) continue;
+                                const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+                                if (mins <= boardBy && (best == null || mins > best.mins)) {
+                                    best = { mins: mins, dep: d };
+                                }
+                            }
+                            if (best) {
+                                leaveByExact = clockOf(best.mins);
+                                leaveLegLine = best.dep.line?.id || (best.dep.line || {}).id || "";
+                            }
+                        } catch (_) { /* fall through to estimate */ }
+                    }
+
+                    const leaveMin = leaveByExact
+                        ? parseInt(leaveByExact.slice(0, 2), 10) * 60 + parseInt(leaveByExact.slice(3, 5), 10)
+                        : (effective - roughDuration);
+                    const leaveLabel = leaveByExact || clockOf(((leaveMin % (24 * 60)) + 24 * 60) % (24 * 60));
+                    const slack = leaveMin - nowMin;
+                    const linePart = leaveLegLine ? ` ${leaveLegLine}` : "";
                     let msg;
                     if (slack < 0) {
                         msg = currentLang === "el"
@@ -2500,22 +2536,28 @@
                             : `Cutting it close. To make ${toName} by ${arriveLabel} you'd have needed to leave ${-slack} min ago.`;
                     } else if (slack < 5) {
                         msg = currentLang === "el"
-                            ? `Στριμωγμένα. Ξεκίνα από ${fromName} μέσα στα επόμενα ${slack} λεπτά για να προλάβεις στο ${toName} στις ${arriveLabel}.`
+                            ? `Στριμωγμένα. Πάρε το${linePart} στις ${leaveLabel} από ${fromName} για να προλάβεις στο ${toName} στις ${arriveLabel}.`
                             : currentLang === "sq"
-                            ? `Ngushtë. Duhet të nisesh nga ${fromName} brenda ${slack} minutash për të arritur në ${toName} në ${arriveLabel}.`
-                            : `Tight. You need to leave ${fromName} within the next ${slack} min to make ${toName} by ${arriveLabel}.`;
+                            ? `Ngushtë. Merr${linePart} në ${leaveLabel} nga ${fromName} për të arritur në ${toName} në ${arriveLabel}.`
+                            : `Tight. Board the ${leaveLabel}${linePart} at ${fromName} to make ${toName} by ${arriveLabel}.`;
                     } else if (slack > roughDuration + 45) {
                         msg = currentLang === "el"
-                            ? `Έχεις άπλα. Ξεκίνα από ${fromName} μέσα στα επόμενα ${slack} λεπτά και θα φτάσεις στο ${toName} στις ${arriveLabel}.`
+                            ? `Έχεις άπλα. Το επόμενο${linePart} στις ${leaveLabel} από ${fromName} σε φτάνει στο ${toName} στις ${arriveLabel}.`
                             : currentLang === "sq"
-                            ? `Ke kohë. Nisu nga ${fromName} brenda ${slack} minutash dhe do të jesh në ${toName} në ${arriveLabel}.`
-                            : `You have time. Leave ${fromName} anytime in the next ${slack} min and you'll reach ${toName} by ${arriveLabel}.`;
+                            ? `Ke kohë. ${linePart ? "Merri" + linePart : "Nis"} në ${leaveLabel} nga ${fromName} dhe do të jesh në ${toName} në ${arriveLabel}.`
+                            : `You have time. Board the ${leaveLabel}${linePart} at ${fromName} to reach ${toName} by ${arriveLabel}.`;
                     } else {
-                        msg = currentLang === "el"
-                            ? `Ξεκίνα από ${fromName} έως ${leaveLabel} και θα είσαι στο ${toName} στις ${arriveLabel}. ${slack} λεπτά περιθώριο.`
-                            : currentLang === "sq"
-                            ? `Nis nga ${fromName} deri në ${leaveLabel} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
-                            : `Leave ${fromName} by ${leaveLabel} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`;
+                        msg = leaveByExact
+                            ? (currentLang === "el"
+                                ? `Πάρε το${linePart} στις ${leaveLabel} από ${fromName} και θα είσαι στο ${toName} στις ${arriveLabel}. ${slack} λεπτά περιθώριο.`
+                                : currentLang === "sq"
+                                ? `Merr${linePart} në ${leaveLabel} nga ${fromName} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
+                                : `Board the ${leaveLabel}${linePart} at ${fromName} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`)
+                            : (currentLang === "el"
+                                ? `Ξεκίνα από ${fromName} έως ${leaveLabel} και θα είσαι στο ${toName} στις ${arriveLabel}. ${slack} λεπτά περιθώριο.`
+                                : currentLang === "sq"
+                                ? `Nis nga ${fromName} deri në ${leaveLabel} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
+                                : `Leave ${fromName} by ${leaveLabel} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`);
                     }
                     return { text: msg };
                 }
