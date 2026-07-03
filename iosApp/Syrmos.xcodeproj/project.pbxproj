@@ -98,6 +98,7 @@
 		562D2C66362545CB97D3E515 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */; };
 		C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
 		BB96CED5F61B446CBA6D87C5 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
+		8F1DB37A07CE4F4E877F3E52 /* iosApp/Core/Schedule/WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -207,6 +208,7 @@
 		67E08E447B8F49FE84CAA194 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripCompact.swift; sourceTree = SOURCE_ROOT; };
 		D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripFull.swift; sourceTree = SOURCE_ROOT; };
 		933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift; sourceTree = SOURCE_ROOT; };
+		889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/WatchSessionManager.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -402,6 +404,7 @@
 		AAAA000000000000000000C6 /* Schedule */ = {
 			isa = PBXGroup;
 			children = (
+				889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */,
 				571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */,
 				395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */,
 				DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */,
@@ -644,6 +647,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F1DB37A07CE4F4E877F3E52 /* iosApp/Core/Schedule/WatchSessionManager.swift in Sources */,
 				C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */,
 				E44EAEAEE0954E9F8735761E /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources */,
 				A8A479D2EBC54B139122C16E /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift in Sources */,

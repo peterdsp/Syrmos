@@ -103,6 +103,9 @@ final class DepartureTracking: ObservableObject {
 
     @Published private(set) var active: TrackedDeparture?
     private var activityId: String?
+    /// Last minutes value pushed to the Watch, so we push on minute changes
+    /// rather than every one-second tick.
+    private var lastWatchMinute: Int = -1
     // Wall clock at which tracking of `active` began. Anchors the progress
     // value we push into the Live Activity so the widget renders a
     // predictable 0 -> 1 bar as the countdown ticks down.
@@ -114,6 +117,8 @@ final class DepartureTracking: ObservableObject {
         active = departure
         startedEpoch = Date().timeIntervalSince1970
         startActivity(departure)
+        lastWatchMinute = -1
+        pushToWatch(departure)
     }
 
     func stop() {
@@ -159,12 +164,25 @@ final class DepartureTracking: ObservableObject {
     /// the track once the train is due.
     func refresh(now: TimeInterval = Date().timeIntervalSince1970) {
         guard let d = active else { return }
-        if d.isDue(now) {
-            // Leave the card up for a beat showing "Now", then clear.
-            updateActivity(d, now: now)
-            return
-        }
         updateActivity(d, now: now)
+        // Push to the Watch on minute changes only (not every one-second tick).
+        let minute = d.minutesRemaining(now)
+        if minute != lastWatchMinute {
+            lastWatchMinute = minute
+            pushToWatch(d)
+        }
+    }
+
+    /// Sends the next few trains on the tracked line to the Apple Watch app and
+    /// its complications. No-op without a paired, installed Watch app.
+    private func pushToWatch(_ d: TrackedDeparture) {
+        let deps = ScheduleProjector.nextDepartures(
+            for: d.stationId, lineIds: [d.lineId], limit: 6, timeHorizonMinutes: 3 * 60
+        )
+        let rows = deps.prefix(3).map {
+            (lineId: SyrmosLineTokens.label(for: $0.lineId), destination: $0.direction, minutes: $0.minutesAway, time: $0.time)
+        }
+        WatchSessionManager.shared.push(stationName: d.stationName, departures: Array(rows))
     }
 
     // MARK: - ActivityKit bridge (no-op safe when unsupported)
