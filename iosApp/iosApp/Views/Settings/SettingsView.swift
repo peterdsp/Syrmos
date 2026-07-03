@@ -8,6 +8,11 @@ struct SyrmosSettingsView: View {
     @State private var refreshAlert: RefreshAlert?
     @State private var showContactSheet = false
     @State private var showSystemMap = false
+    /// Developer toggle: forces the severe-weather card to render on Home
+    /// regardless of the actual weather condition, so we can smoke-test the
+    /// card without waiting for a storm to roll in. Persists across launches
+    /// (helpful when handing the phone to a designer to review the layout).
+    @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
     private struct RefreshAlert: Identifiable {
         let id = UUID()
@@ -96,6 +101,24 @@ struct SyrmosSettingsView: View {
                     Text(loc[.aboutText])
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
+
+                Section(loc.language == .greek ? "Ανάπτυξη" : loc.language == .albanian ? "Zhvillim" : "Developer") {
+                    Toggle(isOn: $forceEmergencyPreview) {
+                        Label(
+                            loc.language == .greek ? "Προεπισκόπηση κακοκαιρίας"
+                                : loc.language == .albanian ? "Paraafisho paralajmërim moti"
+                                : "Preview severe-weather card",
+                            systemImage: "cloud.bolt.rain.fill"
+                        )
+                    }
+                    Text(
+                        loc.language == .greek ? "Δείχνει την κόκκινη κάρτα στην Αρχική χωρίς να χρειάζεται πραγματική καταιγίδα."
+                            : loc.language == .albanian ? "Shfaq kartën e paralajmërimit në Home pa nevojën për stuhi të vërtetë."
+                            : "Forces the amber warning card on Home so you can smoke-test it without waiting for a storm."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 Section(loc.language == .greek ? "Χάρτης" : loc.language == .albanian ? "Harta" : "Map") {

@@ -157,7 +157,8 @@ final class DepartureTracking: ObservableObject {
                 scheduledTime: d.scheduledTime,
                 isDue: false,
                 progress: progress(for: d, now: now),
-                routeStations: d.routeStations.map { $0.stationName }
+                routeStations: d.routeStations.map { $0.stationName },
+                targetEpoch: d.targetEpoch
             )
             do {
                 let activity = try Activity.request(
@@ -182,7 +183,8 @@ final class DepartureTracking: ObservableObject {
                 scheduledTime: d.scheduledTime,
                 isDue: d.isDue(now),
                 progress: progress(for: d, now: now),
-                routeStations: d.routeStations.map { $0.stationName }
+                routeStations: d.routeStations.map { $0.stationName },
+                targetEpoch: d.targetEpoch
             )
             Task {
                 for activity in Activity<SyrmosTrackingAttributes>.activities where activity.id == id {
