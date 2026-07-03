@@ -26,6 +26,7 @@ val domainModule = module {
     factory { SearchStationsUseCase(stationRepository = get()) }
     factory { FindNearestStationUseCase(stationRepository = get()) }
     factory { PlanJourneyUseCase(stationRepository = get(), lineRepository = get()) }
+    factory { com.syrmos.core.domain.usecase.PlanByArrivalUseCase(planJourney = get(), getNextDepartures = get()) }
 
     // Live arrivals infrastructure. All providers return null today (no
     // operator publishes a real-time arrivals feed for Athens). When any

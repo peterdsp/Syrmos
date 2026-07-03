@@ -24,6 +24,7 @@ import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
+import com.syrmos.core.domain.usecase.PlanByArrivalUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
 import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.domain.usecase.SearchStationsUseCase
@@ -77,6 +78,7 @@ class AssistantViewModel(
     private val bandProjector: ComputeDeparturesFromBandsUseCase,
     private val getLastTrain: GetLastTrainUseCase,
     private val planJourney: PlanJourneyUseCase,
+    private val planByArrival: PlanByArrivalUseCase,
     private val searchStations: SearchStationsUseCase,
     private val findNearestStation: FindNearestStationUseCase,
     private val announcementsRepository: AnnouncementsRepository,
@@ -218,30 +220,51 @@ class AssistantViewModel(
         val fromId = intent.fromStationId ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
         val toId = intent.toStationId ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
 
-        val plan = planJourney.invoke(fromStationId = fromId, toStationId = toId).first()
-            ?: return botMessage(noRouteText(fromId, toId))
-
-        val duration = plan.totalMinutes
         val now = com.syrmos.core.common.extensions.currentAthensTime()
         val nowMin = now.hour * 60 + now.minute
-
-        val targetMin = intent.arriveByAthensMinutes
+        val rawTarget = intent.arriveByAthensMinutes
             ?: intent.inMinutesFromNow?.let { nowMin + it }
             ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
+        // Wrap into tomorrow if the absolute target already passed today
+        // (e.g. "at 1am" said at 23:00 means 1am tomorrow).
+        val targetMin = if (rawTarget < nowMin && intent.arriveByAthensMinutes != null)
+            rawTarget + 24 * 60 else rawTarget
 
-        // Wrap tomorrow if the absolute target is in the past today (e.g.
-        // "at 1am" said at 23:00 means 1am tomorrow, +26h)
-        val effectiveTargetMin = if (targetMin < nowMin && intent.arriveByAthensMinutes != null)
-            targetMin + 24 * 60 else targetMin
-
-        val leaveByMin = effectiveTargetMin - duration
-        val slack = leaveByMin - nowMin
+        // Prefer the backward-walking planner: it anchors the first leg to
+        // a real scheduled departure so the answer names an actual train
+        // ("board the 21:04 M3") rather than a rounded clock estimate.
+        val solution = runCatching {
+            planByArrival.invoke(
+                fromStationId = fromId,
+                toStationId = toId,
+                arriveByAthensMinutes = targetMin,
+            )
+        }.getOrNull()
 
         val fromName = stationName(fromId)
         val toName = stationName(toId)
-        val leaveByLabel = formatClock(leaveByMin % (24 * 60))
-        val arriveLabel = formatClock(effectiveTargetMin % (24 * 60))
+        val arriveLabel = formatClock(targetMin % (24 * 60))
 
+        if (solution != null) {
+            val leaveLabel = solution.firstLegDepartureTime
+            val slack = solution.slackMinutes
+            return botMessage(
+                when {
+                    slack < 0 -> arrivalMissed(toName, arriveLabel, -slack)
+                    slack < 5 -> arrivalTightExact(fromName, leaveLabel, toName, arriveLabel, slack)
+                    slack > solution.route.totalMinutes + 45 -> arrivalEarly(fromName, leaveLabel, toName, arriveLabel, slack)
+                    else -> arrivalOkExact(fromName, leaveLabel, toName, arriveLabel, slack)
+                }
+            )
+        }
+
+        // Fallback: schedule-agnostic estimate. Still honest; kept as the
+        // safety net when the projector can't answer for this line/day.
+        val duration = planJourney.invoke(fromStationId = fromId, toStationId = toId).first()?.totalMinutes
+            ?: return botMessage(noRouteText(fromId, toId))
+        val leaveByMin = targetMin - duration
+        val slack = leaveByMin - nowMin
+        val leaveByLabel = formatClock(leaveByMin % (24 * 60))
         return botMessage(
             when {
                 slack < 0 -> arrivalMissed(toName, arriveLabel, -slack)
@@ -251,6 +274,20 @@ class AssistantViewModel(
             }
         )
     }
+
+    private fun arrivalOkExact(from: String, leaveAt: String, to: String, arrive: String, slack: Int): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> "Πάρε τον συρμό στις $leaveAt από $from και θα είσαι στο $to στις $arrive. $slack λεπτά περιθώριο."
+            AppLanguage.ALBANIAN -> "Merr trenin në $leaveAt nga $from dhe do të jesh në $to në $arrive. $slack minuta hapësirë."
+            else -> "Board the $leaveAt from $from and you'll be at $to by $arrive. $slack min to spare."
+        }
+
+    private fun arrivalTightExact(from: String, leaveAt: String, to: String, arrive: String, slack: Int): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> "Στριμωγμένα. Το τρένο στις $leaveAt από $from είναι το τελευταίο που φτάνει στο $to μέχρι τις $arrive."
+            AppLanguage.ALBANIAN -> "Ngushtë. Treni në $leaveAt nga $from është i fundit që arrin në $to deri në $arrive."
+            else -> "Tight. The $leaveAt from $from is the last one that gets you to $to by $arrive."
+        }
 
     private fun stationName(id: String): String {
         val st = stations.firstOrNull { it.id == id } ?: return id

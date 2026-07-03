@@ -221,6 +221,26 @@ SELECT value FROM settings_entity WHERE key = ?;
 setSetting:
 INSERT OR REPLACE INTO settings_entity(key, value) VALUES (?, ?);
 
+-- Weather cache: one row per ~5 km lat/lng bucket so the offline
+-- assistant can answer weather queries after a cold restart. Stored as
+-- a JSON blob keyed by bucketKey ("latHundredths_lngHundredths").
+CREATE TABLE IF NOT EXISTS weather_bucket_entity (
+    bucketKey TEXT NOT NULL PRIMARY KEY,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    placeName TEXT NOT NULL,
+    fetchedAtEpochSeconds INTEGER NOT NULL,
+    payloadJson TEXT NOT NULL
+);
+
+selectWeatherBuckets:
+SELECT bucketKey, latitude, longitude, placeName, fetchedAtEpochSeconds, payloadJson
+FROM weather_bucket_entity;
+
+upsertWeatherBucket:
+INSERT OR REPLACE INTO weather_bucket_entity(bucketKey, latitude, longitude, placeName, fetchedAtEpochSeconds, payloadJson)
+VALUES (?, ?, ?, ?, ?, ?);
+
 -- Cleanup
 deleteAllSchedules:
 DELETE FROM schedule_entity;

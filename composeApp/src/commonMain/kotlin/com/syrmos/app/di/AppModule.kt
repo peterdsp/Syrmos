@@ -33,6 +33,7 @@ val featureModule = module {
             bandProjector = get(),
             getLastTrain = get(),
             planJourney = get(),
+            planByArrival = get(),
             searchStations = get(),
             findNearestStation = get(),
             announcementsRepository = get(),
