@@ -13,15 +13,52 @@ import FoundationModels
 /// When the model is unavailable (older devices, no Apple Intelligence, the
 /// Simulator), Ariadne uses the rule parser directly with zero behaviour change.
 enum AriadneBrain {
-    /// True when an on-device model is ready to use.
-    static var isAvailable: Bool {
+    /// Why the on-device "Clever mode" model is or isn't usable, surfaced in
+    /// Settings so the user understands which engine answers their questions.
+    enum Availability: Equatable {
+        /// Apple Foundation Models are ready; Ariadne runs in Clever mode.
+        case available
+        /// The device supports Apple Intelligence but the user hasn't turned it
+        /// on (Settings -> Apple Intelligence & Siri).
+        case appleIntelligenceNotEnabled
+        /// The model is still downloading; retry shortly.
+        case modelNotReady
+        /// Hardware can't run Apple Intelligence (pre-15 Pro iPhone, non-M iPad).
+        case deviceNotEligible
+        /// The OS predates Apple Intelligence (below iOS 26) or the framework
+        /// isn't present in this build (Simulator without the models).
+        case osTooOld
+
+        /// True only when the smart engine is live.
+        var isClever: Bool { self == .available }
+    }
+
+    /// Resolves the current model availability, mapping Apple's reason cases
+    /// explicitly so Settings can show an actionable string.
+    static var availability: Availability {
         #if canImport(FoundationModels)
         if #available(iOS 26.0, *) {
-            if case .available = SystemLanguageModel.default.availability { return true }
+            switch SystemLanguageModel.default.availability {
+            case .available:
+                return .available
+            case .unavailable(.appleIntelligenceNotEnabled):
+                return .appleIntelligenceNotEnabled
+            case .unavailable(.modelNotReady):
+                return .modelNotReady
+            case .unavailable(.deviceNotEligible):
+                return .deviceNotEligible
+            case .unavailable:
+                // Any future reason we don't map yet: treat as ineligible so we
+                // fall back to the rule parser rather than promising Clever mode.
+                return .deviceNotEligible
+            }
         }
         #endif
-        return false
+        return .osTooOld
     }
+
+    /// True when an on-device model is ready to use.
+    static var isAvailable: Bool { availability == .available }
 
     /// Rewrites [input] into a clean query, or nil to fall back to raw text.
     static func normalize(_ input: String) async -> String? {
