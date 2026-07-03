@@ -38,5 +38,20 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Home Screen widget: next M3 airport-train departures from
+             Syntagma. Refreshes every 30 min (AppWidget minimum) and
+             also whenever MainActivity resumes (see refreshAll()). -->
+        <receiver
+            android:name=".widget.SyrmosDeparturesWidget"
+            android:exported="true"
+            android:label="@string/widget_departures_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_departures_info" />
+        </receiver>
     </application>
 </manifest>

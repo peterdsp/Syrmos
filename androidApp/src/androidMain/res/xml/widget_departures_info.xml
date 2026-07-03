@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AppWidgetProviderInfo for the Syrmos next-departures widget.
+
+    updatePeriodMillis 1800000 (30 min) is the AppWidget hard minimum;
+    we also refresh from MainActivity.onResume so the widget stays
+    honest right after the user closed the app.
+
+    resizeMode="none" keeps the layout stable — the RemoteViews inside
+    are sized for a 2x2 tile and would look awkward stretched.
+-->
+<appwidget-provider
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="150dp"
+    android:minHeight="120dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_departures"
+    android:previewLayout="@layout/widget_departures"
+    android:widgetCategory="home_screen"
+    android:resizeMode="none"
+    android:description="@string/widget_departures_description" />
