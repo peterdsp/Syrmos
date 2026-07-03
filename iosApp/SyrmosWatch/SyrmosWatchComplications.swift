@@ -42,19 +42,7 @@ struct WatchComplicationProvider: TimelineProvider {
     }
 }
 
-/// Reads the snapshot the WatchConnectivityProvider persists.
-enum WatchComplicationStore {
-    static let suite = "group.com.syrmosApp.watch"
-    static func read() -> WatchSnapshot? {
-        guard let d = UserDefaults(suiteName: suite)?.data(forKey: "snapshot") else { return nil }
-        return try? JSONDecoder().decode(WatchSnapshot.self, from: d)
-    }
-    static func write(_ snapshot: WatchSnapshot) {
-        guard let d = try? JSONEncoder().encode(snapshot) else { return }
-        UserDefaults(suiteName: suite)?.set(d, forKey: "snapshot")
-    }
-}
-
+@main
 struct SyrmosWatchComplications: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "SyrmosWatchComplication", provider: WatchComplicationProvider()) { entry in
