@@ -33,6 +33,7 @@
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
 		AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */; };
 		AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */; };
+		AA11BB22CC33DD44EE55BE01 /* EmergencyWeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
 		AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */; };
 		AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */; };
@@ -184,6 +185,7 @@
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingCardBody.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPickerSheet.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyWeatherCard.swift; sourceTree = "<group>"; };
 		2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/WhatsNew/WhatsNewView.swift; sourceTree = SOURCE_ROOT; };
 		571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/AirportData.swift; sourceTree = SOURCE_ROOT; };
 		7FCA4BF462F847AA856D94DB /* SyrmosWidget/NextDeparturesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/NextDeparturesWidget.swift; sourceTree = SOURCE_ROOT; };
@@ -494,6 +496,7 @@
 				F9632839850F8DA49BA56324 /* HomeView.swift */,
 				AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */,
 				AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */,
+				AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -651,6 +654,7 @@
 				A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */,
 				AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */,
 				AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */,
+				AA11BB22CC33DD44EE55BE01 /* EmergencyWeatherCard.swift in Sources */,
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
@@ -828,7 +832,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -851,7 +855,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -932,7 +936,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
@@ -960,7 +964,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;

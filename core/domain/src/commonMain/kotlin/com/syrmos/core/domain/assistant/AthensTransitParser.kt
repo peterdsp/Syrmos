@@ -52,11 +52,23 @@ class AthensTransitParser(
             containsAny(text, FAVORITE_WORDS) ||
             containsAny(text, TIME_PHRASES)
 
-        // Weather is allowed ONLY as a routing constraint, never as a topic.
-        // "weather in london" stays out of scope; "raining, get me to X" routes
-        // with the low-exposure flag set.
+        // Weather as a routing constraint (raining -> low-exposure route),
+        // OR a direct weather question. "weather" / "καιρός" / "moti" alone
+        // is answered from cache; "weather at X" is anchored to a station;
+        // "get me to X, it's raining" still goes to the routing branch.
         val weather = containsAny(text, WEATHER_WORDS)
-        if (weather && !strongTransit) return AssistantIntent.OutOfScope
+        if (weather) {
+            // Direct weather question: no plan cue, no "to" marker, but a
+            // weather word. Optionally anchored to a station the user
+            // named. Non-Athens weather stays out of scope because the
+            // station matcher will find nothing and we bail below.
+            val planning = containsAny(text, PLAN_PHRASES) ||
+                TO_MARKERS.any { text.contains(it) } ||
+                mentionedStations.size >= 2
+            if (!planning) {
+                return AssistantIntent.WeatherAt(stationId = mentionedStations.firstOrNull())
+            }
+        }
 
         // Nothing transit-related at all: decline.
         if (!strongTransit && !intentSignal && !weather) return AssistantIntent.OutOfScope
@@ -115,6 +127,24 @@ class AthensTransitParser(
             (hasToMarker && mentionedStations.isNotEmpty()) ||
             mentionedStations.size >= 2
         if (planning) {
+            // Before the standard PlanTrip, see if the user anchored an
+            // arrival time. "I need to be at Piraeus by 21:30" / "airport
+            // in 45 minutes" / "at 9pm at Syntagma".
+            val target = extractTargetTime(text)
+            if (target != null) {
+                val (from, to) = resolveTripEndpoints(text, mentionedStations)
+                val base = AssistantIntent.PlanTripByArrival(
+                    fromStationId = from,
+                    toStationId = to,
+                    arriveByAthensMinutes = target.absoluteMinutes,
+                    inMinutesFromNow = target.relativeMinutes,
+                )
+                return when {
+                    to == null -> AssistantIntent.NeedsClarification(base, MissingSlot.DESTINATION_STATION)
+                    from == null -> AssistantIntent.NeedsClarification(base, MissingSlot.ORIGIN_STATION)
+                    else -> base
+                }
+            }
             val (from, to) = resolveTripEndpoints(text, mentionedStations)
             val base = AssistantIntent.PlanTrip(
                 fromStationId = from,
@@ -310,6 +340,62 @@ class AthensTransitParser(
     private fun isBareLineQuery(text: String): Boolean {
         // "m2", "line 2", "γραμμη 2" with little else.
         return text.split(WHITESPACE).count { it.isNotBlank() } <= 3
+    }
+
+    // MARK: - Time expressions
+
+    /**
+     * Fingerprint of a time anchor pulled out of the user's utterance.
+     * Absolute minutes: 24h-clock Athens local ("at 21:30" -> 1290).
+     * Relative minutes: minutes from now ("in 45 minutes" -> 45).
+     * Exactly one is non-null; caller decides which to use.
+     */
+    internal data class TargetTime(val absoluteMinutes: Int?, val relativeMinutes: Int?)
+
+    /**
+     * Scan the folded text for a time anchor. Recognised trilingually:
+     *  - "at 21:30" / "by 21:30" / "στις 21:30" / "deri 21:30"
+     *  - "at 9 pm" / "at 9pm" / "9 μμ"
+     *  - "in 45 minutes" / "σε 45 λεπτά" / "për 45 minuta"
+     *  - "in 1 hour" / "σε 1 ώρα" / "për 1 orë"
+     */
+    private fun extractTargetTime(text: String): TargetTime? {
+        // Absolute HH:MM
+        val hhmm = Regex("""(\d{1,2})[:.](\d{2})""").find(text)
+        if (hhmm != null) {
+            val h = hhmm.groupValues[1].toInt()
+            val m = hhmm.groupValues[2].toInt()
+            if (h in 0..23 && m in 0..59) {
+                return TargetTime(absoluteMinutes = h * 60 + m, relativeMinutes = null)
+            }
+        }
+
+        // Absolute H am/pm/μμ/πμ (no minutes)
+        val meridian = Regex("""(\d{1,2})\s*(am|pm|μμ|πμ)""").find(text)
+        if (meridian != null) {
+            var h = meridian.groupValues[1].toInt()
+            val mark = meridian.groupValues[2]
+            if (h in 1..12) {
+                if (mark == "pm" || mark == "μμ") { if (h < 12) h += 12 }
+                else if (mark == "am" || mark == "πμ") { if (h == 12) h = 0 }
+                return TargetTime(absoluteMinutes = h * 60, relativeMinutes = null)
+            }
+        }
+
+        // Relative: "in N min" / "σε N λεπτά" / "për N minuta"
+        val relMin = Regex("""(\d+)\s*(min|minute|minutes|λεπτ|minut)""").find(text)
+        if (relMin != null) {
+            val n = relMin.groupValues[1].toInt()
+            if (n in 1..(24 * 60)) return TargetTime(absoluteMinutes = null, relativeMinutes = n)
+        }
+        // Relative: "in N hour(s)" / "σε N ώρες" / "për N orë"
+        val relHr = Regex("""(\d+)\s*(hour|hours|hr|h |ωρα|ωρε|ore |orë)""").find(text)
+        if (relHr != null) {
+            val n = relHr.groupValues[1].toInt()
+            if (n in 1..12) return TargetTime(absoluteMinutes = null, relativeMinutes = n * 60)
+        }
+
+        return null
     }
 
     // MARK: - Token helpers

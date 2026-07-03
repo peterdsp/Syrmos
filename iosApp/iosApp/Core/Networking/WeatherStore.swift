@@ -17,6 +17,15 @@ enum WeatherCondition {
         }
     }
 
+    /// Severe enough to justify an on-Home warning card with emergency
+    /// contact numbers. Mirrors WeatherCondition.isSevere in KMP.
+    var isSevere: Bool {
+        switch self {
+        case .showers, .thunderstorm, .snow: return true
+        default: return false
+        }
+    }
+
     static func fromCode(_ code: Int) -> WeatherCondition {
         switch code {
         case 0: return .clear

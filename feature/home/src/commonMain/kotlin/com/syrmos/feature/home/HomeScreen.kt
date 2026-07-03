@@ -194,6 +194,13 @@ fun HomeScreen(
 
         val weather = uiState.weather
         if (weather != null) {
+            // Emergency weather card: only when the current condition is
+            // severe (heavy showers, thunderstorm, snow). Sits ABOVE the
+            // regular weather card so a user opening Home on a stormy day
+            // sees the safety message before the temperature.
+            if (weather.current.condition.isSevere) {
+                item { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) }
+            }
             item { WeatherCard(snapshot = weather, lang = lang) }
         }
 
@@ -317,6 +324,174 @@ private fun trackAnyLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Παρακολούθηση συρμού"
     AppLanguage.ALBANIAN -> "Ndiq një tren"
     else -> "Track a train"
+}
+
+/**
+ * Severe-weather warning card. Animated raindrops fall out of an amber
+ * cloud, headline + safety copy in the active language, and the local
+ * Greek emergency numbers so the user can reach help without leaving
+ * the app. Kept compact so it doesn't dominate Home; hidden by
+ * HomeScreen when the current condition isn't severe.
+ */
+@Composable
+private fun EmergencyWeatherCard(
+    condition: com.syrmos.core.model.weather.WeatherCondition,
+    lang: AppLanguage,
+) {
+    val infinite = rememberInfiniteTransition(label = "rainDrops")
+    val dropOffset by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 16f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "rainDropsOffset",
+    )
+    val dropAlpha by infinite.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "rainDropsAlpha",
+    )
+
+    val amber = Color(0xFFE65100)
+    val bg = Color(0xFFFFF3E0)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = bg),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, amber.copy(alpha = 0.35f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                // Animated cloud + falling drop. Drop resets every 900ms so
+                // the eye reads "rain falling" without a whole particle rig.
+                Box(
+                    modifier = Modifier.width(44.dp).height(48.dp),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    Text(
+                        text = "☁️",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 22.dp + dropOffset.dp)
+                            .width(4.dp)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(amber.copy(alpha = dropAlpha)),
+                    )
+                }
+                Column {
+                    Text(
+                        text = emergencyTitle(condition, lang),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = amber,
+                    )
+                    Text(
+                        text = emergencySubtitle(condition, lang),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+            Text(
+                text = emergencyBody(lang),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = emergencyNumbersHeader(lang),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                EmergencyNumberRow(label = "112", sub = emergencyLabel112(lang))
+                EmergencyNumberRow(label = "199", sub = emergencyLabelFire(lang))
+                EmergencyNumberRow(label = "11185", sub = emergencyLabelOASA(lang))
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmergencyNumberRow(label: String, sub: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFFE65100))
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+        }
+        Text(
+            text = sub,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+private fun emergencyTitle(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String {
+    val storm = condition == com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM
+    return when (lang) {
+        AppLanguage.GREEK -> if (storm) "Καταιγίδα σε εξέλιξη" else "Έντονη κακοκαιρία"
+        AppLanguage.ALBANIAN -> if (storm) "Stuhi në zhvillim" else "Mot i keq"
+        else -> if (storm) "Storm in progress" else "Severe weather"
+    }
+}
+private fun emergencySubtitle(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Πρόσεχε στη μετακίνηση."
+    AppLanguage.ALBANIAN -> "Ki kujdes gjatë udhëtimit."
+    else -> "Take care on your journey."
+}
+private fun emergencyBody(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Οι υπόγειες γραμμές μετρό είναι η πιο ασφαλής επιλογή. Το τραμ και ο προαστιακός μπορεί να έχουν καθυστερήσεις. Αν χρειαστείς άμεση βοήθεια, κάλεσε:"
+    AppLanguage.ALBANIAN -> "Metroja nëntokësore është zgjidhja më e sigurt. Tramvaji dhe treni periferik mund të kenë vonesa. Nëse ke nevojë për ndihmë të menjëhershme, telefono:"
+    else -> "Underground metro lines are the safest option. Tram and Suburban services may run late. If you need immediate help, call:"
+}
+private fun emergencyNumbersHeader(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "ΤΗΛΕΦΩΝΑ ΕΚΤΑΚΤΗΣ ΑΝΑΓΚΗΣ"
+    AppLanguage.ALBANIAN -> "NUMRAT E EMERGJENCËS"
+    else -> "EMERGENCY NUMBERS"
+}
+private fun emergencyLabel112(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Ευρωπαϊκή γραμμή έκτακτης ανάγκης"
+    AppLanguage.ALBANIAN -> "Numri europian i emergjencës"
+    else -> "European emergency line"
+}
+private fun emergencyLabelFire(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Πυροσβεστική"
+    AppLanguage.ALBANIAN -> "Zjarrfikësit"
+    else -> "Fire service"
+}
+private fun emergencyLabelOASA(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Πληροφορίες OASA"
+    AppLanguage.ALBANIAN -> "Informacione OASA"
+    else -> "OASA transit info"
 }
 
 

@@ -23,6 +23,17 @@ indirect enum AssistantIntent: Equatable {
     case help
     case needsClarification(base: AssistantIntent, missing: MissingSlot)
     case outOfScope
+    /// Direct weather question, optionally anchored to a station.
+    case weatherAt(stationId: String?)
+    /// "I need to be at X by 21:30" — plan backwards from a target
+    /// arrival time. Exactly one of arriveByAthensMinutes /
+    /// inMinutesFromNow is set.
+    case planTripByArrival(
+        fromStationId: String?,
+        toStationId: String?,
+        arriveByAthensMinutes: Int?,
+        inMinutesFromNow: Int?
+    )
     /// Easter egg: fires on "liepur" / "λιεπ" / close variants. Ariadne
     /// answers with a random cat joke. See catJoke() in AriadneModel.
     case easterEggLiepur
@@ -98,7 +109,14 @@ struct AthensTransitParser {
             containsAny(text, Self.timePhrases)
 
         let weather = containsAny(text, Self.weatherWords)
-        if weather && !strongTransit { return .outOfScope }
+        if weather {
+            let planning = containsAny(text, Self.planPhrases) ||
+                Self.toMarkers.contains(where: { text.contains($0) }) ||
+                stations.count >= 2
+            if !planning {
+                return .weatherAt(stationId: stations.first)
+            }
+        }
         if !strongTransit && !intentSignal && !weather { return .outOfScope }
 
         // 0. Travel time / ETA ("how long to X"). Before fares ("how much time"
@@ -132,6 +150,20 @@ struct AthensTransitParser {
         let planning = containsAny(text, Self.planPhrases) || weather ||
             (hasToMarker && !stations.isEmpty) || stations.count >= 2
         if planning {
+            // Before the standard PlanTrip, see if the user pinned an
+            // arrival time. "airport by 21:30", "in 45 min to Piraeus".
+            if let target = extractTargetTime(text) {
+                let (from, to) = resolveTripEndpoints(text, stations)
+                let base: AssistantIntent = .planTripByArrival(
+                    fromStationId: from,
+                    toStationId: to,
+                    arriveByAthensMinutes: target.absoluteMinutes,
+                    inMinutesFromNow: target.relativeMinutes
+                )
+                if to == nil { return .needsClarification(base: base, missing: .destinationStation) }
+                if from == nil { return .needsClarification(base: base, missing: .originStation) }
+                return base
+            }
             let (from, to) = resolveTripEndpoints(text, stations)
             let base = AssistantIntent.planTrip(fromStationId: from, toStationId: to, lowExposure: weather)
             if to == nil { return .needsClarification(base: base, missing: .destinationStation) }
@@ -272,6 +304,49 @@ struct AthensTransitParser {
         if containsAny(text, Self.saturdayWords) { return .saturday }
         if containsAny(text, Self.sundayWords) { return .sunday }
         return .today
+    }
+
+    struct TargetTime { let absoluteMinutes: Int?; let relativeMinutes: Int? }
+
+    private func extractTargetTime(_ text: String) -> TargetTime? {
+        if let m = text.range(of: #"(\d{1,2})[:.](\d{2})"#, options: .regularExpression) {
+            let s = String(text[m])
+            let parts = s.split(whereSeparator: { $0 == ":" || $0 == "." })
+            if parts.count == 2, let h = Int(parts[0]), let mm = Int(parts[1]),
+               (0...23).contains(h), (0...59).contains(mm) {
+                return TargetTime(absoluteMinutes: h * 60 + mm, relativeMinutes: nil)
+            }
+        }
+        if let m = text.range(of: #"(\d{1,2})\s*(am|pm|μμ|πμ)"#, options: .regularExpression) {
+            let s = String(text[m])
+            var h = 0; var mark = ""
+            for c in s {
+                if c.isNumber { h = h * 10 + Int(String(c))! }
+                else if c.isLetter || "μπ".contains(c) { mark.append(c) }
+            }
+            if (1...12).contains(h) {
+                if mark == "pm" || mark == "μμ" { if h < 12 { h += 12 } }
+                else if mark == "am" || mark == "πμ" { if h == 12 { h = 0 } }
+                return TargetTime(absoluteMinutes: h * 60, relativeMinutes: nil)
+            }
+        }
+        if let m = text.range(of: #"(\d+)\s*(min|minute|minutes|λεπτ|minut)"#, options: .regularExpression) {
+            let s = String(text[m])
+            var n = 0
+            for c in s where c.isNumber { n = n * 10 + Int(String(c))! }
+            if (1...(24 * 60)).contains(n) {
+                return TargetTime(absoluteMinutes: nil, relativeMinutes: n)
+            }
+        }
+        if let m = text.range(of: #"(\d+)\s*(hour|hours|hr|h |ωρα|ωρε|ore |orë)"#, options: .regularExpression) {
+            let s = String(text[m])
+            var n = 0
+            for c in s where c.isNumber { n = n * 10 + Int(String(c))! }
+            if (1...12).contains(n) {
+                return TargetTime(absoluteMinutes: nil, relativeMinutes: n * 60)
+            }
+        }
+        return nil
     }
 
     private func resolveTripEndpoints(_ text: String, _ stations: [String]) -> (String?, String?) {

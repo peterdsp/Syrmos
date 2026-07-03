@@ -23,7 +23,14 @@ final class AriadneModel: ObservableObject {
     // early so a fix is usually ready by the time the user asks; when it isn't
     // (or permission is off) the ETA resolver asks for an origin instead.
     private let location = LocationService()
+    private let weather = WeatherStore.shared
     private var loc: LocalizationManager { LocalizationManager.shared }
+
+    // Conversation state: after NeedsClarification we remember what we
+    // asked for so the user's next bare answer completes it instead of
+    // starting a fresh unrelated intent.
+    private var pendingIntent: AssistantIntent?
+    private var pendingMissing: MissingSlot?
 
     init() {
         messages = [greeting()]
@@ -39,9 +46,64 @@ final class AriadneModel: ObservableObject {
             // On-device LLM (when available) rewrites fuzzy input; the
             // deterministic parser still classifies and validates it.
             let cleaned = await AriadneBrain.normalize(text) ?? text
-            let reply = await resolve(parser.parse(cleaned))
+            let raw = parser.parse(cleaned)
+            let intent = mergePendingIfApplicable(raw)
+            if case let .needsClarification(base, missing) = intent {
+                pendingIntent = base
+                pendingMissing = missing
+            } else {
+                pendingIntent = nil
+                pendingMissing = nil
+            }
+            let reply = await resolve(intent)
             messages.append(reply)
             thinking = false
+        }
+    }
+
+    /// Fill the pending clarification slot with a station id the user just
+    /// named. Bare "Syntagma" turns into a Departures intent from the
+    /// parser; we grab its stationId and merge it into whatever the
+    /// pending PlanTrip / LastTrain / etc was waiting for.
+    private func mergePendingIfApplicable(_ raw: AssistantIntent) -> AssistantIntent {
+        guard let pending = pendingIntent, let missing = pendingMissing else { return raw }
+        let stationId: String? = {
+            switch raw {
+            case let .showDepartures(id, _, _): return id
+            case let .lastTrain(id, _): return id
+            case let .needsClarification(base, _):
+                if case let .showDepartures(id, _, _) = base { return id }
+                return nil
+            default: return nil
+            }
+        }()
+        guard let sid = stationId else { return raw }
+
+        switch pending {
+        case let .planTrip(from, to, lowExposure):
+            var patchedFrom = from, patchedTo = to
+            switch missing {
+            case .originStation: patchedFrom = sid
+            case .destinationStation: patchedTo = sid
+            default: return raw
+            }
+            if let _ = patchedFrom, let _ = patchedTo {
+                return .planTrip(fromStationId: patchedFrom, toStationId: patchedTo, lowExposure: lowExposure)
+            }
+            let stillMissing: MissingSlot = patchedFrom == nil ? .originStation : .destinationStation
+            let base: AssistantIntent = .planTrip(fromStationId: patchedFrom, toStationId: patchedTo, lowExposure: lowExposure)
+            return .needsClarification(base: base, missing: stillMissing)
+        case let .lastTrain(_, lineId):
+            return .lastTrain(stationId: sid, lineId: lineId)
+        case let .showDepartures(_, lineId, day):
+            return .showDepartures(stationId: sid, lineId: lineId, day: day)
+        case let .toggleFavorite(_):
+            return .toggleFavorite(stationId: sid)
+        case let .travelTime(to, from):
+            if to == nil { return .travelTime(toStationId: sid, fromStationId: from) }
+            return raw
+        default:
+            return raw
         }
     }
 
@@ -77,6 +139,214 @@ final class AriadneModel: ObservableObject {
             return bot(outOfScopeText())
         case .easterEggLiepur:
             return bot(catJoke())
+        case let .weatherAt(stationId):
+            return await resolveWeather(stationId: stationId)
+        case let .planTripByArrival(from, to, absMin, relMin):
+            return resolvePlanByArrival(from: from, to: to, absMin: absMin, relMin: relMin)
+        }
+    }
+
+    // MARK: - Time-anchored planning
+
+    private func resolvePlanByArrival(from: String?, to: String?, absMin: Int?, relMin: Int?) -> AriadneMessage {
+        guard let fromId = from else { return bot(clarify(.originStation)) }
+        guard let toId = to else { return bot(clarify(.destinationStation)) }
+
+        guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
+            return bot(noRouteText(from: name(fromId), to: name(toId)))
+        }
+        let duration = plan.totalMinutes
+
+        let cal = Calendar(identifier: .gregorian)
+        let tz = TimeZone(identifier: "Europe/Athens") ?? .current
+        var comps = cal.dateComponents(in: tz, from: Date())
+        let nowMin = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+
+        let targetMin: Int
+        if let absMin { targetMin = absMin }
+        else if let relMin { targetMin = nowMin + relMin }
+        else { return bot(clarify(.destinationStation)) }
+
+        let effective = (targetMin < nowMin && absMin != nil) ? targetMin + 24 * 60 : targetMin
+        let leaveByMin = effective - duration
+        let slack = leaveByMin - nowMin
+
+        let fromName = name(fromId)
+        let toName = name(toId)
+        let leaveLabel = formatClock(leaveByMin % (24 * 60))
+        let arriveLabel = formatClock(effective % (24 * 60))
+
+        if slack < 0 {
+            return bot(arrivalMissed(to: toName, arrive: arriveLabel, minutesOver: -slack))
+        }
+        if slack < 5 {
+            return bot(arrivalTight(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack))
+        }
+        if slack > duration + 45 {
+            return bot(arrivalEarly(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack))
+        }
+        return bot(arrivalOk(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack))
+    }
+
+    private func name(_ id: String) -> String {
+        for line in SyrmosData.lines {
+            for s in SyrmosData.stations(for: line.id) where s.id == id {
+                return loc.language == .greek ? s.nameEl : s.name
+            }
+        }
+        return id
+    }
+
+    private func formatClock(_ minutes: Int) -> String {
+        let h = (minutes / 60) % 24
+        let m = minutes % 60
+        return String(format: "%02d:%02d", h, m)
+    }
+
+    private func noRouteText(from: String, to: String) -> String {
+        switch loc.language {
+        case .greek: return "Δεν βρήκα διαδρομή από \(from) προς \(to)."
+        case .albanian: return "S'gjeta rrugë nga \(from) për te \(to)."
+        case .english: return "I couldn't find a route from \(from) to \(to)."
+        }
+    }
+    private func arrivalOk(from: String, leaveBy: String, to: String, arrive: String, slack: Int) -> String {
+        switch loc.language {
+        case .greek: return "Ξεκίνα από \(from) έως \(leaveBy) και θα είσαι στο \(to) στις \(arrive). \(slack) λεπτά περιθώριο."
+        case .albanian: return "Nis nga \(from) deri në \(leaveBy) dhe do të jesh në \(to) në \(arrive). \(slack) minuta hapësirë."
+        case .english: return "Leave \(from) by \(leaveBy) and you'll be at \(to) by \(arrive). \(slack) min to spare."
+        }
+    }
+    private func arrivalTight(from: String, leaveBy: String, to: String, arrive: String, slack: Int) -> String {
+        switch loc.language {
+        case .greek: return "Στριμωγμένα. Πρέπει να είσαι εκτός από \(from) μέσα στα επόμενα \(slack) λεπτά για να προλάβεις στο \(to) στις \(arrive)."
+        case .albanian: return "Ngushtë. Duhet të nisesh nga \(from) brenda \(slack) minutash për të arritur në \(to) në \(arrive)."
+        case .english: return "Tight. You need to leave \(from) within the next \(slack) min to make \(to) by \(arrive)."
+        }
+    }
+    private func arrivalMissed(to: String, arrive: String, minutesOver: Int) -> String {
+        switch loc.language {
+        case .greek: return "Δύσκολο. Για να είσαι στο \(to) στις \(arrive) θα έπρεπε να έχεις ξεκινήσει πριν \(minutesOver) λεπτά."
+        case .albanian: return "E vështirë. Për të qenë në \(to) në \(arrive) duhej të kishe nisur \(minutesOver) minuta më parë."
+        case .english: return "Cutting it close. To make \(to) by \(arrive) you'd have needed to leave \(minutesOver) min ago."
+        }
+    }
+    private func arrivalEarly(from: String, leaveBy: String, to: String, arrive: String, slack: Int) -> String {
+        switch loc.language {
+        case .greek: return "Έχεις άπλα. Ξεκίνα από \(from) όποτε θες μέσα στα επόμενα \(slack) λεπτά και θα φτάσεις στο \(to) στις \(arrive)."
+        case .albanian: return "Ke kohë. Nisu nga \(from) kur të duash brenda \(slack) minutash dhe do të jesh në \(to) në \(arrive)."
+        case .english: return "You have time. Leave \(from) anytime in the next \(slack) min and you'll reach \(to) by \(arrive)."
+        }
+    }
+
+    // MARK: - Weather
+
+    private func resolveWeather(stationId: String?) async -> AriadneMessage {
+        let anchor = weatherAnchor(stationId: stationId)
+        guard let anchor else {
+            if let snap = weather.snapshot {
+                return bot(formatWeather(snap: snap, placeName: snap.placeName))
+            }
+            return bot(weatherUnavailable())
+        }
+        // Trigger a fresh fetch; iOS WeatherStore refreshes centrally, so
+        // we just ask for a refresh at that coord and read snapshot back.
+        await weather.refresh(latitude: anchor.lat, longitude: anchor.lng, placeName: anchor.name)
+        if let snap = weather.snapshot {
+            return bot(formatWeather(snap: snap, placeName: anchor.name))
+        }
+        return bot(weatherUnavailable())
+    }
+
+    private struct WeatherAnchor { let lat: Double; let lng: Double; let name: String }
+
+    private func weatherAnchor(stationId: String?) -> WeatherAnchor? {
+        if let stationId {
+            for line in SyrmosData.lines {
+                for s in SyrmosData.stations(for: line.id) where s.id == stationId {
+                    let name = loc.language == .greek ? s.nameEl : s.name
+                    return WeatherAnchor(lat: s.coordinate.latitude, lng: s.coordinate.longitude, name: name)
+                }
+            }
+        }
+        // No explicit station: use the nearest station LocationService
+        // already computes, so weather reflects where the user actually is.
+        if let nearest = location.nearbyStations.first {
+            let node = nearest.station
+            let name = loc.language == .greek ? node.nameEl : node.displayName
+            return WeatherAnchor(lat: node.coordinate.latitude, lng: node.coordinate.longitude, name: name)
+        }
+        return nil
+    }
+
+    private func formatWeather(snap: WeatherSnapshot, placeName: String) -> String {
+        let tempC = Int(snap.current.temperatureC.rounded())
+        let feels = Int(snap.current.apparentC.rounded())
+        let cond = conditionLabel(snap.current.condition)
+        let ageMin = max(0, Int(Date().timeIntervalSince(snap.fetchedAt)) / 60)
+        let ageSuffix: String = ageMin >= 5 ? {
+            switch loc.language {
+            case .greek: return " (πριν \(ageMin) λεπτά)"
+            case .albanian: return " (\(ageMin) min më parë)"
+            case .english: return " (\(ageMin) min ago)"
+            }
+        }() : ""
+        switch loc.language {
+        case .greek:  return "\(placeName) τώρα: \(tempC)°C, \(cond). Αίσθηση \(feels)°C.\(ageSuffix)"
+        case .albanian: return "\(placeName) tani: \(tempC)°C, \(cond). Ndihet si \(feels)°C.\(ageSuffix)"
+        case .english: return "\(placeName) right now: \(tempC)°C, \(cond). Feels like \(feels)°C.\(ageSuffix)"
+        }
+    }
+
+    private func conditionLabel(_ c: WeatherCondition) -> String {
+        switch loc.language {
+        case .greek:
+            switch c {
+            case .clear: return "καθαρός"
+            case .partlyCloudy: return "μερική συννεφιά"
+            case .cloudy: return "συννεφιασμένος"
+            case .fog: return "ομίχλη"
+            case .drizzle: return "ψιχάλα"
+            case .rain: return "βροχή"
+            case .snow: return "χιόνι"
+            case .showers: return "μπόρες"
+            case .thunderstorm: return "καταιγίδα"
+            case .unknown: return "άγνωστη"
+            }
+        case .albanian:
+            switch c {
+            case .clear: return "kthjellët"
+            case .partlyCloudy: return "pjesërisht i vranët"
+            case .cloudy: return "i vranët"
+            case .fog: return "mjegull"
+            case .drizzle: return "shi i lehtë"
+            case .rain: return "shi"
+            case .snow: return "borë"
+            case .showers: return "reshje"
+            case .thunderstorm: return "stuhi"
+            case .unknown: return "e panjohur"
+            }
+        case .english:
+            switch c {
+            case .clear: return "clear"
+            case .partlyCloudy: return "partly cloudy"
+            case .cloudy: return "cloudy"
+            case .fog: return "foggy"
+            case .drizzle: return "drizzling"
+            case .rain: return "raining"
+            case .snow: return "snowing"
+            case .showers: return "showery"
+            case .thunderstorm: return "thunderstorm"
+            case .unknown: return "unknown"
+            }
+        }
+    }
+
+    private func weatherUnavailable() -> String {
+        switch loc.language {
+        case .greek: return "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online."
+        case .albanian: return "Ende s'kam të dhëna moti. Provo përsëri kur je online."
+        case .english: return "I don't have weather data yet. Try again when you're online."
         }
     }
 

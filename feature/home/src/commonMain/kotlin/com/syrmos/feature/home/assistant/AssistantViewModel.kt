@@ -7,6 +7,8 @@ import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.WeatherRepository
+import com.syrmos.core.model.weather.WeatherSnapshot
+import kotlinx.datetime.Clock
 import com.syrmos.core.domain.assistant.Exposure
 import com.syrmos.core.domain.assistant.StationComfort
 import com.syrmos.core.domain.assistant.AssistantIntent
@@ -97,6 +99,13 @@ class AssistantViewModel(
     private var nextId = 0L
     private var lastLocation: UserLocation? = null
 
+    // Conversation state: when Ariadne returns NeedsClarification we stash
+    // the pending intent so the next user turn can fill the missing slot
+    // ("How do I go to Nikaia" -> "From which station?" -> "Syntagma"
+    // now resolves as origin instead of a fresh Syntagma departures).
+    private var pendingIntent: AssistantIntent? = null
+    private var pendingMissing: MissingSlot? = null
+
     /**
      * Latest device location, pushed by the host when the assistant opens.
      * Used as the origin for travel-time ("how long to X") answers; when it's
@@ -128,8 +137,59 @@ class AssistantViewModel(
             // On-device LLM (when supplied) rewrites fuzzy input; the
             // deterministic parser still classifies and validates it.
             val cleaned = queryNormalizer.normalize(text) ?: text
-            val reply = resolve(p.parse(cleaned))
+            val raw = p.parse(cleaned)
+            val intent = mergePendingIfApplicable(raw)
+            // Update pending state before we resolve, so the answer's
+            // side effects can rely on it being fresh.
+            if (intent is AssistantIntent.NeedsClarification) {
+                pendingIntent = intent.base
+                pendingMissing = intent.missing
+            } else {
+                pendingIntent = null
+                pendingMissing = null
+            }
+            val reply = resolve(intent)
             _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
+        }
+    }
+
+    /**
+     * If we're mid-conversation and the user's new turn is a bare station
+     * name (Ariadne's parser turns "Syntagma" alone into a
+     * ShowDepartures{station=SYN}), merge that station into the pending
+     * intent's missing slot instead of resetting. Falls through to the raw
+     * intent when the merge doesn't apply.
+     */
+    private fun mergePendingIfApplicable(raw: AssistantIntent): AssistantIntent {
+        val pending = pendingIntent ?: return raw
+        val missing = pendingMissing ?: return raw
+        val stationId = when (raw) {
+            is AssistantIntent.ShowDepartures -> raw.stationId
+            is AssistantIntent.LastTrain -> raw.stationId
+            is AssistantIntent.NeedsClarification -> (raw.base as? AssistantIntent.ShowDepartures)?.stationId
+            else -> null
+        } ?: return raw
+
+        return when (pending) {
+            is AssistantIntent.PlanTrip -> {
+                val patched = when (missing) {
+                    MissingSlot.ORIGIN_STATION -> pending.copy(fromStationId = stationId)
+                    MissingSlot.DESTINATION_STATION -> pending.copy(toStationId = stationId)
+                    else -> return raw
+                }
+                if (patched.fromStationId != null && patched.toStationId != null) patched
+                else AssistantIntent.NeedsClarification(
+                    patched,
+                    if (patched.fromStationId == null) MissingSlot.ORIGIN_STATION
+                    else MissingSlot.DESTINATION_STATION,
+                )
+            }
+            is AssistantIntent.LastTrain -> pending.copy(stationId = stationId)
+            is AssistantIntent.ShowDepartures -> pending.copy(stationId = stationId)
+            is AssistantIntent.ToggleFavorite -> pending.copy(stationId = stationId)
+            is AssistantIntent.TravelTime -> if (pending.toStationId == null)
+                pending.copy(toStationId = stationId) else pending
+            else -> raw
         }
     }
 
@@ -150,6 +210,195 @@ class AssistantViewModel(
         is AssistantIntent.NeedsClarification -> botMessage(clarify(intent.missing))
         AssistantIntent.OutOfScope -> botMessage(outOfScopeText())
         AssistantIntent.EasterEggLiepur -> botMessage(catJoke())
+        is AssistantIntent.WeatherAt -> resolveWeather(intent)
+        is AssistantIntent.PlanTripByArrival -> resolvePlanByArrival(intent)
+    }
+
+    private suspend fun resolvePlanByArrival(intent: AssistantIntent.PlanTripByArrival): AssistantMessage {
+        val fromId = intent.fromStationId ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
+        val toId = intent.toStationId ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
+
+        val plan = planJourney.invoke(fromStationId = fromId, toStationId = toId).first()
+            ?: return botMessage(noRouteText(fromId, toId))
+
+        val duration = plan.totalMinutes
+        val now = com.syrmos.core.common.extensions.currentAthensTime()
+        val nowMin = now.hour * 60 + now.minute
+
+        val targetMin = intent.arriveByAthensMinutes
+            ?: intent.inMinutesFromNow?.let { nowMin + it }
+            ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
+
+        // Wrap tomorrow if the absolute target is in the past today (e.g.
+        // "at 1am" said at 23:00 means 1am tomorrow, +26h)
+        val effectiveTargetMin = if (targetMin < nowMin && intent.arriveByAthensMinutes != null)
+            targetMin + 24 * 60 else targetMin
+
+        val leaveByMin = effectiveTargetMin - duration
+        val slack = leaveByMin - nowMin
+
+        val fromName = stationName(fromId)
+        val toName = stationName(toId)
+        val leaveByLabel = formatClock(leaveByMin % (24 * 60))
+        val arriveLabel = formatClock(effectiveTargetMin % (24 * 60))
+
+        return botMessage(
+            when {
+                slack < 0 -> arrivalMissed(toName, arriveLabel, -slack)
+                slack < 5 -> arrivalTight(fromName, leaveByLabel, toName, arriveLabel, slack)
+                slack > duration + 45 -> arrivalEarly(fromName, leaveByLabel, toName, arriveLabel, slack)
+                else -> arrivalOk(fromName, leaveByLabel, toName, arriveLabel, slack)
+            }
+        )
+    }
+
+    private fun stationName(id: String): String {
+        val st = stations.firstOrNull { it.id == id } ?: return id
+        return if (LocalizationManager.language.value == AppLanguage.GREEK) st.nameEl else st.name
+    }
+
+    private fun formatClock(minutes: Int): String {
+        val h = (minutes / 60) % 24
+        val m = minutes % 60
+        return "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}"
+    }
+
+    private fun noRouteText(from: String, to: String): String = when (LocalizationManager.language.value) {
+        AppLanguage.GREEK -> "Δεν βρήκα διαδρομή από $from προς $to."
+        AppLanguage.ALBANIAN -> "S'gjeta rrugë nga $from për te $to."
+        else -> "I couldn't find a route from $from to $to."
+    }
+
+    private fun arrivalOk(from: String, leaveBy: String, to: String, arrive: String, slack: Int): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> "Ξεκίνα από $from έως $leaveBy και θα είσαι στο $to στις $arrive. $slack λεπτά περιθώριο."
+            AppLanguage.ALBANIAN -> "Nis nga $from deri në $leaveBy dhe do të jesh në $to në $arrive. $slack minuta hapësirë."
+            else -> "Leave $from by $leaveBy and you'll be at $to by $arrive. $slack min to spare."
+        }
+
+    private fun arrivalTight(from: String, leaveBy: String, to: String, arrive: String, slack: Int): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> "Στριμωγμένα. Πρέπει να είσαι εκτός από $from μέσα στα επόμενα $slack λεπτά για να προλάβεις στο $to στις $arrive."
+            AppLanguage.ALBANIAN -> "Ngushtë. Duhet të nisesh nga $from brenda $slack minutash për të arritur në $to në $arrive."
+            else -> "Tight. You need to leave $from within the next $slack min to make $to by $arrive."
+        }
+
+    private fun arrivalMissed(to: String, arrive: String, minutesOver: Int): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> "Δύσκολο. Για να είσαι στο $to στις $arrive θα έπρεπε να έχεις ξεκινήσει πριν $minutesOver λεπτά."
+            AppLanguage.ALBANIAN -> "E vështirë. Për të qenë në $to në $arrive duhej të kishe nisur $minutesOver minuta më parë."
+            else -> "Cutting it close. To make $to by $arrive you'd have needed to leave $minutesOver min ago."
+        }
+
+    private fun arrivalEarly(from: String, leaveBy: String, to: String, arrive: String, slack: Int): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> "Έχεις άπλα. Ξεκίνα από $from όποτε θες μέσα στα επόμενα $slack λεπτά και θα φτάσεις στο $to στις $arrive."
+            AppLanguage.ALBANIAN -> "Ke kohë. Nisu nga $from kur të duash brenda $slack minutash dhe do të jesh në $to në $arrive."
+            else -> "You have time. Leave $from anytime in the next $slack min and you'll reach $to by $arrive."
+        }
+
+    private suspend fun resolveWeather(intent: AssistantIntent.WeatherAt): AssistantMessage {
+        val (lat, lng, placeName) = weatherAnchor(intent.stationId) ?: run {
+            val cached = weatherRepository.cached
+            return if (cached != null) botMessage(formatWeather(cached, placeName = cached.placeName))
+            else botMessage(weatherUnavailableText())
+        }
+        val snap = weatherRepository.snapshotForCoord(lat, lng, placeName)
+            ?: return botMessage(weatherUnavailableText())
+        return botMessage(formatWeather(snap, placeName = placeName))
+    }
+
+    private fun weatherAnchor(stationId: String?): Triple<Double, Double, String>? {
+        if (stationId != null) {
+            val st = stations.firstOrNull { it.id == stationId }
+            if (st != null) {
+                val name = if (LocalizationManager.language.value == AppLanguage.GREEK) st.nameEl else st.name
+                return Triple(st.latitude, st.longitude, name)
+            }
+        }
+        // No explicit station: prefer user's current location -> nearest
+        // station's coord, so weather reflects where they actually are.
+        val loc = lastLocation
+        if (loc != null) {
+            val nearest = stations.minByOrNull { st ->
+                val dLat = st.latitude - loc.latitude
+                val dLng = st.longitude - loc.longitude
+                dLat * dLat + dLng * dLng
+            }
+            if (nearest != null) {
+                val name = if (LocalizationManager.language.value == AppLanguage.GREEK) nearest.nameEl else nearest.name
+                return Triple(nearest.latitude, nearest.longitude, name)
+            }
+        }
+        return null
+    }
+
+    private fun formatWeather(snap: WeatherSnapshot, placeName: String): String {
+        val lang = LocalizationManager.language.value
+        val tempC = snap.current.temperatureC.toInt()
+        val feels = snap.current.apparentC.toInt()
+        val cond = weatherConditionLabel(snap.current.condition, lang)
+        val ageMin = ((Clock.System.now().epochSeconds - snap.fetchedAtEpochSeconds) / 60).toInt()
+        val ageSuffix = if (ageMin >= 5) when (lang) {
+            AppLanguage.GREEK -> " (πριν $ageMin λεπτά)"
+            AppLanguage.ALBANIAN -> " ($ageMin min më parë)"
+            else -> " ($ageMin min ago)"
+        } else ""
+        return when (lang) {
+            AppLanguage.GREEK ->
+                "$placeName τώρα: ${tempC}°C, $cond. Αίσθηση ${feels}°C.$ageSuffix"
+            AppLanguage.ALBANIAN ->
+                "$placeName tani: ${tempC}°C, $cond. Ndihet si ${feels}°C.$ageSuffix"
+            else ->
+                "$placeName right now: ${tempC}°C, $cond. Feels like ${feels}°C.$ageSuffix"
+        }
+    }
+
+    private fun weatherConditionLabel(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String {
+        return when (lang) {
+            AppLanguage.GREEK -> when (condition) {
+                com.syrmos.core.model.weather.WeatherCondition.CLEAR -> "καθαρός"
+                com.syrmos.core.model.weather.WeatherCondition.PARTLY_CLOUDY -> "μερική συννεφιά"
+                com.syrmos.core.model.weather.WeatherCondition.CLOUDY -> "συννεφιασμένος"
+                com.syrmos.core.model.weather.WeatherCondition.FOG -> "ομίχλη"
+                com.syrmos.core.model.weather.WeatherCondition.DRIZZLE -> "ψιχάλα"
+                com.syrmos.core.model.weather.WeatherCondition.RAIN -> "βροχή"
+                com.syrmos.core.model.weather.WeatherCondition.SNOW -> "χιόνι"
+                com.syrmos.core.model.weather.WeatherCondition.SHOWERS -> "μπόρες"
+                com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM -> "καταιγίδα"
+                com.syrmos.core.model.weather.WeatherCondition.UNKNOWN -> "άγνωστη"
+            }
+            AppLanguage.ALBANIAN -> when (condition) {
+                com.syrmos.core.model.weather.WeatherCondition.CLEAR -> "kthjellët"
+                com.syrmos.core.model.weather.WeatherCondition.PARTLY_CLOUDY -> "pjesërisht i vranët"
+                com.syrmos.core.model.weather.WeatherCondition.CLOUDY -> "i vranët"
+                com.syrmos.core.model.weather.WeatherCondition.FOG -> "mjegull"
+                com.syrmos.core.model.weather.WeatherCondition.DRIZZLE -> "shi i lehtë"
+                com.syrmos.core.model.weather.WeatherCondition.RAIN -> "shi"
+                com.syrmos.core.model.weather.WeatherCondition.SNOW -> "borë"
+                com.syrmos.core.model.weather.WeatherCondition.SHOWERS -> "reshje"
+                com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM -> "stuhi"
+                com.syrmos.core.model.weather.WeatherCondition.UNKNOWN -> "e panjohur"
+            }
+            else -> when (condition) {
+                com.syrmos.core.model.weather.WeatherCondition.CLEAR -> "clear"
+                com.syrmos.core.model.weather.WeatherCondition.PARTLY_CLOUDY -> "partly cloudy"
+                com.syrmos.core.model.weather.WeatherCondition.CLOUDY -> "cloudy"
+                com.syrmos.core.model.weather.WeatherCondition.FOG -> "foggy"
+                com.syrmos.core.model.weather.WeatherCondition.DRIZZLE -> "drizzling"
+                com.syrmos.core.model.weather.WeatherCondition.RAIN -> "raining"
+                com.syrmos.core.model.weather.WeatherCondition.SNOW -> "snowing"
+                com.syrmos.core.model.weather.WeatherCondition.SHOWERS -> "showery"
+                com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM -> "thunderstorm"
+                com.syrmos.core.model.weather.WeatherCondition.UNKNOWN -> "unknown"
+            }
+        }
+    }
+
+    private fun weatherUnavailableText(): String = when (LocalizationManager.language.value) {
+        AppLanguage.GREEK -> "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online."
+        AppLanguage.ALBANIAN -> "Ende s'kam të dhëna moti. Provo përsëri kur je online."
+        else -> "I don't have weather data yet. Try again when you're online."
     }
 
     private fun catJoke(): String {

@@ -371,6 +371,42 @@
     // "λιεπουρας", "λιεπ", "liepurashi" all resolve.
     const LIEPUR_TRIGGERS = ['liepur', 'λιεπ'];
 
+    /**
+     * Extract a target time anchor from folded text.
+     * Returns { absoluteMinutes, relativeMinutes } — exactly one set.
+     * Recognized: "21:30", "9 pm", "9μμ", "in 45 min", "σε 1 ώρα", etc.
+     */
+    function extractTargetTime(text) {
+        let m = text.match(/(\d{1,2})[:.](\d{2})/);
+        if (m) {
+            const h = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+            if (h >= 0 && h <= 23 && mm >= 0 && mm <= 59) {
+                return { absoluteMinutes: h * 60 + mm, relativeMinutes: null };
+            }
+        }
+        m = text.match(/(\d{1,2})\s*(am|pm|μμ|πμ)/);
+        if (m) {
+            let h = parseInt(m[1], 10);
+            const mark = m[2];
+            if (h >= 1 && h <= 12) {
+                if (mark === 'pm' || mark === 'μμ') { if (h < 12) h += 12; }
+                else if (mark === 'am' || mark === 'πμ') { if (h === 12) h = 0; }
+                return { absoluteMinutes: h * 60, relativeMinutes: null };
+            }
+        }
+        m = text.match(/(\d+)\s*(min|minute|minutes|λεπτ|minut)/);
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (n >= 1 && n <= 24 * 60) return { absoluteMinutes: null, relativeMinutes: n };
+        }
+        m = text.match(/(\d+)\s*(hour|hours|hr|h |ωρα|ωρε|ore |orë)/);
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (n >= 1 && n <= 12) return { absoluteMinutes: null, relativeMinutes: n * 60 };
+        }
+        return null;
+    }
+
     function parse(rawInput) {
         const text = fold(rawInput || '');
         if (!text.trim()) return { kind: 'outOfScope' };
@@ -400,7 +436,13 @@
             containsAny(text, TIME_PHRASES);
 
         const weather = containsAny(text, WEATHER_WORDS);
-        if (weather && !strongTransit) return { kind: 'outOfScope' };
+        if (weather) {
+            const hasToMarker = TO_MARKERS.some(function (m) { return text.indexOf(m) >= 0; });
+            const planning = containsAny(text, PLAN_PHRASES) || hasToMarker || mentionedStations.length >= 2;
+            if (!planning) {
+                return { kind: 'weatherAt', stationId: mentionedStations[0] || null };
+            }
+        }
         if (!strongTransit && !intentSignal && !weather) return { kind: 'outOfScope' };
 
         // Travel time / ETA ("how long to X"). Before fares ("how much time"
@@ -442,6 +484,20 @@
             (hasToMarker && mentionedStations.length > 0) ||
             mentionedStations.length >= 2;
         if (planning) {
+            const target = extractTargetTime(text);
+            if (target) {
+                const ep = resolveTripEndpoints(text, mentionedStations);
+                const base = {
+                    kind: 'planByArrival',
+                    from: ep.from,
+                    to: ep.to,
+                    arriveByMinutes: target.absoluteMinutes,
+                    inMinutesFromNow: target.relativeMinutes,
+                };
+                if (!ep.to) return { kind: 'needsClarification', base: base, missing: 'DESTINATION_STATION' };
+                if (!ep.from) return { kind: 'needsClarification', base: base, missing: 'ORIGIN_STATION' };
+                return base;
+            }
             const ep = resolveTripEndpoints(text, mentionedStations);
             const base = { kind: 'plan', from: ep.from, to: ep.to, lowExposure: !!weather };
             if (!ep.to) return { kind: 'needsClarification', base: base, missing: 'DESTINATION_STATION' };
