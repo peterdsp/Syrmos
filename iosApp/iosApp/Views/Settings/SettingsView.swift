@@ -103,6 +103,29 @@ struct SyrmosSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Label(ariadneEngineTitle, systemImage: ariadneEngineIcon)
+                            Spacer()
+                            Text(ariadneEngineValue)
+                                .font(.subheadline)
+                                .foregroundStyle(AriadneBrain.availability.isClever ? Color.accentColor : .secondary)
+                        }
+                        Text(ariadneEngineDetail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let url = ariadneEngineLearnMoreURL {
+                            Button(loc.language == .greek ? "Μάθετε περισσότερα" : loc.language == .albanian ? "Mëso më shumë" : "Learn More") {
+                                safariURL = url
+                            }
+                            .font(.caption)
+                        }
+                    }
+                } header: {
+                    Text(ariadneEngineTitle)
+                }
+
                 Section(loc.language == .greek ? "Ανάπτυξη" : loc.language == .albanian ? "Zhvillim" : "Developer") {
                     Toggle(isOn: $forceEmergencyPreview) {
                         Label(
@@ -273,6 +296,61 @@ struct SyrmosSettingsView: View {
 
     private var checkNowLabel: String {
         loc.language == .greek ? "Έλεγχος τώρα" : loc.language == .albanian ? "Kontrollo tani" : "Check now"
+    }
+
+    // MARK: Ariadne engine diagnostic
+
+    private var ariadneEngineTitle: String {
+        loc.language == .greek ? "Μηχανή Ariadne" : loc.language == .albanian ? "Motori i Ariadne" : "Ariadne engine"
+    }
+
+    private var ariadneEngineIcon: String {
+        AriadneBrain.availability.isClever ? "sparkles" : "text.magnifyingglass"
+    }
+
+    /// "Clever mode" when Apple Intelligence is live, else "Rule parser".
+    private var ariadneEngineValue: String {
+        if AriadneBrain.availability.isClever {
+            return loc.language == .greek ? "Έξυπνη λειτουργία" : loc.language == .albanian ? "Modaliteti i zgjuar" : "Clever mode"
+        }
+        return loc.language == .greek ? "Αναλυτής κανόνων" : loc.language == .albanian ? "Analizues rregullash" : "Rule parser"
+    }
+
+    /// One-line reason, so the user understands why the smart engine is or isn't on.
+    private var ariadneEngineDetail: String {
+        let el = loc.language == .greek, sq = loc.language == .albanian
+        switch AriadneBrain.availability {
+        case .available:
+            return el ? "Το Apple Intelligence διορθώνει την ερώτησή σας πριν την ανάλυση, εξ ολοκλήρου στη συσκευή."
+                : sq ? "Apple Intelligence rregullon pyetjen tuaj para analizës, plotësisht në pajisje."
+                : "Apple Intelligence cleans up your question before parsing, fully on device."
+        case .appleIntelligenceNotEnabled:
+            return el ? "Το Apple Intelligence δεν είναι ενεργό. Ενεργοποιήστε το στις Ρυθμίσεις για την Έξυπνη λειτουργία."
+                : sq ? "Apple Intelligence është i çaktivizuar. Aktivizoje te Cilësimet për Modalitetin e zgjuar."
+                : "Apple Intelligence is off. Turn it on in Settings for Clever mode."
+        case .modelNotReady:
+            return el ? "Το μοντέλο κατεβαίνει ακόμη. Δοκιμάστε ξανά σε λίγο."
+                : sq ? "Modeli po shkarkohet ende. Provo përsëri pas pak."
+                : "The model is still downloading. Try again shortly."
+        case .deviceNotEligible:
+            return el ? "Αυτή η συσκευή δεν υποστηρίζει το Apple Intelligence. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
+                : sq ? "Kjo pajisje nuk mbështet Apple Intelligence. Syrmos përdor analizuesin e rregullave."
+                : "This device can't run Apple Intelligence. Syrmos uses the rule parser."
+        case .osTooOld:
+            return el ? "Απαιτείται iOS 26 ή νεότερο για την Έξυπνη λειτουργία. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
+                : sq ? "Kërkohet iOS 26 ose më i ri për Modalitetin e zgjuar. Syrmos përdor analizuesin e rregullave."
+                : "iOS 26 or newer is needed for Clever mode. Syrmos uses the rule parser."
+        }
+    }
+
+    /// Only actionable when the user can flip something (enable Apple Intelligence).
+    private var ariadneEngineLearnMoreURL: URL? {
+        switch AriadneBrain.availability {
+        case .appleIntelligenceNotEnabled, .modelNotReady:
+            return URL(string: "https://support.apple.com/apple-intelligence")
+        default:
+            return nil
+        }
     }
 }
 

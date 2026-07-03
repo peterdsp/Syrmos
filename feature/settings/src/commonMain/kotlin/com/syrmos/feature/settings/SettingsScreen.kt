@@ -39,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.rememberCoroutineScope
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.AppThemeMode
+import com.syrmos.core.common.AriadneEngineStatus
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.common.ThemeManager
@@ -49,7 +50,7 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
     val lang by LocalizationManager.language.collectAsState()
     val themeMode by ThemeManager.theme.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
@@ -275,6 +276,33 @@ fun SettingsScreen() {
             }
         }
 
+        ariadneEngine?.let { engine ->
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SettingsSection(title = when (lang) {
+                        AppLanguage.GREEK -> "Μηχανή Ariadne"
+                        AppLanguage.ALBANIAN -> "Motori i Ariadne"
+                        else -> "Ariadne engine"
+                    }) {
+                        SettingsRow(
+                            title = when (lang) {
+                                AppLanguage.GREEK -> "Μηχανή"
+                                AppLanguage.ALBANIAN -> "Motori"
+                                else -> "Engine"
+                            },
+                            value = engine.engineLabel(lang),
+                        )
+                    }
+                    Text(
+                        text = engine.engineDetail(lang),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+            }
+        }
+
         item {
             SettingsSection(title = when (lang) {
                 AppLanguage.GREEK -> "Χάρτης"
@@ -377,6 +405,50 @@ private fun SettingsRow(
             style = MaterialTheme.typography.bodyMedium,
             color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/** "Clever mode" when a model backs Ariadne, else "Rule parser". */
+private fun AriadneEngineStatus.engineLabel(lang: AppLanguage): String = if (isSmart) {
+    when (lang) {
+        AppLanguage.GREEK -> "Έξυπνη λειτουργία"
+        AppLanguage.ALBANIAN -> "Modaliteti i zgjuar"
+        else -> "Clever mode"
+    }
+} else {
+    when (lang) {
+        AppLanguage.GREEK -> "Αναλυτής κανόνων"
+        AppLanguage.ALBANIAN -> "Analizues rregullash"
+        else -> "Rule parser"
+    }
+}
+
+/** One-line reason so the user understands which engine is answering. */
+private fun AriadneEngineStatus.engineDetail(lang: AppLanguage): String = when (this) {
+    AriadneEngineStatus.AVAILABLE -> when (lang) {
+        AppLanguage.GREEK -> "Το Gemini Nano διορθώνει την ερώτησή σας πριν την ανάλυση, εξ ολοκλήρου στη συσκευή."
+        AppLanguage.ALBANIAN -> "Gemini Nano rregullon pyetjen tuaj para analizës, plotësisht në pajisje."
+        else -> "Gemini Nano cleans up your question before parsing, fully on device."
+    }
+    AriadneEngineStatus.MODEL_NOT_DOWNLOADED -> when (lang) {
+        AppLanguage.GREEK -> "Το μοντέλο στη συσκευή δεν έχει κατέβει ακόμη. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
+        AppLanguage.ALBANIAN -> "Modeli në pajisje nuk është shkarkuar ende. Syrmos përdor analizuesin e rregullave."
+        else -> "The on-device model isn't downloaded yet. Syrmos uses the rule parser."
+    }
+    AriadneEngineStatus.AICORE_MISSING -> when (lang) {
+        AppLanguage.GREEK -> "Το AICore δεν υπάρχει σε αυτή τη συσκευή. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
+        AppLanguage.ALBANIAN -> "AICore mungon në këtë pajisje. Syrmos përdor analizuesin e rregullave."
+        else -> "AICore isn't present on this device. Syrmos uses the rule parser."
+    }
+    AriadneEngineStatus.DEVICE_NOT_ELIGIBLE -> when (lang) {
+        AppLanguage.GREEK -> "Αυτή η συσκευή δεν υποστηρίζει μοντέλο στη συσκευή. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
+        AppLanguage.ALBANIAN -> "Kjo pajisje nuk mbështet model në pajisje. Syrmos përdor analizuesin e rregullave."
+        else -> "This device can't run an on-device model. Syrmos uses the rule parser."
+    }
+    AriadneEngineStatus.RULE_PARSER -> when (lang) {
+        AppLanguage.GREEK -> "Το Syrmos χρησιμοποιεί τον ντετερμινιστικό αναλυτή κανόνων, εξ ολοκλήρου εκτός σύνδεσης."
+        AppLanguage.ALBANIAN -> "Syrmos përdor analizuesin determinist të rregullave, plotësisht jashtë linje."
+        else -> "Syrmos uses the deterministic rule parser, fully offline."
     }
 }
 
