@@ -10,11 +10,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -94,6 +101,36 @@ fun AssistantScreen(
             ) {
                 items(uiState.messages, key = { it.id }) { msg ->
                     MessageBubble(msg, onOpenStation, onOpenLine)
+                }
+                if (uiState.thinking) {
+                    item(key = "typing") { TypingIndicator() }
+                }
+            }
+
+            // Suggestion chips: show while the conversation is still at
+            // the greeting so a first-time user has one-tap prompts.
+            if (uiState.messages.size <= 1 && !uiState.thinking) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = tryLabel(lang),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        suggestions(lang).forEach { prompt ->
+                            SuggestedPromptChip(prompt) {
+                                viewModel.ask(prompt)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -189,4 +226,81 @@ private fun placeholder(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Ρώτησε για τρένα, σταθμούς, διαδρομές…"
     AppLanguage.ALBANIAN -> "Pyet për trena, stacione, udhëtime…"
     else -> "Ask about trains, stations, routes…"
+}
+
+private fun tryLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "ΔΟΚΙΜΑΣΕ"
+    AppLanguage.ALBANIAN -> "PROVO"
+    else -> "TRY"
+}
+
+private fun suggestions(lang: AppLanguage): List<String> = when (lang) {
+    AppLanguage.GREEK -> listOf("Καιρός τώρα", "Πώς πάω στο Αεροδρόμιο;", "Τελευταίο M2")
+    AppLanguage.ALBANIAN -> listOf("Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2")
+    else -> listOf("Weather now", "How do I get to the Airport?", "Last M2")
+}
+
+@Composable
+private fun SuggestedPromptChip(text: String, onTap: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(20.dp),
+            )
+            .clickable(onClick = onTap)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/**
+ * Three-dot typing indicator with a wave animation. Matches the iOS
+ * TypingIndicator so the two platforms feel the same while the parser
+ * is working.
+ */
+@Composable
+private fun TypingIndicator() {
+    val infinite = rememberInfiniteTransition(label = "typing")
+    val phase by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1050, easing = LinearEasing),
+        ),
+        label = "typingPhase",
+    )
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+        Row(
+            modifier = Modifier
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(18.dp),
+                )
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TypingDot(phase, offset = 0f)
+            TypingDot(phase, offset = 0.15f)
+            TypingDot(phase, offset = 0.3f)
+        }
+    }
+}
+
+@Composable
+private fun TypingDot(phase: Float, offset: Float) {
+    val scaleMagnitude = kotlin.math.abs(kotlin.math.sin(kotlin.math.PI * (phase - offset).toDouble())).toFloat()
+    val diameter = 6f + 2f * scaleMagnitude
+    Box(
+        modifier = Modifier
+            .size(diameter.dp)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), shape = CircleShape),
+    )
 }

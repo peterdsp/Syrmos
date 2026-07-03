@@ -31,15 +31,22 @@ struct AriadneView: View {
                                         .id(message.id)
                                         .transition(.asymmetric(
                                             insertion: .move(edge: .bottom)
-                                                .combined(with: .opacity),
+                                                .combined(with: .opacity)
+                                                .combined(with: .scale(scale: 0.92, anchor: .bottomLeading)),
                                             removal: .opacity
                                         ))
+                                }
+                                if model.thinking {
+                                    TypingIndicator()
+                                        .id("typing")
+                                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
                                 }
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
                         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: model.messages.count)
+                        .animation(.easeInOut(duration: 0.2), value: model.thinking)
                         .onChange(of: model.messages.count) { _, _ in
                             if let last = model.messages.last {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
@@ -47,6 +54,16 @@ struct AriadneView: View {
                                 }
                             }
                         }
+                    }
+
+                    // Suggestion chips: shown while the conversation is
+                    // empty so a first-time user has one-tap ways to try
+                    // Ariadne. Hidden once they start typing or asking.
+                    if model.messages.count <= 1 && !model.thinking {
+                        suggestedPrompts
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 6)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
 
                     composer
@@ -93,6 +110,57 @@ struct AriadneView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+        }
+    }
+
+    private var suggestedPrompts: some View {
+        let prompts = suggestions
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(tryLabel)
+                .font(.caption2).fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(prompts, id: \.self) { text in
+                    Button {
+                        input = text
+                        send()
+                    } label: {
+                        Text(text)
+                            .font(.caption).fontWeight(.medium)
+                            .padding(.horizontal, 12).padding(.vertical, 8)
+                            .background(
+                                Capsule().fill(Color.syrmosPrimary.opacity(0.15))
+                            )
+                            .overlay(
+                                Capsule().stroke(Color.syrmosPrimary.opacity(0.3), lineWidth: 0.6)
+                            )
+                            .foregroundStyle(Color.syrmosPrimary)
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    /// Localised quick-tap prompts. Concrete + short so users see the
+    /// shape of what Ariadne can answer without reading instructions.
+    private var suggestions: [String] {
+        switch loc.language {
+        case .greek:
+            return ["Καιρός τώρα", "Πώς πάω στο Αεροδρόμιο;", "Τελευταίο M2"]
+        case .albanian:
+            return ["Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2"]
+        case .english:
+            return ["Weather now", "How do I get to the Airport?", "Last M2"]
+        }
+    }
+
+    private var tryLabel: String {
+        switch loc.language {
+        case .greek: return "ΔΟΚΙΜΑΣΕ"
+        case .albanian: return "PROVO"
+        case .english: return "TRY"
         }
     }
 
@@ -203,5 +271,45 @@ struct AriadneView: View {
         case .albanian: return "Pyet për trena, stacione, udhëtime…"
         default: return "Ask about trains, stations, routes…"
         }
+    }
+}
+
+/// Three-dot typing indicator with a wave animation. Reads as "Ariadne
+/// is thinking" without needing copy, and stops the empty space that
+/// used to sit under the greeting while the parser worked.
+struct TypingIndicator: View {
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("🦉")
+                .font(.system(size: 14))
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(Color.syrmosPrimary.opacity(0.12)))
+            HStack(spacing: 4) {
+                dot(offset: 0)
+                dot(offset: 0.15)
+                dot(offset: 0.3)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(
+                Color.clear.background(.ultraThinMaterial)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
+            Spacer(minLength: 40)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.05).repeatForever(autoreverses: false)) {
+                phase = 1
+            }
+        }
+    }
+
+    private func dot(offset: CGFloat) -> some View {
+        Circle()
+            .fill(Color.syrmosPrimary.opacity(0.7))
+            .frame(width: 6, height: 6)
+            .scaleEffect(1 + 0.35 * abs(sin(.pi * (phase - offset))))
     }
 }
