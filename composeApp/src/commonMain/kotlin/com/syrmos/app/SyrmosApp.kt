@@ -161,7 +161,11 @@ fun SyrmosApp() {
                         var showAriadne by remember { mutableStateOf(false) }
                         val lang by LocalizationManager.language.collectAsState()
                         val tabNavigator = LocalTabNavigator.current
-                        val onNonSettingsTab = tabNavigator.current != SettingsTab
+                        val currentTab = tabNavigator.current
+                        // Hide the launcher on Settings (would sit on the
+                        // scrolling controls) and on Map (the Locate +
+                        // Vehicles buttons already own bottom-right).
+                        val showLauncher = currentTab != SettingsTab && currentTab != MapTab
 
                         Box(modifier = Modifier.fillMaxSize()) {
                             CurrentTab()
@@ -178,7 +182,7 @@ fun SyrmosApp() {
                             // isn't obstructed by a chat pill. Slides in
                             // with a spring so tab changes feel physical.
                             AnimatedVisibility(
-                                visible = onNonSettingsTab && !showAriadne,
+                                visible = showLauncher && !showAriadne,
                                 enter = fadeIn() + slideInVertically(
                                     initialOffsetY = { it / 2 },
                                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),

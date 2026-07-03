@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.infiniteRepeatable
@@ -172,14 +173,49 @@ private fun MessageBubble(
     onOpenLine: (String) -> Unit,
 ) {
     val alignment = if (msg.fromUser) Alignment.CenterEnd else Alignment.CenterStart
-    val bg = if (msg.fromUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val shape = RoundedCornerShape(18.dp)
     val fg = if (msg.fromUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = alignment) {
+        Row(verticalAlignment = Alignment.Top) {
+            if (!msg.fromUser) {
+                // Owl avatar on the left of assistant bubbles, matching
+                // the iOS treatment. Adds identity + gives the eye
+                // something to land on before reading the message.
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "🦉",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+            }
         Column(
             modifier = Modifier
                 .widthIn(max = 320.dp)
-                .background(bg, RoundedCornerShape(14.dp))
-                .padding(12.dp),
+                .shadow(
+                    elevation = if (msg.fromUser) 6.dp else 3.dp,
+                    shape = shape,
+                    ambientColor = MaterialTheme.colorScheme.primary.copy(
+                        alpha = if (msg.fromUser) 0.28f else 0.06f
+                    ),
+                    spotColor = MaterialTheme.colorScheme.primary.copy(
+                        alpha = if (msg.fromUser) 0.28f else 0.06f
+                    ),
+                )
+                .background(
+                    if (msg.fromUser) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                    shape,
+                )
+                .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(text = msg.text, style = MaterialTheme.typography.bodyMedium, color = fg)
@@ -213,6 +249,7 @@ private fun MessageBubble(
                 )
             }
         }
+        }  // Row (avatar + bubble)
     }
 }
 
