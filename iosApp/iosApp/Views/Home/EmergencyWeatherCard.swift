@@ -56,6 +56,9 @@ struct EmergencyWeatherCard: View {
                 emergencyRow("199", labelFire)
                 emergencyRow("11185", labelOASA)
             }
+            Text(tapHint)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -67,17 +70,43 @@ struct EmergencyWeatherCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
+    @ViewBuilder
     private func emergencyRow(_ number: String, _ label: String) -> some View {
+        // Tap-to-call: iOS opens the dialer with the pre-filled number so
+        // a user in trouble taps once instead of memorising three digits.
+        if let url = URL(string: "tel:\(number)") {
+            Link(destination: url) {
+                emergencyRowContent(number, label)
+            }
+        } else {
+            emergencyRowContent(number, label)
+        }
+    }
+
+    private func emergencyRowContent(_ number: String, _ label: String) -> some View {
         HStack(spacing: 10) {
-            Text(number)
-                .font(.caption).fontWeight(.bold)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(amber)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            HStack(spacing: 4) {
+                Image(systemName: "phone.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.white)
+                Text(number)
+                    .font(.caption).fontWeight(.bold)
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(amber)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             Text(label)
                 .font(.subheadline)
                 .foregroundStyle(.primary)
+        }
+    }
+
+    private var tapHint: String {
+        switch language {
+        case .greek: return "Πατήστε έναν αριθμό για κλήση."
+        case .albanian: return "Prek një numër për të thirrur."
+        case .english: return "Tap a number to call."
         }
     }
 

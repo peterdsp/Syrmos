@@ -19,6 +19,12 @@ struct SyrmosTrackingAttributes: ActivityAttributes {
         // updates. Optional so decoding still works if an in-flight activity
         // pushed an older state shape.
         var progress: Double? = 0
+        // Route strip: up to a handful of station names ordered in the
+        // direction of travel, target last. The widget draws these as dots
+        // with a train marker interpolated by progress, mirroring the
+        // in-app TrackingCard. Optional + defaulted so a state pushed by
+        // an older build still decodes.
+        var routeStations: [String]? = []
     }
 
     var lineId: String

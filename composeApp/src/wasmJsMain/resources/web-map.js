@@ -2167,9 +2167,14 @@
                 </div>
                 <div class="severe-weather-banner__numbers">
                     <div class="severe-weather-banner__numbers-header">${numbersHeader}</div>
-                    <div><span class="severe-weather-banner__badge">112</span> ${num112}</div>
-                    <div><span class="severe-weather-banner__badge">199</span> ${numFire}</div>
-                    <div><span class="severe-weather-banner__badge">11185</span> ${numOASA}</div>
+                    <div><a class="severe-weather-banner__badge" href="tel:112">☎ 112</a> ${num112}</div>
+                    <div><a class="severe-weather-banner__badge" href="tel:199">☎ 199</a> ${numFire}</div>
+                    <div><a class="severe-weather-banner__badge" href="tel:11185">☎ 11185</a> ${numOASA}</div>
+                    <div class="severe-weather-banner__hint">${
+                        lang === "el" ? "Πατήστε έναν αριθμό για κλήση."
+                        : lang === "sq" ? "Prek një numër për të thirrur."
+                        : "Tap a number to call."
+                    }</div>
                 </div>
                 <button class="severe-weather-banner__close" aria-label="Dismiss">×</button>
             `;
@@ -2237,10 +2242,16 @@
             .severe-weather-banner__numbers { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
             .severe-weather-banner__numbers-header { font-size: 11px; font-weight: 600; opacity: 0.7; letter-spacing: 0.03em; }
             .severe-weather-banner__badge {
-                display: inline-block; padding: 2px 8px;
+                display: inline-block; padding: 3px 10px;
                 background: #E65100; color: #fff; font-weight: 700;
-                border-radius: 5px; font-size: 12px; margin-right: 8px;
+                border-radius: 6px; font-size: 12px; margin-right: 8px;
                 min-width: 44px; text-align: center;
+                text-decoration: none;
+                transition: filter 120ms ease;
+            }
+            .severe-weather-banner__badge:hover { filter: brightness(1.08); }
+            .severe-weather-banner__hint {
+                margin-top: 6px; font-size: 11px; opacity: 0.7;
             }
             .severe-weather-banner__close {
                 position: absolute; top: 8px; right: 10px;
