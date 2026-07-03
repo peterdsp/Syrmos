@@ -21,5 +21,9 @@ class SyrmosApplication : Application() {
         // Mirror the iOS Live Activity on Android: an ongoing count-down
         // notification driven by the shared DepartureTracking primitive.
         DepartureTrackingNotifier(this).start()
+        // Keep the Glance widget snapshot fresh: a 30-minute periodic refresh
+        // plus an immediate one so a freshly added widget has data quickly.
+        com.syrmos.android.widget.SnapshotWorker.enqueuePeriodic(this)
+        com.syrmos.android.widget.SnapshotWorker.refreshNow(this)
     }
 }

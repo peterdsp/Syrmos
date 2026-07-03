@@ -39,19 +39,52 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Home Screen widget: next M3 airport-train departures from
-             Syntagma. Refreshes every 30 min (AppWidget minimum) and
-             also whenever MainActivity resumes (see refreshAll()). -->
+        <!-- Compose Glance widgets (1.2 "Widgets Everywhere"). Each renders the
+             SharedPreferences snapshot written by SnapshotWorker every ~30 min
+             (and on app resume), with a bundled offline fallback. -->
         <receiver
-            android:name=".widget.SyrmosDeparturesWidget"
+            android:name=".widget.NextTrainGlanceReceiver"
             android:exported="true"
-            android:label="@string/widget_departures_description">
+            android:label="@string/widget_next_train_description">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_departures_info" />
+                android:resource="@xml/glance_next_train_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.LiveDeparturesGlanceReceiver"
+            android:exported="true"
+            android:label="@string/widget_live_departures_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/glance_live_departures_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.LineStatusGlanceReceiver"
+            android:exported="true"
+            android:label="@string/widget_line_status_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/glance_line_status_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.NearMeGlanceReceiver"
+            android:exported="true"
+            android:label="@string/widget_near_me_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/glance_near_me_info" />
         </receiver>
     </application>
 </manifest>
