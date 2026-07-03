@@ -37,3 +37,12 @@ Before merging a feature, ask the four litmus questions. A feature can be techni
 When two implementations are equally cheap, ship the one that is more answer-first, more proactive, more reassuring, or lower-decision. When a feature cannot satisfy any of the four, question whether it belongs.
 
 The companion framing is also the marketing story. The hardest engineering in Syrmos (full offline prediction) is currently invisible. Making it visible is not scope creep; it is the product finally looking like what it already is.
+
+## Addendum: widget philosophy (1.2 "Widgets Everywhere")
+
+Widgets are the purest test of the four rules: no navigation, no scroll, one glance. A widget that makes you open the app has failed. The 1.2 milestone puts the offline-prediction intelligence on every home screen, lock screen, and wrist. Four constraints govern every widget surface:
+
+- **Single-glance.** The answer must land in under a second. One headline number ("3 min"), one line, one destination. Everything else is supporting detail, sized down.
+- **No scroll.** A widget never scrolls. If content does not fit the family, it is the wrong family. Larger families show more rows; they do not hide rows behind a scroll.
+- **Line-tinted.** Every surface derives its accent from the tracked line (M1 green, M2 red, M3 blue, tram orange, suburban purple), from a single token source. Color is information, not decoration.
+- **Dark-first.** Widgets are designed for the dark home screen and the always-on lock screen first, then verified in light. Liquid Glass (`.regularMaterial`) reads on both; tinted StandBy and accented lock-screen modes must stay legible.
