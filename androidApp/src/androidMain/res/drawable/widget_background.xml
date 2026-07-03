@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Rounded dark backdrop for the SyrmosDeparturesWidget so it reads
+    cleanly on any wallpaper and matches the app's dark chrome.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle">
+    <solid android:color="#141922" />
+    <corners android:radius="20dp" />
+</shape>
