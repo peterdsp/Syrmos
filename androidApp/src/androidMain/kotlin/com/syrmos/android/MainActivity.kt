@@ -30,6 +30,18 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { }
 
+    // Location for the "Near Me" Glance widget (nearest station + walking
+    // distance). Asked once on launch when not already granted; declining just
+    // keeps the widget on its pinned-station fallback. On grant we refresh the
+    // snapshot so the widget picks up the nearest station right away.
+    private val startupLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants.values.any { it }) {
+            com.syrmos.android.widget.SnapshotWorker.refreshNow(this)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Drop the launch theme (full-screen StartScreen image set on
         // the activity in AndroidManifest.xml) BEFORE super so the
@@ -45,6 +57,21 @@ class MainActivity : ComponentActivity() {
             PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        // Ask for location on launch when it hasn't been granted, so the
+        // "Near Me" widget can resolve the nearest station. The OS stops
+        // showing the dialog after the user has permanently declined, so this
+        // does not nag. Onboarding still asks in-context via the requester below.
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) {
+            startupLocationLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                )
+            )
         }
 
         // Permission is requested from the onboarding flow now, not on launch.
