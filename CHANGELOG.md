@@ -92,6 +92,14 @@ Per [Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap):
 
 ## Shipped
 
+### 1.1.1 (iOS build 41 / Android code 50)
+
+Bug-fix build, no visual changes.
+
+- Home Screen widget no longer hangs on the skeleton. The one-shot widget location request is now raced against a hard 2-second timeout (`withTaskGroup`), so a widget process that never gets a GPS callback falls through to the picked station instead of awaiting forever. `resolveStation` precedence is: nearest (time-bounded) then the picked station then a last-ditch nearest.
+- Widget schedule hydration is now defensive: the timeline provider touches `SyrmosSchedulesStore.shared` on the main actor before projecting (forcing the bundle hydration), and if the `seed-schedules-v2` folder were ever missing from the built `.appex` it falls back to `SyrmosData.sampleDepartures` so the widget never renders zero rows. `os.Logger` breadcrumbs (`subsystem: com.syrmos.widget`) trace the path taken.
+- Ariadne engine diagnostic in Settings, both platforms. iOS maps `SystemLanguageModel.availability` to an explicit `AriadneBrain.Availability` (available / Apple Intelligence off / model downloading / device ineligible / OS too old) and shows "Clever mode" vs "Rule parser" with an actionable Learn More link. Android mirrors it via a shared `AriadneEngineStatus` derived from the ML Kit GenAI (Gemini Nano / AICore) feature status.
+
 ### 1.0.5 (iOS)
 
 iOS-only patch bump. Android remained on 1.0.4.

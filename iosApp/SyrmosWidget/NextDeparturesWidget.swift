@@ -2,6 +2,14 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 import CoreLocation
+import os
+
+// Breadcrumbs for the widget timeline path. Stream them from a paired Mac with
+//   log stream --predicate 'subsystem == "com.syrmos.widget"' --level debug
+// to see exactly which branch a real device took (hydration source, whether the
+// location request timed out, which station resolved).
+@available(iOS 17.0, *)
+private let widgetLog = Logger(subsystem: "com.syrmos.widget", category: "timeline")
 
 // Home-screen widget: the next departures for a station. The user picks the
 // mode in the widget's Edit sheet:
@@ -72,10 +80,31 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocation?, Never>?
 
+    /// Returns the device location, or nil after a hard 2-second timeout.
+    ///
+    /// In a widget process `requestLocation()` regularly never calls back (no
+    /// active app, cold GPS, permission edge cases). Without the timeout the
+    /// timeline provider awaits the continuation forever and the widget shows
+    /// the skeleton indefinitely. Racing the request against a 2s sleep and
+    /// cancelling the loser guarantees the provider always makes progress.
     func current() async -> CLLocation? {
         let status = manager.authorizationStatus
-        guard status == .authorizedWhenInUse || status == .authorizedAlways else { return nil }
-        return await withCheckedContinuation { c in
+        guard status == .authorizedWhenInUse || status == .authorizedAlways else {
+            widgetLog.debug("location: not authorized (status \(status.rawValue, privacy: .public))")
+            return nil
+        }
+        return await withTaskGroup(of: CLLocation?.self) { group in
+            group.addTask { await self.requestOnce() }
+            group.addTask { try? await Task.sleep(for: .seconds(2)); return nil }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            if first == nil { widgetLog.debug("location: timed out or failed after 2s") }
+            return first
+        }
+    }
+
+    private func requestOnce() async -> CLLocation? {
+        await withCheckedContinuation { c in
             continuation = c
             manager.delegate = self
             manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
@@ -128,22 +157,33 @@ struct NextDeparturesProvider: AppIntentTimelineProvider {
     }
 
     private func entry(for configuration: SelectStationIntent) async -> NextDeparturesEntry {
+        // Force the schedules store to initialise on the main actor before we
+        // project. First access runs its private init() -> hydrateFromBundleIfNeeded(),
+        // which reads Bundle.main/seed-schedules-v2/*.json in the widget's own
+        // .appex, so `bundles` is populated the moment this widget process boots.
+        await MainActor.run { _ = SyrmosSchedulesStore.shared }
         let station = await resolveStation(configuration)
         guard let station else {
+            widgetLog.error("no station resolved (no location, no pick)")
             return NextDeparturesEntry(date: .now, stationName: "—", rows: [])
         }
         let rows = await MainActor.run { departureRows(for: station) }
+        widgetLog.debug("entry ready: station \(station.name, privacy: .public), \(rows.count) rows")
         return NextDeparturesEntry(date: .now, stationName: station.name, rows: rows)
     }
 
-    /// Nearest station via GPS (when in automatic mode and permission exists),
-    /// else the chosen station, else the nearest, else nil.
+    /// Precedence: automatic mode tries the nearest station (bounded by the 2s
+    /// location timeout) and falls through to the picked station if GPS didn't
+    /// answer in time; otherwise the picked station; otherwise a last-ditch
+    /// nearest lookup. The location call can no longer hang the provider.
     private func resolveStation(_ configuration: SelectStationIntent) async -> TransitStation? {
-        if configuration.useNearestStation {
-            if let nearest = await nearestStation() { return nearest }
+        if configuration.useNearestStation, let nearest = await nearestStation() {
+            widgetLog.debug("resolved nearest: \(nearest.name, privacy: .public)")
+            return nearest
         }
         if let id = configuration.station?.id,
            let picked = StationCoords.allStations.first(where: { $0.id == id }) {
+            widgetLog.debug("resolved picked: \(picked.name, privacy: .public)")
             return picked
         }
         return await nearestStation()
@@ -160,12 +200,20 @@ struct NextDeparturesProvider: AppIntentTimelineProvider {
 
     @MainActor
     private func departureRows(for station: TransitStation) -> [DepartureRow] {
-        let deps = ScheduleProjector.nextDepartures(
+        var deps = ScheduleProjector.nextDepartures(
             for: station.id,
             lineIds: station.lineIds,
             limit: 20,
             timeHorizonMinutes: 6 * 60
         )
+        // Defensive fallback: if the seed-schedules-v2 folder ref is missing
+        // from the widget's built .appex (bundles empty), the projector returns
+        // nothing. Rather than render an empty widget, fall back to the same
+        // clock-aligned sample the app uses on cold start so we never show 0 rows.
+        if deps.isEmpty && SyrmosSchedulesStore.shared.service.bundles.isEmpty {
+            widgetLog.error("bundles empty in widget process; using sample departures")
+            deps = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+        }
         let isAirport: (Departure) -> Bool = { $0.serviceType == "airport" || $0.lineId == "M3_AIR" }
 
         // M3 stations: two regular trains + the next Airport train. Every other
