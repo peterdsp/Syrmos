@@ -48,6 +48,14 @@ enum class WeatherCondition {
         get() = this == DRIZZLE || this == RAIN || this == SNOW ||
             this == SHOWERS || this == THUNDERSTORM
 
+    /**
+     * True when conditions are severe enough to warrant an on-Home warning
+     * card with emergency contact numbers. Heavy showers, thunderstorms,
+     * and snow qualify; light drizzle or overcast do not.
+     */
+    val isSevere: Boolean
+        get() = this == SHOWERS || this == THUNDERSTORM || this == SNOW
+
     companion object {
         fun fromCode(code: Int): WeatherCondition = when (code) {
             0 -> CLEAR
