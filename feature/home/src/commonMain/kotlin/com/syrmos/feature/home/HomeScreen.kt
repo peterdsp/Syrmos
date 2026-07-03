@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -424,22 +425,39 @@ private fun EmergencyWeatherCard(
                 EmergencyNumberRow(label = "199", sub = emergencyLabelFire(lang))
                 EmergencyNumberRow(label = "11185", sub = emergencyLabelOASA(lang))
             }
+            Text(
+                text = tapHintLabel(lang),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
 private fun EmergencyNumberRow(label: String, sub: String) {
+    // Tap-to-call: LocalUriHandler.openUri("tel:112") routes to the
+    // dialer on Android and to the system phone handler on Web. On
+    // wasmJs the browser prompts a dial-out, which still helps the
+    // user reach the number even when no native dialer exists.
+    val uriHandler = LocalUriHandler.current
     Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { runCatching { uriHandler.openUri("tel:$label") } }
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFFE65100))
-                .padding(horizontal = 8.dp, vertical = 3.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            Text(text = "☎", style = MaterialTheme.typography.labelMedium, color = Color.White)
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
@@ -453,6 +471,12 @@ private fun EmergencyNumberRow(label: String, sub: String) {
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
+}
+
+private fun tapHintLabel(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Πατήστε έναν αριθμό για κλήση."
+    AppLanguage.ALBANIAN -> "Prek një numër për të thirrur."
+    else -> "Tap a number to call."
 }
 
 private fun emergencyTitle(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String {

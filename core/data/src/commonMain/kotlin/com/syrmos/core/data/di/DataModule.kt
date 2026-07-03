@@ -23,7 +23,7 @@ val dataModule = module {
     single { FaresRepository(schedulesService = get(), resourceReader = get()) }
     single { VisualOverridesRepository(service = get(), resourceReader = get()) }
     single { AnnouncementsRepository(service = get(), resourceReader = get()) }
-    single { WeatherRepository(weatherService = get()) }
+    single { WeatherRepository(weatherService = get(), database = get()) }
     single { LineRepositoryImpl(database = get(), resourceReader = get()) }
     single { StationRepositoryImpl(database = get(), resourceReader = get()) }
     single { ScheduleRepositoryImpl(database = get()) }

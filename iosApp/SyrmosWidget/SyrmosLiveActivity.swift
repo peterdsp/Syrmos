@@ -54,8 +54,13 @@ struct SyrmosLiveActivity: Widget {
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                         }
-                        ProgressView(value: context.state.progress ?? 0)
-                            .tint(tint)
+                        let stops = context.state.routeStations ?? []
+                        if stops.count >= 2 {
+                            StationStripStrip(stops: stops, progress: context.state.progress ?? 0, tint: tint)
+                        } else {
+                            ProgressView(value: context.state.progress ?? 0)
+                                .tint(tint)
+                        }
                     }
                     .padding(.top, 2)
                 }
@@ -122,8 +127,16 @@ private struct LockScreenView: View {
                     .foregroundStyle(.secondary)
             }
 
-            ProgressView(value: context.state.progress ?? 0)
-                .tint(tint)
+            // Route strip when the app supplied enough stations; otherwise
+            // a plain progress bar. Kept compact so the Lock Screen tile
+            // doesn't overflow past ~5 station dots.
+            let stops = context.state.routeStations ?? []
+            if stops.count >= 2 {
+                StationStripStrip(stops: stops, progress: context.state.progress ?? 0, tint: tint)
+            } else {
+                ProgressView(value: context.state.progress ?? 0)
+                    .tint(tint)
+            }
 
             HStack(spacing: 8) {
                 Text(context.attributes.lineId)
@@ -149,6 +162,70 @@ private struct LockScreenView: View {
         case "M3": return Color(red: 0.10, green: 0.36, blue: 0.72)
         case "T6", "T7": return Color(red: 0.95, green: 0.55, blue: 0.11)
         default: return Color(red: 0.42, green: 0.30, blue: 0.66)
+        }
+    }
+}
+
+/// Compact route strip for the Live Activity Lock Screen + Dynamic Island
+/// expanded region. Mirrors the in-app StationStrip: passed stops fill with
+/// the accent, upcoming stops dim to 30%, and the tracked (last) stop is
+/// slightly larger. Widget-safe: no continuous animation (LA state pushes
+/// are batched, not per-frame), just a static snapshot per update.
+@available(iOS 16.2, *)
+struct StationStripStrip: View {
+    let stops: [String]
+    let progress: Double
+    let tint: Color
+
+    var body: some View {
+        let safe = min(max(progress, 0), 1)
+        let lastIndex = max(stops.count - 1, 1)
+        let trainIndex = safe * Double(lastIndex)
+
+        VStack(spacing: 3) {
+            GeometryReader { geo in
+                let width = geo.size.width
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(tint.opacity(0.22))
+                        .frame(height: 3)
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(tint)
+                        .frame(width: width * safe, height: 3)
+                    HStack {
+                        ForEach(Array(stops.enumerated()), id: \.offset) { pair in
+                            let index = pair.offset
+                            let passed = Double(index) <= trainIndex
+                            let isTarget = index == lastIndex
+                            Circle()
+                                .fill(passed ? tint : tint.opacity(0.30))
+                                .frame(width: isTarget ? 9 : 7, height: isTarget ? 9 : 7)
+                            if index != stops.count - 1 { Spacer(minLength: 0) }
+                        }
+                    }
+                    Text("🚆")
+                        .font(.system(size: 10))
+                        .offset(x: max(0, width * safe - 6), y: -1)
+                }
+                .frame(height: 14)
+            }
+            .frame(height: 14)
+
+            HStack {
+                if let first = stops.first {
+                    Text(first)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                if let last = stops.last, stops.count > 1 {
+                    Text(last)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                }
+            }
         }
     }
 }
