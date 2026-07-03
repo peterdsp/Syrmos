@@ -89,6 +89,28 @@ sealed interface AssistantIntent {
     data object OutOfScope : AssistantIntent
 
     /**
+     * Direct weather query for a station or the current location. Falls
+     * back to central Athens when [stationId] is null AND the caller has
+     * no location. Ariadne answers from the WeatherRepository cache when
+     * available so this stays offline-safe.
+     */
+    data class WeatherAt(val stationId: String?) : AssistantIntent
+
+    /**
+     * "I need to be at X by 21:30" — plan a trip backwards from a target
+     * arrival time. The target is expressed as Athens-local minutes from
+     * midnight, or as minutes from now when the user said "in 45 min".
+     * Handler subtracts the estimated trip duration to suggest the latest
+     * reasonable departure, and flags "tight" vs "impossible".
+     */
+    data class PlanTripByArrival(
+        val fromStationId: String?,
+        val toStationId: String?,
+        val arriveByAthensMinutes: Int?,   // e.g. 21*60+30 = 1290
+        val inMinutesFromNow: Int?,
+    ) : AssistantIntent
+
+    /**
      * Easter egg: someone said "liepur" / "λιεπ" / "liepuras" or a close
      * variant. Ariadne answers with a random cat joke. Deliberately opaque
      * from the outside — the trigger words aren't documented anywhere the

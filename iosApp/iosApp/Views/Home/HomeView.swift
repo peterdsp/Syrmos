@@ -117,6 +117,9 @@ struct HomeView: View {
                 lastTrainTeaser(last)
             }
             if let snap = weather.snapshot {
+                if snap.current.condition.isSevere {
+                    EmergencyWeatherCard(condition: snap.current.condition, language: loc.language)
+                }
                 WeatherCard(snapshot: snap)
             }
         }

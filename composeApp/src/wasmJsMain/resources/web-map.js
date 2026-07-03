@@ -2017,6 +2017,169 @@
     // deterministic; this block just routes its intents into the same web
     // primitives the map already uses (selectStation, Google Maps directions,
     // OASA fare panel).
+    // What's New modal for the web. Shows once per version tag via
+    // localStorage. Content mirrors the mobile popup minus the "clever
+    // Ariadne" bullet because the web build doesn't have an on-device LLM
+    // normalizer.
+    (function whatsNewWeb() {
+        const key = "syrmos.whatsnew.version";
+        const version = "1.1.1-r2";
+        try {
+            if (localStorage.getItem(key) === version) return;
+        } catch (_) { return; }
+        const lang = currentLang;
+        const title = lang === "el" ? "Τι νέο υπάρχει στο Syrmos"
+            : lang === "sq" ? "Çfarë ka të re në Syrmos"
+            : "What's new in Syrmos";
+        const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : "Got it";
+        const bullets = lang === "el" ? [
+            "Ρώτα την Αριάδνη για τον καιρό — «καιρός στον Πειραιά», offline-safe.",
+            "Σχεδιασμός με στόχο χρόνου — «αεροδρόμιο στις 21:30» σου λέει πότε να ξεκινήσεις.",
+            "Προειδοποίηση κακοκαιρίας με τηλέφωνα έκτακτης ανάγκης (112, 199, 11185).",
+            "Ανανεωμένη κάρτα παρακολούθησης με στριπ σταθμών.",
+            "Παρακολούθηση οποιουδήποτε τρένου — γραμμή, κατεύθυνση, σταθμός, δρομολόγιο.",
+        ] : lang === "sq" ? [
+            "Pyet Ariadnen për motin — “moti në Piraeus”, offline i sigurt.",
+            "Planifikim me kohë objektiv — “aeroporti deri në 21:30” të thotë kur të nisesh.",
+            "Paralajmërim moti me numra emergjence (112, 199, 11185).",
+            "Karta e ndjekjes e ridizajnuar me strip stacionesh.",
+            "Ndiq çdo tren — linjë, drejtim, stacion, nisje.",
+        ] : [
+            "Ask Ariadne about weather — “weather at Piraeus”, offline-safe.",
+            "Time-anchored planning — “airport by 21:30” answers when to leave.",
+            "Severe-weather warning with emergency numbers (112, 199, 11185).",
+            "Redesigned tracking card with an animated station strip.",
+            "Track any train — pick line, direction, station, departure.",
+        ];
+
+        const scrim = document.createElement("div");
+        scrim.className = "whatsnew-scrim";
+        scrim.innerHTML = `
+            <div class="whatsnew-modal">
+                <div class="whatsnew-modal__head">
+                    <div class="whatsnew-modal__owl">🦉</div>
+                    <div class="whatsnew-modal__title">${title}</div>
+                </div>
+                <ul class="whatsnew-modal__list">
+                    ${bullets.map((b) => `<li>${b}</li>`).join("")}
+                </ul>
+                <button class="whatsnew-modal__button" type="button">${gotIt}</button>
+            </div>
+        `;
+        document.body.appendChild(scrim);
+
+        const dismiss = () => {
+            try { localStorage.setItem(key, version); } catch (_) {}
+            scrim.remove();
+        };
+        scrim.querySelector(".whatsnew-modal__button").addEventListener("click", dismiss);
+        scrim.addEventListener("click", (e) => {
+            if (e.target === scrim) dismiss();
+        });
+
+        const s = document.createElement("style");
+        s.textContent = `
+            .whatsnew-scrim {
+                position: fixed; inset: 0; z-index: 1000;
+                background: rgba(0,0,0,0.45);
+                display: flex; align-items: center; justify-content: center;
+                padding: 16px;
+            }
+            .whatsnew-modal {
+                width: min(440px, 100%);
+                background: linear-gradient(160deg, #F0F7FF, #FBFAEF);
+                color: #111;
+                border-radius: 22px;
+                padding: 24px;
+                box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+            }
+            body.dark-mode .whatsnew-modal {
+                background: linear-gradient(160deg, #0d1420, #050810);
+                color: #f4f4f5;
+            }
+            .whatsnew-modal__head {
+                display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+            }
+            .whatsnew-modal__owl {
+                width: 52px; height: 52px; border-radius: 50%;
+                background: rgba(0,114,206,0.14);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 28px;
+            }
+            .whatsnew-modal__title { font-weight: 700; font-size: 18px; }
+            .whatsnew-modal__list {
+                margin: 4px 0 16px; padding-left: 20px;
+                display: flex; flex-direction: column; gap: 8px;
+                font-size: 14px; line-height: 1.4;
+            }
+            .whatsnew-modal__button {
+                width: 100%; padding: 12px 16px;
+                border: none; cursor: pointer;
+                border-radius: 14px; font: inherit; font-weight: 600; font-size: 15px;
+                background: #0072CE; color: #fff;
+            }
+        `;
+        document.head.appendChild(s);
+    })();
+
+    // Severe-weather banner. Checks central Athens on page load; when the
+    // WMO weather code is showers, snow, or thunderstorm, injects a small
+    // amber warning strip above the map with local emergency numbers.
+    // Mirrors the EmergencyWeatherCard on iOS and Compose.
+    (async function severeWeatherWarning() {
+        try {
+            const url = "https://api.open-meteo.com/v1/forecast?latitude=37.9838&longitude=23.7275&current=weather_code&timezone=auto";
+            const r = await fetch(url);
+            const data = await r.json();
+            const code = data.current && data.current.weather_code;
+            const severe = (code >= 80 && code <= 86) ||
+                (code >= 71 && code <= 77) ||
+                code === 95 || code === 96 || code === 99;
+            if (!severe) return;
+
+            const banner = document.createElement("div");
+            banner.className = "severe-weather-banner";
+            const lang = currentLang;
+            const title = code === 95 || code === 96 || code === 99
+                ? (lang === "el" ? "Καταιγίδα σε εξέλιξη" : lang === "sq" ? "Stuhi në zhvillim" : "Storm in progress")
+                : (lang === "el" ? "Έντονη κακοκαιρία" : lang === "sq" ? "Mot i keq" : "Severe weather");
+            const body = lang === "el"
+                ? "Οι υπόγειες γραμμές μετρό είναι η πιο ασφαλής επιλογή. Πρόσεχε στη μετακίνηση."
+                : lang === "sq"
+                ? "Metroja nëntokësore është zgjidhja më e sigurt. Ki kujdes gjatë udhëtimit."
+                : "Underground metro lines are the safest option. Take care on your journey.";
+            const numbersHeader = lang === "el" ? "ΤΗΛΕΦΩΝΑ ΕΚΤΑΚΤΗΣ ΑΝΑΓΚΗΣ"
+                : lang === "sq" ? "NUMRAT E EMERGJENCËS"
+                : "EMERGENCY NUMBERS";
+            const num112 = lang === "el" ? "Ευρωπαϊκή γραμμή έκτακτης ανάγκης"
+                : lang === "sq" ? "Numri europian i emergjencës"
+                : "European emergency line";
+            const numFire = lang === "el" ? "Πυροσβεστική" : lang === "sq" ? "Zjarrfikësit" : "Fire service";
+            const numOASA = lang === "el" ? "Πληροφορίες OASA" : lang === "sq" ? "Informacione OASA" : "OASA transit info";
+            banner.innerHTML = `
+                <div class="severe-weather-banner__head">
+                    <span class="severe-weather-banner__cloud">☁️</span>
+                    <span class="severe-weather-banner__drop"></span>
+                    <div>
+                        <div class="severe-weather-banner__title">${title}</div>
+                        <div class="severe-weather-banner__sub">${body}</div>
+                    </div>
+                </div>
+                <div class="severe-weather-banner__numbers">
+                    <div class="severe-weather-banner__numbers-header">${numbersHeader}</div>
+                    <div><span class="severe-weather-banner__badge">112</span> ${num112}</div>
+                    <div><span class="severe-weather-banner__badge">199</span> ${numFire}</div>
+                    <div><span class="severe-weather-banner__badge">11185</span> ${numOASA}</div>
+                </div>
+                <button class="severe-weather-banner__close" aria-label="Dismiss">×</button>
+            `;
+            document.body.appendChild(banner);
+            banner.querySelector(".severe-weather-banner__close").addEventListener("click", () => banner.remove());
+        } catch (_) {
+            // Silent no-op; the app keeps working without the warning.
+        }
+    })();
+
     if (window.SyrmosAriadne) {
         window.SyrmosAriadne.init({ stations: stations, lines: lines });
 
@@ -2039,6 +2202,55 @@
             const nodeId = nodeIdFor(rawId);
             if (nodeId) selectStation(nodeId, true);
         }
+
+        const severeWeatherStyle = document.createElement("style");
+        severeWeatherStyle.textContent = `
+            .severe-weather-banner {
+                position: fixed; z-index: 960;
+                top: 90px; left: 50%; transform: translateX(-50%);
+                width: min(520px, calc(100vw - 32px));
+                background: #FFF3E0; color: #111;
+                border: 1px solid rgba(230, 81, 0, 0.35);
+                border-radius: 18px;
+                padding: 14px 18px;
+                box-shadow: 0 12px 32px rgba(230, 81, 0, 0.18);
+                font-size: 13px;
+            }
+            body.dark-mode .severe-weather-banner { background: #2A1B0A; color: #f4f4f5; }
+            .severe-weather-banner__head {
+                display: flex; align-items: center; gap: 12px;
+                position: relative;
+            }
+            .severe-weather-banner__cloud { font-size: 22px; }
+            .severe-weather-banner__drop {
+                position: absolute; left: 18px; top: 22px;
+                width: 4px; height: 10px; border-radius: 2px;
+                background: #E65100;
+                animation: severeWeatherDrop 900ms ease-in-out infinite;
+            }
+            @keyframes severeWeatherDrop {
+                0%   { transform: translateY(0);  opacity: 1; }
+                100% { transform: translateY(16px); opacity: 0; }
+            }
+            .severe-weather-banner__title { font-weight: 700; color: #E65100; font-size: 14px; }
+            .severe-weather-banner__sub { color: inherit; opacity: 0.9; }
+            .severe-weather-banner__numbers { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+            .severe-weather-banner__numbers-header { font-size: 11px; font-weight: 600; opacity: 0.7; letter-spacing: 0.03em; }
+            .severe-weather-banner__badge {
+                display: inline-block; padding: 2px 8px;
+                background: #E65100; color: #fff; font-weight: 700;
+                border-radius: 5px; font-size: 12px; margin-right: 8px;
+                min-width: 44px; text-align: center;
+            }
+            .severe-weather-banner__close {
+                position: absolute; top: 8px; right: 10px;
+                background: none; border: none; cursor: pointer;
+                color: inherit; font-size: 22px; line-height: 1;
+                opacity: 0.6;
+            }
+            .severe-weather-banner__close:hover { opacity: 1; }
+        `;
+        document.head.appendChild(severeWeatherStyle);
 
         const ariadneStyle = document.createElement("style");
         ariadneStyle.textContent = `
@@ -2182,6 +2394,27 @@
             return `${t("ariadne_next_from", { station: name })} ${top.join(", ")}.`;
         }
 
+        // WMO weather code -> localized short label. Used by the weather
+        // intent handler above.
+        function weatherCodeLabel(code, lang) {
+            const bucket = code === 0 ? "clear"
+                : (code === 1 || code === 2) ? "partly-cloudy"
+                : code === 3 ? "cloudy"
+                : (code === 45 || code === 48) ? "fog"
+                : (code >= 51 && code <= 57) ? "drizzle"
+                : (code >= 61 && code <= 67) ? "rain"
+                : (code >= 71 && code <= 77) ? "snow"
+                : (code >= 80 && code <= 86) ? "showers"
+                : (code === 95 || code === 96 || code === 99) ? "thunderstorm"
+                : "unknown";
+            const table = {
+                el: { "clear": "καθαρός", "partly-cloudy": "μερική συννεφιά", "cloudy": "συννεφιασμένος", "fog": "ομίχλη", "drizzle": "ψιχάλα", "rain": "βροχή", "snow": "χιόνι", "showers": "μπόρες", "thunderstorm": "καταιγίδα", "unknown": "άγνωστη" },
+                sq: { "clear": "kthjellët", "partly-cloudy": "pjesërisht i vranët", "cloudy": "i vranët", "fog": "mjegull", "drizzle": "shi i lehtë", "rain": "shi", "snow": "borë", "showers": "reshje", "thunderstorm": "stuhi", "unknown": "e panjohur" },
+                en: { "clear": "clear", "partly-cloudy": "partly cloudy", "cloudy": "cloudy", "fog": "foggy", "drizzle": "drizzling", "rain": "raining", "snow": "snowing", "showers": "showery", "thunderstorm": "thunderstorm", "unknown": "unknown" },
+            };
+            return (table[lang] || table.en)[bucket];
+        }
+
         // Easter egg: random cat joke in the current language. Called from
         // respond() when parser returns kind: "easterEggLiepur".
         function catJoke(lang) {
@@ -2222,6 +2455,96 @@
                     return { text: window.SyrmosAriadne.clarify(intent.missing, currentLang) };
                 case "easterEggLiepur":
                     return { text: catJoke(currentLang) };
+                case "planByArrival": {
+                    // Cheap "backward" plan: subtract a rough transit time
+                    // estimate (10 min per leg + 25 min baseline) from the
+                    // target arrival. Real per-leg schedule walk lives in
+                    // the KMP planner; web keeps this lightweight.
+                    const from = intent.from ? stationMap.get(intent.from) : null;
+                    const to = intent.to ? stationMap.get(intent.to) : null;
+                    if (!from || !to) return { text: window.SyrmosAriadne.outOfScope(currentLang) };
+                    const now = new Date();
+                    const nowMin = now.getHours() * 60 + now.getMinutes();
+                    const roughDuration = 25;
+                    const targetMin = intent.arriveByMinutes != null
+                        ? intent.arriveByMinutes
+                        : (intent.inMinutesFromNow != null ? nowMin + intent.inMinutesFromNow : null);
+                    if (targetMin == null) return { text: window.SyrmosAriadne.outOfScope(currentLang) };
+                    const effective = (targetMin < nowMin && intent.arriveByMinutes != null)
+                        ? targetMin + 24 * 60 : targetMin;
+                    const leaveBy = effective - roughDuration;
+                    const slack = leaveBy - nowMin;
+                    const pad = (n) => String(n).padStart(2, "0");
+                    const clockOf = (mins) => `${pad(Math.floor((mins / 60) % 24))}:${pad(mins % 60)}`;
+                    const fromName = stationName(from.id);
+                    const toName = stationName(to.id);
+                    const leaveLabel = clockOf(((leaveBy % (24 * 60)) + 24 * 60) % (24 * 60));
+                    const arriveLabel = clockOf(effective % (24 * 60));
+                    let msg;
+                    if (slack < 0) {
+                        msg = currentLang === "el"
+                            ? `Δύσκολο. Για να είσαι στο ${toName} στις ${arriveLabel} έπρεπε να έχεις ξεκινήσει πριν ${-slack} λεπτά.`
+                            : currentLang === "sq"
+                            ? `E vështirë. Për të qenë në ${toName} në ${arriveLabel} duhej të kishe nisur ${-slack} minuta më parë.`
+                            : `Cutting it close. To make ${toName} by ${arriveLabel} you'd have needed to leave ${-slack} min ago.`;
+                    } else if (slack < 5) {
+                        msg = currentLang === "el"
+                            ? `Στριμωγμένα. Ξεκίνα από ${fromName} μέσα στα επόμενα ${slack} λεπτά για να προλάβεις στο ${toName} στις ${arriveLabel}.`
+                            : currentLang === "sq"
+                            ? `Ngushtë. Duhet të nisesh nga ${fromName} brenda ${slack} minutash për të arritur në ${toName} në ${arriveLabel}.`
+                            : `Tight. You need to leave ${fromName} within the next ${slack} min to make ${toName} by ${arriveLabel}.`;
+                    } else if (slack > roughDuration + 45) {
+                        msg = currentLang === "el"
+                            ? `Έχεις άπλα. Ξεκίνα από ${fromName} μέσα στα επόμενα ${slack} λεπτά και θα φτάσεις στο ${toName} στις ${arriveLabel}.`
+                            : currentLang === "sq"
+                            ? `Ke kohë. Nisu nga ${fromName} brenda ${slack} minutash dhe do të jesh në ${toName} në ${arriveLabel}.`
+                            : `You have time. Leave ${fromName} anytime in the next ${slack} min and you'll reach ${toName} by ${arriveLabel}.`;
+                    } else {
+                        msg = currentLang === "el"
+                            ? `Ξεκίνα από ${fromName} έως ${leaveLabel} και θα είσαι στο ${toName} στις ${arriveLabel}. ${slack} λεπτά περιθώριο.`
+                            : currentLang === "sq"
+                            ? `Nis nga ${fromName} deri në ${leaveLabel} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
+                            : `Leave ${fromName} by ${leaveLabel} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`;
+                    }
+                    return { text: msg };
+                }
+                case "weatherAt": {
+                    const anchor = intent.stationId ? stationMap.get(intent.stationId) : null;
+                    const lat = anchor ? anchor.latitude : 37.9838;
+                    const lng = anchor ? anchor.longitude : 23.7275;
+                    const name = anchor
+                        ? (currentLang === "el" ? (anchor.name_el || anchor.nameEl || anchor.name) : anchor.name)
+                        : (currentLang === "el" ? "Αθήνα" : currentLang === "sq" ? "Athina" : "Athens");
+                    return {
+                        text: currentLang === "el" ? `Αναζήτηση καιρού για ${name}…`
+                            : currentLang === "sq" ? `Po kërkoj motin për ${name}…`
+                            : `Fetching weather for ${name}…`,
+                        act: async () => {
+                            try {
+                                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`;
+                                const r = await fetch(url);
+                                const data = await r.json();
+                                const c = data.current || {};
+                                const temp = Math.round(c.temperature_2m);
+                                const feels = Math.round(c.apparent_temperature);
+                                const cond = weatherCodeLabel(c.weather_code, currentLang);
+                                const reply = currentLang === "el"
+                                    ? `${name} τώρα: ${temp}°C, ${cond}. Αίσθηση ${feels}°C.`
+                                    : currentLang === "sq"
+                                    ? `${name} tani: ${temp}°C, ${cond}. Ndihet si ${feels}°C.`
+                                    : `${name} right now: ${temp}°C, ${cond}. Feels like ${feels}°C.`;
+                                appendMessage(reply, "assistant");
+                            } catch (_) {
+                                appendMessage(
+                                    currentLang === "el" ? "Δεν έχω δεδομένα καιρού. Δοκίμασε ξανά."
+                                    : currentLang === "sq" ? "S'kam të dhëna moti. Provo përsëri."
+                                    : "I don't have weather data. Try again.",
+                                    "assistant"
+                                );
+                            }
+                        },
+                    };
+                }
                 case "departures":
                     if (intent.stationId) {
                         return {
