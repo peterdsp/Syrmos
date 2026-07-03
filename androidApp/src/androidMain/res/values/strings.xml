@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_departures_description">Next M3 departures from Syntagma to the Athens Airport.</string>
+    <string name="widget_next_train_description">The next train from your station, as a big countdown.</string>
+    <string name="widget_live_departures_description">The next five departures from your station.</string>
+    <string name="widget_line_status_description">Service status for every metro, tram, and suburban line.</string>
+    <string name="widget_near_me_description">Your station and its next departures, with a nearby framing.</string>
 </resources>

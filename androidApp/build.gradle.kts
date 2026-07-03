@@ -27,8 +27,13 @@ kotlin {
         androidMain.dependencies {
             implementation(projects.composeApp)
             implementation(projects.core.common)
+            implementation(projects.core.domain)
+            implementation(projects.core.model)
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
+            implementation(libs.androidx.glance.appwidget)
+            implementation(libs.androidx.glance.material3)
+            implementation(libs.androidx.work.runtime)
         }
     }
 }

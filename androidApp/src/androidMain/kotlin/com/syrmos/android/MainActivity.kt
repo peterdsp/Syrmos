@@ -67,12 +67,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Nudge the Home Screen widget when the user returns to the app.
-        // The AppWidget update period is 30 min (Android minimum) which
-        // is too slow for a "how long till the next train" tile, so we
-        // piggyback on the app lifecycle: opening Syrmos and pressing
-        // Home again gives a fresh widget within seconds.
-        com.syrmos.android.widget.SyrmosDeparturesWidget.refreshAll(this)
+        // Nudge the Glance widgets when the user returns to the app. The
+        // AppWidget update period is 30 min (Android minimum) which is too slow
+        // for a "how long till the next train" tile, so we piggyback on the app
+        // lifecycle: opening Syrmos and pressing Home again refreshes the
+        // snapshot the widgets read within seconds.
+        com.syrmos.android.widget.SnapshotWorker.refreshNow(this)
     }
 
     override fun onDestroy() {
