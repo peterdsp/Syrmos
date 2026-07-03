@@ -16,6 +16,8 @@ struct HomeView: View {
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
+    /// Set from Settings -> Developer -> Preview severe-weather card.
+    @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -117,10 +119,20 @@ struct HomeView: View {
                 lastTrainTeaser(last)
             }
             if let snap = weather.snapshot {
-                if snap.current.condition.isSevere {
-                    EmergencyWeatherCard(condition: snap.current.condition, language: loc.language)
+                // Real severe weather OR the developer preview toggle
+                // (Settings -> Developer -> Preview severe-weather card).
+                if snap.current.condition.isSevere || forceEmergencyPreview {
+                    EmergencyWeatherCard(
+                        condition: forceEmergencyPreview ? .thunderstorm : snap.current.condition,
+                        language: loc.language
+                    )
                 }
                 WeatherCard(snapshot: snap)
+            } else if forceEmergencyPreview {
+                // No weather snapshot yet but the preview toggle is on
+                // (e.g. cold-start during smoke test): still render the
+                // card with a canned thunderstorm condition.
+                EmergencyWeatherCard(condition: .thunderstorm, language: loc.language)
             }
         }
     }

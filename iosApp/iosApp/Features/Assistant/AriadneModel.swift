@@ -692,15 +692,15 @@ final class AriadneModel: ObservableObject {
     private func normalizeLine(_ lineId: String) -> String { lineId.hasPrefix("M3") ? "M3" : lineId }
 
     private func greeting() -> AriadneMessage {
-        bot(t("Hi, I'm Ariadne. Ask me about Athens trains, last departures, or how to get somewhere.",
-            "Γεια, είμαι η Αριάδνη. Ρώτησέ με για τα τρένα της Αθήνας, τελευταία δρομολόγια ή πώς να πας κάπου.",
-            "Përshëndetje, jam Ariadne. Më pyet për trenat e Athinës, nisjet e fundit ose si të shkosh diku."))
+        bot(t("Hi, I'm Ariadne. Ask about departures, weather, or trips like \"airport by 21:30\".",
+            "Γεια, είμαι η Αριάδνη. Ρώτησέ με για αναχωρήσεις, καιρό ή διαδρομές όπως «αεροδρόμιο στις 21:30».",
+            "Përshëndetje, jam Ariadne. Më pyet për nisje, motin ose udhëtime si «aeroporti në 21:30»."))
     }
 
     private func helpText() -> String {
-        t("I can show next departures, the last train home, plan a trip between two stations, explain a line, and show alerts. I only cover Syrmos and Athens public transport, fully offline.",
-            "Μπορώ να δείξω επόμενες αναχωρήσεις, το τελευταίο τρένο, διαδρομή, να εξηγήσω μια γραμμή και ειδοποιήσεις. Καλύπτω μόνο το Syrmos και τις συγκοινωνίες της Αθήνας, εκτός σύνδεσης.",
-            "Mund të tregoj nisjet, trenin e fundit, një udhëtim, të shpjegoj një linjë dhe njoftimet. Mbuloj vetëm Syrmos dhe transportin e Athinës, pa internet.")
+        t("I handle departures, last train home, trip planning (including \"be there by X:XX\"), weather at a station, service alerts, ticket prices, and Athens rail info. Offline-safe.",
+            "Χειρίζομαι αναχωρήσεις, τελευταίο τρένο, σχεδιασμό διαδρομής (και «να είσαι εκεί στις X:XX»), καιρό σταθμού, ειδοποιήσεις, τιμές εισιτηρίων και πληροφορίες των συγκοινωνιών Αθήνας. Λειτουργώ offline.",
+            "Trajtoj nisjet, trenin e fundit, planifikim udhëtimi (edhe «të jesh atje deri në X:XX»), motin te një stacion, njoftime, çmime biletash dhe informacione për transportin e Athinës. Punoj pa internet.")
     }
 
     private func outOfScopeText() -> String {
