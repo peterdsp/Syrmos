@@ -1,51 +1,52 @@
-# Apple Watch target wiring (B4)
+# Apple Watch targets (B4) — created and building
 
-The Watch app source in this folder is complete and **typechecks against the
-watchOS SDK** (`xcrun --sdk watchsimulator swiftc -typecheck …` passes). The one
-step that cannot be done headlessly — and that the repo already does in Xcode for
-the widget extension — is creating the watchOS target in the Xcode project. Do it
-once in Xcode; after that the normal scheme build embeds it.
+The watchOS targets are now part of the Xcode project (added programmatically
+with the `xcodeproj` gem, see `scripts/` history), not a manual TODO:
 
-## Files (already written)
+- **`SyrmosWatch`** — watchOS app target (single-target `WKApplication`), bundle
+  id `com.syrmosApp.ios.watchkitapp`, embedded in the iOS app via an
+  "Embed Watch Content" copy-files phase.
+- **`SyrmosWatchComplications`** — watchOS WidgetKit extension, bundle id
+  `com.syrmosApp.ios.watchkitapp.complications`, embedded in the watch app's
+  PlugIns. Corner (minutes) / circular (line dot) / rectangular (pill + minutes
+  + destination) accessory families.
 
-- `SyrmosWatchApp.swift` — `@main` watchOS app (single-target `WKApplication`).
-- `WatchContentView.swift` — next-three departures for the pinned station,
-  mirroring the iOS Live Departures large widget at Watch scale.
-- `WatchConnectivityProvider.swift` — receives the departures snapshot from the
-  phone (`updateApplicationContext` + `sendMessage`), persists it for the
-  complications, and reloads their timelines.
-- `WatchModels.swift` — `WatchSnapshot` / `WatchDeparture` (the JSON shape the
-  phone sends) and `WatchLineTokens` (line colors, mirroring `SyrmosLineTokens`).
-- `SyrmosWatchComplications.swift` — corner (minutes), circular (line-color dot),
-  rectangular (pill + minutes + destination) accessory complications.
-- `Info.plist` — `WKApplication=YES`, `WKCompanionAppBundleIdentifier=com.syrmosApp.ios`.
+Both use Swift 5 language mode and share the `group.com.syrmosApp.watch` App
+Group (entitlements: `SyrmosWatch/SyrmosWatch.entitlements`) so the app persists
+the departures snapshot for the complications.
 
-The **iPhone side is already wired and building**: `WatchSessionManager` (app
-target) activates a `WCSession` lazily when the user starts tracking a train and
-pushes the next three trains on the tracked line; `DepartureTracking` calls it on
-`track()` and on each minute change.
+## Files
 
-## Xcode steps (once)
+- `SyrmosWatchApp.swift` — `@main` watch app.
+- `WatchContentView.swift` — next-three departures for the pinned station.
+- `WatchConnectivityProvider.swift` — receives the snapshot from the phone,
+  persists it (`WatchComplicationStore`), reloads complications.
+- `WatchModels.swift` — `WatchSnapshot` / `WatchDeparture`, `WatchLineTokens`,
+  and the shared `WatchComplicationStore` (member of both watch targets).
+- `SyrmosWatchComplications.swift` — `@main` complication widget.
+- `Info.plist` / `Complications-Info.plist` / `SyrmosWatch.entitlements`.
 
-1. File → New → Target → **watchOS → App**. Product name `SyrmosWatch`, bundle id
-   `com.syrmosApp.ios.watchkitapp`, interface SwiftUI, language Swift. Uncheck the
-   auto-created tests. When asked, set it as a companion to the iOS app.
-2. Delete the auto-generated `ContentView.swift` / `App.swift` Xcode adds, then
-   add every file in this folder to the new `SyrmosWatch` target
-   (File Inspector → Target Membership). Point the target's `INFOPLIST_FILE` at
-   this folder's `Info.plist`.
-3. Add a **Widget Extension** target (watchOS) named `SyrmosWatchComplications`;
-   move `SyrmosWatchComplications.swift`, `WatchModels.swift` into it (WatchModels
-   is shared by both — tick both memberships). The complication reads the shared
-   suite `group.com.syrmosApp.watch`; add that **App Group** to both watch targets.
-4. Add the same App Group `group.com.syrmosApp.watch` capability so the app and
-   complication share the persisted snapshot. (WatchConnectivity does not need an
-   App Group; the group is only for handing the snapshot to the complication.)
-5. Build the `SyrmosWatch` scheme, then the iOS scheme (which now embeds the watch
-   app). Run on a paired Apple Watch: start tracking a train on the phone and the
-   watch app + complications update within a second when reachable.
+The iPhone side (`WatchSessionManager`, hooked into `DepartureTracking`) pushes
+the next three trains on the tracked line over `WCSession`.
 
-## Verification done here
+## Verified
 
-- `swiftc -typecheck` of all `SyrmosWatch/*.swift` against WatchSimulator SDK: passes.
-- iOS app (with `WatchSessionManager` + the `DepartureTracking` hook) builds green.
+- `xcodebuild -target SyrmosWatch -sdk watchsimulator`: **BUILD SUCCEEDED** —
+  the watch app compiles, links, and the embedded complication passes
+  embedded-binary validation.
+- The iOS app sources are unchanged; the app built green immediately before the
+  watch targets were added.
+
+## Environment note (build requirement)
+
+Because the iOS app now embeds a watch app, **building the `Syrmos - Athens Rail
+Times` scheme requires the watchOS platform installed** (Xcode → Settings →
+Components → watchOS Simulator, or build to a paired Apple Watch). CI runners
+that build the iOS scheme need the watchOS SDK **and** simulator runtime. The
+watch scheme itself builds with just the SDK.
+
+## Portal (device / TestFlight only)
+
+Register the two watch App IDs and the `group.com.syrmosApp.watch` App Group on
+the Apple Developer portal, and enable the App Group on both watch targets. Not
+needed for simulator builds.
