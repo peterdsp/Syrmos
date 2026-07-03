@@ -156,6 +156,10 @@ final class STASYService: ObservableObject {
             // home offline-alive pill to "live".
             LiveDataFreshness.shared.markLive()
             cacheAnnouncements(parsed)
+            // Surface the current alerts in the Weather + Alerts widget. Prefer
+            // real service alerts, then fall back to general announcements.
+            let ranked = parsed.sorted { a, _ in a.category == .serviceAlert }
+            WidgetBridge.publishAlerts(ranked.map { $0.titleEn.isEmpty ? $0.title : $0.titleEn })
         } catch {
             self.error = "Could not reach Syrmos API"
             // keep showing cached content silently — don't flip back to empty

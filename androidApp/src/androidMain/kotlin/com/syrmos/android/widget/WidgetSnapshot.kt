@@ -16,11 +16,19 @@ data class WidgetRow(
     val time: String,
 )
 
+/** A nearby station for the Near Me widget: name, its lines, and walk minutes. */
+data class NearbyStation(
+    val name: String,
+    val lineIds: List<String>,
+    val walkMinutes: Int,
+)
+
 data class WidgetSnapshot(
     val stationName: String,
     val lastTrain: String?,
     val rows: List<WidgetRow>,
     val updatedEpoch: Long,
+    val nearby: List<NearbyStation> = emptyList(),
 ) {
     companion object {
         val empty = WidgetSnapshot(stationName = "—", lastTrain = null, rows = emptyList(), updatedEpoch = 0)
@@ -32,6 +40,7 @@ object SnapshotStore {
     private const val KEY_STATION = "station"
     private const val KEY_LAST = "last_train"
     private const val KEY_ROWS = "rows"
+    private const val KEY_NEARBY = "nearby"
     private const val KEY_UPDATED = "updated"
     private const val ROW_SEP = ""
     private const val FIELD_SEP = ""
@@ -40,10 +49,14 @@ object SnapshotStore {
         val encoded = snapshot.rows.joinToString(ROW_SEP) { r ->
             listOf(r.lineId, r.destination, r.minutes.toString(), r.time).joinToString(FIELD_SEP)
         }
+        val encodedNearby = snapshot.nearby.joinToString(ROW_SEP) { n ->
+            listOf(n.name, n.lineIds.joinToString(","), n.walkMinutes.toString()).joinToString(FIELD_SEP)
+        }
         context.prefs().edit()
             .putString(KEY_STATION, snapshot.stationName)
             .putString(KEY_LAST, snapshot.lastTrain)
             .putString(KEY_ROWS, encoded)
+            .putString(KEY_NEARBY, encodedNearby)
             .putLong(KEY_UPDATED, snapshot.updatedEpoch)
             .apply()
     }
@@ -56,11 +69,21 @@ object SnapshotStore {
             val f = line.split(FIELD_SEP)
             if (f.size < 4) null else WidgetRow(f[0], f[1], f[2].toIntOrNull() ?: 0, f[3])
         }
+        val encodedNearby = p.getString(KEY_NEARBY, "").orEmpty()
+        val nearby = if (encodedNearby.isEmpty()) emptyList() else encodedNearby.split(ROW_SEP).mapNotNull { line ->
+            val f = line.split(FIELD_SEP)
+            if (f.size < 3) null else NearbyStation(
+                name = f[0],
+                lineIds = f[1].split(",").filter { it.isNotEmpty() },
+                walkMinutes = f[2].toIntOrNull() ?: 0,
+            )
+        }
         return WidgetSnapshot(
             stationName = station,
             lastTrain = p.getString(KEY_LAST, null),
             rows = rows,
             updatedEpoch = p.getLong(KEY_UPDATED, 0),
+            nearby = nearby,
         )
     }
 

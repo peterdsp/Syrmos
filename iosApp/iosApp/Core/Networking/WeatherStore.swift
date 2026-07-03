@@ -103,7 +103,7 @@ final class WeatherStore: ObservableObject {
             req.timeoutInterval = 8
             let (data, _) = try await URLSession.shared.data(for: req)
             let decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
-            snapshot = WeatherSnapshot(
+            let fresh = WeatherSnapshot(
                 current: decoded.current.toDomain(),
                 placeName: placeName,
                 fetchedAt: Date(),
@@ -111,7 +111,16 @@ final class WeatherStore: ObservableObject {
                 lowC: decoded.daily?.temperature_2m_min.first,
                 hourly: decoded.nextHours(6)
             )
+            snapshot = fresh
             lastFetch = Date()
+            // Mirror into the App Group so the Weather + Alerts widget shows
+            // real conditions instead of the offline placeholder.
+            WidgetBridge.publishWeather(
+                temperatureC: fresh.current.temperatureC,
+                condition: fresh.current.condition,
+                highC: fresh.highC,
+                lowC: fresh.lowC
+            )
         } catch {
             // Keep the last snapshot; the card and routing degrade honestly.
         }

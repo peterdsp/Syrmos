@@ -19,6 +19,7 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
+import androidx.glance.layout.width
 import androidx.glance.GlanceTheme
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -43,20 +44,52 @@ class NearMeGlanceWidget : GlanceAppWidget() {
                         .padding(14.dp)
                         .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
                 ) {
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth().padding(bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("Near me", style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp))
-                        Spacer(GlanceModifier.defaultWeight())
-                        Text(snapshot.stationName, style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp), maxLines = 1)
-                    }
-                    snapshot.rows.take(3).forEach { row ->
-                        GlanceDepartureRow(
-                            row = row,
-                            onSurface = GlanceTheme.colors.onBackground,
-                            secondary = GlanceTheme.colors.onSurfaceVariant,
+                    Text(
+                        text = "Near me",
+                        style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                        modifier = GlanceModifier.padding(bottom = 6.dp),
+                    )
+                    if (snapshot.nearby.isNotEmpty()) {
+                        // The three nearest stations with walking distance.
+                        snapshot.nearby.take(3).forEach { station ->
+                            Row(
+                                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = GlanceModifier.defaultWeight()) {
+                                    Text(
+                                        text = station.name,
+                                        style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Medium, fontSize = 14.sp),
+                                        maxLines = 1,
+                                    )
+                                    Row {
+                                        station.lineIds.take(3).forEach { line ->
+                                            GlanceLinePill(line, fontSize = 10.sp)
+                                            Spacer(GlanceModifier.width(4.dp))
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = "${station.walkMinutes} min",
+                                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontWeight = FontWeight.Medium, fontSize = 13.sp),
+                                )
+                            }
+                        }
+                    } else {
+                        // No location yet: fall back to the pinned station's departures.
+                        Text(
+                            text = snapshot.stationName,
+                            style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                            modifier = GlanceModifier.padding(bottom = 4.dp),
+                            maxLines = 1,
                         )
+                        snapshot.rows.take(3).forEach { row ->
+                            GlanceDepartureRow(
+                                row = row,
+                                onSurface = GlanceTheme.colors.onBackground,
+                                secondary = GlanceTheme.colors.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

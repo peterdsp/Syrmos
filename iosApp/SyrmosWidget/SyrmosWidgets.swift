@@ -191,14 +191,14 @@ struct SyrmosProvider: AppIntentTimelineProvider {
             widgetLog.error("no station resolved")
             return SyrmosEntry(date: .now, stationName: "—", rows: [], routeStops: [],
                                lastTrain: nil, nearby: nearby, statuses: lineStatuses(),
-                               weather: cachedWeather(), alerts: [])
+                               weather: cachedWeather(), alerts: cachedAlerts())
         }
         let rows = await MainActor.run { departureRows(for: station) }
         let last = await MainActor.run { lastTrainString(for: station) }
         let stops = routeStops(for: station)
         return SyrmosEntry(date: .now, stationName: station.name, rows: rows, routeStops: stops,
                            lastTrain: last, nearby: nearby, statuses: lineStatuses(),
-                           weather: cachedWeather(), alerts: [])
+                           weather: cachedWeather(), alerts: cachedAlerts())
     }
 
     private func resolveStation(_ configuration: SyrmosWidgetConfigurationIntent, location: CLLocation?) async -> TransitStation? {
@@ -285,8 +285,8 @@ struct SyrmosProvider: AppIntentTimelineProvider {
         SyrmosLineTokens.allLines.map { WLineStatus(lineId: $0, ok: true, label: "Good Service") }
     }
 
-    /// Best-effort cached weather from a shared App Group, if the app ever
-    /// writes one; returns nil (graceful offline state) when absent.
+    /// Cached weather from the shared App Group, written by the app's
+    /// WeatherStore; returns nil (graceful offline state) when absent.
     private func cachedWeather() -> WWeather? {
         guard let d = UserDefaults(suiteName: "group.com.syrmosApp.ios"),
               d.object(forKey: "weather.temp") != nil else { return nil }
@@ -296,6 +296,12 @@ struct SyrmosProvider: AppIntentTimelineProvider {
             high: d.integer(forKey: "weather.high"),
             low: d.integer(forKey: "weather.low")
         )
+    }
+
+    /// Cached service alerts from the shared App Group, written by the app's
+    /// STASYService; empty when there are none or nothing has synced yet.
+    private func cachedAlerts() -> [String] {
+        UserDefaults(suiteName: "group.com.syrmosApp.ios")?.stringArray(forKey: "alerts") ?? []
     }
 
     static let sample = SyrmosEntry(

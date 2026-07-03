@@ -99,6 +99,7 @@
 		C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
 		BB96CED5F61B446CBA6D87C5 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
 		8F1DB37A07CE4F4E877F3E52 /* iosApp/Core/Schedule/WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */; };
+		2AC047F768ED40C49CDCC90B /* iosApp/Core/Networking/WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -209,6 +210,7 @@
 		D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripFull.swift; sourceTree = SOURCE_ROOT; };
 		933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift; sourceTree = SOURCE_ROOT; };
 		889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/WatchSessionManager.swift; sourceTree = SOURCE_ROOT; };
+		DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WidgetBridge.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -379,6 +381,7 @@
 		AAAA000000000000000000C4 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */,
 				C5D6E7F8A9B0C1D2E3F40507 /* iosApp/Core/Networking/SyrmosLinesService.swift */,
 				0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */,
 				E1A2B3C4D5E60718293A4B5D /* iosApp/Core/Networking/SyrmosDeparturesService.swift */,
@@ -647,6 +650,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2AC047F768ED40C49CDCC90B /* iosApp/Core/Networking/WidgetBridge.swift in Sources */,
 				8F1DB37A07CE4F4E877F3E52 /* iosApp/Core/Schedule/WatchSessionManager.swift in Sources */,
 				C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */,
 				E44EAEAEE0954E9F8735761E /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources */,
@@ -873,6 +877,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 100;
+				CODE_SIGN_ENTITLEMENTS = iosApp/Syrmos.entitlements;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -896,6 +901,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 100;
+				CODE_SIGN_ENTITLEMENTS = iosApp/Syrmos.entitlements;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -979,6 +985,7 @@
 				CURRENT_PROJECT_VERSION = 100;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = SyrmosWidget/SyrmosWidget.entitlements;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Syrmos;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -1007,6 +1014,7 @@
 				CURRENT_PROJECT_VERSION = 100;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = SyrmosWidget/SyrmosWidget.entitlements;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Syrmos;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
