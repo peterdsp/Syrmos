@@ -247,6 +247,18 @@ struct TransitMapView: View {
                 .safeAreaInset(edge: .top, spacing: 8) {
                     CompactTabHeader(loc[.map])
                 }
+                .task(id: locationManager.authorizationStatus) {
+                    // Auto-center on the user when the Map tab appears AND
+                    // permission is already granted. If the user hasn't
+                    // granted (or has denied) we stay on the Athens fallback
+                    // set in makeUIView. Wait a beat so MKMapView has time to
+                    // start streaming CLLocation updates before we recenter.
+                    let status = locationManager.authorizationStatus
+                    if status == .authorizedWhenInUse || status == .authorizedAlways {
+                        try? await Task.sleep(nanoseconds: 300_000_000)
+                        recenterToUserPing &+= 1
+                    }
+                }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $tappedStation) { station in
                 StationSheetView(station: station)

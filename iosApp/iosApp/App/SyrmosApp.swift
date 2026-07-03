@@ -142,13 +142,19 @@ struct ContentView: View {
         ZStack {
             Color(.systemBackground).ignoresSafeArea()
             TabView(selection: $selectedTab) {
+                // Each non-Settings tab reserves 60pt at the bottom via a
+                // safeAreaInset so the last row/item in its scrollable
+                // never disappears under the floating Ask Ariadne pill.
+                // Settings hides the pill entirely so no clearance needed.
                 HomeView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
                         Label(loc[.home], systemImage: "house")
                     }
                     .tag(SyrmosTab.home)
 
                 LinesView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
                         Label(loc[.lines], systemImage: "tram")
                     }
@@ -161,6 +167,7 @@ struct ContentView: View {
                     .tag(SyrmosTab.map)
 
                 TimetablesView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
                         Label(
                             loc.language == .greek ? "Αεροδρόμιο" :
