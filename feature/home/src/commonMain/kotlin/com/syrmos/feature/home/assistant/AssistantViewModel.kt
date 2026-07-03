@@ -61,6 +61,10 @@ data class AssistantUiState(
     val messages: List<AssistantMessage> = emptyList(),
     val ready: Boolean = false,
     val thinking: Boolean = false,
+    /** Current weather is severe (thunderstorm / heavy showers / snow). Drives context-aware prompt chips. */
+    val severeWeather: Boolean = false,
+    /** Athens local hour (0..23). Drives time-of-day prompt selection. */
+    val athensHour: Int = 12,
 )
 
 /**
@@ -122,8 +126,15 @@ class AssistantViewModel(
             stations = stationRepository.getAllStations().first()
             lines = getLinesUseCase.getAllLines().first()
             parser = AthensTransitParser(AssistantVocabularyBuilder.build(stations, lines))
+            val nowAthens = com.syrmos.core.common.extensions.currentAthensTime()
+            val severe = weatherRepository.cached?.current?.condition?.isSevere == true
             _uiState.update {
-                it.copy(ready = true, messages = listOf(greeting()))
+                it.copy(
+                    ready = true,
+                    messages = listOf(greeting()),
+                    severeWeather = severe,
+                    athensHour = nowAthens.hour,
+                )
             }
         }
     }
@@ -816,15 +827,15 @@ class AssistantViewModel(
     private fun normalizeLine(lineId: String): String = if (lineId.startsWith("M3")) "M3" else lineId
 
     private fun greeting(): AssistantMessage = botMessage(
-        t("Hi, I'm Ariadne. Ask me about Athens trains, last departures, or how to get somewhere.",
-            "Γεια, είμαι η Αριάδνη. Ρώτησέ με για τα τρένα της Αθήνας, τελευταία δρομολόγια ή πώς να πας κάπου.",
-            "Përshëndetje, jam Ariadne. Më pyet për trenat e Athinës, nisjet e fundit ose si të shkosh diku."),
+        t("Hi, I'm Ariadne. Ask about departures, weather, or trips like \"airport by 21:30\".",
+            "Γεια, είμαι η Αριάδνη. Ρώτησέ με για αναχωρήσεις, καιρό ή διαδρομές όπως «αεροδρόμιο στις 21:30».",
+            "Përshëndetje, jam Ariadne. Më pyet për nisje, motin ose udhëtime si «aeroporti në 21:30»."),
     )
 
     private fun helpText(): String = t(
-        "I can show next departures (today or a future day), the last train home, plan a trip, explain a line, ticket prices, service alerts, and favorite a station. I only cover Syrmos and Athens public transport, fully offline.",
-        "Μπορώ να δείξω επόμενες αναχωρήσεις (σήμερα ή άλλη μέρα), το τελευταίο τρένο, διαδρομή, να εξηγήσω μια γραμμή, τιμές εισιτηρίων, ειδοποιήσεις και να προσθέσω σταθμό στα αγαπημένα. Καλύπτω μόνο το Syrmos και τις συγκοινωνίες της Αθήνας, εκτός σύνδεσης.",
-        "Mund të tregoj nisjet (sot ose një ditë tjetër), trenin e fundit, një udhëtim, të shpjegoj një linjë, çmimet e biletave, njoftimet dhe të ruaj një stacion. Mbuloj vetëm Syrmos dhe transportin e Athinës, pa internet.",
+        "I handle departures (today or a future day), last train home, trip planning (including \"be there by X:XX\"), weather at a station, service alerts, ticket prices, favorites, and Athens rail info. Offline-safe.",
+        "Χειρίζομαι αναχωρήσεις (σήμερα ή άλλη μέρα), τελευταίο τρένο, σχεδιασμό διαδρομής (και «να είσαι εκεί στις X:XX»), καιρό σταθμού, ειδοποιήσεις, τιμές εισιτηρίων, αγαπημένα και πληροφορίες των συγκοινωνιών Αθήνας. Λειτουργώ offline.",
+        "Trajtoj nisjet (sot ose një ditë tjetër), trenin e fundit, planifikim udhëtimi (edhe «të jesh atje deri në X:XX»), motin te një stacion, njoftime, çmime biletash, të preferuarat dhe informacione për transportin e Athinës. Punoj pa internet.",
     )
 
     private fun outOfScopeText(): String = t(

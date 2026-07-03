@@ -143,15 +143,33 @@ struct AriadneView: View {
         }
     }
 
-    /// Localised quick-tap prompts. Concrete + short so users see the
-    /// shape of what Ariadne can answer without reading instructions.
+    /// Localised quick-tap prompts, chosen by context. Rules, cheap to
+    /// evaluate, no external calls:
+    ///   - if the current weather condition is severe, lead with a
+    ///     covered-route trip prompt
+    ///   - after 20:00, offer the last-train prompt for M2 (the network's
+    ///     latest-running line)
+    ///   - before 09:00, lead with an airport check for early flights
+    ///   - otherwise the default triplet
     private var suggestions: [String] {
+        let severe = WeatherStore.shared.snapshot?.current.condition.isSevere == true
+        let hour = Calendar.current.component(.hour, from: Date())
+
         switch loc.language {
         case .greek:
+            if severe { return ["Πώς πάω στο σπίτι υπόγεια;", "Κακοκαιρία τώρα", "Ειδοποιήσεις γραμμών"] }
+            if hour >= 20 { return ["Τελευταίο M2", "Καιρός τώρα", "Πώς πάω στο σπίτι;"] }
+            if hour < 9 { return ["Επόμενο M3 στο Αεροδρόμιο", "Καιρός τώρα", "Πώς πάω στο κέντρο;"] }
             return ["Καιρός τώρα", "Πώς πάω στο Αεροδρόμιο;", "Τελευταίο M2"]
         case .albanian:
+            if severe { return ["Si shkoj në shtëpi nën tokë?", "Mot i keq tani", "Njoftime linjash"] }
+            if hour >= 20 { return ["Treni i fundit M2", "Moti tani", "Si shkoj në shtëpi?"] }
+            if hour < 9 { return ["M3 tjetër për Aeroport", "Moti tani", "Si shkoj në qendër?"] }
             return ["Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2"]
         case .english:
+            if severe { return ["How do I get home covered?", "Severe weather now", "Line alerts"] }
+            if hour >= 20 { return ["Last M2", "Weather now", "How do I get home?"] }
+            if hour < 9 { return ["Next M3 to Airport", "Weather now", "How do I get downtown?"] }
             return ["Weather now", "How do I get to the Airport?", "Last M2"]
         }
     }

@@ -32,12 +32,25 @@ struct SyrmosLiveActivity: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.isDue ? "Now" : "\(context.state.minutesRemaining) min")
-                        .font(.title3).bold().monospacedDigit()
-                        .foregroundStyle(tint)
-                        .contentTransition(.numericText())
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
+                    if context.state.isDue {
+                        Text("Now")
+                            .font(.title3).bold().foregroundStyle(tint)
+                    } else if let epoch = context.state.targetEpoch {
+                        // Self-ticking countdown so the widget stays alive
+                        // between minute-boundary state pushes.
+                        Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
+                            .font(.title3).bold().monospacedDigit()
+                            .foregroundStyle(tint)
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
+                    } else {
+                        Text("\(context.state.minutesRemaining) min")
+                            .font(.title3).bold().monospacedDigit()
+                            .foregroundStyle(tint)
+                            .contentTransition(.numericText())
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -68,10 +81,18 @@ struct SyrmosLiveActivity: Widget {
                 Image(systemName: "tram.fill")
                     .foregroundStyle(tint)
             } compactTrailing: {
-                Text(context.state.isDue ? "now" : "\(context.state.minutesRemaining)m")
-                    .monospacedDigit()
-                    .foregroundStyle(tint)
-                    .contentTransition(.numericText())
+                if context.state.isDue {
+                    Text("now").foregroundStyle(tint)
+                } else if let epoch = context.state.targetEpoch {
+                    Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
+                        .monospacedDigit()
+                        .foregroundStyle(tint)
+                } else {
+                    Text("\(context.state.minutesRemaining)m")
+                        .monospacedDigit()
+                        .foregroundStyle(tint)
+                        .contentTransition(.numericText())
+                }
             } minimal: {
                 Text(context.state.isDue ? "•" : "\(context.state.minutesRemaining)")
                     .monospacedDigit()
@@ -116,11 +137,19 @@ private struct LockScreenView: View {
             }
 
             HStack(alignment: .firstTextBaseline) {
-                Text(context.state.isDue ? "Now" : "\(context.state.minutesRemaining) min")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(tint)
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
+                Group {
+                    if context.state.isDue {
+                        Text("Now")
+                    } else if let epoch = context.state.targetEpoch {
+                        Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
+                    } else {
+                        Text("\(context.state.minutesRemaining) min")
+                            .contentTransition(.numericText())
+                    }
+                }
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .foregroundStyle(tint)
+                .monospacedDigit()
                 Spacer()
                 Text(context.state.scheduledTime)
                     .font(.caption)

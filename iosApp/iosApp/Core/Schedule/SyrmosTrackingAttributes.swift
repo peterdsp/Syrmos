@@ -25,6 +25,11 @@ struct SyrmosTrackingAttributes: ActivityAttributes {
         // in-app TrackingCard. Optional + defaulted so a state pushed by
         // an older build still decodes.
         var routeStations: [String]? = []
+        // Unix epoch second the train is expected. The widget uses this to
+        // render Text(timerInterval:countsDown:) so the countdown ticks
+        // between state pushes instead of freezing on the last minute
+        // value. Optional so decoding of older shapes still succeeds.
+        var targetEpoch: Double? = nil
     }
 
     var lineId: String

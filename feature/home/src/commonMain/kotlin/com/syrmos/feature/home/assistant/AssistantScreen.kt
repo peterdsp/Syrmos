@@ -110,6 +110,8 @@ fun AssistantScreen(
 
             // Suggestion chips: show while the conversation is still at
             // the greeting so a first-time user has one-tap prompts.
+            // Context-aware — the chip triplet reflects current weather
+            // severity + time-of-day so the offering matches the moment.
             if (uiState.messages.size <= 1 && !uiState.thinking) {
                 Column(
                     modifier = Modifier
@@ -126,7 +128,12 @@ fun AssistantScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        suggestions(lang).forEach { prompt ->
+                        val prompts = suggestions(
+                            lang = lang,
+                            severeWeather = uiState.severeWeather,
+                            hour = uiState.athensHour,
+                        )
+                        prompts.forEach { prompt ->
                             SuggestedPromptChip(prompt) {
                                 viewModel.ask(prompt)
                             }
@@ -271,10 +278,36 @@ private fun tryLabel(lang: AppLanguage) = when (lang) {
     else -> "TRY"
 }
 
-private fun suggestions(lang: AppLanguage): List<String> = when (lang) {
-    AppLanguage.GREEK -> listOf("Καιρός τώρα", "Πώς πάω στο Αεροδρόμιο;", "Τελευταίο M2")
-    AppLanguage.ALBANIAN -> listOf("Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2")
-    else -> listOf("Weather now", "How do I get to the Airport?", "Last M2")
+/**
+ * Context-aware quick-tap prompt triplet. Rules:
+ *   severeWeather -> lead with a covered-route trip prompt
+ *   hour >= 20    -> late-evening: last-train reminder
+ *   hour < 9      -> morning: airport check
+ *   otherwise     -> the default triplet
+ */
+private fun suggestions(
+    lang: AppLanguage,
+    severeWeather: Boolean,
+    hour: Int,
+): List<String> = when (lang) {
+    AppLanguage.GREEK -> when {
+        severeWeather -> listOf("Πώς πάω στο σπίτι υπόγεια;", "Κακοκαιρία τώρα", "Ειδοποιήσεις γραμμών")
+        hour >= 20 -> listOf("Τελευταίο M2", "Καιρός τώρα", "Πώς πάω στο σπίτι;")
+        hour < 9 -> listOf("Επόμενο M3 στο Αεροδρόμιο", "Καιρός τώρα", "Πώς πάω στο κέντρο;")
+        else -> listOf("Καιρός τώρα", "Πώς πάω στο Αεροδρόμιο;", "Τελευταίο M2")
+    }
+    AppLanguage.ALBANIAN -> when {
+        severeWeather -> listOf("Si shkoj në shtëpi nën tokë?", "Mot i keq tani", "Njoftime linjash")
+        hour >= 20 -> listOf("Treni i fundit M2", "Moti tani", "Si shkoj në shtëpi?")
+        hour < 9 -> listOf("M3 tjetër për Aeroport", "Moti tani", "Si shkoj në qendër?")
+        else -> listOf("Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2")
+    }
+    else -> when {
+        severeWeather -> listOf("How do I get home covered?", "Severe weather now", "Line alerts")
+        hour >= 20 -> listOf("Last M2", "Weather now", "How do I get home?")
+        hour < 9 -> listOf("Next M3 to Airport", "Weather now", "How do I get downtown?")
+        else -> listOf("Weather now", "How do I get to the Airport?", "Last M2")
+    }
 }
 
 @Composable
