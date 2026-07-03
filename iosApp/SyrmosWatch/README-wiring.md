@@ -41,9 +41,28 @@ the next three trains on the tracked line over `WCSession`.
 
 Because the iOS app now embeds a watch app, **building the `Syrmos - Athens Rail
 Times` scheme requires the watchOS platform installed** (Xcode → Settings →
-Components → watchOS Simulator, or build to a paired Apple Watch). CI runners
-that build the iOS scheme need the watchOS SDK **and** simulator runtime. The
-watch scheme itself builds with just the SDK.
+Components → watchOS Simulator, or build to a paired Apple Watch). The watch
+scheme itself builds with just the SDK.
+
+There is currently **no iOS-scheme CI job** in this repo (`.github/workflows`
+only builds the web bundle and refreshes seeds), so nothing is broken today. If
+an iOS CI job is added later, install the watchOS runtime before building the
+app scheme, e.g. on a macОS runner:
+
+```yaml
+- name: Install watchOS simulator runtime
+  run: xcodebuild -downloadPlatform watchOS
+# then build the iOS scheme as usual
+- name: Build iOS app (embeds watch app)
+  run: |
+    xcodebuild build \
+      -project iosApp/Syrmos.xcodeproj \
+      -scheme "Syrmos - Athens Rail Times" \
+      -destination 'generic/platform=iOS Simulator'
+```
+
+Alternatively build only the watch scheme with `-sdk watchsimulator` (SDK only,
+no runtime needed) to validate the watch code without the full embed.
 
 ## Portal (device / TestFlight only)
 
