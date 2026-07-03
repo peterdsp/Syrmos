@@ -248,12 +248,13 @@ class AssistantViewModel(
         if (solution != null) {
             val leaveLabel = solution.firstLegDepartureTime
             val slack = solution.slackMinutes
+            val transferSuffix = if (solution.legDepartures.size >= 2) transferChain(solution.legDepartures) else ""
             return botMessage(
                 when {
                     slack < 0 -> arrivalMissed(toName, arriveLabel, -slack)
-                    slack < 5 -> arrivalTightExact(fromName, leaveLabel, toName, arriveLabel, slack)
-                    slack > solution.route.totalMinutes + 45 -> arrivalEarly(fromName, leaveLabel, toName, arriveLabel, slack)
-                    else -> arrivalOkExact(fromName, leaveLabel, toName, arriveLabel, slack)
+                    slack < 5 -> arrivalTightExact(fromName, leaveLabel, toName, arriveLabel, slack) + transferSuffix
+                    slack > solution.route.totalMinutes + 45 -> arrivalEarly(fromName, leaveLabel, toName, arriveLabel, slack) + transferSuffix
+                    else -> arrivalOkExact(fromName, leaveLabel, toName, arriveLabel, slack) + transferSuffix
                 }
             )
         }
@@ -273,6 +274,31 @@ class AssistantViewModel(
                 else -> arrivalOk(fromName, leaveByLabel, toName, arriveLabel, slack)
             }
         )
+    }
+
+    /**
+     * "Transfer to the 21:19 M2 at Monastiraki" style continuation.
+     * Appended AFTER the leaveBy sentence when the trip has 2+ boardable
+     * legs, so the answer names the connections instead of leaving them
+     * as implicit "just make it work" magic.
+     */
+    private fun transferChain(legs: List<com.syrmos.core.domain.usecase.PlanByArrivalUseCase.LegDeparture>): String {
+        if (legs.size < 2) return ""
+        val lang = LocalizationManager.language.value
+        val parts = StringBuilder()
+        for (i in 1 until legs.size) {
+            val leg = legs[i]
+            val at = leg.fromStationName
+            parts.append(" ")
+            parts.append(
+                when (lang) {
+                    AppLanguage.GREEK -> "Μετάβαση στο ${leg.lineId} στις ${leg.departureTime} στον $at."
+                    AppLanguage.ALBANIAN -> "Ndrysho në ${leg.lineId} në ${leg.departureTime} te $at."
+                    else -> "Transfer to the ${leg.departureTime} ${leg.lineId} at $at."
+                }
+            )
+        }
+        return parts.toString()
     }
 
     private fun arrivalOkExact(from: String, leaveAt: String, to: String, arrive: String, slack: Int): String =
