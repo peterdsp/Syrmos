@@ -79,5 +79,10 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
             .sorted { $0.distanceMeters < $1.distanceMeters }
 
         nearbyStations = Array(sorted.prefix(5))
+
+        // Hand the fix to the widgets: their own location callback is unreliable
+        // in the extension process, so they fall back to this coordinate to
+        // resolve the nearest station and project real departures.
+        WidgetBridge.publishLocation(lat: location.coordinate.latitude, lon: location.coordinate.longitude)
     }
 }
