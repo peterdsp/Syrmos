@@ -1,0 +1,371 @@
+{
+  "packVersion": "2026-07-04",
+  "principle": "The model may choose tools and phrase answers, but every transit fact must come from tools or retrieved chunks. Do not let the model invent times, prices, station ids, service status, or routes.",
+  "toolResultPolicy": {
+    "required": "For any numeric or operational answer, call a deterministic tool first.",
+    "allowedDirectAnswers": [
+      "help",
+      "app capability explanations from RAG chunks",
+      "clarification questions",
+      "out of scope refusals"
+    ],
+    "forbiddenDirectAnswers": [
+      "next train times",
+      "last train times",
+      "fare prices",
+      "service disruption status",
+      "route feasibility",
+      "station coordinates",
+      "live positions"
+    ]
+  },
+  "tools": [
+    {
+      "name": "nextDepartures",
+      "description": "Return upcoming departures for a station and optional line filter from the deterministic schedule projector or live arrivals provider.",
+      "arguments": {
+        "stationId": {
+          "type": "string",
+          "required": true,
+          "examples": [
+            "M3_SYN",
+            "M1_PIR"
+          ]
+        },
+        "lineIds": {
+          "type": "array<string>",
+          "required": false,
+          "examples": [
+            [
+              "M3"
+            ],
+            [
+              "M3",
+              "M3_AIR"
+            ]
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 4,
+          "minimum": 1,
+          "maximum": 8
+        },
+        "dayContext": {
+          "type": "enum",
+          "required": false,
+          "values": [
+            "today",
+            "tomorrow",
+            "weekend",
+            "saturday",
+            "sunday"
+          ],
+          "default": "today"
+        },
+        "direction": {
+          "type": "enum",
+          "required": false,
+          "values": [
+            "outbound",
+            "inbound",
+            "both"
+          ]
+        }
+      },
+      "returns": {
+        "type": "array",
+        "items": {
+          "time": "HH:mm",
+          "lineId": "string",
+          "direction": "string",
+          "minutesAway": "integer",
+          "serviceType": "string",
+          "source": "live or projected"
+        }
+      },
+      "sourceImplementations": [
+        "iosApp/iosApp/Core/Schedule/ScheduleProjector.swift",
+        "core/domain/src/commonMain/kotlin/com/syrmos/core/domain/usecase/ComputeDeparturesFromBandsUseCase.kt",
+        "ops/syrmos-api/syrmos_admin/projector.py"
+      ]
+    },
+    {
+      "name": "lastTrain",
+      "description": "Return tonight's last meaningful departure at a station for a line, or null when service is continuous or over.",
+      "arguments": {
+        "stationId": {
+          "type": "string",
+          "required": true
+        },
+        "lineId": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "returns": {
+        "time": "HH:mm or null",
+        "lineId": "string",
+        "direction": "string",
+        "reasonWhenNull": "continuous_service, service_over, or data_unavailable"
+      },
+      "sourceImplementations": [
+        "iosApp/iosApp/Core/Schedule/ScheduleProjector.swift",
+        "ops/syrmos-api/migrations/0017_last_train_endpoints.sql"
+      ]
+    },
+    {
+      "name": "planRoute",
+      "description": "Plan a station to station rail journey using the station graph and deterministic travel-time weights.",
+      "arguments": {
+        "fromStationId": {
+          "type": "string",
+          "required": true
+        },
+        "toStationId": {
+          "type": "string",
+          "required": true
+        },
+        "lowExposure": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        }
+      },
+      "returns": {
+        "legs": "array of lineId, toStationName, stops, minutes",
+        "totalMinutes": "integer",
+        "transfers": "integer",
+        "exposure": "sheltered, mixed, or exposed"
+      },
+      "sourceImplementations": [
+        "iosApp/iosApp/Features/Assistant/JourneyPlanner.swift",
+        "core/domain/src/commonMain/kotlin/com/syrmos/core/domain/usecase/PlanJourneyUseCase.kt"
+      ]
+    },
+    {
+      "name": "planRouteByArrival",
+      "description": "Plan backwards from a target arrival time and return latest reasonable departure with slack.",
+      "arguments": {
+        "fromStationId": {
+          "type": "string",
+          "required": true
+        },
+        "toStationId": {
+          "type": "string",
+          "required": true
+        },
+        "arriveByAthensMinutes": {
+          "type": "integer",
+          "required": false
+        },
+        "inMinutesFromNow": {
+          "type": "integer",
+          "required": false
+        }
+      },
+      "returns": {
+        "leaveBy": "HH:mm",
+        "arriveBy": "HH:mm",
+        "slackMinutes": "integer",
+        "status": "ok, tight, missed, early"
+      },
+      "sourceImplementations": [
+        "iosApp/iosApp/Features/Assistant/AriadneModel.swift"
+      ]
+    },
+    {
+      "name": "fareInfo",
+      "description": "Return applicable fare products and official operator links. Airport fares are derived from explicit airport intent or endpoint stations.",
+      "arguments": {
+        "airport": {
+          "type": "boolean",
+          "required": false
+        },
+        "fromStationId": {
+          "type": "string",
+          "required": false
+        },
+        "toStationId": {
+          "type": "string",
+          "required": false
+        },
+        "language": {
+          "type": "enum",
+          "values": [
+            "en",
+            "el",
+            "sq"
+          ],
+          "required": false
+        }
+      },
+      "returns": {
+        "products": "array of title, fullPriceEur, discountedPriceEur, validity, notes, sourceUrl",
+        "infoLinks": "array"
+      },
+      "sourceData": [
+        "schedules-v2/fares.json"
+      ]
+    },
+    {
+      "name": "serviceAlerts",
+      "description": "Return active service alerts, optionally filtered to one line.",
+      "arguments": {
+        "lineId": {
+          "type": "string",
+          "required": false
+        },
+        "language": {
+          "type": "enum",
+          "values": [
+            "en",
+            "el",
+            "sq"
+          ],
+          "required": false
+        }
+      },
+      "returns": {
+        "status": "normal or alert",
+        "announcements": "array of title, summary, severity, affectedLines, validFrom, validUntil, url"
+      },
+      "sourceData": [
+        "schedules-v2/announcements.json",
+        "/api/announcements"
+      ]
+    },
+    {
+      "name": "nearestStation",
+      "description": "Return nearest station records from device location. This requires local location permission and must stay on-device.",
+      "arguments": {
+        "latitude": {
+          "type": "number",
+          "required": true
+        },
+        "longitude": {
+          "type": "number",
+          "required": true
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 5
+        }
+      },
+      "returns": {
+        "stations": "array of stationId, name, lineIds, distanceMeters"
+      },
+      "sourceImplementations": [
+        "core/domain/src/commonMain/kotlin/com/syrmos/core/domain/usecase/FindNearestStationUseCase.kt",
+        "iosApp/iosApp/Core/Location/LocationService.swift"
+      ]
+    },
+    {
+      "name": "searchStation",
+      "description": "Search station names and aliases in English, Greek, Albanian, and Greeklish-normalized forms.",
+      "arguments": {
+        "query": {
+          "type": "string",
+          "required": true
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 5
+        }
+      },
+      "returns": {
+        "matches": "array of stationId, name, nameEl, lineIds, score"
+      },
+      "sourceData": [
+        "stations.json",
+        "schedules-v2/lines.json"
+      ]
+    },
+    {
+      "name": "lineInfo",
+      "description": "Return line metadata, terminals, station order, mode, color, and display data.",
+      "arguments": {
+        "lineId": {
+          "type": "string",
+          "required": true
+        },
+        "language": {
+          "type": "enum",
+          "values": [
+            "en",
+            "el",
+            "sq"
+          ],
+          "required": false
+        }
+      },
+      "returns": {
+        "line": "object",
+        "stations": "array",
+        "display": "object"
+      },
+      "sourceData": [
+        "schedules-v2/lines.json",
+        "schedules-v2/line-display.json"
+      ]
+    },
+    {
+      "name": "weatherAtStation",
+      "description": "Return cached or refreshed weather near a station. If unavailable offline, ask user to retry online.",
+      "arguments": {
+        "stationId": {
+          "type": "string",
+          "required": false
+        },
+        "latitude": {
+          "type": "number",
+          "required": false
+        },
+        "longitude": {
+          "type": "number",
+          "required": false
+        }
+      },
+      "returns": {
+        "temperatureC": "number",
+        "apparentC": "number",
+        "condition": "string",
+        "fetchedAt": "ISO-8601"
+      },
+      "sourceImplementations": [
+        "iosApp/iosApp/Core/Networking/WeatherStore.swift"
+      ]
+    },
+    {
+      "name": "openMap",
+      "description": "Navigate the app UI to the map, optionally focusing a station. This is an action, not a fact answer.",
+      "arguments": {
+        "stationId": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "returns": {
+        "didOpen": "boolean",
+        "focusedStationId": "string or null"
+      }
+    },
+    {
+      "name": "toggleFavorite",
+      "description": "Add or remove a station from favorites using local app storage.",
+      "arguments": {
+        "stationId": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "returns": {
+        "stationId": "string",
+        "isFavorite": "boolean"
+      }
+    }
+  ]
+}

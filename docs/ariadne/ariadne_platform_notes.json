@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-07-04T15:27:19.140978+00:00",
+  "platforms": [
+    {
+      "platform": "Apple Foundation Models",
+      "status": "Best fit for iOS selected devices.",
+      "useForAriadne": "Guided generation into AriadneIntent and tool calling into local Swift functions. Keep current parser as fallback.",
+      "sourceLinks": [
+        "https://developer.apple.com/documentation/foundationmodels",
+        "https://developer.apple.com/documentation/foundationmodels/expanding-generation-with-tool-calling",
+        "https://developer.apple.com/documentation/foundationmodels/tool",
+        "https://developer.apple.com/videos/play/wwdc2025/286/",
+        "https://developer.apple.com/videos/play/wwdc2025/301/"
+      ]
+    },
+    {
+      "platform": "Android Gemini Nano through ML Kit GenAI Prompt API or AICore-backed APIs",
+      "status": "Fit for selected Android devices with Gemini Nano support.",
+      "useForAriadne": "Prompt the model to emit validated JSON intent, then call Kotlin tools. For tool calling on local models, evaluate Google AI Edge Function Calling where device and app constraints fit.",
+      "sourceLinks": [
+        "https://developer.android.com/ai/gemini-nano",
+        "https://developers.google.com/ml-kit/genai",
+        "https://developers.google.com/ml-kit/genai/prompt/android",
+        "https://developer.android.com/blog/posts/ml-kit-s-prompt-api-unlock-custom-on-device-gemini-nano-experiences",
+        "https://developers.google.com/edge/mediapipe/solutions/genai/function_calling/android"
+      ]
+    },
+    {
+      "platform": "Samsung Galaxy AI and Samsung on-device AI stack",
+      "status": "Treat Samsung phones as Android devices unless a public Galaxy AI app tool interface is added to the project.",
+      "useForAriadne": "Use the Android/Gemini Nano or generic local model path on Samsung hardware. Samsung Neural SDK and Exynos AI Studio are lower-level model execution or toolchain options, not a drop-in Ariadne assistant API in this repo.",
+      "sourceLinks": [
+        "https://developer.samsung.com/neural/overview.html",
+        "https://semiconductor.samsung.com/news-events/tech-blog/unpacking-samsungs-comprehensive-on-device-ai-sdk-toolchain-strategy/",
+        "https://semiconductor.samsung.com/technologies/processor/on-device-ai/"
+      ]
+    }
+  ]
+}

@@ -82,6 +82,7 @@
 		DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* DataFreshness.swift */; };
 		DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */; };
 		DA7A0011F00D0011F00D0011 /* AriadneParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0012F00D0012F00D0012 /* AriadneParser.swift */; };
+		DA7A0A16F00D0A16F00D0A16 /* AriadneGuided.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0A17F00D0A17F00D0A17 /* AriadneGuided.swift */; };
 		DA7A0013F00D0013F00D0013 /* AriadneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0014F00D0014F00D0014 /* AriadneModel.swift */; };
 		DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* AriadneView.swift */; };
 		DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */; };
@@ -242,6 +243,7 @@
 		DA7A0002F00D0002F00D0002 /* DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeFeaturesTests.swift; sourceTree = "<group>"; };
 		DA7A0012F00D0012F00D0012 /* AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0A17F00D0A17F00D0A17 /* AriadneGuided.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneGuided.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0014F00D0014F00D0014 /* AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0016F00D0016F00D0016 /* AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AriadneParserTests.swift; sourceTree = "<group>"; };
@@ -567,6 +569,7 @@
 			children = (
 				AAAA111111111111111111B2 /* OnboardingView.swift */,
 				DA7A0012F00D0012F00D0012 /* AriadneParser.swift */,
+				DA7A0A17F00D0A17F00D0A17 /* AriadneGuided.swift */,
 				DA7A0014F00D0014F00D0014 /* AriadneModel.swift */,
 				DA7A0016F00D0016F00D0016 /* AriadneView.swift */,
 				DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */,
@@ -837,6 +840,7 @@
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
 				AAAA111111111111111111B1 /* OnboardingView.swift in Sources */,
 				DA7A0011F00D0011F00D0011 /* AriadneParser.swift in Sources */,
+				DA7A0A16F00D0A16F00D0A16 /* AriadneGuided.swift in Sources */,
 				DA7A0013F00D0013F00D0013 /* AriadneModel.swift in Sources */,
 				DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */,
 				DA7A0130F00D0130F00D0130 /* JourneyPlanner.swift in Sources */,
