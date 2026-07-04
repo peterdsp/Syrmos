@@ -2456,10 +2456,29 @@
             return pool[Math.floor(Math.random() * pool.length)];
         }
 
+        // Web "cleverer than dummy" tier: append an explanatory RAG chunk to an
+        // answer. The deterministic engine still produces every fact; retrieval
+        // only adds context (line overview, fare rules, capabilities). Gated to
+        // English because the pack's chunks are English and the EL/SQ answers are
+        // already fully localized, so we never mix languages.
+        function ragEnrich(baseText, opts) {
+            if (currentLang !== "en" || !window.SyrmosAriadneRAG) return baseText;
+            try {
+                let chunk = null;
+                if (opts.id) chunk = window.SyrmosAriadneRAG.byId(opts.id);
+                if (!chunk && opts.query) {
+                    const hits = window.SyrmosAriadneRAG.retrieve(opts.query, { types: opts.types || null, k: 1 });
+                    chunk = hits[0] || null;
+                }
+                if (chunk && chunk.text) return baseText + "\n\n" + chunk.text;
+            } catch (e) { /* retrieval is best-effort; never break an answer */ }
+            return baseText;
+        }
+
         function respond(intent) {
             switch (intent.kind) {
                 case "help":
-                    return { text: window.SyrmosAriadne.help(currentLang) };
+                    return { text: ragEnrich(window.SyrmosAriadne.help(currentLang), { id: "capabilities_current" }) };
                 case "outOfScope":
                     return { text: window.SyrmosAriadne.outOfScope(currentLang) };
                 case "needsClarification":
@@ -2675,16 +2694,15 @@
                 case "explainLine": {
                     const line = lineById(intent.lineId);
                     if (!line) return { text: t("ariadne_no_station") };
-                    return {
-                        text: t("ariadne_line", {
-                            id: line.id,
-                            a: line.terminalA || line.terminal_a || "",
-                            b: line.terminalB || line.terminal_b || "",
-                        }),
-                    };
+                    const base = t("ariadne_line", {
+                        id: line.id,
+                        a: line.terminalA || line.terminal_a || "",
+                        b: line.terminalB || line.terminal_b || "",
+                    });
+                    return { text: ragEnrich(base, { id: "line_" + String(intent.lineId).split("_")[0], query: intent.lineId + " line overview", types: ["line"] }) };
                 }
                 case "explainFare":
-                    return { text: t("ariadne_fare") };
+                    return { text: ragEnrich(t("ariadne_fare"), { query: "ticket validation fare price airport points of supply", types: ["fare_info", "fare"] }) };
                 case "find":
                     return { text: t("ariadne_no_station") };
                 default:

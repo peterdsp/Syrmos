@@ -18,7 +18,7 @@ import kotlin.math.abs
  * "Σύνταγμα", "syntagma" and "Πλατεία Συντάγματος" all resolve.
  */
 class AthensTransitParser(
-    private val vocabulary: AssistantVocabulary,
+    val vocabulary: AssistantVocabulary,
 ) {
     fun parse(rawInput: String): AssistantIntent {
         val text = fold(rawInput)

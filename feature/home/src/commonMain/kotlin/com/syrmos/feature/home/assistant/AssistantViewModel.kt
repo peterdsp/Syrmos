@@ -13,8 +13,10 @@ import com.syrmos.core.domain.assistant.Exposure
 import com.syrmos.core.domain.assistant.StationComfort
 import com.syrmos.core.domain.assistant.AssistantIntent
 import com.syrmos.core.domain.assistant.AssistantQueryNormalizer
+import com.syrmos.core.domain.assistant.AssistantClassifier
 import com.syrmos.core.domain.assistant.AssistantVocabularyBuilder
 import com.syrmos.core.domain.assistant.NoOpQueryNormalizer
+import com.syrmos.core.domain.assistant.NoOpAssistantClassifier
 import com.syrmos.core.domain.assistant.AthensTransitParser
 import com.syrmos.core.domain.assistant.DayContext
 import com.syrmos.core.domain.assistant.DayContextResolver
@@ -94,6 +96,12 @@ class AssistantViewModel(
      * an Android build can inject a Gemini Nano-backed normalizer here.
      */
     private val queryNormalizer: AssistantQueryNormalizer = NoOpQueryNormalizer,
+    /**
+     * Optional on-device LLM classifier (clever tier). No-op by default (rule
+     * parser only); an Android build injects a Gemini Nano-backed classifier.
+     * When it grounds an intent we skip the rule parser; otherwise we fall back.
+     */
+    private val assistantClassifier: AssistantClassifier = NoOpAssistantClassifier,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(AssistantUiState())
@@ -147,10 +155,11 @@ class AssistantViewModel(
             it.copy(messages = it.messages + userMessage(text), thinking = true)
         }
         scope.launch {
-            // On-device LLM (when supplied) rewrites fuzzy input; the
-            // deterministic parser still classifies and validates it.
-            val cleaned = queryNormalizer.normalize(text) ?: text
-            val raw = p.parse(cleaned)
+            // Clever tier: when an on-device classifier (Gemini Nano) is present
+            // and can ground the message, use its intent directly. Otherwise fall
+            // back to normalizing fuzzy input and running the deterministic parser.
+            val raw = assistantClassifier.classify(text, p.vocabulary)
+                ?: p.parse(queryNormalizer.normalize(text) ?: text)
             val intent = mergePendingIfApplicable(raw)
             // Update pending state before we resolve, so the answer's
             // side effects can rely on it being fresh.

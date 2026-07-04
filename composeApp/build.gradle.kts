@@ -77,6 +77,7 @@ kotlin {
             // Ariadne query normalizer. Runtime-gated to capable devices;
             // falls back to the deterministic parser everywhere else.
             implementation(libs.mlkit.genai.proofreading)
+            implementation(libs.mlkit.genai.prompt)
             implementation(libs.kotlinx.coroutines.guava)
         }
     }
