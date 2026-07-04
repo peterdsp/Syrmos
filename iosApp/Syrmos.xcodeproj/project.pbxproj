@@ -108,6 +108,7 @@
 		EDBF9D088F0A46CF90DFAE6B /* DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* DataFreshness.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
 		F4782265512D005F30B45158 /* SyrmosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = E06C2DD61C7CF787E212BA8B /* SyrmosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F547F60AEDEF7EE113E77B7B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8FAA054C866F04CB39A4C07 /* Assets.xcassets */; };
 		FAB11EB401D5464F9E009564 /* SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */; };
 		FFDDCB33EB8ADA0BA119A64C /* WatchConnectivityProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */; };
 /* End PBXBuildFile section */
@@ -229,6 +230,7 @@
 		BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuburbanProjectionTests.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Localization/Localization.swift; sourceTree = SOURCE_ROOT; };
 		C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosLinesService.swift; sourceTree = SOURCE_ROOT; };
+		C8FAA054C866F04CB39A4C07 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = SyrmosWatch/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Shared/StationMapSheet.swift; sourceTree = SOURCE_ROOT; };
 		CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchConnectivityProvider.swift; sourceTree = SOURCE_ROOT; };
 		D0EB6C1444B246B3AB9CF185 /* StationStripFull.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripFull.swift; sourceTree = SOURCE_ROOT; };
@@ -597,6 +599,7 @@
 				2142917C53758AAD7F295055 /* Info.plist */,
 				FF201314EADCD2EA1936941F /* Complications-Info.plist */,
 				5D9C5B3E2DBBAEE20B9A9364 /* SyrmosWatch.entitlements */,
+				C8FAA054C866F04CB39A4C07 /* Assets.xcassets */,
 			);
 			name = SyrmosWatch;
 			path = SyrmosWatch;
@@ -775,6 +778,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F547F60AEDEF7EE113E77B7B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -966,6 +970,7 @@
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 100;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SyrmosWatch/Complications-Info.plist";
@@ -1113,6 +1118,7 @@
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 100;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SyrmosWatch/Info.plist;
@@ -1133,6 +1139,7 @@
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 100;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SyrmosWatch/Complications-Info.plist";
@@ -1297,6 +1304,7 @@
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 100;
+				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SyrmosWatch/Info.plist;
