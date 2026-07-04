@@ -246,10 +246,41 @@ enum ScheduleProjector {
         lineIds: [String],
         maxLookaheadMinutes: Int = 12 * 60
     ) -> Departure? {
+        // On 24h / overnight service days (e.g. metro M2 and M3 on Saturday
+        // night into Sunday morning) trains run continuously past midnight, so
+        // there is no meaningful "last train, leave by X" to rush for. The
+        // same-day projection would otherwise report an early evening slot
+        // (e.g. 00:10) as the "last train" because it treats the overnight
+        // band's post-midnight times as already passed. Surface nothing in
+        // that case rather than a misleading time.
+        if isOvernightServiceToday(lineIds: lineIds) { return nil }
         let all = nextDepartures(for: stationId, lineIds: lineIds, limit: 400)
         return all
             .filter { $0.minutesAway >= 0 && $0.minutesAway <= maxLookaheadMinutes }
             .max { $0.minutesAway < $1.minutesAway }
+    }
+
+    /// True when any of [lineIds] runs 24h / overnight today (the day's rule is
+    /// `is247`, or its close time is at or before its open time, meaning the
+    /// service window wraps past midnight).
+    static func isOvernightServiceToday(lineIds: [String]) -> Bool {
+        let bundles = SyrmosSchedulesStore.shared.service.bundles
+        guard !bundles.isEmpty else { return false }
+        let athens = TimeZone(identifier: "Europe/Athens")!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = athens
+        let comp = cal.dateComponents([.month, .day, .weekday], from: Date())
+        let holiday = resolveHolidayDayType(month: comp.month ?? 1, day: comp.day ?? 1)
+        let dt = dayType(for: comp.weekday ?? 1, holiday: holiday)
+        for lineId in lineIds {
+            guard let bundle = bundles[lineId],
+                  let rule = bundle.rules.first(where: { $0.dayType == dt }) else { continue }
+            if rule.is247 { return true }
+            if let openM = minutesOfDay(rule.openTime),
+               let closeM = minutesOfDay(rule.closeTime),
+               closeM <= openM { return true }
+        }
+        return false
     }
 
     // MARK: - Airport-focused full-day projection

@@ -115,6 +115,30 @@ class ComputeDeparturesFromBandsUseCase(
     }
 
     /**
+     * True when any of [lineIds] runs 24h / overnight today: the day's rule is
+     * `is247`, or its close time is at or before its open time (the service
+     * window wraps past midnight, e.g. metro M2 and M3 on Saturday). Used to
+     * suppress a misleading "last train tonight" on nights when trains never
+     * actually stop.
+     */
+    fun isOvernightServiceToday(lineIds: List<String>): Boolean {
+        val bundles = scheduleSync.lineBundles.value
+        if (bundles.isEmpty()) return false
+        val zone = TimeZone.of("Europe/Athens")
+        val today = Clock.System.now().toLocalDateTime(zone).date
+        val dayType = dayTypeFor(today, resolveHolidayDayType(today))
+        for (lineId in lineIds) {
+            val bundle = bundles[lineId] ?: continue
+            val rule = bundle.rules.firstOrNull { it.dayType == dayType } ?: continue
+            if (rule.is247) return true
+            val openMin = rule.openTime.toMinutesOfDay()
+            val closeMin = rule.closeTime.toMinutesOfDay()
+            if (openMin != null && closeMin != null && closeMin <= openMin) return true
+        }
+        return false
+    }
+
+    /**
      * Projects a whole future service day from 00:00, for the assistant's
      * "this weekend / tomorrow / Saturday" questions. [dayOffset] is days from
      * today (0 = today from midnight). Returns the day's earliest [limit]

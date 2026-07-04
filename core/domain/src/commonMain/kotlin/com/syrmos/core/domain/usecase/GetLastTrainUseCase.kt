@@ -38,6 +38,11 @@ class GetLastTrainUseCase(
         direction: Direction,
         maxLookaheadMinutes: Int = 12 * 60,
     ): LastTrain? {
+        // On 24h / overnight service days (e.g. metro M2 and M3 on Saturday
+        // night into Sunday) trains run continuously past midnight, so there is
+        // no meaningful "last train, leave by X" — surface nothing rather than
+        // a misleading early time.
+        if (bandProjector.isOvernightServiceToday(listOf(lineId))) return null
         val lineIds = if (lineId == "M3") listOf("M3", "M3_AIR") else listOf(lineId)
         val projected = bandProjector.invoke(
             lineIds = lineIds,
