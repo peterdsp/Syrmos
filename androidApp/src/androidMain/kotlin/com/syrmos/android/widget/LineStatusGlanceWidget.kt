@@ -8,6 +8,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
@@ -33,6 +34,11 @@ import com.syrmos.android.MainActivity
  */
 class LineStatusGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val appWidgetId = GlanceAppWidgetManager(context).appWidgetIdOrZero(id)
+        val lineFilter = WidgetConfigStore.read(context, appWidgetId).line
+        val lines = if (lineFilter == null) AndroidLineTokens.allLines
+            else AndroidLineTokens.allLines.filter { AndroidLineTokens.normalize(it) == AndroidLineTokens.normalize(lineFilter) }
+                .ifEmpty { AndroidLineTokens.allLines }
         provideContent {
             GlanceTheme {
                 Column(
@@ -47,7 +53,7 @@ class LineStatusGlanceWidget : GlanceAppWidget() {
                         style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp),
                         modifier = GlanceModifier.padding(bottom = 8.dp),
                     )
-                    AndroidLineTokens.allLines.forEach { line ->
+                    lines.forEach { line ->
                         Row(
                             modifier = GlanceModifier.fillMaxWidth().padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,

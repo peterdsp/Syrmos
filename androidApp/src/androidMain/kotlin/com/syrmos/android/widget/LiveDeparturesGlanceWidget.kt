@@ -8,6 +8,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -29,7 +30,8 @@ import com.syrmos.android.MainActivity
  */
 class LiveDeparturesGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val snapshot = SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() } ?: BundledFallback.snapshot()
+        val appWidgetId = GlanceAppWidgetManager(context).appWidgetIdOrZero(id)
+        val snapshot = WidgetProjection.snapshotFor(context, appWidgetId)
         provideContent {
             GlanceTheme {
                 Column(
