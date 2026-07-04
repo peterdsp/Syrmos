@@ -20,6 +20,19 @@ enum WidgetBridge {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Publish the device's last known coordinate so the widgets can resolve the
+    /// nearest station even when their own CLLocationManager returns nothing. A
+    /// widget extension runs off the main run loop and frequently gets no fix, so
+    /// the app (which does have a reliable fix) hands its coordinate across the
+    /// App Group; the widget falls back to it and still projects real departures.
+    static func publishLocation(lat: Double, lon: Double) {
+        guard let d = defaults else { return }
+        d.set(lat, forKey: "loc.lat")
+        d.set(lon, forKey: "loc.lon")
+        d.set(Date().timeIntervalSince1970, forKey: "loc.ts")
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Publish up to four service-alert titles for the widget's alerts column.
     static func publishAlerts(_ titles: [String]) {
         guard let d = defaults else { return }
