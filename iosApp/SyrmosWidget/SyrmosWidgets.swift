@@ -39,13 +39,14 @@ enum WLoc {
     }
 }
 
-// The widgets use StaticConfiguration (nearest-station mode) rather than an
-// AppIntentConfiguration. An earlier AppIntentConfiguration version failed at
-// runtime — WidgetKit could not reconstruct the configuration intent ("No
-// AppIntent in timeline(for:with:)"), so the timeline provider was never called
-// and every widget showed only the redacted placeholder, on device and in the
-// simulator alike. StaticConfiguration removes that intent dependency entirely,
-// so the provider always runs and the widget renders real departures.
+// The widgets use AppIntentConfiguration so long-pressing shows "Edit Widget"
+// (nearest station by default, or a pinned station, plus an optional line
+// filter). An earlier attempt at this showed the redacted placeholder forever
+// because the App Intents metadata (Metadata.appintents) was never extracted for
+// the extension, so WidgetKit could not reconstruct the configuration intent
+// ("No AppIntent in timeline(for:with:)"). That extraction is now verified to
+// ship inside the .appex; combined with the WidgetLocation hang fix and the App
+// Group coordinate fallback, the provider always runs and renders real data.
 
 // MARK: - One-shot widget location (2s hard timeout)
 
@@ -145,41 +146,104 @@ struct SyrmosEntry: TimelineEntry {
     let alerts: [String]
 }
 
+// MARK: - Configuration intent
+//
+// Each widget is an AppIntentConfiguration, so long-pressing it shows "Edit
+// Widget" with these options: keep the nearest station (default) or pin a
+// specific station, and optionally filter to a single line. Personalization
+// is per widget instance, so two Next Train widgets can track two stations.
+
+@available(iOS 17.0, *)
+struct StationEntity: AppEntity, Identifiable {
+    let id: String
+    let name: String
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Station")
+    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
+    static var defaultQuery = StationQuery()
+}
+
+@available(iOS 17.0, *)
+struct StationQuery: EntityQuery {
+    func entities(for identifiers: [String]) async throws -> [StationEntity] {
+        StationCoords.allStations
+            .filter { identifiers.contains($0.id) }
+            .map { StationEntity(id: $0.id, name: $0.name) }
+    }
+    func suggestedEntities() async throws -> [StationEntity] {
+        // StationCoords has one node per line, so an interchange appears several
+        // times. Show each station name once (keeping the first node's id) so the
+        // Edit Widget picker isn't cluttered with duplicates.
+        var seen = Set<String>()
+        return StationCoords.allStations
+            .sorted { $0.name < $1.name }
+            .compactMap { s in
+                guard seen.insert(s.name).inserted else { return nil }
+                return StationEntity(id: s.id, name: s.name)
+            }
+    }
+}
+
+@available(iOS 17.0, *)
+struct LineEntity: AppEntity, Identifiable {
+    let id: String
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Line")
+    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(id)") }
+    static var defaultQuery = LineQuery()
+}
+
+@available(iOS 17.0, *)
+struct LineQuery: EntityQuery {
+    func entities(for identifiers: [String]) async throws -> [LineEntity] {
+        SyrmosLineTokens.allLines.filter { identifiers.contains($0) }.map { LineEntity(id: $0) }
+    }
+    func suggestedEntities() async throws -> [LineEntity] {
+        SyrmosLineTokens.allLines.map { LineEntity(id: $0) }
+    }
+}
+
+@available(iOS 17.0, *)
+struct SyrmosWidgetConfigurationIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "Syrmos"
+    static var description = IntentDescription("Pick your station and line, or use the nearest station automatically.")
+
+    @Parameter(title: "Use nearest station", default: true)
+    var useNearestStation: Bool
+
+    @Parameter(title: "Station")
+    var station: StationEntity?
+
+    @Parameter(title: "Only this line")
+    var line: LineEntity?
+}
+
 // MARK: - Provider
 
 @available(iOS 17.0, *)
-struct SyrmosProvider: TimelineProvider {
+struct SyrmosProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SyrmosEntry { Self.sample }
 
-    func getSnapshot(in context: Context, completion: @escaping (SyrmosEntry) -> Void) {
-        // The widget gallery preview should show something immediately.
-        if context.isPreview {
-            completion(Self.sample)
-        } else {
-            Task { completion(await entry()) }
-        }
+    func snapshot(for configuration: SyrmosWidgetConfigurationIntent, in context: Context) async -> SyrmosEntry {
+        context.isPreview ? Self.sample : await entry(for: configuration)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SyrmosEntry>) -> Void) {
-        Task {
-            let e = await entry()
-            let next = Calendar.current.date(byAdding: .minute, value: 5, to: .now) ?? .now.addingTimeInterval(300)
-            completion(Timeline(entries: [e], policy: .after(next)))
-        }
+    func timeline(for configuration: SyrmosWidgetConfigurationIntent, in context: Context) async -> Timeline<SyrmosEntry> {
+        let e = await entry(for: configuration)
+        let next = Calendar.current.date(byAdding: .minute, value: 5, to: .now) ?? .now.addingTimeInterval(300)
+        return Timeline(entries: [e], policy: .after(next))
     }
 
-    /// Nearest-station entry. No per-widget configuration: the widget always
-    /// tracks the station closest to the device (bounded by the 2s location
-    /// timeout), falling back to an empty entry when there is no fix.
-    private func entry() async -> SyrmosEntry {
+    /// Builds the entry for the user's Edit Widget configuration. Nearest mode
+    /// (the default) tracks the closest station, falling back to the app's
+    /// published coordinate when the widget process has no fix; otherwise it
+    /// shows the pinned station. An optional line filter narrows the rows.
+    private func entry(for configuration: SyrmosWidgetConfigurationIntent) async -> SyrmosEntry {
         await MainActor.run { _ = SyrmosSchedulesStore.shared }
-        // Prefer the widget's own fix, but fall back to the coordinate the app
-        // published to the App Group (the extension often gets no fix of its
-        // own). This is why the widget renders real departures on device even
-        // when its CLLocationManager stays silent.
+        // Best-known location: the widget's own fix, else the coordinate the app
+        // published to the App Group (the extension often gets no fix of its own).
         let location = await WidgetLocation().current() ?? cachedLocation()
-        let station = location.flatMap { nearest(to: $0) }
+        let station = resolveStation(configuration, location: location)
         let nearby = nearbyStations(from: location)
+        let lineFilter = configuration.line?.id
 
         guard let station else {
             widgetLog.error("no station resolved (no location fix)")
@@ -187,13 +251,30 @@ struct SyrmosProvider: TimelineProvider {
                                lastTrain: nil, nearby: nearby, statuses: lineStatuses(),
                                weather: cachedWeather(), alerts: cachedAlerts())
         }
-        let rows = await MainActor.run { departureRows(for: station) }
-        let last = await MainActor.run { lastTrainString(for: station) }
-        let stops = routeStops(for: station)
+        let rows = await MainActor.run { departureRows(for: station, lineFilter: lineFilter) }
+        let last = await MainActor.run { lastTrainString(for: station, lineFilter: lineFilter) }
+        let stops = routeStops(for: station, lineFilter: lineFilter)
         widgetLog.debug("entry ready: \(station.name, privacy: .public), \(rows.count) rows")
         return SyrmosEntry(date: .now, stationName: station.name, rows: rows, routeStops: stops,
                            lastTrain: last, nearby: nearby, statuses: lineStatuses(),
                            weather: cachedWeather(), alerts: cachedAlerts())
+    }
+
+    /// The station to show: the user's pinned pick when nearest mode is off,
+    /// otherwise the nearest station to the best-known location.
+    private func resolveStation(_ configuration: SyrmosWidgetConfigurationIntent, location: CLLocation?) -> TransitStation? {
+        if !configuration.useNearestStation, let id = configuration.station?.id,
+           let picked = StationCoords.allStations.first(where: { $0.id == id }) {
+            return picked
+        }
+        return location.flatMap { nearest(to: $0) }
+    }
+
+    /// The lines to project for a station, narrowed to the configured line when
+    /// the station actually serves it (otherwise the filter is ignored).
+    private func effectiveLines(for station: TransitStation, lineFilter: String?) -> [String] {
+        if let lf = lineFilter, station.lineIds.contains(lf) { return [lf] }
+        return station.lineIds
     }
 
     /// The app's last known coordinate from the shared App Group, or nil if the
@@ -243,15 +324,16 @@ struct SyrmosProvider: TimelineProvider {
     }
 
     @MainActor
-    private func departureRows(for station: TransitStation, limit: Int = 5) -> [WRow] {
+    private func departureRows(for station: TransitStation, limit: Int = 5, lineFilter: String? = nil) -> [WRow] {
+        let lineIds = effectiveLines(for: station, lineFilter: lineFilter)
         var deps = ScheduleProjector.nextDepartures(
-            for: station.id, lineIds: station.lineIds, limit: 20, timeHorizonMinutes: 6 * 60
+            for: station.id, lineIds: lineIds, limit: 20, timeHorizonMinutes: 6 * 60
         )
         if deps.isEmpty && SyrmosSchedulesStore.shared.service.bundles.isEmpty {
-            deps = SyrmosData.sampleDepartures(for: station.id, lineIds: station.lineIds)
+            deps = SyrmosData.sampleDepartures(for: station.id, lineIds: lineIds)
         }
         let isAirport: (Departure) -> Bool = { $0.serviceType == "airport" || $0.lineId == "M3_AIR" }
-        if station.lineIds.contains("M3") {
+        if lineIds.contains("M3") {
             var out = deps.filter { !isAirport($0) }.prefix(limit - 1).map { dep in
                 WRow(lineId: SyrmosLineTokens.label(for: dep.lineId), destination: dep.direction,
                      minutesAway: dep.minutesAway, time: dep.time, isAirport: false)
@@ -269,14 +351,14 @@ struct SyrmosProvider: TimelineProvider {
     }
 
     @MainActor
-    private func lastTrainString(for station: TransitStation) -> String? {
-        guard let line = station.lineIds.first,
+    private func lastTrainString(for station: TransitStation, lineFilter: String? = nil) -> String? {
+        guard let line = effectiveLines(for: station, lineFilter: lineFilter).first,
               let last = ScheduleProjector.lastTrainTonight(for: station.id, lineIds: [line]) else { return nil }
         return last.time
     }
 
-    private func routeStops(for station: TransitStation) -> [String] {
-        guard let line = station.lineIds.first else { return [] }
+    private func routeStops(for station: TransitStation, lineFilter: String? = nil) -> [String] {
+        guard let line = effectiveLines(for: station, lineFilter: lineFilter).first else { return [] }
         let names = SyrmosData.stations(for: line).map { $0.name }
         guard let idx = names.firstIndex(of: station.name) else { return Array(names.prefix(5)) }
         // A short window centered on the current station, max 5 dots (no scroll).
@@ -593,7 +675,7 @@ struct TrioView: View {
 @available(iOS 17.0, *)
 struct NextTrainWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "SyrmosNextTrain", provider: SyrmosProvider()) { entry in
+        AppIntentConfiguration(kind: "SyrmosNextTrain", intent: SyrmosWidgetConfigurationIntent.self, provider: SyrmosProvider()) { entry in
             NextTrainView(entry: entry).syrmosWidgetContainer(accent: SyrmosLineTokens.color(for: entry.rows.first?.lineId ?? "M3"))
         }
         .configurationDisplayName("Next Train")
@@ -605,7 +687,7 @@ struct NextTrainWidget: Widget {
 @available(iOS 17.0, *)
 struct LiveDeparturesWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "SyrmosLiveDepartures", provider: SyrmosProvider()) { entry in
+        AppIntentConfiguration(kind: "SyrmosLiveDepartures", intent: SyrmosWidgetConfigurationIntent.self, provider: SyrmosProvider()) { entry in
             LiveDeparturesView(entry: entry).syrmosWidgetContainer(accent: SyrmosLineTokens.color(for: entry.rows.first?.lineId ?? "M3"))
         }
         .configurationDisplayName("Live Departures")
@@ -617,7 +699,7 @@ struct LiveDeparturesWidget: Widget {
 @available(iOS 17.0, *)
 struct NearMeWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "SyrmosNearMe", provider: SyrmosProvider()) { entry in
+        AppIntentConfiguration(kind: "SyrmosNearMe", intent: SyrmosWidgetConfigurationIntent.self, provider: SyrmosProvider()) { entry in
             NearMeView(entry: entry).syrmosWidgetContainer(accent: SyrmosLineTokens.color(for: "M3"))
         }
         .configurationDisplayName("Near Me")
@@ -629,7 +711,7 @@ struct NearMeWidget: Widget {
 @available(iOS 17.0, *)
 struct AllLinesStatusWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "SyrmosAllLines", provider: SyrmosProvider()) { entry in
+        AppIntentConfiguration(kind: "SyrmosAllLines", intent: SyrmosWidgetConfigurationIntent.self, provider: SyrmosProvider()) { entry in
             AllLinesStatusView(entry: entry).syrmosWidgetContainer(accent: SyrmosLineTokens.color(for: "M2"))
         }
         .configurationDisplayName("All Lines Status")
@@ -641,7 +723,7 @@ struct AllLinesStatusWidget: Widget {
 @available(iOS 17.0, *)
 struct WeatherAlertsWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "SyrmosWeatherAlerts", provider: SyrmosProvider()) { entry in
+        AppIntentConfiguration(kind: "SyrmosWeatherAlerts", intent: SyrmosWidgetConfigurationIntent.self, provider: SyrmosProvider()) { entry in
             WeatherAlertsView(entry: entry).syrmosWidgetContainer(accent: SyrmosLineTokens.color(for: "M3"))
         }
         .configurationDisplayName("Weather + Alerts")
@@ -653,7 +735,7 @@ struct WeatherAlertsWidget: Widget {
 @available(iOS 17.0, *)
 struct TrioWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "SyrmosTrio", provider: SyrmosProvider()) { entry in
+        AppIntentConfiguration(kind: "SyrmosTrio", intent: SyrmosWidgetConfigurationIntent.self, provider: SyrmosProvider()) { entry in
             TrioView(entry: entry).syrmosWidgetContainer(accent: SyrmosLineTokens.color(for: entry.rows.first?.lineId ?? "M3"))
         }
         .configurationDisplayName("Syrmos Trio")
