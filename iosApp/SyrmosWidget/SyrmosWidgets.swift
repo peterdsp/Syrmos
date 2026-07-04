@@ -22,6 +22,23 @@ import os
 @available(iOS 17.0, *)
 private let widgetLog = Logger(subsystem: "com.syrmos.widget", category: "families")
 
+/// Widget localization. Reads the app's selected language from the shared App
+/// Group (the app mirrors it there via WidgetBridge) and picks EN / EL / SQ, so
+/// the widgets match the in-app language rather than the device language.
+enum WLoc {
+    static var lang: String {
+        UserDefaults(suiteName: "group.com.syrmosApp.ios")?.string(forKey: "app_language") ?? "en"
+    }
+    /// EN, EL, SQ in that order.
+    static func t(_ en: String, _ el: String, _ sq: String) -> String {
+        switch lang {
+        case "el": return el
+        case "sq": return sq
+        default: return en
+        }
+    }
+}
+
 // MARK: - Configuration intent
 
 @available(iOS 17.0, *)
@@ -339,7 +356,7 @@ struct NextTrainView: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let lead {
                     LinePill(lineId: lead.lineId, size: family == .systemSmall ? .regular : .large)
-                    Text(lead.minutesAway <= 1 ? "now" : "\(lead.minutesAway) min")
+                    Text(lead.minutesAway <= 1 ? WLoc.t("now", "τώρα", "tani") : "\(lead.minutesAway) " + WLoc.t("min", "λεπτά", "min"))
                         .font(.system(size: family == .systemSmall ? 30 : 40, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(SyrmosLineTokens.color(for: lead.lineId))
@@ -350,7 +367,7 @@ struct NextTrainView: View {
                         .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 } else {
                     Text(entry.stationName).font(.headline).lineLimit(1)
-                    Text("No upcoming departures").font(.caption).foregroundStyle(.secondary)
+                    Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme")).font(.caption).foregroundStyle(.secondary)
                 }
                 if family == .systemSmall, !entry.routeStops.isEmpty {
                     StationStripCompact(stops: entry.routeStops, tint: SyrmosLineTokens.color(for: lead?.lineId ?? "M3"), showLabels: false)
@@ -366,7 +383,7 @@ struct NextTrainView: View {
                     }
                     Spacer(minLength: 0)
                     if let last = entry.lastTrain {
-                        Text("Last train \(last) 🌙")
+                        Text(WLoc.t("Last train", "Τελευταίο τρένο", "Treni i fundit") + " \(last) 🌙")
                             .font(.caption2).foregroundStyle(.secondary)
                     }
                 }
@@ -400,7 +417,7 @@ struct LiveDeparturesView: View {
                     Divider()
                     HStack(spacing: 4) {
                         Image(systemName: "location.fill").font(.system(size: 9)).foregroundStyle(.secondary)
-                        Text("Near me: " + entry.nearby.prefix(2).map { "\($0.name) \($0.walkMinutes)m" }.joined(separator: " · "))
+                        Text(WLoc.t("Near me", "Κοντά μου", "Pranë meje") + ": " + entry.nearby.prefix(2).map { "\($0.name) \($0.walkMinutes)m" }.joined(separator: " · "))
                             .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
@@ -418,12 +435,14 @@ struct NearMeView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "location.fill").font(.caption).foregroundStyle(.secondary)
-                Text("Near me").font(.headline)
+                Text(WLoc.t("Near me", "Κοντά μου", "Pranë meje")).font(.headline)
                 Spacer()
             }
             if entry.nearby.isEmpty {
                 Spacer()
-                Text("Enable location to see the nearest stations.")
+                Text(WLoc.t("Enable location to see the nearest stations.",
+                            "Ενεργοποιήστε την τοποθεσία για να δείτε τους πλησιέστερους σταθμούς.",
+                            "Aktivizo vendndodhjen për të parë stacionet më të afërta."))
                     .font(.caption).foregroundStyle(.secondary)
                 Spacer()
             } else {
@@ -437,8 +456,8 @@ struct NearMeView: View {
                         }
                         Spacer(minLength: 0)
                         VStack(alignment: .trailing, spacing: 1) {
-                            Text("\(s.walkMinutes) min").font(.subheadline).fontWeight(.semibold).monospacedDigit()
-                            Text("walk").font(.caption2).foregroundStyle(.secondary)
+                            Text("\(s.walkMinutes) " + WLoc.t("min", "λεπτά", "min")).font(.subheadline).fontWeight(.semibold).monospacedDigit()
+                            Text(WLoc.t("walk", "με τα πόδια", "në këmbë")).font(.caption2).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -455,13 +474,14 @@ struct AllLinesStatusView: View {
     var entry: SyrmosEntry
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Network status").font(.headline)
+            Text(WLoc.t("Network status", "Κατάσταση δικτύου", "Statusi i rrjetit")).font(.headline)
             let cols = [GridItem(.adaptive(minimum: 150), spacing: 10)]
             LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
                 ForEach(entry.statuses) { st in
                     HStack(spacing: 8) {
                         LinePill(lineId: st.lineId, size: .regular)
-                        Text(st.label).font(.caption).foregroundStyle(st.ok ? .secondary : .primary).lineLimit(1)
+                        Text(st.ok ? WLoc.t("Good Service", "Κανονική λειτουργία", "Shërbim normal") : st.label)
+                            .font(.caption).foregroundStyle(st.ok ? .secondary : .primary).lineLimit(1)
                         Spacer(minLength: 0)
                         Image(systemName: st.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                             .font(.caption)
@@ -486,14 +506,14 @@ struct WeatherAlertsView: View {
             // Weather column.
             LiquidGlassTile(accent: .blue) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Athens").font(.caption).foregroundStyle(.secondary)
+                    Text(WLoc.t("Athens", "Αθήνα", "Athinë")).font(.caption).foregroundStyle(.secondary)
                     if let w = entry.weather {
                         Image(systemName: w.symbol).font(.title2).foregroundStyle(.yellow)
                         Text("\(w.temperature)°").font(.system(size: 34, weight: .bold, design: .rounded))
                         Text("H:\(w.high)°  L:\(w.low)°").font(.caption2).foregroundStyle(.secondary)
                     } else {
                         Image(systemName: "cloud.fill").font(.title2).foregroundStyle(.secondary)
-                        Text("Weather offline").font(.caption).foregroundStyle(.secondary)
+                        Text(WLoc.t("Weather offline", "Καιρός εκτός σύνδεσης", "Moti jashtë linje")).font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
                 }
@@ -504,11 +524,11 @@ struct WeatherAlertsView: View {
 
             // Alerts column.
             VStack(alignment: .leading, spacing: 6) {
-                Text("Service alerts").font(.caption).fontWeight(.semibold)
+                Text(WLoc.t("Service alerts", "Ειδοποιήσεις", "Njoftime shërbimi")).font(.caption).fontWeight(.semibold)
                 if entry.alerts.isEmpty {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                        Text("No active alerts").font(.caption).foregroundStyle(.secondary)
+                        Text(WLoc.t("No active alerts", "Καμία ενεργή ειδοποίηση", "Asnjë njoftim aktiv")).font(.caption).foregroundStyle(.secondary)
                     }
                 } else {
                     ForEach(entry.alerts.prefix(4), id: \.self) { a in
@@ -544,7 +564,7 @@ struct TrioView: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let lead = entry.rows.first {
                     LinePill(lineId: lead.lineId, size: .regular)
-                    Text(lead.minutesAway <= 1 ? "now" : "\(lead.minutesAway)m")
+                    Text(lead.minutesAway <= 1 ? WLoc.t("now", "τώρα", "tani") : "\(lead.minutesAway)m")
                         .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
                         .foregroundStyle(SyrmosLineTokens.color(for: lead.lineId))
                     Text(entry.stationName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
@@ -555,10 +575,10 @@ struct TrioView: View {
             Divider()
             // Alerts.
             VStack(alignment: .leading, spacing: 4) {
-                Text("Alerts").font(.caption2).fontWeight(.semibold).foregroundStyle(.secondary)
+                Text(WLoc.t("Alerts", "Ειδοποιήσεις", "Njoftime")).font(.caption2).fontWeight(.semibold).foregroundStyle(.secondary)
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.seal.fill").font(.caption2).foregroundStyle(.green)
-                    Text("All clear").font(.caption2)
+                    Text(WLoc.t("All clear", "Όλα καλά", "Gjithçka në rregull")).font(.caption2)
                 }
                 Spacer(minLength: 0)
             }
@@ -566,7 +586,7 @@ struct TrioView: View {
             Divider()
             // Near me.
             VStack(alignment: .leading, spacing: 4) {
-                Text("Near me").font(.caption2).fontWeight(.semibold).foregroundStyle(.secondary)
+                Text(WLoc.t("Near me", "Κοντά μου", "Pranë meje")).font(.caption2).fontWeight(.semibold).foregroundStyle(.secondary)
                 ForEach(entry.nearby.prefix(2)) { s in
                     Text("\(s.name) · \(s.walkMinutes)m").font(.caption2).lineLimit(1)
                 }
