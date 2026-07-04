@@ -8,5 +8,7 @@
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:widgetCategory="home_screen"
+    android:configure="com.syrmos.android.widget.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional"
     android:resizeMode="horizontal|vertical"
     android:description="@string/widget_line_status_description" />

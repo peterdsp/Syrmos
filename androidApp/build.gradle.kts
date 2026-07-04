@@ -31,6 +31,11 @@ kotlin {
             implementation(projects.core.data)
             implementation(projects.core.model)
             implementation(libs.androidx.activity.compose)
+            // Compose UI for the widget configuration Activity (Edit widget).
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
             implementation(libs.koin.android)
             implementation(libs.androidx.glance.appwidget)
             implementation(libs.androidx.glance.material3)

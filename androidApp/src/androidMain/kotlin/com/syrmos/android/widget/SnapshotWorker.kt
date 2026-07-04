@@ -77,7 +77,7 @@ class SnapshotWorker(
         val rows = deps.map { d ->
             WidgetRow(
                 lineId = AndroidLineTokens.label(d.lineId),
-                destination = terminus(d.lineId, d.direction, d.serviceType),
+                destination = terminusFor(d.lineId, d.direction, d.serviceType),
                 minutes = d.minutesAway,
                 time = d.time,
             )
@@ -120,16 +120,6 @@ class SnapshotWorker(
             }
         }.maxByOrNull { it.time } ?: return null
         return best.latitude to best.longitude
-    }
-
-    private fun terminus(lineId: String, direction: Direction, serviceType: String?): String {
-        if (serviceType == "airport") return "Airport"
-        return when (AndroidLineTokens.normalize(lineId)) {
-            "M3" -> if (direction == Direction.OUTBOUND) "Doukissis Plakentias" else "Dimotiko Theatro"
-            "M2" -> if (direction == Direction.OUTBOUND) "Elliniko" else "Anthoupoli"
-            "M1" -> if (direction == Direction.OUTBOUND) "Kifisia" else "Piraeus"
-            else -> if (direction == Direction.OUTBOUND) "Outbound" else "Inbound"
-        }
     }
 
     companion object {
