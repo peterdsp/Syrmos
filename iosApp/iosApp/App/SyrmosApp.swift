@@ -28,6 +28,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Background refresh keeps the Weather + Alerts widget current without
+        // the user opening the app. Register before launch finishes.
+        BackgroundRefresh.register()
+        BackgroundRefresh.schedule()
         return true
     }
 
@@ -70,6 +74,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidEnterBackground(_ scene: UIScene) {
         didBackgroundSinceLastRebuild = true
+        // Queue the next opportunistic weather/alerts refresh for the widget.
+        BackgroundRefresh.schedule()
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
