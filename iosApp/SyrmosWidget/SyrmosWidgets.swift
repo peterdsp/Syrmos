@@ -173,7 +173,11 @@ struct SyrmosProvider: TimelineProvider {
     /// timeout), falling back to an empty entry when there is no fix.
     private func entry() async -> SyrmosEntry {
         await MainActor.run { _ = SyrmosSchedulesStore.shared }
-        let location = await WidgetLocation().current()
+        // Prefer the widget's own fix, but fall back to the coordinate the app
+        // published to the App Group (the extension often gets no fix of its
+        // own). This is why the widget renders real departures on device even
+        // when its CLLocationManager stays silent.
+        let location = await WidgetLocation().current() ?? cachedLocation()
         let station = location.flatMap { nearest(to: $0) }
         let nearby = nearbyStations(from: location)
 
@@ -192,6 +196,18 @@ struct SyrmosProvider: TimelineProvider {
                            weather: cachedWeather(), alerts: cachedAlerts())
     }
 
+    /// The app's last known coordinate from the shared App Group, or nil if the
+    /// app hasn't published one yet. Used as the fallback when the widget's own
+    /// CLLocationManager returns no fix.
+    private func cachedLocation() -> CLLocation? {
+        guard let d = UserDefaults(suiteName: "group.com.syrmosApp.ios"),
+              d.object(forKey: "loc.lat") != nil, d.object(forKey: "loc.lon") != nil else { return nil }
+        let lat = d.double(forKey: "loc.lat")
+        let lon = d.double(forKey: "loc.lon")
+        guard lat != 0 || lon != 0 else { return nil }
+        return CLLocation(latitude: lat, longitude: lon)
+    }
+
     private func nearest(to loc: CLLocation) -> TransitStation? {
         StationCoords.allStations.min { a, b in
             CLLocation(latitude: a.coordinate.latitude, longitude: a.coordinate.longitude).distance(from: loc)
@@ -201,17 +217,28 @@ struct SyrmosProvider: TimelineProvider {
 
     private func nearbyStations(from loc: CLLocation?) -> [WNearby] {
         guard let loc else { return [] }
-        return StationCoords.allStations
-            .map { s -> (TransitStation, Double) in
-                let d = CLLocation(latitude: s.coordinate.latitude, longitude: s.coordinate.longitude).distance(from: loc)
-                return (s, d)
+        // StationCoords has one node per line, so an interchange (e.g. Syntagma
+        // on M2 + M3) appears several times. Collapse by name, keeping the
+        // closest node and unioning its lines, so the list shows three distinct
+        // stations rather than the same interchange repeated.
+        var byName: [String: (station: TransitStation, distance: Double, lines: [String])] = [:]
+        for s in StationCoords.allStations {
+            let d = CLLocation(latitude: s.coordinate.latitude, longitude: s.coordinate.longitude).distance(from: loc)
+            if let existing = byName[s.name] {
+                let mergedLines = existing.lines + s.lineIds.filter { !existing.lines.contains($0) }
+                byName[s.name] = (min(existing.distance, d) == d ? s : existing.station,
+                                  min(existing.distance, d), mergedLines)
+            } else {
+                byName[s.name] = (s, d, s.lineIds)
             }
-            .sorted { $0.1 < $1.1 }
+        }
+        return byName.values
+            .sorted { $0.distance < $1.distance }
             .prefix(3)
-            .map { pair in
+            .map { entry in
                 // ~80 m/min average walking pace.
-                WNearby(id: pair.0.id, name: pair.0.name, lineIds: pair.0.lineIds,
-                        walkMinutes: max(1, Int((pair.1 / 80.0).rounded())))
+                WNearby(id: entry.station.id, name: entry.station.name, lineIds: entry.lines,
+                        walkMinutes: max(1, Int((entry.distance / 80.0).rounded())))
             }
     }
 
