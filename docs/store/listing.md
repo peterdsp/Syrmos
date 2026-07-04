@@ -4,44 +4,62 @@
 Syrmos - Athens Rail Times
 
 ## Short Description (80 chars max)
-Live departure times for Athens metro, tram and suburban railway.
+Live Athens rail departures, on your home screen, lock screen and Apple Watch.
 
 ## Full Description (4000 chars max)
 
-Syrmos gives you instant departure countdowns for every Athens rail station. Metro, tram, suburban railway, all in one app. No searching through separate websites or digging through PDF timetables.
+Syrmos gives you instant departure countdowns for Athens rail transport. Metro, tram and suburban railway, all in one simple app.
+
+Whether you are commuting every day, changing lines, or trying to catch the next train, Syrmos helps you check departures, browse timetables, view station details and understand your route faster.
 
 WHAT YOU GET
 
-- Live departure countdown at any station, in any direction
-- GPS detection finds your nearest station automatically
-- Browse all lines: Metro (Lines 1, 2, 3), Tram (T6, T7), Suburban Railway
-- Interactive transit map with live train positions
-- Full timetable viewer with weekday/weekend filtering
-- Station details with connecting lines and interchange info
-- Bilingual interface (English and Greek)
+• Live departure countdowns for Athens rail stations
+• Direction-based departures, so you know which way your train is going
+• GPS detection to find your nearest station automatically
+• Browse Metro Lines 1, 2, 3, Tram T6/T7 and Suburban Railway services
+• Interactive transit map with supported live train positions
+• Full timetable viewer per station for Airport
+• Station details with connecting lines and interchange information
+• Fare information for metro, tram and suburban railway journeys
+• Quick access to Hellenic Train ticket purchase pages for Suburban Railway services
+• Multilingual interface in English, Greek and Albanian
+
+WIDGETS AND APPLE WATCH
+
+Your next train, without opening the app.
+
+• Home Screen widgets: Next Train, Live Departures, Near Me, All Lines Status, and a Weather + Alerts view
+• Lock Screen Live Activity and Dynamic Island countdown for the train you are tracking
+• Apple Watch app with the next departures for your station, plus corner, circular and rectangular complications
+• Every widget projects offline from the schedule that ships with the app, and follows your language
+
+ARIADNE, YOUR OFFLINE ASSISTANT
+
+Ask Syrmos about Athens trains in plain language, fully offline, in English, Greek or Albanian. "When is the last train home from Syntagma?" "How do I get to the airport?" Ariadne answers from the schedule on your device. She never invents train times.
 
 WORKS OFFLINE
 
-All schedule data ships with the app. Underground with no signal? The app still works. Timetables, station info, and departure calculations happen entirely on your device.
+All schedule data ships with the app. Underground with no signal? Syrmos still helps you check departures, stations and timetables.
 
 LIVE TRAIN TRACKING
 
-See metro, tram, and suburban trains moving in real time on the map. Trains accelerate out of stations, pause at stops, and follow the actual route. Suburban railway positions come from the Hellenic Train live feed.
+See supported train services moving on the map and follow your journey across the Athens rail network.
 
-TRANSIT COVERAGE
+WEATHER
 
-Metro: Line 1 (Green, Piraeus to Kifissia), Line 2 (Red, Anthoupoli to Elliniko), Line 3 (Blue, Dimotiko Theatro to Airport)
-Tram: T6 (Syntagma to Pikrodafni), T7 (Akti Poseidonos to Asklipiio Voulas)
-Suburban: A1 (Piraeus to Airport), A2 (Ano Liosia to Airport), A3 (Athens to Chalcis), A4 (Piraeus to Kiato)
+Current Athens conditions on your Home screen, so you know it is raining before the open-air tram stop tells you in person.
 
-BUILT FOR COMMUTERS
+FARES AND TICKETS
 
-Syrmos was built by a daily Athens rail commuter. The name comes from the Greek word "syrmós" (συρμός), meaning the carriages that form a train.
+Check fare information directly in the app. For Suburban Railway tickets, Syrmos can redirect you to the official Hellenic Train website for purchase. Syrmos is not affiliated with, endorsed by, or connected to Hellenic Train.
 
-No ads. No tracking. No account required. Just your next train.
+BUILT FOR ATHENS
+
+Fast, simple and focused on one thing: helping you catch your next train.
 
 ## Keywords / Tags
-athens, metro, transit, tram, train, subway, rail, departure, schedule, timetable, greece, stasy, proastiakos, suburban, commute, public transport, OASA
+athens, metro, transit, tram, train, subway, rail, departure, schedule, timetable, greece, stasy, proastiakos, suburban, commute, public transport, OASA, widget, apple watch
 
 ## Category
 - iOS: Travel (primary), Navigation (secondary)
@@ -50,11 +68,22 @@ athens, metro, transit, tram, train, subway, rail, departure, schedule, timetabl
 ## Content Rating
 - Everyone / 4+
 
-## What's New (v1.0.0)
-Initial release! Live departure times for every Athens metro, tram, and suburban railway station. Interactive transit map with real-time train positions. Works offline.
-
 ## App Store Subtitle (30 chars max)
-Athens Metro & Tram Times
+Athens rail on your wrist
 
 ## Promotional Text (170 chars, iOS only)
-Real-time departures for Athens metro, tram, and suburban railway. Find your nearest station, see when the next train arrives. Works underground with no signal.
+Widgets everywhere: next train on your Home screen, Lock Screen and Apple Watch. Plus Ariadne, your offline Athens transit assistant, in Greek, English and Albanian.
+
+## What's New (v1.2.0)
+Widgets. Everywhere.
+
+We put Syrmos where you actually look, so you stop opening the app like a nervous pigeon checking the same platform sign twice a second.
+
+• Home Screen widgets. Next Train, Live Departures, Near Me, All Lines Status, even a Weather + Alerts view. Your next train at a glance, offline, in your language.
+• Apple Watch app and complications. Glance at your wrist, see the next three trains. Line-color dot, minutes, destination, right on the watch face.
+• Live Activity glow-up. The Lock Screen and Dynamic Island countdown got a full redesign, with the next three trains on your line while you wait.
+• Weather that refreshes in the background, so the widget already knows it is raining before you reach the tram stop.
+
+Ariadne is still here, still offline, still refusing to invent train times, which keeps making her more reliable than most people giving directions in Monastiraki.
+
+Bigger update, same Athens rail chaos, now on your home screen and your wrist.

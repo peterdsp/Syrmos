@@ -111,6 +111,7 @@
 		F547F60AEDEF7EE113E77B7B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8FAA054C866F04CB39A4C07 /* Assets.xcassets */; };
 		FAB11EB401D5464F9E009564 /* SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */; };
 		FFDDCB33EB8ADA0BA119A64C /* WatchConnectivityProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */; };
+		9C1FEB967B3B4F0897AC98ED /* iosApp/Core/Networking/BackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -271,6 +272,7 @@
 		F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosRouteShapesStore.swift; sourceTree = SOURCE_ROOT; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		FF201314EADCD2EA1936941F /* Complications-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SyrmosWatch/Complications-Info.plist"; sourceTree = SOURCE_ROOT; };
+		1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/BackgroundRefresh.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -467,6 +469,7 @@
 		AAAA000000000000000000C4 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */,
 				DD50BCD053B64059B6D3A243 /* WidgetBridge.swift */,
 				C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */,
 				0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */,
@@ -811,6 +814,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C1FEB967B3B4F0897AC98ED /* iosApp/Core/Networking/BackgroundRefresh.swift in Sources */,
 				2AC047F768ED40C49CDCC90B /* WidgetBridge.swift in Sources */,
 				8F1DB37A07CE4F4E877F3E52 /* WatchSessionManager.swift in Sources */,
 				C173574BC2DC4C0F9D5C159E /* DepartureRowCompact.swift in Sources */,
