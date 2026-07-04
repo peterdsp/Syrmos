@@ -27,6 +27,15 @@ enum WidgetBridge {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Mirror the app's selected language into the App Group so the widgets
+    /// render in EN / EL / SQ to match the app (they run in a separate process
+    /// and can't read the app's standard UserDefaults).
+    static func publishLanguage(_ code: String) {
+        guard let d = defaults else { return }
+        d.set(code, forKey: "app_language")
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     private static func symbol(for c: WeatherCondition) -> String {
         switch c {
         case .clear: return "sun.max.fill"

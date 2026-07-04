@@ -216,6 +216,9 @@ struct ContentView: View {
         .task {
             _ = DiagnosticsCenter.shared
             DiagnosticsCenter.shared.leaveBreadcrumb("app", "ContentView appeared")
+            // Mirror the selected language into the widgets' App Group so
+            // they render in EN / EL / SQ to match the app.
+            WidgetBridge.publishLanguage(loc.language.rawValue)
             // Live train positions are runtime data by nature, not bundled —
             // the whole point is "where are the trains RIGHT NOW". Skipping
             // these refreshes on launch left the map with zero moving dots
@@ -228,6 +231,10 @@ struct ContentView: View {
         }
         .onChange(of: selectedTab) { _, newTab in
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")
+        }
+        .onChange(of: loc.language) { _, newLang in
+            // Keep the widgets' language in step when the user switches it.
+            WidgetBridge.publishLanguage(newLang.rawValue)
         }
     }
 

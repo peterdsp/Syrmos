@@ -264,6 +264,113 @@
             <button type="submit" class="primary-button ariadne-panel__send" data-i18n="send">Send</button>
         </form>
     </aside>
+
+    <!-- Widgets showcase (1.2 "Widgets Everywhere"). Purely marketing: a
+         CSS-only modal (no JS, checkbox-hack toggle) with fake iPhone + Pixel
+         frames rendering the widget gallery in CSS. Sells the home-screen
+         widgets for App Store / Play screenshots. -->
+    <style>
+      .ws-toggle { position: absolute; opacity: 0; pointer-events: none; }
+      .ws-launcher {
+        position: fixed; left: 16px; bottom: 24px; z-index: 1200;
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 12px 18px; border-radius: 999px; cursor: pointer;
+        font: 600 14px/1 system-ui, sans-serif; color: #fff;
+        background: #1A5CB8; box-shadow: 0 6px 18px rgba(26,92,184,.35);
+      }
+      .ws-overlay {
+        display: none; position: fixed; inset: 0; z-index: 1300;
+        align-items: center; justify-content: center; padding: 24px;
+      }
+      .ws-toggle:checked ~ .ws-overlay { display: flex; }
+      .ws-scrim { position: absolute; inset: 0; background: rgba(6,10,20,.62); backdrop-filter: blur(4px); cursor: pointer; }
+      .ws-card {
+        position: relative; z-index: 1; width: min(920px, 96vw);
+        max-height: 90vh; overflow: auto; border-radius: 22px; padding: 22px;
+        background: #0c1524; color: #eaf0fb; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      }
+      .ws-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+      .ws-head h2 { font: 700 20px/1.2 system-ui, sans-serif; margin: 0; }
+      .ws-close { padding: 8px 14px; border-radius: 999px; cursor: pointer; background: rgba(255,255,255,.12); color: #fff; font: 600 13px/1 system-ui; }
+      .ws-sub { color: #9fb2d0; font: 400 13px/1.4 system-ui; margin: 4px 0 18px; }
+      .ws-frames { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
+      .ws-phone { width: 300px; border-radius: 34px; padding: 14px; background: linear-gradient(160deg,#11203a,#0a1120); box-shadow: inset 0 0 0 2px rgba(255,255,255,.06); }
+      .ws-phone__label { text-align: center; color: #8fa6c8; font: 600 11px/1 system-ui; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+      .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .ws-tile { border-radius: 18px; padding: 12px; background: rgba(255,255,255,.07); backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+      .ws-tile--wide { grid-column: 1 / -1; }
+      .ws-pill { display: inline-flex; min-width: 30px; justify-content: center; padding: 2px 7px; border-radius: 6px; font: 700 11px/1.4 system-ui; color: #fff; }
+      .ws-m1 { background: #30A050; } .ws-m2 { background: #D93333; } .ws-m3 { background: #1A5CB8; } .ws-t { background: #F28C1C; }
+      .ws-min { font: 800 30px/1 system-ui; color: #eaf0fb; margin: 8px 0 2px; }
+      .ws-dest { font: 600 12px/1.3 system-ui; color: #eaf0fb; }
+      .ws-station { font: 400 11px/1.3 system-ui; color: #9fb2d0; }
+      .ws-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+      .ws-row .ws-dest { flex: 1; }
+      .ws-row .ws-when { font: 700 12px/1 system-ui; color: #eaf0fb; }
+      .ws-android .ws-tile { border-radius: 24px; background: rgba(255,255,255,.09); }
+      @media (max-width: 680px) { .ws-frames { gap: 16px; } .ws-phone { width: 88vw; max-width: 320px; } }
+    </style>
+    <input type="checkbox" id="wsToggle" class="ws-toggle" aria-hidden="true">
+    <label for="wsToggle" class="ws-launcher" role="button" aria-label="See Syrmos widgets">
+      <span aria-hidden="true">📱</span><span>Widgets</span>
+    </label>
+    <div class="ws-overlay" role="dialog" aria-modal="true" aria-label="Syrmos on your Home Screen">
+      <label for="wsToggle" class="ws-scrim" aria-label="Close"></label>
+      <div class="ws-card">
+        <div class="ws-head">
+          <h2>Syrmos on your Home Screen</h2>
+          <label for="wsToggle" class="ws-close">Close</label>
+        </div>
+        <p class="ws-sub">Live, offline departures at a glance — home screen, lock screen, and Apple Watch.</p>
+        <div class="ws-frames">
+          <div class="ws-phone ws-phone--ios">
+            <div class="ws-phone__label">iPhone</div>
+            <div class="ws-grid">
+              <div class="ws-tile">
+                <span class="ws-pill ws-m3">M3</span>
+                <div class="ws-min">3 min</div>
+                <div class="ws-dest">Doukissis Plakentias</div>
+                <div class="ws-station">Syntagma</div>
+              </div>
+              <div class="ws-tile">
+                <span class="ws-pill ws-m2">M2</span>
+                <div class="ws-min">4 min</div>
+                <div class="ws-dest">Elliniko</div>
+                <div class="ws-station">Syntagma</div>
+              </div>
+              <div class="ws-tile ws-tile--wide">
+                <div class="ws-station" style="margin-bottom:6px;font-weight:600;color:#eaf0fb;">Syntagma · Live Departures</div>
+                <div class="ws-row"><span class="ws-pill ws-m3">M3</span><span class="ws-dest">Airport</span><span class="ws-when">11m ✈</span></div>
+                <div class="ws-row"><span class="ws-pill ws-m2">M2</span><span class="ws-dest">Anthoupoli</span><span class="ws-when">6m</span></div>
+                <div class="ws-row"><span class="ws-pill ws-m3">M3</span><span class="ws-dest">Dimotiko Theatro</span><span class="ws-when">8m</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="ws-phone ws-phone--android ws-android">
+            <div class="ws-phone__label">Pixel</div>
+            <div class="ws-grid">
+              <div class="ws-tile">
+                <span class="ws-pill ws-m1">M1</span>
+                <div class="ws-min">2 min</div>
+                <div class="ws-dest">Kifisia</div>
+                <div class="ws-station">Monastiraki</div>
+              </div>
+              <div class="ws-tile">
+                <span class="ws-pill ws-t">T7</span>
+                <div class="ws-min">7 min</div>
+                <div class="ws-dest">Syntagma</div>
+                <div class="ws-station">SEF</div>
+              </div>
+              <div class="ws-tile ws-tile--wide">
+                <div class="ws-station" style="margin-bottom:6px;font-weight:600;color:#eaf0fb;">Near me</div>
+                <div class="ws-row"><span class="ws-pill ws-m1">M1</span><span class="ws-dest">Monastiraki</span><span class="ws-when">2 min walk</span></div>
+                <div class="ws-row"><span class="ws-pill ws-m3">M3</span><span class="ws-dest">Syntagma</span><span class="ws-when">6 min walk</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 </div>
 
 <script
