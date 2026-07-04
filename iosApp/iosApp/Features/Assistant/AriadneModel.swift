@@ -43,10 +43,18 @@ final class AriadneModel: ObservableObject {
         messages.append(AriadneMessage(fromUser: true, text: text))
         thinking = true
         Task {
-            // On-device LLM (when available) rewrites fuzzy input; the
-            // deterministic parser still classifies and validates it.
-            let cleaned = await AriadneBrain.normalize(text) ?? text
-            let raw = parser.parse(cleaned)
+            // Clever mode: when Apple Foundation Models is available, the
+            // on-device model classifies the message into a grounded intent
+            // (station / line resolved to ids by Swift, never invented). When it
+            // is unavailable or can't ground the result, fall back to the rule
+            // parser, first letting the model at least normalize fuzzy input.
+            let raw: AssistantIntent
+            if let guided = await AriadneGuided.classify(text, vocabulary: parser.vocabulary) {
+                raw = guided
+            } else {
+                let cleaned = await AriadneBrain.normalize(text) ?? text
+                raw = parser.parse(cleaned)
+            }
             let intent = mergePendingIfApplicable(raw)
             if case let .needsClarification(base, missing) = intent {
                 pendingIntent = base

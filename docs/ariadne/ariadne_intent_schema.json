@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AriadneIntent",
+  "description": "Guided generation schema for Apple @Generable, Gemini Nano JSON output, or a generic structured classifier. The model emits this only, then the app validates slots and dispatches deterministic tools.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "showDepartures"
+        },
+        "stationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lineId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dayContext": {
+          "enum": [
+            "today",
+            "tomorrow",
+            "weekend",
+            "saturday",
+            "sunday"
+          ]
+        }
+      },
+      "required": [
+        "intent",
+        "dayContext"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "lastTrain"
+        },
+        "stationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lineId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "findStation"
+        },
+        "query": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "query"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "planTrip"
+        },
+        "fromStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lowExposure": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "intent",
+        "lowExposure"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "travelTime"
+        },
+        "fromStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "explainLine"
+        },
+        "lineId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "lineId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "explainFare"
+        },
+        "airport": {
+          "type": "boolean"
+        },
+        "fromStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent",
+        "airport"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "toggleFavorite"
+        },
+        "stationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "showAlerts"
+        },
+        "lineId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "openMap"
+        },
+        "stationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "help"
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "weatherAt"
+        },
+        "stationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "planTripByArrival"
+        },
+        "fromStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toStationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "arriveByAthensMinutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1439
+        },
+        "inMinutesFromNow": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        }
+      },
+      "required": [
+        "intent"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "outOfScope"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "const": "needsClarification"
+        },
+        "missing": {
+          "enum": [
+            "originStation",
+            "destinationStation",
+            "station"
+          ]
+        },
+        "baseIntent": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "missing",
+        "baseIntent"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "requiredPolicy": "Every generated object must contain intent. The app must reject unknown stationId or lineId values and retry with station vocabulary or ask a clarification question.",
+  "allowedLineIds": [
+    "M1",
+    "M2",
+    "M3",
+    "T6",
+    "T7",
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "M3_AIR"
+  ],
+  "dayContextValues": [
+    "today",
+    "tomorrow",
+    "weekend",
+    "saturday",
+    "sunday"
+  ]
+}
