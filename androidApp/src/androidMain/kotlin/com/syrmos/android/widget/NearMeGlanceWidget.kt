@@ -8,6 +8,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
@@ -34,7 +35,16 @@ import com.syrmos.android.MainActivity
  */
 class NearMeGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val snapshot = SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() } ?: BundledFallback.snapshot()
+        val appWidgetId = GlanceAppWidgetManager(context).appWidgetIdOrZero(id)
+        val lineFilter = WidgetConfigStore.read(context, appWidgetId).line
+        val base = SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() } ?: BundledFallback.snapshot()
+        // Honor the optional line filter by keeping only nearby stations that
+        // serve the chosen line (ignored when that would empty the list).
+        val snapshot = if (lineFilter == null) base else {
+            val target = AndroidLineTokens.normalize(lineFilter)
+            val filtered = base.nearby.filter { st -> st.lineIds.any { AndroidLineTokens.normalize(it) == target } }
+            if (filtered.isEmpty()) base else base.copy(nearby = filtered)
+        }
         provideContent {
             GlanceTheme {
                 Column(

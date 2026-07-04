@@ -39,6 +39,18 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Widget configuration screen (Edit widget): pick nearest vs a pinned
+             station and an optional line filter. Launched when adding a widget
+             and, on Android 12+, from the widget's reconfigure affordance. -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Syrmos">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Compose Glance widgets (1.2 "Widgets Everywhere"). Each renders the
              SharedPreferences snapshot written by SnapshotWorker every ~30 min
              (and on app resume), with a bundled offline fallback. -->
