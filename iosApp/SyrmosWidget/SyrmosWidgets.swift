@@ -53,33 +53,46 @@ enum WLoc {
 final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocation?, Never>?
+    private var didResume = false
+    private let lock = NSLock()
 
     func current() async -> CLLocation? {
         let status = manager.authorizationStatus
         guard status == .authorizedWhenInUse || status == .authorizedAlways else { return nil }
-        return await withTaskGroup(of: CLLocation?.self) { group in
-            group.addTask { await self.requestOnce() }
-            group.addTask { try? await Task.sleep(for: .seconds(2)); return nil }
-            let first = await group.next() ?? nil
-            group.cancelAll()
-            return first
-        }
-    }
-
-    private func requestOnce() async -> CLLocation? {
-        await withCheckedContinuation { c in
+        return await withCheckedContinuation { c in
+            lock.lock()
             continuation = c
+            didResume = false
+            lock.unlock()
             manager.delegate = self
             manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
             manager.requestLocation()
+            // Hard 2s timeout: guarantees the continuation resumes even if the
+            // location callback never fires (widget process off the main run
+            // loop, cold GPS, no fix). Without this the timeline provider hangs
+            // forever and the widget is stuck on the redacted placeholder.
+            DispatchQueue.global().asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.finish(nil)
+            }
         }
     }
 
+    /// Resumes the continuation at most once, whichever of the delegate
+    /// callback or the timeout arrives first.
+    private func finish(_ location: CLLocation?) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !didResume, let c = continuation else { return }
+        didResume = true
+        continuation = nil
+        c.resume(returning: location)
+    }
+
     func locationManager(_ m: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
-        continuation?.resume(returning: locs.last); continuation = nil
+        finish(locs.last)
     }
     func locationManager(_ m: CLLocationManager, didFailWithError error: Error) {
-        continuation?.resume(returning: nil); continuation = nil
+        finish(nil)
     }
 }
 
