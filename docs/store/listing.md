@@ -72,18 +72,23 @@ athens, metro, transit, tram, train, subway, rail, departure, schedule, timetabl
 Athens rail on your wrist
 
 ## Promotional Text (170 chars, iOS only)
-Widgets everywhere: next train on your Home screen, Lock Screen and Apple Watch. Plus Ariadne, your offline Athens transit assistant, in Greek, English and Albanian.
+Your next train on your Home Screen, Lock Screen and Apple Watch. Meet the widgets. Ariadne still answers offline in 3 languages and still refuses to invent train times.
 
 ## What's New (v1.2.0)
-Widgets. Everywhere.
+Hope your commute is flowing better than Line 1 pretending it runs every four minutes.
 
-We put Syrmos where you actually look, so you stop opening the app like a nervous pigeon checking the same platform sign twice a second.
+This one puts Syrmos where you actually look. Widgets. Everywhere.
 
-• Home Screen widgets. Next Train, Live Departures, Near Me, All Lines Status, even a Weather + Alerts view. Your next train at a glance, offline, in your language.
-• Apple Watch app and complications. Glance at your wrist, see the next three trains. Line-color dot, minutes, destination, right on the watch face.
-• Live Activity glow-up. The Lock Screen and Dynamic Island countdown got a full redesign, with the next three trains on your line while you wait.
-• Weather that refreshes in the background, so the widget already knows it is raining before you reach the tram stop.
+• Home Screen widgets. Next Train, Live Departures, Near Me, All Lines Status, even a Weather plus Alerts view. Your next train at a glance, offline, in your language, so you can stop opening the app like a nervous pigeon checking the same platform sign twice a second.
+
+• Apple Watch app and complications. Glance at your wrist and see the next three trains. Line-color dot, minutes, destination, right on the watch face.
+
+• Live Activity, redesigned. The Lock Screen and Dynamic Island countdown got a full glow-up, now with the next three trains on your line while you wait.
+
+• Weather that refreshes in the background, so the widget already knows it is raining before the open-air tram stop breaks the news to you personally.
 
 Ariadne is still here, still offline, still refusing to invent train times, which keeps making her more reliable than most people giving directions in Monastiraki.
+
+Thank you for keeping Syrmos in the Top 10 Navigation apps in Greece. Still wilder than finding a seat on Line 1 at 08:30.
 
 Bigger update, same Athens rail chaos, now on your home screen and your wrist.
