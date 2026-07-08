@@ -9,14 +9,14 @@ import Foundation
 /// transfer edges between co-located stations (same accent-folded name) to let
 /// Dijkstra change lines at a physical interchange.
 enum JourneyPlanner {
-    struct Leg {
+    struct Leg: Equatable {
         let lineId: String
         let toName: String
         let stops: Int
         let minutes: Int
     }
 
-    struct Plan {
+    struct Plan: Equatable {
         let legs: [Leg]
         let totalMinutes: Int
         let transfers: Int
@@ -28,7 +28,20 @@ enum JourneyPlanner {
         let weight: Int
     }
 
+    /// Fastest route across the whole network.
     static func plan(from fromId: String, to toId: String, language: AppLanguage) -> Plan? {
+        compute(from: fromId, to: toId, lines: SyrmosData.lines, language: language)
+    }
+
+    /// Metro-only alternative (M1/M2/M3), the sheltered option Ariadne can offer
+    /// when the fastest route uses the tram or a surface line and the weather
+    /// makes staying underground worth a few extra minutes. Nil when there's no
+    /// all-metro path between the two stations. Mirrors KMP `metroOnly`.
+    static func metroOnly(from fromId: String, to toId: String, language: AppLanguage) -> Plan? {
+        compute(from: fromId, to: toId, lines: SyrmosData.lines.filter { $0.type == .metro }, language: language)
+    }
+
+    private static func compute(from fromId: String, to toId: String, lines: [TransitLine], language: AppLanguage) -> Plan? {
         if fromId == toId { return nil }
         let stations = allStations()
         let byId = Dictionary(uniqueKeysWithValues: stations.map { ($0.id, $0) })
@@ -37,7 +50,7 @@ enum JourneyPlanner {
         var graph: [String: [Edge]] = [:]
 
         // Same-line edges between consecutive stations.
-        for line in SyrmosData.lines {
+        for line in lines {
             let weight = travelTime(for: line.type)
             let ordered = SyrmosData.stations(for: line.id)
             for i in 0..<max(0, ordered.count - 1) {

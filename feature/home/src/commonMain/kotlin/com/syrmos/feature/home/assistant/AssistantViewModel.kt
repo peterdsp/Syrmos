@@ -11,7 +11,13 @@ import com.syrmos.core.model.weather.WeatherSnapshot
 import kotlinx.datetime.Clock
 import com.syrmos.core.domain.assistant.Exposure
 import com.syrmos.core.domain.assistant.StationComfort
+import com.syrmos.core.domain.assistant.AdvisorySeverity
 import com.syrmos.core.domain.assistant.AssistantIntent
+import com.syrmos.core.domain.assistant.AssistantSessionContext
+import com.syrmos.core.domain.assistant.RouteMemory
+import com.syrmos.core.domain.assistant.ServiceAdvisory
+import com.syrmos.core.domain.assistant.ServiceAdvisoryMatcher
+import com.syrmos.core.domain.assistant.ServiceNotice
 import com.syrmos.core.domain.assistant.AssistantQueryNormalizer
 import com.syrmos.core.domain.assistant.AssistantClassifier
 import com.syrmos.core.domain.assistant.AssistantVocabularyBuilder
@@ -120,6 +126,11 @@ class AssistantViewModel(
     private var pendingIntent: AssistantIntent? = null
     private var pendingMissing: MissingSlot? = null
 
+    // Durable co-pilot memory: the current station ("I'm at Syntagma"), the
+    // last destination/route, and the last intent, so follow-ups like "go
+    // airport faster" don't re-ask what the user already told us.
+    private var session = AssistantSessionContext.EMPTY
+
     /**
      * Latest device location, pushed by the host when the assistant opens.
      * Used as the origin for travel-time ("how long to X") answers; when it's
@@ -160,7 +171,9 @@ class AssistantViewModel(
             // back to normalizing fuzzy input and running the deterministic parser.
             val raw = assistantClassifier.classify(text, p.vocabulary)
                 ?: p.parse(queryNormalizer.normalize(text) ?: text)
-            val intent = mergePendingIfApplicable(raw)
+            // Fill a missing origin from the known current station before asking,
+            // so "I'm at Syntagma" then "go airport faster" needs no follow-up.
+            val intent = fillFromContext(mergePendingIfApplicable(raw))
             // Update pending state before we resolve, so the answer's
             // side effects can rely on it being fresh.
             if (intent is AssistantIntent.NeedsClarification) {
@@ -170,6 +183,7 @@ class AssistantViewModel(
                 pendingIntent = null
                 pendingMissing = null
             }
+            updateSession(intent)
             val reply = resolve(intent)
             _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
         }
@@ -234,7 +248,157 @@ class AssistantViewModel(
         AssistantIntent.EasterEggLiepur -> botMessage(catJoke())
         is AssistantIntent.WeatherAt -> resolveWeather(intent)
         is AssistantIntent.PlanTripByArrival -> resolvePlanByArrival(intent)
+        is AssistantIntent.StationStatus -> resolveStationStatus(intent)
+        is AssistantIntent.SetCurrentLocation -> resolveSetLocation(intent)
     }
+
+    /**
+     * Fills a missing trip origin from the remembered current station, so a
+     * follow-up like "go airport faster" after "I'm at Syntagma" resolves
+     * without re-asking. Only touches the origin slot; everything else is left
+     * to the normal clarification flow.
+     */
+    private fun fillFromContext(intent: AssistantIntent): AssistantIntent {
+        val current = session.currentStation ?: return intent
+        if (intent !is AssistantIntent.NeedsClarification) return intent
+        if (intent.missing != MissingSlot.ORIGIN_STATION) return intent
+        return when (val base = intent.base) {
+            is AssistantIntent.PlanTrip -> base.copy(fromStationId = current)
+            is AssistantIntent.TravelTime -> base.copy(fromStationId = current)
+            is AssistantIntent.PlanTripByArrival -> base.copy(fromStationId = current)
+            else -> intent
+        }
+    }
+
+    /** Threads the turn's outcome into the session so the next turn has context. */
+    private fun updateSession(intent: AssistantIntent) {
+        session = when (intent) {
+            is AssistantIntent.SetCurrentLocation ->
+                session.withCurrentStation(intent.stationId ?: session.currentStation).remembering(intent)
+            is AssistantIntent.PlanTrip -> {
+                val from = intent.fromStationId
+                val to = intent.toStationId
+                session.copy(
+                    currentStation = from ?: session.currentStation,
+                    lastDestination = to ?: session.lastDestination,
+                    lastRoute = if (from != null && to != null) {
+                        RouteMemory(from, to, intent.preference)
+                    } else {
+                        session.lastRoute
+                    },
+                    lastIntent = intent,
+                )
+            }
+            is AssistantIntent.TravelTime -> session.copy(
+                lastDestination = intent.toStationId ?: session.lastDestination,
+                lastIntent = intent,
+            )
+            is AssistantIntent.ShowDepartures -> session.copy(
+                currentStation = intent.stationId ?: session.currentStation,
+                lastIntent = intent,
+            )
+            is AssistantIntent.NeedsClarification -> session
+            else -> session.copy(lastIntent = intent)
+        }
+    }
+
+    private fun resolveSetLocation(intent: AssistantIntent.SetCurrentLocation): AssistantMessage {
+        val stationId = intent.stationId
+            ?: return botMessage(t("Okay, you're at the station. Where do you want to go next?",
+                "Οκ, είσαι στον σταθμό. Πού θέλεις να πας μετά;",
+                "Në rregull, je te stacioni. Ku do të shkosh më pas?"))
+        val name = stationNameById(stationId)
+        return botMessage(t("Got it. I'll use $name as your starting station.",
+            "Οκ. Θα χρησιμοποιώ τον $name ως σταθμό εκκίνησης.",
+            "Në rregull. Do ta përdor $name si stacionin tënd të nisjes."))
+    }
+
+    private suspend fun resolveStationStatus(intent: AssistantIntent.StationStatus): AssistantMessage {
+        val station = intent.stationId?.let { id -> stations.firstOrNull { it.id == id } }
+            ?: return botMessage(clarify(MissingSlot.STATION))
+        val advisory = ServiceAdvisoryMatcher.forStation(
+            stationNames = stationSearchNames(station),
+            stationLineIds = station.lineIds,
+            notices = currentNotices(),
+            severeWeather = weatherRepository.cached?.current?.condition?.isSevere == true,
+        )
+        return AssistantMessage(
+            id = nextId++,
+            fromUser = false,
+            text = stationStatusText(stationName(station), advisory),
+            action = AssistantAction.OpenStation(station.id),
+            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+        )
+    }
+
+    /** Honest station status: lead with any live advisory, else the timetable. */
+    private fun stationStatusText(name: String, advisory: ServiceAdvisory): String {
+        val top = advisory.top
+        if (top != null) {
+            val lead = when (top.severity) {
+                AdvisorySeverity.CLOSURE -> t("Heads up, there's an active closure affecting $name.",
+                    "Προσοχή, υπάρχει ενεργό κλείσιμο που αφορά τον $name.",
+                    "Kujdes, ka një mbyllje aktive që prek $name.")
+                AdvisorySeverity.WARNING -> t("There's an active advisory affecting $name.",
+                    "Υπάρχει ενεργή ειδοποίηση που αφορά τον $name.",
+                    "Ka një njoftim aktiv që prek $name.")
+                AdvisorySeverity.INFO -> t("There's a notice affecting $name.",
+                    "Υπάρχει ανακοίνωση που αφορά τον $name.",
+                    "Ka një njoftim që prek $name.")
+            }
+            val tail = t("Check official STASY alerts for details.",
+                "Δες τις επίσημες ανακοινώσεις της ΣΤΑΣΥ για λεπτομέρειες.",
+                "Kontrollo njoftimet zyrtare të STASY për detaje.")
+            return "$lead ${top.text} $tail"
+        }
+        val base = t(
+            "I don't have a live closure alert for $name. Based on the normal timetable, the station should be operating. Check official STASY alerts if this is urgent.",
+            "Δεν έχω ζωντανή ειδοποίηση κλεισίματος για τον $name. Με βάση το κανονικό πρόγραμμα, ο σταθμός πρέπει να λειτουργεί. Αν είναι επείγον, δες τις ανακοινώσεις της ΣΤΑΣΥ.",
+            "Nuk kam njoftim live për mbyllje të $name. Sipas orarit normal, stacioni duhet të jetë në punë. Nëse është urgjente, kontrollo njoftimet e STASY.",
+        )
+        return if (advisory.severeWeather) {
+            base + " " + t("Severe weather is in effect, so allow extra time.",
+                "Επικρατεί κακοκαιρία, οπότε άφησε περιθώριο.",
+                "Ka mot të keq, ndaj lër kohë shtesë.")
+        } else {
+            base
+        }
+    }
+
+    /** Station names in every language the matcher should look for in notices. */
+    private fun stationSearchNames(station: Station): List<String> =
+        listOf(station.name, station.nameEl).filter { it.isNotBlank() }.distinct()
+
+    /**
+     * Projects the STASY announcement feed into domain [ServiceNotice]s. [text]
+     * is the localized title for read-back; [searchText] concatenates every
+     * language so station-name matching works regardless of the notice language.
+     */
+    private suspend fun currentNotices(): List<ServiceNotice> {
+        val feed = announcementsRepository.feed.first()
+        return feed.announcements
+            .filter { it.isServiceAlert || it.severity != "info" }
+            .map { a ->
+                ServiceNotice(
+                    id = a.id,
+                    text = localizedAnnouncementTitle(a),
+                    affectedLineIds = a.affectedLines,
+                    severity = AdvisorySeverity.fromRaw(a.severity),
+                    validFrom = a.validFrom,
+                    validUntil = a.validUntil,
+                    searchText = listOf(
+                        a.title, a.titleEn, a.titleSq, a.summary, a.summaryEn, a.summarySq,
+                    ).filter { it.isNotBlank() }.joinToString(" "),
+                )
+            }
+    }
+
+    private fun localizedAnnouncementTitle(a: com.syrmos.core.network.STASYAnnouncement): String =
+        when (LocalizationManager.language.value) {
+            AppLanguage.GREEK -> a.title.ifBlank { a.titleEn }
+            AppLanguage.ALBANIAN -> a.titleSq.ifBlank { a.titleEn.ifBlank { a.title } }
+            else -> a.titleEn.ifBlank { a.title }
+        }
 
     private suspend fun resolvePlanByArrival(intent: AssistantIntent.PlanTripByArrival): AssistantMessage {
         val fromId = intent.fromStationId ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
@@ -478,10 +642,24 @@ class AssistantViewModel(
         }
     }
 
-    private fun weatherUnavailableText(): String = when (LocalizationManager.language.value) {
-        AppLanguage.GREEK -> "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online."
-        AppLanguage.ALBANIAN -> "Ende s'kam të dhëna moti. Provo përsëri kur je online."
-        else -> "I don't have weather data yet. Try again when you're online."
+    /**
+     * No live reading: fall back to the honest Athens seasonal norm ("usually
+     * hot and dry this time of year") rather than a dead end, phrased as
+     * "usually", never "now".
+     */
+    private fun weatherUnavailableText(): String {
+        val ctx = weatherContext()
+        if (ctx.source == com.syrmos.core.model.weather.WeatherSource.SEASONAL_FALLBACK) {
+            val typical = seasonalClause(ctx)
+            return t(
+                "I don't have live weather right now, but Athens this time of year is usually $typical.",
+                "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως $typical.",
+                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është $typical.",
+            )
+        }
+        return t("I don't have weather data yet. Try again when you're online.",
+            "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online.",
+            "Ende s'kam të dhëna moti. Provo përsëri kur je online.")
     }
 
     private fun catJoke(): String {
@@ -604,26 +782,86 @@ class AssistantViewModel(
     }
 
     private suspend fun resolvePlanTrip(intent: AssistantIntent.PlanTrip): AssistantMessage {
-        val fromId = intent.fromStationId ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
+        // Origin falls back to the remembered current station ("I'm at Syntagma").
+        val fromId = intent.fromStationId ?: session.currentStation
+            ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
         val toId = intent.toStationId ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
-        val result = planJourney.invoke(fromId, toId).first()
+        val fastest = planJourney.invoke(fromId, toId).first()
             ?: return botMessage(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
                 "Nuk gjeta një rrugë hekurudhore mes tyre."))
-        val legs = result.segments.filter { !it.isTransfer }
-        val lines = legs.joinToString(" → ") { "${displayLine(it.lineId)} ${it.toStationName}" }
-        val transfers = if (result.transferCount == 0) {
+
+        // Offer a sheltered all-metro alternative only when the fastest route is
+        // exposed (tram / surface) and a distinct metro-only path exists. On a
+        // hot or wet day the ranker can then pick the drier option.
+        val ctx = weatherContext()
+        val fastExposure = routeExposure(fastest)
+        val candidates = buildList {
+            add(com.syrmos.core.domain.assistant.RouteCandidate(fastest, fastExposure))
+            if (fastExposure != Exposure.SHELTERED) {
+                planJourney.metroOnly(fromId, toId).first()?.let { metro ->
+                    val distinct = metro.totalMinutes != fastest.totalMinutes ||
+                        metro.segments.size != fastest.segments.size
+                    if (distinct && routeExposure(metro) == Exposure.SHELTERED) {
+                        add(com.syrmos.core.domain.assistant.RouteCandidate(metro, Exposure.SHELTERED))
+                    }
+                }
+            }
+        }
+        val ranked = com.syrmos.core.domain.assistant.RouteRanker.rank(candidates, intent.preference, ctx)
+        val best = ranked.first().candidate.result
+
+        val linesText = routeLineText(best)
+        val transfers = if (best.transferCount == 0) {
             t("no change", "χωρίς αλλαγή", "pa ndërrim")
         } else {
-            t("${result.transferCount} change(s)", "${result.transferCount} αλλαγή/ές", "${result.transferCount} ndërrim(e)")
+            t("${best.transferCount} change(s)", "${best.transferCount} αλλαγή/ές", "${best.transferCount} ndërrim(e)")
         }
-        val exposure = if (intent.lowExposure) "\n" + weatherAdvice(result) else ""
+        // "This is direct" nod when the user asked for the easiest route.
+        val directNote = if (intent.preference == com.syrmos.core.domain.assistant.RoutePreference.FEWEST_CHANGES &&
+            best.transferCount == 0) {
+            " " + t("This is direct, no change needed.", "Είναι απευθείας, χωρίς αλλαγή.", "Është direkt, pa ndërrim.")
+        } else {
+            ""
+        }
+        // When the ranker overrode the fastest route (weather tilt), say why.
+        val tradeoff = if (best !== fastest) {
+            "\n" + t(
+                "The faster route (${routeLineText(fastest)}, ${fastest.totalMinutes} min) is more exposed; in this weather I'd take this one.",
+                "Η πιο γρήγορη διαδρομή (${routeLineText(fastest)}, ${fastest.totalMinutes} λεπτά) είναι πιο εκτεθειμένη· με αυτόν τον καιρό θα προτιμούσα αυτή.",
+                "Rruga më e shpejtë (${routeLineText(fastest)}, ${fastest.totalMinutes} min) është më e ekspozuar; me këtë mot do të zgjidhja këtë.",
+            )
+        } else {
+            ""
+        }
+        val exposure = if (intent.lowExposure) "\n" + weatherAdvice(best) else ""
+        val legs = best.segments.filter { !it.isTransfer }
+        val advisory = ServiceAdvisoryMatcher.forRoute(
+            lineIds = legs.map { normalizeLine(it.lineId) },
+            stationNames = best.segments.flatMap { listOf(it.fromStationName, it.toStationName) }.distinct(),
+            notices = currentNotices(),
+            severeWeather = weatherRepository.cached?.current?.condition?.isSevere == true,
+        )
+        val caveat = advisory.top?.let {
+            "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ") + it.text
+        } ?: ""
         return botMessage(
-            t("$lines. About ${result.totalMinutes} min, $transfers.",
-                "$lines. Περίπου ${result.totalMinutes} λεπτά, $transfers.",
-                "$lines. Rreth ${result.totalMinutes} min, $transfers.") + exposure,
+            t("$linesText. About ${best.totalMinutes} min, $transfers.",
+                "$linesText. Περίπου ${best.totalMinutes} λεπτά, $transfers.",
+                "$linesText. Rreth ${best.totalMinutes} min, $transfers.") + directNote + tradeoff + exposure + caveat,
         )
     }
+
+    /** A route's shelter, from its non-transfer segments' line types. */
+    private fun routeExposure(result: com.syrmos.core.model.planner.JourneyResult): Exposure {
+        val types = result.segments.filter { !it.isTransfer }
+            .mapNotNull { seg -> lines.firstOrNull { it.id == normalizeLine(seg.lineId) }?.type }
+        return StationComfort.forRoute(types)
+    }
+
+    private fun routeLineText(result: com.syrmos.core.model.planner.JourneyResult): String =
+        result.segments.filter { !it.isTransfer }
+            .joinToString(" → ") { "${displayLine(it.lineId)} ${it.toStationName}" }
 
     /**
      * Real weather-aware advice for a rainy-day route: reads the cached weather
@@ -634,27 +872,89 @@ class AssistantViewModel(
         val types = result.segments.filter { !it.isTransfer }
             .mapNotNull { seg -> lines.firstOrNull { it.id == normalizeLine(seg.lineId) }?.type }
         val exposure = StationComfort.forRoute(types)
-        val shelter = when (exposure) {
-            Exposure.SHELTERED -> t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
-                "kryesisht nëntokë dhe e mbrojtur")
-            Exposure.MIXED -> t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
-            Exposure.EXPOSED -> t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
-                "në ajër të hapur (tram/sipërfaqe)")
-        }
-        val weather = weatherRepository.cached
-        return when {
-            weather != null && weather.current.condition.isWet ->
-                t("It's wet in ${weather.placeName} right now, and this route is $shelter.",
-                    "Έχει βροχή στην ${weather.placeName} τώρα, και η διαδρομή είναι $shelter.",
-                    "Ka shi në ${weather.placeName} tani, dhe kjo rrugë është $shelter.")
-            weather != null ->
-                t("It's dry in ${weather.placeName} right now; this route is $shelter.",
-                    "Δεν βρέχει στην ${weather.placeName} τώρα· η διαδρομή είναι $shelter.",
-                    "S'ka shi në ${weather.placeName} tani; kjo rrugë është $shelter.")
-            else ->
-                t("I can't check live weather offline, but this route is $shelter.",
+        return weatherAdviceText(weatherContext(), exposure)
+    }
+
+    /** Live snapshot wins; else the Athens seasonal profile for this month. */
+    private fun weatherContext(): com.syrmos.core.model.weather.WeatherContext {
+        val month = com.syrmos.core.common.extensions.currentAthensDate().monthNumber
+        return com.syrmos.core.domain.assistant.WeatherContextBuilder.resolve(weatherRepository.cached, month)
+    }
+
+    private fun shelterClause(exposure: Exposure): String = when (exposure) {
+        Exposure.SHELTERED -> t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
+            "kryesisht nëntokë dhe e mbrojtur")
+        Exposure.MIXED -> t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
+        Exposure.EXPOSED -> t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
+            "në ajër të hapur (tram/sipërfaqe)")
+    }
+
+    /**
+     * Composes honest weather advice: live ("It's hot in Athens right now"),
+     * seasonal ("Athens this time of year is usually hot and dry"), or unknown,
+     * plus the route's shelter and an optional nudge when exposure matters.
+     */
+    private fun weatherAdviceText(ctx: com.syrmos.core.model.weather.WeatherContext, exposure: Exposure): String {
+        val shelter = shelterClause(exposure)
+        val nudge = weatherNudge(ctx.state, exposure)
+        val lead = when (ctx.source) {
+            com.syrmos.core.model.weather.WeatherSource.LIVE,
+            com.syrmos.core.model.weather.WeatherSource.FORECAST -> {
+                val place = ctx.placeName ?: t("Athens", "Αθήνα", "Athinë")
+                val now = liveStateClause(ctx.state)
+                t("$now in $place right now, and this route is $shelter.",
+                    "$now στην $place τώρα, και η διαδρομή είναι $shelter.",
+                    "$now në $place tani, dhe kjo rrugë është $shelter.")
+            }
+            com.syrmos.core.model.weather.WeatherSource.SEASONAL_FALLBACK -> {
+                val typical = seasonalClause(ctx)
+                t("I don't have live weather right now, but Athens this time of year is usually $typical. This route is $shelter.",
+                    "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως $typical. Η διαδρομή είναι $shelter.",
+                    "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është $typical. Kjo rrugë është $shelter.")
+            }
+            com.syrmos.core.model.weather.WeatherSource.UNKNOWN ->
+                t("I can't check the weather offline, but this route is $shelter.",
                     "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι $shelter.",
                     "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është $shelter.")
+        }
+        return if (nudge.isEmpty()) lead else "$lead $nudge"
+    }
+
+    private fun liveStateClause(state: com.syrmos.core.model.weather.WeatherState): String = when (state) {
+        com.syrmos.core.model.weather.WeatherState.RAINY -> t("It's wet", "Έχει βροχή", "Ka shi")
+        com.syrmos.core.model.weather.WeatherState.HOT -> t("It's hot", "Έχει ζέστη", "Bën vapë")
+        com.syrmos.core.model.weather.WeatherState.WINDY -> t("It's windy", "Έχει αέρα", "Ka erë")
+        com.syrmos.core.model.weather.WeatherState.NORMAL -> t("It's calm", "Ο καιρός είναι ήπιος", "Moti është i qetë")
+    }
+
+    private fun seasonalClause(ctx: com.syrmos.core.model.weather.WeatherContext): String {
+        val month = ctx.month ?: 0
+        return when {
+            ctx.state == com.syrmos.core.model.weather.WeatherState.HOT ->
+                t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë")
+            month in listOf(11, 12, 1, 2) ->
+                t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu")
+            else -> t("mild", "ήπια", "e butë")
+        }
+    }
+
+    /** Optional nudge toward shelter when the weather makes exposure matter. */
+    private fun weatherNudge(state: com.syrmos.core.model.weather.WeatherState, exposure: Exposure): String {
+        if (exposure == Exposure.SHELTERED) return ""
+        return when (state) {
+            com.syrmos.core.model.weather.WeatherState.RAINY ->
+                t("A more underground option would keep you drier.",
+                    "Μια πιο υπόγεια επιλογή θα σε κρατούσε πιο στεγνό.",
+                    "Një opsion më nëntokësor do të të mbante më të thatë.")
+            com.syrmos.core.model.weather.WeatherState.HOT ->
+                t("Prefer an underground route to avoid long sun-exposed waits.",
+                    "Προτίμησε υπόγεια διαδρομή για να αποφύγεις αναμονές στον ήλιο.",
+                    "Zgjidh një rrugë nëntokësore për të shmangur pritjet në diell.")
+            com.syrmos.core.model.weather.WeatherState.WINDY ->
+                t("Exposed tram/surface stretches can be gusty; metro is steadier.",
+                    "Τα ανοιχτά τμήματα τραμ/επιφάνειας έχουν ριπές· το μετρό είναι πιο σταθερό.",
+                    "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.")
+            com.syrmos.core.model.weather.WeatherState.NORMAL -> ""
         }
     }
 

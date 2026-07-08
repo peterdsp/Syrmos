@@ -32,6 +32,11 @@ final class AriadneModel: ObservableObject {
     private var pendingIntent: AssistantIntent?
     private var pendingMissing: MissingSlot?
 
+    // Durable co-pilot memory: the current station ("I'm at Syntagma"), the last
+    // destination/route, and the last intent, so follow-ups like "go airport
+    // faster" don't re-ask what the user already told us.
+    private var session = AssistantSessionContext.empty
+
     init() {
         messages = [greeting()]
         location.requestIfNeeded()
@@ -55,7 +60,9 @@ final class AriadneModel: ObservableObject {
                 let cleaned = await AriadneBrain.normalize(text) ?? text
                 raw = parser.parse(cleaned)
             }
-            let intent = mergePendingIfApplicable(raw)
+            // Fill a missing origin from the known current station before asking,
+            // so "I'm at Syntagma" then "go airport faster" needs no follow-up.
+            let intent = fillFromContext(mergePendingIfApplicable(raw))
             if case let .needsClarification(base, missing) = intent {
                 pendingIntent = base
                 pendingMissing = missing
@@ -63,6 +70,7 @@ final class AriadneModel: ObservableObject {
                 pendingIntent = nil
                 pendingMissing = nil
             }
+            updateSession(intent)
             let reply = await resolve(intent)
             messages.append(reply)
             thinking = false
@@ -88,7 +96,7 @@ final class AriadneModel: ObservableObject {
         guard let sid = stationId else { return raw }
 
         switch pending {
-        case let .planTrip(from, to, lowExposure):
+        case let .planTrip(from, to, lowExposure, preference):
             var patchedFrom = from, patchedTo = to
             switch missing {
             case .originStation: patchedFrom = sid
@@ -96,10 +104,10 @@ final class AriadneModel: ObservableObject {
             default: return raw
             }
             if let _ = patchedFrom, let _ = patchedTo {
-                return .planTrip(fromStationId: patchedFrom, toStationId: patchedTo, lowExposure: lowExposure)
+                return .planTrip(fromStationId: patchedFrom, toStationId: patchedTo, lowExposure: lowExposure, preference: preference)
             }
             let stillMissing: MissingSlot = patchedFrom == nil ? .originStation : .destinationStation
-            let base: AssistantIntent = .planTrip(fromStationId: patchedFrom, toStationId: patchedTo, lowExposure: lowExposure)
+            let base: AssistantIntent = .planTrip(fromStationId: patchedFrom, toStationId: patchedTo, lowExposure: lowExposure, preference: preference)
             return .needsClarification(base: base, missing: stillMissing)
         case let .lastTrain(_, lineId):
             return .lastTrain(stationId: sid, lineId: lineId)
@@ -123,8 +131,8 @@ final class AriadneModel: ObservableObject {
             return resolveDepartures(stationId: stationId, lineId: lineId, day: day)
         case let .lastTrain(stationId, lineId):
             return resolveLastTrain(stationId: stationId, lineId: lineId)
-        case let .planTrip(from, to, lowExposure):
-            return resolvePlanTrip(from: from, to: to, lowExposure: lowExposure)
+        case let .planTrip(from, to, lowExposure, preference):
+            return resolvePlanTrip(from: from, to: to, lowExposure: lowExposure, preference: preference)
         case let .travelTime(to, from):
             return resolveTravelTime(to: to, from: from)
         case let .findStation(query):
@@ -151,7 +159,141 @@ final class AriadneModel: ObservableObject {
             return await resolveWeather(stationId: stationId)
         case let .planTripByArrival(from, to, absMin, relMin):
             return resolvePlanByArrival(from: from, to: to, absMin: absMin, relMin: relMin)
+        case let .stationStatus(stationId):
+            return await resolveStationStatus(stationId: stationId)
+        case let .setCurrentLocation(stationId):
+            return resolveSetLocation(stationId: stationId)
         }
+    }
+
+    /// Fills a missing trip origin from the remembered current station, so a
+    /// follow-up like "go airport faster" after "I'm at Syntagma" resolves
+    /// without re-asking. Only touches the origin slot; everything else is left
+    /// to the normal clarification flow.
+    private func fillFromContext(_ intent: AssistantIntent) -> AssistantIntent {
+        guard let current = session.currentStation else { return intent }
+        guard case let .needsClarification(base, missing) = intent, missing == .originStation else { return intent }
+        switch base {
+        case let .planTrip(_, to, lowExposure, preference):
+            return .planTrip(fromStationId: current, toStationId: to, lowExposure: lowExposure, preference: preference)
+        case let .travelTime(to, _):
+            return .travelTime(toStationId: to, fromStationId: current)
+        case let .planTripByArrival(_, to, absMin, relMin):
+            return .planTripByArrival(fromStationId: current, toStationId: to, arriveByAthensMinutes: absMin, inMinutesFromNow: relMin)
+        default:
+            return intent
+        }
+    }
+
+    /// Threads the turn's outcome into the session so the next turn has context.
+    private func updateSession(_ intent: AssistantIntent) {
+        switch intent {
+        case let .setCurrentLocation(stationId):
+            session = session.withCurrentStation(stationId ?? session.currentStation)
+        case let .planTrip(from, to, _, preference):
+            session.currentStation = from ?? session.currentStation
+            session.lastDestination = to ?? session.lastDestination
+            if let from, let to {
+                session.lastRoute = RouteMemory(fromStationId: from, toStationId: to, preference: preference)
+            }
+        case let .travelTime(to, _):
+            session.lastDestination = to ?? session.lastDestination
+        case let .showDepartures(stationId, _, _):
+            session.currentStation = stationId ?? session.currentStation
+        case .needsClarification:
+            break
+        default:
+            break
+        }
+    }
+
+    // MARK: - Context set + station status
+
+    private func resolveSetLocation(stationId: String?) -> AriadneMessage {
+        guard let stationId else {
+            return bot(t("Okay, you're at the station. Where do you want to go next?",
+                "Οκ, είσαι στον σταθμό. Πού θέλεις να πας μετά;",
+                "Në rregull, je te stacioni. Ku do të shkosh më pas?"))
+        }
+        let stationName = station(stationId).map { name($0) } ?? stationId
+        return bot(t("Got it. I'll use \(stationName) as your starting station.",
+            "Οκ. Θα χρησιμοποιώ τον \(stationName) ως σταθμό εκκίνησης.",
+            "Në rregull. Do ta përdor \(stationName) si stacionin tënd të nisjes."))
+    }
+
+    /// Honest station status: lead with any live advisory, else the timetable.
+    private func resolveStationStatus(stationId: String?) async -> AriadneMessage {
+        guard let id = stationId, let st = station(id) else { return bot(clarify(.station)) }
+        await alertsService.fetchAnnouncements()
+        let advisory = ServiceAdvisoryMatcher.forStation(
+            stationNames: stationSearchNames(st),
+            stationLineIds: st.lineIds,
+            notices: currentNotices(),
+            severeWeather: WeatherStore.shared.snapshot?.current.condition.isSevere == true
+        )
+        return bot(stationStatusText(name: name(st), advisory: advisory))
+    }
+
+    private func stationStatusText(name: String, advisory: ServiceAdvisory) -> String {
+        if let top = advisory.top {
+            let lead: String
+            switch top.severity {
+            case .closure:
+                lead = t("Heads up, there's an active closure affecting \(name).",
+                    "Προσοχή, υπάρχει ενεργό κλείσιμο που αφορά τον \(name).",
+                    "Kujdes, ka një mbyllje aktive që prek \(name).")
+            case .warning:
+                lead = t("There's an active advisory affecting \(name).",
+                    "Υπάρχει ενεργή ειδοποίηση που αφορά τον \(name).",
+                    "Ka një njoftim aktiv që prek \(name).")
+            case .info:
+                lead = t("There's a notice affecting \(name).",
+                    "Υπάρχει ανακοίνωση που αφορά τον \(name).",
+                    "Ka një njoftim që prek \(name).")
+            }
+            let tail = t("Check official STASY alerts for details.",
+                "Δες τις επίσημες ανακοινώσεις της ΣΤΑΣΥ για λεπτομέρειες.",
+                "Kontrollo njoftimet zyrtare të STASY për detaje.")
+            return "\(lead) \(top.text) \(tail)"
+        }
+        let base = t(
+            "I don't have a live closure alert for \(name). Based on the normal timetable, the station should be operating. Check official STASY alerts if this is urgent.",
+            "Δεν έχω ζωντανή ειδοποίηση κλεισίματος για τον \(name). Με βάση το κανονικό πρόγραμμα, ο σταθμός πρέπει να λειτουργεί. Αν είναι επείγον, δες τις ανακοινώσεις της ΣΤΑΣΥ.",
+            "Nuk kam njoftim live për mbyllje të \(name). Sipas orarit normal, stacioni duhet të jetë në punë. Nëse është urgjente, kontrollo njoftimet e STASY.")
+        if advisory.severeWeather {
+            return base + " " + t("Severe weather is in effect, so allow extra time.",
+                "Επικρατεί κακοκαιρία, οπότε άφησε περιθώριο.",
+                "Ka mot të keq, ndaj lër kohë shtesë.")
+        }
+        return base
+    }
+
+    /// Station names in every language the matcher should look for in notices.
+    private func stationSearchNames(_ st: TransitStation) -> [String] {
+        Array(Set([st.name, st.nameEl].filter { !$0.isEmpty }))
+    }
+
+    /// Projects the iOS STASY announcement feed into `ServiceNotice`s. `text` is
+    /// the localized title for read-back; `searchText` concatenates every
+    /// language so station-name matching works regardless of the notice language.
+    /// `affectedLineIds` and `severity` now come straight from the feed, so iOS
+    /// matches the KMP path: a line-wide advisory reaches any station on that
+    /// line, and a real closure reads as a closure.
+    private func currentNotices() -> [ServiceNotice] {
+        alertsService.announcements
+            .filter { $0.category == .serviceAlert || AdvisorySeverity.fromRaw($0.severity) != .info }
+            .map { a in
+                ServiceNotice(
+                    id: a.id,
+                    text: a.displayTitle(language: loc.language),
+                    affectedLineIds: a.affectedLines,
+                    severity: AdvisorySeverity.fromRaw(a.severity),
+                    validFrom: a.validFrom,
+                    validUntil: a.validUntil,
+                    searchText: [a.title, a.titleEn, a.titleSq, a.summary, a.summaryEn, a.summarySq]
+                        .filter { !$0.isEmpty }.joined(separator: " ")
+                )
+            }
     }
 
     // MARK: - Time-anchored planning
@@ -350,12 +492,20 @@ final class AriadneModel: ObservableObject {
         }
     }
 
+    /// No live reading: fall back to the honest Athens seasonal norm ("usually
+    /// hot and dry this time of year") rather than a dead end, phrased as
+    /// "usually", never "now". Matches the KMP `weatherUnavailableText`.
     private func weatherUnavailable() -> String {
-        switch loc.language {
-        case .greek: return "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online."
-        case .albanian: return "Ende s'kam të dhëna moti. Provo përsëri kur je online."
-        case .english: return "I don't have weather data yet. Try again when you're online."
+        let ctx = weatherContext()
+        if ctx.source == .seasonalFallback {
+            let typical = seasonalClause(ctx)
+            return t("I don't have live weather right now, but Athens this time of year is usually \(typical).",
+                "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως \(typical).",
+                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është \(typical).")
         }
+        return t("I don't have weather data yet. Try again when you're online.",
+            "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online.",
+            "Ende s'kam të dhëna moti. Provo përsëri kur je online.")
     }
 
     private func catJoke() -> String {
@@ -529,22 +679,75 @@ final class AriadneModel: ObservableObject {
 
     /// Full point-to-point routing via `JourneyPlanner` (Dijkstra), matching
     /// the Android/Web `PlanJourneyUseCase`.
-    private func resolvePlanTrip(from: String?, to: String?, lowExposure: Bool) -> AriadneMessage {
-        guard let fromId = from else { return bot(clarify(.originStation)) }
+    private func resolvePlanTrip(from: String?, to: String?, lowExposure: Bool, preference: RoutePreference) -> AriadneMessage {
+        // Origin falls back to the remembered current station ("I'm at Syntagma").
+        guard let fromId = from ?? session.currentStation else { return bot(clarify(.originStation)) }
         guard let toId = to else { return bot(clarify(.destinationStation)) }
-        guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
+        guard let fastest = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
             return bot(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
                 "Nuk gjeta një rrugë hekurudhore mes tyre."))
         }
-        let legs = plan.legs.map { "\(displayLine($0.lineId)) \($0.toName)" }.joined(separator: " → ")
-        let transfers = plan.transfers == 0
+
+        // Offer a sheltered all-metro alternative only when the fastest route is
+        // exposed (tram / surface) and a distinct metro-only path exists. On a
+        // hot or wet day the ranker can then pick the drier option.
+        let ctx = weatherContext()
+        let fastExposure = routeExposure(fastest)
+        var candidates: [RouteCandidate] = [RouteCandidate(result: fastest, exposure: fastExposure)]
+        if fastExposure != .sheltered,
+           let metro = JourneyPlanner.metroOnly(from: fromId, to: toId, language: loc.language) {
+            let distinct = metro.totalMinutes != fastest.totalMinutes || metro.legs.count != fastest.legs.count
+            if distinct && routeExposure(metro) == .sheltered {
+                candidates.append(RouteCandidate(result: metro, exposure: .sheltered))
+            }
+        }
+        let ranked = RouteRanker.rank(candidates, preference: preference, weather: ctx)
+        let best = ranked.first!.candidate.result
+
+        let legs = routeLineText(best)
+        let transfers = best.transfers == 0
             ? t("no change", "χωρίς αλλαγή", "pa ndërrim")
-            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
-        let exposure = lowExposure ? "\n" + weatherAdvice(plan) : ""
-        return bot(t("\(legs). About \(plan.totalMinutes) min, \(transfers).",
-            "\(legs). Περίπου \(plan.totalMinutes) λεπτά, \(transfers).",
-            "\(legs). Rreth \(plan.totalMinutes) min, \(transfers).") + exposure)
+            : t("\(best.transfers) change(s)", "\(best.transfers) αλλαγή/ές", "\(best.transfers) ndërrim(e)")
+        // "This is direct" nod when the user asked for the easiest route.
+        let directNote = (preference == .fewestChanges && best.transfers == 0)
+            ? " " + t("This is direct, no change needed.", "Είναι απευθείας, χωρίς αλλαγή.", "Është direkt, pa ndërrim.")
+            : ""
+        // When the ranker overrode the fastest route (weather tilt), say why.
+        let tradeoff = (best != fastest)
+            ? "\n" + t(
+                "The faster route (\(routeLineText(fastest)), \(fastest.totalMinutes) min) is more exposed; in this weather I'd take this one.",
+                "Η πιο γρήγορη διαδρομή (\(routeLineText(fastest)), \(fastest.totalMinutes) λεπτά) είναι πιο εκτεθειμένη· με αυτόν τον καιρό θα προτιμούσα αυτή.",
+                "Rruga më e shpejtë (\(routeLineText(fastest)), \(fastest.totalMinutes) min) është më e ekspozuar; me këtë mot do të zgjidhja këtë.")
+            : ""
+        let exposure = lowExposure ? "\n" + weatherAdvice(best) : ""
+        // Surface any STASY advisory that intersects the route. The Swift Plan
+        // only carries per-leg lineIds + leg destination names, so route matching
+        // runs off the leg line ids and the trip endpoint names.
+        let routeStationNames = Array(Set(
+            ([name(fromId), name(toId)] + best.legs.map { $0.toName }).filter { !$0.isEmpty }
+        ))
+        let advisory = ServiceAdvisoryMatcher.forRoute(
+            lineIds: best.legs.map { normalizeLine($0.lineId) },
+            stationNames: routeStationNames,
+            notices: currentNotices(),
+            severeWeather: WeatherStore.shared.snapshot?.current.condition.isSevere == true
+        )
+        let caveat = advisory.top.map { "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ") + $0.text } ?? ""
+        return bot(t("\(legs). About \(best.totalMinutes) min, \(transfers).",
+            "\(legs). Περίπου \(best.totalMinutes) λεπτά, \(transfers).",
+            "\(legs). Rreth \(best.totalMinutes) min, \(transfers).") + directNote + tradeoff + exposure + caveat)
+    }
+
+    /// A route's shelter, from its legs' line types. Mirror of KMP `routeExposure`.
+    private func routeExposure(_ plan: JourneyPlanner.Plan) -> Exposure {
+        let types = plan.legs.compactMap { SyrmosData.line(for: normalizeLine($0.lineId))?.type }
+        return Exposure.forRoute(types)
+    }
+
+    /// "M3 Syntagma → M2 Monastiraki" leg text. Mirror of KMP `routeLineText`.
+    private func routeLineText(_ plan: JourneyPlanner.Plan) -> String {
+        plan.legs.map { "\(displayLine($0.lineId)) \($0.toName)" }.joined(separator: " → ")
     }
 
     /// "How long to X". Origin is the user's nearest station from GPS, or an
@@ -588,41 +791,107 @@ final class AriadneModel: ObservableObject {
         return name(s)
     }
 
-    private enum RouteExposure { case sheltered, mixed, exposed }
-
-    /// Real weather-aware advice: cached weather + route exposure (metro is
-    /// underground/sheltered, tram is open-air). Mirrors the KMP StationComfort.
+    /// Real weather-aware advice for a rainy-day route: reads the cached weather
+    /// snapshot and the route's exposure (metro is underground/sheltered, tram
+    /// is open-air). Degrades honestly when there's no cached weather.
     private func weatherAdvice(_ plan: JourneyPlanner.Plan) -> String {
         let types = plan.legs.compactMap { SyrmosData.line(for: $0.lineId)?.type }
-        let shelter: String
-        switch routeExposure(types) {
-        case .sheltered: shelter = t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη", "kryesisht nëntokë dhe e mbrojtur")
-        case .mixed: shelter = t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
-        case .exposed: shelter = t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)", "në ajër të hapur (tram/sipërfaqe)")
-        }
-        if let snap = WeatherStore.shared.snapshot {
-            if snap.current.condition.isWet {
-                return t("It's wet in \(snap.placeName) right now, and this route is \(shelter).",
-                    "Έχει βροχή στην \(snap.placeName) τώρα, και η διαδρομή είναι \(shelter).",
-                    "Ka shi në \(snap.placeName) tani, dhe kjo rrugë është \(shelter).")
-            }
-            return t("It's dry in \(snap.placeName) right now; this route is \(shelter).",
-                "Δεν βρέχει στην \(snap.placeName) τώρα· η διαδρομή είναι \(shelter).",
-                "S'ka shi në \(snap.placeName) tani; kjo rrugë është \(shelter).")
-        }
-        return t("I can't check live weather offline, but this route is \(shelter).",
-            "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι \(shelter).",
-            "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është \(shelter).")
+        let exposure = Exposure.forRoute(types)
+        return weatherAdviceText(weatherContext(), exposure)
     }
 
-    private func routeExposure(_ types: [TransitType]) -> RouteExposure {
-        func e(_ type: TransitType) -> RouteExposure {
-            switch type { case .metro: return .sheltered; case .tram: return .exposed; case .suburban: return .mixed }
+    /// Live snapshot wins; else the Athens seasonal profile for this month.
+    private func weatherContext() -> WeatherContext {
+        WeatherContextBuilder.resolve(snapshot: WeatherStore.shared.snapshot, month: currentAthensMonth())
+    }
+
+    /// The current calendar month (1..12) in Athens local time. Reuses the same
+    /// Europe/Athens gregorian calendar the arrival planner and day-offset use.
+    private func currentAthensMonth() -> Int {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Athens") ?? .current
+        return cal.component(.month, from: Date())
+    }
+
+    private func shelterClause(_ exposure: Exposure) -> String {
+        switch exposure {
+        case .sheltered:
+            return t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
+                "kryesisht nëntokë dhe e mbrojtur")
+        case .mixed:
+            return t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
+        case .exposed:
+            return t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
+                "në ajër të hapur (tram/sipërfaqe)")
         }
-        let es = types.map(e)
-        if es.contains(.exposed) { return .exposed }
-        if es.contains(.mixed) { return .mixed }
-        return .sheltered
+    }
+
+    /// Composes honest weather advice: live ("It's hot in Athens right now"),
+    /// seasonal ("Athens this time of year is usually hot and dry"), or unknown,
+    /// plus the route's shelter and an optional nudge when exposure matters.
+    private func weatherAdviceText(_ ctx: WeatherContext, _ exposure: Exposure) -> String {
+        let shelter = shelterClause(exposure)
+        let nudge = weatherNudge(ctx.state, exposure)
+        let lead: String
+        switch ctx.source {
+        case .live, .forecast:
+            let place = ctx.placeName ?? t("Athens", "Αθήνα", "Athinë")
+            let now = liveStateClause(ctx.state)
+            lead = t("\(now) in \(place) right now, and this route is \(shelter).",
+                "\(now) στην \(place) τώρα, και η διαδρομή είναι \(shelter).",
+                "\(now) në \(place) tani, dhe kjo rrugë është \(shelter).")
+        case .seasonalFallback:
+            let typical = seasonalClause(ctx)
+            lead = t("I don't have live weather right now, but Athens this time of year is usually \(typical). This route is \(shelter).",
+                "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως \(typical). Η διαδρομή είναι \(shelter).",
+                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është \(typical). Kjo rrugë është \(shelter).")
+        case .unknown:
+            lead = t("I can't check the weather offline, but this route is \(shelter).",
+                "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι \(shelter).",
+                "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është \(shelter).")
+        }
+        return nudge.isEmpty ? lead : "\(lead) \(nudge)"
+    }
+
+    private func liveStateClause(_ state: WeatherState) -> String {
+        switch state {
+        case .rainy: return t("It's wet", "Έχει βροχή", "Ka shi")
+        case .hot: return t("It's hot", "Έχει ζέστη", "Bën vapë")
+        case .windy: return t("It's windy", "Έχει αέρα", "Ka erë")
+        case .normal: return t("It's calm", "Ο καιρός είναι ήπιος", "Moti është i qetë")
+        }
+    }
+
+    private func seasonalClause(_ ctx: WeatherContext) -> String {
+        let month = ctx.month ?? 0
+        if ctx.state == .hot {
+            return t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë")
+        }
+        if [11, 12, 1, 2].contains(month) {
+            return t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu")
+        }
+        return t("mild", "ήπια", "e butë")
+    }
+
+    /// Optional nudge toward shelter when the weather makes exposure matter.
+    private func weatherNudge(_ state: WeatherState, _ exposure: Exposure) -> String {
+        if exposure == .sheltered { return "" }
+        switch state {
+        case .rainy:
+            return t("A more underground option would keep you drier.",
+                "Μια πιο υπόγεια επιλογή θα σε κρατούσε πιο στεγνό.",
+                "Një opsion më nëntokësor do të të mbante më të thatë.")
+        case .hot:
+            return t("Prefer an underground route to avoid long sun-exposed waits.",
+                "Προτίμησε υπόγεια διαδρομή για να αποφύγεις αναμονές στον ήλιο.",
+                "Zgjidh një rrugë nëntokësore për të shmangur pritjet në diell.")
+        case .windy:
+            return t("Exposed tram/surface stretches can be gusty; metro is steadier.",
+                "Τα ανοιχτά τμήματα τραμ/επιφάνειας έχουν ριπές· το μετρό είναι πιο σταθερό.",
+                "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.")
+        case .normal:
+            return ""
+        }
     }
 
     private func resolveFindStation(_ query: String) -> AriadneMessage {

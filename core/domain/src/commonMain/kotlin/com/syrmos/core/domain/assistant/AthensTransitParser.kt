@@ -50,7 +50,8 @@ class AthensTransitParser(
             containsAny(text, FIND_WORDS) ||
             containsAny(text, FARE_WORDS) ||
             containsAny(text, FAVORITE_WORDS) ||
-            containsAny(text, TIME_PHRASES)
+            containsAny(text, TIME_PHRASES) ||
+            containsAny(text, LOCATION_PHRASES)
 
         // Weather as a routing constraint (raining -> low-exposure route),
         // OR a direct weather question. "weather" / "καιρός" / "moti" alone
@@ -72,6 +73,22 @@ class AthensTransitParser(
 
         // Nothing transit-related at all: decline.
         if (!strongTransit && !intentSignal && !weather) return AssistantIntent.OutOfScope
+
+        // Pure context-set "I'm at X" is checked before planning, because the
+        // Albanian "jam te X" contains " te ", which would otherwise read as a
+        // "to" marker and turn the statement into a trip. Only fires with at
+        // most one station, no plan cue, and no routing preference, so
+        // "I'm at X, go to Y faster" still plans normally below.
+        if (containsAny(text, LOCATION_PHRASES) &&
+            mentionedStations.size <= 1 &&
+            !containsAny(text, PLAN_PHRASES) &&
+            RoutePreference.fromFolded(text) == RoutePreference.BALANCED &&
+            !containsAny(text, TIME_PHRASES) &&
+            !containsAny(text, FARE_WORDS) &&
+            !containsAny(text, LAST_TRAIN_PHRASES)
+        ) {
+            return AssistantIntent.SetCurrentLocation(stationId = mentionedStations.firstOrNull())
+        }
 
         // 0. Travel time / ETA ("how long to X", "how many minutes to X").
         //    Placed before fares because "how much time" shares the fare
@@ -122,8 +139,10 @@ class AthensTransitParser(
         //    distinct stations named. A bare "trains FROM X" is departures, not
         //    a trip, so "from" alone does not trigger planning.
         val hasToMarker = TO_MARKERS.any { text.contains(it) }
+        val preference = RoutePreference.fromFolded(text)
         val planning = containsAny(text, PLAN_PHRASES) ||
             weather ||
+            (preference != RoutePreference.BALANCED && mentionedStations.isNotEmpty()) ||
             (hasToMarker && mentionedStations.isNotEmpty()) ||
             mentionedStations.size >= 2
         if (planning) {
@@ -145,11 +164,22 @@ class AthensTransitParser(
                     else -> base
                 }
             }
-            val (from, to) = resolveTripEndpoints(text, mentionedStations)
+            // A single named station reached through a plan cue or a routing
+            // preference ("how do I go airport faster") is the destination; the
+            // origin comes from session context or a follow-up question. Without
+            // such a cue, a lone station keeps the position-based reading.
+            val singleDestination = mentionedStations.size == 1 && !hasToMarker &&
+                (containsAny(text, PLAN_PHRASES) || preference != RoutePreference.BALANCED)
+            val (from, to) = if (singleDestination) {
+                null to mentionedStations[0]
+            } else {
+                resolveTripEndpoints(text, mentionedStations)
+            }
             val base = AssistantIntent.PlanTrip(
                 fromStationId = from,
                 toStationId = to,
                 lowExposure = weather,
+                preference = preference,
             )
             return when {
                 to == null -> AssistantIntent.NeedsClarification(base, MissingSlot.DESTINATION_STATION)
@@ -162,6 +192,23 @@ class AthensTransitParser(
         if (containsAny(text, LAST_TRAIN_PHRASES)) {
             val station = mentionedStations.firstOrNull()
             val base = AssistantIntent.LastTrain(stationId = station, lineId = mentionedLine)
+            return if (station == null) {
+                AssistantIntent.NeedsClarification(base, MissingSlot.STATION)
+            } else {
+                base
+            }
+        }
+
+        // 2b. Station operational status: "is X open / working / closed?".
+        //     Needs either a named station or the word "station", so a general
+        //     "any closures today?" still falls through to the alerts branch.
+        //     Placed before Alerts so "is Syntagma closed" is a station-status
+        //     question, not a network-wide alerts query.
+        if (containsAny(text, STATION_STATUS_WORDS) &&
+            (mentionedStations.isNotEmpty() || containsAny(text, STATION_NOUN_WORDS))
+        ) {
+            val station = mentionedStations.firstOrNull()
+            val base = AssistantIntent.StationStatus(stationId = station)
             return if (station == null) {
                 AssistantIntent.NeedsClarification(base, MissingSlot.STATION)
             } else {
@@ -493,8 +540,9 @@ class AthensTransitParser(
         // Two named stations or an explicit "to" frame trigger planning instead.
         private val PLAN_PHRASES = listOf(
             "how do i get", "how to get", "get to", "get me to", "route",
-            "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα",
-            "si shkoj", "si te shkoj", "rruga", "udhetim",
+            "how do i go", "how to go", "go to", "can i go", "can i still", "can i reach",
+            "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "προλαβαινω", "μπορω να παω",
+            "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij",
         )
         private val TO_MARKERS = listOf(
             " to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ",
@@ -549,6 +597,30 @@ class AthensTransitParser(
             "how long to get", "how much time", "minutes away", "how far",
             "ποση ωρα", "ποσα λεπτα", "ποσες ωρες", "ποσο θελει", "ποση ωρα κανει",
             "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe",
+        )
+        // Station operational-status cues. "closed"/"κλειστ"/"mbyll" overlap
+        // ALERT_WORDS on purpose: with a named station they mean "is this stop
+        // open?", which the status branch (ordered first) handles.
+        private val STATION_STATUS_WORDS = listOf(
+            "open", "working", "operating", "operational", "running", "closed", "shut",
+            "ανοιχτ", "λειτουργει", "δουλευει", "κλειστ", "ανοιξ",
+            "hapur", "punon", "funksionon", "mbyllur", "mbyll",
+        )
+        // Words meaning "station", so "is the station open?" resolves even
+        // before the specific stop is named.
+        private val STATION_NOUN_WORDS = listOf(
+            "station", "σταθμ", "stacion",
+        )
+        // "I'm at / here / got off" context-set cues. Kept to multi-word or
+        // distinctive tokens so a lone "in"/"on" can't trigger a location set.
+        private val LOCATION_PHRASES = listOf(
+            "i'm at", "im at", "i am at", "i'm in", "im in", "i'm on", "im on",
+            "i'm here", "im here", "i am here", "i'm there", "im there", "i am there",
+            "i reached", "i just reached", "i arrived", "i got off", "i just got off",
+            "currently at", "i'm inside", "im inside",
+            "ειμαι στο", "ειμαι στη", "ειμαι στον", "ειμαι εδω", "ειμαι μεσα",
+            "εφτασα", "μολις εφτασα", "κατεβηκα", "μολις κατεβηκα",
+            "jam te", "jam ne", "jam ketu", "jam brenda", "arrita", "zbrita", "sapo zbrita",
         )
         private val TOMORROW_WORDS = listOf("tomorrow", "αυριο", "neser")
         private val WEEKEND_WORDS = listOf("weekend", "σαββατοκυριακο", "fundjave")

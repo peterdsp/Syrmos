@@ -1,6 +1,8 @@
 package com.syrmos.core.common.extensions
 
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -9,15 +11,18 @@ import kotlinx.datetime.toLocalDateTime
 // throw IllegalTimeZoneException eagerly, killing tests that don't touch tz.
 private val athensTimeZone by lazy { TimeZone.of("Europe/Athens") }
 
-fun currentAthensTime(): LocalTime {
-    val now = Clock.System.now()
-    return now.toLocalDateTime(athensTimeZone).time
-}
+// All three read the clock through an injectable [Clock] that defaults to
+// Clock.System, so production is unchanged but tests can pin "now" to a fixed
+// instant and assert time-dependent behaviour (last train, seasonal weather)
+// deterministically instead of relying on the wall clock.
+fun currentAthensTime(clock: Clock = Clock.System): LocalTime =
+    clock.now().toLocalDateTime(athensTimeZone).time
 
-fun currentAthensDayOfWeek(): kotlinx.datetime.DayOfWeek {
-    val now = Clock.System.now()
-    return now.toLocalDateTime(athensTimeZone).dayOfWeek
-}
+fun currentAthensDayOfWeek(clock: Clock = Clock.System): DayOfWeek =
+    clock.now().toLocalDateTime(athensTimeZone).dayOfWeek
+
+fun currentAthensDate(clock: Clock = Clock.System): LocalDate =
+    clock.now().toLocalDateTime(athensTimeZone).date
 
 fun parseTime(timeString: String): LocalTime {
     val parts = timeString.split(":")

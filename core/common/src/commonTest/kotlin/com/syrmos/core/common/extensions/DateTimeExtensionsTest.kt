@@ -1,0 +1,39 @@
+package com.syrmos.core.common.extensions
+
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.Month
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/** A test clock frozen at a fixed instant, so time-dependent code is deterministic. */
+private class FixedClock(private val instant: Instant) : Clock {
+    override fun now(): Instant = instant
+}
+
+class DateTimeExtensionsTest {
+
+    // 09:00 UTC on 2026-07-08. Athens is UTC+3 in July (DST), so 12:00 local.
+    private val summerMorning = FixedClock(Instant.parse("2026-07-08T09:00:00Z"))
+
+    @Test
+    fun athens_time_is_offset_from_utc_in_summer() {
+        assertEquals(LocalTime(12, 0), currentAthensTime(summerMorning))
+    }
+
+    @Test
+    fun athens_date_reflects_the_frozen_instant() {
+        assertEquals(LocalDate(2026, 7, 8), currentAthensDate(summerMorning))
+        assertEquals(Month.JULY, currentAthensDate(summerMorning).month)
+    }
+
+    @Test
+    fun after_midnight_utc_can_be_next_day_in_athens() {
+        // 22:30 UTC on 2026-07-08 is 01:30 on 2026-07-09 in Athens.
+        val lateUtc = FixedClock(Instant.parse("2026-07-08T22:30:00Z"))
+        assertEquals(LocalDate(2026, 7, 9), currentAthensDate(lateUtc))
+        assertEquals(LocalTime(1, 30), currentAthensTime(lateUtc))
+    }
+}
