@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -359,8 +360,14 @@ private fun EmergencyWeatherCard(
         label = "rainDropsAlpha",
     )
 
-    val amber = Color(0xFFE65100)
-    val bg = Color(0xFFFFF3E0)
+    // Title, raindrop, and border accent. Brighter in dark mode so the thin
+    // strokes and headline don't muddy against the dark card. The bg flips to
+    // a deep amber-brown in dark mode so the onSurface text stays legible
+    // instead of washing out light-on-cream. Badge fill stays deep orange
+    // (see EmergencyNumberRow) because its white glyphs need a dark chip.
+    val isDark = isSystemInDarkTheme()
+    val amber = if (isDark) Color(0xFFFF9E42) else Color(0xFFE65100)
+    val bg = if (isDark) Color(0xFF291705) else Color(0xFFFFF3E0)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1338,12 +1345,15 @@ private fun AlertCard(
     onOpenUrl: (String) -> Unit,
 ) {
     val hasUrl = announcement.url.isNotBlank()
+    // Warm advisory tint for alerts. Flips to a dark warm fill in dark mode so
+    // the onSurface text stays legible instead of washing out on light cream.
+    val alertBg = if (isSystemInDarkTheme()) Color(0xFF2A2016) else Color(0xFFFFF3E0)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (hasUrl) Modifier.clickable { onOpenUrl(announcement.url) } else Modifier),
         colors = CardDefaults.cardColors(
-            containerColor = if (isAlert) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.surface,
+            containerColor = if (isAlert) alertBg else MaterialTheme.colorScheme.surface,
         ),
         border = if (isAlert) BorderStroke(1.dp, Color(0x33E87722)) else null,
         shape = RoundedCornerShape(10.dp),

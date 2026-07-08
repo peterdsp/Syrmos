@@ -107,6 +107,19 @@ struct WRow: Identifiable {
     let minutesAway: Int
     let time: String
     let isAirport: Bool
+    /// Absolute arrival time, so the widget's minutes tick live via the OS
+    /// (`Text(timerInterval:)`) instead of freezing at the value baked into the
+    /// timeline entry. Derived from `minutesAway` at entry-build time.
+    let target: Date
+
+    init(lineId: String, destination: String, minutesAway: Int, time: String, isAirport: Bool, target: Date? = nil) {
+        self.lineId = lineId
+        self.destination = destination
+        self.minutesAway = minutesAway
+        self.time = time
+        self.isAirport = isAirport
+        self.target = target ?? Date().addingTimeInterval(TimeInterval(minutesAway) * 60)
+    }
 }
 
 @available(iOS 17.0, *)
@@ -228,7 +241,10 @@ struct SyrmosProvider: AppIntentTimelineProvider {
 
     func timeline(for configuration: SyrmosWidgetConfigurationIntent, in context: Context) async -> Timeline<SyrmosEntry> {
         let e = await entry(for: configuration)
-        let next = Calendar.current.date(byAdding: .minute, value: 5, to: .now) ?? .now.addingTimeInterval(300)
+        // The visible minutes tick every second via the OS (Text(timerInterval:)),
+        // so this policy only governs how fresh the underlying projected data is.
+        // +1 min keeps the data current without leaning on reloads for the tick.
+        let next = Calendar.current.date(byAdding: .minute, value: 1, to: .now) ?? .now.addingTimeInterval(60)
         return Timeline(entries: [e], policy: .after(next))
     }
 
@@ -416,6 +432,25 @@ struct SyrmosProvider: AppIntentTimelineProvider {
 
 // MARK: - Family views
 
+/// The big self-ticking headline countdown for Next Train / Trio. Uses the
+/// OS-native `Text(timerInterval:)` so it updates every second with no reload,
+/// mirroring the Live Activity. Shows a localized "now" in red when imminent.
+@available(iOS 17.0, *)
+struct LiveBigMinutes: View {
+    let lead: WRow
+
+    var body: some View {
+        if lead.target.timeIntervalSinceNow <= 60 {
+            Text(WLoc.t("now", "τώρα", "tani"))
+                .foregroundStyle(.red)
+        } else {
+            Text(timerInterval: Date()...lead.target, countsDown: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+    }
+}
+
 @available(iOS 17.0, *)
 struct NextTrainView: View {
     var entry: SyrmosEntry
@@ -427,7 +462,7 @@ struct NextTrainView: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let lead {
                     LinePill(lineId: lead.lineId, size: family == .systemSmall ? .regular : .large)
-                    Text(lead.minutesAway <= 1 ? WLoc.t("now", "τώρα", "tani") : "\(lead.minutesAway) " + WLoc.t("min", "λεπτά", "min"))
+                    LiveBigMinutes(lead: lead)
                         .font(.system(size: family == .systemSmall ? 30 : 40, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(SyrmosLineTokens.color(for: lead.lineId))
@@ -481,7 +516,8 @@ struct LiveDeparturesView: View {
             } else {
                 ForEach(entry.rows.prefix(5)) { row in
                     DepartureRowCompact(lineId: row.lineId, destination: row.destination,
-                                        minutesAway: row.minutesAway, isAirport: row.isAirport)
+                                        minutesAway: row.minutesAway, isAirport: row.isAirport,
+                                        target: row.target)
                 }
                 Spacer(minLength: 0)
                 if !entry.nearby.isEmpty {
@@ -615,7 +651,8 @@ struct WeatherAlertsView: View {
                 Text(entry.stationName).font(.caption).fontWeight(.semibold).lineLimit(1)
                 ForEach(entry.rows.prefix(3)) { row in
                     DepartureRowCompact(lineId: row.lineId, destination: row.destination,
-                                        minutesAway: row.minutesAway, isAirport: row.isAirport)
+                                        minutesAway: row.minutesAway, isAirport: row.isAirport,
+                                        target: row.target)
                 }
                 Spacer(minLength: 0)
             }
@@ -635,7 +672,7 @@ struct TrioView: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let lead = entry.rows.first {
                     LinePill(lineId: lead.lineId, size: .regular)
-                    Text(lead.minutesAway <= 1 ? WLoc.t("now", "τώρα", "tani") : "\(lead.minutesAway)m")
+                    LiveBigMinutes(lead: lead)
                         .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
                         .foregroundStyle(SyrmosLineTokens.color(for: lead.lineId))
                     Text(entry.stationName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)

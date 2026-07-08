@@ -13,12 +13,22 @@ indirect enum AssistantIntent: Equatable {
     case showDepartures(stationId: String?, lineId: String?, day: DayContext)
     case lastTrain(stationId: String?, lineId: String?)
     case findStation(query: String)
-    case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool)
+    case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool, preference: RoutePreference)
     case travelTime(toStationId: String?, fromStationId: String?)
     case explainLine(lineId: String)
     case explainFare(airport: Bool, fromStationId: String?, toStationId: String?)
     case toggleFavorite(stationId: String?)
     case showAlerts(lineId: String?)
+    /// "Is X open / working / closed?". Operational status for one station.
+    /// Ariadne has no live per-station status feed, so the honest answer leads
+    /// with any matching STASY advisory; absent one it falls back to the
+    /// timetable and says so, never asserting "open".
+    case stationStatus(stationId: String?)
+    /// "I'm at X" / "I'm here" / "I got off at X". Pure context-set: records the
+    /// user's current station in the session so later follow-ups ("go airport
+    /// faster") need no "from where?". stationId is nil for a bare "I'm here",
+    /// which the resolver anchors to GPS / last known station.
+    case setCurrentLocation(stationId: String?)
     case openMap(stationId: String?)
     case help
     case needsClarification(base: AssistantIntent, missing: MissingSlot)
@@ -54,10 +64,19 @@ struct AssistantVocabulary {
         for line in SyrmosData.lines {
             for st in SyrmosData.stations(for: line.id) where !seen.contains(st.id) {
                 seen.insert(st.id)
+                // Albanian is first-class (large Athens community): the bundled
+                // station only has EN + EL names, so augment key stations with
+                // Albanian / Latin-Greeklish spellings ("aeroport", "Pireas",
+                // "Sintagma") so SQ input resolves as reliably as EN/EL. Mirrors
+                // the KMP AssistantVocabularyBuilder.
+                let folded = AthensTransitParser.fold("\(st.name) \(st.nameEl)")
+                let extra = Self.sqAndLatinAliases
+                    .filter { folded.contains($0.key) }
+                    .flatMap { $0.value }
                 stationVocab.append(
                     StationVocab(
                         id: st.id,
-                        names: [st.name, st.nameEl].filter { !$0.isEmpty },
+                        names: ([st.name, st.nameEl] + extra).filter { !$0.isEmpty },
                         lineIds: st.lineIds
                     )
                 )
@@ -77,6 +96,17 @@ struct AssistantVocabulary {
         }
         return AssistantVocabulary(stations: stationVocab, lines: lineVocab)
     }
+
+    /// Albanian / Latin-Greeklish station aliases, keyed by an accent-folded
+    /// token in the EN or EL name. Confident, real variants only. Mirrors the
+    /// KMP `AssistantVocabularyBuilder.SQ_AND_LATIN_ALIASES`. Long-term the
+    /// bundled Station should carry a `nameSq`; this closes the top gaps now.
+    private static let sqAndLatinAliases: [String: [String]] = [
+        "airport": ["Aeroport", "Aeroporti"],
+        "aerodromio": ["Aeroport", "Aeroporti"],
+        "piraeus": ["Pireas", "Pireu"],
+        "syntagma": ["Sintagma"],
+    ]
 }
 
 struct AthensTransitParser {
@@ -106,7 +136,8 @@ struct AthensTransitParser {
             containsAny(text, Self.findWords) ||
             containsAny(text, Self.fareWords) ||
             containsAny(text, Self.favoriteWords) ||
-            containsAny(text, Self.timePhrases)
+            containsAny(text, Self.timePhrases) ||
+            containsAny(text, Self.locationPhrases)
 
         let weather = containsAny(text, Self.weatherWords)
         if weather {
@@ -118,6 +149,21 @@ struct AthensTransitParser {
             }
         }
         if !strongTransit && !intentSignal && !weather { return .outOfScope }
+
+        // Pure context-set "I'm at X" is checked before planning, because the
+        // Albanian "jam te X" contains " te ", which would otherwise read as a
+        // "to" marker and turn the statement into a trip. Only fires with at
+        // most one station, no plan cue, and no routing preference, so
+        // "I'm at X, go to Y faster" still plans normally below.
+        if containsAny(text, Self.locationPhrases) &&
+            stations.count <= 1 &&
+            !containsAny(text, Self.planPhrases) &&
+            RoutePreference.fromFolded(text) == .balanced &&
+            !containsAny(text, Self.timePhrases) &&
+            !containsAny(text, Self.fareWords) &&
+            !containsAny(text, Self.lastTrainPhrases) {
+            return .setCurrentLocation(stationId: stations.first)
+        }
 
         // 0. Travel time / ETA ("how long to X"). Before fares ("how much time"
         //    shares the fare cue) and planning ("how long to get to X" shares
@@ -145,9 +191,13 @@ struct AthensTransitParser {
             return stations.first == nil ? .needsClarification(base: base, missing: .station) : base
         }
 
-        // 1. Plan a trip.
+        // 1. Plan a trip. Triggered by an explicit "how do I get" phrase, an
+        //    explicit "to" frame with a station, weather routing, a non-balanced
+        //    preference with a station, or two distinct stations named.
         let hasToMarker = Self.toMarkers.contains { text.contains($0) }
+        let preference = RoutePreference.fromFolded(text)
         let planning = containsAny(text, Self.planPhrases) || weather ||
+            (preference != .balanced && !stations.isEmpty) ||
             (hasToMarker && !stations.isEmpty) || stations.count >= 2
         if planning {
             // Before the standard PlanTrip, see if the user pinned an
@@ -164,8 +214,19 @@ struct AthensTransitParser {
                 if from == nil { return .needsClarification(base: base, missing: .originStation) }
                 return base
             }
-            let (from, to) = resolveTripEndpoints(text, stations)
-            let base = AssistantIntent.planTrip(fromStationId: from, toStationId: to, lowExposure: weather)
+            // A single named station reached through a plan cue or a routing
+            // preference ("how do I go airport faster") is the destination; the
+            // origin comes from session context or a follow-up question. Without
+            // such a cue, a lone station keeps the position-based reading.
+            let singleDestination = stations.count == 1 && !hasToMarker &&
+                (containsAny(text, Self.planPhrases) || preference != .balanced)
+            let from: String?, to: String?
+            if singleDestination {
+                (from, to) = (nil, stations[0])
+            } else {
+                (from, to) = resolveTripEndpoints(text, stations)
+            }
+            let base = AssistantIntent.planTrip(fromStationId: from, toStationId: to, lowExposure: weather, preference: preference)
             if to == nil { return .needsClarification(base: base, missing: .destinationStation) }
             if from == nil { return .needsClarification(base: base, missing: .originStation) }
             return base
@@ -175,6 +236,18 @@ struct AthensTransitParser {
         if containsAny(text, Self.lastTrainPhrases) {
             let station = stations.first
             let base = AssistantIntent.lastTrain(stationId: station, lineId: line)
+            return station == nil ? .needsClarification(base: base, missing: .station) : base
+        }
+
+        // 2b. Station operational status: "is X open / working / closed?".
+        //     Needs either a named station or the word "station", so a general
+        //     "any closures today?" still falls through to the alerts branch.
+        //     Placed before Alerts so "is Syntagma closed" is a station-status
+        //     question, not a network-wide alerts query.
+        if containsAny(text, Self.stationStatusWords) &&
+            (!stations.isEmpty || containsAny(text, Self.stationNounWords)) {
+            let station = stations.first
+            let base = AssistantIntent.stationStatus(stationId: station)
             return station == nil ? .needsClarification(base: base, missing: .station) : base
         }
 
@@ -421,7 +494,9 @@ struct AthensTransitParser {
     private static let lastTrainPhrases = ["last train", "last metro", "last one", "leave by",
         "τελευται", "τελευταιο τρεν", "τελευταιος", "treni i fundit", "fundit", "i fundit", "tren i fundit"]
     private static let planPhrases = ["how do i get", "how to get", "get to", "get me to", "route",
-        "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "si shkoj", "si te shkoj", "rruga", "udhetim"]
+        "how do i go", "how to go", "go to", "can i go", "can i still", "can i reach",
+        "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "προλαβαινω", "μπορω να παω",
+        "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij"]
     private static let toMarkers = [" to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne "]
     private static let findWords = ["where is", "find", "locate", "nearest", "near me", "closest",
         "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ku eshte", "gjej", "me afert", "afer meje"]
@@ -443,6 +518,24 @@ struct AthensTransitParser {
         "how long does it take", "how long to get", "how much time", "minutes away", "how far",
         "ποση ωρα", "ποσα λεπτα", "ποσες ωρες", "ποσο θελει", "ποση ωρα κανει",
         "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe"]
+    // Station operational-status cues. "closed"/"κλειστ"/"mbyll" overlap
+    // alertWords on purpose: with a named station they mean "is this stop open?",
+    // which the status branch (ordered first) handles.
+    private static let stationStatusWords = ["open", "working", "operating", "operational", "running", "closed", "shut",
+        "ανοιχτ", "λειτουργει", "δουλευει", "κλειστ", "ανοιξ",
+        "hapur", "punon", "funksionon", "mbyllur", "mbyll"]
+    // Words meaning "station", so "is the station open?" resolves even before the
+    // specific stop is named.
+    private static let stationNounWords = ["station", "σταθμ", "stacion"]
+    // "I'm at / here / got off" context-set cues. Kept to multi-word or
+    // distinctive tokens so a lone "in"/"on" can't trigger a location set.
+    private static let locationPhrases = ["i'm at", "im at", "i am at", "i'm in", "im in", "i'm on", "im on",
+        "i'm here", "im here", "i am here", "i'm there", "im there", "i am there",
+        "i reached", "i just reached", "i arrived", "i got off", "i just got off",
+        "currently at", "i'm inside", "im inside",
+        "ειμαι στο", "ειμαι στη", "ειμαι στον", "ειμαι εδω", "ειμαι μεσα",
+        "εφτασα", "μολις εφτασα", "κατεβηκα", "μολις κατεβηκα",
+        "jam te", "jam ne", "jam ketu", "jam brenda", "arrita", "zbrita", "sapo zbrita"]
     private static let tomorrowWords = ["tomorrow", "αυριο", "neser"]
     private static let weekendWords = ["weekend", "σαββατοκυριακο", "fundjave"]
     private static let saturdayWords = ["saturday", "σαββατο", "te shtune", "shtune"]
