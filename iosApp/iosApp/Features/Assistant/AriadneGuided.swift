@@ -126,7 +126,7 @@ enum AriadneGuided {
             return q.isEmpty ? nil : .findStation(query: q)
         case .planTrip:
             if station == nil && toStation == nil { return nil }
-            return .planTrip(fromStationId: station, toStationId: toStation, lowExposure: p.lowExposure)
+            return .planTrip(fromStationId: station, toStationId: toStation, lowExposure: p.lowExposure, preference: .balanced)
         case .planTripByArrival:
             let absMin = clockToAthensMinutes(p.arriveByClock)
             let relMin = p.arriveInMinutes > 0 ? p.arriveInMinutes : nil

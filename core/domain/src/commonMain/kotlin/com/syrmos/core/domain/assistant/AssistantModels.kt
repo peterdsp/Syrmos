@@ -37,6 +37,7 @@ sealed interface AssistantIntent {
         val fromStationId: String?,
         val toStationId: String?,
         val lowExposure: Boolean = false,
+        val preference: RoutePreference = RoutePreference.BALANCED,
     ) : AssistantIntent
 
     /**
@@ -69,6 +70,22 @@ sealed interface AssistantIntent {
 
     /** Current service alerts / status, optionally for one line. */
     data class ShowAlerts(val lineId: String? = null) : AssistantIntent
+
+    /**
+     * "Is X open / working / closed?". Operational status for one station.
+     * Ariadne has no live per-station status feed, so the honest answer leads
+     * with any matching STASY advisory (via [ServiceAdvisoryMatcher]); absent
+     * one, it falls back to the timetable and says so, never asserting "open".
+     */
+    data class StationStatus(val stationId: String?) : AssistantIntent
+
+    /**
+     * "I'm at X" / "I'm here" / "I got off at X". Pure context-set: records the
+     * user's current station in [AssistantSessionContext] so later follow-ups
+     * ("go airport faster") need no "from where?". [stationId] is null for a
+     * bare "I'm here", which the resolver anchors to GPS / last known station.
+     */
+    data class SetCurrentLocation(val stationId: String?) : AssistantIntent
 
     /** Open the map, optionally focused on a station. */
     data class OpenMap(val stationId: String? = null) : AssistantIntent
