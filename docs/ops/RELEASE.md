@@ -20,7 +20,7 @@ A release is driven by a version tag (`vMAJOR.MINOR.PATCH`, for example `v1.2.1`
 |---|---|---|---|
 | Web (GitHub Pages / Fastly) | push to `master` touching app code | `.github/workflows/pages.yml` | Automated and live. Nothing to add. |
 | Android (Play internal track) | tag `v*` | `.github/workflows/release-android.yml` | Ready; needs the secrets below. |
-| iOS (TestFlight) | tag `v*` | `.github/workflows/release-ios.yml` | Pending: needs the Loupe + agent-device invocation, plus the secrets below. |
+| iOS (TestFlight) | tag `v*` | `.github/workflows/release-ios.yml` | Ready; needs the three ASC-key secrets below. |
 
 Note: the Pi (`api-syrmos.peterdsp.dev`) only hosts the live-train SSE proxy. The
 web app itself is served from GitHub Pages, so there is no separate web deploy
@@ -42,20 +42,24 @@ First upload of a brand-new package to Play must be done manually in the console
 (Google requires the first bundle by hand); the workflow handles every release
 after that. Default track is `internal`; promote in the console or change `track`.
 
-## iOS secrets (once the workflow lands)
+## iOS secrets (GitHub repo settings, Actions secrets)
 
-- `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
-  `APP_STORE_CONNECT_API_KEY_P8` — App Store Connect API key for TestFlight upload.
-- Signing: either an App Store Connect API key with "cloud managed" signing, or a
-  distribution certificate + provisioning profile (base64) plus a keychain password.
+`release-ios.yml` mirrors the klipa App Store Connect job: one App Store Connect
+API key drives both automatic signing (`xcodebuild -allowProvisioningUpdates`)
+and the TestFlight upload (`xcrun altool --upload-app`). Same secret names as
+klipa, so the same key is reused:
 
-Open item: the repo standard is to run Apple platform CI through **Loupe +
-agent-device**. Those are not yet wired into any workflow, and the exact
-invocation (custom action, self-hosted runner, or CLI) needs to be confirmed
-before `release-ios.yml` can be written correctly rather than guessed. Once that
-is known, the iOS job will: check out, resolve signing, archive the
-`Syrmos - Athens Rail Times` scheme, export an App Store `.ipa`, and upload to
-TestFlight via the App Store Connect API key.
+- `ASC_KEY_ID` — App Store Connect API key id (Users and Access, Keys).
+- `ASC_ISSUER_ID` — the issuer id shown above the keys list.
+- `ASC_API_KEY_P8_BASE64` — base64 of the `AuthKey_<id>.p8`.
+
+Team id `YTS4KJBX3P` and `app-store-connect` export live in
+`scripts/export-options.plist`, so no separate cert/profile secrets are needed.
+The key must have the App Manager role so automatic signing can create/fetch the
+distribution profiles for the app, watch app, watch complication, and widget
+extension. The app record must already exist in App Store Connect (bundle ids
+under the Syrmos app). If the ASC key is absent the job skips cleanly, so a tag
+still ships web + Android.
 
 ## Verifying a release
 
