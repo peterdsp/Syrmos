@@ -4,6 +4,8 @@ import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.model.planner.JourneyResult
 import com.syrmos.core.model.planner.JourneySegment
+import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -22,8 +24,27 @@ class PlanJourneyUseCase(
     private val stationRepository: StationRepositoryImpl,
     private val lineRepository: LineRepositoryImpl,
 ) {
+    /** Fastest route across the whole network. */
     fun invoke(fromStationId: String, toStationId: String): Flow<JourneyResult?> = flow {
-        val allLines = lineRepository.getAllLines().first()
+        emit(compute(fromStationId, toStationId, lineRepository.getAllLines().first()))
+    }
+
+    /**
+     * Metro-only alternative (M1/M2/M3), the sheltered option Ariadne can offer
+     * when the fastest route uses the tram or a surface line and the weather
+     * makes staying underground worth a few extra minutes. Null when there's no
+     * all-metro path between the two stations.
+     */
+    fun metroOnly(fromStationId: String, toStationId: String): Flow<JourneyResult?> = flow {
+        val metro = lineRepository.getAllLines().first().filter { it.type == LineType.METRO }
+        emit(compute(fromStationId, toStationId, metro))
+    }
+
+    private suspend fun compute(
+        fromStationId: String,
+        toStationId: String,
+        allLines: List<Line>,
+    ): JourneyResult? {
         val graph = mutableMapOf<String, MutableList<Edge>>()
 
         // Build edges from station ordering on each line
@@ -98,8 +119,7 @@ class PlanJourneyUseCase(
 
         // Reconstruct path
         if (toStationId !in previous && fromStationId != toStationId) {
-            emit(null)
-            return@flow
+            return null
         }
 
         val path = mutableListOf<Pair<String, Edge?>>()
@@ -164,12 +184,10 @@ class PlanJourneyUseCase(
         val totalMinutes = distances[toStationId] ?: 0
         val transferCount = (segments.size - 1).coerceAtLeast(0)
 
-        emit(
-            JourneyResult(
-                segments = segments,
-                totalMinutes = totalMinutes,
-                transferCount = transferCount,
-            )
+        return JourneyResult(
+            segments = segments,
+            totalMinutes = totalMinutes,
+            transferCount = transferCount,
         )
     }
 

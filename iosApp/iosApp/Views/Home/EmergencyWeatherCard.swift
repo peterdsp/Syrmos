@@ -10,11 +10,32 @@ struct EmergencyWeatherCard: View {
     let condition: WeatherCondition
     let language: AppLanguage
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var dropOffset: CGFloat = 0
     @State private var dropOpacity: Double = 1
 
-    private let amber = Color(red: 0.90, green: 0.32, blue: 0.00)
-    private let bg = Color(red: 1.00, green: 0.95, blue: 0.88)
+    /// Deep orange used for the phone-number badges and their white glyphs.
+    /// Kept constant across schemes because white text needs a dark fill to
+    /// stay readable, and this reads fine on both the cream and dark cards.
+    private let badgeAmber = Color(red: 0.90, green: 0.32, blue: 0.00)
+
+    /// Title, raindrop, and border accent. Brighter in dark mode so the
+    /// thin strokes and headline don't muddy against the dark card.
+    private var amber: Color {
+        colorScheme == .dark
+            ? Color(red: 1.00, green: 0.62, blue: 0.26)
+            : Color(red: 0.90, green: 0.32, blue: 0.00)
+    }
+
+    /// Card fill. In light mode the warm cream reads as "advisory"; in dark
+    /// mode a deep amber-brown keeps that warning identity while letting the
+    /// semantic `.primary` / `.secondary` text stay legible on top.
+    private var bg: Color {
+        colorScheme == .dark
+            ? Color(red: 0.16, green: 0.09, blue: 0.02)
+            : Color(red: 1.00, green: 0.95, blue: 0.88)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -94,7 +115,7 @@ struct EmergencyWeatherCard: View {
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(amber)
+            .background(badgeAmber)
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             Text(label)
                 .font(.subheadline)

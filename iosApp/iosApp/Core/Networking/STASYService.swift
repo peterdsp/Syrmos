@@ -11,6 +11,46 @@ struct STASYAnnouncement: Identifiable {
     let summarySq: String
     let url: URL?
     let category: AnnouncementCategory
+    /// Lines this notice affects (e.g. ["M3"]), from the feed's `affectedLines`.
+    /// Lets Ariadne surface a line-wide advisory to any station on that line,
+    /// matching the KMP `STASYAnnouncement`.
+    let affectedLines: [String]
+    /// Raw feed severity: "info" | "warning" | "closure".
+    let severity: String
+    let validFrom: String?
+    let validUntil: String?
+
+    init(
+        id: String,
+        title: String,
+        titleEn: String,
+        titleSq: String,
+        date: String,
+        summary: String,
+        summaryEn: String,
+        summarySq: String,
+        url: URL?,
+        category: AnnouncementCategory,
+        affectedLines: [String] = [],
+        severity: String = "info",
+        validFrom: String? = nil,
+        validUntil: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.titleEn = titleEn
+        self.titleSq = titleSq
+        self.date = date
+        self.summary = summary
+        self.summaryEn = summaryEn
+        self.summarySq = summarySq
+        self.url = url
+        self.category = category
+        self.affectedLines = affectedLines
+        self.severity = severity
+        self.validFrom = validFrom
+        self.validUntil = validUntil
+    }
 
     /// Pick the right language-variant title for the active app language.
     /// Albanian falls back to English when titleSq is blank (the synthetic
@@ -111,6 +151,10 @@ final class STASYService: ObservableObject {
         let summarySq: String?
         let url: String
         let category: String
+        let affectedLines: [String]?
+        let severity: String?
+        let validFrom: String?
+        let validUntil: String?
     }
 
     /// Latest STASY service-status badge, populated by `fetchAnnouncements`.
@@ -147,7 +191,11 @@ final class STASYService: ObservableObject {
                     summaryEn: item.summaryEn ?? "",
                     summarySq: item.summarySq ?? "",
                     url: URL(string: item.url),
-                    category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general
+                    category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
+                    affectedLines: item.affectedLines ?? [],
+                    severity: item.severity ?? "info",
+                    validFrom: item.validFrom,
+                    validUntil: item.validUntil
                 )
             }
             announcements = parsed
@@ -186,6 +234,11 @@ final class STASYService: ObservableObject {
                 "summarySq": ann.summarySq,
                 "url": ann.url?.absoluteString ?? "",
                 "category": ann.category.rawValue,
+                // Line ids are simple tokens (M1..A4), so a comma join is safe.
+                "affectedLines": ann.affectedLines.joined(separator: ","),
+                "severity": ann.severity,
+                "validFrom": ann.validFrom ?? "",
+                "validUntil": ann.validUntil ?? "",
             ]
         }
         UserDefaults.standard.set(dicts, forKey: cacheKey)
@@ -206,7 +259,11 @@ final class STASYService: ObservableObject {
                 summaryEn: dict["summaryEn"] ?? "",
                 summarySq: dict["summarySq"] ?? "",
                 url: URL(string: dict["url"] ?? ""),
-                category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other
+                category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other,
+                affectedLines: (dict["affectedLines"] ?? "").split(separator: ",").map(String.init),
+                severity: dict["severity"] ?? "info",
+                validFrom: (dict["validFrom"]?.isEmpty == false) ? dict["validFrom"] : nil,
+                validUntil: (dict["validUntil"]?.isEmpty == false) ? dict["validUntil"] : nil
             )
         }
         if let cached = UserDefaults.standard.object(forKey: cacheTimeKey) as? TimeInterval {
@@ -268,7 +325,11 @@ final class STASYService: ObservableObject {
                 summaryEn: item.summaryEn ?? "",
                 summarySq: item.summarySq ?? "",
                 url: URL(string: item.url),
-                category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general
+                category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
+                affectedLines: item.affectedLines ?? [],
+                severity: item.severity ?? "info",
+                validFrom: item.validFrom,
+                validUntil: item.validUntil
             )
         }
     }

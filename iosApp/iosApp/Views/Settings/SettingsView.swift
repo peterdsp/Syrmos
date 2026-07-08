@@ -1,10 +1,11 @@
 import SwiftUI
+import UIKit
 
 struct SyrmosSettingsView: View {
+    @Environment(\.openURL) private var openURL
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var schedules = SyrmosSchedulesStore.shared
     @ObservedObject private var themeManager = ThemeManager.shared
-    @State private var safariURL: URL?
     @State private var refreshAlert: RefreshAlert?
     @State private var showContactSheet = false
     @State private var showSystemMap = false
@@ -115,9 +116,11 @@ struct SyrmosSettingsView: View {
                         Text(ariadneEngineDetail)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        if let url = ariadneEngineLearnMoreURL {
-                            Button(loc.language == .greek ? "Μάθετε περισσότερα" : loc.language == .albanian ? "Mëso më shumë" : "Learn More") {
-                                safariURL = url
+                        if ariadneCanOpenSettings {
+                            Button(ariadneOpenSettingsLabel) {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    openURL(url)
+                                }
                             }
                             .font(.caption)
                         }
@@ -201,7 +204,6 @@ struct SyrmosSettingsView: View {
                 CompactTabHeader(loc[.settings])
             }
             .toolbar(.hidden, for: .navigationBar)
-            .inAppSafari(url: $safariURL)
             .sheet(isPresented: $showSystemMap) {
                 StasyMapView()
             }
@@ -343,14 +345,22 @@ struct SyrmosSettingsView: View {
         }
     }
 
-    /// Only actionable when the user can flip something (enable Apple Intelligence).
-    private var ariadneEngineLearnMoreURL: URL? {
-        switch AriadneBrain.availability {
-        case .appleIntelligenceNotEnabled, .modelNotReady:
-            return URL(string: "https://support.apple.com/apple-intelligence")
-        default:
-            return nil
-        }
+    /// Only show the Settings shortcut when the user can actually flip
+    /// something: Apple Intelligence is supported here but switched off. For
+    /// `.modelNotReady` the model is mid-download (nothing to toggle), and for
+    /// `.deviceNotEligible` / `.osTooOld` there's no setting that would help,
+    /// so the explanatory detail line stands on its own.
+    private var ariadneCanOpenSettings: Bool {
+        if case .appleIntelligenceNotEnabled = AriadneBrain.availability { return true }
+        return false
+    }
+
+    /// "Open Settings" — deep-links to the system Settings app so the user can
+    /// enable Apple Intelligence, matching the "Turn it on in Settings" copy.
+    private var ariadneOpenSettingsLabel: String {
+        loc.language == .greek ? "Άνοιγμα Ρυθμίσεων"
+            : loc.language == .albanian ? "Hap Cilësimet"
+            : "Open Settings"
     }
 }
 
