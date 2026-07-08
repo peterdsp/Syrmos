@@ -21,10 +21,16 @@ final class WatchSessionManager: NSObject, @unchecked Sendable {
             let destination: String
             let minutes: Int
             let time: String
+            /// Absolute Unix epoch seconds of the departure, so the Watch can
+            /// tick its own countdown between phone pushes.
+            let targetEpoch: TimeInterval?
         }
         let stationName: String
         let departures: [Dep]
         let updatedEpoch: Double
+        /// App language ("en"/"el"/"sq") so the Watch's voiced read-back
+        /// matches the phone.
+        let language: String?
     }
 
     #if canImport(WatchConnectivity)
@@ -41,15 +47,16 @@ final class WatchSessionManager: NSObject, @unchecked Sendable {
 
     /// Push the latest departures to the Watch. No-op on devices without
     /// WatchConnectivity or without a paired, installed Watch app.
-    func push(stationName: String, departures: [(lineId: String, destination: String, minutes: Int, time: String)]) {
+    func push(stationName: String, departures: [(lineId: String, destination: String, minutes: Int, time: String, targetEpoch: TimeInterval?)], language: String) {
         #if canImport(WatchConnectivity)
         activateIfNeeded()
         let session = WCSession.default
         guard session.activationState == .activated else { return }
         let payload = Payload(
             stationName: stationName,
-            departures: departures.map { .init(lineId: $0.lineId, destination: $0.destination, minutes: $0.minutes, time: $0.time) },
-            updatedEpoch: Date().timeIntervalSince1970
+            departures: departures.map { .init(lineId: $0.lineId, destination: $0.destination, minutes: $0.minutes, time: $0.time, targetEpoch: $0.targetEpoch) },
+            updatedEpoch: Date().timeIntervalSince1970,
+            language: language
         )
         guard let data = try? JSONEncoder().encode(payload) else { return }
         let dict: [String: Any] = ["snapshot": data]
