@@ -7,115 +7,115 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		002709A0C1454019B429939D /* SyrmosSchedulesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */; };
+		002709A0C1454019B429939D /* iosApp/Core/Networking/SyrmosSchedulesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */; };
 		017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */; };
-		020B9BA01E714B238FC04496 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D67A43DD93145FBB9809123 /* WhatsNewView.swift */; };
-		03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* ThemeManager.swift */; };
+		020B9BA01E714B238FC04496 /* iosApp/Features/WhatsNew/WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */; };
+		03329116BFDB4F16A2A9B937 /* iosApp/DesignSystem/ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */; };
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
-		03FBB75EEE74C7E43F7A609B /* CompactTabHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */; };
-		0658B8596FD64D0EB5BE30A0 /* FaresView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD55D549DBE24531BEA4597D /* FaresView.swift */; };
+		03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */; };
+		0658B8596FD64D0EB5BE30A0 /* iosApp/Features/Fares/FaresView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */; };
 		090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */; };
-		0FC202D00E8A46C389296714 /* seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* seed-schedules-v2 */; };
+		0FC202D00E8A46C389296714 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
 		12D1B2FE4D803668E2481F2D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */; };
-		204183F8B0D84A90A83F834D /* LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* LinePill.swift */; };
+		204183F8B0D84A90A83F834D /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */; };
 		25288E10152B593D7B7A8D35 /* SyrmosWatchComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0CC57A007A9CFBEF45359A28 /* SyrmosWatchComplications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		26AC636F7C9B467B9097F8F6 /* TimetablesIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBADA13AF3954288A721329B /* TimetablesIcons.swift */; };
+		26AC636F7C9B467B9097F8F6 /* iosApp/Features/Timetables/TimetablesIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBADA13AF3954288A721329B /* iosApp/Features/Timetables/TimetablesIcons.swift */; };
 		28B86D763BF517E19CF4DB5D /* SuburbanProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */; };
-		2AC047F768ED40C49CDCC90B /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD50BCD053B64059B6D3A243 /* WidgetBridge.swift */; };
-		2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */; };
-		37F4634210E64A09819E5A76 /* SyrmosStationOffsetsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C1 /* SyrmosStationOffsetsStore.swift */; };
+		2AC047F768ED40C49CDCC90B /* iosApp/Core/Networking/WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */; };
+		2FDAB04CAE6E25AD392B1E99 /* iosApp/Core/Schedule/StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */; };
+		37F4634210E64A09819E5A76 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */; };
 		3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */; };
-		3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */; };
-		470A39F895004D4CB8BC04D4 /* SyrmosTrainTimestampsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */; };
-		4B9E757154C3AEF92629B854 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7F86E13C39694BA17FD740 /* WatchContentView.swift */; };
-		7F9E63555C75A414D8BC9D39 /* WatchSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF31ACE2630B3EA36DBE66E /* WatchSpeech.swift */; };
-		B3621A83DE8D374BF385359C /* WatchNearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6A64F2930A00B9F04C461 /* WatchNearbyView.swift */; };
-		4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */; };
-		562D2C66362545CB97D3E515 /* StationStripFull.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EB6C1444B246B3AB9CF185 /* StationStripFull.swift */; };
+		3F12F021ECD240BE97B74BB9 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */; };
+		470A39F895004D4CB8BC04D4 /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA99E493B0C4CA48ECE53BD /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift */; };
+		4B9E757154C3AEF92629B854 /* SyrmosWatch/WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7F86E13C39694BA17FD740 /* SyrmosWatch/WatchContentView.swift */; };
+		4DFE1212D427449286398220 /* iosApp/Shared/StationMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAE5D2E14B71AFAB3C2F /* iosApp/Shared/StationMapSheet.swift */; };
+		562D2C66362545CB97D3E515 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */; };
 		59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCB57EF47F5B2293727841A /* StationDetailView.swift */; };
-		68F1F7047DBA43CC970CCF92 /* LiquidGlassTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C0854D3D8A40F9A9F267E9 /* LiquidGlassTile.swift */; };
-		691E35E631ED478590A0F25F /* SyrmosSchedulesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */; };
-		695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */; };
-		726F4319319A4CEF912673CB /* SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */; };
-		736E6FA5879F4B30A1B60B9C /* SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */; };
-		7469233EA00146DB9444F7BB /* LivePositionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */; };
-		7BA0F0893BD64501A7EAC5A1 /* StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */; };
-		7C684B9562B2126A07E23D4C /* SyrmosWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C75E63D8FD8430063F61D0 /* SyrmosWatchApp.swift */; };
-		80408BB654634CB9A5BEFE52 /* AirportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD2789A52441AB0C26BF2 /* AirportData.swift */; };
-		8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */; };
-		8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551315413AD2438B8C7F5FF0 /* SafariSheet.swift */; };
-		8F1DB37A07CE4F4E877F3E52 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889F9EDE14524E2DA3F4B3B5 /* WatchSessionManager.swift */; };
+		68F1F7047DBA43CC970CCF92 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C0854D3D8A40F9A9F267E9 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift */; };
+		691E35E631ED478590A0F25F /* iosApp/Core/Networking/SyrmosSchedulesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */; };
+		695053E938CCE178E8FEAAC9 /* iosApp/DesignSystem/SyrmosColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CB0FF1A8E58A05798DED77 /* iosApp/DesignSystem/SyrmosColors.swift */; };
+		726F4319319A4CEF912673CB /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */; };
+		736E6FA5879F4B30A1B60B9C /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift */; };
+		7469233EA00146DB9444F7BB /* iosApp/Core/Networking/LivePositionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B6F /* iosApp/Core/Networking/LivePositionsService.swift */; };
+		7BA0F0893BD64501A7EAC5A1 /* iosApp/Core/Schedule/StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */; };
+		7C684B9562B2126A07E23D4C /* SyrmosWatch/SyrmosWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C75E63D8FD8430063F61D0 /* SyrmosWatch/SyrmosWatchApp.swift */; };
+		7F9E63555C75A414D8BC9D39 /* SyrmosWatch/WatchSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF31ACE2630B3EA36DBE66E /* SyrmosWatch/WatchSpeech.swift */; };
+		80408BB654634CB9A5BEFE52 /* iosApp/Core/Schedule/AirportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */; };
+		8218D06AFB1A4111BBE6A6BA /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51972231C37146A79B5760E4 /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift */; };
+		8A72EAE7260D46FDA05D490B /* iosApp/Shared/SafariSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551315413AD2438B8C7F5FF0 /* iosApp/Shared/SafariSheet.swift */; };
+		8F1DB37A07CE4F4E877F3E52 /* iosApp/Core/Schedule/WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */; };
 		8FD7065798C557186BA57411 /* LinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D0CA28E96EEF13502C887F /* LinesView.swift */; };
-		8FEFDAADF8474EE0AD94377E /* LiquidGlassTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C0854D3D8A40F9A9F267E9 /* LiquidGlassTile.swift */; };
+		8FEFDAADF8474EE0AD94377E /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C0854D3D8A40F9A9F267E9 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift */; };
 		9412470679966D24ED107169 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD63C5586DB5B3F0921AC1D6 /* Foundation.framework */; };
-		980A534651EFC2013B8ED38F /* TransitData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748CC40BCBDC9D468CD371B8 /* TransitData.swift */; };
-		A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6071829304142 /* STASYService.swift */; };
+		980A534651EFC2013B8ED38F /* iosApp/Core/Schedule/TransitData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748CC40BCBDC9D468CD371B8 /* iosApp/Core/Schedule/TransitData.swift */; };
+		9C1FEB967B3B4F0897AC98ED /* iosApp/Core/Networking/BackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */; };
+		A1B2C3D4E5F60718192A3B4C /* iosApp/Core/Networking/STASYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6071829304142 /* iosApp/Core/Networking/STASYService.swift */; };
 		A1B2C3D4E5F60718293A4B01 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */; };
 		A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9632839850F8DA49BA56324 /* HomeView.swift */; };
-		A3EA76BA0F7C855E281D4342 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 292764518958617840FE187E /* WatchModels.swift */; };
-		A8A479D2EBC54B139122C16E /* StationStripCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E08E447B8F49FE84CAA194 /* StationStripCompact.swift */; };
+		A3EA76BA0F7C855E281D4342 /* SyrmosWatch/WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 292764518958617840FE187E /* SyrmosWatch/WatchModels.swift */; };
+		A8A479D2EBC54B139122C16E /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E08E447B8F49FE84CAA194 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift */; };
 		AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */; };
 		AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */; };
 		AA11BB22CC33DD44EE55BE01 /* EmergencyWeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
-		AAAA111111111111111111B1 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* OnboardingView.swift */; };
-		AAAA111111111111111111B3 /* OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* OnboardingMeshBackground.swift */; };
-		AABB01CD02EF030405060708 /* seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* seed-schedules-v2 */; };
-		AB532D96B1C7F1C32AE17B06 /* SyrmosWatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = B321F78C955813F66BA4C930 /* SyrmosWatchComplications.swift */; };
-		AC74A75A5E7742A6A2AC71B3 /* SyrmosWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCA4BF462F847AA856D94DB /* SyrmosWidgets.swift */; };
-		AE7DE0584EF948EFB5BB3FC1 /* StationStripCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E08E447B8F49FE84CAA194 /* StationStripCompact.swift */; };
-		B0F1906F29BD4E9FB9B33721 /* SyrmosColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */; };
-		B100649A9FE24D65B49698FC /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
-		B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* TimetablesView.swift */; };
-		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
-		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
-		BB22CC33DD44EE55FF660011 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* LocationService.swift */; };
-		BB96CED5F61B446CBA6D87C5 /* DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* DepartureRowCompact.swift */; };
-		BCB2D8DDE0D14B2D8664EC16 /* SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */; };
-		C173574BC2DC4C0F9D5C159E /* DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* DepartureRowCompact.swift */; };
-		C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */; };
-		C5D6E7F8A9B0C1D2E3F40506 /* SyrmosLinesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */; };
+		AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */; };
+		AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */; };
+		AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
+		AB532D96B1C7F1C32AE17B06 /* SyrmosWatch/SyrmosWatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = B321F78C955813F66BA4C930 /* SyrmosWatch/SyrmosWatchComplications.swift */; };
+		AC74A75A5E7742A6A2AC71B3 /* SyrmosWidget/SyrmosWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCA4BF462F847AA856D94DB /* SyrmosWidget/SyrmosWidgets.swift */; };
+		AE7DE0584EF948EFB5BB3FC1 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E08E447B8F49FE84CAA194 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift */; };
+		B0F1906F29BD4E9FB9B33721 /* iosApp/DesignSystem/SyrmosColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CB0FF1A8E58A05798DED77 /* iosApp/DesignSystem/SyrmosColors.swift */; };
+		B100649A9FE24D65B49698FC /* iosApp/Core/Localization/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */; };
+		B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */; };
+		B2C3D4E5F6071829A3B4C5D6 /* iosApp/Core/Localization/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */; };
+		B3621A83DE8D374BF385359C /* SyrmosWatch/WatchNearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */; };
+		B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */; };
+		BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */; };
+		BB96CED5F61B446CBA6D87C5 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
+		BCB2D8DDE0D14B2D8664EC16 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */; };
+		C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
+		C5D4C72817CA43BA90F02ADB /* iosApp/Core/Schedule/ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */; };
+		C5D6E7F8A9B0C1D2E3F40506 /* iosApp/Core/Networking/SyrmosLinesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D6E7F8A9B0C1D2E3F40507 /* iosApp/Core/Networking/SyrmosLinesService.swift */; };
 		C7C48BC8C2A3E895472A8FCD /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */; };
-		CA564E5B6224431DAC6CC3E2 /* AirportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD2789A52441AB0C26BF2 /* AirportData.swift */; };
-		D10CE67C95FA4662AB0D160F /* TransitData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748CC40BCBDC9D468CD371B8 /* TransitData.swift */; };
-		D4A0E928208E4D84AD520D51 /* SyrmosStationOffsetsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C1 /* SyrmosStationOffsetsStore.swift */; };
-		D4A0E928208E4D84AD520D52 /* SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */; };
-		D7E8F9A0B1C2D3E4F5060708 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5060709 /* Diagnostics.swift */; };
-		DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* DataFreshness.swift */; };
+		CA564E5B6224431DAC6CC3E2 /* iosApp/Core/Schedule/AirportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */; };
+		D10CE67C95FA4662AB0D160F /* iosApp/Core/Schedule/TransitData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748CC40BCBDC9D468CD371B8 /* iosApp/Core/Schedule/TransitData.swift */; };
+		D4A0E928208E4D84AD520D51 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */; };
+		D4A0E928208E4D84AD520D52 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */; };
+		D7E8F9A0B1C2D3E4F5060708 /* iosApp/Core/Diagnostics/Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5060709 /* iosApp/Core/Diagnostics/Diagnostics.swift */; };
+		DA7A0001F00D0001F00D0001 /* iosApp/Core/Schedule/DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */; };
 		DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */; };
-		DA7A0011F00D0011F00D0011 /* AriadneParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0012F00D0012F00D0012 /* AriadneParser.swift */; };
-		DA7A0211F00D0211F00D0211 /* AriadneDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0212F00D0212F00D0212 /* AriadneDomain.swift */; };
-		DA7A0A16F00D0A16F00D0A16 /* AriadneGuided.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0A17F00D0A17F00D0A17 /* AriadneGuided.swift */; };
-		DA7A0013F00D0013F00D0013 /* AriadneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0014F00D0014F00D0014 /* AriadneModel.swift */; };
-		DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* AriadneView.swift */; };
+		DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */; };
+		DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */; };
+		DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */; };
 		DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */; };
-		DA7A0021F00D0021F00D0021 /* DepartureTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */; };
+		DA7A0021F00D0021F00D0021 /* iosApp/Core/Schedule/DepartureTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */; };
 		DA7A010BF00D010BF00D010B /* SyrmosWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		DA7A0120F00D0120F00D0120 /* SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */; };
-		DA7A0121F00D0121F00D0121 /* SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */; };
-		DA7A0122F00D0122F00D0122 /* SyrmosLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0111F00D0111F00D0111 /* SyrmosLiveActivity.swift */; };
-		DA7A0123F00D0123F00D0123 /* SyrmosWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */; };
-		DA7A0130F00D0130F00D0130 /* JourneyPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */; };
-		DA7A0140F00D0140F00D0140 /* WeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0141F00D0141F00D0141 /* WeatherStore.swift */; };
-		DA7A0142F00D0142F00D0142 /* WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0143F00D0143F00D0143 /* WeatherCard.swift */; };
-		DA7A0150F00D0150F00D0150 /* AriadneBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0151F00D0151F00D0151 /* AriadneBrain.swift */; };
-		DB4E28495C2C4563A4A26795 /* LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* LinePill.swift */; };
-		DF3C6FE39FA544239D09EE50 /* SyrmosFaresStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E4CA5A03BC488B882F9BB0 /* SyrmosFaresStore.swift */; };
-		E1A2B3C4D5E60718293A4B5C /* SyrmosDeparturesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */; };
-		E1A2B3C4D5E60718293A4B6E /* LivePositionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */; };
+		DA7A0120F00D0120F00D0120 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */; };
+		DA7A0121F00D0121F00D0121 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */; };
+		DA7A0122F00D0122F00D0122 /* SyrmosWidget/SyrmosLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0111F00D0111F00D0111 /* SyrmosWidget/SyrmosLiveActivity.swift */; };
+		DA7A0123F00D0123F00D0123 /* SyrmosWidget/SyrmosWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0112F00D0112F00D0112 /* SyrmosWidget/SyrmosWidgetBundle.swift */; };
+		DA7A0130F00D0130F00D0130 /* iosApp/Features/Assistant/JourneyPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */; };
+		DA7A0140F00D0140F00D0140 /* iosApp/Core/Networking/WeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0141F00D0141F00D0141 /* iosApp/Core/Networking/WeatherStore.swift */; };
+		DA7A0142F00D0142F00D0142 /* iosApp/Features/Weather/WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0143F00D0143F00D0143 /* iosApp/Features/Weather/WeatherCard.swift */; };
+		DA7A0150F00D0150F00D0150 /* iosApp/Features/Assistant/AriadneBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0151F00D0151F00D0151 /* iosApp/Features/Assistant/AriadneBrain.swift */; };
+		DA7A0211F00D0211F00D0211 /* iosApp/Features/Assistant/AriadneDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */; };
+		DA7A0A16F00D0A16F00D0A16 /* iosApp/Features/Assistant/AriadneGuided.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */; };
+		DB4E28495C2C4563A4A26795 /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */; };
+		DF3C6FE39FA544239D09EE50 /* iosApp/Core/Persistence/SyrmosFaresStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E4CA5A03BC488B882F9BB0 /* iosApp/Core/Persistence/SyrmosFaresStore.swift */; };
+		E1A2B3C4D5E60718293A4B5C /* iosApp/Core/Networking/SyrmosDeparturesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B5D /* iosApp/Core/Networking/SyrmosDeparturesService.swift */; };
+		E1A2B3C4D5E60718293A4B6E /* iosApp/Core/Networking/LivePositionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B6F /* iosApp/Core/Networking/LivePositionsService.swift */; };
 		E1A2B3C4D5E60718293A4C70 /* ContactDeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */; };
 		E1A2B3C4D5E60718293A4E90 /* StasyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */; };
-		E36B2B66CE3FE430B935D319 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBA71617E0DC88481663507 /* WatchModels.swift */; };
-		E44EAEAEE0954E9F8735761E /* StationStripFull.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EB6C1444B246B3AB9CF185 /* StationStripFull.swift */; };
-		E6BB2EE245424B80AE4241AF /* ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */; };
+		E36B2B66CE3FE430B935D319 /* SyrmosWatch/WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBA71617E0DC88481663507 /* SyrmosWatch/WatchModels.swift */; };
+		E44EAEAEE0954E9F8735761E /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */; };
+		E6BB2EE245424B80AE4241AF /* iosApp/Core/Schedule/ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */; };
 		ECAA824BE3E518277AB18AB6 /* NearbyStationDestinationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */; };
-		EDBF9D088F0A46CF90DFAE6B /* DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* DataFreshness.swift */; };
+		EDBF9D088F0A46CF90DFAE6B /* iosApp/Core/Schedule/DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */; };
 		F29B88836219BB903078C5DA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD822CADE700A3FA325710D /* MapView.swift */; };
 		F4782265512D005F30B45158 /* SyrmosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = E06C2DD61C7CF787E212BA8B /* SyrmosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		F547F60AEDEF7EE113E77B7B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8FAA054C866F04CB39A4C07 /* Assets.xcassets */; };
-		FAB11EB401D5464F9E009564 /* SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */; };
-		FFDDCB33EB8ADA0BA119A64C /* WatchConnectivityProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */; };
-		9C1FEB967B3B4F0897AC98ED /* iosApp/Core/Networking/BackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */; };
+		F547F60AEDEF7EE113E77B7B /* SyrmosWatch/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8FAA054C866F04CB39A4C07 /* SyrmosWatch/Assets.xcassets */; };
+		FAB11EB401D5464F9E009564 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift */; };
+		FFDDCB33EB8ADA0BA119A64C /* SyrmosWatch/WatchConnectivityProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA07DD99223CD5AAE17E70 /* SyrmosWatch/WatchConnectivityProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -186,101 +186,101 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		09288EF8307B4CDC9D065AED /* TimetablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesView.swift; sourceTree = SOURCE_ROOT; };
+		09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesView.swift; sourceTree = SOURCE_ROOT; };
 		0CC57A007A9CFBEF45359A28 /* SyrmosWatchComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SyrmosWatchComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
-		0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosSchedulesService.swift; sourceTree = SOURCE_ROOT; };
+		0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosSchedulesService.swift; sourceTree = SOURCE_ROOT; };
 		18D0CA28E96EEF13502C887F /* LinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinesView.swift; sourceTree = "<group>"; };
 		1DF85A2E3F716D7313EC9642 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		2142917C53758AAD7F295055 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = SyrmosWatch/Info.plist; sourceTree = SOURCE_ROOT; };
-		287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/App/SyrmosApp.swift; sourceTree = SOURCE_ROOT; };
-		28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/SyrmosColors.swift; sourceTree = SOURCE_ROOT; };
-		292764518958617840FE187E /* WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchModels.swift; sourceTree = SOURCE_ROOT; };
-		2D67A43DD93145FBB9809123 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/WhatsNew/WhatsNewView.swift; sourceTree = SOURCE_ROOT; };
-		2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/StationCoordinates.swift; sourceTree = SOURCE_ROOT; };
-		2F7F86E13C39694BA17FD740 /* WatchContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchContentView.swift; sourceTree = SOURCE_ROOT; };
-		CEF31ACE2630B3EA36DBE66E /* WatchSpeech.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchSpeech.swift; sourceTree = SOURCE_ROOT; };
-		1FE6A64F2930A00B9F04C461 /* WatchNearbyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchNearbyView.swift; sourceTree = SOURCE_ROOT; };
-		37E20527B3ED48E6806B8138 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/ThemeManager.swift; sourceTree = SOURCE_ROOT; };
-		395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/ScheduleProjector.swift; sourceTree = SOURCE_ROOT; };
-		51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift; sourceTree = SOURCE_ROOT; };
-		53C0854D3D8A40F9A9F267E9 /* LiquidGlassTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift; sourceTree = SOURCE_ROOT; };
-		5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosSchedulesStore.swift; sourceTree = SOURCE_ROOT; };
-		551315413AD2438B8C7F5FF0 /* SafariSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Shared/SafariSheet.swift; sourceTree = SOURCE_ROOT; };
-		56E4CA5A03BC488B882F9BB0 /* SyrmosFaresStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosFaresStore.swift; sourceTree = SOURCE_ROOT; };
-		571BD2789A52441AB0C26BF2 /* AirportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/AirportData.swift; sourceTree = SOURCE_ROOT; };
-		5D9C5B3E2DBBAEE20B9A9364 /* SyrmosWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = SyrmosWatch/SyrmosWatch.entitlements; sourceTree = SOURCE_ROOT; };
-		67E08E447B8F49FE84CAA194 /* StationStripCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripCompact.swift; sourceTree = SOURCE_ROOT; };
-		748CC40BCBDC9D468CD371B8 /* TransitData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/TransitData.swift; sourceTree = SOURCE_ROOT; };
-		7FCA4BF462F847AA856D94DB /* SyrmosWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosWidgets.swift; sourceTree = SOURCE_ROOT; };
+		1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/BackgroundRefresh.swift; sourceTree = SOURCE_ROOT; };
+		1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchNearbyView.swift; sourceTree = SOURCE_ROOT; };
+		2142917C53758AAD7F295055 /* SyrmosWatch/Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = SyrmosWatch/Info.plist; sourceTree = SOURCE_ROOT; };
+		287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/App/SyrmosApp.swift; sourceTree = SOURCE_ROOT; };
+		28CB0FF1A8E58A05798DED77 /* iosApp/DesignSystem/SyrmosColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/SyrmosColors.swift; sourceTree = SOURCE_ROOT; };
+		292764518958617840FE187E /* SyrmosWatch/WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchModels.swift; sourceTree = SOURCE_ROOT; };
+		2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/WhatsNew/WhatsNewView.swift; sourceTree = SOURCE_ROOT; };
+		2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/StationCoordinates.swift; sourceTree = SOURCE_ROOT; };
+		2F7F86E13C39694BA17FD740 /* SyrmosWatch/WatchContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchContentView.swift; sourceTree = SOURCE_ROOT; };
+		37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/ThemeManager.swift; sourceTree = SOURCE_ROOT; };
+		395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/ScheduleProjector.swift; sourceTree = SOURCE_ROOT; };
+		51972231C37146A79B5760E4 /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift; sourceTree = SOURCE_ROOT; };
+		53C0854D3D8A40F9A9F267E9 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift; sourceTree = SOURCE_ROOT; };
+		5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosSchedulesStore.swift; sourceTree = SOURCE_ROOT; };
+		551315413AD2438B8C7F5FF0 /* iosApp/Shared/SafariSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Shared/SafariSheet.swift; sourceTree = SOURCE_ROOT; };
+		56E4CA5A03BC488B882F9BB0 /* iosApp/Core/Persistence/SyrmosFaresStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosFaresStore.swift; sourceTree = SOURCE_ROOT; };
+		571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/AirportData.swift; sourceTree = SOURCE_ROOT; };
+		5D9C5B3E2DBBAEE20B9A9364 /* SyrmosWatch/SyrmosWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = SyrmosWatch/SyrmosWatch.entitlements; sourceTree = SOURCE_ROOT; };
+		67E08E447B8F49FE84CAA194 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripCompact.swift; sourceTree = SOURCE_ROOT; };
+		748CC40BCBDC9D468CD371B8 /* iosApp/Core/Schedule/TransitData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/TransitData.swift; sourceTree = SOURCE_ROOT; };
+		7FCA4BF462F847AA856D94DB /* SyrmosWidget/SyrmosWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosWidgets.swift; sourceTree = SOURCE_ROOT; };
 		7FD822CADE700A3FA325710D /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineDetailView.swift; sourceTree = "<group>"; };
 		836DE84E99C06ABA19E71805 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/CompactTabHeader.swift; sourceTree = SOURCE_ROOT; };
+		836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/CompactTabHeader.swift; sourceTree = SOURCE_ROOT; };
 		87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScheduleProjectorTests.swift; sourceTree = "<group>"; };
-		889F9EDE14524E2DA3F4B3B5 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/WatchSessionManager.swift; sourceTree = SOURCE_ROOT; };
-		89C75E63D8FD8430063F61D0 /* SyrmosWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/SyrmosWatchApp.swift; sourceTree = SOURCE_ROOT; };
-		933E6F89FEA54214B1B2AE31 /* DepartureRowCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift; sourceTree = SOURCE_ROOT; };
+		889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/WatchSessionManager.swift; sourceTree = SOURCE_ROOT; };
+		89C75E63D8FD8430063F61D0 /* SyrmosWatch/SyrmosWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/SyrmosWatchApp.swift; sourceTree = SOURCE_ROOT; };
+		933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift; sourceTree = SOURCE_ROOT; };
 		A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingCardBody.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPickerSheet.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyWeatherCard.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
-		AAAA111111111111111111B2 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
-		AAAA111111111111111111B4 /* OnboardingMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingMeshBackground.swift; sourceTree = SOURCE_ROOT; };
-		AABB01CD02EF030405060709 /* seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
-		AEEEF0962C64453194C74A7D /* LinePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/LinePill.swift; sourceTree = SOURCE_ROOT; };
-		B321F78C955813F66BA4C930 /* SyrmosWatchComplications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/SyrmosWatchComplications.swift; sourceTree = SOURCE_ROOT; };
+		AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
+		AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingMeshBackground.swift; sourceTree = SOURCE_ROOT; };
+		AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
+		AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/LinePill.swift; sourceTree = SOURCE_ROOT; };
+		B321F78C955813F66BA4C930 /* SyrmosWatch/SyrmosWatchComplications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/SyrmosWatchComplications.swift; sourceTree = SOURCE_ROOT; };
 		B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NearbyStationDestinationTests.swift; sourceTree = "<group>"; };
-		BB22CC33DD44EE55FF660012 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Location/LocationService.swift; sourceTree = SOURCE_ROOT; };
+		BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Location/LocationService.swift; sourceTree = SOURCE_ROOT; };
 		BD63C5586DB5B3F0921AC1D6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuburbanProjectionTests.swift; sourceTree = "<group>"; };
-		C3D4E5F60718293A4B5C6D7E /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Localization/Localization.swift; sourceTree = SOURCE_ROOT; };
-		C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosLinesService.swift; sourceTree = SOURCE_ROOT; };
-		C8FAA054C866F04CB39A4C07 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = SyrmosWatch/Assets.xcassets; sourceTree = SOURCE_ROOT; };
-		C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Shared/StationMapSheet.swift; sourceTree = SOURCE_ROOT; };
-		CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchConnectivityProvider.swift; sourceTree = SOURCE_ROOT; };
-		D0EB6C1444B246B3AB9CF185 /* StationStripFull.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripFull.swift; sourceTree = SOURCE_ROOT; };
+		C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Localization/Localization.swift; sourceTree = SOURCE_ROOT; };
+		C5D6E7F8A9B0C1D2E3F40507 /* iosApp/Core/Networking/SyrmosLinesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosLinesService.swift; sourceTree = SOURCE_ROOT; };
+		C8FAA054C866F04CB39A4C07 /* SyrmosWatch/Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = SyrmosWatch/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		C9C9AAE5D2E14B71AFAB3C2F /* iosApp/Shared/StationMapSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Shared/StationMapSheet.swift; sourceTree = SOURCE_ROOT; };
+		CEEA07DD99223CD5AAE17E70 /* SyrmosWatch/WatchConnectivityProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchConnectivityProvider.swift; sourceTree = SOURCE_ROOT; };
+		CEF31ACE2630B3EA36DBE66E /* SyrmosWatch/WatchSpeech.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchSpeech.swift; sourceTree = SOURCE_ROOT; };
+		D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/StationStripFull.swift; sourceTree = SOURCE_ROOT; };
 		D19BB18628D05A667A4BD6B8 /* Syrmos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Syrmos.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D1E2F3A4B5C6071829304142 /* STASYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/STASYService.swift; sourceTree = SOURCE_ROOT; };
-		D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift; sourceTree = SOURCE_ROOT; };
-		D7E8F9A0B1C2D3E4F5060709 /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Diagnostics/Diagnostics.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0002F00D0002F00D0002 /* DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
+		D1E2F3A4B5C6071829304142 /* iosApp/Core/Networking/STASYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/STASYService.swift; sourceTree = SOURCE_ROOT; };
+		D32687A748EF4519991403D6 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift; sourceTree = SOURCE_ROOT; };
+		D7E8F9A0B1C2D3E4F5060709 /* iosApp/Core/Diagnostics/Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Diagnostics/Diagnostics.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeFeaturesTests.swift; sourceTree = "<group>"; };
-		DA7A0012F00D0012F00D0012 /* AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0212F00D0212F00D0212 /* AriadneDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneDomain.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0A17F00D0A17F00D0A17 /* AriadneGuided.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneGuided.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0014F00D0014F00D0014 /* AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0016F00D0016F00D0016 /* AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AriadneParserTests.swift; sourceTree = "<group>"; };
-		DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureTracking.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureTracking.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SyrmosWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SyrmosTrackingAttributes.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0111F00D0111F00D0111 /* SyrmosLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosLiveActivity.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0113F00D0113F00D0113 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SyrmosWidget/Info.plist; sourceTree = SOURCE_ROOT; };
-		DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyPlanner.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0141F00D0141F00D0141 /* WeatherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WeatherStore.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0143F00D0143F00D0143 /* WeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Weather/WeatherCard.swift; sourceTree = SOURCE_ROOT; };
-		DA7A0151F00D0151F00D0151 /* AriadneBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneBrain.swift; sourceTree = SOURCE_ROOT; };
-		DBADA13AF3954288A721329B /* TimetablesIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesIcons.swift; sourceTree = SOURCE_ROOT; };
-		DD50BCD053B64059B6D3A243 /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WidgetBridge.swift; sourceTree = SOURCE_ROOT; };
-		DD55D549DBE24531BEA4597D /* FaresView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Fares/FaresView.swift; sourceTree = SOURCE_ROOT; };
-		DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SyrmosTrackingAttributes.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0111F00D0111F00D0111 /* SyrmosWidget/SyrmosLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosLiveActivity.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0112F00D0112F00D0112 /* SyrmosWidget/SyrmosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0113F00D0113F00D0113 /* SyrmosWidget/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SyrmosWidget/Info.plist; sourceTree = SOURCE_ROOT; };
+		DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyPlanner.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0141F00D0141F00D0141 /* iosApp/Core/Networking/WeatherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WeatherStore.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0143F00D0143F00D0143 /* iosApp/Features/Weather/WeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Weather/WeatherCard.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0151F00D0151F00D0151 /* iosApp/Features/Assistant/AriadneBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneBrain.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneDomain.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneGuided.swift; sourceTree = SOURCE_ROOT; };
+		DBADA13AF3954288A721329B /* iosApp/Features/Timetables/TimetablesIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesIcons.swift; sourceTree = SOURCE_ROOT; };
+		DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WidgetBridge.swift; sourceTree = SOURCE_ROOT; };
+		DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Fares/FaresView.swift; sourceTree = SOURCE_ROOT; };
+		DDA99E493B0C4CA48ECE53BD /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift; sourceTree = SOURCE_ROOT; };
 		DDCB57EF47F5B2293727841A /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
 		E06C2DD61C7CF787E212BA8B /* SyrmosWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SyrmosWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosDeparturesService.swift; sourceTree = SOURCE_ROOT; };
-		E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/LivePositionsService.swift; sourceTree = SOURCE_ROOT; };
+		E1A2B3C4D5E60718293A4B5D /* iosApp/Core/Networking/SyrmosDeparturesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosDeparturesService.swift; sourceTree = SOURCE_ROOT; };
+		E1A2B3C4D5E60718293A4B6F /* iosApp/Core/Networking/LivePositionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/LivePositionsService.swift; sourceTree = SOURCE_ROOT; };
 		E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactDeveloperView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StasyMapView.swift; sourceTree = "<group>"; };
 		E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		EEBA71617E0DC88481663507 /* WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchModels.swift; sourceTree = SOURCE_ROOT; };
+		EEBA71617E0DC88481663507 /* SyrmosWatch/WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchModels.swift; sourceTree = SOURCE_ROOT; };
 		F43D88E4E6775ADB265D3D56 /* iosAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		F7CC446436C541DC9D86F2C1 /* SyrmosStationOffsetsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift; sourceTree = SOURCE_ROOT; };
-		F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosRouteShapesStore.swift; sourceTree = SOURCE_ROOT; };
+		F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift; sourceTree = SOURCE_ROOT; };
+		F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosRouteShapesStore.swift; sourceTree = SOURCE_ROOT; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		FF201314EADCD2EA1936941F /* Complications-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SyrmosWatch/Complications-Info.plist"; sourceTree = SOURCE_ROOT; };
-		1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/BackgroundRefresh.swift; sourceTree = SOURCE_ROOT; };
+		FF201314EADCD2EA1936941F /* SyrmosWatch/Complications-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SyrmosWatch/Complications-Info.plist"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -423,7 +423,7 @@
 		AAAA000000000000000000A1 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */,
+				287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */,
 			);
 			name = App;
 			sourceTree = "<group>";
@@ -431,8 +431,8 @@
 		AAAA000000000000000000B0 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				551315413AD2438B8C7F5FF0 /* SafariSheet.swift */,
-				C9C9AAE5D2E14B71AFAB3C2F /* StationMapSheet.swift */,
+				551315413AD2438B8C7F5FF0 /* iosApp/Shared/SafariSheet.swift */,
+				C9C9AAE5D2E14B71AFAB3C2F /* iosApp/Shared/StationMapSheet.swift */,
 			);
 			name = Shared;
 			sourceTree = "<group>";
@@ -453,7 +453,7 @@
 		AAAA000000000000000000C1 /* Diagnostics */ = {
 			isa = PBXGroup;
 			children = (
-				D7E8F9A0B1C2D3E4F5060709 /* Diagnostics.swift */,
+				D7E8F9A0B1C2D3E4F5060709 /* iosApp/Core/Diagnostics/Diagnostics.swift */,
 			);
 			name = Diagnostics;
 			sourceTree = "<group>";
@@ -461,7 +461,7 @@
 		AAAA000000000000000000C2 /* Localization */ = {
 			isa = PBXGroup;
 			children = (
-				C3D4E5F60718293A4B5C6D7E /* Localization.swift */,
+				C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */,
 			);
 			name = Localization;
 			sourceTree = "<group>";
@@ -469,7 +469,7 @@
 		AAAA000000000000000000C3 /* Location */ = {
 			isa = PBXGroup;
 			children = (
-				BB22CC33DD44EE55FF660012 /* LocationService.swift */,
+				BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */,
 			);
 			name = Location;
 			sourceTree = "<group>";
@@ -478,12 +478,12 @@
 			isa = PBXGroup;
 			children = (
 				1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */,
-				DD50BCD053B64059B6D3A243 /* WidgetBridge.swift */,
-				C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */,
-				0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */,
-				E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */,
-				E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */,
-				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
+				DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */,
+				C5D6E7F8A9B0C1D2E3F40507 /* iosApp/Core/Networking/SyrmosLinesService.swift */,
+				0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */,
+				E1A2B3C4D5E60718293A4B5D /* iosApp/Core/Networking/SyrmosDeparturesService.swift */,
+				E1A2B3C4D5E60718293A4B6F /* iosApp/Core/Networking/LivePositionsService.swift */,
+				D1E2F3A4B5C6071829304142 /* iosApp/Core/Networking/STASYService.swift */,
 			);
 			name = Networking;
 			sourceTree = "<group>";
@@ -491,12 +491,12 @@
 		AAAA000000000000000000C5 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
-				5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */,
-				56E4CA5A03BC488B882F9BB0 /* SyrmosFaresStore.swift */,
-				F7CC446436C541DC9D86F2C1 /* SyrmosStationOffsetsStore.swift */,
-				F7CC446436C541DC9D86F2C2 /* SyrmosRouteShapesStore.swift */,
-				DDA99E493B0C4CA48ECE53BD /* SyrmosTrainTimestampsStore.swift */,
-				51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */,
+				5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */,
+				56E4CA5A03BC488B882F9BB0 /* iosApp/Core/Persistence/SyrmosFaresStore.swift */,
+				F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */,
+				F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */,
+				DDA99E493B0C4CA48ECE53BD /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift */,
+				51972231C37146A79B5760E4 /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift */,
 			);
 			name = Persistence;
 			sourceTree = "<group>";
@@ -504,13 +504,13 @@
 		AAAA000000000000000000C6 /* Schedule */ = {
 			isa = PBXGroup;
 			children = (
-				889F9EDE14524E2DA3F4B3B5 /* WatchSessionManager.swift */,
-				571BD2789A52441AB0C26BF2 /* AirportData.swift */,
-				395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */,
-				DA7A0002F00D0002F00D0002 /* DataFreshness.swift */,
-				DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */,
-				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
-				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
+				889F9EDE14524E2DA3F4B3B5 /* iosApp/Core/Schedule/WatchSessionManager.swift */,
+				571BD2789A52441AB0C26BF2 /* iosApp/Core/Schedule/AirportData.swift */,
+				395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */,
+				DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */,
+				DA7A0022F00D0022F00D0022 /* iosApp/Core/Schedule/DepartureTracking.swift */,
+				748CC40BCBDC9D468CD371B8 /* iosApp/Core/Schedule/TransitData.swift */,
+				2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */,
 			);
 			name = Schedule;
 			sourceTree = "<group>";
@@ -518,15 +518,15 @@
 		AAAA000000000000000000D0 /* DesignSystem */ = {
 			isa = PBXGroup;
 			children = (
-				933E6F89FEA54214B1B2AE31 /* DepartureRowCompact.swift */,
-				D0EB6C1444B246B3AB9CF185 /* StationStripFull.swift */,
-				67E08E447B8F49FE84CAA194 /* StationStripCompact.swift */,
-				53C0854D3D8A40F9A9F267E9 /* LiquidGlassTile.swift */,
-				AEEEF0962C64453194C74A7D /* LinePill.swift */,
-				D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */,
-				28CB0FF1A8E58A05798DED77 /* SyrmosColors.swift */,
-				37E20527B3ED48E6806B8138 /* ThemeManager.swift */,
-				836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */,
+				933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */,
+				D0EB6C1444B246B3AB9CF185 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift */,
+				67E08E447B8F49FE84CAA194 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift */,
+				53C0854D3D8A40F9A9F267E9 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift */,
+				AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */,
+				D32687A748EF4519991403D6 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift */,
+				28CB0FF1A8E58A05798DED77 /* iosApp/DesignSystem/SyrmosColors.swift */,
+				37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */,
+				836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */,
 			);
 			name = DesignSystem;
 			sourceTree = "<group>";
@@ -535,7 +535,7 @@
 			isa = PBXGroup;
 			children = (
 				E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */,
-				AABB01CD02EF030405060709 /* seed-schedules-v2 */,
+				AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */,
 				A1B2C3D4E5F60718293A4B00 /* LaunchScreen.storyboard */,
 				1DF85A2E3F716D7313EC9642 /* Info.plist */,
 			);
@@ -545,7 +545,7 @@
 		AAAA000000000000000000F0 /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				2D67A43DD93145FBB9809123 /* WhatsNewView.swift */,
+				2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */,
 				AAAA111111111111111111B0 /* Onboarding */,
 				AAAA000000000000000000F2 /* Timetables */,
 				AAAA000000000000000000F1 /* Fares */,
@@ -556,7 +556,7 @@
 		AAAA000000000000000000F1 /* Fares */ = {
 			isa = PBXGroup;
 			children = (
-				DD55D549DBE24531BEA4597D /* FaresView.swift */,
+				DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */,
 			);
 			name = Fares;
 			sourceTree = "<group>";
@@ -564,8 +564,8 @@
 		AAAA000000000000000000F2 /* Timetables */ = {
 			isa = PBXGroup;
 			children = (
-				09288EF8307B4CDC9D065AED /* TimetablesView.swift */,
-				DBADA13AF3954288A721329B /* TimetablesIcons.swift */,
+				09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */,
+				DBADA13AF3954288A721329B /* iosApp/Features/Timetables/TimetablesIcons.swift */,
 			);
 			name = Timetables;
 			sourceTree = "<group>";
@@ -573,17 +573,17 @@
 		AAAA111111111111111111B0 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
-				AAAA111111111111111111B2 /* OnboardingView.swift */,
-				DA7A0012F00D0012F00D0012 /* AriadneParser.swift */,
-				DA7A0212F00D0212F00D0212 /* AriadneDomain.swift */,
-				DA7A0A17F00D0A17F00D0A17 /* AriadneGuided.swift */,
-				DA7A0014F00D0014F00D0014 /* AriadneModel.swift */,
-				DA7A0016F00D0016F00D0016 /* AriadneView.swift */,
-				DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */,
-				DA7A0141F00D0141F00D0141 /* WeatherStore.swift */,
-				DA7A0143F00D0143F00D0143 /* WeatherCard.swift */,
-				DA7A0151F00D0151F00D0151 /* AriadneBrain.swift */,
-				AAAA111111111111111111B4 /* OnboardingMeshBackground.swift */,
+				AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */,
+				DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */,
+				DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */,
+				DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */,
+				DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */,
+				DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */,
+				DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */,
+				DA7A0141F00D0141F00D0141 /* iosApp/Core/Networking/WeatherStore.swift */,
+				DA7A0143F00D0143F00D0143 /* iosApp/Features/Weather/WeatherCard.swift */,
+				DA7A0151F00D0151F00D0151 /* iosApp/Features/Assistant/AriadneBrain.swift */,
+				AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */,
 			);
 			name = Onboarding;
 			sourceTree = "<group>";
@@ -603,20 +603,19 @@
 		D666BF2B0273E4C6C2E84B8B /* SyrmosWatch */ = {
 			isa = PBXGroup;
 			children = (
-				89C75E63D8FD8430063F61D0 /* SyrmosWatchApp.swift */,
-				2F7F86E13C39694BA17FD740 /* WatchContentView.swift */,
-				CEF31ACE2630B3EA36DBE66E /* WatchSpeech.swift */,
-				1FE6A64F2930A00B9F04C461 /* WatchNearbyView.swift */,
-				CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */,
-				EEBA71617E0DC88481663507 /* WatchModels.swift */,
-				B321F78C955813F66BA4C930 /* SyrmosWatchComplications.swift */,
-				292764518958617840FE187E /* WatchModels.swift */,
-				2142917C53758AAD7F295055 /* Info.plist */,
-				FF201314EADCD2EA1936941F /* Complications-Info.plist */,
-				5D9C5B3E2DBBAEE20B9A9364 /* SyrmosWatch.entitlements */,
-				C8FAA054C866F04CB39A4C07 /* Assets.xcassets */,
+				89C75E63D8FD8430063F61D0 /* SyrmosWatch/SyrmosWatchApp.swift */,
+				2F7F86E13C39694BA17FD740 /* SyrmosWatch/WatchContentView.swift */,
+				CEF31ACE2630B3EA36DBE66E /* SyrmosWatch/WatchSpeech.swift */,
+				1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */,
+				CEEA07DD99223CD5AAE17E70 /* SyrmosWatch/WatchConnectivityProvider.swift */,
+				EEBA71617E0DC88481663507 /* SyrmosWatch/WatchModels.swift */,
+				B321F78C955813F66BA4C930 /* SyrmosWatch/SyrmosWatchComplications.swift */,
+				292764518958617840FE187E /* SyrmosWatch/WatchModels.swift */,
+				2142917C53758AAD7F295055 /* SyrmosWatch/Info.plist */,
+				FF201314EADCD2EA1936941F /* SyrmosWatch/Complications-Info.plist */,
+				5D9C5B3E2DBBAEE20B9A9364 /* SyrmosWatch/SyrmosWatch.entitlements */,
+				C8FAA054C866F04CB39A4C07 /* SyrmosWatch/Assets.xcassets */,
 			);
-			name = SyrmosWatch;
 			path = SyrmosWatch;
 			sourceTree = "<group>";
 		};
@@ -632,11 +631,11 @@
 		DA7A010CF00D010CF00D010C /* SyrmosWidget */ = {
 			isa = PBXGroup;
 			children = (
-				7FCA4BF462F847AA856D94DB /* SyrmosWidgets.swift */,
-				DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */,
-				DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */,
-				DA7A0111F00D0111F00D0111 /* SyrmosLiveActivity.swift */,
-				DA7A0113F00D0113F00D0113 /* Info.plist */,
+				7FCA4BF462F847AA856D94DB /* SyrmosWidget/SyrmosWidgets.swift */,
+				DA7A0110F00D0110F00D0110 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift */,
+				DA7A0112F00D0112F00D0112 /* SyrmosWidget/SyrmosWidgetBundle.swift */,
+				DA7A0111F00D0111F00D0111 /* SyrmosWidget/SyrmosLiveActivity.swift */,
+				DA7A0113F00D0113F00D0113 /* SyrmosWidget/Info.plist */,
 			);
 			name = SyrmosWidget;
 			sourceTree = "<group>";
@@ -783,7 +782,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AABB01CD02EF030405060708 /* seed-schedules-v2 in Resources */,
+				AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */,
 				017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */,
 				A1B2C3D4E5F60718293A4B01 /* LaunchScreen.storyboard in Resources */,
 			);
@@ -793,7 +792,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F547F60AEDEF7EE113E77B7B /* Assets.xcassets in Resources */,
+				F547F60AEDEF7EE113E77B7B /* SyrmosWatch/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -815,7 +814,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0FC202D00E8A46C389296714 /* seed-schedules-v2 in Resources */,
+				0FC202D00E8A46C389296714 /* Resources/seed-schedules-v2 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -827,47 +826,47 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C1FEB967B3B4F0897AC98ED /* iosApp/Core/Networking/BackgroundRefresh.swift in Sources */,
-				2AC047F768ED40C49CDCC90B /* WidgetBridge.swift in Sources */,
-				8F1DB37A07CE4F4E877F3E52 /* WatchSessionManager.swift in Sources */,
-				C173574BC2DC4C0F9D5C159E /* DepartureRowCompact.swift in Sources */,
-				E44EAEAEE0954E9F8735761E /* StationStripFull.swift in Sources */,
-				A8A479D2EBC54B139122C16E /* StationStripCompact.swift in Sources */,
-				8FEFDAADF8474EE0AD94377E /* LiquidGlassTile.swift in Sources */,
-				204183F8B0D84A90A83F834D /* LinePill.swift in Sources */,
-				736E6FA5879F4B30A1B60B9C /* SyrmosLineTokens.swift in Sources */,
-				CA564E5B6224431DAC6CC3E2 /* AirportData.swift in Sources */,
-				020B9BA01E714B238FC04496 /* WhatsNewView.swift in Sources */,
-				0658B8596FD64D0EB5BE30A0 /* FaresView.swift in Sources */,
-				DF3C6FE39FA544239D09EE50 /* SyrmosFaresStore.swift in Sources */,
-				D4A0E928208E4D84AD520D51 /* SyrmosStationOffsetsStore.swift in Sources */,
-				D4A0E928208E4D84AD520D52 /* SyrmosRouteShapesStore.swift in Sources */,
-				26AC636F7C9B467B9097F8F6 /* TimetablesIcons.swift in Sources */,
-				470A39F895004D4CB8BC04D4 /* SyrmosTrainTimestampsStore.swift in Sources */,
-				03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */,
-				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
-				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
-				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
-				AAAA111111111111111111B1 /* OnboardingView.swift in Sources */,
-				DA7A0011F00D0011F00D0011 /* AriadneParser.swift in Sources */,
-				DA7A0211F00D0211F00D0211 /* AriadneDomain.swift in Sources */,
-				DA7A0A16F00D0A16F00D0A16 /* AriadneGuided.swift in Sources */,
-				DA7A0013F00D0013F00D0013 /* AriadneModel.swift in Sources */,
-				DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */,
-				DA7A0130F00D0130F00D0130 /* JourneyPlanner.swift in Sources */,
-				DA7A0140F00D0140F00D0140 /* WeatherStore.swift in Sources */,
-				DA7A0142F00D0142F00D0142 /* WeatherCard.swift in Sources */,
-				DA7A0150F00D0150F00D0150 /* AriadneBrain.swift in Sources */,
-				AAAA111111111111111111B3 /* OnboardingMeshBackground.swift in Sources */,
-				03FBB75EEE74C7E43F7A609B /* CompactTabHeader.swift in Sources */,
-				8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */,
-				C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */,
-				DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */,
-				DA7A0021F00D0021F00D0021 /* DepartureTracking.swift in Sources */,
-				DA7A0120F00D0120F00D0120 /* SyrmosTrackingAttributes.swift in Sources */,
-				3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */,
-				002709A0C1454019B429939D /* SyrmosSchedulesService.swift in Sources */,
-				E1A2B3C4D5E60718293A4B5C /* SyrmosDeparturesService.swift in Sources */,
-				E1A2B3C4D5E60718293A4B6E /* LivePositionsService.swift in Sources */,
+				2AC047F768ED40C49CDCC90B /* iosApp/Core/Networking/WidgetBridge.swift in Sources */,
+				8F1DB37A07CE4F4E877F3E52 /* iosApp/Core/Schedule/WatchSessionManager.swift in Sources */,
+				C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */,
+				E44EAEAEE0954E9F8735761E /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources */,
+				A8A479D2EBC54B139122C16E /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift in Sources */,
+				8FEFDAADF8474EE0AD94377E /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift in Sources */,
+				204183F8B0D84A90A83F834D /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */,
+				736E6FA5879F4B30A1B60B9C /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift in Sources */,
+				CA564E5B6224431DAC6CC3E2 /* iosApp/Core/Schedule/AirportData.swift in Sources */,
+				020B9BA01E714B238FC04496 /* iosApp/Features/WhatsNew/WhatsNewView.swift in Sources */,
+				0658B8596FD64D0EB5BE30A0 /* iosApp/Features/Fares/FaresView.swift in Sources */,
+				DF3C6FE39FA544239D09EE50 /* iosApp/Core/Persistence/SyrmosFaresStore.swift in Sources */,
+				D4A0E928208E4D84AD520D51 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */,
+				D4A0E928208E4D84AD520D52 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift in Sources */,
+				26AC636F7C9B467B9097F8F6 /* iosApp/Features/Timetables/TimetablesIcons.swift in Sources */,
+				470A39F895004D4CB8BC04D4 /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift in Sources */,
+				03329116BFDB4F16A2A9B937 /* iosApp/DesignSystem/ThemeManager.swift in Sources */,
+				8A72EAE7260D46FDA05D490B /* iosApp/Shared/SafariSheet.swift in Sources */,
+				4DFE1212D427449286398220 /* iosApp/Shared/StationMapSheet.swift in Sources */,
+				B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */,
+				AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */,
+				DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */,
+				DA7A0211F00D0211F00D0211 /* iosApp/Features/Assistant/AriadneDomain.swift in Sources */,
+				DA7A0A16F00D0A16F00D0A16 /* iosApp/Features/Assistant/AriadneGuided.swift in Sources */,
+				DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */,
+				DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */,
+				DA7A0130F00D0130F00D0130 /* iosApp/Features/Assistant/JourneyPlanner.swift in Sources */,
+				DA7A0140F00D0140F00D0140 /* iosApp/Core/Networking/WeatherStore.swift in Sources */,
+				DA7A0142F00D0142F00D0142 /* iosApp/Features/Weather/WeatherCard.swift in Sources */,
+				DA7A0150F00D0150F00D0150 /* iosApp/Features/Assistant/AriadneBrain.swift in Sources */,
+				AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */,
+				03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */,
+				8218D06AFB1A4111BBE6A6BA /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift in Sources */,
+				C5D4C72817CA43BA90F02ADB /* iosApp/Core/Schedule/ScheduleProjector.swift in Sources */,
+				DA7A0001F00D0001F00D0001 /* iosApp/Core/Schedule/DataFreshness.swift in Sources */,
+				DA7A0021F00D0021F00D0021 /* iosApp/Core/Schedule/DepartureTracking.swift in Sources */,
+				DA7A0120F00D0120F00D0120 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */,
+				3F12F021ECD240BE97B74BB9 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */,
+				002709A0C1454019B429939D /* iosApp/Core/Networking/SyrmosSchedulesService.swift in Sources */,
+				E1A2B3C4D5E60718293A4B5C /* iosApp/Core/Networking/SyrmosDeparturesService.swift in Sources */,
+				E1A2B3C4D5E60718293A4B6E /* iosApp/Core/Networking/LivePositionsService.swift in Sources */,
 				A2AF349B478106204EC5E0A7 /* HomeView.swift in Sources */,
 				AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */,
 				AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */,
@@ -879,16 +878,16 @@
 				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
 				E1A2B3C4D5E60718293A4C70 /* ContactDeveloperView.swift in Sources */,
 				E1A2B3C4D5E60718293A4E90 /* StasyMapView.swift in Sources */,
-				2FDAB04CAE6E25AD392B1E99 /* StationCoordinates.swift in Sources */,
+				2FDAB04CAE6E25AD392B1E99 /* iosApp/Core/Schedule/StationCoordinates.swift in Sources */,
 				59B190E857ABADADF2CC90C3 /* StationDetailView.swift in Sources */,
-				B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */,
-				695053E938CCE178E8FEAAC9 /* SyrmosColors.swift in Sources */,
-				B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */,
-				A1B2C3D4E5F60718192A3B4C /* STASYService.swift in Sources */,
-				BB22CC33DD44EE55FF660011 /* LocationService.swift in Sources */,
-				C5D6E7F8A9B0C1D2E3F40506 /* SyrmosLinesService.swift in Sources */,
-				D7E8F9A0B1C2D3E4F5060708 /* Diagnostics.swift in Sources */,
-				980A534651EFC2013B8ED38F /* TransitData.swift in Sources */,
+				B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */,
+				695053E938CCE178E8FEAAC9 /* iosApp/DesignSystem/SyrmosColors.swift in Sources */,
+				B2C3D4E5F6071829A3B4C5D6 /* iosApp/Core/Localization/Localization.swift in Sources */,
+				A1B2C3D4E5F60718192A3B4C /* iosApp/Core/Networking/STASYService.swift in Sources */,
+				BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */,
+				C5D6E7F8A9B0C1D2E3F40506 /* iosApp/Core/Networking/SyrmosLinesService.swift in Sources */,
+				D7E8F9A0B1C2D3E4F5060708 /* iosApp/Core/Diagnostics/Diagnostics.swift in Sources */,
+				980A534651EFC2013B8ED38F /* iosApp/Core/Schedule/TransitData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -896,12 +895,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7C684B9562B2126A07E23D4C /* SyrmosWatchApp.swift in Sources */,
-				4B9E757154C3AEF92629B854 /* WatchContentView.swift in Sources */,
-				7F9E63555C75A414D8BC9D39 /* WatchSpeech.swift in Sources */,
-				B3621A83DE8D374BF385359C /* WatchNearbyView.swift in Sources */,
-				FFDDCB33EB8ADA0BA119A64C /* WatchConnectivityProvider.swift in Sources */,
-				E36B2B66CE3FE430B935D319 /* WatchModels.swift in Sources */,
+				7C684B9562B2126A07E23D4C /* SyrmosWatch/SyrmosWatchApp.swift in Sources */,
+				4B9E757154C3AEF92629B854 /* SyrmosWatch/WatchContentView.swift in Sources */,
+				7F9E63555C75A414D8BC9D39 /* SyrmosWatch/WatchSpeech.swift in Sources */,
+				B3621A83DE8D374BF385359C /* SyrmosWatch/WatchNearbyView.swift in Sources */,
+				FFDDCB33EB8ADA0BA119A64C /* SyrmosWatch/WatchConnectivityProvider.swift in Sources */,
+				E36B2B66CE3FE430B935D319 /* SyrmosWatch/WatchModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -921,8 +920,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB532D96B1C7F1C32AE17B06 /* SyrmosWatchComplications.swift in Sources */,
-				A3EA76BA0F7C855E281D4342 /* WatchModels.swift in Sources */,
+				AB532D96B1C7F1C32AE17B06 /* SyrmosWatch/SyrmosWatchComplications.swift in Sources */,
+				A3EA76BA0F7C855E281D4342 /* SyrmosWatch/WatchModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -930,28 +929,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BB96CED5F61B446CBA6D87C5 /* DepartureRowCompact.swift in Sources */,
-				562D2C66362545CB97D3E515 /* StationStripFull.swift in Sources */,
-				AE7DE0584EF948EFB5BB3FC1 /* StationStripCompact.swift in Sources */,
-				68F1F7047DBA43CC970CCF92 /* LiquidGlassTile.swift in Sources */,
-				DB4E28495C2C4563A4A26795 /* LinePill.swift in Sources */,
-				FAB11EB401D5464F9E009564 /* SyrmosLineTokens.swift in Sources */,
-				726F4319319A4CEF912673CB /* SyrmosRouteShapesStore.swift in Sources */,
-				7469233EA00146DB9444F7BB /* LivePositionsService.swift in Sources */,
-				EDBF9D088F0A46CF90DFAE6B /* DataFreshness.swift in Sources */,
-				B0F1906F29BD4E9FB9B33721 /* SyrmosColors.swift in Sources */,
-				B100649A9FE24D65B49698FC /* Localization.swift in Sources */,
-				80408BB654634CB9A5BEFE52 /* AirportData.swift in Sources */,
-				37F4634210E64A09819E5A76 /* SyrmosStationOffsetsStore.swift in Sources */,
-				BCB2D8DDE0D14B2D8664EC16 /* SyrmosSchedulesStore.swift in Sources */,
-				691E35E631ED478590A0F25F /* SyrmosSchedulesService.swift in Sources */,
-				7BA0F0893BD64501A7EAC5A1 /* StationCoordinates.swift in Sources */,
-				D10CE67C95FA4662AB0D160F /* TransitData.swift in Sources */,
-				E6BB2EE245424B80AE4241AF /* ScheduleProjector.swift in Sources */,
-				AC74A75A5E7742A6A2AC71B3 /* SyrmosWidgets.swift in Sources */,
-				DA7A0121F00D0121F00D0121 /* SyrmosTrackingAttributes.swift in Sources */,
-				DA7A0122F00D0122F00D0122 /* SyrmosLiveActivity.swift in Sources */,
-				DA7A0123F00D0123F00D0123 /* SyrmosWidgetBundle.swift in Sources */,
+				BB96CED5F61B446CBA6D87C5 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */,
+				562D2C66362545CB97D3E515 /* iosApp/DesignSystem/WidgetKit/StationStripFull.swift in Sources */,
+				AE7DE0584EF948EFB5BB3FC1 /* iosApp/DesignSystem/WidgetKit/StationStripCompact.swift in Sources */,
+				68F1F7047DBA43CC970CCF92 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift in Sources */,
+				DB4E28495C2C4563A4A26795 /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */,
+				FAB11EB401D5464F9E009564 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift in Sources */,
+				726F4319319A4CEF912673CB /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift in Sources */,
+				7469233EA00146DB9444F7BB /* iosApp/Core/Networking/LivePositionsService.swift in Sources */,
+				EDBF9D088F0A46CF90DFAE6B /* iosApp/Core/Schedule/DataFreshness.swift in Sources */,
+				B0F1906F29BD4E9FB9B33721 /* iosApp/DesignSystem/SyrmosColors.swift in Sources */,
+				B100649A9FE24D65B49698FC /* iosApp/Core/Localization/Localization.swift in Sources */,
+				80408BB654634CB9A5BEFE52 /* iosApp/Core/Schedule/AirportData.swift in Sources */,
+				37F4634210E64A09819E5A76 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */,
+				BCB2D8DDE0D14B2D8664EC16 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */,
+				691E35E631ED478590A0F25F /* iosApp/Core/Networking/SyrmosSchedulesService.swift in Sources */,
+				7BA0F0893BD64501A7EAC5A1 /* iosApp/Core/Schedule/StationCoordinates.swift in Sources */,
+				D10CE67C95FA4662AB0D160F /* iosApp/Core/Schedule/TransitData.swift in Sources */,
+				E6BB2EE245424B80AE4241AF /* iosApp/Core/Schedule/ScheduleProjector.swift in Sources */,
+				AC74A75A5E7742A6A2AC71B3 /* SyrmosWidget/SyrmosWidgets.swift in Sources */,
+				DA7A0121F00D0121F00D0121 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */,
+				DA7A0122F00D0122F00D0122 /* SyrmosWidget/SyrmosLiveActivity.swift in Sources */,
+				DA7A0123F00D0123F00D0123 /* SyrmosWidget/SyrmosWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
