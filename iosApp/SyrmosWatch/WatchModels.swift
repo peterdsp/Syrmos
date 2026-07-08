@@ -23,8 +23,34 @@ struct WatchDeparture: Codable, Identifiable, Hashable {
     var id: String { "\(lineId)-\(time)-\(destination)" }
     let lineId: String
     let destination: String
+    /// Minutes away at the moment the phone built the snapshot. The Watch
+    /// recomputes live from `targetEpoch`, so this is only a fallback for
+    /// older payloads that carry no absolute target.
     let minutes: Int
     let time: String
+    /// Absolute Unix epoch seconds of the departure. The Watch ticks its own
+    /// countdown against this every second (see `TimelineView`) so the rows
+    /// stay live without waiting for a phone push. Optional so a snapshot
+    /// encoded before this field existed still decodes.
+    let targetEpoch: TimeInterval?
+
+    init(lineId: String, destination: String, minutes: Int, time: String, targetEpoch: TimeInterval? = nil) {
+        self.lineId = lineId
+        self.destination = destination
+        self.minutes = minutes
+        self.time = time
+        self.targetEpoch = targetEpoch
+    }
+
+    /// Live minutes away as of `now`, computed from the absolute target when
+    /// present. Falls back to the snapshot's `minutes` for legacy payloads.
+    /// Rounds up so a train 2m10s out reads "3m", matching the projector.
+    func liveMinutes(now: TimeInterval) -> Int {
+        guard let targetEpoch else { return minutes }
+        let secs = targetEpoch - now
+        if secs <= 0 { return 0 }
+        return max(0, Int(ceil(secs / 60)))
+    }
 }
 
 struct WatchSnapshot: Codable, Equatable {
@@ -32,16 +58,30 @@ struct WatchSnapshot: Codable, Equatable {
     let departures: [WatchDeparture]
     /// Epoch seconds the snapshot was produced, so the Watch can age it.
     let updatedEpoch: Double
+    /// App language the phone is set to ("en"/"el"/"sq"), so the Watch's
+    /// voiced read-back matches the app. Optional for legacy payloads.
+    let language: String?
 
-    static let placeholder = WatchSnapshot(
-        stationName: "Syntagma",
-        departures: [
-            WatchDeparture(lineId: "M3", destination: "Doukissis Plakentias", minutes: 3, time: "17:47"),
-            WatchDeparture(lineId: "M3", destination: "Airport", minutes: 11, time: "17:55"),
-            WatchDeparture(lineId: "M2", destination: "Elliniko", minutes: 4, time: "17:48"),
-        ],
-        updatedEpoch: 0
-    )
+    init(stationName: String, departures: [WatchDeparture], updatedEpoch: Double, language: String? = nil) {
+        self.stationName = stationName
+        self.departures = departures
+        self.updatedEpoch = updatedEpoch
+        self.language = language
+    }
+
+    static let placeholder: WatchSnapshot = {
+        let now = Date().timeIntervalSince1970
+        return WatchSnapshot(
+            stationName: "Syntagma",
+            departures: [
+                WatchDeparture(lineId: "M3", destination: "Doukissis Plakentias", minutes: 3, time: "17:47", targetEpoch: now + 3 * 60),
+                WatchDeparture(lineId: "M3", destination: "Airport", minutes: 11, time: "17:55", targetEpoch: now + 11 * 60),
+                WatchDeparture(lineId: "M2", destination: "Elliniko", minutes: 4, time: "17:48", targetEpoch: now + 4 * 60),
+            ],
+            updatedEpoch: now,
+            language: "en"
+        )
+    }()
 }
 
 /// Shared snapshot store persisted to the watch App Group, written by the watch

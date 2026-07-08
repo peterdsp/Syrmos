@@ -179,10 +179,21 @@ final class DepartureTracking: ObservableObject {
         let deps = ScheduleProjector.nextDepartures(
             for: d.stationId, lineIds: [d.lineId], limit: 6, timeHorizonMinutes: 3 * 60
         )
+        // Derive an absolute target epoch from the projector's relative
+        // minutesAway so the Watch can tick its own countdown locally.
+        let now = Date().timeIntervalSince1970
         let rows = deps.prefix(3).map {
-            (lineId: SyrmosLineTokens.label(for: $0.lineId), destination: $0.direction, minutes: $0.minutesAway, time: $0.time)
+            (lineId: SyrmosLineTokens.label(for: $0.lineId),
+             destination: $0.direction,
+             minutes: $0.minutesAway,
+             time: $0.time,
+             targetEpoch: Optional(now + Double($0.minutesAway) * 60))
         }
-        WatchSessionManager.shared.push(stationName: d.stationName, departures: Array(rows))
+        WatchSessionManager.shared.push(
+            stationName: d.stationName,
+            departures: Array(rows),
+            language: LocalizationManager.shared.language.rawValue
+        )
     }
 
     // MARK: - ActivityKit bridge (no-op safe when unsupported)
