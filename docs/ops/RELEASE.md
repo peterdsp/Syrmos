@@ -44,22 +44,30 @@ after that. Default track is `internal`; promote in the console or change `track
 
 ## iOS secrets (GitHub repo settings, Actions secrets)
 
-`release-ios.yml` mirrors the klipa App Store Connect job: one App Store Connect
-API key drives both automatic signing (`xcodebuild -allowProvisioningUpdates`)
-and the TestFlight upload (`xcrun altool --upload-app`). Same secret names as
-klipa, so the same key is reused:
+`release-ios.yml` uses least-privilege manual signing (klipa's cert-import
+pattern). The App Store Connect API key stays **App Manager** and is used only
+for the upload; signing uses an imported Apple Distribution certificate and
+explicit App Store profiles, so no Admin/cloud-signing permission is needed.
 
-- `ASC_KEY_ID` — App Store Connect API key id (Users and Access, Keys).
-- `ASC_ISSUER_ID` — the issuer id shown above the keys list.
-- `ASC_API_KEY_P8_BASE64` — base64 of the `AuthKey_<id>.p8`.
+Signing:
+- `IOS_DIST_CERT_P12_BASE64` — base64 of your Apple Distribution certificate
+  exported from Keychain Access as a `.p12` (includes the private key).
+- `IOS_DIST_CERT_P12_PASSWORD` — the password you set on that `.p12` export.
+- `CI_KEYCHAIN_PASSWORD` — any string; password for the throwaway CI keychain.
+- Four App Store provisioning profiles (base64 of each `.mobileprovision`),
+  created on the developer portal and named to match `scripts/export-options.plist`:
+  - `IOS_PROFILE_APP_BASE64` — "Syrmos AppStore" (`com.syrmosApp.ios`)
+  - `IOS_PROFILE_WATCH_BASE64` — "Syrmos Watch AppStore" (`...watchkitapp`)
+  - `IOS_PROFILE_COMPLICATION_BASE64` — "Syrmos Complication AppStore" (`...watchkitapp.complications`)
+  - `IOS_PROFILE_WIDGET_BASE64` — "Syrmos Widget AppStore" (`...SyrmosWidget`)
 
-Team id `YTS4KJBX3P` and `app-store-connect` export live in
-`scripts/export-options.plist`, so no separate cert/profile secrets are needed.
-The key must have the App Manager role so automatic signing can create/fetch the
-distribution profiles for the app, watch app, watch complication, and widget
-extension. The app record must already exist in App Store Connect (bundle ids
-under the Syrmos app). If the ASC key is absent the job skips cleanly, so a tag
-still ships web + Android.
+Upload (App Manager key is enough):
+- `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_API_KEY_P8_BASE64`.
+
+Team id `YTS4KJBX3P` is in `scripts/export-options.plist`. The App Store app
+record and all four bundle ids must exist in App Store Connect / the developer
+portal. If the distribution cert secret is absent the job skips cleanly, so a
+tag still ships web + Android.
 
 ## Verifying a release
 
