@@ -113,6 +113,23 @@ jobs:
           write_profile widget       "$IOS_PROFILE_WIDGET_BASE64"
           ls -la "$DIR"
 
+      # Auto-increment the build number so a tag never collides with a build
+      # already on App Store Connect. CFBundleVersion is hardcoded in the app +
+      # watch Info.plist, and the widget/complication read $(CURRENT_PROJECT_VERSION),
+      # so stamp both to one unique, monotonic value (Unix epoch seconds). The
+      # marketing version (CFBundleShortVersionString) is intentionally left to
+      # the human to bump per release.
+      - name: Stamp a unique build number
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
+        run: |
+          set -euo pipefail
+          BUILD="$(date +%s)"
+          echo "BUILD_NUMBER=$BUILD" >> "$GITHUB_ENV"
+          for p in iosApp/iosApp/Info.plist iosApp/SyrmosWatch/Info.plist; do
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$p"
+          done
+          echo "Build number stamped: $BUILD"
+
       # Archive UNSIGNED, then sign everything during export with the explicit
       # profiles + cert from scripts/export-options.plist. Signing all four
       # embedded targets manually on the archive command line is unreliable
@@ -128,6 +145,7 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/Syrmos.xcarchive" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Export App Store .ipa (manual signing)
