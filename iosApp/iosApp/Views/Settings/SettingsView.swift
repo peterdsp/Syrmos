@@ -104,47 +104,54 @@ struct SyrmosSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Label(ariadneEngineTitle, systemImage: ariadneEngineIcon)
-                            Spacer()
-                            Text(ariadneEngineValue)
-                                .font(.subheadline)
-                                .foregroundStyle(AriadneBrain.availability.isClever ? Color.accentColor : .secondary)
-                        }
-                        Text(ariadneEngineDetail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        if ariadneCanOpenSettings {
-                            Button(ariadneOpenSettingsLabel) {
-                                if let url = URL(string: UIApplication.openSettingsURLString) {
-                                    openURL(url)
-                                }
+                // Internal-only diagnostics: the Ariadne engine readout and the
+                // severe-weather preview toggle are useful in TestFlight/Debug but
+                // are noise for App Store users, so they are hidden in the App
+                // Store build. Same binary; gated at runtime by the install source
+                // (App Store receipt) via BuildEnv.isInternalBuild.
+                if BuildEnv.isInternalBuild {
+                    Section {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Label(ariadneEngineTitle, systemImage: ariadneEngineIcon)
+                                Spacer()
+                                Text(ariadneEngineValue)
+                                    .font(.subheadline)
+                                    .foregroundStyle(AriadneBrain.availability.isClever ? Color.accentColor : .secondary)
                             }
-                            .font(.caption)
+                            Text(ariadneEngineDetail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            if ariadneCanOpenSettings {
+                                Button(ariadneOpenSettingsLabel) {
+                                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                                        openURL(url)
+                                    }
+                                }
+                                .font(.caption)
+                            }
                         }
+                    } header: {
+                        Text(ariadneEngineTitle)
                     }
-                } header: {
-                    Text(ariadneEngineTitle)
-                }
 
-                Section(loc.language == .greek ? "Ανάπτυξη" : loc.language == .albanian ? "Zhvillim" : "Developer") {
-                    Toggle(isOn: $forceEmergencyPreview) {
-                        Label(
-                            loc.language == .greek ? "Προεπισκόπηση κακοκαιρίας"
-                                : loc.language == .albanian ? "Paraafisho paralajmërim moti"
-                                : "Preview severe-weather card",
-                            systemImage: "cloud.bolt.rain.fill"
+                    Section(loc.language == .greek ? "Ανάπτυξη" : loc.language == .albanian ? "Zhvillim" : "Developer") {
+                        Toggle(isOn: $forceEmergencyPreview) {
+                            Label(
+                                loc.language == .greek ? "Προεπισκόπηση κακοκαιρίας"
+                                    : loc.language == .albanian ? "Paraafisho paralajmërim moti"
+                                    : "Preview severe-weather card",
+                                systemImage: "cloud.bolt.rain.fill"
+                            )
+                        }
+                        Text(
+                            loc.language == .greek ? "Δείχνει την κόκκινη κάρτα στην Αρχική χωρίς να χρειάζεται πραγματική καταιγίδα."
+                                : loc.language == .albanian ? "Shfaq kartën e paralajmërimit në Home pa nevojën për stuhi të vërtetë."
+                                : "Forces the amber warning card on Home so you can smoke-test it without waiting for a storm."
                         )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
-                    Text(
-                        loc.language == .greek ? "Δείχνει την κόκκινη κάρτα στην Αρχική χωρίς να χρειάζεται πραγματική καταιγίδα."
-                            : loc.language == .albanian ? "Shfaq kartën e paralajmërimit në Home pa nevojën për stuhi të vërtetë."
-                            : "Forces the amber warning card on Home so you can smoke-test it without waiting for a storm."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
 
                 Section(loc.language == .greek ? "Χάρτης" : loc.language == .albanian ? "Harta" : "Map") {
@@ -455,4 +462,19 @@ private struct ShareSheet: UIViewControllerRepresentable {
         UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+
+/// Distinguishes an internal build (Debug or TestFlight) from the public App
+/// Store build, so internal-only UI can be hidden from App Store users. The
+/// same binary ships to TestFlight and the App Store, so this is a RUNTIME
+/// check on the install source: TestFlight installs carry a "sandboxReceipt",
+/// App Store installs carry a "receipt".
+enum BuildEnv {
+    static var isInternalBuild: Bool {
+        #if DEBUG
+        return true
+        #else
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        #endif
+    }
 }
