@@ -1,0 +1,89 @@
+name: iOS UI inspection
+
+# Runtime UI verification for the iOS app using the Apple AI tools (Loupe +
+# agent-device): launch the app in a simulator and capture the rendered view
+# tree, accessibility snapshot, and screenshots as workflow artifacts. This
+# catches the "build green but UI broken" class of bug that the build-only
+# `ios.yml` gate cannot.
+#
+# Advisory, never a gate: every inspection step is best-effort (continue-on-
+# error), so a hiccup in the tooling or the simulator does not fail CI. It runs
+# alongside `ios.yml`, not instead of it.
+#
+# The tool invocations follow the documented Apple-tools pattern; the first real
+# run may need a flag tweak for the runner's installed simulator names.
+
+on:
+  push:
+    paths:
+      - "iosApp/**"
+      - ".github/workflows/ios-ui-inspection.yml"
+  pull_request:
+    paths:
+      - "iosApp/**"
+      - ".github/workflows/ios-ui-inspection.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-inspect-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    name: Launch in simulator + capture inspection
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      SCHEME: "Syrmos - Athens Rail Times"
+      BUNDLE_ID: com.syrmosApp.ios
+      SIM_NAME: "iPhone 17"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest installed Xcode
+        run: |
+          latest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest"; fi
+          xcodebuild -version
+
+      # The app scheme embeds the watch app, so the watchOS runtime is required.
+      - name: Install watchOS simulator runtime
+        run: xcodebuild -downloadPlatform watchOS
+
+      - name: Install Apple AI tools (Loupe + agent-device)
+        run: |
+          brew tap heoblitz/loupe https://github.com/heoblitz/Loupe.git
+          brew install loupe
+          npm install -g agent-device@latest
+
+      - name: Build for the simulator
+        run: |
+          xcodebuild build \
+            -project iosApp/Syrmos.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=$SIM_NAME" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Launch app and capture UI inspection
+        continue-on-error: true
+        run: |
+          set -x
+          xcrun simctl boot "$SIM_NAME" || true
+          APP="$(find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 2 -name "*.app" -not -path "*Watch*" | head -1)"
+          echo "app: $APP"
+          xcrun simctl install "$SIM_NAME" "$APP" || xcrun simctl install booted "$APP" || true
+          loupe app launch --bundle-id "$BUNDLE_ID" --device "$SIM_NAME" --inject || true
+          loupe ui report --bundle-id "$BUNDLE_ID" --output loupe-report || true
+          agent-device snapshot -i > agent-snapshot.txt || true
+
+      - name: Upload inspection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-runtime-inspection
+          path: |
+            loupe-report/
+            agent-snapshot.txt
+          if-no-files-found: warn
