@@ -63,9 +63,20 @@ jobs:
           if [ -n "$latest" ]; then sudo xcode-select -s "$latest"; fi
           xcodebuild -version
 
-      - name: Install watchOS simulator runtime
+      # The device archive uses the watchOS SDK bundled with Xcode; the
+      # simulator runtime is not strictly required, and its download is a known
+      # flaky runner step ("Unable to connect to simulator"). Retry a few times
+      # and never let a transient download failure block the release.
+      - name: Install watchOS simulator runtime (best-effort)
         if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
-        run: xcodebuild -downloadPlatform watchOS
+        continue-on-error: true
+        run: |
+          for i in 1 2 3; do
+            xcodebuild -downloadPlatform watchOS && exit 0
+            echo "watchOS runtime download attempt $i failed; retrying in 20s"
+            sleep 20
+          done
+          echo "watchOS simulator runtime unavailable after retries; continuing (device archive uses the bundled SDK)."
 
       - name: Import signing certificate into a temp keychain
         if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
