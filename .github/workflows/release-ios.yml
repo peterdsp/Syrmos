@@ -113,7 +113,12 @@ jobs:
           write_profile widget       "$IOS_PROFILE_WIDGET_BASE64"
           ls -la "$DIR"
 
-      - name: Archive (manual signing)
+      # Archive UNSIGNED, then sign everything during export with the explicit
+      # profiles + cert from scripts/export-options.plist. Signing all four
+      # embedded targets manually on the archive command line is unreliable
+      # (xcodebuild won't match installed profiles per embedded target), so we
+      # let -exportArchive do the signing where the profile-name map applies.
+      - name: Archive (unsigned)
         if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           set -euo pipefail
@@ -123,9 +128,7 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/Syrmos.xcarchive" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=YTS4KJBX3P \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Export App Store .ipa (manual signing)
         if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
