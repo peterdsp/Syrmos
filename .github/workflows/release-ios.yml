@@ -2,24 +2,29 @@ name: Release iOS
 
 # Archives the iOS app (which embeds the watchOS app + widget extension) and
 # uploads it to TestFlight when a version tag is pushed (for example v1.2.1),
-# or on manual dispatch. Mirrors the klipa release pattern: App Store Connect
-# API key for both signing (automatic, via -allowProvisioningUpdates) and the
-# upload (xcrun altool). No Loupe/agent-device; the hosted macOS runner drives
-# xcodebuild directly, exactly like klipa's App Store Connect job.
+# or on manual dispatch.
 #
-# All secret-gated: with the ASC key absent the job skips cleanly (a tag still
-# releases web + Android) rather than failing the whole release.
+# Least-privilege manual signing (klipa's cert-import pattern): the App Store
+# Connect API key stays App Manager and is used only for the UPLOAD. Signing
+# uses an imported Apple Distribution certificate + explicit App Store
+# provisioning profiles, so no Admin/cloud-signing permission is needed.
 #
-# Required repo secrets (same names as klipa, so the same App Store Connect key
-# is reused):
-#   ASC_KEY_ID            App Store Connect API key id (Users and Access -> Keys)
-#   ASC_ISSUER_ID         the issuer id shown above the keys list
-#   ASC_API_KEY_P8_BASE64 base64 of the AuthKey_<id>.p8 file
+# Secret-gated: with the distribution cert absent the job skips cleanly, so a
+# tag still releases web + Android.
 #
-# Team id (YTS4KJBX3P) and app-store-connect export live in
-# scripts/export-options.plist. The ASC key must have the App Manager role so
-# automatic signing can create/fetch the distribution profiles for the app,
-# watch app, watch complication, and widget extension.
+# Required repo secrets:
+#   Signing (manual):
+#     IOS_DIST_CERT_P12_BASE64      base64 of the Apple Distribution cert .p12
+#     IOS_DIST_CERT_P12_PASSWORD    the .p12 export password
+#     CI_KEYCHAIN_PASSWORD          any string; password for the temp keychain
+#     IOS_PROFILE_APP_BASE64        App Store profile "Syrmos AppStore"  (com.syrmosApp.ios)
+#     IOS_PROFILE_WATCH_BASE64      "Syrmos Watch AppStore"        (com.syrmosApp.ios.watchkitapp)
+#     IOS_PROFILE_COMPLICATION_BASE64 "Syrmos Complication AppStore" (....watchkitapp.complications)
+#     IOS_PROFILE_WIDGET_BASE64     "Syrmos Widget AppStore"       (com.syrmosApp.ios.SyrmosWidget)
+#   Upload (App Manager key is fine):
+#     ASC_KEY_ID, ASC_ISSUER_ID, ASC_API_KEY_P8_BASE64
+#
+# Profile names must match scripts/export-options.plist. Team id YTS4KJBX3P.
 
 on:
   push:
@@ -37,42 +42,68 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 60
     env:
+      SCHEME: "Syrmos - Athens Rail Times"
+      IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+      IOS_DIST_CERT_P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_P12_PASSWORD }}
+      CI_KEYCHAIN_PASSWORD: ${{ secrets.CI_KEYCHAIN_PASSWORD }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
-      SCHEME: "Syrmos - Athens Rail Times"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Notice (ASC key not set)
-        if: ${{ env.ASC_API_KEY_P8_BASE64 == '' }}
-        run: echo "App Store Connect API key secrets not set - skipping iOS TestFlight upload."
+      - name: Notice (signing secrets not set)
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 == '' }}
+        run: echo "iOS distribution cert secret not set - skipping iOS TestFlight upload."
 
       - name: Select the newest installed Xcode
-        if: ${{ env.ASC_API_KEY_P8_BASE64 != '' }}
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           latest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
           if [ -n "$latest" ]; then sudo xcode-select -s "$latest"; fi
           xcodebuild -version
 
-      # The iOS scheme embeds the watch app, so the watchOS runtime is required.
       - name: Install watchOS simulator runtime
-        if: ${{ env.ASC_API_KEY_P8_BASE64 != '' }}
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: xcodebuild -downloadPlatform watchOS
 
-      - name: Write App Store Connect API key
-        if: ${{ env.ASC_API_KEY_P8_BASE64 != '' }}
+      - name: Import signing certificate into a temp keychain
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           set -euo pipefail
-          KEY_DIR="$HOME/.appstoreconnect/private_keys"
-          mkdir -p "$KEY_DIR"
-          echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
-          # A copy for xcodebuild's -authenticationKeyPath (absolute path).
-          echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
-          echo "ASC_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          security create-keychain -p "$CI_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$CI_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo "$IOS_DIST_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN_PATH" -P "$IOS_DIST_CERT_P12_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$CI_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          rm -f "$RUNNER_TEMP/dist.p12"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
-      - name: Archive
-        if: ${{ env.ASC_API_KEY_P8_BASE64 != '' }}
+      - name: Install App Store provisioning profiles
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
+        env:
+          IOS_PROFILE_APP_BASE64: ${{ secrets.IOS_PROFILE_APP_BASE64 }}
+          IOS_PROFILE_WATCH_BASE64: ${{ secrets.IOS_PROFILE_WATCH_BASE64 }}
+          IOS_PROFILE_COMPLICATION_BASE64: ${{ secrets.IOS_PROFILE_COMPLICATION_BASE64 }}
+          IOS_PROFILE_WIDGET_BASE64: ${{ secrets.IOS_PROFILE_WIDGET_BASE64 }}
+        run: |
+          set -euo pipefail
+          DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$DIR"
+          write_profile () { echo "$2" | base64 --decode > "$DIR/$1.mobileprovision"; }
+          write_profile app          "$IOS_PROFILE_APP_BASE64"
+          write_profile watch        "$IOS_PROFILE_WATCH_BASE64"
+          write_profile complication "$IOS_PROFILE_COMPLICATION_BASE64"
+          write_profile widget       "$IOS_PROFILE_WIDGET_BASE64"
+          ls -la "$DIR"
+
+      - name: Archive (manual signing)
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           set -euo pipefail
           xcodebuild archive \
@@ -81,28 +112,26 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/Syrmos.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=YTS4KJBX3P \
+            CODE_SIGN_IDENTITY="Apple Distribution"
 
-      - name: Export App Store .ipa
-        if: ${{ env.ASC_API_KEY_P8_BASE64 != '' }}
+      - name: Export App Store .ipa (manual signing)
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           set -euo pipefail
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/Syrmos.xcarchive" \
             -exportOptionsPlist scripts/export-options.plist \
-            -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -exportPath "$RUNNER_TEMP/export"
 
       - name: Validate + upload to TestFlight
-        if: ${{ env.ASC_API_KEY_P8_BASE64 != '' }}
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           set -euo pipefail
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$KEY_DIR"
+          echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
           IPA="$(ls "$RUNNER_TEMP"/export/*.ipa | head -1)"
           echo "Uploading $IPA"
           xcrun altool --validate-app -f "$IPA" -t ios \
@@ -111,6 +140,9 @@ jobs:
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
           echo "Uploaded to App Store Connect / TestFlight."
 
-      - name: Clean up the API key
+      - name: Clean up secrets from the runner
         if: always()
-        run: rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_"*.p8 "$RUNNER_TEMP/AuthKey.p8" || true
+        run: |
+          rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_"*.p8 || true
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision || true
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
