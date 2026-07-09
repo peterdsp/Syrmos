@@ -3,10 +3,27 @@
 Goal: cutting a release should mean "shipped to users", not "merged to GitHub".
 A release is driven by a version tag (`vMAJOR.MINOR.PATCH`, for example `v1.2.1`).
 
+Status: **verified end-to-end on 2026-07-09.** The iOS job signs (imported Apple
+Distribution cert + 4 App Store profiles), archives, exports a signed `.ipa`, and
+uploads to TestFlight via `altool`. All 10 iOS secrets are set. The only thing that
+is not automated (by design) is choosing the marketing version.
+
+Two gotchas learned:
+- The iOS **build number lives in `Info.plist`** (`CFBundleVersion`), NOT in
+  `CURRENT_PROJECT_VERSION`. The release job now **auto-stamps a unique build
+  number** (`date +%s`) into the app + watch `Info.plist` and passes it to the
+  widget/complication via `CURRENT_PROJECT_VERSION`, so builds never collide.
+- The **marketing version** (`CFBundleShortVersionString`) must be **higher than
+  the last version already on App Store Connect**, and a shipped version's train
+  is "closed". So each release you must bump `CFBundleShortVersionString` in
+  `iosApp/iosApp/Info.plist` (and match Android `versionName`). That is the one
+  manual, human step.
+
 ## The flow
 
-1. Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` (iOS) and
-   `versionName` / `versionCode` (Android) on the release branch, land the PR.
+1. Bump the marketing version: `CFBundleShortVersionString` in
+   `iosApp/iosApp/Info.plist` (iOS) and `versionName` (Android). The build number
+   is auto-stamped by CI for iOS; bump Android `versionCode` too. Land the PR.
 2. Tag the merge commit and push the tag:
    ```bash
    git tag -a v1.2.1 -m "Syrmos 1.2.1"
