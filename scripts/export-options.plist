@@ -8,8 +8,26 @@
     <string>export</string>
     <key>teamID</key>
     <string>YTS4KJBX3P</string>
+    <!-- Manual signing (least-privilege): the App Manager API key cannot create
+         signing assets via cloud signing, so CI imports an Apple Distribution
+         certificate and explicit App Store profiles and references them by name.
+         Profile names must match the ones release-ios.yml installs (created on
+         the developer portal). -->
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Apple Distribution</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.syrmosApp.ios</key>
+        <string>Syrmos AppStore</string>
+        <key>com.syrmosApp.ios.watchkitapp</key>
+        <string>Syrmos Watch AppStore</string>
+        <key>com.syrmosApp.ios.watchkitapp.complications</key>
+        <string>Syrmos Complication AppStore</string>
+        <key>com.syrmosApp.ios.SyrmosWidget</key>
+        <string>Syrmos Widget AppStore</string>
+    </dict>
     <key>stripSwiftSymbols</key>
     <true/>
     <key>uploadSymbols</key>
