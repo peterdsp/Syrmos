@@ -21,6 +21,12 @@
 // invalid intent is impossible.
 
 (() => {
+  // Pinned model source (mirrors core/common AriadneModelManifest). The web app
+  // fetches it on explicit opt-in; only the small runtime ships with the page.
+  const DEFAULT_ASSETS = 'llm/';
+  const DEFAULT_MODEL_URL =
+    'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf';
+
   const S = { state: 'idle', wllama: null, grammar: '', assets: 'llm/' };
 
   async function load(assets, modelUrl) {
@@ -51,8 +57,9 @@
 
   window.AriadneLLM = {
     status: () => S.state,
-    // Explicit, user-triggered. Never called automatically.
-    download: (assets, modelUrl) => { load(assets, modelUrl); },
+    // Explicit, user-triggered. Never called automatically. Args optional; the
+    // web app can call download() with no args to use the pinned defaults.
+    download: (assets, modelUrl) => { load(assets || DEFAULT_ASSETS, modelUrl || DEFAULT_MODEL_URL); },
     classify: async (prompt) => {
       if (S.state !== 'ready') return '';
       try {
