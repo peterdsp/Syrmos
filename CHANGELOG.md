@@ -8,6 +8,17 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## Unreleased
+
+Headline: Ariadne gets a **real on-device LLM** (one model, every platform) plus a **cleverer rule parser**. The model does the understanding step only (messy message to an approved intent and quoted slots); it never generates a transit fact, and the deterministic rule parser stays the offline floor, so nothing regresses when the model is absent.
+
+- One model everywhere via **llama.cpp** (GGUF), replacing the old per-platform "smart" tiers (Apple Intelligence on iOS, Gemini Nano on Android, nothing on Web) that lit up on almost no devices. Model: **Qwen2.5-1.5B-Instruct (Q4_K_M)**, chosen after a real browser benchmark on messy trilingual queries where 0.5B scored 3/9 (failing every Greek and Albanian case) and 1.5B scored 9/9. Albanian and Greek stay first-class.
+- **On-demand, not bundled**: only the small runtime ships with the app; the ~1.1 GB model is downloaded in-app on explicit opt-in and cached, so first install stays lightweight. Single shared manifest (`AriadneModelManifest`, pinned URL + SHA-256); the binary is fetched + verified by CI, never committed.
+- **Web (shipped, browser-verified)**: `@wllama/wllama` (llama.cpp to WASM) runs the model in the browser, cached in OPFS, multi-threaded under COOP/COEP with a single-thread fallback. A GBNF grammar locks output to the exact intent JSON, so an invalid intent is impossible. Output is grounded by the existing `IntentGrounder` and dispatched to the same deterministic use cases.
+- **Cleverer rule parser**: expanded EN/EL/SQ cue coverage (departures, last train, plan, find, fare, help) so more natural phrasings resolve without the model, and fixed a bug where a weather question about a place we do not serve ("what's the weather in London") answered with Athens weather instead of declining.
+- Shared `IntentGrounder.classificationPrompt` rewritten as a few-shot trilingual prompt (also improves the native paths).
+- **iOS + Android native runtimes**: in progress (llama.cpp via Swift/JNI, same on-demand model). Rule parser is the floor on both until the model is downloaded.
+
 ## 1.2.1 (2026-07-08, in review)
 
 Headline: the **Ariadne co-pilot** (Phases 1 to 4) plus first-class Albanian coverage. Ariadne now keeps session context ("I'm at Syntagma" then "go airport faster"), answers honest station status backed by live STASY advisories, ranks routes by preference with a weather tilt, reasons about live-vs-seasonal weather, and drives a live Apple Watch app + widgets with voiced (TTS) read-back. Details below.
