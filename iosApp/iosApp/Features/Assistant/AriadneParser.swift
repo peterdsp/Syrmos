@@ -510,8 +510,16 @@ struct AthensTransitParser {
     private static let alertWords = ["alert", "alerts", "status", "disruption", "delay", "delays", "problem", "closed", "closure",
         "ειδοποι", "κατασταση", "καθυστερη", "προβλημα", "κλειστ", "διακοπη", "njoftim", "vonese", "mbyll"]
     private static let mapWords = ["map", "show on map", "on the map", "χαρτη", "στον χαρτη", "harta", "ne harte"]
-    private static let help = ["what can you do", "help", "how do you work", "what do you do", "who are you",
-        "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι", "si funksionon", "ndihme", "cfare mund", "kush je"]
+    private static let help = ["what can you do", "help", "how do you work", "what do you do",
+        // Identity: "who is she" answers with the intro instead of declining.
+        "who are you", "who are u", "who r u", "who ru", "who is ariadne", "whos ariadne",
+        "what is ariadne", "what are you",
+        // Greetings: a bare hello opens Ariadne with her intro.
+        "hello", "hi", "hey", "hiya", "hey there", "good morning", "good evening",
+        "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι", "τι εισαι", "τι ειναι η αριαδνη",
+        "ποια εισαι", "γεια", "γεια σου", "γεια σας", "καλημερα",
+        "si funksionon", "ndihme", "cfare mund", "kush je", "cfare je", "cfare eshte ariadne",
+        "kush eshte ariadne", "pershendetje", "tung", "ckemi"]
     private static let weatherWords = ["rain", "raining", "rainy", "weather", "storm", "wet",
         "βροχη", "βρεχει", "καιρο", "κακοκαιρ", "shi", "moti", "stuhi"]
     private static let timePhrases = ["how long", "how many minutes", "how many hours",

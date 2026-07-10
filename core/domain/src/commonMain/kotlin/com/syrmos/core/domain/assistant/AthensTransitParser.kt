@@ -606,10 +606,16 @@ class AthensTransitParser(
             "harta", "ne harte",
         )
         private val HELP_PHRASES = listOf(
-            "what can you do", "help", "how do you work", "what do you do", "who are you",
-            "what is ariadne", "who is ariadne", "what are you",
+            "what can you do", "help", "how do you work", "what do you do",
+            // Identity: "who is she" answers with the intro instead of declining.
+            "who are you", "who are u", "who r u", "who ru", "who is ariadne",
+            "whos ariadne", "what is ariadne", "what are you",
+            // Greetings: a bare hello opens Ariadne with her intro.
+            "hello", "hi", "hey", "hiya", "hey there", "good morning", "good evening",
             "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι", "τι εισαι", "τι ειναι η αριαδνη",
+            "ποια εισαι", "γεια", "γεια σου", "γεια σας", "καλημερα",
             "si funksionon", "ndihme", "cfare mund", "kush je", "cfare eshte ariadne", "cfare je",
+            "kush eshte ariadne", "pershendetje", "tung", "ckemi",
         )
         private val WEATHER_WORDS = listOf(
             "rain", "raining", "rainy", "weather", "storm", "wet",
