@@ -20,19 +20,24 @@ package com.syrmos.core.common
 object AriadneModelManifest {
 
     /** Filename as it ships on every platform. Keep in sync with CI + loaders. */
-    const val FILE_NAME: String = "qwen2.5-0.5b-instruct-q4_k_m.gguf"
+    const val FILE_NAME: String = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
 
     /** Human-facing model name for the Settings engine readout. */
-    const val DISPLAY_NAME: String = "Qwen2.5 0.5B (Q4)"
+    const val DISPLAY_NAME: String = "Qwen2.5 1.5B (Q4)"
 
     /**
      * Pinned download source: the official Qwen GGUF repository (public, no
      * auth). CI is the only consumer; the app never fetches at runtime on mobile
      * (the file is bundled), and on Web the static asset is served from our own
      * origin, not this URL.
+     *
+     * We ship 1.5B rather than 0.5B on purpose: a browser benchmark of both on
+     * the same messy trilingual queries scored 0.5B at 3/9 (failing every Greek
+     * and Albanian case) versus 1.5B at 9/9. Albanian and Greek are first-class,
+     * so 0.5B was not viable despite being less than half the size.
      */
     const val URL: String =
-        "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+        "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 
     /**
      * SHA-256 of the exact file at [URL] (the HF LFS object id). CI must fail the
@@ -40,12 +45,8 @@ object AriadneModelManifest {
      * can never slip an unverified binary into a release.
      */
     const val SHA256: String =
-        "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
+        "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
 
-    /**
-     * Exact on-disk size in bytes, for progress UI and sanity checks. Larger than
-     * a naive 0.5B estimate because Qwen2.5's 151k-token embedding matrix (kept
-     * at higher precision) dominates the file at this size.
-     */
-    const val APPROX_BYTES: Long = 491_400_032L
+    /** Exact on-disk size in bytes, for progress UI and sanity checks. */
+    const val APPROX_BYTES: Long = 1_117_320_736L
 }

@@ -2,7 +2,7 @@
 #
 # Download + verify the Ariadne on-device model (GGUF) for a release build.
 #
-# The model is ~470 MB and is intentionally NOT committed to the repo. CI (and
+# The model is ~1.1 GB and is intentionally NOT committed to the repo. CI (and
 # any local release build) runs this to fetch it from the pinned source and
 # verify its SHA-256 before packaging it per platform. The single source of
 # truth for filename / URL / checksum is the Kotlin manifest:
@@ -62,7 +62,7 @@ if [ -f "$OUT" ] && [ "$(sha_of "$OUT")" = "$SHA256" ]; then
   exit 0
 fi
 
-echo "Downloading $FILE_NAME (~470 MB) from $URL"
+echo "Downloading $FILE_NAME (~1.1 GB) from $URL"
 curl -fL --retry 3 --retry-delay 5 -o "$OUT" "$URL"
 
 GOT="$(sha_of "$OUT")"
