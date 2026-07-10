@@ -67,6 +67,13 @@ class AthensTransitParser(
                 TO_MARKERS.any { text.contains(it) } ||
                 mentionedStations.size >= 2
             if (!planning) {
+                // "weather in London": the user named a place we do not serve
+                // (no Athens station resolved, yet a location was clearly given),
+                // so decline instead of answering with Athens weather. A bare
+                // "what's the weather" with no place still answers locally.
+                if (mentionedStations.isEmpty() && namesUnservedPlace(text)) {
+                    return AssistantIntent.OutOfScope
+                }
                 return AssistantIntent.WeatherAt(stationId = mentionedStations.firstOrNull())
             }
         }
@@ -451,6 +458,18 @@ class AthensTransitParser(
         needles.any { containsToken(text, fold(it)) }
 
     /**
+     * True when [text] introduces a place with a location preposition
+     * ("weather IN London", "καιρός ΣΤΟ Λονδίνο"). Used by the weather branch to
+     * decline a weather question about a place that resolved to no Athens
+     * station, instead of silently answering with Athens weather. [text] is
+     * already folded (lowercased, accents stripped).
+     */
+    private fun namesUnservedPlace(text: String): Boolean {
+        val markers = listOf(" in ", " at ", " στο ", " στη ", " στην ", " σε ")
+        return markers.any { text.contains(fold(it)) }
+    }
+
+    /**
      * Word-ish containment: matches [needle] as a substring but guards the
      * common false positive where a short token sits inside a longer word.
      * Multi-word needles match as plain substrings.
@@ -527,30 +546,35 @@ class AthensTransitParser(
         )
         private val DEPARTURE_WORDS = listOf(
             "next", "departure", "departures", "when", "trains", "leave", "leaving", "schedule",
-            "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν",
-            "ardhsh", "kur", "nisje", "tren", "trena",
+            "coming", "upcoming", "due",
+            "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ερχεται",
+            "ardhsh", "kur", "nisje", "tren", "trena", "vjen",
         )
         private val LAST_TRAIN_PHRASES = listOf(
-            "last train", "last metro", "last one", "leave by",
-            "τελευται", "τελευταιο τρεν", "τελευταιος",
-            "treni i fundit", "fundit", "i fundit", "tren i fundit",
+            "last train", "last metro", "last one", "leave by", "final train", "last departure",
+            "τελευται", "τελευταιο τρεν", "τελευταιος", "τελευταιο δρομολογιο",
+            "treni i fundit", "fundit", "i fundit", "tren i fundit", "nisja e fundit",
         )
         // Strong trip cues only. Bare "from" / "από" / "nga" are deliberately
         // excluded: "trains from Syntagma" is a departures query, not a trip.
         // Two named stations or an explicit "to" frame trigger planning instead.
         private val PLAN_PHRASES = listOf(
-            "how do i get", "how to get", "get to", "get me to", "route",
+            "how do i get", "how to get", "get to", "get me to", "route", "directions",
             "how do i go", "how to go", "go to", "can i go", "can i still", "can i reach",
+            "take me to", "best way", "fastest way", "quickest way",
             "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "προλαβαινω", "μπορω να παω",
+            "πως θα παω", "καλυτερος τροπος", "πιο γρηγορα",
             "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij",
+            "si te vij", "rruga me e mire", "rruga me e shpejte",
         )
         private val TO_MARKERS = listOf(
             " to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ",
         )
         private val FIND_WORDS = listOf(
             "where is", "find", "locate", "nearest", "near me", "closest",
-            "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ",
-            "ku eshte", "gjej", "me afert", "afer meje",
+            "which station", "what station", "where's",
+            "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ποιος σταθμος",
+            "ku eshte", "gjej", "me afert", "afer meje", "cili stacion",
         )
         private val LINE_WORDS = listOf(
             "line", "about", "tell me about",
@@ -559,8 +583,9 @@ class AthensTransitParser(
         )
         private val FARE_WORDS = listOf(
             "fare", "fares", "ticket", "tickets", "how much", "price", "cost", "cheap",
-            "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος",
-            "bilete", "sa kushton", "kushton", "cmim", "cmimi",
+            "ticket price", "how much does it cost", "how much is",
+            "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος", "τιμη εισιτηριου",
+            "bilete", "sa kushton", "kushton", "cmim", "cmimi", "cmimi i biletes",
         )
         private val FAVORITE_WORDS = listOf(
             "favorite", "favourite", "save this", "bookmark", "add to favorites", "pin",
@@ -582,8 +607,9 @@ class AthensTransitParser(
         )
         private val HELP_PHRASES = listOf(
             "what can you do", "help", "how do you work", "what do you do", "who are you",
-            "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι",
-            "si funksionon", "ndihme", "cfare mund", "kush je",
+            "what is ariadne", "who is ariadne", "what are you",
+            "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι", "τι εισαι", "τι ειναι η αριαδνη",
+            "si funksionon", "ndihme", "cfare mund", "kush je", "cfare eshte ariadne", "cfare je",
         )
         private val WEATHER_WORDS = listOf(
             "rain", "raining", "rainy", "weather", "storm", "wet",
