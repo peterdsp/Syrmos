@@ -2270,12 +2270,12 @@
                 right: 16px; bottom: 16px;
                 display: inline-flex; align-items: center; justify-content: center;
                 padding: 0; border: none; cursor: pointer;
-                width: 60px; height: 60px; border-radius: 50%;
+                width: 62px; height: 62px; border-radius: 16px;
                 background: #fff; overflow: hidden;
                 box-shadow: 0 6px 20px rgba(0,0,0,0.28);
             }
             .ariadne-launcher:hover { filter: brightness(1.03); transform: translateY(-1px); }
-            .ariadne-launcher__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+            .ariadne-launcher__img { width: 100%; height: 100%; object-fit: contain; display: block; }
             .ariadne-panel__logo { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; vertical-align: middle; }
             .ariadne-panel {
                 position: fixed; z-index: 950;
