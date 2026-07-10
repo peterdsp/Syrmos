@@ -62,6 +62,7 @@ import com.syrmos.app.screen.OnboardingScreen
 import com.syrmos.app.screen.WhatsNewDialog
 import org.jetbrains.compose.resources.painterResource
 import syrmos.composeapp.generated.resources.Res
+import syrmos.composeapp.generated.resources.ariadne_logo
 import syrmos.composeapp.generated.resources.start_screen
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -317,29 +318,17 @@ private fun LiquidGlassTabItem(
  */
 @Composable
 private fun AriadneLauncherPill(label: String, onClick: () -> Unit) {
-    Row(
+    // The Ariadne brand logo is the button (owl + labyrinth + thread).
+    Image(
+        painter = painterResource(Res.drawable.ariadne_logo),
+        contentDescription = label,
         modifier = Modifier
-            .shadow(
-                elevation = 12.dp,
-                shape = RoundedCornerShape(24.dp),
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-            )
-            .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.primary)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(text = "🦉", style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
-    }
+            .size(60.dp)
+            .shadow(elevation = 12.dp, shape = RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick),
+    )
 }
 
 private fun askAriadneLabel(lang: AppLanguage): String = when (lang) {
