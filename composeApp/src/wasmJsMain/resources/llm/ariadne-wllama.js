@@ -36,7 +36,7 @@
   const DEFAULT_MODEL_URL =
     'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf';
 
-  const S = { state: 'idle', wllama: null, grammar: '', assets: SCRIPT_BASE };
+  const S = { state: 'idle', wllama: null, grammar: '', assets: SCRIPT_BASE, progress: 0 };
 
   async function load(assets, modelUrl) {
     if (S.state === 'loading' || S.state === 'ready') return;
@@ -58,7 +58,12 @@
         // Multi-thread needs cross-origin isolation (COOP/COEP). Fall back to a
         // single thread when the headers are absent; slower but still works.
         n_threads: self.crossOriginIsolated ? 4 : 1,
+        // Report download progress (0..1) for the UI indicator.
+        progressCallback: ({ loaded, total }) => {
+          S.progress = total > 0 ? Math.min(1, loaded / total) : 0;
+        },
       });
+      S.progress = 1;
       S.state = 'ready';
     } catch (e) {
       console.warn('[AriadneLLM] load failed, staying on rule parser:', e);
@@ -68,6 +73,8 @@
 
   window.AriadneLLM = {
     status: () => S.state,
+    // Download progress as 0..1 while state === 'loading'.
+    progress: () => S.progress,
     // Explicit, user-triggered. Never called automatically. Args optional; the
     // web app can call download() with no args to use the pinned defaults.
     download: (assets, modelUrl) => { load(assets || DEFAULT_ASSETS, modelUrl || DEFAULT_MODEL_URL); },
