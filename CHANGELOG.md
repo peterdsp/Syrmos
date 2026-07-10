@@ -2,13 +2,13 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.1**, **Android 1.2.1** (in review), **Web** (rolling).
+Current shipping: **iOS 1.2.2**, **Android 1.2.2**, **Web** (rolling).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
-## Unreleased
+## 1.2.2 (2026-07-10)
 
 Headline: Ariadne gets a **real on-device LLM** (one model, every platform) plus a **cleverer rule parser**. The model does the understanding step only (messy message to an approved intent and quoted slots); it never generates a transit fact, and the deterministic rule parser stays the offline floor, so nothing regresses when the model is absent.
 
@@ -17,7 +17,7 @@ Headline: Ariadne gets a **real on-device LLM** (one model, every platform) plus
 - **Web (shipped, browser-verified)**: `@wllama/wllama` (llama.cpp to WASM) runs the model in the browser, cached in OPFS, multi-threaded under COOP/COEP with a single-thread fallback. A GBNF grammar locks output to the exact intent JSON, so an invalid intent is impossible. Output is grounded by the existing `IntentGrounder` and dispatched to the same deterministic use cases.
 - **Cleverer rule parser**: expanded EN/EL/SQ cue coverage (departures, last train, plan, find, fare, help) so more natural phrasings resolve without the model, and fixed a bug where a weather question about a place we do not serve ("what's the weather in London") answered with Athens weather instead of declining.
 - Shared `IntentGrounder.classificationPrompt` rewritten as a few-shot trilingual prompt (also improves the native paths).
-- **iOS + Android native runtimes**: in progress (llama.cpp via Swift/JNI, same on-demand model). Rule parser is the floor on both until the model is downloaded.
+- **iOS + Android native runtimes**: shipped and build-verified. Pinned llama.cpp (Swift `LlamaSession` via an xcframework on iOS; JNI `libsyrmos_llama` on Android arm64), the same on-demand model, an in-app "Download Ariadne's brain" control with live progress, and grammar-locked JSON grounded by the shared `IntentGrounder`. The deterministic rule parser is the floor on both until the model is downloaded. On-device inference is verified per device at first run.
 
 ## 1.2.1 (2026-07-08, in review)
 
