@@ -244,14 +244,13 @@
          open Google Maps directions, show alerts). No LLM, no network for
          parsing. -->
     <button id="ariadneLauncher" class="ariadne-launcher" type="button" aria-label="Ask Ariadne" title="Ask Ariadne">
-        <span class="ariadne-launcher__icon" aria-hidden="true">🦉</span>
-        <span class="ariadne-launcher__text" data-i18n="ask_ariadne">Ask Ariadne</span>
+        <img class="ariadne-launcher__img" src="ariadne-logo.png" alt="Ask Ariadne" width="56" height="56">
     </button>
 
     <aside id="ariadnePanel" class="ariadne-panel ariadne-panel--hidden" aria-hidden="true">
         <header class="ariadne-panel__head">
             <div class="ariadne-panel__title">
-                <span aria-hidden="true">🦉</span>
+                <img class="ariadne-panel__logo" src="ariadne-logo.png" alt="" width="24" height="24" aria-hidden="true">
                 <span data-i18n="ariadne_title">Ariadne</span>
             </div>
             <button id="ariadneClose" class="ghost-button" type="button" data-i18n="done">Done</button>
@@ -310,10 +309,9 @@
       .ws-android .ws-tile { border-radius: 24px; background: rgba(255,255,255,.09); }
       @media (max-width: 680px) { .ws-frames { gap: 16px; } .ws-phone { width: 88vw; max-width: 320px; } }
     </style>
+    <!-- Widgets are a mobile home-screen feature; the launcher is hidden on web.
+         The checkbox + overlay markup stays inert (nothing toggles it). -->
     <input type="checkbox" id="wsToggle" class="ws-toggle" aria-hidden="true">
-    <label for="wsToggle" class="ws-launcher" role="button" aria-label="See Syrmos widgets">
-      <span aria-hidden="true">📱</span><span>Widgets</span>
-    </label>
     <div class="ws-overlay" role="dialog" aria-modal="true" aria-label="Syrmos on your Home Screen">
       <label for="wsToggle" class="ws-scrim" aria-label="Close"></label>
       <div class="ws-card">
