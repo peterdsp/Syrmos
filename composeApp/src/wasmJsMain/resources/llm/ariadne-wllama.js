@@ -1,35 +1,42 @@
 // Ariadne on-device LLM bridge for the web (Kotlin/wasmJs -> this -> wllama).
 //
-// Exposes window.AriadneLLM with two methods the Kotlin actual calls:
-//   status()                     -> 'idle' | 'loading' | 'ready' | 'error'
-//   classify(base, model, prompt)-> JSON string, or '' when the model is not
-//                                   ready yet (so Kotlin falls back to the rule
-//                                   parser instantly and never blocks a query).
+// Exposes window.AriadneLLM the Kotlin actual calls:
+//   status()                  -> 'idle' | 'loading' | 'ready' | 'error'
+//   download(assets, modelUrl)-> starts the one-time model download+load
+//   classify(prompt)          -> JSON string, or '' when the model is not ready
+//                                (so Kotlin falls back to the rule parser and
+//                                never blocks a query).
 //
-// The model is large (~1.1 GB), so the first classify() call only KICKS OFF the
-// download+load and returns '' immediately; wllama caches the weights in the
-// browser (Cache Storage / OPFS), so subsequent sessions load in ~2 s and later
-// queries run the model. The rule parser answers while the model wakes up.
+// The model is ~1.1 GB and is downloaded ON DEMAND, only after the user opts in
+// (Ariadne never auto-pulls that much data). wllama caches the weights in the
+// browser (Cache Storage / OPFS), so once downloaded, later sessions load in
+// ~2 s and run fully offline. Until then, the deterministic rule parser answers.
+//
+// The model itself is fetched from its pinned source URL (passed in from the
+// Kotlin AriadneModelManifest); only the small wllama runtime (wasm + grammar)
+// ships with the web app, keeping the first load lightweight.
 //
 // Grammar-constrained: the completion is locked to ariadne-grammar.gbnf, so the
 // output is always the flat intent JSON that IntentGrounder.ground() parses; an
 // invalid intent is impossible.
 
 (() => {
-  const S = { state: 'idle', wllama: null, grammar: '' };
+  const S = { state: 'idle', wllama: null, grammar: '', assets: 'llm/' };
 
-  async function load(base, model) {
+  async function load(assets, modelUrl) {
+    if (S.state === 'loading' || S.state === 'ready') return;
     S.state = 'loading';
+    S.assets = assets;
     try {
-      const { Wllama } = await import(base + 'wllama/index.js');
-      const wasm = base + 'wllama/wllama.wasm';
+      const { Wllama } = await import(assets + 'wllama/index.js');
+      const wasm = assets + 'wllama/wllama.wasm';
       S.wllama = new Wllama({
         'default': wasm,
         'single-thread/wllama.wasm': wasm,
         'multi-thread/wllama.wasm': wasm,
       });
-      S.grammar = await (await fetch(base + 'ariadne-grammar.gbnf')).text();
-      await S.wllama.loadModelFromUrl(base + model, {
+      S.grammar = await (await fetch(assets + 'ariadne-grammar.gbnf')).text();
+      await S.wllama.loadModelFromUrl(modelUrl, {
         n_ctx: 1024,
         // Multi-thread needs cross-origin isolation (COOP/COEP). Fall back to a
         // single thread when the headers are absent; slower but still works.
@@ -44,8 +51,9 @@
 
   window.AriadneLLM = {
     status: () => S.state,
-    classify: async (base, model, prompt) => {
-      if (S.state === 'idle') { load(base, model); return ''; }
+    // Explicit, user-triggered. Never called automatically.
+    download: (assets, modelUrl) => { load(assets, modelUrl); },
+    classify: async (prompt) => {
       if (S.state !== 'ready') return '';
       try {
         const res = await S.wllama.createCompletion({

@@ -15,16 +15,30 @@ import kotlin.js.Promise
 // resources/llm/ariadne-wllama.js (window.AriadneLLM); this actual just hands it
 // the prompt and grounds the JSON it returns.
 //
-// The model is large, so the first call only warms it up and returns '' (the
-// bridge caches the weights and reports 'ready' later); IntentGrounder.ground()
-// turns '' into null so the caller runs the deterministic rule parser meanwhile.
-// Nothing blocks on the multi-hundred-MB load.
-@JsFun("(base, model, prompt) => window.AriadneLLM.classify(base, model, prompt)")
-private external fun jsClassify(base: JsString, model: JsString, prompt: JsString): Promise<JsString>
+// The model (~1.1 GB) is downloaded ON DEMAND after the user opts in, never
+// bundled and never auto-pulled, so the web app stays lightweight. Until it is
+// ready, classify() returns null and the caller runs the deterministic rule
+// parser. Only the small wllama runtime ships with the app.
+@JsFun("(prompt) => window.AriadneLLM.classify(prompt)")
+private external fun jsClassify(prompt: JsString): Promise<JsString>
 
-// All web LLM assets are served under /llm/ (see wasmJsMain/resources/llm and the
-// CI web-staging step that drops the model there).
-private const val LLM_BASE = "llm/"
+@JsFun("(assets, modelUrl) => window.AriadneLLM.download(assets, modelUrl)")
+private external fun jsDownload(assets: JsString, modelUrl: JsString)
+
+@JsFun("() => window.AriadneLLM.status()")
+private external fun jsStatus(): JsString
+
+// The small wllama runtime (wasm + grammar) is served under /llm/. The model is
+// fetched from its pinned manifest URL, not from our origin.
+private const val LLM_ASSETS = "llm/"
+
+/** Start the one-time, user-triggered model download. Safe to call repeatedly. */
+fun startAriadneModelDownload() {
+    jsDownload(LLM_ASSETS.toJsString(), AriadneModelManifest.URL.toJsString())
+}
+
+/** 'idle' | 'loading' | 'ready' | 'error' for the download/engine UI. */
+fun ariadneModelStatus(): String = jsStatus().toString()
 
 actual fun provideAssistantClassifier(): AssistantClassifier = WllamaAssistantClassifier
 
@@ -32,9 +46,7 @@ private object WllamaAssistantClassifier : AssistantClassifier {
     override suspend fun classify(input: String, vocabulary: AssistantVocabulary): AssistantIntent? {
         val prompt = IntentGrounder.classificationPrompt(input)
         val json = try {
-            jsClassify(LLM_BASE.toJsString(), AriadneModelManifest.FILE_NAME.toJsString(), prompt.toJsString())
-                .awaitJs()
-                .toString()
+            jsClassify(prompt.toJsString()).awaitJs().toString()
         } catch (_: Throwable) {
             return null
         }
