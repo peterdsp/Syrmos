@@ -21,16 +21,27 @@
 // invalid intent is impossible.
 
 (() => {
+  // Resolve the folder this script lives in (…/llm/) from its own URL, so the
+  // wllama runtime + grammar always load relative to it regardless of how the
+  // caller invokes download(). This is robust against a cached older caller.
+  let SCRIPT_BASE = 'llm/';
+  try {
+    const self = document.currentScript && document.currentScript.src;
+    if (self) SCRIPT_BASE = new URL('.', self).href;
+  } catch (_) { /* keep the relative default */ }
+
   // Pinned model source (mirrors core/common AriadneModelManifest). The web app
   // fetches it on explicit opt-in; only the small runtime ships with the page.
-  const DEFAULT_ASSETS = 'llm/';
+  const DEFAULT_ASSETS = SCRIPT_BASE;
   const DEFAULT_MODEL_URL =
     'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf';
 
-  const S = { state: 'idle', wllama: null, grammar: '', assets: 'llm/' };
+  const S = { state: 'idle', wllama: null, grammar: '', assets: SCRIPT_BASE };
 
   async function load(assets, modelUrl) {
     if (S.state === 'loading' || S.state === 'ready') return;
+    assets = assets || SCRIPT_BASE;
+    modelUrl = modelUrl || DEFAULT_MODEL_URL;
     S.state = 'loading';
     S.assets = assets;
     try {
