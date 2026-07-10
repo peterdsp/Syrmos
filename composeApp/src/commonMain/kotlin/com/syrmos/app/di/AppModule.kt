@@ -42,6 +42,7 @@ val featureModule = module {
             weatherRepository = get(),
             queryNormalizer = com.syrmos.app.platform.provideQueryNormalizer(),
             assistantClassifier = com.syrmos.app.platform.provideAssistantClassifier(),
+            modelDownloader = com.syrmos.app.platform.provideModelDownloader(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }
