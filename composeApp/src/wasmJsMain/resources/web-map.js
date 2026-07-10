@@ -2345,9 +2345,45 @@
         const launcher = document.getElementById("ariadneLauncher");
         const panel = document.getElementById("ariadnePanel");
         const closeBtn = document.getElementById("ariadneClose");
+        const brainBtn = document.getElementById("ariadneBrain");
         const messages = document.getElementById("ariadneMessages");
         const form = document.getElementById("ariadneForm");
         const input = document.getElementById("ariadneInput");
+
+        // On-demand "clever" brain. The ~1.1 GB model is never bundled and never
+        // auto-downloaded; the user opts in here. Once downloaded the browser
+        // caches it (OPFS), so later visits are instant and offline. Until then,
+        // and if the user never opts in, the deterministic rule parser answers.
+        if (brainBtn) {
+            const llm = window.AriadneLLM;
+            if (!llm) {
+                brainBtn.style.display = "none";
+            } else {
+                const paint = () => {
+                    const s = llm.status();
+                    brainBtn.textContent = s === "ready" ? "🧠✓" : s === "loading" ? "⏳" : s === "error" ? "🧠!" : "🧠";
+                    brainBtn.title = s === "ready"
+                        ? "Smarter answers are on (on-device brain ready)"
+                        : s === "loading"
+                        ? "Downloading Ariadne's brain… (~1.1 GB, one time)"
+                        : s === "error"
+                        ? "Download failed. Tap to retry. Rule parser still answers."
+                        : "Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)";
+                };
+                paint();
+                brainBtn.addEventListener("click", () => {
+                    const s = llm.status();
+                    if (s === "idle" || s === "error") {
+                        llm.download();
+                        const poll = setInterval(() => {
+                            paint();
+                            if (llm.status() === "ready" || llm.status() === "error") clearInterval(poll);
+                        }, 1000);
+                    }
+                    paint();
+                });
+            }
+        }
 
         function appendMessage(text, from) {
             const el = document.createElement("div");
@@ -2355,6 +2391,7 @@
             el.textContent = text;
             messages.appendChild(el);
             messages.scrollTop = messages.scrollHeight;
+            return el;
         }
 
         function openPanel() {
@@ -2803,17 +2840,45 @@
                 pendingMissing = null;
             }
 
-            const reply = respond(intent);
-            appendMessage(reply.text, "assistant");
-            // For a departures answer, follow the "Looking up X..." line with
-            // the actual next trains in a second bubble once the projector
-            // resolves, so the chat itself carries the times.
-            if (reply.departuresFor) {
-                departuresSummary(reply.departuresFor).then((summary) => {
-                    if (summary) appendMessage(summary, "assistant");
-                });
+            const deliver = (finalIntent) => {
+                const reply = respond(finalIntent);
+                appendMessage(reply.text, "assistant");
+                // For a departures answer, follow the "Looking up X..." line with
+                // the actual next trains in a second bubble once the projector
+                // resolves, so the chat itself carries the times.
+                if (reply.departuresFor) {
+                    departuresSummary(reply.departuresFor).then((summary) => {
+                        if (summary) appendMessage(summary, "assistant");
+                    });
+                }
+                if (reply.act) setTimeout(reply.act, 400);
+            };
+
+            // Clever tier: when the deterministic parser can't place the message
+            // and the on-device model is downloaded + ready, let the LLM re-read
+            // it, then ground its guess back through the SAME parser (it only
+            // picks an intent + quotes a station; parse() does the grounding).
+            const llm = window.AriadneLLM;
+            const A = window.SyrmosAriadne;
+            if (intent.kind === "outOfScope" && llm && llm.status && llm.status() === "ready" && A.buildClassificationPrompt) {
+                const thinking = appendMessage("…", "assistant");
+                llm.classify(A.buildClassificationPrompt(value)).then((json) => {
+                    if (thinking) thinking.remove();
+                    const q = A.cleverQueryFromJson(json);
+                    const clever = q ? A.parse(q) : null;
+                    if (clever && clever.kind !== "outOfScope") {
+                        if (clever.kind === "needsClarification") {
+                            pendingIntent = clever.base;
+                            pendingMissing = clever.missing;
+                        }
+                        deliver(clever);
+                    } else {
+                        deliver(intent);
+                    }
+                }).catch(() => { if (thinking) thinking.remove(); deliver(intent); });
+            } else {
+                deliver(intent);
             }
-            if (reply.act) setTimeout(reply.act, 400);
         });
     }
 
