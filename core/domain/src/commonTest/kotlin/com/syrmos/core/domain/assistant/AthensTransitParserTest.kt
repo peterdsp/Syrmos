@@ -278,4 +278,24 @@ class AthensTransitParserTest {
     fun cfare_eshte_ariadne_is_help() {
         assertIs<AssistantIntent.Help>(parser.parse("cfare eshte ariadne"))
     }
+
+    @Test
+    fun greeting_hello_is_help() {
+        assertIs<AssistantIntent.Help>(parser.parse("hello"))
+    }
+
+    @Test
+    fun who_are_u_shorthand_is_help() {
+        assertIs<AssistantIntent.Help>(parser.parse("who are u"))
+    }
+
+    @Test
+    fun greek_greeting_is_help() {
+        assertIs<AssistantIntent.Help>(parser.parse("γεια σου"))
+    }
+
+    @Test
+    fun albanian_greeting_is_help() {
+        assertIs<AssistantIntent.Help>(parser.parse("pershendetje"))
+    }
 }

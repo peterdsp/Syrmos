@@ -109,9 +109,16 @@
         'harta', 'ne harte',
     ];
     const HELP_PHRASES = [
-        'what can you do', 'help', 'how do you work', 'what do you do', 'who are you',
-        'τι μπορεισ', 'βοηθεια', 'πωσ δουλευ', 'ποιοσ εισαι',
-        'si funksionon', 'ndihme', 'cfare mund', 'kush je',
+        'what can you do', 'help', 'how do you work', 'what do you do',
+        // Identity: "who is she" should answer with the intro, not decline.
+        'who are you', 'who are u', 'who r u', 'who ru', 'who is ariadne',
+        'whos ariadne', 'what is ariadne', 'what are you', 'what can you',
+        // Greetings: a bare hello opens the assistant with its intro.
+        'hello', 'hi', 'hey', 'hiya', 'hey there', 'good morning', 'good evening',
+        'τι μπορεισ', 'βοηθεια', 'πωσ δουλευ', 'ποιοσ εισαι', 'τι εισαι',
+        'τι ειναι η αριαδνη', 'ποια εισαι', 'γεια', 'γεια σου', 'γεια σασ', 'καλημερα',
+        'si funksionon', 'ndihme', 'cfare mund', 'kush je', 'cfare je',
+        'cfare eshte ariadne', 'kush eshte ariadne', 'pershendetje', 'tung', 'ckemi', 'ckemi',
     ];
     const WEATHER_WORDS = [
         'rain', 'raining', 'rainy', 'weather', 'storm', 'wet',
