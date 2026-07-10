@@ -23,6 +23,10 @@ struct AriadneView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 8)
 
+                    AriadneModelBanner()
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: 12) {
@@ -329,5 +333,90 @@ struct TypingIndicator: View {
             .fill(Color.syrmosPrimary.opacity(0.7))
             .frame(width: 6, height: 6)
             .scaleEffect(1 + 0.35 * abs(sin(.pi * (phase - offset))))
+    }
+}
+
+/// On-demand "Download Ariadne's brain" banner. Shown only until the on-device
+/// model is ready; the rule parser answers throughout, so this is purely
+/// additive. Bound to the shared AriadneModelStore.
+private struct AriadneModelBanner: View {
+    @ObservedObject private var store = AriadneModelStore.shared
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        switch store.status {
+        case .ready:
+            EmptyView()
+        case .downloading(let p):
+            card {
+                Text(downloadingText(Int(p * 100)))
+                    .font(.caption).foregroundStyle(.secondary)
+                ProgressView(value: p).tint(.accentColor)
+            }
+        case .error:
+            card {
+                Text(errorText).font(.caption).foregroundStyle(.secondary)
+                Button(retryText) { Task { await store.download() } }
+                    .font(.caption.weight(.semibold))
+            }
+        case .notDownloaded:
+            card {
+                Text(title).font(.subheadline.weight(.bold))
+                Text(offerText).font(.caption).foregroundStyle(.secondary)
+                Button(downloadText) { Task { await store.download() } }
+                    .font(.caption.weight(.semibold))
+            }
+        }
+    }
+
+    @ViewBuilder private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) { content() }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .onAppear { store.refreshReadyState() }
+    }
+
+    private var title: String {
+        switch loc.language {
+        case .greek: return "Πιο έξυπνη Αριάδνη"
+        case .albanian: return "Ariadne më e zgjuar"
+        case .english: return "Smarter Ariadne"
+        }
+    }
+    private var offerText: String {
+        switch loc.language {
+        case .greek: return "Κατέβασε ένα AI στη συσκευή (~1.1 GB, μία φορά) για πιο ελεύθερη διατύπωση. Λειτουργεί offline μετά."
+        case .albanian: return "Shkarko një AI në pajisje (~1.1 GB, një herë) për fjalë më të lira. Punon offline më pas."
+        case .english: return "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
+        }
+    }
+    private func downloadingText(_ pct: Int) -> String {
+        switch loc.language {
+        case .greek: return "Λήψη του AI… \(pct)%"
+        case .albanian: return "Po shkarkohet AI… \(pct)%"
+        case .english: return "Downloading the on-device AI… \(pct)%"
+        }
+    }
+    private var errorText: String {
+        switch loc.language {
+        case .greek: return "Η λήψη απέτυχε. Ο κανόνας-parser συνεχίζει να απαντά."
+        case .albanian: return "Shkarkimi dështoi. Rregull-parser vazhdon të përgjigjet."
+        case .english: return "Download failed. The rule parser still answers."
+        }
+    }
+    private var downloadText: String {
+        switch loc.language {
+        case .greek: return "Λήψη (~1.1 GB)"
+        case .albanian: return "Shkarko (~1.1 GB)"
+        case .english: return "Download (~1.1 GB)"
+        }
+    }
+    private var retryText: String {
+        switch loc.language {
+        case .greek: return "Δοκίμασε ξανά"
+        case .albanian: return "Provo sërish"
+        case .english: return "Try again"
+        }
     }
 }

@@ -12,10 +12,10 @@ final class AriadneModelStore: ObservableObject {
     enum Status: Equatable { case notDownloaded, downloading(Double), ready, error }
 
     // Kept in sync with core/common AriadneModelManifest.
-    static let fileName = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
-    static let url = URL(string: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf")!
-    static let sha256 = "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
-    static let byteCount: Int64 = 1_117_320_736
+    nonisolated static let fileName = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+    nonisolated static let url = URL(string: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf")!
+    nonisolated static let sha256 = "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
+    nonisolated static let byteCount: Int64 = 1_117_320_736
 
     @Published private(set) var status: Status = .notDownloaded
 
@@ -29,6 +29,17 @@ final class AriadneModelStore: ObservableObject {
     var modelPath: String? {
         let p = modelURL.path
         return FileManager.default.fileExists(atPath: p) ? p : nil
+    }
+
+    /// Nonisolated path to the downloaded, complete model, or nil. Safe to call
+    /// from the classifier (off the main actor).
+    nonisolated static func readyModelPath() -> String? {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Ariadne", isDirectory: true)
+        let f = dir.appendingPathComponent(fileName)
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: f.path),
+              (attrs[.size] as? Int64) == byteCount else { return nil }
+        return f.path
     }
 
     func refreshReadyState() {
