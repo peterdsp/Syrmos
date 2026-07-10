@@ -277,18 +277,16 @@ private struct AriadneLauncherPill: View {
                 onTap()
             }
         } label: {
-            HStack(spacing: 8) {
-                Text("🦉")
-                    .font(.system(size: 18))
-                Text(label).fontWeight(.semibold)
-            }
-            .font(.subheadline)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(Color.syrmosPrimary, in: Capsule())
-            .shadow(color: Color.syrmosPrimary.opacity(0.35), radius: 12, y: 6)
-            .scaleEffect(pressed ? 0.92 : 1.0)
+            // The Ariadne brand logo is the button (owl + labyrinth + thread).
+            Image("AriadneLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.28), radius: 12, y: 6)
+                .scaleEffect(pressed ? 0.92 : 1.0)
+                .accessibilityLabel(label)
         }
         .buttonStyle(.plain)
     }
