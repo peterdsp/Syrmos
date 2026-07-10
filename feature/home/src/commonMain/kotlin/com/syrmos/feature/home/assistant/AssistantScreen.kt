@@ -33,6 +33,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
+import com.syrmos.core.common.AriadneModelState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +68,8 @@ fun AssistantScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
+    val modelState by viewModel.modelState.collectAsState()
+    val modelProgress by viewModel.modelProgress.collectAsState()
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -93,6 +100,13 @@ fun AssistantScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
+            AriadneModelCard(
+                state = modelState,
+                progress = modelProgress,
+                onDownload = { viewModel.downloadModel() },
+                lang = lang,
+            )
 
             LazyColumn(
                 state = listState,
@@ -373,4 +387,85 @@ private fun TypingDot(phase: Float, offset: Float) {
             .size(diameter.dp)
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), shape = CircleShape),
     )
+}
+
+/**
+ * On-demand "Download Ariadne's brain" card. Shown only where a downloadable
+ * on-device model applies (Android). Hidden when UNSUPPORTED (iOS native / Web)
+ * or READY. The rule parser answers throughout, so this is purely additive.
+ */
+@Composable
+private fun AriadneModelCard(
+    state: AriadneModelState,
+    progress: Float,
+    onDownload: () -> Unit,
+    lang: AppLanguage,
+) {
+    if (state == AriadneModelState.UNSUPPORTED || state == AriadneModelState.READY) return
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.GREEK -> "Πιο έξυπνη Αριάδνη"
+                    AppLanguage.ALBANIAN -> "Ariadne më e zgjuar"
+                    else -> "Smarter Ariadne"
+                },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.size(4.dp))
+            Text(
+                text = when (state) {
+                    AriadneModelState.DOWNLOADING -> when (lang) {
+                        AppLanguage.GREEK -> "Λήψη του μοντέλου AI… ${(progress * 100).toInt()}%"
+                        AppLanguage.ALBANIAN -> "Po shkarkohet modeli AI… ${(progress * 100).toInt()}%"
+                        else -> "Downloading the on-device AI… ${(progress * 100).toInt()}%"
+                    }
+                    AriadneModelState.ERROR -> when (lang) {
+                        AppLanguage.GREEK -> "Η λήψη απέτυχε. Δοκίμασε ξανά. Ο κανόνας-parser συνεχίζει να απαντά."
+                        AppLanguage.ALBANIAN -> "Shkarkimi dështoi. Provo sërish. Rregull-parser vazhdon të përgjigjet."
+                        else -> "Download failed. Try again. The rule parser still answers."
+                    }
+                    else -> when (lang) {
+                        AppLanguage.GREEK -> "Κατέβασε ένα AI στη συσκευή (~1.1 GB, μία φορά) για να κατανοεί πιο ελεύθερη διατύπωση. Λειτουργεί offline μετά."
+                        AppLanguage.ALBANIAN -> "Shkarko një AI në pajisje (~1.1 GB, një herë) që kupton fjalët më të lira. Punon offline më pas."
+                        else -> "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
+                    }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(10.dp))
+            if (state == AriadneModelState.DOWNLOADING) {
+                LinearProgressIndicator(
+                    progress = { progress.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(999.dp)),
+                )
+            } else {
+                Button(onClick = onDownload) {
+                    Text(
+                        when (state) {
+                            AriadneModelState.ERROR -> when (lang) {
+                                AppLanguage.GREEK -> "Δοκίμασε ξανά"
+                                AppLanguage.ALBANIAN -> "Provo sërish"
+                                else -> "Try again"
+                            }
+                            else -> when (lang) {
+                                AppLanguage.GREEK -> "Λήψη (~1.1 GB)"
+                                AppLanguage.ALBANIAN -> "Shkarko (~1.1 GB)"
+                                else -> "Download (~1.1 GB)"
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
 }

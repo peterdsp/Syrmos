@@ -2,6 +2,9 @@ package com.syrmos.app.platform
 
 import com.syrmos.core.common.AriadneModelManifest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
@@ -18,14 +21,14 @@ object AriadneModelStore {
 
     enum class Status { NOT_DOWNLOADED, DOWNLOADING, READY, ERROR }
 
-    @Volatile
-    var status: Status = Status.NOT_DOWNLOADED
-        private set
+    private val _status = MutableStateFlow(Status.NOT_DOWNLOADED)
+    val statusFlow: StateFlow<Status> = _status.asStateFlow()
+    val status: Status get() = _status.value
 
     /** Bytes downloaded so far / total, for a progress UI (0 when idle). */
-    @Volatile
-    var progress: Float = 0f
-        private set
+    private val _progress = MutableStateFlow(0f)
+    val progressFlow: StateFlow<Float> = _progress.asStateFlow()
+    val progress: Float get() = _progress.value
 
     fun modelFile(): File? {
         val ctx = androidPlatformContext() ?: return null
@@ -36,7 +39,7 @@ object AriadneModelStore {
         if (status == Status.READY) return true
         val f = modelFile() ?: return false
         val ready = f.exists() && f.length() == AriadneModelManifest.APPROX_BYTES
-        if (ready) status = Status.READY
+        if (ready) _status.value = Status.READY
         return ready
     }
 
@@ -44,8 +47,8 @@ object AriadneModelStore {
     suspend fun download(): Boolean = withContext(Dispatchers.IO) {
         if (isReady()) return@withContext true
         val out = modelFile() ?: return@withContext false
-        status = Status.DOWNLOADING
-        progress = 0f
+        _status.value = Status.DOWNLOADING
+        _progress.value = 0f
         val tmp = File(out.parentFile, out.name + ".part")
         try {
             val conn = (URL(AriadneModelManifest.URL).openConnection() as HttpURLConnection).apply {
@@ -63,20 +66,21 @@ object AriadneModelStore {
                         if (n < 0) break
                         output.write(buf, 0, n)
                         total += n
-                        progress = (total / expected).coerceIn(0f, 1f)
+                        _progress.value = (total / expected).coerceIn(0f, 1f)
                     }
                 }
             }
             if (sha256(tmp) != AriadneModelManifest.SHA256) {
-                tmp.delete(); status = Status.ERROR; return@withContext false
+                tmp.delete(); _status.value = Status.ERROR; return@withContext false
             }
             if (out.exists()) out.delete()
             tmp.renameTo(out)
-            status = Status.READY
+            _progress.value = 1f
+            _status.value = Status.READY
             true
         } catch (_: Throwable) {
             tmp.delete()
-            status = Status.ERROR
+            _status.value = Status.ERROR
             false
         }
     }

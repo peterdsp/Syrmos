@@ -20,6 +20,9 @@ import com.syrmos.core.domain.assistant.ServiceAdvisoryMatcher
 import com.syrmos.core.domain.assistant.ServiceNotice
 import com.syrmos.core.domain.assistant.AssistantQueryNormalizer
 import com.syrmos.core.domain.assistant.AssistantClassifier
+import com.syrmos.core.common.AriadneModelDownloader
+import com.syrmos.core.common.AriadneModelState
+import com.syrmos.core.common.NoOpAriadneModelDownloader
 import com.syrmos.core.domain.assistant.AssistantVocabularyBuilder
 import com.syrmos.core.domain.assistant.NoOpQueryNormalizer
 import com.syrmos.core.domain.assistant.NoOpAssistantClassifier
@@ -108,8 +111,18 @@ class AssistantViewModel(
      * When it grounds an intent we skip the rule parser; otherwise we fall back.
      */
     private val assistantClassifier: AssistantClassifier = NoOpAssistantClassifier,
+    /**
+     * Optional on-demand model downloader (Android). No-op by default, so the
+     * shared download UI stays hidden where it does not apply (iOS/Web).
+     */
+    private val modelDownloader: AriadneModelDownloader = NoOpAriadneModelDownloader,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /** State + progress for the shared "Download Ariadne's brain" control. */
+    val modelState: StateFlow<AriadneModelState> = modelDownloader.state
+    val modelProgress: StateFlow<Float> = modelDownloader.progress
+    fun downloadModel() = modelDownloader.start()
     private val _uiState = MutableStateFlow(AssistantUiState())
     val uiState: StateFlow<AssistantUiState> = _uiState.asStateFlow()
 
