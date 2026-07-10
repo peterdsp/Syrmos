@@ -17,6 +17,7 @@
 		090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */; };
 		0FC202D00E8A46C389296714 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
 		12D1B2FE4D803668E2481F2D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */; };
+		15204646A0A673BDF0D30FCF /* llama.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D8B4CA7955E1724CF96A1AD /* llama.xcframework */; };
 		204183F8B0D84A90A83F834D /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */; };
 		25288E10152B593D7B7A8D35 /* SyrmosWatchComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0CC57A007A9CFBEF45359A28 /* SyrmosWatchComplications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		26AC636F7C9B467B9097F8F6 /* iosApp/Features/Timetables/TimetablesIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBADA13AF3954288A721329B /* iosApp/Features/Timetables/TimetablesIcons.swift */; };
@@ -26,6 +27,7 @@
 		37F4634210E64A09819E5A76 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */; };
 		3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */; };
 		3F12F021ECD240BE97B74BB9 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */; };
+		43624A138DF31948BB4FA7F2 /* AriadneModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE854D92A6C68AEAC8E0603F /* AriadneModelStore.swift */; };
 		470A39F895004D4CB8BC04D4 /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA99E493B0C4CA48ECE53BD /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift */; };
 		4B9E757154C3AEF92629B854 /* SyrmosWatch/WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7F86E13C39694BA17FD740 /* SyrmosWatch/WatchContentView.swift */; };
 		4DFE1212D427449286398220 /* iosApp/Shared/StationMapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAE5D2E14B71AFAB3C2F /* iosApp/Shared/StationMapSheet.swift */; };
@@ -37,6 +39,7 @@
 		726F4319319A4CEF912673CB /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */; };
 		736E6FA5879F4B30A1B60B9C /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift */; };
 		7469233EA00146DB9444F7BB /* iosApp/Core/Networking/LivePositionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B6F /* iosApp/Core/Networking/LivePositionsService.swift */; };
+		75F149A8840774EF3A2145D1 /* LlamaSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAF468AA4244E1A6FF45B64 /* LlamaSession.swift */; };
 		7BA0F0893BD64501A7EAC5A1 /* iosApp/Core/Schedule/StationCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0AC3ECFD5A2387CA6CFEFB /* iosApp/Core/Schedule/StationCoordinates.swift */; };
 		7C684B9562B2126A07E23D4C /* SyrmosWatch/SyrmosWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C75E63D8FD8430063F61D0 /* SyrmosWatch/SyrmosWatchApp.swift */; };
 		7F9E63555C75A414D8BC9D39 /* SyrmosWatch/WatchSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF31ACE2630B3EA36DBE66E /* SyrmosWatch/WatchSpeech.swift */; };
@@ -68,6 +71,7 @@
 		B100649A9FE24D65B49698FC /* iosApp/Core/Localization/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */; };
 		B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */; };
 		B2C3D4E5F6071829A3B4C5D6 /* iosApp/Core/Localization/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */; };
+		B2E7405E8B82B46C2A20B6A2 /* llama.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3D8B4CA7955E1724CF96A1AD /* llama.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B3621A83DE8D374BF385359C /* SyrmosWatch/WatchNearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */; };
 		B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */; };
 		BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */; };
@@ -150,6 +154,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		283F49BAA2426567F2246F74 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				B2E7405E8B82B46C2A20B6A2 /* llama.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		58B0A6E9B93BCF338FF901A8 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -203,6 +218,7 @@
 		2F7F86E13C39694BA17FD740 /* SyrmosWatch/WatchContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchContentView.swift; sourceTree = SOURCE_ROOT; };
 		37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/ThemeManager.swift; sourceTree = SOURCE_ROOT; };
 		395C38720CDE4C34AC7FA9AD /* iosApp/Core/Schedule/ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/ScheduleProjector.swift; sourceTree = SOURCE_ROOT; };
+		3D8B4CA7955E1724CF96A1AD /* llama.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = llama.xcframework; path = Frameworks/llama.xcframework; sourceTree = SOURCE_ROOT; };
 		51972231C37146A79B5760E4 /* iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift; sourceTree = SOURCE_ROOT; };
 		53C0854D3D8A40F9A9F267E9 /* iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift; sourceTree = SOURCE_ROOT; };
 		5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosSchedulesStore.swift; sourceTree = SOURCE_ROOT; };
@@ -275,11 +291,13 @@
 		E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactDeveloperView.swift; sourceTree = "<group>"; };
 		E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StasyMapView.swift; sourceTree = "<group>"; };
 		E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EBAF468AA4244E1A6FF45B64 /* LlamaSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LlamaSession.swift; path = iosApp/Features/Assistant/LlamaSession.swift; sourceTree = SOURCE_ROOT; };
 		EEBA71617E0DC88481663507 /* SyrmosWatch/WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchModels.swift; sourceTree = SOURCE_ROOT; };
 		F43D88E4E6775ADB265D3D56 /* iosAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7CC446436C541DC9D86F2C1 /* iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosStationOffsetsStore.swift; sourceTree = SOURCE_ROOT; };
 		F7CC446436C541DC9D86F2C2 /* iosApp/Core/Persistence/SyrmosRouteShapesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosRouteShapesStore.swift; sourceTree = SOURCE_ROOT; };
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		FE854D92A6C68AEAC8E0603F /* AriadneModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AriadneModelStore.swift; path = iosApp/Features/Assistant/AriadneModelStore.swift; sourceTree = SOURCE_ROOT; };
 		FF201314EADCD2EA1936941F /* SyrmosWatch/Complications-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SyrmosWatch/Complications-Info.plist"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -305,6 +323,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				C7C48BC8C2A3E895472A8FCD /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D725414488C4406BB32AB64E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15204646A0A673BDF0D30FCF /* llama.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -339,6 +365,9 @@
 				1A5D059E1D0EC95C67466E53 /* Frameworks */,
 				0E05CD2D65F51E3B7C19E908 /* iosAppTests */,
 				D666BF2B0273E4C6C2E84B8B /* SyrmosWatch */,
+				EBAF468AA4244E1A6FF45B64 /* LlamaSession.swift */,
+				FE854D92A6C68AEAC8E0603F /* AriadneModelStore.swift */,
+				3D8B4CA7955E1724CF96A1AD /* llama.xcframework */,
 			);
 			sourceTree = "<group>";
 		};
@@ -662,6 +691,8 @@
 				123D21FB8A24EE726D99E5D7 /* Sources */,
 				DA7A0108F00D0108F00D0108 /* Embed Foundation Extensions */,
 				58B0A6E9B93BCF338FF901A8 /* Embed Watch Content */,
+				D725414488C4406BB32AB64E /* Frameworks */,
+				283F49BAA2426567F2246F74 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -754,7 +785,7 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2620;
 			};
-			buildConfigurationList = 8058A39F61358BF5CBCE543C /* Build configuration list for PBXProject "Syrmos" */;
+			buildConfigurationList = 8058A39F61358BF5CBCE543C /* Build configuration list for PBXProject "Syrmos - Athens Rail Times" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -888,6 +919,8 @@
 				C5D6E7F8A9B0C1D2E3F40506 /* iosApp/Core/Networking/SyrmosLinesService.swift in Sources */,
 				D7E8F9A0B1C2D3E4F5060708 /* iosApp/Core/Diagnostics/Diagnostics.swift in Sources */,
 				980A534651EFC2013B8ED38F /* iosApp/Core/Schedule/TransitData.swift in Sources */,
+				75F149A8840774EF3A2145D1 /* LlamaSession.swift in Sources */,
+				43624A138DF31948BB4FA7F2 /* AriadneModelStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1112,17 +1145,33 @@
 				CODE_SIGN_ENTITLEMENTS = iosApp/Syrmos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 104;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Frameworks/llama-headers",
+				);
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"$(inherited) @executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.2.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+					"-framework",
+					Accelerate,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = "iosApp/Syrmos-Bridging-Header.h";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1181,17 +1230,33 @@
 				CODE_SIGN_ENTITLEMENTS = iosApp/Syrmos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 104;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Frameworks/llama-headers",
+				);
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Syrmos - Athens Rail Times";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"$(inherited) @executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.2.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+					"-framework",
+					Accelerate,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios;
 				PRODUCT_NAME = Syrmos;
 				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = "iosApp/Syrmos-Bridging-Header.h";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1360,7 +1425,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8058A39F61358BF5CBCE543C /* Build configuration list for PBXProject "Syrmos" */ = {
+		8058A39F61358BF5CBCE543C /* Build configuration list for PBXProject "Syrmos - Athens Rail Times" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				852CC85B2E65EBF791201246 /* Debug */,
