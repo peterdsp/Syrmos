@@ -2359,16 +2359,51 @@
             if (!llm) {
                 brainBtn.style.display = "none";
             } else {
+                // A thin download-progress bar under the panel header, shown only
+                // while the ~1.1 GB model is downloading.
+                const progress = document.createElement("div");
+                progress.className = "ariadne-progress";
+                progress.innerHTML =
+                    '<div class="ariadne-progress__label"></div>' +
+                    '<div class="ariadne-progress__track"><div class="ariadne-progress__fill"></div></div>';
+                progress.style.display = "none";
+                (document.getElementById("ariadnePanel") || document.body).insertBefore(
+                    progress, document.getElementById("ariadneMessages"));
+                const pFill = progress.querySelector(".ariadne-progress__fill");
+                const pLabel = progress.querySelector(".ariadne-progress__label");
+
+                const pbStyle = document.createElement("style");
+                pbStyle.textContent = `
+                    .ariadne-progress { padding: 8px 14px 4px; }
+                    .ariadne-progress__label { font-size: 12px; opacity: 0.75; margin-bottom: 5px; }
+                    .ariadne-progress__track { height: 6px; border-radius: 999px; background: rgba(0,0,0,0.12); overflow: hidden; }
+                    body.dark-mode .ariadne-progress__track { background: rgba(255,255,255,0.16); }
+                    .ariadne-progress__fill { height: 100%; width: 0%; border-radius: 999px; background: #0072CE; transition: width 300ms ease; }
+                `;
+                document.head.appendChild(pbStyle);
+
                 const paint = () => {
                     const s = llm.status();
-                    brainBtn.textContent = s === "ready" ? "🧠✓" : s === "loading" ? "⏳" : s === "error" ? "🧠!" : "🧠";
+                    const pct = Math.round((llm.progress ? llm.progress() : 0) * 100);
+                    brainBtn.textContent = s === "ready" ? "🧠✓" : s === "loading" ? (pct + "%") : s === "error" ? "🧠!" : "🧠";
                     brainBtn.title = s === "ready"
                         ? "Smarter answers are on (on-device brain ready)"
                         : s === "loading"
-                        ? "Downloading Ariadne's brain… (~1.1 GB, one time)"
+                        ? ("Downloading Ariadne's brain… " + pct + "% (~1.1 GB, one time)")
                         : s === "error"
                         ? "Download failed. Tap to retry. Rule parser still answers."
                         : "Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)";
+                    if (s === "loading") {
+                        progress.style.display = "block";
+                        pFill.style.width = pct + "%";
+                        pLabel.textContent = "Downloading Ariadne's brain… " + pct + "%";
+                    } else if (s === "error") {
+                        progress.style.display = "block";
+                        pLabel.textContent = "Download failed. Tap 🧠 to retry.";
+                        pFill.style.width = "0%";
+                    } else {
+                        progress.style.display = "none";
+                    }
                 };
                 paint();
                 brainBtn.addEventListener("click", () => {
@@ -2377,8 +2412,11 @@
                         llm.download();
                         const poll = setInterval(() => {
                             paint();
-                            if (llm.status() === "ready" || llm.status() === "error") clearInterval(poll);
-                        }, 1000);
+                            if (llm.status() === "ready" || llm.status() === "error") {
+                                if (llm.status() === "ready") setTimeout(() => { progress.style.display = "none"; }, 800);
+                                clearInterval(poll);
+                            }
+                        }, 400);
                     }
                     paint();
                 });
