@@ -88,6 +88,14 @@ enum AriadneGuided {
     /// that we can't resolve is dropped (never guessed), so a plan/departures
     /// intent with an unresolved station degrades to a clarification request.
     static func classify(_ input: String, vocabulary: AssistantVocabulary) async -> AssistantIntent? {
+        // Preferred: the downloaded on-device model (llama.cpp), same GGUF as
+        // Android/Web. Grammar-locked JSON, grounded exactly like the rule parser.
+        if let path = AriadneModelStore.readyModelPath(),
+           await LlamaSession.shared.load(path: path) {
+            let json = await LlamaSession.shared.complete(
+                prompt: llamaClassificationPrompt(input), maxTokens: 160, grammar: llamaGrammar)
+            if let intent = groundJSON(json, vocabulary: vocabulary) { return intent }
+        }
         #if canImport(FoundationModels)
         if #available(iOS 26.0, *) {
             guard case .available = SystemLanguageModel.default.availability else { return nil }
@@ -102,6 +110,86 @@ enum AriadneGuided {
         }
         #endif
         return nil
+    }
+
+    // MARK: - On-device llama.cpp path (grammar-locked JSON)
+
+    /// GBNF that locks output to the flat intent JSON (mirrors
+    /// core/common AriadneGrammar.GBNF and the web grammar).
+    private static let llamaGrammar = """
+    root ::= "{\\"intent\\":" intent ",\\"station\\":" str ",\\"toStation\\":" str ",\\"line\\":" str ",\\"query\\":" str ",\\"airport\\":" bool ",\\"lowExposure\\":" bool ",\\"day\\":" day ",\\"arriveByClock\\":" str ",\\"arriveInMinutes\\":" int "}"
+    intent ::= "\\"showDepartures\\"" | "\\"lastTrain\\"" | "\\"findStation\\"" | "\\"planTrip\\"" | "\\"planTripByArrival\\"" | "\\"travelTime\\"" | "\\"explainLine\\"" | "\\"explainFare\\"" | "\\"showAlerts\\"" | "\\"weatherAt\\"" | "\\"help\\"" | "\\"outOfScope\\""
+    day ::= "\\"today\\"" | "\\"tomorrow\\"" | "\\"weekend\\"" | "\\"saturday\\"" | "\\"sunday\\""
+    bool ::= "true" | "false"
+    int ::= "0" | [1-9] [0-9]{0,3}
+    str ::= "\\"" schar{0,40} "\\""
+    schar ::= [a-zA-Z0-9 .,:/-]
+    """
+
+    /// Few-shot prompt, mirrors core/domain IntentGrounder.classificationPrompt.
+    private static func llamaClassificationPrompt(_ input: String) -> String {
+        """
+        Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.
+        Intents: showDepartures (next trains from a station), lastTrain (last/final train), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).
+
+        Message: last train from syntagma
+        JSON: {"intent":"lastTrain","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: how much is a ticket to the airport
+        JSON: {"intent":"explainFare","station":"","toStation":"airport","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: kur niset treni i fundit per Pire
+        JSON: {"intent":"lastTrain","station":"Pire","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: \(input.trimmingCharacters(in: .whitespacesAndNewlines))
+        JSON:
+        """
+    }
+
+    /// Grounds the model's JSON into an intent, resolving quoted station/line to
+    /// canonical ids (never trusting the model for an id or a fact).
+    private static func groundJSON(_ json: String, vocabulary: AssistantVocabulary) -> AssistantIntent? {
+        guard let data = json.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        func s(_ k: String) -> String { (obj[k] as? String) ?? "" }
+        func b(_ k: String) -> Bool { (obj[k] as? Bool) ?? false }
+        func i(_ k: String) -> Int { (obj[k] as? Int) ?? ((obj[k] as? NSNumber)?.intValue ?? 0) }
+        let kind = s("intent")
+        let station = resolveStation(s("station"), in: vocabulary)
+        let toStation = resolveStation(s("toStation"), in: vocabulary)
+        let line = resolveLine(s("line"), in: vocabulary)
+        let day = mapDayString(s("day"))
+        switch kind {
+        case "showDepartures": return .showDepartures(stationId: station, lineId: line, day: day)
+        case "lastTrain": return .lastTrain(stationId: station, lineId: line)
+        case "findStation":
+            let q = s("query").isEmpty ? s("station") : s("query")
+            return q.isEmpty ? nil : .findStation(query: q)
+        case "planTrip":
+            if station == nil && toStation == nil { return nil }
+            return .planTrip(fromStationId: station, toStationId: toStation, lowExposure: b("lowExposure"), preference: .balanced)
+        case "planTripByArrival":
+            let absMin = clockToAthensMinutes(s("arriveByClock"))
+            let relMin = i("arriveInMinutes") > 0 ? i("arriveInMinutes") : nil
+            if absMin == nil && relMin == nil { return nil }
+            return .planTripByArrival(fromStationId: station, toStationId: toStation,
+                                      arriveByAthensMinutes: absMin, inMinutesFromNow: relMin)
+        case "travelTime": return .travelTime(toStationId: toStation ?? station, fromStationId: toStation == nil ? nil : station)
+        case "explainLine": guard let line else { return nil }; return .explainLine(lineId: line)
+        case "explainFare": return .explainFare(airport: b("airport"), fromStationId: station, toStationId: toStation)
+        case "showAlerts": return .showAlerts(lineId: line)
+        case "weatherAt": return .weatherAt(stationId: station)
+        case "help": return .help
+        case "outOfScope": return .outOfScope
+        default: return nil
+        }
+    }
+
+    private static func mapDayString(_ d: String) -> DayContext {
+        switch d.lowercased() {
+        case "tomorrow": return .tomorrow
+        case "weekend": return .weekend
+        case "saturday": return .saturday
+        case "sunday": return .sunday
+        default: return .today
+        }
     }
 
     #if canImport(FoundationModels)
