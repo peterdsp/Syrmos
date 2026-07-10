@@ -38,3 +38,8 @@ xcuserdata/
 # Local syrmos-api dev state (DB + venv created when running importer locally)
 ops/syrmos-api/.venv/
 ops/syrmos-api/db/
+
+# Ariadne on-device model (GGUF, ~470 MB) is fetched + verified by CI, never committed.
+# See scripts/fetch-ariadne-model.sh and core/common/.../AriadneModelManifest.kt
+*.gguf
+iosApp/iosApp/Resources/model/
