@@ -1,44 +1,65 @@
 package com.syrmos.app.platform
 
-import com.google.mlkit.genai.common.FeatureStatus
-import com.google.mlkit.genai.prompt.Generation
-import com.google.mlkit.genai.prompt.GenerativeModel
+import com.syrmos.core.common.AriadneGrammar
 import com.syrmos.core.domain.assistant.AssistantClassifier
-import com.syrmos.core.domain.assistant.AssistantVocabulary
 import com.syrmos.core.domain.assistant.AssistantIntent
+import com.syrmos.core.domain.assistant.AssistantVocabulary
 import com.syrmos.core.domain.assistant.IntentGrounder
-import com.syrmos.core.domain.assistant.NoOpAssistantClassifier
+import com.syrmos.llm.LlamaBridge
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
-actual fun provideAssistantClassifier(): AssistantClassifier = AndroidGeminiNanoClassifier
+actual fun provideAssistantClassifier(): AssistantClassifier = LlamaAssistantClassifier
 
 /**
- * Clever-Android tier: Gemini Nano via ML Kit GenAI Prompt API. It runs the
- * pack's classification prompt on-device, gets back a small JSON object, and
- * hands it to [IntentGrounder], which resolves the quoted station / line to
- * canonical ids (the model never supplies an id or a fact) and produces a
- * grounded [AssistantIntent] for the existing deterministic dispatch.
+ * Android "clever" tier: the same GGUF model that runs on iOS/Web, executed on
+ * device by a pinned llama.cpp (via [LlamaBridge]). It does the UNDERSTANDING
+ * step only, grammar-locked to the intent JSON; [IntentGrounder] resolves the
+ * quoted station/line to canonical ids (the model never supplies an id or a
+ * fact) and the deterministic dispatch produces every answer.
  *
- * It only acts when Gemini Nano is already available on the device (a capable
- * device with the feature downloaded); otherwise [classify] returns null and the
- * caller runs the deterministic rule parser. It never throws into the caller and
- * never blocks a query on a multi-gigabyte model download.
+ * It only acts when the native libs loaded AND the user has downloaded the model
+ * ([AriadneModelStore]); otherwise [classify] returns null and the caller runs
+ * the rule parser. It never blocks a query on the multi-hundred-MB load: the
+ * first call after the model is ready warms it up and returns null, and later
+ * calls run the model.
  */
-private object AndroidGeminiNanoClassifier : AssistantClassifier {
-    private val model: GenerativeModel by lazy { Generation.getClient() }
+private object LlamaAssistantClassifier : AssistantClassifier {
+    private val mutex = Mutex()
+    @Volatile private var handle: Long = 0L
+    @Volatile private var loading = false
 
     override suspend fun classify(input: String, vocabulary: AssistantVocabulary): AssistantIntent? {
-        val text = input.trim()
-        if (text.isEmpty()) return null
-        return try {
-            // checkStatus() and generateContent() are suspend functions on the
-            // GenerativeModel interface (they take a Continuation), so they are
-            // awaited directly here — no ListenableFuture bridging.
-            if (model.checkStatus() != FeatureStatus.AVAILABLE) return null
-            val response = model.generateContent(IntentGrounder.classificationPrompt(text))
-            val json = response.candidates.firstOrNull()?.text ?: return null
-            IntentGrounder.ground(json, vocabulary)
-        } catch (_: Throwable) {
-            null
+        if (!LlamaBridge.available || !AriadneModelStore.isReady()) return null
+        if (!ensureLoaded()) return null
+        return withContext(Dispatchers.Default) {
+            val prompt = IntentGrounder.classificationPrompt(input)
+            val json = try {
+                LlamaBridge.nativeComplete(handle, prompt, 160, AriadneGrammar.GBNF)
+            } catch (_: Throwable) {
+                return@withContext null
+            }
+            if (json.isBlank()) null else IntentGrounder.ground(json, vocabulary)
+        }
+    }
+
+    /** Loads the model once, off the calling path. Returns true only when a
+     *  handle is ready now; the warm-up call returns false (rule parser answers). */
+    private suspend fun ensureLoaded(): Boolean {
+        if (handle != 0L) return true
+        if (loading) return false
+        return mutex.withLock {
+            if (handle != 0L) return@withLock true
+            loading = true
+            val path = AriadneModelStore.modelFile()?.absolutePath
+            val h = if (path != null) withContext(Dispatchers.IO) {
+                try { LlamaBridge.nativeLoadModel(path, 1024) } catch (_: Throwable) { 0L }
+            } else 0L
+            handle = h
+            loading = false
+            h != 0L
         }
     }
 }
