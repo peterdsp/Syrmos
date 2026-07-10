@@ -241,4 +241,41 @@ class AthensTransitParserTest {
         assertEquals("M1_PIR", plan.fromStationId)
         assertEquals("M2_SYN", plan.toStationId)
     }
+
+    // --- Expanded trilingual cue coverage (cleverer rule parser) ---
+
+    @Test
+    fun final_train_english_synonym() {
+        assertIs<AssistantIntent.LastTrain>(parser.parse("final train from Syntagma"))
+    }
+
+    @Test
+    fun last_departure_albanian_synonym() {
+        assertIs<AssistantIntent.LastTrain>(parser.parse("nisja e fundit nga Pireas"))
+    }
+
+    @Test
+    fun take_me_to_is_plan_trip() {
+        assertIs<AssistantIntent.PlanTrip>(parser.parse("take me to the Airport from Monastiraki"))
+    }
+
+    @Test
+    fun fastest_way_greek_is_plan_trip() {
+        assertIs<AssistantIntent.PlanTrip>(parser.parse("ποιος ειναι ο καλυτερος τροπος απο Μοναστηρακι στο Αεροδρομιο"))
+    }
+
+    @Test
+    fun ticket_price_greek_is_fare() {
+        assertIs<AssistantIntent.ExplainFare>(parser.parse("τιμη εισιτηριου για το αεροδρομιο"))
+    }
+
+    @Test
+    fun what_is_ariadne_is_help() {
+        assertIs<AssistantIntent.Help>(parser.parse("what is ariadne"))
+    }
+
+    @Test
+    fun cfare_eshte_ariadne_is_help() {
+        assertIs<AssistantIntent.Help>(parser.parse("cfare eshte ariadne"))
+    }
 }
