@@ -118,27 +118,34 @@ object IntentGrounder {
         Regex("\"" + Regex.escape(key) + "\"\\s*:\\s*(-?\\d+)").find(json)?.groupValues?.get(1)?.toIntOrNull() ?: 0
 
     /**
-     * The prompt for the clever model. It demands strict JSON only, mirroring the
-     * pack's ariadne_intent_schema.json flattened to one object, and forbids the
-     * model from producing any fact.
+     * The prompt for the clever model, designed as a raw few-shot completion (the
+     * on-device llama.cpp / wllama backends run this with a GBNF grammar that
+     * locks the output to the exact flat JSON below, so the model can only choose
+     * an approved intent and quote free-text slots, never emit a fact).
+     *
+     * The worked examples span English, Greek, and Albanian on purpose: a browser
+     * benchmark showed a small model classifying English acceptably but failing
+     * Greek and Albanian without in-context examples. Keep all three languages
+     * represented here so Albanian and Greek stay first-class.
      */
     fun classificationPrompt(input: String): String = """
-        You are Ariadne, the offline assistant inside Syrmos for Athens metro, tram, and suburban rail.
-        You are NOT the source of transit facts. Read the user's message and output ONLY a single JSON
-        object, no prose, no code fence, with exactly these fields:
-        {"intent":"<one of: showDepartures,lastTrain,findStation,planTrip,planTripByArrival,travelTime,explainLine,explainFare,showAlerts,weatherAt,help,outOfScope>",
-         "station":"<origin/primary station exactly as the user said, or empty>",
-         "toStation":"<destination station exactly as the user said, or empty>",
-         "line":"<line like M2 or line 3 or tram, or empty>",
-         "query":"<free-text station search when intent is findStation, or empty>",
-         "airport":<true only if clearly about the airport>,
-         "lowExposure":<true if the user wants a sheltered route>,
-         "day":"<one of: today,tomorrow,weekend,saturday,sunday>",
-         "arriveByClock":"<HH:mm in Athens time when the user must arrive by a time, or empty>",
-         "arriveInMinutes":<minutes-from-now the user must arrive within, or 0>}
-        Never output a station id, a time, a fare, or a route. If the message is not about Athens public
-        transport, use outOfScope. If they ask what you can do, use help.
-        User: ${input.trim()}
+        Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.
+        Intents: showDepartures (next trains from a station), lastTrain (last/final train), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).
+        Fields: intent, station, toStation, line, query, airport(bool), lowExposure(bool), day(today/tomorrow/weekend/saturday/sunday), arriveByClock(HH:mm or empty), arriveInMinutes(int). Never output an id, a time, a fare, or a route.
+
+        Message: next trains from ambelokipi
+        JSON: {"intent":"showDepartures","station":"ambelokipi","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: last train from syntagma
+        JSON: {"intent":"lastTrain","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: πως παω απο μοναστηρακι στο αεροδρομιο
+        JSON: {"intent":"planTrip","station":"μοναστηρακι","toStation":"αεροδρομιο","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: how much is a ticket to the airport
+        JSON: {"intent":"explainFare","station":"","toStation":"airport","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: kur niset treni i fundit per Pire
+        JSON: {"intent":"lastTrain","station":"Pire","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: what can you do
+        JSON: {"intent":"help","station":"","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: ${input.trim()}
         JSON:
     """.trimIndent()
 }
