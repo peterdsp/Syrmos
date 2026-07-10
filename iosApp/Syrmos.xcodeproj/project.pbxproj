@@ -71,7 +71,6 @@
 		B100649A9FE24D65B49698FC /* iosApp/Core/Localization/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */; };
 		B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */; };
 		B2C3D4E5F6071829A3B4C5D6 /* iosApp/Core/Localization/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */; };
-		B2E7405E8B82B46C2A20B6A2 /* llama.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3D8B4CA7955E1724CF96A1AD /* llama.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B3621A83DE8D374BF385359C /* SyrmosWatch/WatchNearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */; };
 		B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */; };
 		BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */; };
@@ -160,7 +159,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				B2E7405E8B82B46C2A20B6A2 /* llama.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;

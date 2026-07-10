@@ -166,11 +166,26 @@ jobs:
           echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
           IPA="$(ls "$RUNNER_TEMP"/export/*.ipa | head -1)"
           echo "Uploading $IPA"
+
+          # altool can exit 0 even when validation/upload fails (it prints the
+          # error but returns success), which would let a broken build masquerade
+          # as delivered. So capture the output and fail hard on any error marker.
+          check_altool () {
+            local log="$1"
+            if grep -qiE "UPLOAD FAILED|Validation failed|Failed to (validate|upload) package|VALIDATION_ERROR|ERROR:" "$log"; then
+              echo "::error::altool reported a failure - build NOT delivered."
+              exit 1
+            fi
+          }
+
           xcrun altool --validate-app -f "$IPA" -t ios \
-            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool-validate.log"
+          check_altool "$RUNNER_TEMP/altool-validate.log"
+
           xcrun altool --upload-app -f "$IPA" -t ios \
-            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
-          echo "Uploaded to App Store Connect / TestFlight."
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool-upload.log"
+          check_altool "$RUNNER_TEMP/altool-upload.log"
+          echo "Verified delivery to App Store Connect / TestFlight."
 
       - name: Clean up secrets from the runner
         if: always()
