@@ -2,13 +2,21 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.2**, **Android 1.2.2**, **Web** (rolling).
+Current shipping: **iOS 1.2.2** (TestFlight), **Android 1.2.0** (Play, published 2026-07-16), **Web** (rolling).
+
+Android lags iOS: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no 1.2.2 bundle was ever uploaded. Android sat on **1.1.1** until 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published on 2026-07-16. 1.2.1 never shipped to Play. Android 1.2.2 (versionCode 106) follows once the release secrets are set (see [docs/ops/RELEASE.md](docs/ops/RELEASE.md)). versionCode 105 was consumed by a rejected upload (4 KB-aligned native libs, see below) and can never be reused.
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
 ## 1.2.2 (2026-07-10)
+
+Fixes after tagging:
+
+- **Android on-device LLM never actually ran (silent, since the feature shipped).** `libsyrmos_llama.so` was linked against `libc++_shared.so`, which is not packaged in the APK/AAB, so `System.loadLibrary("syrmos_llama")` always threw `dlopen failed: library "libc++_shared.so" not found`. `LlamaBridge` caught it, set `available=false`, and Ariadne fell back to the rule parser — so nothing crashed and nothing looked wrong, which is exactly why it went unnoticed. llama.cpp's own libs static-link libc++ and loaded fine; only the JNI shim asked for the shared runtime. The shim is now linked with `-static-libstdc++` (matching llama.cpp), needs no extra runtime, and all five libs load on device. Verified on an arm64 emulator: libs load, the 1.5B GGUF loads (~1.2 GB RSS) and inference executes multi-threaded. Inference latency on a real device is still unmeasured (the emulator is too slow to time it meaningfully).
+
+- **Android 16 KB page-size support (blocking Play).** The vendored llama.cpp libs (`libllama`, `libggml*`, `libsyrmos_llama`) were linked with the default 4 KB max page size, so Google Play rejected the 1.2.2 bundle ("Your app does not support 16 KB memory page sizes") and on a 16 KB-page device the libs would fail to load, silently dropping Ariadne to the rule parser. llama.cpp's CMake does not set the alignment and the NDK default did not apply, so the rebuild now passes `-Wl,-z,max-page-size=16384` explicitly to both the CMake link and the JNI shim. All five arm64 libs now report LOAD align `0x4000`. The recipe + a verification step are documented in `composeApp/src/androidMain/jniLibs/README.md`.
 
 Headline: Ariadne gets a **real on-device LLM** (one model, every platform) plus a **cleverer rule parser**. The model does the understanding step only (messy message to an approved intent and quoted slots); it never generates a transit fact, and the deterministic rule parser stays the offline floor, so nothing regresses when the model is absent.
 
