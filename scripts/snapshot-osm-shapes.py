@@ -40,6 +40,14 @@ RELATION_FOR_LINE = {
     "A2": 8467443,   # Ano Liosia -> Airport
     "A3": 8467442,   # Athens -> Chalcis
     "A4": 8467515,   # Piraeus -> Kiato
+    # Thessaloniki. Ids verified against a Geofabrik Greece extract, not a web
+    # search: searching for these returns confident wrong answers (one "Metro 1"
+    # hit is Brussels). The route_masters are 7885089 (Μετρό 1) and 7898299
+    # (Μετρό 2); we point at the concrete direction relations, as we do for
+    # Athens. TM2 is tagged construction:route=subway upstream, matching its
+    # under_construction status here until the Kalamaria extension opens.
+    "TM1": 6152448,  # New Railway Station -> Nea Elvetia
+    "TM2": 7898294,  # New Railway Station -> Mikra (under construction)
 }
 
 
