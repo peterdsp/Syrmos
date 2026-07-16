@@ -2,9 +2,11 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.2** (TestFlight), **Android 1.2.0** (Play, published 2026-07-16), **Web** (rolling).
+Current shipping: **iOS 1.2.2** (TestFlight), **Android 1.2.2** (Play, versionCode 106, released 2026-07-16), **Web** (rolling).
 
-Android lags iOS: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no 1.2.2 bundle was ever uploaded. Android sat on **1.1.1** until 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published on 2026-07-16. 1.2.1 never shipped to Play. Android 1.2.2 (versionCode 106) follows once the release secrets are set (see [docs/ops/RELEASE.md](docs/ops/RELEASE.md)). versionCode 105 was consumed by a rejected upload (4 KB-aligned native libs, see below) and can never be reused.
+How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
+
+The release secrets are now set, so a `v*` tag ships Android automatically alongside iOS and web. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md). Do not re-run the `v1.2.2` tag: it points at the pre-fix commit (versionCode 105, 4 KB libs, broken JNI shim).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
