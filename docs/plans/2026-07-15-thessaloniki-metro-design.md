@@ -103,14 +103,46 @@ Plan:
   gains `TP1/TP2/TP3`; on-device, the bundled `{LINE}.json` carry the trips (KMP
   + Swift project from trips like they approximate A1–A4 today).
 
-## Metro stations (TM1, NW -> SE)
+## Metro stations (NW -> SE), from OSM relations
 
-TM1_NRS New Railway Station / Νέος Σιδηροδρομικός Σταθμός · TM1_DIM Dimokratias /
-Δημοκρατίας · TM1_VEN Venizelou / Βενιζέλου · TM1_AGS Agia Sofia / Αγία Σοφία ·
-TM1_PAN Panepistimio / Πανεπιστήμιο · TM1_SYN Sintrivani/Ekthesi / Συντριβάνι ·
-TM1_PAP Papafi / Παπάφη · TM1_EFK Efklidi / Ευκλείδη · TM1_FLE Fleming /
-Φλέμινγκ · TM1_ANA Analipsi / Ανάληψη · TM1_25M 25 Martiou / 25ης Μαρτίου ·
-TM1_VOU Voulgari / Βούλγαρη · TM1_NEL Nea Elvetia / Νέα Ελβετία.
+Order and coordinates are taken from the OSM route relations (TM1 outbound
+`6152448`, TM2 `7898294`), not from prose station lists. **Sintrivani precedes
+Panepistimio**: the marketing copy we started from had them the other way round,
+and the coordinates (a clean monotonic run southeast) plus the official line map
+both say otherwise. Names below are the OSM `name` values.
+
+TM1 (13 stations, red `#FF0000`, route_master `7885089`):
+
+| # | id | EN | EL | lat, lng |
+|---|----|----|----|----------|
+| 1 | TM1_NSS | New Railway Station | Νέος Σιδηροδρομικός Σταθμός | 40.643918, 22.928711 |
+| 2 | TM1_DIM | Dimokratias | Δημοκρατίας | 40.640941, 22.934419 |
+| 3 | TM1_VEN | Venizelou | Βενιζέλου | 40.636941, 22.942086 |
+| 4 | TM1_AGS | Agia Sofia | Αγίας Σοφίας | 40.634616, 22.946429 |
+| 5 | TM1_SYN | Sintrivani | Συντριβάνι | 40.630756, 22.954161 |
+| 6 | TM1_PAN | Panepistimio | Πανεπιστήμιο | 40.626254, 22.960527 |
+| 7 | TM1_PAP | Papafi | Παπάφη | 40.619708, 22.962974 |
+| 8 | TM1_EFK | Efkleidis | Ευκλείδης | 40.615873, 22.960412 |
+| 9 | TM1_FLE | Fleming | Φλέμινγκ | 40.611983, 22.957280 |
+| 10 | TM1_ANA | Analipsi | Ανάληψη | 40.606199, 22.957800 |
+| 11 | TM1_25M | 25 Martiou | 25ης Μαρτίου | 40.601083, 22.958473 |
+| 12 | TM1_VOU | Voulgari | Βούλγαρη | 40.595024, 22.960612 |
+| 13 | TM1_NEL | Nea Elvetia | Νέα Ελβετία | 40.593231, 22.968863 |
+
+TM2 (blue `#0070FF`, route_master `7898299`, OSM tags it
+`construction:route=subway`) shares TM1_NSS..TM1_25M and then branches. It does
+**not** serve Voulgari or Nea Elvetia. Its five own stations:
+
+| # | id | EN | EL | lat, lng |
+|---|----|----|----|----------|
+| 12 | TM2_NOM | Nomarchia | Νομαρχία | 40.591653, 22.957086 |
+| 13 | TM2_KAL | Kalamaria | Καλαμαριά | 40.584718, 22.953047 |
+| 14 | TM2_ARE | Aretsou | Αρετσού | 40.578375, 22.954404 |
+| 15 | TM2_NKR | Nea Krini | Νέα Κρήνη | 40.571903, 22.961363 |
+| 16 | TM2_MIK | Mikra | Μίκρα | 40.567590, 22.966672 |
+
+The 11 shared stations keep their `TM1_*` ids and are referenced by both lines
+through `line_stations`; there is one physical Syntrivani, not two.
 
 ## Suburban stations (from official Hellenic Train corridor maps)
 
