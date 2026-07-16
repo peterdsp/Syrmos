@@ -44,6 +44,26 @@ What we kept from it: the suburban marker bug, live-marker map density, and live
 Hellenic Train data. All rail. Out: bikes, scooters, cars, navigation, traffic,
 and buses (OASA).
 
+### The one bus exception: rail-replacement services
+
+"No buses" means **no OASA city buses**. It does not mean ignoring the operator's
+own rail-replacement services.
+
+Of the 458 services in the 2026-07-16 timetable compilation, **130 are Hellenic
+Train replacement or connecting buses** on corridors where the rail line is
+suspended: Larisa-Volos, Kiato-Patras, Paleofarsalos-Kalambaka,
+Drama-Xanthi-Alexandroupoli, and the Patras connecting/circular services.
+
+On those corridors **there is no train**. Omitting them would mean answering
+"Larisa to Volos" with "no service" when the true answer is "it is a bus today,
+and here is the time". That fails litmus test 3 (reassuring, not just
+informative) and it makes us wrong rather than merely narrow.
+
+So: include them, modelled as part of the rail network with an explicit bus /
+replacement mode, always labelled as a bus so we never imply a train that does
+not run. They are the rail line, operated by the rail operator, standing in for
+the rail service. OASA city buses remain out.
+
 ## The region model
 
 `region` groups a line and its stations into a network. Three values:
@@ -147,9 +167,31 @@ is fast (a Thessaloniki bbox cut takes ~2s) and it is the same data.
 
 ## Open questions
 
-- Does Hellenic Train expose any real-time feed, or is `LiveArrivalsProvider`
-  still a no-op seam waiting on an operator?
-- Which national lines actually run, at what frequency, and is there a per-station
-  timetable or only endpoints (as with Larisa/Florina)?
-- Patras and other cities: rail exists, but is there a published timetable to
-  model?
+Two of the three original open questions were answered on 2026-07-16 by
+`greece_passenger_rail_timetables_2026-07-16.pdf` (458 services, sourced from the
+live booking system, the railway.gov.gr live board and published timetables, with
+an explicit statement that no times were estimated):
+
+- **Per-station timetables exist.** ANSWERED. Every corridor carries train
+  numbers and arrival/departure at each intermediate stop, so nothing needs
+  interpolating. This retired the interpolation compromise in the Thessaloniki
+  design.
+- **Patras is modellable.** ANSWERED. The source has a Patras Suburban Railway
+  section plus its connecting and circular bus services.
+- **Real-time feeds** remain open. railway.gov.gr publishes a live board and the
+  booking system is queryable, so a feed may be reachable, but nothing is
+  confirmed and `LiveArrivalsProvider` stays a no-op seam until it is.
+
+The full national picture from that source, i.e. the work list for `national`:
+InterCity Athens-Thessaloniki; regional Athens-Leianokladi and
+Alexandroupoli-Orestiada-Ormenio; the Athens suburban set already modelled;
+Thessaloniki regional (Larisa, Edessa/Florina, **Serres-Drama**, Sindos); Patras
+suburban; and the heritage lines Katakolo-Pyrgos-Olympia and the Pelion Railway.
+
+Newly open:
+
+- **Heritage/tourist railways** (Pelion, Katakolo-Pyrgos-Olympia) are rail and in
+  scope by the letter of it, but they are seasonal tourist operations rather than
+  transit. Decide whether they belong.
+- **Thessaloniki-Serres-Drama** was missing from the Thessaloniki design and
+  needs adding as TP4.
