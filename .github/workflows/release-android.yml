@@ -43,6 +43,13 @@ jobs:
           done
           [ "$missing" = "0" ] || { echo "Add the release secrets (see docs/ops/RELEASE.md)"; exit 1; }
 
+      # Both of these have shipped once, silently: 4 KB-aligned libs get the
+      # bundle rejected by Play, and a libc++_shared.so dependency makes the
+      # shim fail to dlopen so Ariadne quietly drops to the rule parser. Neither
+      # is visible at build time or in the UI, so assert it before we build.
+      - name: Check vendored native libs (16 KB alignment + no libc++_shared)
+        run: ./scripts/check-native-libs.sh
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
