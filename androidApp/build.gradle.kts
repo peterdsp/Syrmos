@@ -51,7 +51,10 @@ android {
         applicationId = "com.syrmos.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 106
+        // 105 (rejected) and 106 (released 2026-07-16) are consumed and can
+        // never be reused. Bump this before every release; Play refuses a code
+        // it has already seen, even from a discarded upload.
+        versionCode = 107
         versionName = "1.2.2"
     }
     signingConfigs {
