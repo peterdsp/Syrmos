@@ -41,10 +41,14 @@ timetable.
 6. **Ariadne understands Thessaloniki** (metro + suburban). Station vocabulary
    EN/EL/SQ + Greeklish, region-scoped.
 7. **Thessaloniki fares included**, region-scoped.
-8. **Suburban intermediate-stop rule.** For lines with endpoint-only times
-   (Larisa, Florina): Regional trains interpolate intermediate stop times by
-   track distance (flagged estimated); Express trains are endpoint-only (no
-   fabricated intermediate stops). Origin board exact for every train.
+8. ~~**Suburban intermediate-stop rule.**~~ **OBSOLETE (2026-07-16).** We agreed
+   to distance-interpolate Regional intermediates and keep Express endpoint-only,
+   because the only timetable we had published endpoints alone. A fuller
+   compilation (`greece_passenger_rail_timetables_2026-07-16.pdf`, sourced from
+   the live booking system + railway.gov.gr live board) carries **exact
+   per-intermediate-station times with train numbers** for every corridor. No
+   interpolation, no estimated suburban data: TP1/TP2 model exactly like Athens
+   A1-A4. See "Suburban timetables" below.
 
 ## Line identifiers
 
@@ -178,29 +182,46 @@ hard rule (ship weekday service, note it may not run during university breaks).
 Some PDF-highlighted trips likely through-run beyond Sindos; do not over-model —
 treat TP3 as the Thessaloniki–Sindos service.
 
-## TP1 Larisa + TP2 Florina timetables (endpoint times, in hand)
+## Suburban timetables (exact, per-stop)
 
-Source PDF gives origin -> terminus dep/arr per train only (no per-station
-times). Modeling rule (decision 8): Regional trains serve all intermediate stops
-with times **interpolated by track distance** (flagged estimated, same basis as
-metro offsets); Express trains are modeled **endpoint-only** (exact Thessaloniki
-<-> terminus, no fabricated intermediate stops). Origin (Thessaloniki) board is
-exact for every train. Days: treat as daily unless the operator marks otherwise
-(verify weekend/holiday variants when a fuller PDF exists).
+Source: `greece_passenger_rail_timetables_2026-07-16.pdf` (458 services, 328
+passenger trains), compiled from the Hellenic Train live booking system, the
+railway.gov.gr live board, and published operator timetables, all queried
+2026-07-16. It states explicitly that no times were estimated. It carries **train
+numbers and arrival/departure at every intermediate station**, so the suburban
+corridors seed exactly like Athens A1-A4 with nothing interpolated.
 
-TP2 Thessaloniki -> Florina: train 731 10:40->13:44, train 733 13:55->17:01.
-TP2 Florina -> Thessaloniki: train 730 06:45->09:49, train 732 14:15->17:21.
-(Express-style long-distance; served subset: Sindos, Adendro, Platy, Alexandria,
-Veroia, Naousa, Skydra, Edessa, Arnissa, Amyntaio. Times at those are
-interpolated; the many small halts on the 22-stop map are not served.)
+**This supersedes the earlier endpoint-only compilation, which was wrong.** That
+document listed 9 Thessaloniki-Larisa trains including two "Express" runs
+(05:55->07:23, 16:49->18:17) at ~1h28. This source lists **8 trains, all 1h44m,
+no Express**. Those faster runs are InterCity Athens-Thessaloniki services
+calling at Larisa: `region = national`, not Thessaloniki regional. The earlier
+doc conflated the two networks. Prefer sourced timetables with train numbers.
 
-TP1 Thessaloniki -> Larisa (dep->arr, type): 05:00->06:44 R · 05:55->07:23 E ·
-07:30->09:14 R · 10:20->12:04 R · 12:20->14:04 R · 15:10->16:54 R ·
-16:49->18:17 E · 19:45->21:29 R · 21:50->23:34 R.
-TP1 Larisa -> Thessaloniki: 05:15->07:00 R · 07:10->08:55 R · 09:45->11:30 R ·
-10:39->12:10 E · 12:35->14:20 R · 14:50->16:35 R · 17:30->19:15 R ·
-19:35->21:20 R · 21:39->23:10 E · 22:00->23:45 R.
-(R = Regional = all 12 stops, interpolated. E = Express = endpoint-only.)
+TP1 Thessaloniki <-> Larisa, daily, 8 trains each way, 1h44m/1h45m.
+Outbound (Thess -> Larisa): 1591 05:00 · 1593 07:30 · 1595 10:20 · 1597 12:20 ·
+1599 15:10 · 2591 17:30 · 2593 19:45 · 2595 21:50.
+Inbound (Larisa -> Thess): 1590 05:15 · 1592 07:10 · 1594 09:45 · 1596 12:35 ·
+1598 14:50 · 2590 17:30 · 2592 19:35 · 2594 22:00.
+Calls: Θεσσαλονίκη, Σίνδος, Άδενδρο, Πλατύ, Αιγίνιο, Κορινός, Κατερίνη,
+Λιτόχωρο, Λεπτοκαρυά, Νέοι Πόροι, Ραψάνη, Λάρισα (12, all trains).
+
+TP2 Thessaloniki <-> Edessa/Florina, daily.
+Florina: 731 Thess 10:40 -> Florina 13:44 · 733 Thess 13:55 -> 17:01;
+730 Florina 06:45 -> Thess 09:49 · 732 14:15 -> 17:21.
+Edessa short-turn: 1735 Thess 18:30 -> Edessa 20:12 · 1736 Edessa 20:45 ->
+Thess 22:27.
+Calls include Σίνδος, Άδενδρο, Πλατύ, Λιανοβέργιον, Αλεξάνδρεια, Λουτρός,
+Κεφαλοχώρι Ημαθίας, Ξεχασμένη Ημαθίας, Κουλούρα, Μέση, Βέροια, Νάουσα,
+Επισκοπή Νάουσας, Πετριά, Σκύδρα, Έδεσσα (+ Άρνισσα, Αγ. Παντελεήμων,
+Αμύνταιο, Βεύη to Florina). Take the exact call list per train from the source;
+they differ between 731/733 and 1735/1736.
+
+TP3 Thessaloniki <-> Sindos shuttle: see above (17 trips each way, Mon-Fri).
+
+**TP4 Thessaloniki - Serres - Drama** exists in the source (p62) and was missing
+from this design entirely. Model it with the same machinery; it is a fourth
+Thessaloniki corridor, not a variant of the others.
 
 ## Metro frequency bands (thessmetro FAQ) — 05:15–23:00, no midnight wrap
 
