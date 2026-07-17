@@ -285,13 +285,29 @@
 
     const [stations, lines, routes, servicePatterns, vehicleManifest] = await Promise.all([
         fetch("files/seed/stations.json").then((r) => r.json()),
-        fetch("files/seed/lines.json").then((r) => r.json()),
+        // schedules-v2 is the generator's payload and the single source of truth
+        // for lines. The legacy flat seed/lines.json was transcribed from
+        // hardcoded Swift by a script broken since June 2026, so it carries
+        // neither region nor status. Falls back to it only if the payload cannot
+        // be read, so a bad deploy degrades rather than renders an empty map. See
+        // docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+        fetch("files/seed/schedules-v2/lines.json")
+            .then((r) => r.json())
+            .then((d) => (Array.isArray(d?.lines) && d.lines.length ? d.lines : Promise.reject()))
+            .catch(() => fetch("files/seed/lines.json").then((r) => r.json())),
         fetch("files/seed/routes.json").then((r) => r.json()),
         fetch("files/seed/service_patterns.json").then((r) => r.json()),
         fetch("icons/vehicles/manifest.json").then((r) => r.json()).catch(() => ({ directional_icons: [] })),
     ]);
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
+
+    // A line that is built but not open still renders, greyed, because the track
+    // is real and hiding it would be its own kind of lie. What must never exist is
+    // a train on it, or a departure from it. Default to operational so an older
+    // payload without the field behaves exactly as today.
+    const isOperational = (line) => (line?.status ?? "operational") !== "under_construction";
+    const operationalLines = lines.filter(isOperational);
 
     const vehicleIconMap = new Map();
     const lineIdToManifestLine = { M1: "M1", M2: "M2", M3: "M3", T6: "T6", T7: "T7", T6T7: "T6T7", A1: "P1", A2: "P1A", A3: "P3", A4: "P2" };
@@ -358,7 +374,13 @@
     // Source of truth for schedules: /api/schedules/{lineId}. Cached in
     // localStorage so an offline cold start still has correct data.
     const apiSchedules = new Map();
-    const lineIdsToFetch = ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"];
+    // Derived, not hardcoded: a new city should be a data change, not an edit to a
+    // list of ids. Operational lines only, so track that is built but not open is
+    // never fetched or projected. M3_AIR is appended explicitly because it is a
+    // synthetic line (the airport branch of M3) that the generator excludes from
+    // lines.json but the projector still needs. Today this yields exactly the ten
+    // ids it replaced.
+    const lineIdsToFetch = [...operationalLines.map((l) => l.id), "M3_AIR"];
     try {
         const cached = localStorage.getItem("syrmos.schedules.v1");
         if (cached) {
@@ -992,6 +1014,9 @@
             if (minutesAway < 0 || minutesAway > 240) continue;  // drop past and >4h ahead
             const last = train.stops[train.stops.length - 1];
             const line = lineMap.get(train.lineId);
+            // Track that is built but not open carries no service, so it can have
+            // no departures, however the feed or the projector might describe it.
+            if (line && !isOperational(line)) continue;
             out.push({
                 line: line || { id: train.lineId, name: train.lineId, color: "#7e22ce" },
                 direction: last.stationNameEn,
