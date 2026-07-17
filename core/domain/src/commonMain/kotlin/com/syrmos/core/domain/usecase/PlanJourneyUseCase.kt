@@ -24,10 +24,20 @@ class PlanJourneyUseCase(
     private val stationRepository: StationRepositoryImpl,
     private val lineRepository: LineRepositoryImpl,
 ) {
-    /** Fastest route across the whole network. */
+    /**
+     * Fastest route across the whole network.
+     *
+     * Only operational lines are routable. Track that is built but not open (e.g.
+     * Thessaloniki Line 2 until the Kalamaria extension opens) renders on the map
+     * because it is real, but routing a journey through it would hand the user a
+     * plan they cannot travel, which is worse than no plan at all.
+     */
     fun invoke(fromStationId: String, toStationId: String): Flow<JourneyResult?> = flow {
-        emit(compute(fromStationId, toStationId, lineRepository.getAllLines().first()))
+        emit(compute(fromStationId, toStationId, operationalLines()))
     }
+
+    private suspend fun operationalLines(): List<Line> =
+        lineRepository.getAllLines().first().filter { it.isOperational }
 
     /**
      * Metro-only alternative (M1/M2/M3), the sheltered option Ariadne can offer
@@ -36,7 +46,7 @@ class PlanJourneyUseCase(
      * all-metro path between the two stations.
      */
     fun metroOnly(fromStationId: String, toStationId: String): Flow<JourneyResult?> = flow {
-        val metro = lineRepository.getAllLines().first().filter { it.type == LineType.METRO }
+        val metro = operationalLines().filter { it.type == LineType.METRO }
         emit(compute(fromStationId, toStationId, metro))
     }
 

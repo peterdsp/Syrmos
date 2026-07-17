@@ -156,7 +156,9 @@ class AssistantViewModel(
     init {
         scope.launch {
             stations = stationRepository.getAllStations().first()
-            lines = getLinesUseCase.getAllLines().first()
+            // Ariadne must never offer a line that does not run: she answers
+            // departures, last trains and routes, all of which are actionable.
+            lines = getLinesUseCase.getOperationalLines().first()
             parser = AthensTransitParser(AssistantVocabularyBuilder.build(stations, lines))
             val nowAthens = com.syrmos.core.common.extensions.currentAthensTime()
             val severe = weatherRepository.cached?.current?.condition?.isSevere == true

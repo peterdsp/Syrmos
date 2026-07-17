@@ -135,7 +135,10 @@ class HomeViewModel(
 
     private fun loadLines() {
         scope.launch {
-            getLinesUseCase.getAllLines()
+            // Operational only: this list feeds the Lines section and the track
+            // picker, both of which are things the user acts on. A line that is
+            // built but not open belongs on the map, greyed, not in a picker.
+            getLinesUseCase.getOperationalLines()
                 .catch { /* ignore */ }
                 .collect { lines ->
                     _uiState.update { it.copy(lines = lines) }
