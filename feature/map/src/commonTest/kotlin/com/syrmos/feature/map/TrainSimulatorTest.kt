@@ -2,6 +2,7 @@ package com.syrmos.feature.map
 
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineColor
+import com.syrmos.core.model.transit.LineStatus
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.SyrmosLivePositionsService
@@ -297,5 +298,66 @@ class TrainSimulatorTest {
         assertEquals(2, result.size, "Both trains must appear; IDs are disambiguated by originDepartureMinute")
         assertNotNull(result.firstOrNull { it.id.contains("_0") })
         assertNotNull(result.firstOrNull { it.id.contains("_8") })
+    }
+
+    // --- status honouring -------------------------------------------------
+    //
+    // A line that is built but not open (Thessaloniki Line 2 until the Kalamaria
+    // extension opens) still renders on the map, greyed, because the track is
+    // real. It must never carry a moving train, because the service does not
+    // exist. Everything else about the train is valid here: the ONLY reason it
+    // must be dropped is the line's status.
+
+    private val underConstructionLine = m3Line.copy(
+        id = "TM2",
+        status = LineStatus.UNDER_CONSTRUCTION,
+    )
+
+    @Test
+    fun dropsTrainOnUnderConstructionLine() {
+        val now = Clock.System.now().epochSeconds
+        val train = SyrmosLivePositionsService.LiveTrain(
+            lineId = "TM2",
+            directionKey = "outbound",
+            originDepartureMinute = 0.0,
+            elapsedMinutes = 5.0,
+            totalTravelMinutes = 20,
+            serviceType = "regular",
+        )
+        val result = simulateTrains(
+            lines = listOf(underConstructionLine),
+            lineStations = mapOf("TM2" to m3LineStations.getValue("M3")),
+            snapshot = snapshotWith(
+                trains = listOf(train),
+                offsetsKey = "TM2" to "outbound",
+                generatedAtEpochSeconds = now,
+            ),
+        )
+        assertTrue(
+            result.isEmpty(),
+            "An under-construction line must never carry a train, even when the " +
+                "feed reports one and its offsets resolve",
+        )
+    }
+
+    @Test
+    fun stillRunsTrainsOnOperationalLines() {
+        // The status filter must not be over-eager: the same train on an
+        // operational line still simulates.
+        val now = Clock.System.now().epochSeconds
+        val train = SyrmosLivePositionsService.LiveTrain(
+            lineId = "M3",
+            directionKey = "outbound",
+            originDepartureMinute = 0.0,
+            elapsedMinutes = 5.0,
+            totalTravelMinutes = 20,
+            serviceType = "regular",
+        )
+        val result = simulateTrains(
+            lines = listOf(m3Line),
+            lineStations = m3LineStations,
+            snapshot = snapshotWith(trains = listOf(train), generatedAtEpochSeconds = now),
+        )
+        assertEquals(1, result.size, "An operational line must still yield trains")
     }
 }
