@@ -71,6 +71,27 @@ S = {
     "GR_SIT": ("Sitaria", "Σιταριά", 40.778811, 21.538327),
     "GR_MSN": ("Mesonisi", "Μεσονήσιον", 40.794623, 21.466706),
     "GR_FLO": ("Florina", "Φλώρινα", 40.781285, 21.415188),
+    # Serres-Drama branch (TP4)
+    "GR_NFT": ("Nea Filadelfeia Toumbas", "Νέα Φιλαδέλφεια Τούμπας", 40.796414, 22.848799),
+    "GR_GAL": ("Gallikos", "Γαλλικός", 40.859029, 22.884719),
+    "GR_PED": ("Pedino", "Πεδινό", 40.915809, 22.876430),
+    "GR_KIL": ("Kilkis", "Κιλκίς", 40.958902, 22.857010),
+    "GR_MET": ("Metalliko", "Μεταλλικός", 41.025130, 22.803471),
+    "GR_CHE": ("Cherso", "Χέρσος", 41.090260, 22.783222),
+    "GR_DOI": ("Doirani", "Δοϊράνη", 41.172816, 22.772198),
+    "GR_MOU": ("Mouries", "Μουριές", 41.261412, 22.840147),
+    "GR_KAS": ("Kastanoussa", "Καστανούσσα", 41.276092, 22.896279),
+    "GR_ROD": ("Rodopoli", "Ροδόπολις", 41.259047, 22.999826),
+    "GR_LIK": ("Livadia Kerkinis", "Λιβάδια Κερκίνης", 41.255443, 23.072084),
+    "GR_MAN": ("Mandraki", "Μανδράκι", 41.260686, 23.139316),
+    "GR_OMA": ("Omalo Kerkinis", "Ομαλό Κερκίνης", 41.261302, 23.196920),
+    "GR_VYR": ("Vyroneia", "Βυρώνεια", 41.262388, 23.255619),
+    "GR_NPE": ("Neo Petritsi", "Νέο Πετρίτσι", 41.269872, 23.297756),
+    "GR_STR": ("Strymonas", "Στρυμώνας", 41.262038, 23.345464),
+    "GR_SID": ("Sidirokastro", "Σιδηρόκαστρο", 41.229077, 23.375807),
+    "GR_SKO": ("Skotoussa", "Σκοτούσσα", 41.129459, 23.376344),
+    "GR_SER": ("Serres", "Σέρρες", 41.073813, 23.536510),
+    "GR_DRA": ("Drama", "Δράμα", 41.140345, 24.147167),
 }
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
@@ -83,6 +104,8 @@ LINES = {
             "Thessaloniki", "Florina", 32, "thessaloniki"),
     "TP3": ("Thessaloniki - Sindos", "Θεσσαλονίκη - Σίνδος", "#059669",
             "Thessaloniki", "Sindos", 33, "thessaloniki"),
+    "TP4": ("Thessaloniki - Serres - Drama", "Θεσσαλονίκη - Σέρρες - Δράμα", "#EA580C",
+            "Thessaloniki", "Drama", 34, "thessaloniki"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -96,6 +119,9 @@ ORDER = {
             "GR_NAO", "GR_EPI", "GR_PET", "GR_SKY", "GR_EDE", "GR_ARN",
             "GR_APA", "GR_AMY", "GR_XIN", "GR_VEV", "GR_SIT", "GR_MSN", "GR_FLO"],
     "TP3": ["GR_THE", "GR_SIN"],
+    "TP4": ["GR_THE", "GR_NFT", "GR_GAL", "GR_PED", "GR_KIL", "GR_MET", "GR_CHE",
+            "GR_DOI", "GR_MOU", "GR_KAS", "GR_ROD", "GR_LIK", "GR_MAN", "GR_OMA",
+            "GR_VYR", "GR_NPE", "GR_STR", "GR_SID", "GR_SKO", "GR_SER", "GR_DRA"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
@@ -203,6 +229,26 @@ for i, dp in enumerate(_TP3_OUT):
 for i, dp in enumerate(_TP3_IN):
     d, a = dp.split("/")
     TRIPS.append(trip("TP3", "inbound", f"S{i*2+2:03d}", WEEKDAY, ["GR_SIN", "GR_THE"], [d, a]))
+
+# ---- TP4 Serres-Drama ----
+TP4_OUT = ORDER["TP4"]
+TP4_IN = list(reversed(TP4_OUT))
+TP4_SER_OUT = TP4_OUT[:20]                 # Thessaloniki .. Serres (short-turn)
+TP4_SER_IN = list(reversed(TP4_SER_OUT))
+TRIPS += [
+    trip("TP4", "outbound", "1634", DAILY, TP4_OUT,
+         ["15:00", "15:16", "15:21", "15:26", "15:33", "15:42", "15:48", "15:54", "16:03", "16:08",
+          "16:28", "16:43", "16:55", "17:06", "17:18", "17:26", "17:31", "17:36", "17:47", "18:04", "19:27"]),
+    trip("TP4", "inbound", "1635", DAILY, TP4_IN,
+         ["17:07", "18:30", "18:47", "18:58", "19:03", "19:08", "19:16", "19:28", "19:39", "19:51",
+          "20:06", "20:26", "20:30", "20:39", "20:46", "20:52", "21:02", "21:08", "21:12", "21:18", "21:34"]),
+    trip("TP4", "outbound", "3632", WEEKDAY, TP4_SER_OUT,
+         ["05:35", "05:51", "05:56", "06:01", "06:08", "06:17", "06:23", "06:29", "06:38", "06:43",
+          "07:03", "07:18", "07:30", "07:41", "07:53", "08:01", "08:06", "08:11", "08:22", "08:39"]),
+    trip("TP4", "inbound", "3633", WEEKDAY, TP4_SER_IN,
+         ["09:10", "09:27", "09:38", "09:43", "09:48", "09:56", "10:08", "10:19", "10:31", "10:46",
+          "11:06", "11:10", "11:19", "11:26", "11:32", "11:42", "11:48", "11:52", "11:58", "12:14"]),
+]
 
 
 def main() -> None:
