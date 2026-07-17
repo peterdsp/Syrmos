@@ -7,7 +7,13 @@ CREATE TABLE line_entity (
     color TEXT NOT NULL,
     terminal_a TEXT NOT NULL,
     terminal_b TEXT NOT NULL,
-    station_count INTEGER NOT NULL
+    station_count INTEGER NOT NULL,
+    -- athens | thessaloniki | national. See core/model Region.
+    region TEXT NOT NULL DEFAULT 'athens',
+    -- operational | under_construction. A line that does not run still renders,
+    -- greyed, but must never yield a departure. Defaults to operational so an
+    -- upgraded database keeps behaving exactly as it did.
+    status TEXT NOT NULL DEFAULT 'operational'
 );
 
 -- Stations
@@ -19,7 +25,8 @@ CREATE TABLE station_entity (
     longitude REAL NOT NULL,
     is_interchange INTEGER NOT NULL DEFAULT 0,
     accessibility INTEGER NOT NULL DEFAULT 1,
-    zone INTEGER NOT NULL DEFAULT 1
+    zone INTEGER NOT NULL DEFAULT 1,
+    region TEXT NOT NULL DEFAULT 'athens'
 );
 
 -- Station-Line junction with ordering
@@ -107,8 +114,8 @@ getLinesByType:
 SELECT * FROM line_entity WHERE type = ? ORDER BY name;
 
 insertLine:
-INSERT OR REPLACE INTO line_entity(id, name, name_el, type, color, terminal_a, terminal_b, station_count)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO line_entity(id, name, name_el, type, color, terminal_a, terminal_b, station_count, region, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- Stations
 getAllStations:
