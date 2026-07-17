@@ -92,6 +92,17 @@ S = {
     "GR_SKO": ("Skotoussa", "Σκοτούσσα", 41.129459, 23.376344),
     "GR_SER": ("Serres", "Σέρρες", 41.073813, 23.536510),
     "GR_DRA": ("Drama", "Δράμα", 41.140345, 24.147167),
+    # Athens - Leianokladi regional (RG1); shares GR_ATH/OIN/THI/LIV/TIT/LEI with IC1
+    "GR_SKA": ("SKA Acharnon", "ΣΚΑ (Κέντρο Αχαρνών)", 38.054188, 23.732645),
+    "GR_TAN": ("Tanagra", "Τανάγρα", 38.342334, 23.574198),
+    "GR_ALI": ("Aliartos", "Αλίαρτος", 38.379296, 23.111797),
+    "GR_YPS": ("Ypsilantis", "Υψηλάντης", 38.385157, 23.028716),
+    "GR_ALA": ("Alalkomenai", "Αλαλκομεναί", 38.408225, 22.982464),
+    "GR_CHA": ("Chaironeia", "Χαιρώνεια", 38.507845, 22.859227),
+    "GR_DAV": ("Davleia", "Δαύλεια", 38.535119, 22.811194),
+    "GR_PAR": ("Parori", "Παρόρι", 38.574360, 22.762130),
+    "GR_KIF": ("Kifissos", "Κηφισσός", 38.585710, 22.745148),
+    "GR_MYL": ("Mylos", "Μύλος", 38.800000, 22.480000),  # small halt, interpolated Tithorea-Leianokladi
 }
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
@@ -106,6 +117,8 @@ LINES = {
             "Thessaloniki", "Sindos", 33, "thessaloniki"),
     "TP4": ("Thessaloniki - Serres - Drama", "Θεσσαλονίκη - Σέρρες - Δράμα", "#EA580C",
             "Thessaloniki", "Drama", 34, "thessaloniki"),
+    "RG1": ("Athens - Leianokladi", "Αθήνα - Λειανοκλάδι", "#0891B2",
+            "Athens", "Leianokladi", 35, "national"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -122,6 +135,9 @@ ORDER = {
     "TP4": ["GR_THE", "GR_NFT", "GR_GAL", "GR_PED", "GR_KIL", "GR_MET", "GR_CHE",
             "GR_DOI", "GR_MOU", "GR_KAS", "GR_ROD", "GR_LIK", "GR_MAN", "GR_OMA",
             "GR_VYR", "GR_NPE", "GR_STR", "GR_SID", "GR_SKO", "GR_SER", "GR_DRA"],
+    "RG1": ["GR_ATH", "GR_SKA", "GR_OIN", "GR_TAN", "GR_THI", "GR_ALI", "GR_YPS",
+            "GR_ALA", "GR_LIV", "GR_CHA", "GR_DAV", "GR_PAR", "GR_KIF", "GR_TIT",
+            "GR_MYL", "GR_LEI"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
@@ -248,6 +264,18 @@ TRIPS += [
     trip("TP4", "inbound", "3633", WEEKDAY, TP4_SER_IN,
          ["09:10", "09:27", "09:38", "09:43", "09:48", "09:56", "10:08", "10:19", "10:31", "10:46",
           "11:06", "11:10", "11:19", "11:26", "11:32", "11:42", "11:48", "11:52", "11:58", "12:14"]),
+]
+
+# ---- RG1 Athens-Leianokladi, daily, one train each way ----
+RG1_OUT = ORDER["RG1"]
+RG1_IN = list(reversed(RG1_OUT))
+TRIPS += [
+    trip("RG1", "outbound", "520", DAILY, RG1_OUT,
+         ["19:58", "20:08", "20:51", "20:55", "21:11", "21:24", "21:30", "21:34", "21:41", "21:46",
+          "21:51", "21:55", "21:58", "22:02", "22:19", "22:35"]),
+    trip("RG1", "inbound", "521", DAILY, RG1_IN,
+         ["05:20", "05:37", "05:53", "05:57", "06:00", "06:04", "06:09", "06:15", "06:21", "06:25",
+          "06:31", "06:44", "07:00", "07:04", "07:47", "08:07"]),
 ]
 
 
