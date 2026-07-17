@@ -27,7 +27,13 @@ fun simulateTrains(
     snapshot: LivePositionsSnapshot?,
 ): List<SimulatedTrain> {
     if (snapshot == null || snapshot.trains.isEmpty()) return emptyList()
-    val lineById = lines.associateBy { it.id }
+    // Only operational lines get trains. A line that is built but not open (e.g.
+    // Thessaloniki Line 2 until the Kalamaria extension opens) still renders on
+    // the map, greyed, because the track is real -- but it must never carry a
+    // moving dot, because the service does not exist. Filtering here rather than
+    // at each caller means no future data or feed change can put a train on track
+    // that carries none.
+    val lineById = lines.filter { it.isOperational }.associateBy { it.id }
     val stationById: Map<String, Station> = lineStations.values.flatten().associateBy { it.id }
 
     val nowEpochSeconds = Clock.System.now().epochSeconds
