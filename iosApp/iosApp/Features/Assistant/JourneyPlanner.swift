@@ -30,7 +30,11 @@ enum JourneyPlanner {
 
     /// Fastest route across the whole network.
     static func plan(from fromId: String, to toId: String, language: AppLanguage) -> Plan? {
-        compute(from: fromId, to: toId, lines: SyrmosData.lines, language: language)
+        // Operational only. Track that is built but not open renders on the map
+        // because it is real, but routing through it would hand the user a plan
+        // they cannot travel, which is worse than no plan. Mirrors KMP
+        // PlanJourneyUseCase.
+        compute(from: fromId, to: toId, lines: SyrmosData.operationalLines, language: language)
     }
 
     /// Metro-only alternative (M1/M2/M3), the sheltered option Ariadne can offer
@@ -38,7 +42,7 @@ enum JourneyPlanner {
     /// makes staying underground worth a few extra minutes. Nil when there's no
     /// all-metro path between the two stations. Mirrors KMP `metroOnly`.
     static func metroOnly(from fromId: String, to toId: String, language: AppLanguage) -> Plan? {
-        compute(from: fromId, to: toId, lines: SyrmosData.lines.filter { $0.type == .metro }, language: language)
+        compute(from: fromId, to: toId, lines: SyrmosData.operationalLines.filter { $0.type == .metro }, language: language)
     }
 
     private static func compute(from fromId: String, to toId: String, lines: [TransitLine], language: AppLanguage) -> Plan? {
