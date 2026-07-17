@@ -102,26 +102,34 @@ same line prefix + nearest coordinate.
 |---|---|---|---|---|---|
 | `M2_AGA` | Agios Antonios | 2 | `M2_PER` | Peristeri | 831m |
 
-## The one that cannot be resolved mechanically: `M2_AGI`
+## The `M2_AGI` collision: resolved, it is a swap
 
-`M2_AGI` is a genuine id collision. The same id names two different stations
-5.5 km apart:
+`M2_AGI` means two different stations 5.5 km apart depending on which seed you
+read. It is not an ambiguity, it is the two seeds having assigned the same id to
+different stations. Both stations are real, both are on M2, and both already
+exist on the server:
 
-| side | name | lat |
+| server id | station | lat | position on M2 |
+|---|---|---|---|
+| `M2_AGI` | Agios Antonios | 38.0061 | northwest, after Peristeri |
+| `M2_AG2` | Agios Ioannis | 37.9564 | south, between Neos Kosmos and Dafni |
+
+The server disambiguated the second "Agios" with a `2` suffix, exactly as it does
+for `M2_SY2` (Syngrou-Fix) and `M2_AG3` (Agios Dimitrios). So the mapping is a
+swap, confirmed by coordinates matching to four decimal places on both sides:
+
+| legacy | -> server | station |
 |---|---|---|
-| legacy | Agios Ioannis | 37.9564 |
-| server | Agios Antonios | 38.0061 |
+| `M2_AGI` Agios Ioannis (37.9564) | `M2_AG2` | Agios Ioannis |
+| `M2_AGA` Agios Antonios (38.0061) | `M2_AGI` | Agios Antonios |
 
-An id-based backfill sees `M2_AGI` on both sides, treats it as a match, and
-writes Agios Ioannis's fare zone onto Agios Antonios. No error, no mismatch in
-the counts, just a wrong zone on a real station. This is why
-`scripts/import_legacy_station_attrs.py` refuses on ANY discrepancy rather than
-trusting id equality, and why it must not be "fixed" by skipping misses.
+**Do not map legacy `M2_AGI` onto server `M2_AGI`.** That id belongs to Agios
+Antonios on the server; writing Agios Ioannis's fare zone into it would corrupt a
+different station and orphan `M2_AG2`. This is the case that an id-equality
+backfill cannot see: `M2_AGI` exists on both sides, so it looks like a match and
+nothing in the counts flags it.
 
-Legacy `M2_AGA` "Agios Antonios" is the record that should map to server
-`M2_AGI`, so the legacy pair (`M2_AGA`, `M2_AGI`) maps to server (`M2_AGI`, ?).
-**Petros must confirm** where legacy `M2_AGI` "Agios Ioannis" belongs on the
-server before anything is written.
+With this pair recorded, **all 86 resolve and no human decisions remain.**
 
 ## How to use this map
 
