@@ -42,12 +42,13 @@ def _now_iso() -> str:
 def _build_lines(conn: sqlite3.Connection) -> dict:
     lines: list[dict] = []
     line_rows = conn.execute(
-        "SELECT id, mode, name_en, name_el, color, terminal_a, terminal_b, sort_order"
+        "SELECT id, mode, name_en, name_el, color, terminal_a, terminal_b,"
+        " sort_order, region, status"
         " FROM lines WHERE id NOT LIKE '%\\_AIR' ESCAPE '\\' ORDER BY sort_order"
     ).fetchall()
     station_rows_by_line: dict[str, list[sqlite3.Row]] = defaultdict(list)
     for r in conn.execute(
-        "SELECT ls.line_id, s.id, s.name_en, s.name_el, s.lat, s.lng, ls.seq"
+        "SELECT ls.line_id, s.id, s.name_en, s.name_el, s.lat, s.lng, s.region, ls.seq"
         " FROM line_stations ls JOIN stations s ON s.id = ls.station_id"
         " ORDER BY ls.line_id, ls.seq"
     ):
@@ -63,6 +64,13 @@ def _build_lines(conn: sqlite3.Connection) -> dict:
             "color": ln["color"],
             "terminalA": ln["terminal_a"],
             "terminalB": ln["terminal_b"],
+            # region groups the line into a network (athens | thessaloniki |
+            # national). status is operational | under_construction: a
+            # non-operational line still renders, greyed, but every prediction
+            # path must skip it. Both MUST reach the apps -- without status a
+            # line that does not run looks like one that does.
+            "region": ln["region"],
+            "status": ln["status"],
             "stationCount": len(stops),
             "stations": [
                 {
@@ -71,6 +79,7 @@ def _build_lines(conn: sqlite3.Connection) -> dict:
                     "nameEl": s["name_el"],
                     "lat": s["lat"],
                     "lng": s["lng"],
+                    "region": s["region"],
                 }
                 for s in stops
             ],
