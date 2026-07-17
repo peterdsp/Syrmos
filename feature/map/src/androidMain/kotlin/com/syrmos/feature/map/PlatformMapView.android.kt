@@ -239,19 +239,34 @@ internal actual fun PlatformMapView(
                 catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
             }
             val override = displayOverrides[line.id]
-            val color = override?.strokeColor?.let { parseHex(it) }
-                ?: line.color.toComposeColor().toArgb()
-            val width = override?.strokeWeight?.toFloat()
-                ?: (if (line.type == LineType.SUBURBAN) 7f else 10f)
+            // A line that is built but not open still draws, because the track is
+            // real, but it reads as inert: muted grey, thinner, dashed. It carries
+            // no trains or departures either (handled in the simulator/projector).
+            val underConstruction = !line.isOperational
+            val color = when {
+                underConstruction -> android.graphics.Color.parseColor("#94A3B8")
+                else -> override?.strokeColor?.let { parseHex(it) }
+                    ?: line.color.toComposeColor().toArgb()
+            }
+            val width = when {
+                underConstruction -> if (line.type == LineType.SUBURBAN) 5f else 6f
+                else -> override?.strokeWeight?.toFloat()
+                    ?: (if (line.type == LineType.SUBURBAN) 7f else 10f)
+            }
             val polyline = Polyline().apply {
                 outlinePaint.color = color
                 outlinePaint.strokeWidth = width
                 outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
                 outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
-                override?.strokeDash?.let { dashSpec ->
-                    val parts = dashSpec.split(" ").mapNotNull { it.toFloatOrNull() }
-                    if (parts.size >= 2) {
-                        outlinePaint.pathEffect = android.graphics.DashPathEffect(parts.toFloatArray(), 0f)
+                if (underConstruction) {
+                    outlinePaint.alpha = 140
+                    outlinePaint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(12f, 16f), 0f)
+                } else {
+                    override?.strokeDash?.let { dashSpec ->
+                        val parts = dashSpec.split(" ").mapNotNull { it.toFloatOrNull() }
+                        if (parts.size >= 2) {
+                            outlinePaint.pathEffect = android.graphics.DashPathEffect(parts.toFloatArray(), 0f)
+                        }
                     }
                 }
                 setPoints(smoothed)

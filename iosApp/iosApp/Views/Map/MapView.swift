@@ -60,6 +60,10 @@ struct RouteLine: Identifiable {
     let color: Color
     let coordinates: [CLLocationCoordinate2D]
     let lineWeight: CGFloat
+    // A line that is built but not open draws greyed and dashed, because the
+    // track is real but carries no service. It has no trains or departures
+    // either (handled in the projector/simulator).
+    var underConstruction: Bool = false
 }
 
 private func catmullRomSpline(_ points: [CLLocationCoordinate2D], segments: Int = 5) -> [CLLocationCoordinate2D] {
@@ -106,11 +110,13 @@ enum PreloadedData {
         } else {
             return nil
         }
+        let underConstruction = !line.isOperational
         return RouteLine(
             id: line.id,
-            color: line.color,
+            color: underConstruction ? Color(white: 0.62) : line.color,
             coordinates: coords,
-            lineWeight: line.type == .suburban ? 3 : 4
+            lineWeight: underConstruction ? 2.5 : (line.type == .suburban ? 3 : 4),
+            underConstruction: underConstruction
         )
     }
     static let stationIconMap: [String: String] = {
@@ -936,6 +942,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             let poly = SyrmosColoredPolyline(coordinates: route.coordinates, count: route.coordinates.count)
             poly.color = UIColor(route.color)
             poly.weight = route.lineWeight
+            poly.dashed = route.underConstruction
             mv.addOverlay(poly)
         }
 
@@ -1235,6 +1242,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 r.lineWidth = p.weight
                 r.lineCap = .round
                 r.lineJoin = .round
+                if p.dashed {
+                    // Dashed + translucent so track that is built but not open
+                    // reads as inert and can never be mistaken for live service.
+                    r.lineDashPattern = [6, 8]
+                    r.strokeColor = p.color.withAlphaComponent(0.6)
+                }
                 return r
             }
             return MKOverlayRenderer(overlay: overlay)
@@ -1360,6 +1373,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
 final class SyrmosColoredPolyline: MKPolyline {
     var color: UIColor = .systemBlue
     var weight: CGFloat = 4
+    var dashed: Bool = false
 }
 
 final class SyrmosStationAnnotation: NSObject, MKAnnotation {

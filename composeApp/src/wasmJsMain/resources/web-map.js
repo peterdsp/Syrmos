@@ -681,15 +681,20 @@
     for (const line of lines) {
         const ld = lineDisplayById.get(line.id);
         const feat = geoCache.get(line.id);
-        const strokeColor = ld?.strokeColor || line.color;
-        const strokeWeight = ld?.strokeWeight ?? (line.type === "suburban" ? 4 : 5);
+        // A line that is built but not open still draws, because the track is
+        // real, but it reads as inert: muted grey, thinner, dashed and semi
+        // transparent, so it can never be mistaken for a line in service. It
+        // carries no trains and no departures either (handled above).
+        const underConstruction = !isOperational(line);
+        const strokeColor = underConstruction ? "#94a3b8" : (ld?.strokeColor || line.color);
+        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (line.type === "suburban" ? 4 : 5));
         const polylineOpts = {
             color: strokeColor,
             weight: strokeWeight,
-            opacity: 0.9,
+            opacity: underConstruction ? 0.55 : 0.9,
             lineCap: "round",
             lineJoin: "round",
-            dashArray: ld?.strokeDash || null,
+            dashArray: underConstruction ? "6 8" : (ld?.strokeDash || null),
         };
         if (feat && feat.geometry) {
             // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
