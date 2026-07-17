@@ -82,7 +82,11 @@ struct AssistantVocabulary {
                 )
             }
         }
-        let lineVocab: [LineVocab] = SyrmosData.lines.map { line in
+        // Operational only: Ariadne answers departures, last trains and routes,
+        // all actionable. Station vocabulary above stays complete, so she can
+        // still recognise a station on unopened track and say something honest
+        // about it rather than pretend not to know the name.
+        let lineVocab: [LineVocab] = SyrmosData.operationalLines.map { line in
             var aliases = [line.id, line.name, line.nameEl]
             let suffix = String(line.id.drop { !$0.isNumber })
             if !suffix.isEmpty {

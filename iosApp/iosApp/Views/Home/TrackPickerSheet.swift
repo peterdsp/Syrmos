@@ -70,7 +70,9 @@ struct TrackPickerSheet: View {
     private var lineList: some View {
         ScrollView {
             VStack(spacing: 8) {
-                ForEach(SyrmosData.lines) { line in
+                // A line that does not run belongs on the map, greyed, not in a
+                // picker: every entry here is a train the user expects to catch.
+                ForEach(SyrmosData.operationalLines) { line in
                     Button {
                         selectedLine = line
                         step = .direction
