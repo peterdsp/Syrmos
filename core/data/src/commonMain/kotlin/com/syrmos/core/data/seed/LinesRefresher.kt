@@ -52,6 +52,12 @@ class LinesRefresher(
                     terminal_a = line.terminalA,
                     terminal_b = line.terminalB,
                     station_count = line.stationCount.toLong(),
+                    // This upserts over the seeded rows, so region and status must
+                    // be carried through. Dropping them here would silently promote
+                    // an under-construction line back to live on the first refresh,
+                    // after the seed had it right.
+                    region = line.region,
+                    status = line.status,
                 )
 
                 line.stations.forEachIndexed { index, station ->
