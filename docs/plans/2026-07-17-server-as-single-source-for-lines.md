@@ -52,11 +52,71 @@ Rejected: repointing the script at the new Swift path. It works today and is
 smaller, but it keeps lines defined in two places and makes every future city a
 manual Swift edit.
 
-## Shape of the work
+## The sources have already diverged: 86 station ids disagree
+
+Discovered 2026-07-17 while attempting the backfill. This is the real blocker and
+it is **data reconciliation, not refactoring**.
+
+Both sides have exactly 201 stations. **86 ids differ on each side**, and they are
+the same physical stations filed under different ids:
+
+| legacy | server | station |
+|---|---|---|
+| `A1_AER` | `A2_AIR` | Airport |
+| `A1_IRK` | `M1_IRA` | Irakleio |
+| `A1_KRP` | `A2_KOR` | Koropi |
+| `A1_PEK` | `A2_PEA` | Peania-Kantza |
+| `A1_AAN` | (no name match) | Ag. Anargyroi |
+
+The two systems **disagree about which line owns a station**: the legacy seed
+files the Airport under `A1_`, the server under `A2_`. Some do not match by name
+at all and need a human.
+
+Of the 86: **33 resolve unambiguously by exact name, 53 need a manual decision.**
+
+This is the strongest argument for the decision above. Two sources of truth
+drifted this far unnoticed precisely because the script bridging them was broken.
+
+**Why it is dangerous rather than merely annoying:** backfilling by id and
+skipping the misses leaves 86 stations on the column default `zone=1`. Athens is a
+zoned fare network, so that is not a missing value, it is a **wrong fare**,
+written into rows that look perfectly fine. `scripts/import_legacy_station_attrs.py`
+therefore refuses to run while any id is unmatched, rather than silently
+defaulting. Do not "fix" it by skipping.
+
+**Required before any client switches:** map the 86 legacy ids to server ids, by
+hand for the 53 ambiguous ones, and decide which side is authoritative for
+line ownership (server, per the decision above).
+
+## The station gap (do this first, it is the real work)
+
+Lines port over easily. **Stations do not**, and this is the part that bites:
+
+| legacy `stations.json` | `schedules-v2` nested station |
+|---|---|
+| id, name, name_el, latitude, longitude, **line_ids, is_interchange, accessibility, zone** | id, name, nameEl, lat, lng, region |
+
+- `line_ids` and `is_interchange` are **derivable** from the nesting: a station is
+  an interchange when it appears under more than one line.
+- **`accessibility` and `zone` are not derivable and exist only in the legacy
+  seed**, i.e. only in hardcoded Swift. They are consumed by
+  `StationRepositoryImpl` (141-142) and `DataSeeder` (66-67).
+
+Switching the read path without addressing this **silently drops accessibility
+and zone**. So server-as-source requires, in order:
+
+1. Add `accessibility` + `zone` columns to the server `stations` table.
+2. Backfill them from the current legacy seed (the only place the data exists).
+3. Emit them from the generator into the nested station payload.
+4. Only then switch the clients.
+
+Skipping straight to step 4 loses data that has no other home.
+
+## Shape of the rest
 
 1. **Schema.** `schedules-v2/lines.json` is `{version, updatedAt, lines:[...]}`;
    the legacy seed is a flat `[...]`. Same per-line camelCase shape otherwise, so
-   the DTO mostly survives. `SeedLine` gains `region` and `status`; give them
+   the line DTO mostly survives. `SeedLine` gains `region` and `status`; give them
    defaults (`athens`, `operational`) so a stale bundle still parses.
 2. **KMP.** Point `LineRepositoryImpl` and `DataSeeder` at
    `files/seed/schedules-v2/lines.json`. Add `region` + `status` to the `Line`
