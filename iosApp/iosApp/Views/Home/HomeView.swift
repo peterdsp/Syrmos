@@ -670,7 +670,7 @@ struct HomeView: View {
                 .fontWeight(.semibold)
 
             ForEach(TransitType.allCases, id: \.self) { type in
-                let filtered = SyrmosData.lines.filter { $0.type == type }
+                let filtered = SyrmosData.operationalLines.filter { $0.type == type }
                 if !filtered.isEmpty {
                     VStack(spacing: 8) {
                         ForEach(filtered) { line in
