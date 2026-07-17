@@ -48,7 +48,8 @@ def _build_lines(conn: sqlite3.Connection) -> dict:
     ).fetchall()
     station_rows_by_line: dict[str, list[sqlite3.Row]] = defaultdict(list)
     for r in conn.execute(
-        "SELECT ls.line_id, s.id, s.name_en, s.name_el, s.lat, s.lng, s.region, ls.seq"
+        "SELECT ls.line_id, s.id, s.name_en, s.name_el, s.lat, s.lng, s.region,"
+        " s.accessibility, s.zone, ls.seq"
         " FROM line_stations ls JOIN stations s ON s.id = ls.station_id"
         " ORDER BY ls.line_id, ls.seq"
     ):
@@ -80,6 +81,14 @@ def _build_lines(conn: sqlite3.Connection) -> dict:
                     "lat": s["lat"],
                     "lng": s["lng"],
                     "region": s["region"],
+                    # accessibility + zone used to exist only in the legacy
+                    # bundled seed (i.e. only in hardcoded Swift). They are in
+                    # the DB now, and they have to reach the apps before the
+                    # clients can switch to this payload, or the switch silently
+                    # drops them. zone is a fare zone: getting it wrong is a
+                    # wrong price, not a missing field.
+                    "accessibility": bool(s["accessibility"]),
+                    "zone": s["zone"],
                 }
                 for s in stops
             ],
