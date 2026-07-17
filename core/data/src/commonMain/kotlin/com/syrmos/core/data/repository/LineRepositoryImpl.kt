@@ -4,8 +4,11 @@ import com.syrmos.core.database.SyrmosDatabase
 import com.syrmos.core.database.mapper.toDomain
 import com.syrmos.core.data.seed.ResourceReader
 import com.syrmos.core.data.seed.SeedLine
+import com.syrmos.core.data.seed.SeedLinesPayload
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineColor
+import com.syrmos.core.model.transit.LineStatus
+import com.syrmos.core.model.transit.Region
 import com.syrmos.core.model.transit.LineType
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.Flow
@@ -37,11 +40,18 @@ class LineRepositoryImpl(
         emit(lines.ifEmpty { readSeedLines().filter { it.type == type } })
     }
 
+    /**
+     * Reads the generator's `schedules-v2/lines.json`, the single source of truth
+     * for lines. The old flat `seed/lines.json` was generated from hardcoded Swift
+     * by a sync script broken since June 2026, so it could not carry region or
+     * status and had drifted from the server. See
+     * docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+     */
     private suspend fun readSeedLines(): List<Line> {
         seedLines?.let { return it }
-        return json.decodeFromString<List<SeedLine>>(
-            resourceReader.readText("files/seed/lines.json"),
-        ).map { seed ->
+        return json.decodeFromString<SeedLinesPayload>(
+            resourceReader.readText("files/seed/schedules-v2/lines.json"),
+        ).lines.map { seed ->
             Line(
                 id = seed.id,
                 name = seed.name,
@@ -51,6 +61,8 @@ class LineRepositoryImpl(
                 terminalA = seed.terminalA,
                 terminalB = seed.terminalB,
                 stationCount = seed.stationCount,
+                region = Region.fromRaw(seed.region),
+                status = LineStatus.fromRaw(seed.status),
             )
         }.also {
             seedLines = it

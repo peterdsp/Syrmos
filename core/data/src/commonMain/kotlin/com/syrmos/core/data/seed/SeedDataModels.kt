@@ -3,6 +3,22 @@ package com.syrmos.core.data.seed
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * The generator's `schedules-v2/lines.json`: `{version, updatedAt, lines: [...]}`.
+ *
+ * This is the single source of truth for lines and stations. It replaces the old
+ * flat `seed/lines.json`, which was generated from hardcoded Swift by a sync
+ * script that had been broken since the June 2026 iOS restructure, so the two
+ * copies silently drifted apart (86 of 201 station ids diverged). See
+ * docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+ */
+@Serializable
+data class SeedLinesPayload(
+    val version: Int = 0,
+    val updatedAt: String = "",
+    val lines: List<SeedLine> = emptyList(),
+)
+
 @Serializable
 data class SeedLine(
     val id: String,
@@ -13,6 +29,28 @@ data class SeedLine(
     val terminalA: String,
     val terminalB: String,
     val stationCount: Int,
+    /** athens | thessaloniki | national. Defaulted so a stale bundle still parses. */
+    val region: String = "athens",
+    /**
+     * operational | under_construction. A non-operational line still renders, greyed,
+     * but must never produce a departure or a train. Defaults to operational so an
+     * older bundle behaves exactly as it does today.
+     */
+    val status: String = "operational",
+    val stations: List<SeedLineStation> = emptyList(),
+)
+
+/** A station as nested under a line in `schedules-v2/lines.json`. */
+@Serializable
+data class SeedLineStation(
+    val id: String,
+    val name: String,
+    val nameEl: String,
+    val lat: Double,
+    val lng: Double,
+    val region: String = "athens",
+    val accessibility: Boolean = true,
+    val zone: Int = 1,
 )
 
 @Serializable
