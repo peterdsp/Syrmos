@@ -1,0 +1,24 @@
+-- Schema 1 -> 2: region on lines and stations, status on lines.
+--
+-- THIS IS THE FIRST MIGRATION THIS DATABASE HAS EVER HAD.
+--
+-- Until now there were no .sqm files at all, so SyrmosDatabase.Schema.version was
+-- 1 and Schema.migrate() was a no-op. That was survivable only because the schema
+-- never changed after release. Adding a column to the .sq without a migration
+-- would leave every shipped 1.2.x install on the old schema, and the first query
+-- touching region or status would crash with "no such column" on upgrade. The
+-- crash would hit existing users only, so it would sail through a fresh-install
+-- test.
+--
+-- Adding this file makes Schema.version 2, so SQLDelight runs it when it opens a
+-- version-1 database.
+--
+-- Every column is NOT NULL with a default that reproduces today's behaviour:
+-- everything already in the database is Athens and operational. An upgraded
+-- install therefore looks identical until new data arrives, which is the point.
+--
+-- See docs/plans/2026-07-17-server-as-single-source-for-lines.md
+
+ALTER TABLE line_entity ADD COLUMN region TEXT NOT NULL DEFAULT 'athens';
+ALTER TABLE line_entity ADD COLUMN status TEXT NOT NULL DEFAULT 'operational';
+ALTER TABLE station_entity ADD COLUMN region TEXT NOT NULL DEFAULT 'athens';

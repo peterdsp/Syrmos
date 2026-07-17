@@ -53,6 +53,14 @@ class SyrmosLinesService(
         val terminalB: String,
         val stationCount: Int,
         val stations: List<RemoteStation>,
+        /** athens | thessaloniki | national. Defaulted for older API responses. */
+        val region: String = "athens",
+        /**
+         * operational | under_construction. Must be carried through to the DB:
+         * this refresher upserts over the seeded rows, so dropping it here would
+         * quietly promote an under-construction line back to live.
+         */
+        val status: String = "operational",
     )
 
     @Serializable

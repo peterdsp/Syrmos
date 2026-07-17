@@ -18,9 +18,13 @@ class DataSeeder(
     }
 
     private suspend fun seed() {
-        val lines = json.decodeFromString<List<SeedLine>>(
-            resourceReader.readText("files/seed/lines.json")
-        )
+        // schedules-v2 is the generator's payload and the single source of truth
+        // for lines. The legacy flat seed/lines.json came from hardcoded Swift via
+        // a sync script broken since June 2026, so it carries neither region nor
+        // status. See docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+        val lines = json.decodeFromString<SeedLinesPayload>(
+            resourceReader.readText("files/seed/schedules-v2/lines.json")
+        ).lines
         val stations = json.decodeFromString<List<SeedStation>>(
             resourceReader.readText("files/seed/stations.json")
         )
@@ -52,6 +56,11 @@ class DataSeeder(
                     terminal_a = line.terminalA,
                     terminal_b = line.terminalB,
                     station_count = line.stationCount.toLong(),
+                    // Must be persisted, not defaulted: getAllLines() prefers the
+                    // database, so a line seeded without its status would read back
+                    // as operational and an under-construction line would look live.
+                    region = line.region,
+                    status = line.status,
                 )
             }
 
@@ -140,6 +149,8 @@ class DataSeeder(
     }
 
     companion object {
-        const val SEED_VERSION = "4"
+        // Bumped to 5: lines now come from schedules-v2 and carry region + status.
+        // Without a bump an existing install keeps its old rows and never sees them.
+        const val SEED_VERSION = "5"
     }
 }
