@@ -12,6 +12,46 @@ struct TransitLine: Identifiable {
     let stationCount: Int
     let color: Color
     let type: TransitType
+    var region: TransitRegion = .athens
+    var status: TransitLineStatus = .operational
+
+    /// A line that does not run must never produce a departure, a train, a
+    /// last-train answer or a track-picker entry. It still renders on the map,
+    /// greyed, because the track is real and hiding it would be its own kind of
+    /// lie. Check this, not the id.
+    var isOperational: Bool { status == .operational }
+}
+
+/// The network a line belongs to.
+///
+/// Deliberately not "city": the Thessaloniki suburban corridors reach Larisa and
+/// Florina, and `national` intercity spans the country, so a line legitimately
+/// crosses cities. Unknown values fall back to `athens` rather than failing on a
+/// newer payload.
+enum TransitRegion: String {
+    case athens
+    case thessaloniki
+    case national
+
+    init(raw: String?) {
+        self = TransitRegion(rawValue: (raw ?? "").lowercased()) ?? .athens
+    }
+}
+
+/// Whether a line actually carries trains.
+///
+/// Thessaloniki metro Line 2 opens at the end of July 2026; until then it renders
+/// greyed and every prediction path skips it. Opening it is a data change, not a
+/// code change. Unknown values fall back to `operational`, matching how the app
+/// behaved before the field existed: a stale payload must not make live Athens
+/// lines vanish.
+enum TransitLineStatus: String {
+    case operational
+    case underConstruction = "under_construction"
+
+    init(raw: String?) {
+        self = TransitLineStatus(rawValue: (raw ?? "").lowercased()) ?? .operational
+    }
 }
 
 enum TransitType: String, CaseIterable {
@@ -70,9 +110,90 @@ struct ServicePattern {
 
 // MARK: - Static Data
 
+/// Decodes the generator's `seed-schedules-v2/lines.json`, the single source of
+/// truth for lines.
+///
+/// The old path was a hardcoded Swift array here, which a JS script transcribed
+/// into the KMP seed. That script broke in June 2026 when this file moved, so the
+/// two copies silently drifted (86 of 201 station ids diverged) and neither could
+/// carry region or status. See
+/// docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+private struct SeedLinesPayload: Decodable {
+    struct SeedLine: Decodable {
+        let id: String
+        let name: String
+        let nameEl: String
+        let type: String
+        let color: String
+        let terminalA: String
+        let terminalB: String
+        let stationCount: Int
+        let region: String?
+        let status: String?
+    }
+    let lines: [SeedLine]
+}
+
 enum SyrmosData {
 
-    static let lines: [TransitLine] = [
+    /// Lines, loaded from the bundled payload.
+    ///
+    /// Falls back to `hardcodedLines` if the bundle is missing or unreadable. That
+    /// fallback is deliberate belt-and-braces, not a second source of truth: it
+    /// keeps the app working rather than launching with an empty network, and it
+    /// goes away once the payload has proven itself in the field.
+    static let lines: [TransitLine] = loadLines() ?? hardcodedLines
+
+    private static func loadLines() -> [TransitLine]? {
+        guard let url = Bundle.main.url(
+            forResource: "lines",
+            withExtension: "json",
+            subdirectory: "seed-schedules-v2"
+        ) ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(SeedLinesPayload.self, from: data),
+              !payload.lines.isEmpty
+        else { return nil }
+
+        return payload.lines.map { seed in
+            TransitLine(
+                id: seed.id,
+                name: seed.name,
+                nameEl: seed.nameEl,
+                terminalA: seed.terminalA,
+                terminalB: seed.terminalB,
+                stationCount: seed.stationCount,
+                color: colorFor(hex: seed.color, type: seed.type),
+                type: transitType(for: seed.type),
+                region: TransitRegion(raw: seed.region),
+                status: TransitLineStatus(raw: seed.status)
+            )
+        }
+    }
+
+    private static func transitType(for raw: String) -> TransitType {
+        switch raw.lowercased() {
+        case "metro": return .metro
+        case "tram": return .tram
+        default: return .suburban
+        }
+    }
+
+    /// Prefer the payload's own hex, so a colour correction ships without an app
+    /// release. Falls back to the mode's house colour when the hex is unusable.
+    private static func colorFor(hex: String, type: String) -> Color {
+        if let c = Color(hex: hex) { return c }
+        switch type.lowercased() {
+        case "metro": return .metroBlue
+        case "tram": return .tramOrange
+        default: return .suburbanPurple
+        }
+    }
+
+    /// Lines that actually carry trains. The default for anything the user acts on.
+    static var operationalLines: [TransitLine] { lines.filter(\.isOperational) }
+
+    private static let hardcodedLines: [TransitLine] = [
         .init(id: "M1", name: "Line 1", nameEl: "Γραμμή 1", terminalA: "Piraeus", terminalB: "Kifissia", stationCount: 24, color: .metroGreen, type: .metro),
         .init(id: "M2", name: "Line 2", nameEl: "Γραμμή 2", terminalA: "Anthoupoli", terminalB: "Elliniko", stationCount: 20, color: .metroRed, type: .metro),
         .init(id: "M3", name: "Line 3", nameEl: "Γραμμή 3", terminalA: "Dimotiko Theatro", terminalB: "Doukissis Plakentias", stationCount: 27, color: .metroBlue, type: .metro),
