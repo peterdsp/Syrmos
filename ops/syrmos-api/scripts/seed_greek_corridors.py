@@ -6,11 +6,16 @@ railway.gov.gr live board, which states no times were estimated). Station
 coordinates come from the OSM route relations in the Greece extract
 (docs/plans/greek-rail-osm-relations.md), never invented.
 
-Four corridors, all on the scheduled-trips path like Athens A1-A4:
+Corridors, all on the scheduled-trips path like Athens A1-A4:
   IC1  national  Athens <-> Thessaloniki (IC50/51/56/57), daily
   TP1  thess     Thessaloniki <-> Larisa (1590..2595), daily
   TP2  thess     Thessaloniki <-> Florina + Edessa short-turn, daily
   TP3  thess     Thessaloniki <-> Sindos shuttle, Mon-Fri
+  TP4  thess     Thessaloniki <-> Serres <-> Drama, daily + Serres short-turn
+  RG1  national  Athens <-> Leianokladi regional (520/521), daily
+  AL1  national  Alexandroupoli <-> Orestiada <-> Ormenio (1680..1683), daily
+  KB1  national  Paleofarsalos <-> Kalambaka rail-replacement bus (C88x), daily
+  PS1/PS2/PSB    Patras suburban + Kato Achaia connecting bus
 
 At each intermediate stop the timetable shows arrival/departure; we store the
 DEPARTURE (the time a passenger can still catch it). Terminals store their single
@@ -120,10 +125,47 @@ S = {
     "PA_RIO": ("Rio", "Ρίο", 38.298158, 21.777595),
     "PA_KAT": ("Kato Achaia", "Κάτω Αχαΐα", 38.145895, 21.561441),
     "PA_ALI": ("Alissos", "Αλισσός", 38.147000, 21.591000),  # small halt, interpolated
+    # Evros / Thrace line (AL1): Alexandroupoli Port -> Orestiada -> Ormenio (rel 14122316)
+    "EV_ALX": ("Alexandroupoli Port", "Αλεξανδρούπολη Λιμάνι", 40.845250, 25.878800),
+    "EV_FER": ("Ferres", "Φέρρες", 40.891060, 26.185150),
+    "EV_PEP": ("Peplos", "Πέπλος", 40.959330, 26.276990),
+    "EV_TYC": ("Tychero", "Τυχερό", 41.034920, 26.293370),
+    "EV_FYL": ("Fylakto", "Φυλακτό", 41.053130, 26.279240),
+    "EV_LAG": ("Lagyna", "Λαγυνά", 41.086390, 26.301350),
+    "EV_KOR": ("Kornofolia", "Κορνοφωλιά", 41.156610, 26.301770),
+    "EV_SOU": ("Soufli", "Σουφλί", 41.187860, 26.301580),
+    "EV_MAN": ("Mandra Evrou", "Μάνδρα Έβρου", 41.265620, 26.333070),
+    "EV_LAV": ("Lavara", "Λάβαρα", 41.268170, 26.392970),
+    "EV_AMO": ("Amorio", "Αμόριο", 41.295650, 26.443110),
+    "EV_PSA": ("Psathades", "Ψαθάδες", 41.323830, 26.489940),
+    "EV_DID": ("Didymoteicho", "Διδυμότειχο", 41.352090, 26.511310),
+    "EV_PRA": ("Praggi", "Πραγγί", 41.342970, 26.575960),
+    "EV_PET": ("Petrades", "Πετράδες", 41.338950, 26.610970),
+    "EV_PYT": ("Pythio", "Πύθιο", 41.369700, 26.621850),
+    "EV_PYS": ("Pythio Stasi", "Πύθιο Στάση", 41.382770, 26.612840),
+    "EV_RIG": ("Rigio", "Ρήγιο", 41.398090, 26.591600),
+    "EV_SOF": ("Sofiko", "Σοφικό", 41.423610, 26.565530),
+    "EV_THO": ("Thourio", "Θούριο", 41.434500, 26.561440),
+    "EV_CHE": ("Cheimonio", "Χειμώνιο", 41.450040, 26.555630),
+    "EV_ORE": ("Orestiada", "Ορεστιάδα", 41.502980, 26.537380),
+    "EV_SAK": ("Sakkos", "Σάκκος", 41.539860, 26.531750),
+    "EV_KAV": ("Kavyli", "Καβύλη", 41.557200, 26.534580),
+    "EV_NVY": ("Nea Vyssa", "Νέα Βύσσα", 41.578740, 26.534770),
+    "EV_KAS": ("Kastaneai", "Καστανέαι", 41.647380, 26.486580),
+    "EV_MAR": ("Marasia", "Μαράσια", 41.669020, 26.469840),
+    "EV_DIL": ("Dilofos", "Δίλοφος", 41.693370, 26.377780),
+    "EV_DIK": ("Dikaia", "Δίκαια", 41.706130, 26.297370),
+    "EV_PTE": ("Ptelea", "Πτελέα", 41.717720, 26.253250),
+    "EV_ORM": ("Ormenio", "Ορμένιο", 41.728180, 26.212570),
+    # Paleofarsalos - Kalambaka rail-replacement bus (KB1); GR_PAL shared with IC1 (rel 14007294)
+    "KB_SOF": ("Sofades", "Σοφάδες", 39.340460, 22.086720),
+    "KB_KAR": ("Karditsa", "Καρδίτσα", 39.353940, 21.914770),
+    "KB_TRI": ("Trikala", "Τρίκαλα", 39.546050, 21.763320),
+    "KB_KAL": ("Kalambaka", "Καλαμπάκα", 39.702950, 21.625300),
 }
 
 # Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
-MODE = {"PSB": "bus"}
+MODE = {"PSB": "bus", "KB1": "bus"}
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
 LINES = {
@@ -145,6 +187,10 @@ LINES = {
             "Agios Andreas", "Rio", 41, "patras"),
     "PSB": ("Kato Achaia - Kaminia bus", "Κάτω Αχαΐα - Καμίνια (λεωφορείο)", "#F59E0B",
             "Kato Achaia", "Kaminia", 42, "patras"),
+    "AL1": ("Alexandroupoli - Ormenio", "Αλεξανδρούπολη - Ορμένιο", "#B91C1C",
+            "Alexandroupoli", "Ormenio", 36, "national"),
+    "KB1": ("Paleofarsalos - Kalambaka bus", "Παλαιοφάρσαλος - Καλαμπάκα (λεωφορείο)", "#A16207",
+            "Paleofarsalos", "Kalambaka", 37, "national"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -167,6 +213,12 @@ ORDER = {
     "PS1": ["PA_AND", "PA_ANT", "PA_ITI", "PA_PAR", "PA_MIN", "PA_VRA", "PA_TSO", "PA_KAM"],
     "PS2": ["PA_AND", "PA_PAT", "PA_PAN", "PA_AGY", "PA_BOZ", "PA_KST", "PA_RIO"],
     "PSB": ["PA_KAT", "PA_ALI", "PA_KAM"],
+    "AL1": ["EV_ALX", "EV_FER", "EV_PEP", "EV_TYC", "EV_FYL", "EV_LAG", "EV_KOR",
+            "EV_SOU", "EV_MAN", "EV_LAV", "EV_AMO", "EV_PSA", "EV_DID", "EV_PRA",
+            "EV_PET", "EV_PYT", "EV_PYS", "EV_RIG", "EV_SOF", "EV_THO", "EV_CHE",
+            "EV_ORE", "EV_SAK", "EV_KAV", "EV_NVY", "EV_KAS", "EV_MAR", "EV_DIL",
+            "EV_DIK", "EV_PTE", "EV_ORM"],
+    "KB1": ["GR_PAL", "KB_SOF", "KB_KAR", "KB_TRI", "KB_KAL"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
@@ -307,6 +359,44 @@ TRIPS += [
           "06:31", "06:44", "07:00", "07:04", "07:47", "08:07"]),
 ]
 
+# ---- AL1 Alexandroupoli - Orestiada - Ormenio (Evros), daily ----
+AL1_OUT = ORDER["AL1"]
+AL1_IN = list(reversed(AL1_OUT))
+AL1_ORE_OUT = AL1_OUT[:22]                 # Alexandroupoli .. Orestiada short-turn
+AL1_ORE_IN = list(reversed(AL1_ORE_OUT))
+TRIPS += [
+    trip("AL1", "outbound", "1680", DAILY, AL1_OUT,
+         ["05:40", "06:04", "06:12", "06:19", "06:22", "06:26", "06:32", "06:35", "06:45", "06:49",
+          "06:53", "06:57", "07:01", "07:07", "07:10", "07:14", "07:16", "07:19", "07:22", "07:24",
+          "07:26", "07:32", "07:36", "07:38", "07:40", "07:47", "07:50", "07:55", "08:03", "08:07", "08:09"]),
+    trip("AL1", "outbound", "1682", DAILY, AL1_ORE_OUT,
+         ["15:30", "15:54", "16:02", "16:09", "16:12", "16:16", "16:22", "16:25", "16:35", "16:39",
+          "16:43", "16:47", "16:51", "16:57", "17:00", "17:05", "17:06", "17:09", "17:12", "17:14",
+          "17:16", "17:21"]),
+    trip("AL1", "inbound", "1681", DAILY, AL1_IN,
+         ["08:45", "08:48", "08:52", "08:59", "09:05", "09:08", "09:15", "09:17", "09:19", "09:23",
+          "09:28", "09:30", "09:32", "09:35", "09:38", "09:40", "09:44", "09:46", "09:53", "09:57",
+          "10:00", "10:05", "10:09", "10:19", "10:22", "10:29", "10:32", "10:35", "10:42", "10:51", "11:15"]),
+    trip("AL1", "inbound", "1683", DAILY, AL1_ORE_IN,
+         ["17:40", "17:46", "17:48", "17:49", "17:52", "17:55", "17:57", "18:01", "18:04", "18:10",
+          "18:14", "18:18", "18:22", "18:26", "18:36", "18:39", "18:46", "18:49", "18:52", "19:00",
+          "19:08", "19:31"]),
+]
+
+# ---- KB1 Paleofarsalos - Kalambaka rail-replacement BUS, daily ----
+KB1_OUT = ORDER["KB1"]
+KB1_IN = list(reversed(KB1_OUT))
+TRIPS += [
+    trip("KB1", "outbound", "C1880", DAILY, KB1_OUT,
+         ["10:30", "10:50", "11:20", "11:50", "12:30"]),
+    trip("KB1", "outbound", "C888", DAILY, KB1_OUT,
+         ["21:15", "21:35", "22:05", "22:35", "23:15"]),
+    trip("KB1", "inbound", "C881", DAILY, KB1_IN,
+         ["05:45", "06:10", "06:40", "07:05", "07:45"]),
+    trip("KB1", "inbound", "C1889", DAILY, KB1_IN,
+         ["16:50", "17:15", "17:45", "18:05", "18:50"]),
+]
+
 # ---- Patras: regular-interval shuttles. Every train shares one stop pattern,
 # just time-shifted, so generate from (departure list + fixed per-stop offsets).
 # The offsets ARE the exact PDF data; this is compact, not approximated.
@@ -351,6 +441,19 @@ interval_trips("PSB", "inbound", PSB_IN, 20500,
                [0, 3, 10])
 
 
+_NATIONAL_GR = ("GR_ATH", "GR_OIN", "GR_THI", "GR_LIV", "GR_TIT", "GR_LEI", "GR_PAL")
+
+
+def station_region(sid: str) -> str:
+    """Region a station belongs to. Evros (EV_) + Kalambaka bus (KB_) are national,
+    the Athens leg of IC1 is national, Patras (PA_) is patras, rest thessaloniki."""
+    if sid in _NATIONAL_GR or sid.startswith(("EV_", "KB_")):
+        return "national"
+    if sid.startswith("PA_"):
+        return "patras"
+    return "thessaloniki"
+
+
 def main() -> None:
     conn = dbmod.connect()
     dbmod.migrate(conn)
@@ -365,8 +468,7 @@ def main() -> None:
             " VALUES(?,?,?,?,?,?,1,1) ON CONFLICT(id) DO UPDATE SET"
             " name_en=excluded.name_en,name_el=excluded.name_el,lat=excluded.lat,"
             " lng=excluded.lng,region=excluded.region",
-            [(sid, en, el, la, lo, "national" if sid in ("GR_ATH", "GR_OIN", "GR_THI",
-              "GR_LIV", "GR_TIT", "GR_LEI", "GR_PAL") else "thessaloniki")
+            [(sid, en, el, la, lo, station_region(sid))
              for sid, (en, el, la, lo) in S.items()],
         )
         # lines
