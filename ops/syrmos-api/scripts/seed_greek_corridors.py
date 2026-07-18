@@ -103,7 +103,27 @@ S = {
     "GR_PAR": ("Parori", "Παρόρι", 38.574360, 22.762130),
     "GR_KIF": ("Kifissos", "Κηφισσός", 38.585710, 22.745148),
     "GR_MYL": ("Mylos", "Μύλος", 38.800000, 22.480000),  # small halt, interpolated Tithorea-Leianokladi
+    # Patras suburban (PS1 Kaminia branch, PS2 Rio branch, PSB Kato Achaia bus)
+    "PA_AND": ("Agios Andreas", "Αγ. Ανδρέας", 38.239405, 21.727159),
+    "PA_ANT": ("Antheia", "Άνθεια", 38.226000, 21.723000),   # small halt, interpolated
+    "PA_ITI": ("Ities", "Ιτιές", 38.211753, 21.718475),
+    "PA_PAR": ("Paralia Patron", "Παραλία Πατρών", 38.202351, 21.705495),
+    "PA_MIN": ("Mintilogli", "Μιντιλόγλι", 38.188679, 21.690434),
+    "PA_VRA": ("Vrachneika", "Βραχνέικα", 38.165751, 21.672147),
+    "PA_TSO": ("Tsoukaleika", "Τσουκαλαίικα", 38.156375, 21.646760),
+    "PA_KAM": ("Kaminia", "Καμίνια", 38.147832, 21.621152),
+    "PA_PAT": ("Patra", "Πάτρα", 38.249848, 21.735122),
+    "PA_PAN": ("Panachaiki", "Παναχαϊκή", 38.262385, 21.742359),
+    "PA_AGY": ("Agyia Patron", "Αγυιά Πατρών", 38.271038, 21.747219),
+    "PA_BOZ": ("Bozaitika", "Μποζαίτικα", 38.281000, 21.759000),  # small halt, interpolated
+    "PA_KST": ("Kastelokampos", "Καστελόκαμπος", 38.291426, 21.771523),
+    "PA_RIO": ("Rio", "Ρίο", 38.298158, 21.777595),
+    "PA_KAT": ("Kato Achaia", "Κάτω Αχαΐα", 38.145895, 21.561441),
+    "PA_ALI": ("Alissos", "Αλισσός", 38.147000, 21.591000),  # small halt, interpolated
 }
+
+# Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
+MODE = {"PSB": "bus"}
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
 LINES = {
@@ -119,6 +139,12 @@ LINES = {
             "Thessaloniki", "Drama", 34, "thessaloniki"),
     "RG1": ("Athens - Leianokladi", "Αθήνα - Λειανοκλάδι", "#0891B2",
             "Athens", "Leianokladi", 35, "national"),
+    "PS1": ("Patras - Kaminia", "Πάτρα - Καμίνια", "#0D9488",
+            "Agios Andreas", "Kaminia", 40, "patras"),
+    "PS2": ("Patras - Rio", "Πάτρα - Ρίο", "#0284C7",
+            "Agios Andreas", "Rio", 41, "patras"),
+    "PSB": ("Kato Achaia - Kaminia bus", "Κάτω Αχαΐα - Καμίνια (λεωφορείο)", "#F59E0B",
+            "Kato Achaia", "Kaminia", 42, "patras"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -138,6 +164,9 @@ ORDER = {
     "RG1": ["GR_ATH", "GR_SKA", "GR_OIN", "GR_TAN", "GR_THI", "GR_ALI", "GR_YPS",
             "GR_ALA", "GR_LIV", "GR_CHA", "GR_DAV", "GR_PAR", "GR_KIF", "GR_TIT",
             "GR_MYL", "GR_LEI"],
+    "PS1": ["PA_AND", "PA_ANT", "PA_ITI", "PA_PAR", "PA_MIN", "PA_VRA", "PA_TSO", "PA_KAM"],
+    "PS2": ["PA_AND", "PA_PAT", "PA_PAN", "PA_AGY", "PA_BOZ", "PA_KST", "PA_RIO"],
+    "PSB": ["PA_KAT", "PA_ALI", "PA_KAM"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
@@ -278,6 +307,49 @@ TRIPS += [
           "06:31", "06:44", "07:00", "07:04", "07:47", "08:07"]),
 ]
 
+# ---- Patras: regular-interval shuttles. Every train shares one stop pattern,
+# just time-shifted, so generate from (departure list + fixed per-stop offsets).
+# The offsets ARE the exact PDF data; this is compact, not approximated.
+def interval_trips(line, direction, ids, base_no, deps, offsets):
+    assert len(ids) == len(offsets)
+    for i, d in enumerate(deps):
+        h, m = map(int, d.split(":"))
+        base = h * 60 + m
+        times = [f"{(base + o) // 60 % 24:02d}:{(base + o) % 60:02d}" for o in offsets]
+        TRIPS.append(trip(line, direction, f"{base_no + i}", DAILY, ids, times))
+
+
+PS1_OUT, PS1_IN = ORDER["PS1"], list(reversed(ORDER["PS1"]))
+PS2_OUT, PS2_IN = ORDER["PS2"], list(reversed(ORDER["PS2"]))
+PSB_OUT, PSB_IN = ORDER["PSB"], list(reversed(ORDER["PSB"]))
+# PS1 Ag.Andreas<->Kaminia (train)
+interval_trips("PS1", "outbound", PS1_OUT, 20000,
+               ["06:33", "07:33", "08:33", "09:33", "11:33", "12:33", "13:33", "14:33",
+                "15:33", "16:33", "17:33", "18:33", "19:33", "20:33", "21:33"],
+               [0, 4, 7, 9, 13, 17, 21, 24])
+interval_trips("PS1", "inbound", PS1_IN, 20100,
+               ["07:03", "08:03", "09:03", "10:03", "12:03", "13:03", "14:03", "15:03",
+                "16:03", "17:03", "18:03", "19:03", "20:03", "21:03", "22:03"],
+               [0, 3, 7, 11, 14, 17, 19, 23])
+# PS2 Ag.Andreas<->Rio (train)
+interval_trips("PS2", "outbound", PS2_OUT, 20200,
+               ["06:32", "07:32", "08:32", "09:32", "10:32", "11:32", "12:32", "13:32", "14:32",
+                "15:32", "16:32", "17:32", "18:32", "19:32", "20:32", "21:32", "22:32"],
+               [0, 7, 12, 14, 17, 19, 21])
+interval_trips("PS2", "inbound", PS2_IN, 20300,
+               ["07:07", "08:07", "09:07", "10:07", "11:07", "12:07", "13:07", "14:07", "15:07",
+                "16:07", "17:07", "18:07", "19:07", "20:07", "21:07", "22:07", "23:07"],
+               [0, 3, 5, 7, 10, 16, 22])
+# PSB Kato Achaia<->Kaminia (rail-replacement / connecting BUS)
+interval_trips("PSB", "outbound", PSB_OUT, 20400,
+               ["06:45", "07:45", "08:45", "09:45", "10:45", "11:45", "12:45", "13:45",
+                "14:45", "15:45", "16:45", "17:45", "18:45", "19:45", "20:45"],
+               [0, 7, 15])
+interval_trips("PSB", "inbound", PSB_IN, 20500,
+               ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+                "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"],
+               [0, 3, 10])
+
 
 def main() -> None:
     conn = dbmod.connect()
@@ -304,7 +376,7 @@ def main() -> None:
             " ON CONFLICT(id) DO UPDATE SET name_en=excluded.name_en,"
             " name_el=excluded.name_el,color=excluded.color,region=excluded.region,"
             " sort_order=excluded.sort_order,status='operational'",
-            [(lid, "suburban", en, el, col, ta, tb, so, reg)
+            [(lid, MODE.get(lid, "suburban"), en, el, col, ta, tb, so, reg)
              for lid, (en, el, col, ta, tb, so, reg) in LINES.items()],
         )
         # line_stations (rebuild)

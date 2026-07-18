@@ -16,6 +16,9 @@ ExecStart=/bin/bash -c '\
   .venv/bin/python -m scripts.import_icons --apply; \
   .venv/bin/python -m scripts.seed_fare_products; \
   .venv/bin/python -m scripts.seed_station_offsets; \
+  .venv/bin/python -m scripts.import_legacy_station_attrs --seed legacy_stations.json || true; \
+  .venv/bin/python -m scripts.seed_thessaloniki; \
+  .venv/bin/python -m scripts.seed_greek_corridors; \
   .venv/bin/python -m syrmos_admin.generator'
 Nice=10
 IOSchedulingClass=best-effort
