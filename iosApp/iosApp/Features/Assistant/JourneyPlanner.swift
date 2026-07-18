@@ -163,6 +163,7 @@ enum JourneyPlanner {
         case .metro: return 2
         case .tram: return 3
         case .suburban: return 4
+        case .bus: return 4
         }
     }
 

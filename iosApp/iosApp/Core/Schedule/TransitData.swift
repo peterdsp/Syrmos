@@ -32,6 +32,7 @@ enum TransitRegion: String {
     case athens
     case thessaloniki
     case national
+    case patras
 
     init(raw: String?) {
         self = TransitRegion(rawValue: (raw ?? "").lowercased()) ?? .athens
@@ -58,6 +59,9 @@ enum TransitType: String, CaseIterable {
     case metro = "Metro"
     case tram = "Tram"
     case suburban = "Suburban Railway"
+    /// Rail-replacement / connecting bus on a suspended rail corridor. The rail
+    /// operator's own bus standing in for the train, never an OASA city bus.
+    case bus = "Bus"
 }
 
 struct TransitStation: Identifiable {
@@ -175,6 +179,7 @@ enum SyrmosData {
         switch raw.lowercased() {
         case "metro": return .metro
         case "tram": return .tram
+        case "bus": return .bus
         default: return .suburban
         }
     }

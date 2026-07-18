@@ -30,6 +30,9 @@ enum class Region {
     /** Intercity / long-distance. An Athens-Thessaloniki train belongs to neither city. */
     @SerialName("national")
     NATIONAL,
+
+    @SerialName("patras")
+    PATRAS,
     ;
 
     companion object {
@@ -37,6 +40,7 @@ enum class Region {
         fun fromRaw(raw: String?): Region = when (raw?.lowercase()) {
             "thessaloniki" -> THESSALONIKI
             "national" -> NATIONAL
+            "patras" -> PATRAS
             else -> ATHENS
         }
     }
