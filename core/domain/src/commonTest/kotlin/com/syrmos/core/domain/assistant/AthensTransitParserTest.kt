@@ -298,4 +298,124 @@ class AthensTransitParserTest {
     fun albanian_greeting_is_help() {
         assertIs<AssistantIntent.Help>(parser.parse("pershendetje"))
     }
+
+    // MARK: - First train (new capability)
+
+    @Test
+    fun first_train_with_station() {
+        val intent = parser.parse("when is the first train from Piraeus")
+        val first = assertIs<AssistantIntent.FirstTrain>(intent)
+        assertEquals("M1_PIR", first.stationId)
+    }
+
+    @Test
+    fun first_train_greek() {
+        val intent = parser.parse("πρώτο τρένο από το Σύνταγμα")
+        val first = assertIs<AssistantIntent.FirstTrain>(intent)
+        assertEquals("M2_SYN", first.stationId)
+    }
+
+    @Test
+    fun first_train_albanian() {
+        val intent = parser.parse("treni i parë nga Pireas")
+        val first = assertIs<AssistantIntent.FirstTrain>(intent)
+        assertEquals("M1_PIR", first.stationId)
+    }
+
+    @Test
+    fun first_train_bare_line_answers_from_origin() {
+        val intent = parser.parse("first M2 train")
+        val first = assertIs<AssistantIntent.FirstTrain>(intent)
+        assertEquals("M2", first.lineId)
+    }
+
+    @Test
+    fun first_train_not_confused_with_last() {
+        assertIs<AssistantIntent.FirstTrain>(parser.parse("first train Syntagma"))
+        assertIs<AssistantIntent.LastTrain>(parser.parse("last train Syntagma"))
+    }
+
+    // MARK: - Accessibility (new capability)
+
+    @Test
+    fun accessibility_with_station() {
+        val intent = parser.parse("is Syntagma wheelchair accessible")
+        val acc = assertIs<AssistantIntent.StationAccessibility>(intent)
+        assertEquals("M2_SYN", acc.stationId)
+    }
+
+    @Test
+    fun accessibility_lift_phrasing() {
+        val intent = parser.parse("does Piraeus have a lift")
+        val acc = assertIs<AssistantIntent.StationAccessibility>(intent)
+        assertEquals("M1_PIR", acc.stationId)
+    }
+
+    @Test
+    fun accessibility_greek() {
+        val intent = parser.parse("είναι προσβάσιμο για ΑμεΑ το Σύνταγμα")
+        assertIs<AssistantIntent.StationAccessibility>(intent)
+    }
+
+    @Test
+    fun accessibility_albanian() {
+        val intent = parser.parse("a është Sintagma i aksesueshëm")
+        val acc = assertIs<AssistantIntent.StationAccessibility>(intent)
+        assertEquals("M2_SYN", acc.stationId)
+    }
+
+    @Test
+    fun accessibility_without_station_asks() {
+        val intent = parser.parse("is the station accessible")
+        val clar = assertIs<AssistantIntent.NeedsClarification>(intent)
+        assertIs<AssistantIntent.StationAccessibility>(clar.base)
+    }
+
+    // MARK: - Reverse trip follow-up (smarter conversations)
+
+    @Test
+    fun reverse_trip_and_back() {
+        assertIs<AssistantIntent.ReverseTrip>(parser.parse("and back?"))
+    }
+
+    @Test
+    fun reverse_trip_greek() {
+        assertIs<AssistantIntent.ReverseTrip>(parser.parse("και πίσω;"))
+    }
+
+    @Test
+    fun reverse_trip_albanian() {
+        assertIs<AssistantIntent.ReverseTrip>(parser.parse("kthimi"))
+    }
+
+    @Test
+    fun reverse_trip_dormant_when_stations_named() {
+        // "X to Y and back" names two stations, so it plans X->Y instead of firing reverse.
+        val intent = parser.parse("Syntagma to Piraeus and back")
+        assertIs<AssistantIntent.PlanTrip>(intent)
+    }
+
+    // MARK: - Expanded phrasings
+
+    @Test
+    fun expanded_plan_phrasing_i_want_to_go() {
+        val intent = parser.parse("I want to go from Syntagma to the airport")
+        val plan = assertIs<AssistantIntent.PlanTrip>(intent)
+        assertEquals("M2_SYN", plan.fromStationId)
+        assertEquals("M3_AER", plan.toStationId)
+    }
+
+    @Test
+    fun expanded_departure_phrasing_arrivals() {
+        val intent = parser.parse("arrivals at Monastiraki")
+        assertIs<AssistantIntent.ShowDepartures>(intent)
+    }
+
+    @Test
+    fun day_probe_detects_tomorrow_trilingual() {
+        assertEquals(DayContext.TOMORROW, parser.dayOf("what about tomorrow"))
+        assertEquals(DayContext.TOMORROW, parser.dayOf("και αύριο;"))
+        assertEquals(DayContext.WEEKEND, parser.dayOf("po fundjave"))
+        assertEquals(DayContext.TODAY, parser.dayOf("Syntagma"))
+    }
 }

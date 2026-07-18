@@ -2743,6 +2743,41 @@
                         };
                     }
                     return { text: t("ariadne_no_station") };
+                case "firstTrain":
+                    if (intent.stationId || intent.lineId) {
+                        const fid = intent.stationId || (lineById(intent.lineId) && (lineById(intent.lineId).terminalA || lineById(intent.lineId).terminal_a));
+                        const openId = intent.stationId;
+                        return {
+                            text: t("ariadne_looking_up", { station: intent.stationId ? stationName(intent.stationId) : intent.lineId }),
+                            act: () => { if (openId) { openStation(openId); if (window.innerWidth < 721) closePanel(); } },
+                        };
+                    }
+                    return { text: t("ariadne_no_station") };
+                case "stationAccessibility": {
+                    const st = intent.stationId ? stationMap.get(intent.stationId) : null;
+                    if (!st) return { text: t("ariadne_no_station") };
+                    const nm = stationName(st.id);
+                    const acc = st.accessibility !== false;   // bundle default is accessible
+                    const text = acc
+                        ? (currentLang === "el" ? `Ο ${nm} είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).`
+                            : currentLang === "sq" ? `${nm} është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë).`
+                            : `${nm} is step-free accessible (lift / level access).`)
+                        : (currentLang === "el" ? `Ο ${nm} δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.`
+                            : currentLang === "sq" ? `${nm} nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.`
+                            : `${nm} is not marked step-free. Check for stairs-only access before you go.`);
+                    return { text: text };
+                }
+                case "reverseTrip": {
+                    const r = aSession.lastRoute;
+                    if (!r) {
+                        return {
+                            text: currentLang === "el" ? "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή."
+                                : currentLang === "sq" ? "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."
+                                : "Tell me a trip first, then I can flip it for the way back.",
+                        };
+                    }
+                    return respond({ kind: "plan", from: r.to, to: r.from, lowExposure: false });
+                }
                 case "openMap":
                     if (intent.stationId) {
                         return {
@@ -2828,6 +2863,49 @@
         let pendingIntent = null;
         let pendingMissing = null;
 
+        // Durable conversation memory (parity with the KMP / iOS session):
+        // remembers the current station and the last full route so follow-ups
+        // like "and back?" and "what about tomorrow?" work without repeating.
+        const aSession = { currentStation: null, lastRoute: null, lastIntent: null };
+
+        function updateSession(intent) {
+            if (!intent) return;
+            switch (intent.kind) {
+                case "plan":
+                    if (intent.from) aSession.currentStation = intent.from;
+                    if (intent.from && intent.to) aSession.lastRoute = { from: intent.from, to: intent.to };
+                    break;
+                case "departures":
+                case "firstTrain":
+                    if (intent.stationId) aSession.currentStation = intent.stationId;
+                    break;
+                case "reverseTrip":
+                    if (aSession.lastRoute) {
+                        const r = aSession.lastRoute;
+                        aSession.lastRoute = { from: r.to, to: r.from };
+                        aSession.currentStation = r.to;
+                    }
+                    break;
+                case "needsClarification":
+                    return;
+            }
+            aSession.lastIntent = intent;
+        }
+
+        // Bare day-change follow-up: "what about tomorrow?", "and the weekend?".
+        // The parser can't classify these alone; if the last answered turn was a
+        // departures query for a known station, re-issue it for the new day.
+        function applyDayFollowUp(rawInput, intent) {
+            if (!intent || intent.kind !== "outOfScope") return intent;
+            const day = window.SyrmosAriadne.dayOf ? window.SyrmosAriadne.dayOf(rawInput) : "TODAY";
+            if (day === "TODAY") return intent;
+            const last = aSession.lastIntent;
+            if (last && last.kind === "departures" && (last.stationId || last.lineId)) {
+                return Object.assign({}, last, { day: day });
+            }
+            return intent;
+        }
+
         function mergePending(rawInput) {
             // Try to fill the missing slot with a station matched from
             // the bare input. Requires SyrmosAriadne.parse to expose
@@ -2859,7 +2937,8 @@
                 }
                 return patched;
             }
-            if (pendingIntent.kind === "lastTrain" || pendingIntent.kind === "departures") {
+            if (pendingIntent.kind === "lastTrain" || pendingIntent.kind === "departures" ||
+                pendingIntent.kind === "firstTrain" || pendingIntent.kind === "stationAccessibility") {
                 const patched = Object.assign({}, pendingIntent, { stationId: stationId });
                 return patched;
             }
@@ -2903,6 +2982,9 @@
                 intent = window.SyrmosAriadne.parse(value);
             }
 
+            // Bare "what about tomorrow?" re-runs the last departures query.
+            intent = applyDayFollowUp(value, intent);
+
             if (intent.kind === "needsClarification") {
                 pendingIntent = intent.base;
                 pendingMissing = intent.missing;
@@ -2912,6 +2994,7 @@
             }
 
             const deliver = (finalIntent) => {
+                updateSession(finalIntent);
                 const reply = respond(finalIntent);
                 appendMessage(reply.text, "assistant");
                 // For a departures answer, follow the "Looking up X..." line with
