@@ -219,10 +219,20 @@ S = {
     "PL_ALE": ("Ano Lechonia", "Άνω Λεχώνια", 39.325470, 23.053840),
     "PL_GAT": ("Ano Gatzea", "Άνω Γατζέα", 39.322100, 23.094040),
     "PL_MIL": ("Milies", "Μηλιές", 39.327630, 23.143590),
+    # Patras University campus shuttles (PU1 loop, PU2 Agios Vasileios); PA_KST shared.
+    # Real OSM University-of-Patras building coords where mapped; OAED and Agios
+    # Vasileios are unmapped campus/suburb bus stops, placed on the known route.
+    "PU_UNC": ("University (Chemical Eng.)", "Πανεπιστήμιο (Χημικών Μηχ.)", 38.289700, 21.788285),
+    "PU_HOS": ("University Hospital", "Πανεπιστημιακό Νοσοκομείο", 38.294067, 21.793638),
+    "PU_UNP": ("University (Pedagogy)", "Πανεπιστήμιο (Παιδαγωγικό)", 38.288549, 21.787311),
+    "PU_UNR": ("University (Rectory)", "Πανεπιστήμιο (Πρυτανεία)", 38.285915, 21.786802),
+    "PU_OAE": ("OAED", "ΟΑΕΔ", 38.288000, 21.782000),                 # unmapped; on the loop, interpolated
+    "PU_AGV": ("Agios Vasileios", "Άγιος Βασίλειος", 38.295000, 21.762000),  # unmapped Rio suburb, interpolated
 }
 
 # Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
-MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus", "TL1": "bus"}
+MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus", "TL1": "bus",
+        "PU1": "bus", "PU2": "bus"}
 
 # Line status; defaults to operational. Suspended/not-yet-open lines render greyed
 # with no departures (same treatment as Thessaloniki TM2).
@@ -266,6 +276,10 @@ LINES = {
             "Ano Lechonia", "Milies", 46, "national"),
     "DK1": ("Diakopto - Kalavryta rack railway", "Οδοντωτός Διακοπτό - Καλάβρυτα", "#DC2626",
             "Diakopto", "Kalavryta", 47, "national"),
+    "PU1": ("Patras University loop bus", "Πανεπιστήμιο Πατρών (κυκλική)", "#F59E0B",
+            "Kastelokampos", "Kastelokampos", 48, "patras"),
+    "PU2": ("Kastelokampos - Agios Vasileios bus", "Καστελόκαμπος - Άγιος Βασίλειος", "#F59E0B",
+            "Kastelokampos", "Agios Vasileios", 49, "patras"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -304,6 +318,8 @@ ORDER = {
     "KO1": ["KO_KAT", "KO_PYR", "KO_ALF", "KO_SAL", "KO_STR", "KO_PEL", "KO_PLA", "KO_OLY"],
     "PL1": ["PL_ALE", "PL_GAT", "PL_MIL"],
     "DK1": ["KI_DIA", "DK_MSP", "DK_KAL"],
+    "PU1": ["PA_KST", "PU_UNC", "PU_HOS", "PU_UNP", "PU_UNR", "PU_OAE"],
+    "PU2": ["PA_KST", "PU_AGV"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
@@ -669,6 +685,26 @@ interval_trips("PSB", "inbound", PSB_IN, 20500,
                 "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"],
                [0, 3, 10])
 
+# ---- PU1 Patras University campus loop BUS, daily, hourly 06:50..22:50 ----
+# Circular: Kastelokampos -> Chemical -> Hospital -> Pedagogy -> Rectory -> OAED
+# -> back to Kastelokampos. Offsets from the departure are the exact matrix data.
+# A station can appear only once per trip, so the loop's return call at
+# Kastelokampos (offset 19) is dropped; the departure already stands at offset 0.
+interval_trips("PU1", "outbound",
+               ["PA_KST", "PU_UNC", "PU_HOS", "PU_UNP", "PU_UNR", "PU_OAE"], 61000,
+               ["06:50", "07:50", "08:50", "09:50", "10:50", "11:50", "12:50", "13:50",
+                "14:50", "15:50", "16:50", "17:50", "18:50", "19:50", "20:50", "21:50", "22:50"],
+               [0, 5, 7, 11, 13, 14])
+# ---- PU2 Kastelokampos <-> Agios Vasileios BUS, daily, hourly, 15 min ----
+interval_trips("PU2", "outbound", ["PA_KST", "PU_AGV"], 61200,
+               ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+                "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"],
+               [0, 15])
+interval_trips("PU2", "inbound", ["PU_AGV", "PA_KST"], 61300,
+               ["06:45", "07:45", "08:45", "09:45", "10:45", "11:45", "12:45", "13:45",
+                "14:45", "15:45", "16:45", "17:45", "18:45", "19:45", "20:45", "21:45", "22:45"],
+               [0, 15])
+
 
 _NATIONAL_GR = ("GR_ATH", "GR_OIN", "GR_THI", "GR_LIV", "GR_TIT", "GR_LEI", "GR_PAL")
 
@@ -679,7 +715,7 @@ def station_region(sid: str) -> str:
     if sid in _NATIONAL_GR or sid.startswith(("EV_", "KB_", "VL_", "XD_", "KI_",
                                               "FL_", "KO_", "DK_", "PL_")):
         return "national"
-    if sid.startswith("PA_"):
+    if sid.startswith(("PA_", "PU_")):
         return "patras"
     return "thessaloniki"
 

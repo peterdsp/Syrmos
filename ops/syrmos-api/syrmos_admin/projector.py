@@ -566,7 +566,7 @@ def _project_band(
 # a regular headway grid. The projector picks the explicit-trips path for
 # these when the line has rows in scheduled_trips for the current day_type,
 # and falls back to the frequency_bands path otherwise.
-SCHEDULED_TRIP_LINES = {"A1", "A2", "A3", "A4", "IC1", "TP1", "TP2", "TP3", "TP4", "RG1", "PS1", "PS2", "PSB", "AL1", "KB1", "VL1", "DX1", "KP1", "TL1", "KO1", "PL1"}
+SCHEDULED_TRIP_LINES = {"A1", "A2", "A3", "A4", "IC1", "TP1", "TP2", "TP3", "TP4", "RG1", "PS1", "PS2", "PSB", "AL1", "KB1", "VL1", "DX1", "KP1", "TL1", "KO1", "PL1", "PU1", "PU2"}
 
 
 def _hhmm_to_minutes(hhmm: str) -> int | None:
