@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <title>Syrmos press kit</title>
+    <script type="speculationrules">{"prefetch":[{"source":"document","where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
     <meta name="description" content="Press and media kit for Syrmos, the offline-first companion for the Athens metro, tram, and suburban railway. Boilerplate, fact sheet, screenshots, logos, and press contact.">
     <meta name="author" content="Petros Dhespollari">
     <link rel="canonical" href="https://syrmos.peterdsp.dev/press.html">
@@ -459,6 +460,7 @@
         .lang-btn:hover { color: var(--text); }
         .lang-btn.active { background: var(--accent); color: #ffffff; }
 
+        @view-transition { navigation: auto; }
         @media (prefers-reduced-motion: no-preference) {
             ::view-transition-old(root),
             ::view-transition-new(root) {
