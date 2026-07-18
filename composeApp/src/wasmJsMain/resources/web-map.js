@@ -686,15 +686,18 @@
         // transparent, so it can never be mistaken for a line in service. It
         // carries no trains and no departures either (handled above).
         const underConstruction = !isOperational(line);
+        // A rail-replacement bus draws dashed in its own colour, so it reads as
+        // "a bus stands in here" without ever looking like a rail line.
+        const isBus = line.type === "bus";
         const strokeColor = underConstruction ? "#94a3b8" : (ld?.strokeColor || line.color);
-        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (line.type === "suburban" ? 4 : 5));
+        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (line.type === "suburban" || isBus ? 4 : 5));
         const polylineOpts = {
             color: strokeColor,
             weight: strokeWeight,
             opacity: underConstruction ? 0.55 : 0.9,
             lineCap: "round",
             lineJoin: "round",
-            dashArray: underConstruction ? "6 8" : (ld?.strokeDash || null),
+            dashArray: underConstruction ? "6 8" : (isBus ? "2 7" : (ld?.strokeDash || null)),
         };
         if (feat && feat.geometry) {
             // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
