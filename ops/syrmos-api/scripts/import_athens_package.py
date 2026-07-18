@@ -620,12 +620,19 @@ def apply(conn, dry_run: bool) -> dict:
     cur = conn.cursor()
     cur.execute("BEGIN")
     try:
-        cur.execute("DELETE FROM line_stations")
-        cur.execute("DELETE FROM schedule_rules")
-        cur.execute("DELETE FROM frequency_bands")
-        cur.execute("DELETE FROM holiday_rules")
-        cur.execute("DELETE FROM lines")
-        cur.execute("DELETE FROM stations")
+        # This importer owns ONLY the Athens package. It must not delete lines or
+        # stations from other regions (thessaloniki, national, patras) -- those
+        # are seeded by seed_thessaloniki / seed_greek_corridors and would
+        # otherwise be wiped on every nightly run, taking the whole map with them.
+        athens_line_ids = [r[0] for r in line_rows_final]
+        ph = ",".join("?" for _ in athens_line_ids)
+        cur.execute(f"DELETE FROM line_stations WHERE line_id IN ({ph})", athens_line_ids)
+        cur.execute(f"DELETE FROM schedule_rules WHERE line_id IN ({ph})", athens_line_ids)
+        cur.execute(f"DELETE FROM frequency_bands WHERE line_id IN ({ph})", athens_line_ids)
+        cur.execute("DELETE FROM holiday_rules")  # global calendar, safe to rebuild
+        cur.execute(f"DELETE FROM lines WHERE id IN ({ph})", athens_line_ids)
+        # Athens stations only. region defaults to 'athens' on re-insert below.
+        cur.execute("DELETE FROM stations WHERE region='athens'")
 
         cur.executemany(
             "INSERT INTO lines(id,mode,name_en,name_el,color,terminal_a,terminal_b,sort_order)"
