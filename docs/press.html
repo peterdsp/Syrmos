@@ -437,6 +437,35 @@
             .hero { padding: 32px 0; }
             section.block { padding: 56px 0; }
         }
+
+        .header-right { display: inline-flex; align-items: center; gap: 12px; }
+        .lang-switch {
+            display: inline-flex;
+            gap: 2px;
+            padding: 3px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface-2);
+        }
+        .lang-btn {
+            all: unset;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 4px 9px;
+            border-radius: 999px;
+        }
+        .lang-btn:hover { color: var(--text); }
+        .lang-btn.active { background: var(--accent); color: #ffffff; }
+
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+                animation-duration: 320ms;
+                animation-timing-function: ease;
+            }
+        }
     </style>
 </head>
 <body>
@@ -447,19 +476,26 @@
             <img src="assets/favicon-512.png" alt="" aria-hidden="true">
             <span>Syrmos</span>
         </a>
-        <nav class="top-nav" aria-label="Site">
-            <a href="https://syrmos.peterdsp.dev/">Web app</a>
-            <a href="https://github.com/peterdsp/Syrmos">Source</a>
-            <a href="PRIVACY_POLICY.md">Privacy</a>
-        </nav>
+        <div class="header-right">
+            <nav class="top-nav" aria-label="Site">
+                <a href="https://syrmos.peterdsp.dev/" data-i18n="navWebApp">Web app</a>
+                <a href="https://github.com/peterdsp/Syrmos" data-i18n="navSource">Source</a>
+                <a href="PRIVACY_POLICY.md" data-i18n="navPrivacy">Privacy</a>
+            </nav>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button class="lang-btn" type="button" data-lang="en" title="English">EN</button>
+                <button class="lang-btn" type="button" data-lang="el" title="Ελληνικά">ΕΛ</button>
+                <button class="lang-btn" type="button" data-lang="sq" title="Shqip">SQ</button>
+            </div>
+        </div>
     </div>
 </header>
 
 <section class="hero">
     <div class="container">
-        <span class="eyebrow">Press &nbsp;/&nbsp; Media kit</span>
-        <h1>Syrmos press kit</h1>
-        <p class="lede">
+        <span class="eyebrow" data-i18n="heroEyebrow">Press &nbsp;/&nbsp; Media kit</span>
+        <h1 data-i18n="heroH1">Syrmos press kit</h1>
+        <p class="lede" data-i18n="heroLede">
             Everything a writer, editor, or reviewer needs to cover Syrmos:
             the boilerplate, the fact sheet, native screenshots at store
             resolution, and the app icon in every variant.
@@ -467,30 +503,30 @@
 
         <div class="cta-row">
             <a class="btn btn--primary" href="assets/syrmos-press-kit.zip" download>
-                Download press kit
+                <span data-i18n="ctaDownload">Download press kit</span>
                 <span class="btn__meta">ZIP</span>
             </a>
             <a class="btn" href="mailto:info@peterdsp.dev?subject=Syrmos%20press%20enquiry">
-                Email press contact
+                <span data-i18n="ctaEmail">Email press contact</span>
                 <span class="btn__meta">info@peterdsp.dev</span>
             </a>
         </div>
 
         <nav class="chip-nav" aria-label="Press kit sections">
-            <a href="#about">About</a>
-            <a href="#facts">Fact sheet</a>
-            <a href="#media">Media &amp; brand</a>
-            <a href="#contact">Contact</a>
+            <a href="#about" data-i18n="chipAbout">About</a>
+            <a href="#facts" data-i18n="chipFacts">Fact sheet</a>
+            <a href="#media" data-i18n="chipMedia">Media &amp; brand</a>
+            <a href="#contact" data-i18n="chipContact">Contact</a>
         </nav>
     </div>
 </section>
 
 <section class="block" id="about" aria-labelledby="about-title">
     <div class="container">
-        <p class="section-label">About</p>
-        <h2 class="section-title" id="about-title">A companion for every ride in Athens.</h2>
+        <p class="section-label" data-i18n="aboutLabel">About</p>
+        <h2 class="section-title" id="about-title" data-i18n="aboutTitle">A companion for every ride in Athens.</h2>
         <div class="prose">
-            <p>
+            <p data-i18n="aboutP1">
                 Syrmos is a free, offline-first companion for the Athens public
                 transit network. It bundles a full snapshot of every metro, tram,
                 and suburban schedule inside the release itself, so it launches
@@ -498,7 +534,7 @@
                 station with no signal, and syncs quietly when a connection
                 returns.
             </p>
-            <p>
+            <p data-i18n="aboutP2">
                 Built as a single Kotlin Multiplatform codebase, Syrmos ships as
                 a native iOS app, a native Android app, and a WebAssembly web app
                 from the same shared logic. It covers Metro lines 1, 2, and 3,
@@ -514,34 +550,34 @@
 
 <section class="block" id="facts" aria-labelledby="facts-title">
     <div class="container">
-        <p class="section-label">Fact sheet</p>
-        <h2 class="section-title" id="facts-title">At a glance.</h2>
+        <p class="section-label" data-i18n="factsLabel">Fact sheet</p>
+        <h2 class="section-title" id="facts-title" data-i18n="factsTitle">At a glance.</h2>
         <dl class="facts">
-            <div><dt>Product</dt><dd>Syrmos (συρμός), Athens transit companion.</dd></div>
-            <div><dt>Category</dt><dd>Travel and navigation. Public transit.</dd></div>
-            <div><dt>Platforms</dt><dd>iOS 17 and later, Android 8 and later, any modern browser with WebAssembly.</dd></div>
-            <div><dt>Availability</dt><dd>Worldwide. App Store, Google Play, and the web app.</dd></div>
-            <div><dt>Pricing</dt><dd>Free. No subscriptions, no in-app purchases, no advertising.</dd></div>
-            <div><dt>License</dt><dd>Source code under BSD 3-Clause. Documentation and assets under CC BY-SA 4.0.</dd></div>
-            <div><dt>Privacy</dt><dd>No accounts, no analytics, no telemetry. Location stays on the device.</dd></div>
-            <div><dt>Languages</dt><dd>English, Greek, and Albanian (for the on-device assistant).</dd></div>
-            <div><dt>Coverage</dt><dd>3 metro lines, 2 tram lines, 4 suburban lines. Around 200 stations across Attica.</dd></div>
-            <div><dt>Stack</dt><dd>Kotlin Multiplatform, Compose Multiplatform, SwiftUI, SQLDelight, Ktor.</dd></div>
-            <div><dt>Website</dt><dd><a href="https://syrmos.peterdsp.dev/">syrmos.peterdsp.dev</a></dd></div>
-            <div><dt>Source</dt><dd><a href="https://github.com/peterdsp/Syrmos">github.com/peterdsp/Syrmos</a></dd></div>
+            <div><dt data-i18n="factProductK">Product</dt><dd data-i18n="factProductV">Syrmos (συρμός), Athens transit companion.</dd></div>
+            <div><dt data-i18n="factCategoryK">Category</dt><dd data-i18n="factCategoryV">Travel and navigation. Public transit.</dd></div>
+            <div><dt data-i18n="factPlatformsK">Platforms</dt><dd data-i18n="factPlatformsV">iOS 17 and later, Android 8 and later, any modern browser with WebAssembly.</dd></div>
+            <div><dt data-i18n="factAvailK">Availability</dt><dd data-i18n="factAvailV">Worldwide. App Store, Google Play, and the web app.</dd></div>
+            <div><dt data-i18n="factPricingK">Pricing</dt><dd data-i18n="factPricingV">Free. No subscriptions, no in-app purchases, no advertising.</dd></div>
+            <div><dt data-i18n="factLicenseK">License</dt><dd data-i18n="factLicenseV">Source code under BSD 3-Clause. Documentation and assets under CC BY-SA 4.0.</dd></div>
+            <div><dt data-i18n="factPrivacyK">Privacy</dt><dd data-i18n="factPrivacyV">No accounts, no analytics, no telemetry. Location stays on the device.</dd></div>
+            <div><dt data-i18n="factLangK">Languages</dt><dd data-i18n="factLangV">English, Greek, and Albanian (for the on-device assistant).</dd></div>
+            <div><dt data-i18n="factCoverageK">Coverage</dt><dd data-i18n="factCoverageV">3 metro lines, 2 tram lines, 4 suburban lines. Around 200 stations across Attica.</dd></div>
+            <div><dt data-i18n="factStackK">Stack</dt><dd data-i18n="factStackV">Kotlin Multiplatform, Compose Multiplatform, SwiftUI, SQLDelight, Ktor.</dd></div>
+            <div><dt data-i18n="factWebsiteK">Website</dt><dd><a href="https://syrmos.peterdsp.dev/">syrmos.peterdsp.dev</a></dd></div>
+            <div><dt data-i18n="factSourceK">Source</dt><dd><a href="https://github.com/peterdsp/Syrmos">github.com/peterdsp/Syrmos</a></dd></div>
             <div><dt>App Store</dt><dd><a href="https://apps.apple.com/app/id6777650671">apps.apple.com/app/id6777650671</a></dd></div>
             <div><dt>Play Store</dt><dd><a href="https://play.google.com/store/apps/details?id=com.syrmos.android">play.google.com/store/apps/details?id=com.syrmos.android</a></dd></div>
-            <div><dt>Built by</dt><dd>Petros Dhespollari, Athens, Greece.</dd></div>
+            <div><dt data-i18n="factBuiltK">Built by</dt><dd data-i18n="factBuiltV">Petros Dhespollari, Athens, Greece.</dd></div>
         </dl>
     </div>
 </section>
 
 <section class="block" id="media" aria-labelledby="media-title">
     <div class="container">
-        <p class="section-label">Media &amp; brand assets</p>
-        <h2 class="section-title" id="media-title">Screenshots and icons.</h2>
+        <p class="section-label" data-i18n="mediaLabel">Media &amp; brand assets</p>
+        <h2 class="section-title" id="media-title" data-i18n="mediaTitle">Screenshots and icons.</h2>
         <p class="prose" style="margin-bottom: 32px;">
-            <span style="display:block; color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 640px;">
+            <span style="display:block; color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 640px;" data-i18n="mediaIntro">
                 Click a thumbnail to open the full-resolution file, or use the
                 Download link to save it locally. Everything below is included
                 in the ZIP.
@@ -555,10 +591,10 @@
                     <img src="screenshots/ios_home.png" alt="Syrmos Home screen on iPhone showing the next departure hero card, weather, and nearest station" loading="lazy" width="1206" height="2622">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">Home screen</div>
+                    <div class="tile__name" data-i18n="tHome">Home screen</div>
                     <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="screenshots/ios_home.png" download>Download</a>
+                        <a class="tile__link" href="screenshots/ios_home.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -568,10 +604,10 @@
                     <img src="screenshots/ios_map.png" alt="Syrmos live map on iPhone showing metro, tram, and suburban trains moving across Athens" loading="lazy" width="1206" height="2622">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">Live train map</div>
+                    <div class="tile__name" data-i18n="tMap">Live train map</div>
                     <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="screenshots/ios_map.png" download>Download</a>
+                        <a class="tile__link" href="screenshots/ios_map.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -581,10 +617,10 @@
                     <img src="screenshots/ios_lines.png" alt="Syrmos Lines browser on iPhone listing every metro, tram, and suburban route" loading="lazy" width="1206" height="2622">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">Lines browser</div>
+                    <div class="tile__name" data-i18n="tLines">Lines browser</div>
                     <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="screenshots/ios_lines.png" download>Download</a>
+                        <a class="tile__link" href="screenshots/ios_lines.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -594,10 +630,10 @@
                     <img src="screenshots/ios_settings.png" alt="Syrmos Settings on iPhone showing language, appearance, and data controls" loading="lazy" width="1206" height="2622">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">Settings</div>
+                    <div class="tile__name" data-i18n="tSettings">Settings</div>
                     <div class="tile__meta">iOS &middot; PNG &middot; 1206 &times; 2622</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="screenshots/ios_settings.png" download>Download</a>
+                        <a class="tile__link" href="screenshots/ios_settings.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -607,10 +643,10 @@
                     <img src="assets/icon-default-1024.png" alt="Syrmos app icon, default variant" loading="lazy" width="1024" height="1024">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">App icon &middot; Default</div>
+                    <div class="tile__name" data-i18n="tIconDefault">App icon &middot; Default</div>
                     <div class="tile__meta">PNG &middot; 1024 &times; 1024</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="assets/icon-default-1024.png" download>Download</a>
+                        <a class="tile__link" href="assets/icon-default-1024.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -620,10 +656,10 @@
                     <img src="assets/icon-dark-1024.png" alt="Syrmos app icon, iOS dark variant" loading="lazy" width="1024" height="1024">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">App icon &middot; Dark</div>
+                    <div class="tile__name" data-i18n="tIconDark">App icon &middot; Dark</div>
                     <div class="tile__meta">PNG &middot; 1024 &times; 1024</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="assets/icon-dark-1024.png" download>Download</a>
+                        <a class="tile__link" href="assets/icon-dark-1024.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -633,10 +669,10 @@
                     <img src="assets/icon-tinted-1024.png" alt="Syrmos app icon, iOS tinted variant" loading="lazy" width="1024" height="1024">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">App icon &middot; Tinted</div>
+                    <div class="tile__name" data-i18n="tIconTinted">App icon &middot; Tinted</div>
                     <div class="tile__meta">PNG &middot; 1024 &times; 1024</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="assets/icon-tinted-1024.png" download>Download</a>
+                        <a class="tile__link" href="assets/icon-tinted-1024.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -646,10 +682,10 @@
                     <img src="assets/favicon-512.png" alt="Syrmos favicon at 512 by 512" loading="lazy" width="512" height="512">
                 </a>
                 <div class="tile__body">
-                    <div class="tile__name">Favicon</div>
+                    <div class="tile__name" data-i18n="tFavicon">Favicon</div>
                     <div class="tile__meta">PNG &middot; 512 &times; 512</div>
                     <div class="tile__actions">
-                        <a class="tile__link" href="assets/favicon-512.png" download>Download</a>
+                        <a class="tile__link" href="assets/favicon-512.png" download data-i18n="dlWord">Download</a>
                     </div>
                 </div>
             </article>
@@ -660,20 +696,20 @@
 
 <section class="block" id="contact" aria-labelledby="contact-title">
     <div class="container">
-        <p class="section-label">Press contact</p>
-        <h2 class="section-title" id="contact-title">Get in touch.</h2>
+        <p class="section-label" data-i18n="contactLabel">Press contact</p>
+        <h2 class="section-title" id="contact-title" data-i18n="contactTitle">Get in touch.</h2>
 
         <div class="contact-card">
             <div class="avatar" aria-hidden="true">PD</div>
             <div>
                 <p class="contact-card__name">Petros Dhespollari</p>
-                <p class="contact-card__role">Creator and maintainer</p>
-                <p class="contact-card__note">
+                <p class="contact-card__role" data-i18n="contactRole">Creator and maintainer</p>
+                <p class="contact-card__note" data-i18n="contactNote">
                     Always up for collaborations, partnerships, and building things with people who care about the craft.
                 </p>
             </div>
             <a class="btn btn--primary" href="mailto:info@peterdsp.dev?subject=Syrmos%20press%20enquiry">
-                Email
+                <span data-i18n="contactEmail">Email</span>
                 <span class="btn__meta">info@peterdsp.dev</span>
             </a>
         </div>
@@ -682,7 +718,7 @@
 
 <footer class="site">
     <div class="container">
-        <div>&copy; 2026 Petros Dhespollari. Assets licensed CC BY-SA 4.0.</div>
+        <div data-i18n="footCopy">&copy; 2026 Petros Dhespollari. Assets licensed CC BY-SA 4.0.</div>
         <div>
             <a href="https://syrmos.peterdsp.dev/">syrmos.peterdsp.dev</a>
             &nbsp;&middot;&nbsp;
@@ -690,6 +726,156 @@
         </div>
     </div>
 </footer>
+
+<script>
+(function () {
+  var I18N = {
+    en: {
+      title: "Syrmos press kit",
+      navWebApp: "Web app", navSource: "Source", navPrivacy: "Privacy",
+      heroEyebrow: "Press / Media kit",
+      heroH1: "Syrmos press kit",
+      heroLede: "Everything a writer, editor, or reviewer needs to cover Syrmos: the boilerplate, the fact sheet, native screenshots at store resolution, and the app icon in every variant.",
+      ctaDownload: "Download press kit", ctaEmail: "Email press contact",
+      chipAbout: "About", chipFacts: "Fact sheet", chipMedia: "Media & brand", chipContact: "Contact",
+      aboutLabel: "About",
+      aboutTitle: "A companion for every ride in Athens.",
+      aboutP1: "Syrmos is a free, offline-first companion for the Athens public transit network. It bundles a full snapshot of every metro, tram, and suburban schedule inside the release itself, so it launches with the right data underground, on airplane mode, or in a station with no signal, and syncs quietly when a connection returns.",
+      aboutP2: "Built as a single Kotlin Multiplatform codebase, Syrmos ships as a native iOS app, a native Android app, and a WebAssembly web app from the same shared logic. It covers Metro lines 1, 2, and 3, Tram T6 and T7, and Suburban lines A1 through A4, with live train positions, a GPS nearest-station lookup, and a bilingual English and Greek interface. It is developed independently by Petros Dhespollari in Athens, and is not affiliated with STASY, OASA, or Hellenic Train.",
+      factsLabel: "Fact sheet", factsTitle: "At a glance.",
+      factProductK: "Product", factProductV: "Syrmos (συρμός), Athens transit companion.",
+      factCategoryK: "Category", factCategoryV: "Travel and navigation. Public transit.",
+      factPlatformsK: "Platforms", factPlatformsV: "iOS 17 and later, Android 8 and later, any modern browser with WebAssembly.",
+      factAvailK: "Availability", factAvailV: "Worldwide. App Store, Google Play, and the web app.",
+      factPricingK: "Pricing", factPricingV: "Free. No subscriptions, no in-app purchases, no advertising.",
+      factLicenseK: "License", factLicenseV: "Source code under BSD 3-Clause. Documentation and assets under CC BY-SA 4.0.",
+      factPrivacyK: "Privacy", factPrivacyV: "No accounts, no analytics, no telemetry. Location stays on the device.",
+      factLangK: "Languages", factLangV: "English, Greek, and Albanian (for the on-device assistant).",
+      factCoverageK: "Coverage", factCoverageV: "3 metro lines, 2 tram lines, 4 suburban lines. Around 200 stations across Attica.",
+      factStackK: "Stack", factStackV: "Kotlin Multiplatform, Compose Multiplatform, SwiftUI, SQLDelight, Ktor.",
+      factWebsiteK: "Website", factSourceK: "Source", factBuiltK: "Built by", factBuiltV: "Petros Dhespollari, Athens, Greece.",
+      mediaLabel: "Media & brand assets", mediaTitle: "Screenshots and icons.",
+      mediaIntro: "Click a thumbnail to open the full-resolution file, or use the Download link to save it locally. Everything below is included in the ZIP.",
+      tHome: "Home screen", tMap: "Live train map", tLines: "Lines browser", tSettings: "Settings",
+      tIconDefault: "App icon · Default", tIconDark: "App icon · Dark", tIconTinted: "App icon · Tinted", tFavicon: "Favicon",
+      dlWord: "Download",
+      contactLabel: "Press contact", contactTitle: "Get in touch.", contactRole: "Creator and maintainer",
+      contactNote: "Always up for collaborations, partnerships, and building things with people who care about the craft.",
+      contactEmail: "Email",
+      footCopy: "© 2026 Petros Dhespollari. Assets licensed CC BY-SA 4.0.",
+    },
+    el: {
+      title: "Υλικό Τύπου Syrmos",
+      navWebApp: "Web εφαρμογή", navSource: "Πηγαίος κώδικας", navPrivacy: "Απόρρητο",
+      heroEyebrow: "Τύπος / Media kit",
+      heroH1: "Υλικό Τύπου Syrmos",
+      heroLede: "Ό,τι χρειάζεται ένας συντάκτης, επιμελητής ή κριτικός για να καλύψει το Syrmos: το boilerplate, το δελτίο στοιχείων, εγγενή στιγμιότυπα σε ανάλυση καταστήματος, και το εικονίδιο της εφαρμογής σε κάθε παραλλαγή.",
+      ctaDownload: "Λήψη υλικού Τύπου", ctaEmail: "Email επαφής Τύπου",
+      chipAbout: "Σχετικά", chipFacts: "Δελτίο στοιχείων", chipMedia: "Media & επωνυμία", chipContact: "Επικοινωνία",
+      aboutLabel: "Σχετικά",
+      aboutTitle: "Ένας σύντροφος για κάθε διαδρομή στην Αθήνα.",
+      aboutP1: "Το Syrmos είναι ένας δωρεάν, offline-first σύντροφος για το δίκτυο δημόσιων συγκοινωνιών της Αθήνας. Ενσωματώνει ένα πλήρες στιγμιότυπο κάθε δρομολογίου μετρό, τραμ και προαστιακού μέσα στην ίδια την έκδοση, ώστε να ξεκινά με τα σωστά δεδομένα στο υπόγειο, σε λειτουργία πτήσης ή σε έναν σταθμό χωρίς σήμα, και συγχρονίζεται διακριτικά όταν επιστρέφει η σύνδεση.",
+      aboutP2: "Φτιαγμένο ως ένας ενιαίος κώδικας Kotlin Multiplatform, το Syrmos κυκλοφορεί ως εγγενής εφαρμογή iOS, εγγενής εφαρμογή Android και web εφαρμογή WebAssembly από την ίδια κοινή λογική. Καλύπτει τις γραμμές μετρό 1, 2 και 3, τα τραμ T6 και T7, και τους προαστιακούς A1 έως A4, με ζωντανές θέσεις συρμών, εντοπισμό πλησιέστερου σταθμού μέσω GPS, και δίγλωσσο περιβάλλον στα Αγγλικά και τα Ελληνικά. Αναπτύσσεται ανεξάρτητα από τον Petros Dhespollari στην Αθήνα, και δεν συνδέεται με τη ΣΤΑΣΥ, τον ΟΑΣΑ ή την Hellenic Train.",
+      factsLabel: "Δελτίο στοιχείων", factsTitle: "Με μια ματιά.",
+      factProductK: "Προϊόν", factProductV: "Syrmos (συρμός), σύντροφος συγκοινωνιών Αθήνας.",
+      factCategoryK: "Κατηγορία", factCategoryV: "Ταξίδια και πλοήγηση. Δημόσιες συγκοινωνίες.",
+      factPlatformsK: "Πλατφόρμες", factPlatformsV: "iOS 17 και νεότερο, Android 8 και νεότερο, οποιοδήποτε σύγχρονο πρόγραμμα περιήγησης με WebAssembly.",
+      factAvailK: "Διαθεσιμότητα", factAvailV: "Παγκοσμίως. App Store, Google Play, και η web εφαρμογή.",
+      factPricingK: "Τιμή", factPricingV: "Δωρεάν. Χωρίς συνδρομές, χωρίς αγορές εντός εφαρμογής, χωρίς διαφημίσεις.",
+      factLicenseK: "Άδεια", factLicenseV: "Πηγαίος κώδικας υπό BSD 3-Clause. Τεκμηρίωση και υλικό υπό CC BY-SA 4.0.",
+      factPrivacyK: "Απόρρητο", factPrivacyV: "Χωρίς λογαριασμούς, χωρίς analytics, χωρίς τηλεμετρία. Η τοποθεσία παραμένει στη συσκευή.",
+      factLangK: "Γλώσσες", factLangV: "Αγγλικά, Ελληνικά και Αλβανικά (για τον βοηθό στη συσκευή).",
+      factCoverageK: "Κάλυψη", factCoverageV: "3 γραμμές μετρό, 2 γραμμές τραμ, 4 προαστιακές γραμμές. Περίπου 200 σταθμοί σε όλη την Αττική.",
+      factStackK: "Τεχνολογίες", factStackV: "Kotlin Multiplatform, Compose Multiplatform, SwiftUI, SQLDelight, Ktor.",
+      factWebsiteK: "Ιστότοπος", factSourceK: "Πηγαίος κώδικας", factBuiltK: "Δημιουργός", factBuiltV: "Petros Dhespollari, Αθήνα, Ελλάδα.",
+      mediaLabel: "Media & στοιχεία επωνυμίας", mediaTitle: "Στιγμιότυπα και εικονίδια.",
+      mediaIntro: "Κάντε κλικ σε μια μικρογραφία για να ανοίξετε το αρχείο σε πλήρη ανάλυση, ή χρησιμοποιήστε τον σύνδεσμο Λήψη για να το αποθηκεύσετε τοπικά. Όλα τα παρακάτω περιλαμβάνονται στο ZIP.",
+      tHome: "Αρχική οθόνη", tMap: "Ζωντανός χάρτης συρμών", tLines: "Περιήγηση γραμμών", tSettings: "Ρυθμίσεις",
+      tIconDefault: "Εικονίδιο εφαρμογής · Προεπιλογή", tIconDark: "Εικονίδιο εφαρμογής · Σκούρο", tIconTinted: "Εικονίδιο εφαρμογής · Χρωματισμένο", tFavicon: "Favicon",
+      dlWord: "Λήψη",
+      contactLabel: "Επαφή Τύπου", contactTitle: "Επικοινωνήστε.", contactRole: "Δημιουργός και συντηρητής",
+      contactNote: "Πάντα ανοιχτός σε συνεργασίες, εταιρικές σχέσεις και στο να φτιάχνει πράγματα με ανθρώπους που νοιάζονται για την τέχνη τους.",
+      contactEmail: "Email",
+      footCopy: "© 2026 Petros Dhespollari. Υλικό υπό άδεια CC BY-SA 4.0.",
+    },
+    sq: {
+      title: "Materialet për shtypin të Syrmos",
+      navWebApp: "Web app", navSource: "Kodi burimor", navPrivacy: "Privatësia",
+      heroEyebrow: "Shtypi / Media kit",
+      heroH1: "Materialet për shtypin të Syrmos",
+      heroLede: "Gjithçka që i duhet një shkrimtari, redaktori ose recensuesi për të mbuluar Syrmos: teksti gati për përdorim, fleta e fakteve, pamje ekrani vendase në rezolucion dyqani, dhe ikona e aplikacionit në çdo variant.",
+      ctaDownload: "Shkarko materialet", ctaEmail: "Email për kontaktin e shtypit",
+      chipAbout: "Rreth", chipFacts: "Fleta e fakteve", chipMedia: "Media & marka", chipContact: "Kontakti",
+      aboutLabel: "Rreth",
+      aboutTitle: "Një shoqërues për çdo udhëtim në Athinë.",
+      aboutP1: "Syrmos është një shoqërues falas, offline-first për rrjetin e transportit publik të Athinës. Ai përfshin një fotografi të plotë të çdo orari të metrosë, tramvajit dhe hekurudhës suburbane brenda vetë versionit, kështu që niset me të dhënat e duhura nën tokë, në modalitetin e aeroplanit, ose në një stacion pa sinjal, dhe sinkronizohet në heshtje kur kthehet lidhja.",
+      aboutP2: "I ndërtuar si një kod i vetëm Kotlin Multiplatform, Syrmos shpërndahet si aplikacion vendas iOS, aplikacion vendas Android, dhe aplikacion web WebAssembly nga e njëjta logjikë e përbashkët. Mbulon linjat e metrosë 1, 2 dhe 3, tramvajet T6 dhe T7, dhe linjat suburbane A1 deri A4, me pozicione të drejtpërdrejta trenash, gjetjen e stacionit më të afërt me GPS, dhe një ndërfaqe dygjuhëshe në anglisht dhe greqisht. Zhvillohet në mënyrë të pavarur nga Petros Dhespollari në Athinë, dhe nuk është i lidhur me STASY, OASA ose Hellenic Train.",
+      factsLabel: "Fleta e fakteve", factsTitle: "Me një shikim.",
+      factProductK: "Produkti", factProductV: "Syrmos (συρμός), shoqërues transporti i Athinës.",
+      factCategoryK: "Kategoria", factCategoryV: "Udhëtime dhe navigim. Transport publik.",
+      factPlatformsK: "Platformat", factPlatformsV: "iOS 17 e lart, Android 8 e lart, çdo shfletues modern me WebAssembly.",
+      factAvailK: "Disponueshmëria", factAvailV: "Në mbarë botën. App Store, Google Play, dhe aplikacioni web.",
+      factPricingK: "Çmimi", factPricingV: "Falas. Pa abonime, pa blerje brenda aplikacionit, pa reklama.",
+      factLicenseK: "Licenca", factLicenseV: "Kodi burimor nën BSD 3-Clause. Dokumentacioni dhe materialet nën CC BY-SA 4.0.",
+      factPrivacyK: "Privatësia", factPrivacyV: "Pa llogari, pa analitikë, pa telemetri. Vendndodhja qëndron në pajisje.",
+      factLangK: "Gjuhët", factLangV: "Anglisht, greqisht dhe shqip (për asistentin në pajisje).",
+      factCoverageK: "Mbulimi", factCoverageV: "3 linja metroje, 2 linja tramvaji, 4 linja suburbane. Rreth 200 stacione në të gjithë Atikën.",
+      factStackK: "Teknologjia", factStackV: "Kotlin Multiplatform, Compose Multiplatform, SwiftUI, SQLDelight, Ktor.",
+      factWebsiteK: "Faqja", factSourceK: "Kodi burimor", factBuiltK: "Krijuar nga", factBuiltV: "Petros Dhespollari, Athinë, Greqi.",
+      mediaLabel: "Media & materiale marke", mediaTitle: "Pamje ekrani dhe ikona.",
+      mediaIntro: "Kliko një miniaturë për të hapur skedarin në rezolucion të plotë, ose përdor lidhjen Shkarko për ta ruajtur lokalisht. Gjithçka më poshtë përfshihet në ZIP.",
+      tHome: "Ekrani kryesor", tMap: "Harta e drejtpërdrejtë e trenave", tLines: "Shfletuesi i linjave", tSettings: "Cilësimet",
+      tIconDefault: "Ikona e aplikacionit · E parazgjedhur", tIconDark: "Ikona e aplikacionit · E errët", tIconTinted: "Ikona e aplikacionit · Me nuancë", tFavicon: "Favicon",
+      dlWord: "Shkarko",
+      contactLabel: "Kontakti për shtypin", contactTitle: "Na kontaktoni.", contactRole: "Krijuesi dhe mirëmbajtësi",
+      contactNote: "Gjithmonë i gatshëm për bashkëpunime, partneritete dhe për të ndërtuar gjëra me njerëz që kujdesen për mjeshtërinë.",
+      contactEmail: "Email",
+      footCopy: "© 2026 Petros Dhespollari. Materialet të licencuara CC BY-SA 4.0.",
+    },
+  };
+
+  function detect() {
+    try { var s = localStorage.getItem("syrmos_site_lang"); if (s && I18N[s]) return s; } catch (e) {}
+    var n = (navigator.language || "en").toLowerCase();
+    if (n.indexOf("el") === 0) return "el";
+    if (n.indexOf("sq") === 0) return "sq";
+    return "en";
+  }
+
+  function apply(lang) {
+    var d = I18N[lang] || I18N.en;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var v = d[el.getAttribute("data-i18n")];
+      if (v != null) el.textContent = v;
+    });
+    document.documentElement.lang = lang;
+    if (d.title) document.title = d.title;
+    document.querySelectorAll(".lang-btn").forEach(function (b) {
+      var on = b.getAttribute("data-lang") === lang;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    try { localStorage.setItem("syrmos_site_lang", lang); } catch (e) {}
+  }
+
+  function reduce() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  function switchLang(lang) {
+    if (!reduce() && document.startViewTransition) {
+      document.startViewTransition(function () { apply(lang); });
+    } else {
+      apply(lang);
+    }
+  }
+
+  document.querySelectorAll(".lang-btn").forEach(function (b) {
+    b.addEventListener("click", function () { switchLang(b.getAttribute("data-lang")); });
+  });
+
+  apply(detect());
+})();
+</script>
 
 </body>
 </html>
