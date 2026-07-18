@@ -53,13 +53,14 @@ final class AriadneModel: ObservableObject {
             // (station / line resolved to ids by Swift, never invented). When it
             // is unavailable or can't ground the result, fall back to the rule
             // parser, first letting the model at least normalize fuzzy input.
-            let raw: AssistantIntent
+            var raw: AssistantIntent
             if let guided = await AriadneGuided.classify(text, vocabulary: parser.vocabulary) {
                 raw = guided
             } else {
                 let cleaned = await AriadneBrain.normalize(text) ?? text
                 raw = parser.parse(cleaned)
             }
+            raw = applyDayFollowUp(text, raw)
             // Fill a missing origin from the known current station before asking,
             // so "I'm at Syntagma" then "go airport faster" needs no follow-up.
             let intent = fillFromContext(mergePendingIfApplicable(raw))
@@ -77,6 +78,21 @@ final class AriadneModel: ObservableObject {
         }
     }
 
+    /// Bare day-change follow-up: "what about tomorrow?", "and the weekend?".
+    /// The parser can't classify these alone (no station), so they land as
+    /// outOfScope; if the last answered turn was a departures query for a known
+    /// station, re-issue it for the new day instead of declining. Mirrors KMP.
+    private func applyDayFollowUp(_ text: String, _ raw: AssistantIntent) -> AssistantIntent {
+        guard case .outOfScope = raw else { return raw }
+        let day = parser.dayOf(text)
+        guard day != .today else { return raw }
+        if case let .showDepartures(stationId, lineId, _) = session.lastIntent,
+           stationId != nil || lineId != nil {
+            return .showDepartures(stationId: stationId, lineId: lineId, day: day)
+        }
+        return raw
+    }
+
     /// Fill the pending clarification slot with a station id the user just
     /// named. Bare "Syntagma" turns into a Departures intent from the
     /// parser; we grab its stationId and merge it into whatever the
@@ -87,6 +103,7 @@ final class AriadneModel: ObservableObject {
             switch raw {
             case let .showDepartures(id, _, _): return id
             case let .lastTrain(id, _): return id
+            case let .firstTrain(id, _): return id
             case let .needsClarification(base, _):
                 if case let .showDepartures(id, _, _) = base { return id }
                 return nil
@@ -111,8 +128,12 @@ final class AriadneModel: ObservableObject {
             return .needsClarification(base: base, missing: stillMissing)
         case let .lastTrain(_, lineId):
             return .lastTrain(stationId: sid, lineId: lineId)
+        case let .firstTrain(_, lineId):
+            return .firstTrain(stationId: sid, lineId: lineId)
         case let .showDepartures(_, lineId, day):
             return .showDepartures(stationId: sid, lineId: lineId, day: day)
+        case .stationAccessibility:
+            return .stationAccessibility(stationId: sid)
         case let .toggleFavorite(_):
             return .toggleFavorite(stationId: sid)
         case let .travelTime(to, from):
@@ -131,6 +152,12 @@ final class AriadneModel: ObservableObject {
             return resolveDepartures(stationId: stationId, lineId: lineId, day: day)
         case let .lastTrain(stationId, lineId):
             return resolveLastTrain(stationId: stationId, lineId: lineId)
+        case let .firstTrain(stationId, lineId):
+            return resolveFirstTrain(stationId: stationId, lineId: lineId)
+        case let .stationAccessibility(stationId):
+            return resolveAccessibility(stationId: stationId)
+        case .reverseTrip:
+            return resolveReverseTrip()
         case let .planTrip(from, to, lowExposure, preference):
             return resolvePlanTrip(from: from, to: to, lowExposure: lowExposure, preference: preference)
         case let .travelTime(to, from):
@@ -190,20 +217,36 @@ final class AriadneModel: ObservableObject {
         switch intent {
         case let .setCurrentLocation(stationId):
             session = session.withCurrentStation(stationId ?? session.currentStation)
+            session.lastIntent = intent
         case let .planTrip(from, to, _, preference):
             session.currentStation = from ?? session.currentStation
             session.lastDestination = to ?? session.lastDestination
             if let from, let to {
                 session.lastRoute = RouteMemory(fromStationId: from, toStationId: to, preference: preference)
             }
+            session.lastIntent = intent
         case let .travelTime(to, _):
             session.lastDestination = to ?? session.lastDestination
+            session.lastIntent = intent
         case let .showDepartures(stationId, _, _):
             session.currentStation = stationId ?? session.currentStation
+            session.lastIntent = intent
+        case let .firstTrain(stationId, _):
+            session.currentStation = stationId ?? session.currentStation
+            session.lastIntent = intent
+        // "and back" flips the remembered route so a second "and back" flips it
+        // right back, and the return origin becomes the new current station.
+        case .reverseTrip:
+            if let r = session.lastRoute {
+                session.lastRoute = RouteMemory(fromStationId: r.toStationId, toStationId: r.fromStationId, preference: r.preference)
+                session.currentStation = r.toStationId
+                session.lastDestination = r.fromStationId
+            }
+            session.lastIntent = intent
         case .needsClarification:
             break
         default:
-            break
+            session.lastIntent = intent
         }
     }
 
@@ -677,6 +720,48 @@ final class AriadneModel: ObservableObject {
             "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë."))
     }
 
+    /// First / earliest scheduled train of today at a station (mirror of last train).
+    private func resolveFirstTrain(stationId: String?, lineId: String?) -> AriadneMessage {
+        guard let station = resolveStation(stationId: stationId, lineId: lineId) else {
+            return bot(clarify(.station))
+        }
+        let lineIds = lineId.map { [$0] } ?? station.lineIds
+        // Project the whole service day from 00:00 and take the earliest slot.
+        let deps = ScheduleProjector.nextDepartures(for: station.id, lineIds: lineIds, limit: 4, dayOffset: 0)
+        guard let first = deps.min(by: { $0.minutesAway < $1.minutesAway }) else {
+            return bot(t("I don't have today's schedule for \(name(station)) offline.",
+                "Δεν έχω το σημερινό πρόγραμμα για \(name(station)) εκτός σύνδεσης.",
+                "Nuk e kam orarin e sotëm për \(name(station)) pa internet."))
+        }
+        return bot(t("First \(displayLine(first.lineId)) from \(name(station)) is at \(first.time).",
+            "Το πρώτο \(displayLine(first.lineId)) από \(name(station)) είναι στις \(first.time).",
+            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time)."))
+    }
+
+    /// Step-free accessibility for one station, from the bundled flag. Never invented.
+    private func resolveAccessibility(stationId: String?) -> AriadneMessage {
+        guard let id = stationId, let st = station(id) else { return bot(clarify(.station)) }
+        let n = name(st)
+        if AriadneAccessibility.isAccessible(id) {
+            return bot(t("\(n) is step-free accessible (lift / level access).",
+                "Ο \(n) είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).",
+                "\(n) është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë)."))
+        }
+        return bot(t("\(n) is not marked step-free. Check for stairs-only access before you go.",
+            "Ο \(n) δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.",
+            "\(n) nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë."))
+    }
+
+    /// "and back?" — reverse the remembered route and re-plan.
+    private func resolveReverseTrip() -> AriadneMessage {
+        guard let route = session.lastRoute else {
+            return bot(t("Tell me a trip first, then I can flip it for the way back.",
+                "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή.",
+                "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."))
+        }
+        return resolvePlanTrip(from: route.toStationId, to: route.fromStationId, lowExposure: false, preference: route.preference)
+    }
+
     /// Full point-to-point routing via `JourneyPlanner` (Dijkstra), matching
     /// the Android/Web `PlanJourneyUseCase`.
     private func resolvePlanTrip(from: String?, to: String?, lowExposure: Bool, preference: RoutePreference) -> AriadneMessage {
@@ -1003,4 +1088,37 @@ final class AriadneModel: ObservableObject {
         default: return en
         }
     }
+}
+
+/// Per-station step-free accessibility, decoded once from the embedded stations
+/// in the bundled seed payload (TransitStation itself doesn't carry the flag).
+/// Ariadne answers accessibility questions from this, never invented. Unknown
+/// ids default to accessible, matching the KMP `Station.accessibility` default.
+enum AriadneAccessibility {
+    private struct Payload: Decodable {
+        struct Line: Decodable {
+            struct Stn: Decodable { let id: String; let accessibility: Bool? }
+            let stations: [Stn]?
+        }
+        let lines: [Line]
+    }
+
+    static func isAccessible(_ stationId: String) -> Bool {
+        map[stationId] ?? true
+    }
+
+    private static let map: [String: Bool] = {
+        let url = Bundle.main.url(forResource: "lines", withExtension: "json", subdirectory: "seed-schedules-v2")
+            ?? Bundle.main.url(forResource: "lines", withExtension: "json")
+        guard let url = url,
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(Payload.self, from: data) else { return [:] }
+        var result: [String: Bool] = [:]
+        for line in payload.lines {
+            for stn in line.stations ?? [] where result[stn.id] == nil {
+                result[stn.id] = stn.accessibility ?? true
+            }
+        }
+        return result
+    }()
 }

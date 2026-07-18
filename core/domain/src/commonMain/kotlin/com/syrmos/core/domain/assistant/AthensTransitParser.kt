@@ -38,6 +38,14 @@ class AthensTransitParser(
         // Help / capabilities, allowed even with no other signal.
         if (containsAny(text, HELP_PHRASES)) return AssistantIntent.Help
 
+        // Reverse-trip follow-up: a bare "and back?" / "return" / "the other
+        // way" / "και πίσω" / "kthimi" with no newly-named station. The resolver
+        // flips the remembered route; with an explicit new trip ("X to Y and
+        // back") the stations below take over and this stays dormant.
+        if (mentionedStations.isEmpty() && containsAny(text, REVERSE_PHRASES)) {
+            return AssistantIntent.ReverseTrip
+        }
+
         val strongTransit = mentionedStations.isNotEmpty() ||
             mentionedLine != null ||
             containsAny(text, TRANSIT_NOUNS)
@@ -141,6 +149,23 @@ class AthensTransitParser(
                 }
         }
 
+        // 0c. Station accessibility: "is X step-free?", "does X have a lift?".
+        //     Checked before planning because the Greek "για ΑμεΑ" ("for
+        //     disabled access") contains the " για " to-marker, which would
+        //     otherwise turn the question into a trip. Needs a named station or
+        //     the word "station".
+        if (containsAny(text, ACCESSIBILITY_WORDS) &&
+            (mentionedStations.isNotEmpty() || containsAny(text, STATION_NOUN_WORDS))
+        ) {
+            val station = mentionedStations.firstOrNull()
+            val base = AssistantIntent.StationAccessibility(stationId = station)
+            return if (station == null) {
+                AssistantIntent.NeedsClarification(base, MissingSlot.STATION)
+            } else {
+                base
+            }
+        }
+
         // 1. Plan a trip. Triggered by an explicit "how do I get" phrase, an
         //    explicit "to" frame with a station, weather routing, or two
         //    distinct stations named. A bare "trains FROM X" is departures, not
@@ -192,6 +217,24 @@ class AthensTransitParser(
                 to == null -> AssistantIntent.NeedsClarification(base, MissingSlot.DESTINATION_STATION)
                 from == null -> AssistantIntent.NeedsClarification(base, MissingSlot.ORIGIN_STATION)
                 else -> base
+            }
+        }
+
+        // 1c. First / earliest train of the day. The mirror of last train,
+        //     checked just before it so "first train" isn't read as a plain
+        //     departures query. A bare position word ("first" / "πρώτο" /
+        //     "parë") counts only alongside a named station or line, so
+        //     "first M2 train" resolves while "first" alone does not.
+        val firstCue = containsAny(text, FIRST_TRAIN_PHRASES) ||
+            (FIRST_TOKENS.any { text.contains(it) } &&
+                (mentionedStations.isNotEmpty() || mentionedLine != null))
+        if (firstCue) {
+            val station = mentionedStations.firstOrNull()
+            val base = AssistantIntent.FirstTrain(stationId = station, lineId = mentionedLine)
+            return if (station == null && mentionedLine == null) {
+                AssistantIntent.NeedsClarification(base, MissingSlot.STATION)
+            } else {
+                base
             }
         }
 
@@ -351,6 +394,13 @@ class AthensTransitParser(
         }
         return null
     }
+
+    /**
+     * Public day-context probe for follow-ups. Lets the caller detect a bare
+     * "what about tomorrow?" / "and the weekend?" turn and re-run the last
+     * query for that day without the user repeating the station.
+     */
+    fun dayOf(rawInput: String): DayContext = matchDay(fold(rawInput))
 
     private fun matchDay(text: String): DayContext = when {
         containsAny(text, TOMORROW_WORDS) -> DayContext.TOMORROW
@@ -546,14 +596,48 @@ class AthensTransitParser(
         )
         private val DEPARTURE_WORDS = listOf(
             "next", "departure", "departures", "when", "trains", "leave", "leaving", "schedule",
-            "coming", "upcoming", "due",
-            "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ερχεται",
-            "ardhsh", "kur", "nisje", "tren", "trena", "vjen",
+            "coming", "upcoming", "due", "arrivals", "arriving", "next one", "how soon", "timetable",
+            "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ερχεται", "ερχονται",
+            "ωραριο", "επομενο",
+            "ardhsh", "kur", "nisje", "tren", "trena", "vjen", "orari", "ardhja",
         )
         private val LAST_TRAIN_PHRASES = listOf(
             "last train", "last metro", "last one", "leave by", "final train", "last departure",
             "τελευται", "τελευταιο τρεν", "τελευταιος", "τελευταιο δρομολογιο",
             "treni i fundit", "fundit", "i fundit", "tren i fundit", "nisja e fundit",
+        )
+        // First / earliest service of the day. Mirror of LAST_TRAIN_PHRASES.
+        private val FIRST_TRAIN_PHRASES = listOf(
+            "first train", "first metro", "first tram", "first one", "earliest train",
+            "earliest metro", "first departure", "when does it start", "when does service start",
+            "start of service", "when do trains start", "first service",
+            "πρωτο τρεν", "πρωτο δρομολογιο", "πρωτος συρμος", "ποτε ξεκινα", "ποτε ξεκινουν",
+            "εναρξη δρομολογιων", "πρωτο μετρο", "πρωτη αναχωρηση",
+            "treni i pare", "nisja e pare", "tren i pare", "kur fillon", "kur fillojne",
+            "sherbimi i pare", "metroja e pare",
+        )
+        // Bare "first / earliest" position tokens (folded substrings). Only
+        // count as a first-train cue alongside a named station or line, so
+        // "first M2 train" resolves without "first" alone hijacking a query.
+        private val FIRST_TOKENS = listOf("first", "earliest", "πρωτ", "i pare", "e pare", "me heret")
+        // Step-free / wheelchair / lift accessibility cues.
+        private val ACCESSIBILITY_WORDS = listOf(
+            "accessible", "accessibility", "wheelchair", "step free", "step-free", "stepfree",
+            "lift", "elevator", "disabled access", "disability access", "amea",
+            "προσβασιμ", "προσβαση αμεα", "για αμεα", "αναπηρικ", "αμαξιδι", "ασανσερ",
+            "αναβατοριο", "αναπηρια",
+            "i aksesueshem", "aksesueshem", "aksesi", "karrige me rrota", "ashensor",
+            "per personat me aftesi", "personat me aftesi te kufizuara",
+        )
+        // "and back" / "return" / "the other way" — reverse the last route.
+        private val REVERSE_PHRASES = listOf(
+            "and back", "way back", "the other way", "return trip", "round trip", "return journey",
+            "reverse", "reverse trip", "back again", "other direction", "opposite direction",
+            "coming back", "on the way back", "return the same way",
+            "και πισω", "επιστροφη", "αντιστροφ", "το αναποδο", "το αντιθετο", "πισω παλι",
+            "αναποδη διαδρομη", "για επιστροφη",
+            "kthimi", "kthimin", "e kunderta", "rruga e kthimit", "anasjelltas",
+            "kthimi mbrapa", "kthej mbrapsht", "dhe kthimi",
         )
         // Strong trip cues only. Bare "from" / "από" / "nga" are deliberately
         // excluded: "trains from Syntagma" is a departures query, not a trip.
@@ -561,11 +645,12 @@ class AthensTransitParser(
         private val PLAN_PHRASES = listOf(
             "how do i get", "how to get", "get to", "get me to", "route", "directions",
             "how do i go", "how to go", "go to", "can i go", "can i still", "can i reach",
-            "take me to", "best way", "fastest way", "quickest way",
+            "take me to", "best way", "fastest way", "quickest way", "how can i get",
+            "i want to go", "i need to go", "navigate to", "way to reach", "getting to",
             "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "προλαβαινω", "μπορω να παω",
-            "πως θα παω", "καλυτερος τροπος", "πιο γρηγορα",
+            "πως θα παω", "καλυτερος τροπος", "πιο γρηγορα", "θελω να παω", "πως μπορω να παω",
             "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij",
-            "si te vij", "rruga me e mire", "rruga me e shpejte",
+            "si te vij", "rruga me e mire", "rruga me e shpejte", "dua te shkoj", "si mund te shkoj",
         )
         private val TO_MARKERS = listOf(
             " to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ",
@@ -669,6 +754,7 @@ class AthensTransitParser(
         private val STOPWORDS: Set<String> = (
             TRANSIT_NOUNS + DEPARTURE_WORDS + FIND_WORDS + LINE_WORDS + FARE_WORDS +
                 FAVORITE_WORDS + AIRPORT_WORDS + ALERT_WORDS + MAP_WORDS + WEATHER_WORDS +
+                ACCESSIBILITY_WORDS + REVERSE_PHRASES + FIRST_TRAIN_PHRASES +
                 TOMORROW_WORDS + WEEKEND_WORDS + SATURDAY_WORDS + SUNDAY_WORDS
             ).map { fold(it) }.filter { it.length >= 4 && !it.contains(' ') }.toSet()
     }

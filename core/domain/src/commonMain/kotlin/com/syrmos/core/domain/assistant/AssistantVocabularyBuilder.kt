@@ -60,5 +60,22 @@ object AssistantVocabularyBuilder {
         "aerodromio" to listOf("Aeroport", "Aeroporti"),
         "piraeus" to listOf("Pireas", "Pireu"),      // Greeklish / SQ
         "syntagma" to listOf("Sintagma"),            // common Latin variant
+        // Albanian exonyms + common Greeklish for the highest-traffic stops.
+        "thessaloniki" to listOf("Selanik", "Selaniku", "Thesaloniki"),  // SQ exonym
+        "athens" to listOf("Athina", "Athine"),      // SQ / Greeklish for Athens
+        "acropolis" to listOf("Akropoli", "Akropolis"),
+        "omonia" to listOf("Omonoia"),
+        "monastiraki" to listOf("Monastiraqi"),
+        "nikaia" to listOf("Nikea", "Nikaja"),
+        "victoria" to listOf("Viktoria"),
+        "attiki" to listOf("Atiki"),
+        "kifisia" to listOf("Kifissia"),
+        "elliniko" to listOf("Helliniko"),
+        "peristeri" to listOf("Peristeri"),
+        "aigaleo" to listOf("Egaleo", "Aigaleo"),
+        "larisa" to listOf("Larisis"),               // Larissa Station (Stathmos Larisis)
+        "patra" to listOf("Patra", "Patras"),
+        "aghios" to listOf("Agios"),                 // normalise "Aghios"/"Agios"
+        "agios" to listOf("Aghios"),
     )
 }

@@ -10,7 +10,7 @@ package com.syrmos.core.common
  */
 object AriadneGrammar {
     const val GBNF: String = """root ::= "{\"intent\":" intent ",\"station\":" str ",\"toStation\":" str ",\"line\":" str ",\"query\":" str ",\"airport\":" bool ",\"lowExposure\":" bool ",\"day\":" day ",\"arriveByClock\":" str ",\"arriveInMinutes\":" int "}"
-intent ::= "\"showDepartures\"" | "\"lastTrain\"" | "\"findStation\"" | "\"planTrip\"" | "\"planTripByArrival\"" | "\"travelTime\"" | "\"explainLine\"" | "\"explainFare\"" | "\"showAlerts\"" | "\"weatherAt\"" | "\"help\"" | "\"outOfScope\""
+intent ::= "\"showDepartures\"" | "\"lastTrain\"" | "\"firstTrain\"" | "\"stationAccessibility\"" | "\"reverseTrip\"" | "\"findStation\"" | "\"planTrip\"" | "\"planTripByArrival\"" | "\"travelTime\"" | "\"explainLine\"" | "\"explainFare\"" | "\"showAlerts\"" | "\"weatherAt\"" | "\"help\"" | "\"outOfScope\""
 day ::= "\"today\"" | "\"tomorrow\"" | "\"weekend\"" | "\"saturday\"" | "\"sunday\""
 bool ::= "true" | "false"
 int ::= "0" | [1-9] [0-9]{0,3}

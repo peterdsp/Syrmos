@@ -184,8 +184,8 @@ class AssistantViewModel(
             // Clever tier: when an on-device classifier (Gemini Nano) is present
             // and can ground the message, use its intent directly. Otherwise fall
             // back to normalizing fuzzy input and running the deterministic parser.
-            val raw = assistantClassifier.classify(text, p.vocabulary)
-                ?: p.parse(queryNormalizer.normalize(text) ?: text)
+            val raw = applyDayFollowUp(text, assistantClassifier.classify(text, p.vocabulary)
+                ?: p.parse(queryNormalizer.normalize(text) ?: text), p)
             // Fill a missing origin from the known current station before asking,
             // so "I'm at Syntagma" then "go airport faster" needs no follow-up.
             val intent = fillFromContext(mergePendingIfApplicable(raw))
@@ -205,6 +205,23 @@ class AssistantViewModel(
     }
 
     /**
+     * Bare day-change follow-up: "what about tomorrow?", "and the weekend?".
+     * The parser can't classify these alone (no station), so they land as
+     * OutOfScope; if the last answered turn was a departures query for a known
+     * station, re-issue it for the new day instead of declining.
+     */
+    private fun applyDayFollowUp(text: String, raw: AssistantIntent, p: AthensTransitParser): AssistantIntent {
+        if (raw !is AssistantIntent.OutOfScope) return raw
+        val day = p.dayOf(text)
+        if (day == DayContext.TODAY) return raw
+        val last = session.lastIntent
+        return when (last) {
+            is AssistantIntent.ShowDepartures -> if (last.stationId != null || last.lineId != null) last.copy(day = day) else raw
+            else -> raw
+        }
+    }
+
+    /**
      * If we're mid-conversation and the user's new turn is a bare station
      * name (Ariadne's parser turns "Syntagma" alone into a
      * ShowDepartures{station=SYN}), merge that station into the pending
@@ -217,6 +234,7 @@ class AssistantViewModel(
         val stationId = when (raw) {
             is AssistantIntent.ShowDepartures -> raw.stationId
             is AssistantIntent.LastTrain -> raw.stationId
+            is AssistantIntent.FirstTrain -> raw.stationId
             is AssistantIntent.NeedsClarification -> (raw.base as? AssistantIntent.ShowDepartures)?.stationId
             else -> null
         } ?: return raw
@@ -236,7 +254,9 @@ class AssistantViewModel(
                 )
             }
             is AssistantIntent.LastTrain -> pending.copy(stationId = stationId)
+            is AssistantIntent.FirstTrain -> pending.copy(stationId = stationId)
             is AssistantIntent.ShowDepartures -> pending.copy(stationId = stationId)
+            is AssistantIntent.StationAccessibility -> pending.copy(stationId = stationId)
             is AssistantIntent.ToggleFavorite -> pending.copy(stationId = stationId)
             is AssistantIntent.TravelTime -> if (pending.toStationId == null)
                 pending.copy(toStationId = stationId) else pending
@@ -249,6 +269,9 @@ class AssistantViewModel(
     private suspend fun resolve(intent: AssistantIntent): AssistantMessage = when (intent) {
         is AssistantIntent.ShowDepartures -> resolveDepartures(intent)
         is AssistantIntent.LastTrain -> resolveLastTrain(intent)
+        is AssistantIntent.FirstTrain -> resolveFirstTrain(intent)
+        is AssistantIntent.StationAccessibility -> resolveAccessibility(intent)
+        AssistantIntent.ReverseTrip -> resolveReverseTrip()
         is AssistantIntent.PlanTrip -> resolvePlanTrip(intent)
         is AssistantIntent.TravelTime -> resolveTravelTime(intent)
         is AssistantIntent.FindStation -> resolveFindStation(intent)
@@ -312,6 +335,21 @@ class AssistantViewModel(
                 currentStation = intent.stationId ?: session.currentStation,
                 lastIntent = intent,
             )
+            is AssistantIntent.FirstTrain -> session.copy(
+                currentStation = intent.stationId ?: session.currentStation,
+                lastIntent = intent,
+            )
+            // "and back" flips the remembered route so a second "and back" flips
+            // it right back, and the new current station becomes the return origin.
+            AssistantIntent.ReverseTrip -> {
+                val r = session.lastRoute
+                session.copy(
+                    lastRoute = r?.let { RouteMemory(it.toStationId, it.fromStationId, it.preference) },
+                    currentStation = r?.toStationId ?: session.currentStation,
+                    lastDestination = r?.fromStationId ?: session.lastDestination,
+                    lastIntent = intent,
+                )
+            }
             is AssistantIntent.NeedsClarification -> session
             else -> session.copy(lastIntent = intent)
         }
@@ -793,6 +831,63 @@ class AssistantViewModel(
                 "Treni i fundit ${displayLine(last.lineId)} nga ${stationName(station)} niset ${last.time}. Nisu deri atëherë."),
             action = AssistantAction.OpenStation(station.id),
             actionLabel = t("Open", "Άνοιγμα", "Hap"),
+        )
+    }
+
+    /** First / earliest scheduled train of today at a station (mirror of last train). */
+    private suspend fun resolveFirstTrain(intent: AssistantIntent.FirstTrain): AssistantMessage {
+        val station = resolveStation(intent.stationId, intent.lineId) ?: return botMessage(clarify(MissingSlot.STATION))
+        val lineIds = intent.lineId?.let { listOf(it) } ?: station.lineIds
+        val expanded = lineIds.flatMap { if (it == "M3") listOf("M3", "M3_AIR") else listOf(it) }
+        val departures = mutableListOf<UpcomingDeparture>()
+        for (lineId in expanded) {
+            for (direction in Direction.entries) {
+                departures += bandProjector.invokeForDay(listOf(lineId), direction, dayOffset = 0, limit = 2, stationId = station.id)
+            }
+        }
+        val first = departures.distinctBy { it.time + it.lineId }.minByOrNull { it.minutesAway }
+            ?: return botMessage(t("I don't have today's schedule for ${stationName(station)} offline.",
+                "Δεν έχω το σημερινό πρόγραμμα για ${stationName(station)} εκτός σύνδεσης.",
+                "Nuk e kam orarin e sotëm për ${stationName(station)} pa internet."))
+        return AssistantMessage(
+            id = nextId++,
+            fromUser = false,
+            text = t("First ${displayLine(first.lineId)} from ${stationName(station)} is at ${first.time}.",
+                "Το πρώτο ${displayLine(first.lineId)} από ${stationName(station)} είναι στις ${first.time}.",
+                "Treni i parë ${displayLine(first.lineId)} nga ${stationName(station)} është në ${first.time}."),
+            action = AssistantAction.OpenStation(station.id),
+            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+        )
+    }
+
+    /** Step-free accessibility for one station, from the bundled flag. Never invented. */
+    private suspend fun resolveAccessibility(intent: AssistantIntent.StationAccessibility): AssistantMessage {
+        val station = resolveStation(intent.stationId, null) ?: return botMessage(clarify(MissingSlot.STATION))
+        val name = stationName(station)
+        val reply = if (station.accessibility) {
+            t("$name is step-free accessible (lift / level access).",
+                "Ο $name είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).",
+                "$name është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë).")
+        } else {
+            t("$name is not marked step-free. Check for stairs-only access before you go.",
+                "Ο $name δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.",
+                "$name nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.")
+        }
+        return botMessage(reply)
+    }
+
+    /** "and back?" — reverse the remembered route and re-plan. */
+    private suspend fun resolveReverseTrip(): AssistantMessage {
+        val route = session.lastRoute
+            ?: return botMessage(t("Tell me a trip first, then I can flip it for the way back.",
+                "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή.",
+                "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."))
+        return resolvePlanTrip(
+            AssistantIntent.PlanTrip(
+                fromStationId = route.toStationId,
+                toStationId = route.fromStationId,
+                preference = route.preference,
+            ),
         )
     }
 

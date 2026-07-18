@@ -296,6 +296,111 @@ final class AriadneParserTests: XCTestCase {
         XCTAssertNil(from)
         XCTAssertEqual(preference, .fastest)
     }
+
+    // MARK: - First train (new capability)
+
+    func test_firstTrainWithStation() {
+        guard case let .firstTrain(stationId, _) = parser.parse("when is the first train from Piraeus") else {
+            return XCTFail("expected first train")
+        }
+        XCTAssertEqual(stationId, "M1_PIR")
+    }
+
+    func test_firstTrainGreek() {
+        guard case let .firstTrain(stationId, _) = parser.parse("πρώτο τρένο από το Σύνταγμα") else {
+            return XCTFail("expected first train")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_firstTrainAlbanian() {
+        guard case .firstTrain = parser.parse("treni i parë nga Pireas") else {
+            return XCTFail("expected first train")
+        }
+    }
+
+    func test_firstTrainBareLine() {
+        guard case let .firstTrain(_, lineId) = parser.parse("first M2 train") else {
+            return XCTFail("expected first train")
+        }
+        XCTAssertEqual(lineId, "M2")
+    }
+
+    func test_firstNotConfusedWithLast() {
+        guard case .firstTrain = parser.parse("first train Syntagma") else { return XCTFail("expected first") }
+        guard case .lastTrain = parser.parse("last train Syntagma") else { return XCTFail("expected last") }
+    }
+
+    // MARK: - Accessibility (new capability)
+
+    func test_accessibilityWithStation() {
+        guard case let .stationAccessibility(stationId) = parser.parse("is Syntagma wheelchair accessible") else {
+            return XCTFail("expected accessibility")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_accessibilityLiftPhrasing() {
+        guard case let .stationAccessibility(stationId) = parser.parse("does Piraeus have a lift") else {
+            return XCTFail("expected accessibility")
+        }
+        XCTAssertEqual(stationId, "M1_PIR")
+    }
+
+    func test_accessibilityGreek() {
+        guard case .stationAccessibility = parser.parse("είναι προσβάσιμο για ΑμεΑ το Σύνταγμα") else {
+            return XCTFail("expected accessibility")
+        }
+    }
+
+    func test_accessibilityAlbanian() {
+        guard case let .stationAccessibility(stationId) = parser.parse("a është Sintagma i aksesueshëm") else {
+            return XCTFail("expected accessibility")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    // MARK: - Reverse trip follow-up (smarter conversations)
+
+    func test_reverseTripAndBack() {
+        guard case .reverseTrip = parser.parse("and back?") else { return XCTFail("expected reverse") }
+    }
+
+    func test_reverseTripGreek() {
+        guard case .reverseTrip = parser.parse("και πίσω;") else { return XCTFail("expected reverse") }
+    }
+
+    func test_reverseTripAlbanian() {
+        guard case .reverseTrip = parser.parse("kthimi") else { return XCTFail("expected reverse") }
+    }
+
+    func test_reverseTripDormantWithStations() {
+        guard case .planTrip = parser.parse("Syntagma to Piraeus and back") else {
+            return XCTFail("expected plan trip")
+        }
+    }
+
+    // MARK: - Expanded phrasings + day probe
+
+    func test_expandedPlanPhrasing() {
+        guard case let .planTrip(from, to, _, _) = parser.parse("I want to go from Syntagma to the airport") else {
+            return XCTFail("expected plan trip")
+        }
+        XCTAssertEqual(from, "M2_SYN")
+        XCTAssertEqual(to, "M3_AER")
+    }
+
+    func test_expandedDeparturePhrasingArrivals() {
+        guard case .showDepartures = parser.parse("arrivals at Monastiraki") else {
+            return XCTFail("expected departures")
+        }
+    }
+
+    func test_dayProbeTrilingual() {
+        XCTAssertEqual(parser.dayOf("what about tomorrow"), .tomorrow)
+        XCTAssertEqual(parser.dayOf("και αύριο;"), .tomorrow)
+        XCTAssertEqual(parser.dayOf("Syntagma"), .today)
+    }
 }
 
 /// Mirrors the KMP `ServiceAdvisoryMatcherTest`: Ariadne surfaces the same STASY

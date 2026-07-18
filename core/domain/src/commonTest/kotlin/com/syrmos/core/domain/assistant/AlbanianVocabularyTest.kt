@@ -59,4 +59,22 @@ class AlbanianVocabularyTest {
         assertEquals("PIR", trip.fromStationId)
         assertEquals("AIR", trip.toStationId)
     }
+
+    @Test
+    fun builder_adds_albanian_thessaloniki_exonym() {
+        // "Selanik" is the Albanian name for Thessaloniki — a real recall win
+        // for the large Albanian community, not just Greeklish.
+        val thess = AssistantVocabularyBuilder.build(
+            listOf(station("THE", "Thessaloniki", "Θεσσαλονίκη", listOf("TM1"))),
+            emptyList(),
+        ).stations.single()
+        assertTrue("Selanik" in thess.names, "expected SQ 'Selanik' alias, got ${thess.names}")
+    }
+
+    @Test
+    fun greeklish_sintagma_still_resolves() {
+        val intent = parser.parse("next trains from Sintagma")
+        val dep = assertIs<AssistantIntent.ShowDepartures>(intent)
+        assertEquals("SYN", dep.stationId)
+    }
 }
