@@ -56,9 +56,13 @@ jobs:
 
       - name: Build iOS app scheme (embeds watch app)
         run: |
+          # ARCHS=arm64: the vendored llama.xcframework simulator slice is
+          # arm64-only, so a universal (arm64+x86_64) generic build fails to link
+          # the x86_64 slice. CI runners and modern simulators are all arm64.
           xcodebuild build \
             -project iosApp/Syrmos.xcodeproj \
             -scheme "Syrmos - Athens Rail Times" \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO

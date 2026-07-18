@@ -53,6 +53,10 @@ jobs:
       - name: Install Apple AI tools (Loupe + agent-device)
         run: |
           brew tap heoblitz/loupe https://github.com/heoblitz/Loupe.git
+          # Recent Homebrew refuses formulae from third-party taps until the tap
+          # is explicitly trusted, which broke this step ("Refusing to load
+          # formula ... from untrusted tap").
+          brew trust heoblitz/loupe || brew trust --formula heoblitz/loupe/loupe || true
           brew install loupe
           npm install -g agent-device@latest
 

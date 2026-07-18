@@ -16,7 +16,7 @@ import Foundation
 /// `.fastest` minimises total minutes. `.fewestChanges` minimises transfers even
 /// at a small time cost, the right default for luggage / strollers / limited
 /// mobility. `.balanced` is the neutral default when the user gave no cue.
-enum RoutePreference: Equatable {
+enum RoutePreference: Equatable, Sendable {
     case balanced
     case fastest
     case fewestChanges
@@ -54,7 +54,7 @@ enum RoutePreference: Equatable {
 /// "I'm at Syntagma" sets `currentStation`; a later "go airport faster" then
 /// needs no "from where?". Everything is optional and the whole context is
 /// replaced each turn, so state is easy to reason about and mirror on Android.
-struct AssistantSessionContext: Equatable {
+struct AssistantSessionContext: Equatable, Sendable {
     var currentStation: String?
     var currentLine: String?
     // Kept in sync with the KMP AssistantSessionContext: direction on the
@@ -79,7 +79,7 @@ struct AssistantSessionContext: Equatable {
 
 /// Just enough of the last route to answer a follow-up ("faster?") without
 /// recomputing from scratch or re-asking endpoints.
-struct RouteMemory: Equatable {
+struct RouteMemory: Equatable, Sendable {
     let fromStationId: String
     let toStationId: String
     var preference: RoutePreference = .balanced

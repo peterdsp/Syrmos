@@ -340,4 +340,4 @@ struct TrackPickerSheet: View {
 }
 
 enum PickStep { case line, direction, station, departure }
-enum TransitDirection { case outbound, inbound, airport }
+enum TransitDirection: Sendable { case outbound, inbound, airport }
