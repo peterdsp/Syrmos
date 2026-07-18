@@ -18,6 +18,10 @@ Corridors, all on the scheduled-trips path like Athens A1-A4:
   VL1  national  Volos <-> Larisa rail-replacement bus (C157x/C257x), daily
   DX1  national  Drama <-> Xanthi <-> Alexandroupoli replacement bus (C6xx)
   KP1  national  Kiato <-> Patra replacement bus (Cx/CxE), incl. Fri/Fri+Sun runs
+  TL1  national  Tithorea <-> Lianokladi <-> Lamia <-> Stylida bus (Cxxx), daily
+  KO1  national  Katakolo <-> Pyrgos <-> Olympia tourist rail (138x), Mon-Sat
+  PL1  national  Ano Lechonia <-> Milies Pelion tourist rail (380x), weekends
+  DK1  national  Diakopto <-> Kalavryta rack railway, SUSPENDED (greyed, no trips)
   PS1/PS2/PSB    Patras suburban + Kato Achaia connecting bus
 
 At each intermediate stop the timetable shows arrival/departure; we store the
@@ -185,10 +189,44 @@ S = {
     # Kiato - Patra rail-replacement bus (KP1); PA_PAT shared with PS2
     "KI_KIA": ("Kiato", "Κιάτο", 38.013980, 22.734810),
     "KI_DIA": ("Diakopto", "Διακοπτό", 38.191870, 22.197720),
+    # Tithorea - Lianokladi - Lamia - Stylida bus (TL1); GR_TIT + GR_LEI shared
+    "FL_AMF": ("Amfikleia", "Αμφίκλεια", 38.658510, 22.594790),
+    "FL_LIL": ("Lilaia", "Λιλαία", 38.669910, 22.544550),
+    "FL_BRA": ("Bralos", "Μπράλος", 38.702080, 22.457810),
+    "FL_MUS": ("Music School of Lamia", "Μουσικό Σχολείο Λαμίας", 38.889120, 22.395050),
+    "FL_KAL": ("Kalyvia Lamias", "Καλύβια Λαμίας", 38.889990, 22.405010),
+    "FL_REV": ("Revenia Lamias", "Ρεβένια Λαμίας", 38.892830, 22.416010),
+    "FL_PAG": ("Pagkrati Lamias", "Παγκράτι Λαμίας", 38.893040, 22.426100),
+    "FL_LAM": ("Lamia", "Λαμία", 38.896040, 22.434710),
+    "FL_ROD": ("Roditsa", "Ροδίτσα", 38.895070, 22.457150),
+    "FL_MEG": ("Megali Vrysi", "Μεγάλη Βρύση", 38.894570, 22.474310),
+    "FL_AGM": ("Agia Marina", "Αγία Μαρίνα", 38.896860, 22.584030),
+    "FL_VAS": ("Vassiliki", "Βασιλική", 38.908960, 22.601320),
+    "FL_STY": ("Stylida", "Στυλίδα", 38.913370, 22.614430),
+    # Katakolo - Pyrgos - Olympia tourist rail (KO1)
+    "KO_KAT": ("Katakolo", "Κατάκολο", 37.648390, 21.316640),
+    "KO_PYR": ("Pyrgos Ilias", "Πύργος Ηλείας", 37.676190, 21.435410),
+    "KO_ALF": ("Alfeios", "Αλφειός", 37.653700, 21.503290),
+    "KO_SAL": ("Salmoni", "Σαλμώνη", 37.653530, 21.539770),
+    "KO_STR": ("Strefi", "Στρέφη", 37.658400, 21.557180),
+    "KO_PEL": ("Pelopio", "Πελόπιο", 37.672080, 21.590140),
+    "KO_PLA": ("Platanos Olympias", "Πλάτανος Ολυμπίας", 37.667630, 21.605840),
+    "KO_OLY": ("Olympia", "Ολυμπία", 37.645640, 21.626620),
+    # Diakopto - Kalavryta rack railway (DK1, SUSPENDED); Diakopto = KI_DIA shared
+    "DK_MSP": ("Mega Spilaio", "Μέγα Σπήλαιο", 38.094170, 22.164600),
+    "DK_KAL": ("Kalavryta", "Καλάβρυτα", 38.033540, 22.109940),
+    # Ano Lechonia - Ano Gatzea - Milies Pelion tourist rail (PL1)
+    "PL_ALE": ("Ano Lechonia", "Άνω Λεχώνια", 39.325470, 23.053840),
+    "PL_GAT": ("Ano Gatzea", "Άνω Γατζέα", 39.322100, 23.094040),
+    "PL_MIL": ("Milies", "Μηλιές", 39.327630, 23.143590),
 }
 
 # Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
-MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus"}
+MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus", "TL1": "bus"}
+
+# Line status; defaults to operational. Suspended/not-yet-open lines render greyed
+# with no departures (same treatment as Thessaloniki TM2).
+STATUS = {"DK1": "under_construction"}  # Diakopto-Kalavryta rack railway, suspended 13 Mar 2026
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
 LINES = {
@@ -220,6 +258,14 @@ LINES = {
             "Drama", "Alexandroupoli", 39, "national"),
     "KP1": ("Kiato - Patra bus", "Κιάτο - Πάτρα (λεωφορείο)", "#C2410C",
             "Kiato", "Patra", 43, "national"),
+    "TL1": ("Tithorea - Lamia - Stylida bus", "Τιθορέα - Λαμία - Στυλίδα (λεωφορείο)", "#9333EA",
+            "Tithorea", "Stylida", 44, "national"),
+    "KO1": ("Katakolo - Pyrgos - Olympia", "Κατάκολο - Πύργος - Ολυμπία", "#16A34A",
+            "Katakolo", "Olympia", 45, "national"),
+    "PL1": ("Pelion Railway", "Τρένο Πηλίου", "#0D9488",
+            "Ano Lechonia", "Milies", 46, "national"),
+    "DK1": ("Diakopto - Kalavryta rack railway", "Οδοντωτός Διακοπτό - Καλάβρυτα", "#DC2626",
+            "Diakopto", "Kalavryta", 47, "national"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -252,12 +298,20 @@ ORDER = {
     "DX1": ["GR_DRA", "XD_NIK", "XD_PLA", "XD_PAR", "XD_NEO", "XD_STA", "XD_TOX",
             "XD_XAN", "XD_IAS", "XD_POL", "XD_KOM", "XD_MES", "XD_SYK", "XD_KIR", "EV_ALX"],
     "KP1": ["KI_KIA", "KI_DIA", "PA_PAT"],
+    # Tithorea..Lianokladi(hub)..Lamia..Stylida. Lianokladi (idx 4) is the pivot.
+    "TL1": ["GR_TIT", "FL_AMF", "FL_LIL", "FL_BRA", "GR_LEI", "FL_MUS", "FL_KAL",
+            "FL_REV", "FL_PAG", "FL_LAM", "FL_ROD", "FL_MEG", "FL_AGM", "FL_VAS", "FL_STY"],
+    "KO1": ["KO_KAT", "KO_PYR", "KO_ALF", "KO_SAL", "KO_STR", "KO_PEL", "KO_PLA", "KO_OLY"],
+    "PL1": ["PL_ALE", "PL_GAT", "PL_MIL"],
+    "DK1": ["KI_DIA", "DK_MSP", "DK_KAL"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
 WEEKDAY = ("mon_thu", "fri")
 FRI = ("fri",)
 FRI_SUN = ("fri", "sun")
+MON_SAT = ("mon_thu", "fri", "sat")
+SAT_SUN = ("sat", "sun")
 
 # --- trips: (line, direction, train_no, day_types, [(station_id, "HH:MM")]) -
 # direction: outbound = terminal_a -> terminal_b, inbound = reverse.
@@ -506,6 +560,72 @@ TRIPS += [
     trip("KP1", "inbound", "C21E", FRI_SUN, KP_PK2, ["17:40", "19:05"]),
 ]
 
+# ---- TL1 Tithorea - Lianokladi - Lamia - Stylida rail-replacement BUS, daily ----
+TL_T2L = ["GR_TIT", "FL_AMF", "FL_LIL", "FL_BRA", "GR_LEI"]           # outbound, Tithorea->Lianokladi
+TL_L2T = list(reversed(TL_T2L))                                       # inbound
+TL_L2LAM = ["GR_LEI", "FL_MUS", "FL_LAM"]                             # outbound (Music School stop)
+TL_L2LAM_X = ["GR_LEI", "FL_LAM"]                                     # outbound (skips Music School)
+TL_LAM2L = ["FL_LAM", "FL_MUS", "GR_LEI"]                             # inbound
+TL_LAM2L_X = ["FL_LAM", "GR_LEI"]                                     # inbound (skips Music School)
+TL_L2STY = ["GR_LEI", "FL_MUS", "FL_KAL", "FL_REV", "FL_PAG", "FL_LAM",
+            "FL_ROD", "FL_MEG", "FL_AGM", "FL_VAS", "FL_STY"]         # outbound Lianokladi->Stylida
+TL_STY2L = list(reversed(TL_L2STY))                                  # inbound
+TRIPS += [
+    trip("TL1", "outbound", "C452", DAILY, TL_T2L, ["06:55", "07:05", "07:10", "07:20", "08:03"]),
+    trip("TL1", "outbound", "C454", DAILY, TL_T2L, ["12:02", "12:12", "12:17", "12:27", "13:10"]),
+    trip("TL1", "outbound", "C456", DAILY, TL_T2L, ["19:02", "19:12", "19:17", "19:27", "20:10"]),
+    trip("TL1", "outbound", "C458", DAILY, TL_T2L, ["22:07", "22:17", "22:22", "22:32", "23:15"]),
+    trip("TL1", "inbound", "C451", DAILY, TL_L2T, ["04:37", "05:20", "05:30", "05:35", "05:45"]),
+    trip("TL1", "inbound", "C453", DAILY, TL_L2T, ["09:47", "10:30", "10:40", "10:45", "10:55"]),
+    trip("TL1", "inbound", "C455", DAILY, TL_L2T, ["16:47", "17:30", "17:40", "17:45", "17:55"]),
+    trip("TL1", "inbound", "C457", DAILY, TL_L2T, ["19:32", "20:15", "20:25", "20:30", "20:42"]),
+    trip("TL1", "outbound", "C524", DAILY, TL_L2LAM_X, ["06:30", "06:45"]),
+    trip("TL1", "outbound", "C526", DAILY, TL_L2LAM, ["08:00", "08:03", "08:15"]),
+    trip("TL1", "outbound", "C528", DAILY, TL_L2LAM, ["14:45", "14:48", "15:00"]),
+    trip("TL1", "outbound", "C530", DAILY, TL_L2LAM_X, ["22:45", "23:00"]),
+    trip("TL1", "inbound", "C523", DAILY, TL_LAM2L_X, ["05:00", "05:15"]),
+    trip("TL1", "inbound", "C525", DAILY, TL_LAM2L, ["08:25", "08:37", "08:40"]),
+    trip("TL1", "inbound", "C527", DAILY, TL_LAM2L, ["14:00", "14:12", "14:15"]),
+    trip("TL1", "inbound", "C529", DAILY, TL_LAM2L_X, ["21:00", "21:15"]),
+    trip("TL1", "outbound", "C150", DAILY, TL_L2STY, ["08:08", "08:11", "08:12", "08:13", "08:14", "08:19", "08:29", "08:31", "08:46", "08:52", "08:55"]),
+    trip("TL1", "outbound", "C152", DAILY, TL_L2STY, ["09:25", "09:28", "09:29", "09:30", "09:31", "09:36", "09:46", "09:48", "10:03", "10:09", "10:12"]),
+    trip("TL1", "outbound", "C154", DAILY, TL_L2STY, ["13:15", "13:18", "13:19", "13:20", "13:21", "13:26", "13:36", "13:38", "13:53", "13:59", "14:02"]),
+    trip("TL1", "outbound", "C156", DAILY, TL_L2STY, ["17:15", "17:18", "17:19", "17:20", "17:21", "17:26", "17:36", "17:38", "17:53", "17:59", "18:02"]),
+    trip("TL1", "outbound", "C158", DAILY, TL_L2STY, ["20:15", "20:18", "20:19", "20:20", "20:21", "20:26", "20:36", "20:38", "20:53", "20:59", "21:02"]),
+    trip("TL1", "outbound", "C250", DAILY, TL_L2STY, ["23:20", "23:23", "23:24", "23:25", "23:26", "23:31", "23:41", "23:43", "23:58", "00:02", "00:07"]),
+    trip("TL1", "inbound", "C151", DAILY, TL_STY2L, ["03:45", "03:48", "03:54", "04:09", "04:11", "04:21", "04:26", "04:27", "04:28", "04:29", "04:32"]),
+    trip("TL1", "inbound", "C153", DAILY, TL_STY2L, ["08:55", "08:58", "09:04", "09:19", "09:21", "09:31", "09:36", "09:37", "09:38", "09:39", "09:42"]),
+    trip("TL1", "inbound", "C155", DAILY, TL_STY2L, ["11:40", "11:43", "11:49", "12:04", "12:06", "12:16", "12:21", "12:22", "12:23", "12:24", "12:27"]),
+    trip("TL1", "inbound", "C157", DAILY, TL_STY2L, ["14:40", "14:43", "14:49", "15:04", "15:06", "15:16", "15:21", "15:22", "15:23", "15:24", "15:27"]),
+    trip("TL1", "inbound", "C159", DAILY, TL_STY2L, ["15:55", "15:58", "16:04", "16:19", "16:21", "16:31", "16:36", "16:37", "16:38", "16:39", "16:42"]),
+    trip("TL1", "inbound", "C251", DAILY, TL_STY2L, ["18:40", "18:43", "18:49", "19:04", "19:06", "19:16", "19:21", "19:22", "19:23", "19:24", "19:27"]),
+]
+
+# ---- KO1 Katakolo - Pyrgos - Olympia tourist rail, Mon-Sat ----
+KO_FULL = ORDER["KO1"]                                   # Katakolo..Olympia (8)
+KO_PYR2O = KO_FULL[1:]                                   # Pyrgos->Olympia (7)
+KO_O2FULL = list(reversed(KO_FULL))                      # Olympia->Katakolo
+KO_O2PYR = list(reversed(KO_PYR2O))                      # Olympia->Pyrgos
+TRIPS += [
+    trip("KO1", "outbound", "1382", MON_SAT, KO_FULL, ["09:15", "09:38", "09:48", "09:52", "09:56", "10:01", "10:03", "10:07"]),
+    trip("KO1", "outbound", "1380", MON_SAT, KO_PYR2O, ["07:00", "07:10", "07:14", "07:18", "07:23", "07:25", "07:29"]),
+    trip("KO1", "outbound", "1384", MON_SAT, KO_PYR2O, ["12:35", "12:45", "12:49", "12:53", "12:58", "13:00", "13:04"]),
+    trip("KO1", "inbound", "1381", MON_SAT, KO_O2FULL, ["07:35", "07:40", "07:42", "07:47", "07:50", "07:55", "08:05", "08:27"]),
+    trip("KO1", "inbound", "1385", MON_SAT, KO_O2FULL, ["13:30", "13:35", "13:37", "13:42", "13:45", "13:50", "14:00", "14:22"]),
+    trip("KO1", "inbound", "1383", MON_SAT, KO_O2PYR, ["10:15", "10:20", "10:22", "10:27", "10:30", "10:35", "10:44"]),
+]
+
+# ---- PL1 Pelion tourist rail, weekends. Hellenic Train publishes only the
+# origin departure (intermediate + arrival "not separately published"), so we
+# seed exactly that single call and invent nothing. ----
+TRIPS += [
+    trip("PL1", "outbound", "3800", SAT_SUN, ["PL_ALE"], ["10:00"]),
+    trip("PL1", "inbound", "3801", SAT_SUN, ["PL_MIL"], ["15:00"]),
+]
+# DK1 Diakopto - Kalavryta rack railway: SUSPENDED since 13 Mar 2026. Seeded as a
+# greyed line (status under_construction) with NO trips, so it shows on the map
+# with no departures rather than fabricated times.
+
 # ---- Patras: regular-interval shuttles. Every train shares one stop pattern,
 # just time-shifted, so generate from (departure list + fixed per-stop offsets).
 # The offsets ARE the exact PDF data; this is compact, not approximated.
@@ -556,7 +676,8 @@ _NATIONAL_GR = ("GR_ATH", "GR_OIN", "GR_THI", "GR_LIV", "GR_TIT", "GR_LEI", "GR_
 def station_region(sid: str) -> str:
     """Region a station belongs to. Evros (EV_) + Kalambaka bus (KB_) are national,
     the Athens leg of IC1 is national, Patras (PA_) is patras, rest thessaloniki."""
-    if sid in _NATIONAL_GR or sid.startswith(("EV_", "KB_", "VL_", "XD_", "KI_")):
+    if sid in _NATIONAL_GR or sid.startswith(("EV_", "KB_", "VL_", "XD_", "KI_",
+                                              "FL_", "KO_", "DK_", "PL_")):
         return "national"
     if sid.startswith("PA_"):
         return "patras"
@@ -583,11 +704,12 @@ def main() -> None:
         # lines
         conn.executemany(
             "INSERT INTO lines(id,mode,name_en,name_el,color,terminal_a,terminal_b,"
-            "sort_order,region,status) VALUES(?,?,?,?,?,?,?,?,?,'operational')"
+            "sort_order,region,status) VALUES(?,?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(id) DO UPDATE SET name_en=excluded.name_en,"
             " name_el=excluded.name_el,color=excluded.color,region=excluded.region,"
-            " sort_order=excluded.sort_order,status='operational'",
-            [(lid, MODE.get(lid, "suburban"), en, el, col, ta, tb, so, reg)
+            " sort_order=excluded.sort_order,status=excluded.status",
+            [(lid, MODE.get(lid, "suburban"), en, el, col, ta, tb, so, reg,
+              STATUS.get(lid, "operational"))
              for lid, (en, el, col, ta, tb, so, reg) in LINES.items()],
         )
         # line_stations (rebuild)
