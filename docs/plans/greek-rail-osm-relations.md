@@ -33,10 +33,17 @@ useful for drawing the line.
 
 | corridor | outbound rel | inbound rel |
 |---|---|---|
-| Volos ↔ Larisa (ΑΠ) | 14006996 (Β→Λ) | 14006995 (Λ→Β) |
+| VL1 Volos ↔ Larisa (ΑΠ) | 14006996 (Β→Λ) | 14006995 (Λ→Β) |
 | Kalambaka ↔ Paleofarsalos (ΑΠ) | 14007294 (Κ→Π) | 14007293 (Π→Κ) |
+| DX1 Drama ↔ Xanthi ↔ Alexandroupoli | 1185198 (line, sliced Δράμα→Αλεξ) | — |
+| KP1 Kiato ↔ Patra | 12423298 (Κιάτο→Αίγιο, sliced) + 1769919 (Κόρινθος→Πάτρα, axis-ordered) | — |
 | Leianokladi ↔ Stylida (ΑΠ) | 8279886 (Λ→Σ) | 14005081 (Σ→Λ) |
 | Volos – Milies (heritage/Pelion) | 17931339 | — |
+
+Note: 1769919 (Κόρινθος→Πάτρα) has out-of-order way members that member-order and
+greedy stitching both mangle (45-50 km phantom jumps). For KP1 the coastal Kiato→Patra
+segment was rebuilt by projecting the relation's node set onto the Kiato→Patra axis and
+sorting, which is robust because the Gulf of Corinth line is near-monotonic in longitude.
 
 ## Line alignments (for reference, not service)
 

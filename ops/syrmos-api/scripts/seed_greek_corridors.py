@@ -15,6 +15,9 @@ Corridors, all on the scheduled-trips path like Athens A1-A4:
   RG1  national  Athens <-> Leianokladi regional (520/521), daily
   AL1  national  Alexandroupoli <-> Orestiada <-> Ormenio (1680..1683), daily
   KB1  national  Paleofarsalos <-> Kalambaka rail-replacement bus (C88x), daily
+  VL1  national  Volos <-> Larisa rail-replacement bus (C157x/C257x), daily
+  DX1  national  Drama <-> Xanthi <-> Alexandroupoli replacement bus (C6xx)
+  KP1  national  Kiato <-> Patra replacement bus (Cx/CxE), incl. Fri/Fri+Sun runs
   PS1/PS2/PSB    Patras suburban + Kato Achaia connecting bus
 
 At each intermediate stop the timetable shows arrival/departure; we store the
@@ -162,10 +165,30 @@ S = {
     "KB_KAR": ("Karditsa", "Καρδίτσα", 39.353940, 21.914770),
     "KB_TRI": ("Trikala", "Τρίκαλα", 39.546050, 21.763320),
     "KB_KAL": ("Kalambaka", "Καλαμπάκα", 39.702950, 21.625300),
+    # Volos - Larisa rail-replacement bus (VL1); GR_LAR shared with IC1/TP1
+    "VL_VOL": ("Volos", "Βόλος", 39.364660, 22.936670),
+    "VL_VEL": ("Velestino", "Βελεστίνο", 39.391240, 22.759000),
+    # Drama - Xanthi - Alexandroupoli rail-replacement bus (DX1); GR_DRA + EV_ALX shared
+    "XD_NIK": ("Nikiforos", "Νικηφόρος", 41.167260, 24.309920),
+    "XD_PLA": ("Platania", "Πλατανιά", 41.204470, 24.421790),
+    "XD_PAR": ("Paranesti", "Παρανέστι", 41.265640, 24.501950),
+    "XD_NEO": ("Neochorio", "Νεοχώριο", 41.220860, 24.633400),
+    "XD_STA": ("Stavroupoli Xanthis", "Σταυρούπολη Ξάνθης", 41.193240, 24.703270),
+    "XD_TOX": ("Toxotes", "Τοξότες", 41.086870, 24.780110),
+    "XD_XAN": ("Xanthi", "Ξάνθη", 41.123890, 24.892900),
+    "XD_IAS": ("Iasmos", "Ίασμος", 41.126040, 25.187410),
+    "XD_POL": ("Polyanthos", "Πολύανθος", 41.125690, 25.227820),
+    "XD_KOM": ("Komotini", "Κομοτηνή", 41.109900, 25.394100),
+    "XD_MES": ("Mesti", "Μεστή", 40.967200, 25.640450),
+    "XD_SYK": ("Sykorrachi", "Συκορράχη", 40.974960, 25.720360),
+    "XD_KIR": ("Kirki", "Κίρκη", 40.975620, 25.797840),
+    # Kiato - Patra rail-replacement bus (KP1); PA_PAT shared with PS2
+    "KI_KIA": ("Kiato", "Κιάτο", 38.013980, 22.734810),
+    "KI_DIA": ("Diakopto", "Διακοπτό", 38.191870, 22.197720),
 }
 
 # Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
-MODE = {"PSB": "bus", "KB1": "bus"}
+MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus"}
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
 LINES = {
@@ -191,6 +214,12 @@ LINES = {
             "Alexandroupoli", "Ormenio", 36, "national"),
     "KB1": ("Paleofarsalos - Kalambaka bus", "Παλαιοφάρσαλος - Καλαμπάκα (λεωφορείο)", "#A16207",
             "Paleofarsalos", "Kalambaka", 37, "national"),
+    "VL1": ("Volos - Larisa bus", "Βόλος - Λάρισα (λεωφορείο)", "#CA8A04",
+            "Volos", "Larisa", 38, "national"),
+    "DX1": ("Drama - Xanthi - Alexandroupoli bus", "Δράμα - Ξάνθη - Αλεξανδρούπολη (λεωφορείο)", "#B45309",
+            "Drama", "Alexandroupoli", 39, "national"),
+    "KP1": ("Kiato - Patra bus", "Κιάτο - Πάτρα (λεωφορείο)", "#C2410C",
+            "Kiato", "Patra", 43, "national"),
 }
 
 # canonical station order per line (outbound = terminal_a -> terminal_b)
@@ -219,10 +248,16 @@ ORDER = {
             "EV_ORE", "EV_SAK", "EV_KAV", "EV_NVY", "EV_KAS", "EV_MAR", "EV_DIL",
             "EV_DIK", "EV_PTE", "EV_ORM"],
     "KB1": ["GR_PAL", "KB_SOF", "KB_KAR", "KB_TRI", "KB_KAL"],
+    "VL1": ["VL_VOL", "VL_VEL", "GR_LAR"],
+    "DX1": ["GR_DRA", "XD_NIK", "XD_PLA", "XD_PAR", "XD_NEO", "XD_STA", "XD_TOX",
+            "XD_XAN", "XD_IAS", "XD_POL", "XD_KOM", "XD_MES", "XD_SYK", "XD_KIR", "EV_ALX"],
+    "KP1": ["KI_KIA", "KI_DIA", "PA_PAT"],
 }
 
 DAILY = ("mon_thu", "fri", "sat", "sun")
 WEEKDAY = ("mon_thu", "fri")
+FRI = ("fri",)
+FRI_SUN = ("fri", "sun")
 
 # --- trips: (line, direction, train_no, day_types, [(station_id, "HH:MM")]) -
 # direction: outbound = terminal_a -> terminal_b, inbound = reverse.
@@ -397,6 +432,80 @@ TRIPS += [
          ["16:50", "17:15", "17:45", "18:05", "18:50"]),
 ]
 
+# ---- VL1 Volos - Larisa rail-replacement BUS, daily, 7 each way ----
+VL1_OUT = ORDER["VL1"]                    # Volos -> Velestino -> Larisa
+VL1_IN = list(reversed(VL1_OUT))
+_VL_OUT = {"C1571": ["05:25", "05:45", "06:30"], "C1573": ["07:00", "07:20", "08:05"],
+           "C1575": ["08:25", "08:42", "09:30"], "C1577": ["13:20", "13:40", "14:25"],
+           "C1579": ["15:50", "16:10", "16:55"], "C2571": ["18:00", "18:20", "19:05"],
+           "C2573": ["21:10", "21:30", "22:15"]}
+_VL_IN = {"C1572": ["06:50", "07:30", "07:50"], "C1574": ["08:30", "09:10", "09:30"],
+          "C1576": ["10:50", "11:30", "11:50"], "C1578": ["12:40", "13:20", "13:40"],
+          "C2570": ["14:45", "15:25", "15:45"], "C2572": ["16:55", "17:35", "17:55"],
+          "C2574": ["21:45", "22:25", "22:45"]}
+for no, tm in _VL_OUT.items():
+    TRIPS.append(trip("VL1", "outbound", no, DAILY, VL1_OUT, tm))
+for no, tm in _VL_IN.items():
+    TRIPS.append(trip("VL1", "inbound", no, DAILY, VL1_IN, tm))
+
+# ---- DX1 Drama - Xanthi - Alexandroupoli rail-replacement BUS ----
+# Per-service stop patterns (each trip serves a subset of the 15-station line in travel order).
+DX_D2X = ["GR_DRA", "XD_NIK", "XD_PLA", "XD_PAR", "XD_NEO", "XD_STA", "XD_TOX", "XD_XAN"]  # outbound
+DX_D2A = ["GR_DRA", "XD_PAR", "XD_STA", "XD_XAN", "XD_IAS", "XD_KOM", "EV_ALX"]            # outbound (express)
+DX_X2A = ["XD_XAN", "XD_IAS", "XD_POL", "XD_KOM", "XD_MES", "XD_SYK", "XD_KIR", "EV_ALX"]  # outbound
+DX_A2X = list(reversed(DX_X2A))                                                            # inbound
+DX_X2D = ["XD_XAN", "XD_STA", "XD_NEO", "XD_PAR", "XD_PLA", "XD_NIK", "GR_DRA"]            # inbound (skips Toxotes)
+TRIPS += [
+    trip("DX1", "inbound", "C671", WEEKDAY, DX_A2X,
+         ["05:55", "06:30", "06:40", "06:49", "07:14", "07:28", "07:35", "08:00"]),
+    trip("DX1", "inbound", "C673", WEEKDAY, DX_A2X,
+         ["11:30", "12:05", "12:15", "12:24", "12:49", "13:03", "13:10", "13:35"]),
+    trip("DX1", "inbound", "C675", DAILY, DX_A2X,
+         ["16:10", "16:45", "16:55", "17:04", "17:29", "17:43", "17:50", "18:15"]),
+    trip("DX1", "outbound", "C602", DAILY, DX_D2A,
+         ["19:50", "20:35", "20:55", "21:30", "21:50", "22:15", "23:05"]),
+    trip("DX1", "outbound", "C670", DAILY, DX_D2X,
+         ["05:40", "05:59", "06:09", "06:19", "06:34", "06:44", "07:39", "07:52"]),
+    trip("DX1", "outbound", "C672", WEEKDAY, DX_X2A,
+         ["08:05", "08:40", "08:47", "09:06", "09:31", "09:40", "09:50", "10:25"]),
+    trip("DX1", "outbound", "C674", WEEKDAY, DX_X2A,
+         ["13:40", "14:20", "14:27", "14:41", "15:06", "15:15", "15:25", "16:00"]),
+    trip("DX1", "outbound", "C676", DAILY, DX_X2A,
+         ["18:20", "18:55", "19:02", "19:16", "19:41", "19:50", "20:00", "20:35"]),
+    trip("DX1", "inbound", "C679", DAILY, DX_X2D,
+         ["08:30", "09:09", "09:19", "09:34", "09:49", "09:59", "10:19"]),
+]
+
+# ---- KP1 Kiato - Patra rail-replacement BUS (express; Diakopto on the longer runs) ----
+KP_KP2 = ["KI_KIA", "PA_PAT"]             # outbound endpoint-only
+KP_KP3 = ["KI_KIA", "KI_DIA", "PA_PAT"]   # outbound via Diakopto
+KP_PK2 = ["PA_PAT", "KI_KIA"]             # inbound endpoint-only
+KP_PK3 = ["PA_PAT", "KI_DIA", "KI_KIA"]   # inbound via Diakopto
+TRIPS += [
+    trip("KP1", "outbound", "C4E", DAILY, KP_KP2, ["08:20", "09:45"]),
+    trip("KP1", "outbound", "C8E", DAILY, KP_KP2, ["10:20", "11:45"]),
+    trip("KP1", "outbound", "C10E", DAILY, KP_KP2, ["12:20", "13:45"]),
+    trip("KP1", "outbound", "C12E", DAILY, KP_KP2, ["14:20", "15:45"]),
+    trip("KP1", "outbound", "C14", DAILY, KP_KP3, ["16:20", "17:05", "17:55"]),
+    trip("KP1", "outbound", "C18E", DAILY, KP_KP2, ["17:20", "18:45"]),
+    trip("KP1", "outbound", "C20", DAILY, KP_KP3, ["18:20", "19:05", "19:55"]),
+    trip("KP1", "outbound", "C24E", DAILY, KP_KP2, ["20:20", "21:45"]),
+    trip("KP1", "outbound", "C26E", DAILY, KP_KP2, ["21:20", "22:45"]),
+    trip("KP1", "outbound", "C14E", FRI, KP_KP2, ["15:20", "16:45"]),
+    trip("KP1", "outbound", "C22E", FRI_SUN, KP_KP2, ["19:20", "20:45"]),
+    trip("KP1", "inbound", "C3E", DAILY, KP_PK2, ["06:40", "08:05"]),
+    trip("KP1", "inbound", "C7", DAILY, KP_PK3, ["08:25", "09:20", "10:05"]),
+    trip("KP1", "inbound", "C9", DAILY, KP_PK3, ["10:25", "11:20", "12:05"]),
+    trip("KP1", "inbound", "C11E", DAILY, KP_PK2, ["12:40", "14:05"]),
+    trip("KP1", "inbound", "C15E", DAILY, KP_PK2, ["14:40", "16:05"]),
+    trip("KP1", "inbound", "C17E", DAILY, KP_PK2, ["15:40", "17:05"]),
+    trip("KP1", "inbound", "C19E", DAILY, KP_PK2, ["16:40", "18:05"]),
+    trip("KP1", "inbound", "C23E", DAILY, KP_PK2, ["18:40", "20:05"]),
+    trip("KP1", "inbound", "C25E", DAILY, KP_PK2, ["19:40", "21:05"]),
+    trip("KP1", "inbound", "C13E", FRI, KP_PK2, ["13:40", "15:05"]),
+    trip("KP1", "inbound", "C21E", FRI_SUN, KP_PK2, ["17:40", "19:05"]),
+]
+
 # ---- Patras: regular-interval shuttles. Every train shares one stop pattern,
 # just time-shifted, so generate from (departure list + fixed per-stop offsets).
 # The offsets ARE the exact PDF data; this is compact, not approximated.
@@ -447,7 +556,7 @@ _NATIONAL_GR = ("GR_ATH", "GR_OIN", "GR_THI", "GR_LIV", "GR_TIT", "GR_LEI", "GR_
 def station_region(sid: str) -> str:
     """Region a station belongs to. Evros (EV_) + Kalambaka bus (KB_) are national,
     the Athens leg of IC1 is national, Patras (PA_) is patras, rest thessaloniki."""
-    if sid in _NATIONAL_GR or sid.startswith(("EV_", "KB_")):
+    if sid in _NATIONAL_GR or sid.startswith(("EV_", "KB_", "VL_", "XD_", "KI_")):
         return "national"
     if sid.startswith("PA_"):
         return "patras"
