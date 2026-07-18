@@ -163,5 +163,10 @@ private fun LineType.localizedName(lang: AppLanguage): String {
             AppLanguage.ALBANIAN -> "Hekurudha periferike"
             else -> "Suburban Railway"
         }
+        LineType.BUS -> when (lang) {
+            AppLanguage.GREEK -> "Λεωφορείο (αντικατάσταση)"
+            AppLanguage.ALBANIAN -> "Autobus (zëvendësim)"
+            else -> "Bus (rail replacement)"
+        }
     }
 }
