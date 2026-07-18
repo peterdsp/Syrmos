@@ -77,12 +77,13 @@ import org.koin.compose.koinInject
 
 private enum class DesktopSection(
     val title: String,
+    val titleKey: L,
     val icon: ImageVector,
 ) {
-    Planner("Planner", Icons.Filled.Map),
-    Schedules("Schedules", Icons.Filled.Schedule),
-    Passes("Passes", Icons.Filled.CalendarMonth),
-    Account("Account", Icons.Filled.AccountCircle),
+    Planner("Planner", L.DESKTOP_PLANNER, Icons.Filled.Map),
+    Schedules("Schedules", L.DESKTOP_SCHEDULES, Icons.Filled.Schedule),
+    Passes("Passes", L.DESKTOP_PASSES, Icons.Filled.CalendarMonth),
+    Account("Account", L.DESKTOP_ACCOUNT, Icons.Filled.AccountCircle),
 }
 
 @Composable
@@ -109,6 +110,7 @@ fun DesktopWebApp() {
         DesktopSidebar(
             selectedSection = selectedSection,
             onSectionSelected = { selectedSection = it },
+            lang = lang,
         )
 
         Row(
@@ -150,6 +152,7 @@ fun DesktopWebApp() {
                         nearestStations = homeState.nearestStations,
                         mapStations = mapState.mapStations,
                         lines = mapState.lines,
+                        lang = lang,
                     )
                 }
 
@@ -198,11 +201,12 @@ fun DesktopWebApp() {
                         selectedStation = mapState.selectedStation,
                         selectedStationLines = mapState.selectedStationLines,
                         stations = mapState.mapStations,
+                        lang = lang,
                     )
                 }
 
                 item {
-                    RouteComparisonCard(lines = linesState.lines)
+                    RouteComparisonCard(lines = linesState.lines, lang = lang)
                 }
 
                 item {
@@ -210,7 +214,7 @@ fun DesktopWebApp() {
                 }
 
                 item {
-                    ExportCard()
+                    ExportCard(lang = lang)
                 }
             }
         }
@@ -221,6 +225,7 @@ fun DesktopWebApp() {
 private fun DesktopSidebar(
     selectedSection: DesktopSection,
     onSectionSelected: (DesktopSection) -> Unit,
+    lang: AppLanguage,
 ) {
     Surface(
         modifier = Modifier
@@ -241,7 +246,7 @@ private fun DesktopSidebar(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Athens rail command center",
+                text = L.DESKTOP_SUBTITLE.text(lang),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -253,6 +258,7 @@ private fun DesktopSidebar(
                     section = section,
                     selected = selectedSection == section,
                     onClick = { onSectionSelected(section) },
+                    lang = lang,
                 )
             }
 
@@ -271,12 +277,12 @@ private fun DesktopSidebar(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = "Network status",
+                        text = L.NETWORK_STATUS.text(lang),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Metro, tram and suburban data loaded for planning.",
+                        text = L.NETWORK_STATUS_BODY.text(lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -337,6 +343,7 @@ private fun SidebarItem(
     section: DesktopSection,
     selected: Boolean,
     onClick: () -> Unit,
+    lang: AppLanguage,
 ) {
     Row(
         modifier = Modifier
@@ -360,7 +367,7 @@ private fun SidebarItem(
             tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = section.title,
+            text = section.titleKey.text(lang),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -372,7 +379,7 @@ private fun SidebarItem(
 private fun DesktopHeader(lang: AppLanguage) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            text = "Athens transit planner",
+            text = L.DESKTOP_HEADER.text(lang),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -391,30 +398,31 @@ private fun PlannerCard(
     selectedStation: MapStationNode?,
     selectedStationLines: List<Line>,
     stations: List<MapStationNode>,
+    lang: AppLanguage,
 ) {
-    DashboardCard(title = "Trip planning") {
+    DashboardCard(title = L.TRIP_PLANNING.text(lang)) {
         OutlinedTextField(
             value = search,
             onValueChange = onSearchChange,
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            label = { Text("Search station or destination") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            label = { Text(L.SEARCH_STATION.text(lang)) },
             singleLine = true,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatPill(value = stations.size.toString(), label = "stations")
-            StatPill(value = selectedStationLines.size.toString(), label = "lines here")
-            StatPill(value = "90+", label = "accessible stops")
+            StatPill(value = stations.size.toString(), label = L.STATIONS_LOWER.text(lang))
+            StatPill(value = selectedStationLines.size.toString(), label = L.LINES_HERE.text(lang))
+            StatPill(value = "90+", label = L.ACCESSIBLE_STOPS.text(lang))
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         if (selectedStation == null) {
             Text(
-                text = "Select a station on the map to inspect lines, accessibility and next steps.",
+                text = L.SELECT_STATION_HINT.text(lang),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -422,6 +430,7 @@ private fun PlannerCard(
             StationSummary(
                 station = selectedStation,
                 lines = selectedStationLines,
+                lang = lang,
             )
         }
     }
@@ -431,6 +440,7 @@ private fun PlannerCard(
 private fun StationSummary(
     station: MapStationNode,
     lines: List<Line>,
+    lang: AppLanguage,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
@@ -454,12 +464,12 @@ private fun StationSummary(
             }
         }
         Text(
-            text = if (station.isInterchange) "Transfer station" else "Direct station",
+            text = if (station.isInterchange) L.TRANSFER_STATION.text(lang) else L.DIRECT_STATION.text(lang),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "${station.stationIds.size} merged records",
+            text = "${station.stationIds.size} ${L.MERGED_RECORDS.text(lang)}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -473,11 +483,12 @@ private fun OperationsCard(
     nearestStations: List<com.syrmos.core.model.location.NearestStationResult>,
     mapStations: List<MapStationNode>,
     lines: List<Line>,
+    lang: AppLanguage,
 ) {
-    DashboardCard(title = "Live trains") {
+    DashboardCard(title = L.LIVE_TRAINS.text(lang)) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             if (simulatedTrains.isNotEmpty()) {
-                SectionLabel("Metro & Tram (${simulatedTrains.size} active)")
+                SectionLabel("${L.METRO.text(lang)} & ${L.TRAM.text(lang)} (${simulatedTrains.size} ${L.ACTIVE_TRAINS.text(lang)})")
                 val displayTrains = simulatedTrains
                     .groupBy { "${it.lineId}_${it.direction}" }
                     .flatMap { (_, group) -> group.take(1) }
@@ -503,12 +514,12 @@ private fun OperationsCard(
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "Near ${train.currentStationName}",
+                                text = "${L.NEAR.text(lang)} ${train.currentStationName}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = "Next: ${train.nextStationName}",
+                                text = "${L.NEXT_SHORT.text(lang)}: ${train.nextStationName}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -518,7 +529,7 @@ private fun OperationsCard(
             }
 
             if (liveTrains.isNotEmpty()) {
-                SectionLabel("Suburban railway")
+                SectionLabel(L.SUBURBAN_RAILWAY.text(lang))
                 liveTrains.take(3).forEach { train ->
                     val line = lines.firstOrNull { it.id == train.lineId }
                     Row(
@@ -549,13 +560,13 @@ private fun OperationsCard(
 
             if (simulatedTrains.isEmpty() && liveTrains.isEmpty()) {
                 Text(
-                    text = "No live trains available right now.",
+                    text = L.NO_LIVE_TRAINS_NOW.text(lang),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            SectionLabel("Nearby or popular stations")
+            SectionLabel(L.NEARBY_POPULAR.text(lang))
             val stationRows = if (nearestStations.isNotEmpty()) {
                 nearestStations.mapNotNull { result ->
                     mapStations.firstOrNull { node -> node.stationIds.contains(result.stationId) }
@@ -579,13 +590,13 @@ private fun OperationsCard(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = if (station.isInterchange) "Popular interchange" else "Popular stop",
+                            text = if (station.isInterchange) L.POPULAR_INTERCHANGE.text(lang) else L.POPULAR_STOP.text(lang),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Text(
-                        text = "${station.lineIds.size} lines",
+                        text = "${station.lineIds.size} ${L.LINES_LOWER.text(lang)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -605,25 +616,25 @@ private fun SectionLabel(text: String) {
 }
 
 @Composable
-private fun RouteComparisonCard(lines: List<Line>) {
-    DashboardCard(title = "Route comparison") {
+private fun RouteComparisonCard(lines: List<Line>, lang: AppLanguage) {
+    DashboardCard(title = L.ROUTE_COMPARISON.text(lang)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             RouteOption(
-                title = "Fastest",
+                title = L.FASTEST.text(lang),
                 metric = "18 min",
-                detail = lines.firstOrNull()?.name ?: "Metro",
+                detail = lines.firstOrNull()?.name ?: L.METRO.text(lang),
                 modifier = Modifier.weight(1f),
             )
             RouteOption(
-                title = "Fewest transfers",
-                metric = "1 transfer",
-                detail = lines.getOrNull(1)?.name ?: "Tram",
+                title = L.FEWEST_TRANSFERS.text(lang),
+                metric = L.ONE_TRANSFER.text(lang),
+                detail = lines.getOrNull(1)?.name ?: L.TRAM.text(lang),
                 modifier = Modifier.weight(1f),
             )
             RouteOption(
-                title = "Best coverage",
-                metric = "4 lines",
-                detail = "Metro + tram",
+                title = L.BEST_COVERAGE.text(lang),
+                metric = "4 ${L.LINES_LOWER.text(lang)}",
+                detail = "${L.METRO.text(lang)} + ${L.TRAM.text(lang)}",
                 modifier = Modifier.weight(1f),
             )
         }
@@ -635,7 +646,7 @@ private fun TimetableCard(
     lines: List<Line>,
     lang: AppLanguage,
 ) {
-    DashboardCard(title = "Schedule board") {
+    DashboardCard(title = L.SCHEDULE_BOARD.text(lang)) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             lines.take(6).forEachIndexed { index, line ->
                 ScheduleRow(
@@ -652,18 +663,18 @@ private fun TimetableCard(
 }
 
 @Composable
-private fun ExportCard() {
-    DashboardCard(title = "Export") {
+private fun ExportCard(lang: AppLanguage) {
+    DashboardCard(title = L.EXPORT.text(lang)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(onClick = {}, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Filled.Print, contentDescription = "Print schedule")
+                Icon(Icons.Filled.Print, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Print schedule")
+                Text(L.PRINT_SCHEDULE.text(lang))
             }
             OutlinedButton(onClick = {}, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Filled.Download, contentDescription = "Download PDF")
+                Icon(Icons.Filled.Download, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Download PDF")
+                Text(L.DOWNLOAD_PDF.text(lang))
             }
         }
     }
@@ -1026,7 +1037,7 @@ private fun ScheduleRow(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "${line.terminalA} to ${line.terminalB}",
+                text = "${line.terminalA} ${L.TO.text(lang)} ${line.terminalB}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
