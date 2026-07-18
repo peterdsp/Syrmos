@@ -5,11 +5,11 @@ import Foundation
 // behave identically: an intent router over the deterministic projector, never
 // a generative chatbot, fully offline, EN / EL / SQ.
 
-enum DayContext: Equatable { case today, tomorrow, weekend, saturday, sunday }
+enum DayContext: Equatable, Sendable { case today, tomorrow, weekend, saturday, sunday }
 
-enum MissingSlot: Equatable { case originStation, destinationStation, station }
+enum MissingSlot: Equatable, Sendable { case originStation, destinationStation, station }
 
-indirect enum AssistantIntent: Equatable {
+indirect enum AssistantIntent: Equatable, Sendable {
     case showDepartures(stationId: String?, lineId: String?, day: DayContext)
     case lastTrain(stationId: String?, lineId: String?)
     /// First / earliest train of the day at a station (mirror of lastTrain).
