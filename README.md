@@ -5,8 +5,8 @@
 <h1 align="center">Syrmos</h1>
 
 <p align="center">
-  <strong>Your next Athens train, instantly.</strong><br/>
-  Metro &bull; Tram &bull; Suburban Railway
+  <strong>Your next Greek train, instantly.</strong><br/>
+  Metro &bull; Tram &bull; Suburban &bull; InterCity Railway
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 ---
 
-A transit companion for the Athens metro, tram, and suburban railway. Pick a station or let GPS find the nearest one and get a live countdown to your next departure. Works offline, underground, with no signal.
+A rail companion for Greece. Athens (metro, tram, suburban), Thessaloniki (metro + suburban), the InterCity corridor between them, and Patras suburban. Pick a station or let GPS find the nearest one and get a live countdown to your next departure. Works offline, underground, with no signal.
 
 > *Syrmos (συρμός)* is the Greek word for the carriages that form a metro train.
 
@@ -52,16 +52,22 @@ A transit companion for the Athens metro, tram, and suburban railway. Pick a sta
 - **Live train map** with simulated metro/tram positions and real-time suburban tracking from the Hellenic Train SSE feed.
 - **Frequency-band projector** computes next departures from operator rules, so schedules stay correct without a client release.
 - **Real OSM track geometry** for every line: T7 Piraeus loop, M3 airport branch, A4 Megara curve render along actual rail.
-- **GPS nearest station**, bilingual EN/EL, light/dark theme, full timetables, station details, line browser.
+- **GPS nearest station**, trilingual EN/EL/SQ (Albanian first-class), light/dark theme, full timetables, station details, line browser.
+- **Ariadne**, an offline transit assistant: ask in plain English, Greek or Albanian and she answers departures, last trains, routes and fares from the bundled data. A tool-only intent router with an optional on-device LLM &mdash; she never invents a fact.
 - **Hot-patchable schedules** via `api-syrmos.peterdsp.dev`: fix a band on the Pi, every installed app sees it on next cold start.
 
 ## Coverage
 
-| Mode | Lines | Stations | Operator |
-|------|-------|----------|----------|
-| Metro | Line 1, 2, 3 | 71 | STASY |
-| Tram | T6, T7 | 62 | STASY |
-| Suburban | A1, A2, A3, A4 | 68 | Hellenic Train |
+Greek passenger rail, city by city. 21 lines, four regions.
+
+| Region | Lines | Operator |
+|--------|-------|----------|
+| **Athens** | Metro 1/2/3, Tram T6/T7, Suburban A1-A4 | STASY, Hellenic Train |
+| **Thessaloniki** | Metro TM1 (live), TM2 (Kalamaria, opening) &bull; Suburban Larisa, Florina, Sindos, Serres-Drama | Thessaloniki Metro, Hellenic Train |
+| **National** | InterCity Athens&ndash;Thessaloniki, Athens&ndash;Leianokladi | Hellenic Train |
+| **Patras** | Suburban Kaminia & Rio branches, Kato Achaia connecting bus | Hellenic Train |
+
+Every timetable is transcribed from the official Hellenic Train / railway.gov.gr sources and stored as exact per-station times &mdash; never estimated. A line that is built but not yet open (Thessaloniki Line 2) renders greyed and carries no departures until it opens.
 
 ## Architecture
 
