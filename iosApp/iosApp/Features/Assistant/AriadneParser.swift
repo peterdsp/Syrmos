@@ -12,6 +12,12 @@ enum MissingSlot: Equatable { case originStation, destinationStation, station }
 indirect enum AssistantIntent: Equatable {
     case showDepartures(stationId: String?, lineId: String?, day: DayContext)
     case lastTrain(stationId: String?, lineId: String?)
+    /// First / earliest train of the day at a station (mirror of lastTrain).
+    case firstTrain(stationId: String?, lineId: String?)
+    /// "Is X step-free / wheelchair accessible?". From the bundled flag, never invented.
+    case stationAccessibility(stationId: String?)
+    /// "and back?" / "return" — reverse the remembered route and re-plan.
+    case reverseTrip
     case findStation(query: String)
     case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool, preference: RoutePreference)
     case travelTime(toStationId: String?, fromStationId: String?)
@@ -110,6 +116,22 @@ struct AssistantVocabulary {
         "aerodromio": ["Aeroport", "Aeroporti"],
         "piraeus": ["Pireas", "Pireu"],
         "syntagma": ["Sintagma"],
+        "thessaloniki": ["Selanik", "Selaniku", "Thesaloniki"],
+        "athens": ["Athina", "Athine"],
+        "acropolis": ["Akropoli", "Akropolis"],
+        "omonia": ["Omonoia"],
+        "monastiraki": ["Monastiraqi"],
+        "nikaia": ["Nikea", "Nikaja"],
+        "victoria": ["Viktoria"],
+        "attiki": ["Atiki"],
+        "kifisia": ["Kifissia"],
+        "elliniko": ["Helliniko"],
+        "peristeri": ["Peristeri"],
+        "aigaleo": ["Egaleo", "Aigaleo"],
+        "larisa": ["Larisis"],
+        "patra": ["Patra", "Patras"],
+        "aghios": ["Agios"],
+        "agios": ["Aghios"],
     ]
 }
 
@@ -132,6 +154,13 @@ struct AthensTransitParser {
 
         if containsAny(text, Self.help) { return .help }
 
+        // Reverse-trip follow-up: a bare "and back?" / "return" / "the other
+        // way" / "kthimi" with no newly-named station. The resolver flips the
+        // remembered route; an explicit "X to Y and back" keeps the stations.
+        if stations.isEmpty && containsAny(text, Self.reversePhrases) {
+            return .reverseTrip
+        }
+
         let strongTransit = !stations.isEmpty || line != nil || containsAny(text, Self.transitNouns)
         let intentSignal = containsAny(text, Self.alertWords) ||
             containsAny(text, Self.mapWords) ||
@@ -149,6 +178,12 @@ struct AthensTransitParser {
                 Self.toMarkers.contains(where: { text.contains($0) }) ||
                 stations.count >= 2
             if !planning {
+                // "weather in London": a place we don't serve resolved to no
+                // Athens station, yet a location was clearly named, so decline
+                // instead of answering with Athens weather. Mirrors KMP.
+                if stations.isEmpty && namesUnservedPlace(text) {
+                    return .outOfScope
+                }
                 return .weatherAt(stationId: stations.first)
             }
         }
@@ -195,6 +230,16 @@ struct AthensTransitParser {
             return stations.first == nil ? .needsClarification(base: base, missing: .station) : base
         }
 
+        // 0c. Station accessibility: "is X step-free?", "does X have a lift?".
+        //     Before planning because the Greek "για ΑμεΑ" contains the " για "
+        //     to-marker, which would otherwise turn the question into a trip.
+        if containsAny(text, Self.accessibilityWords) &&
+            (!stations.isEmpty || containsAny(text, Self.stationNounWords)) {
+            let station = stations.first
+            let base = AssistantIntent.stationAccessibility(stationId: station)
+            return station == nil ? .needsClarification(base: base, missing: .station) : base
+        }
+
         // 1. Plan a trip. Triggered by an explicit "how do I get" phrase, an
         //    explicit "to" frame with a station, weather routing, a non-balanced
         //    preference with a station, or two distinct stations named.
@@ -233,6 +278,21 @@ struct AthensTransitParser {
             let base = AssistantIntent.planTrip(fromStationId: from, toStationId: to, lowExposure: weather, preference: preference)
             if to == nil { return .needsClarification(base: base, missing: .destinationStation) }
             if from == nil { return .needsClarification(base: base, missing: .originStation) }
+            return base
+        }
+
+        // 1c. First / earliest train of the day (mirror of last train). A bare
+        //     position word ("first" / "πρώτο" / "parë") counts only alongside a
+        //     named station or line, so "first M2 train" resolves while "first"
+        //     alone does not.
+        let firstCue = containsAny(text, Self.firstTrainPhrases) ||
+            (Self.firstTokens.contains(where: { text.contains($0) }) && (!stations.isEmpty || line != nil))
+        if firstCue {
+            let station = stations.first
+            let base = AssistantIntent.firstTrain(stationId: station, lineId: line)
+            if station == nil && line == nil {
+                return .needsClarification(base: base, missing: .station)
+            }
             return base
         }
 
@@ -375,6 +435,10 @@ struct AthensTransitParser {
         return nil
     }
 
+    /// Public day-context probe for follow-ups ("what about tomorrow?").
+    /// Mirrors the KMP `dayOf`.
+    func dayOf(_ rawInput: String) -> DayContext { matchDay(Self.fold(rawInput)) }
+
     private func matchDay(_ text: String) -> DayContext {
         if containsAny(text, Self.tomorrowWords) { return .tomorrow }
         if containsAny(text, Self.weekendWords) { return .weekend }
@@ -455,6 +519,14 @@ struct AthensTransitParser {
         needles.contains { containsToken(text, Self.fold($0)) }
     }
 
+    /// True when the text introduces a place with a location preposition
+    /// ("weather IN London"). Used by the weather branch to decline a question
+    /// about a place that resolved to no Athens station. Mirrors KMP.
+    private func namesUnservedPlace(_ text: String) -> Bool {
+        let markers = [" in ", " at ", " στο ", " στη ", " στην ", " σε "]
+        return markers.contains { text.contains(Self.fold($0)) }
+    }
+
     private func containsToken(_ text: String, _ needle: String) -> Bool {
         if needle.isEmpty { return false }
         if needle.contains(" ") { return text.contains(needle) }
@@ -494,13 +566,45 @@ struct AthensTransitParser {
     private static let transitNouns = ["train", "trains", "metro", "tram", "station", "departure", "departures",
         "τρεν", "μετρο", "τραμ", "σταθμ", "δρομολογ", "αναχωρη", "συρμ", "προαστιακ", "tren", "stacion", "nisje"]
     private static let departureWords = ["next", "departure", "departures", "when", "trains", "leave", "leaving", "schedule",
-        "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ardhsh", "kur", "nisje", "tren", "trena"]
-    private static let lastTrainPhrases = ["last train", "last metro", "last one", "leave by",
-        "τελευται", "τελευταιο τρεν", "τελευταιος", "treni i fundit", "fundit", "i fundit", "tren i fundit"]
+        "arrivals", "arriving", "next one", "how soon", "timetable",
+        "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ερχεται", "ερχονται", "ωραριο", "επομενο",
+        "ardhsh", "kur", "nisje", "tren", "trena", "vjen", "orari", "ardhja"]
+    private static let lastTrainPhrases = ["last train", "last metro", "last one", "leave by", "final train", "last departure",
+        "τελευται", "τελευταιο τρεν", "τελευταιος", "τελευταιο δρομολογιο",
+        "treni i fundit", "fundit", "i fundit", "tren i fundit", "nisja e fundit"]
+    // First / earliest service of the day. Mirror of lastTrainPhrases.
+    private static let firstTrainPhrases = ["first train", "first metro", "first tram", "first one",
+        "earliest train", "earliest metro", "first departure", "when does it start",
+        "when does service start", "start of service", "when do trains start", "first service",
+        "πρωτο τρεν", "πρωτο δρομολογιο", "πρωτος συρμος", "ποτε ξεκινα", "ποτε ξεκινουν",
+        "εναρξη δρομολογιων", "πρωτο μετρο", "πρωτη αναχωρηση",
+        "treni i pare", "nisja e pare", "tren i pare", "kur fillon", "kur fillojne",
+        "sherbimi i pare", "metroja e pare"]
+    // Bare "first / earliest" position tokens (folded substrings). Count only
+    // alongside a named station or line.
+    private static let firstTokens = ["first", "earliest", "πρωτ", "i pare", "e pare", "me heret"]
+    // Step-free / wheelchair / lift accessibility cues.
+    private static let accessibilityWords = ["accessible", "accessibility", "wheelchair", "step free", "step-free", "stepfree",
+        "lift", "elevator", "disabled access", "disability access", "amea",
+        "προσβασιμ", "προσβαση αμεα", "για αμεα", "αναπηρικ", "αμαξιδι", "ασανσερ", "αναβατοριο", "αναπηρια",
+        "i aksesueshem", "aksesueshem", "aksesi", "karrige me rrota", "ashensor",
+        "per personat me aftesi", "personat me aftesi te kufizuara"]
+    // "and back" / "return" / "the other way" — reverse the last route.
+    private static let reversePhrases = ["and back", "way back", "the other way", "return trip", "round trip",
+        "return journey", "reverse", "reverse trip", "back again", "other direction", "opposite direction",
+        "coming back", "on the way back", "return the same way",
+        "και πισω", "επιστροφη", "αντιστροφ", "το αναποδο", "το αντιθετο", "πισω παλι",
+        "αναποδη διαδρομη", "για επιστροφη",
+        "kthimi", "kthimin", "e kunderta", "rruga e kthimit", "anasjelltas",
+        "kthimi mbrapa", "kthej mbrapsht", "dhe kthimi"]
     private static let planPhrases = ["how do i get", "how to get", "get to", "get me to", "route",
         "how do i go", "how to go", "go to", "can i go", "can i still", "can i reach",
+        "take me to", "best way", "fastest way", "quickest way", "how can i get",
+        "i want to go", "i need to go", "navigate to", "way to reach", "getting to",
         "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "προλαβαινω", "μπορω να παω",
-        "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij"]
+        "πως θα παω", "καλυτερος τροπος", "πιο γρηγορα", "θελω να παω", "πως μπορω να παω",
+        "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij",
+        "si te vij", "rruga me e mire", "rruga me e shpejte", "dua te shkoj", "si mund te shkoj"]
     private static let toMarkers = [" to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne "]
     private static let findWords = ["where is", "find", "locate", "nearest", "near me", "closest",
         "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ku eshte", "gjej", "me afert", "afer meje"]
@@ -562,6 +666,7 @@ struct AthensTransitParser {
     private static let stopwords: Set<String> = Set(
         (transitNouns + departureWords + findWords + lineWords + fareWords + favoriteWords +
          airportWords + alertWords + mapWords + weatherWords +
+         accessibilityWords + reversePhrases + firstTrainPhrases +
          tomorrowWords + weekendWords + saturdayWords + sundayWords)
             .map { fold($0) }
             .filter { $0.count >= 4 && !$0.contains(" ") }

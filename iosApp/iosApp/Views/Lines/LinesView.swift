@@ -47,6 +47,9 @@ extension TransitType {
         case (.suburban, .greek): return "Προαστιακός Σιδηρόδρομος"
         case (.suburban, .english): return "Suburban Railway"
         case (.suburban, .albanian): return "Hekurudha periferike"
+        case (.bus, .greek): return "Λεωφορείο (αντικατάσταση)"
+        case (.bus, .english): return "Bus (rail replacement)"
+        case (.bus, .albanian): return "Autobus (zëvendësim)"
         }
     }
 }

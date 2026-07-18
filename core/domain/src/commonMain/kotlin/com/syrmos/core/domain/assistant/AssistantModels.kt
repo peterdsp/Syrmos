@@ -29,6 +29,32 @@ sealed interface AssistantIntent {
         val lineId: String?,
     ) : AssistantIntent
 
+    /**
+     * The first / earliest train of the day at a station, optionally on a line.
+     * The mirror of [LastTrain]: "when does service start", "first metro",
+     * "πρώτο τρένο", "treni i parë". Answered deterministically from the
+     * earliest scheduled departure, never estimated.
+     */
+    data class FirstTrain(
+        val stationId: String?,
+        val lineId: String?,
+    ) : AssistantIntent
+
+    /**
+     * "Is X accessible / step-free / wheelchair friendly?" / "does X have a
+     * lift?". Answered from the bundled per-station accessibility flag, never
+     * invented. Null [stationId] asks which station.
+     */
+    data class StationAccessibility(val stationId: String?) : AssistantIntent
+
+    /**
+     * A context-only follow-up: "and back?" / "return" / "the other way" /
+     * "και πίσω" / "kthimi". Ariadne has no slots to fill here; the resolver
+     * reverses [AssistantSessionContext.lastRoute] (swaps origin/destination)
+     * and re-plans. With no remembered route it asks for a trip first.
+     */
+    data object ReverseTrip : AssistantIntent
+
     /** Free-text station lookup. */
     data class FindStation(val query: String) : AssistantIntent
 

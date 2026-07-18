@@ -14,6 +14,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased (rolling web + data)
 
+**Ariadne got cleverer** across iOS, Android and Web (shared KMP brain + Swift and JS mirrors, all trilingual, still tool-only — she never invents a transit fact):
+
+- **Understands more phrasings.** Broadened the EN/EL/SQ cue vocabularies (departures, planning, arrivals, "I want to go", "navigate to", …) so far more natural wording resolves without a dead-end. Albanian station recall widened from ~4 stops to ~20 high-traffic ones, including real Albanian exonyms (Selanik → Thessaloniki, Athina → Athens) — and the web build now applies those aliases too (it previously didn't).
+- **New capabilities.** **First train** of the day (mirror of last train), **step-free accessibility** ("is X wheelchair accessible / does it have a lift?", answered from the bundled per-station flag), and **reverse trip** ("and back?" / "return" / "kthimi" flips the last route). Each is deterministic and grounded.
+- **Smarter conversations.** Day-change follow-ups ("what about tomorrow?", "the weekend?") re-run the last departures query without repeating the station, and web now has durable session memory (current station + last route) so multi-turn works there like it already did on iOS/Android. The Swift session context was brought back into parity with the KMP one (last intent, current line/direction).
+- **Smarter LLM tier.** The on-device model's few-shot classification prompt and GBNF grammar (all three copies — Kotlin, web `.gbnf`, Swift) plus the IntentGrounder now cover the new intents, with EL/SQ worked examples so Greek and Albanian stay first-class.
+
 All-Greece rail coverage, shipped as bundled data + web with no client-code changes (the app is fully data-driven for lines/stations/geometry):
 
 - **Real OSM track geometry for every national + Patras corridor.** IC1, RG1, TP1-TP4, PS1/PS2/PSB now follow the real curved rail alignment (stitched in OSM relation-member order from the Greece extract) instead of straight station-to-station chords. Injected into all five bundled `shapes.json` copies. Every served station sits on its line (0-76 m); a few multi-km straight segments on IC1/RG1 are genuine gaps in OSM's mapping of the new high-speed alignment, not stitching errors (not hand-drawn, to avoid inventing track).

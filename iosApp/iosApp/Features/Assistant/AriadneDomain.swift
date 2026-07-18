@@ -57,8 +57,13 @@ enum RoutePreference: Equatable {
 struct AssistantSessionContext: Equatable {
     var currentStation: String?
     var currentLine: String?
+    // Kept in sync with the KMP AssistantSessionContext: direction on the
+    // current line ("I'm on M3 towards the airport") and the last answered
+    // intent (so a bare "what about tomorrow?" can re-run it).
+    var currentDirection: TransitDirection?
     var lastDestination: String?
     var lastRoute: RouteMemory?
+    var lastIntent: AssistantIntent?
 
     static let empty = AssistantSessionContext()
 

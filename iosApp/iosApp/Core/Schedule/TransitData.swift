@@ -186,8 +186,13 @@ enum SyrmosData {
 
     /// Prefer the payload's own hex, so a colour correction ships without an app
     /// release. Falls back to the mode's house colour when the hex is unusable.
+    /// Parses the hex to a UInt and uses the unambiguous `Color(hex: UInt)`
+    /// initialiser directly (the `Color(hex: String)` overload mis-resolves under
+    /// Swift 6 overload rules here, picking the UInt init and rejecting a String).
     private static func colorFor(hex: String, type: String) -> Color {
-        if let c = Color(hex: hex) { return c }
+        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.hasPrefix("#") { s.removeFirst() }
+        if s.count == 6, let v = UInt(s, radix: 16) { return Color(hex: v) }
         switch type.lowercased() {
         case "metro": return .metroBlue
         case "tram": return .tramOrange

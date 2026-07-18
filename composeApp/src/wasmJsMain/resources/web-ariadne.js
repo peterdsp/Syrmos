@@ -61,18 +61,54 @@
     ];
     const DEPARTURE_WORDS = [
         'next', 'departure', 'departures', 'when', 'trains', 'leave', 'leaving', 'schedule',
-        'επομεν', 'αναχωρη', 'ποτε', 'δρομολογ', 'φευγει', 'τρεν',
-        'ardhsh', 'kur', 'nisje', 'tren', 'trena',
+        'arrivals', 'arriving', 'next one', 'how soon', 'timetable',
+        'επομεν', 'αναχωρη', 'ποτε', 'δρομολογ', 'φευγει', 'τρεν', 'ερχεται', 'ερχονται', 'ωραριο', 'επομενο',
+        'ardhsh', 'kur', 'nisje', 'tren', 'trena', 'vjen', 'orari', 'ardhja',
     ];
     const LAST_TRAIN_PHRASES = [
-        'last train', 'last metro', 'last one', 'leave by',
-        'τελευται', 'τελευταιο τρεν', 'τελευταιοσ',
-        'treni i fundit', 'fundit', 'i fundit', 'tren i fundit',
+        'last train', 'last metro', 'last one', 'leave by', 'final train', 'last departure',
+        'τελευται', 'τελευταιο τρεν', 'τελευταιοσ', 'τελευταιο δρομολογιο',
+        'treni i fundit', 'fundit', 'i fundit', 'tren i fundit', 'nisja e fundit',
+    ];
+    // First / earliest service of the day. Mirror of LAST_TRAIN_PHRASES.
+    const FIRST_TRAIN_PHRASES = [
+        'first train', 'first metro', 'first tram', 'first one', 'earliest train',
+        'earliest metro', 'first departure', 'when does it start', 'when does service start',
+        'start of service', 'when do trains start', 'first service',
+        'πρωτο τρεν', 'πρωτο δρομολογιο', 'πρωτοσ συρμοσ', 'ποτε ξεκινα', 'ποτε ξεκινουν',
+        'εναρξη δρομολογιων', 'πρωτο μετρο', 'πρωτη αναχωρηση',
+        'treni i pare', 'nisja e pare', 'tren i pare', 'kur fillon', 'kur fillojne',
+        'sherbimi i pare', 'metroja e pare',
+    ];
+    // Bare "first / earliest" position tokens. Count only with a station or line.
+    const FIRST_TOKENS = ['first', 'earliest', 'πρωτ', 'i pare', 'e pare', 'me heret'];
+    // Step-free / wheelchair / lift accessibility cues.
+    const ACCESSIBILITY_WORDS = [
+        'accessible', 'accessibility', 'wheelchair', 'step free', 'step-free', 'stepfree',
+        'lift', 'elevator', 'disabled access', 'disability access', 'amea',
+        'προσβασιμ', 'προσβαση αμεα', 'για αμεα', 'αναπηρικ', 'αμαξιδι', 'ασανσερ', 'αναβατοριο', 'αναπηρια',
+        'i aksesueshem', 'aksesueshem', 'aksesi', 'karrige me rrota', 'ashensor',
+        'per personat me aftesi',
+    ];
+    // "and back" / "return" / "the other way" — reverse the last route.
+    const REVERSE_PHRASES = [
+        'and back', 'way back', 'the other way', 'return trip', 'round trip', 'return journey',
+        'reverse', 'reverse trip', 'back again', 'other direction', 'opposite direction',
+        'coming back', 'on the way back', 'return the same way',
+        'και πισω', 'επιστροφη', 'αντιστροφ', 'το αναποδο', 'το αντιθετο', 'πισω παλι',
+        'αναποδη διαδρομη', 'για επιστροφη',
+        'kthimi', 'kthimin', 'e kunderta', 'rruga e kthimit', 'anasjelltas',
+        'kthimi mbrapa', 'kthej mbrapsht', 'dhe kthimi',
     ];
     const PLAN_PHRASES = [
         'how do i get', 'how to get', 'get to', 'get me to', 'route',
-        'πωσ πα', 'πωσ πη', 'πωσ φτα', 'διαδρομη', 'για να πα',
-        'si shkoj', 'si te shkoj', 'rruga', 'udhetim',
+        'how do i go', 'how to go', 'go to', 'can i go', 'can i still', 'can i reach',
+        'take me to', 'best way', 'fastest way', 'quickest way', 'how can i get',
+        'i want to go', 'i need to go', 'navigate to', 'way to reach', 'getting to',
+        'πωσ πα', 'πωσ πη', 'πωσ φτα', 'διαδρομη', 'για να πα', 'προλαβαινω', 'μπορω να παω',
+        'πωσ θα παω', 'καλυτεροσ τροπος', 'πιο γρηγορα', 'θελω να παω', 'πωσ μπορω να παω',
+        'si shkoj', 'si te shkoj', 'rruga', 'udhetim', 'a mund te shkoj', 'a arrij',
+        'si te vij', 'rruga me e mire', 'rruga me e shpejte', 'dua te shkoj', 'si mund te shkoj',
     ];
     const TO_MARKERS = [
         ' to ', ' for ', '->', '→', ' προσ ', ' για ', ' te ', ' per ', ' ne ',
@@ -131,6 +167,7 @@
         'ποση ωρα', 'ποσα λεπτα', 'ποσες ωρες', 'ποσο θελει', 'ποση ωρα κανει',
         'sa gjate', 'sa minuta', 'sa ore', 'sa larg', 'sa kohe',
     ];
+    const STATION_NOUN_WORDS = ['station', 'σταθμ', 'stacion'];
     const TOMORROW_WORDS = ['tomorrow', 'αυριο', 'neser'];
     const WEEKEND_WORDS = ['weekend', 'σαββατοκυριακο', 'fundjave'];
     const SATURDAY_WORDS = ['saturday', 'σαββατο', 'te shtune', 'shtune'];
@@ -143,10 +180,36 @@
         []
             .concat(TRANSIT_NOUNS, DEPARTURE_WORDS, FIND_WORDS, LINE_WORDS,
                 FARE_WORDS, FAVORITE_WORDS, AIRPORT_WORDS, ALERT_WORDS, MAP_WORDS,
-                WEATHER_WORDS, TOMORROW_WORDS, WEEKEND_WORDS, SATURDAY_WORDS, SUNDAY_WORDS)
+                WEATHER_WORDS, ACCESSIBILITY_WORDS, REVERSE_PHRASES, FIRST_TRAIN_PHRASES,
+                TOMORROW_WORDS, WEEKEND_WORDS, SATURDAY_WORDS, SUNDAY_WORDS)
             .map(fold)
             .filter(function (w) { return w.length >= 4 && w.indexOf(' ') < 0; }),
     );
+
+    // Albanian / Latin-Greeklish station aliases, keyed by an accent-folded
+    // token in the EN or EL name. Mirrors the KMP AssistantVocabularyBuilder.
+    const SQ_AND_LATIN_ALIASES = {
+        'airport': ['Aeroport', 'Aeroporti'],
+        'aerodromio': ['Aeroport', 'Aeroporti'],
+        'piraeus': ['Pireas', 'Pireu'],
+        'syntagma': ['Sintagma'],
+        'thessaloniki': ['Selanik', 'Selaniku', 'Thesaloniki'],
+        'athens': ['Athina', 'Athine'],
+        'acropolis': ['Akropoli', 'Akropolis'],
+        'omonia': ['Omonoia'],
+        'monastiraki': ['Monastiraqi'],
+        'nikaia': ['Nikea', 'Nikaja'],
+        'victoria': ['Viktoria'],
+        'attiki': ['Atiki'],
+        'kifisia': ['Kifissia'],
+        'elliniko': ['Helliniko'],
+        'peristeri': ['Peristeri'],
+        'aigaleo': ['Egaleo', 'Aigaleo'],
+        'larisa': ['Larisis'],
+        'patra': ['Patra', 'Patras'],
+        'aghios': ['Agios'],
+        'agios': ['Aghios'],
+    };
 
     // MARK: - Vocab builder (mirrors AssistantVocabularyBuilder)
 
@@ -159,8 +222,17 @@
         const lines = (opts && opts.lines) || [];
 
         stationVocab = stations.map(function (st) {
-            const raw = [st.name, st.nameEl || st.name_el].filter(Boolean);
-            const distinct = Array.from(new Set(raw));
+            const base = [st.name, st.nameEl || st.name_el].filter(Boolean);
+            // Albanian is first-class: augment key stations with Albanian /
+            // Latin-Greeklish spellings so SQ input resolves like EN/EL.
+            const folded = fold(base.join(' '));
+            const extra = [];
+            for (const key in SQ_AND_LATIN_ALIASES) {
+                if (folded.indexOf(key) >= 0) {
+                    for (const alias of SQ_AND_LATIN_ALIASES[key]) extra.push(alias);
+                }
+            }
+            const distinct = Array.from(new Set(base.concat(extra)));
             return {
                 id: st.id,
                 rawNames: distinct,
@@ -430,6 +502,12 @@
 
         if (containsAny(text, HELP_PHRASES)) return { kind: 'help' };
 
+        // Reverse-trip follow-up: a bare "and back?" / "return" / "kthimi"
+        // with no newly-named station. The dispatcher flips the last route.
+        if (mentionedStations.length === 0 && containsAny(text, REVERSE_PHRASES)) {
+            return { kind: 'reverseTrip' };
+        }
+
         const strongTransit = mentionedStations.length > 0 ||
             mentionedLine !== null ||
             containsAny(text, TRANSIT_NOUNS);
@@ -484,6 +562,16 @@
             return st ? base : { kind: 'needsClarification', base: base, missing: 'STATION' };
         }
 
+        // Station accessibility: "is X step-free?", "does X have a lift?".
+        // Before planning because the Greek "για ΑμεΑ" contains the " για "
+        // to-marker, which would otherwise turn the question into a trip.
+        if (containsAny(text, ACCESSIBILITY_WORDS) &&
+            (mentionedStations.length > 0 || containsAny(text, STATION_NOUN_WORDS))) {
+            const st = mentionedStations[0] || null;
+            const base = { kind: 'stationAccessibility', stationId: st };
+            return st ? base : { kind: 'needsClarification', base: base, missing: 'STATION' };
+        }
+
         // Plan a trip.
         const hasToMarker = TO_MARKERS.some(function (m) { return text.indexOf(m) >= 0; });
         const planning = containsAny(text, PLAN_PHRASES) ||
@@ -510,6 +598,18 @@
             if (!ep.to) return { kind: 'needsClarification', base: base, missing: 'DESTINATION_STATION' };
             if (!ep.from) return { kind: 'needsClarification', base: base, missing: 'ORIGIN_STATION' };
             return base;
+        }
+
+        // First / earliest train of the day (mirror of last train). A bare
+        // position word ("first" / "πρώτο" / "parë") counts only with a named
+        // station or line, so "first M2 train" resolves while "first" alone does not.
+        const firstCue = containsAny(text, FIRST_TRAIN_PHRASES) ||
+            (FIRST_TOKENS.some(function (t) { return text.indexOf(fold(t)) >= 0; }) &&
+                (mentionedStations.length > 0 || mentionedLine));
+        if (firstCue) {
+            const st = mentionedStations[0] || null;
+            const base = { kind: 'firstTrain', stationId: st, lineId: mentionedLine };
+            return (st || mentionedLine) ? base : { kind: 'needsClarification', base: base, missing: 'STATION' };
         }
 
         // Last train tonight.
@@ -611,13 +711,19 @@
     function buildClassificationPrompt(input) {
         return [
             'Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.',
-            'Intents: showDepartures (next trains from a station), lastTrain (last/final train), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).',
+            'Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).',
             'Fields: intent, station, toStation, line, query, airport(bool), lowExposure(bool), day(today/tomorrow/weekend/saturday/sunday), arriveByClock(HH:mm or empty), arriveInMinutes(int). Never output an id, a time, a fare, or a route.',
             '',
             'Message: next trains from ambelokipi',
             'JSON: {"intent":"showDepartures","station":"ambelokipi","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
             'Message: last train from syntagma',
             'JSON: {"intent":"lastTrain","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
+            'Message: πρωτο τρενο απο το μοναστηρακι',
+            'JSON: {"intent":"firstTrain","station":"μοναστηρακι","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
+            'Message: a eshte pireas i aksesueshem',
+            'JSON: {"intent":"stationAccessibility","station":"pireas","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
+            'Message: and back',
+            'JSON: {"intent":"reverseTrip","station":"","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
             'Message: how much is a ticket to the airport',
             'JSON: {"intent":"explainFare","station":"","toStation":"airport","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
             'Message: kur niset treni i fundit per Pire',
@@ -650,6 +756,12 @@
                 return station ? ('next trains from ' + station + (line ? ' ' + line : '') + daySuffix) : null;
             case 'lastTrain':
                 return station ? ('last train from ' + station + (line ? ' ' + line : '')) : null;
+            case 'firstTrain':
+                return (station || line) ? ('first train from ' + (station || '') + (line ? ' ' + line : '')) : null;
+            case 'stationAccessibility':
+                return station ? ('is ' + station + ' accessible') : null;
+            case 'reverseTrip':
+                return 'and back';
             case 'findStation':
                 return query ? ('where is ' + query) : null;
             case 'planTrip':
@@ -676,6 +788,10 @@
         }
     }
 
+    // Public day-context probe for follow-ups ("what about tomorrow?").
+    // Returns 'today' | 'tomorrow' | 'weekend' | 'saturday' | 'sunday'.
+    function dayOf(rawInput) { return matchDay(fold(rawInput || '')); }
+
     global.SyrmosAriadne = {
         init: init,
         parse: parse,
@@ -683,6 +799,7 @@
         outOfScope: outOfScope,
         clarify: clarify,
         fold: fold,
+        dayOf: dayOf,
         buildClassificationPrompt: buildClassificationPrompt,
         cleverQueryFromJson: cleverQueryFromJson,
     };
