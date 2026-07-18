@@ -23,6 +23,8 @@ and ordered station coordinates.
 | IC Athens ↔ Kalambaka | 14008390 (Α→Κ) | 14008391 (Κ→Α) |
 | IC Thessaloniki ↔ Serres | 14939622 (Θ→Σ) | 14939623 (Σ→Θ) |
 | Thessaloniki ↔ Alexandroupoli | 7051601 | — |
+| AL1 Alexandroupoli ↔ Ormenio (Evros) | 14122316 (Α→Ο) | 14122315 (Ο→Α) |
+| KB1 Paleofarsalos ↔ Kalambaka bus (rail alignment) | 14007294 (Π→Κ) | 14007293 (Κ→Π) |
 
 ## Rail-replacement / regional buses in the PDF (mode = bus)
 

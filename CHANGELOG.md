@@ -12,6 +12,14 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## Unreleased (rolling web + data)
+
+All-Greece rail coverage, shipped as bundled data + web with no client-code changes (the app is fully data-driven for lines/stations/geometry):
+
+- **Real OSM track geometry for every national + Patras corridor.** IC1, RG1, TP1-TP4, PS1/PS2/PSB now follow the real curved rail alignment (stitched in OSM relation-member order from the Greece extract) instead of straight station-to-station chords. Injected into all five bundled `shapes.json` copies. Every served station sits on its line (0-76 m); a few multi-km straight segments on IC1/RG1 are genuine gaps in OSM's mapping of the new high-speed alignment, not stitching errors (not hand-drawn, to avoid inventing track).
+- **Two more national corridors.** **AL1 Alexandroupoli - Orestiada - Ormenio** (Evros/Thrace, 31 stations, four daily trains 1680/1681/1682/1683 incl. the Orestiada short-turns) as a real suburban train; **KB1 Paleofarsalos - Kalambaka** (Sofades, Karditsa, Trikala) as a rail-replacement **bus** (C881/C1889/C1880/C888), which is how Hellenic Train serves that branch today. Every time transcribed from the official Hellenic Train timetable, stored as exact per-station departures; coordinates and track geometry from the OSM service relations (14122316/14122315 for AL1, 14007294/14007293 for KB1), never invented. Total network is now **23 lines** across four regions (athens 10, national 4, thessaloniki 6, patras 3).
+- Fixed the nightly importer that scoped `DELETE` too broadly and wiped every non-Athens line overnight; corrected station-region tagging so Evros/Kalambaka read national and Patras reads patras.
+
 ## 1.2.2 (2026-07-10)
 
 Fixes after tagging:
