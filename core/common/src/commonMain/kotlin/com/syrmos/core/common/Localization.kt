@@ -45,7 +45,15 @@ enum class L {
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
     NEXT_TRAIN, TO, LIVE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE,
-    LAST_TRAIN, LEAVE_BY, SERVICE_OVER, ENABLE_LOCATION_FOR_NEXT;
+    LAST_TRAIN, LEAVE_BY, SERVICE_OVER, ENABLE_LOCATION_FOR_NEXT,
+    DESKTOP_PLANNER, DESKTOP_SCHEDULES, DESKTOP_PASSES, DESKTOP_ACCOUNT,
+    DESKTOP_SUBTITLE, NETWORK_STATUS, NETWORK_STATUS_BODY, DESKTOP_HEADER,
+    TRIP_PLANNING, SEARCH_STATION, STATIONS_LOWER, LINES_HERE, ACCESSIBLE_STOPS,
+    SELECT_STATION_HINT, TRANSFER_STATION, DIRECT_STATION, MERGED_RECORDS,
+    LIVE_TRAINS, SUBURBAN_RAILWAY, NEAR, NEXT_SHORT, NO_LIVE_TRAINS_NOW,
+    NEARBY_POPULAR, POPULAR_INTERCHANGE, POPULAR_STOP, LINES_LOWER,
+    ROUTE_COMPARISON, FASTEST, FEWEST_TRANSFERS, BEST_COVERAGE, ONE_TRANSFER,
+    SCHEDULE_BOARD, EXPORT, PRINT_SCHEDULE, DOWNLOAD_PDF;
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> when (lang) {
@@ -307,6 +315,181 @@ enum class L {
             AppLanguage.GREEK -> "Ενεργοποίησε την τοποθεσία για τον επόμενο συρμό σου"
             AppLanguage.ALBANIAN -> "Aktivizo vendndodhjen për trenin tënd të ardhshëm"
             else -> "Enable location to see your next train"
+        }
+        DESKTOP_PLANNER -> when (lang) {
+            AppLanguage.GREEK -> "Σχεδιασμός"
+            AppLanguage.ALBANIAN -> "Planifikim"
+            else -> "Planner"
+        }
+        DESKTOP_SCHEDULES -> when (lang) {
+            AppLanguage.GREEK -> "Δρομολόγια"
+            AppLanguage.ALBANIAN -> "Oraret"
+            else -> "Schedules"
+        }
+        DESKTOP_PASSES -> when (lang) {
+            AppLanguage.GREEK -> "Κάρτες"
+            AppLanguage.ALBANIAN -> "Kartat"
+            else -> "Passes"
+        }
+        DESKTOP_ACCOUNT -> when (lang) {
+            AppLanguage.GREEK -> "Λογαριασμός"
+            AppLanguage.ALBANIAN -> "Llogaria"
+            else -> "Account"
+        }
+        DESKTOP_SUBTITLE -> when (lang) {
+            AppLanguage.GREEK -> "Κέντρο ελέγχου σιδηροδρόμων Αθήνας"
+            AppLanguage.ALBANIAN -> "Qendra e kontrollit të hekurudhave të Athinës"
+            else -> "Athens rail command center"
+        }
+        NETWORK_STATUS -> when (lang) {
+            AppLanguage.GREEK -> "Κατάσταση δικτύου"
+            AppLanguage.ALBANIAN -> "Statusi i rrjetit"
+            else -> "Network status"
+        }
+        NETWORK_STATUS_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Δεδομένα μετρό, τραμ και προαστιακού φορτωμένα για σχεδιασμό."
+            AppLanguage.ALBANIAN -> "Të dhënat e metrosë, tramvajit dhe trenit periferik të ngarkuara për planifikim."
+            else -> "Metro, tram and suburban data loaded for planning."
+        }
+        DESKTOP_HEADER -> when (lang) {
+            AppLanguage.GREEK -> "Σχεδιαστής συγκοινωνιών Αθήνας"
+            AppLanguage.ALBANIAN -> "Planifikuesi i transportit të Athinës"
+            else -> "Athens transit planner"
+        }
+        TRIP_PLANNING -> when (lang) {
+            AppLanguage.GREEK -> "Σχεδιασμός διαδρομής"
+            AppLanguage.ALBANIAN -> "Planifikimi i udhëtimit"
+            else -> "Trip planning"
+        }
+        SEARCH_STATION -> when (lang) {
+            AppLanguage.GREEK -> "Αναζήτηση σταθμού ή προορισμού"
+            AppLanguage.ALBANIAN -> "Kërko stacion ose destinacion"
+            else -> "Search station or destination"
+        }
+        STATIONS_LOWER -> when (lang) {
+            AppLanguage.GREEK -> "σταθμοί"
+            AppLanguage.ALBANIAN -> "stacione"
+            else -> "stations"
+        }
+        LINES_HERE -> when (lang) {
+            AppLanguage.GREEK -> "γραμμές εδώ"
+            AppLanguage.ALBANIAN -> "linja këtu"
+            else -> "lines here"
+        }
+        ACCESSIBLE_STOPS -> when (lang) {
+            AppLanguage.GREEK -> "προσβάσιμες στάσεις"
+            AppLanguage.ALBANIAN -> "ndalesa të aksesueshme"
+            else -> "accessible stops"
+        }
+        SELECT_STATION_HINT -> when (lang) {
+            AppLanguage.GREEK -> "Επίλεξε έναν σταθμό στον χάρτη για να δεις γραμμές, προσβασιμότητα και επόμενα βήματα."
+            AppLanguage.ALBANIAN -> "Zgjidh një stacion në hartë për të parë linjat, aksesueshmërinë dhe hapat e ardhshëm."
+            else -> "Select a station on the map to inspect lines, accessibility and next steps."
+        }
+        TRANSFER_STATION -> when (lang) {
+            AppLanguage.GREEK -> "Σταθμός μετεπιβίβασης"
+            AppLanguage.ALBANIAN -> "Stacion transferimi"
+            else -> "Transfer station"
+        }
+        DIRECT_STATION -> when (lang) {
+            AppLanguage.GREEK -> "Απλός σταθμός"
+            AppLanguage.ALBANIAN -> "Stacion i drejtpërdrejtë"
+            else -> "Direct station"
+        }
+        MERGED_RECORDS -> when (lang) {
+            AppLanguage.GREEK -> "συγχωνευμένες εγγραφές"
+            AppLanguage.ALBANIAN -> "regjistrime të bashkuara"
+            else -> "merged records"
+        }
+        LIVE_TRAINS -> when (lang) {
+            AppLanguage.GREEK -> "Ζωντανά τρένα"
+            AppLanguage.ALBANIAN -> "Trena të drejtpërdrejtë"
+            else -> "Live trains"
+        }
+        SUBURBAN_RAILWAY -> when (lang) {
+            AppLanguage.GREEK -> "Προαστιακός σιδηρόδρομος"
+            AppLanguage.ALBANIAN -> "Hekurudha periferike"
+            else -> "Suburban railway"
+        }
+        NEAR -> when (lang) {
+            AppLanguage.GREEK -> "Κοντά σε"
+            AppLanguage.ALBANIAN -> "Afër"
+            else -> "Near"
+        }
+        NEXT_SHORT -> when (lang) {
+            AppLanguage.GREEK -> "Επόμενος"
+            AppLanguage.ALBANIAN -> "Tjetri"
+            else -> "Next"
+        }
+        NO_LIVE_TRAINS_NOW -> when (lang) {
+            AppLanguage.GREEK -> "Δεν υπάρχουν ζωντανά τρένα αυτή τη στιγμή."
+            AppLanguage.ALBANIAN -> "Nuk ka trena të drejtpërdrejtë për momentin."
+            else -> "No live trains available right now."
+        }
+        NEARBY_POPULAR -> when (lang) {
+            AppLanguage.GREEK -> "Κοντινοί ή δημοφιλείς σταθμοί"
+            AppLanguage.ALBANIAN -> "Stacione afër ose popullore"
+            else -> "Nearby or popular stations"
+        }
+        POPULAR_INTERCHANGE -> when (lang) {
+            AppLanguage.GREEK -> "Δημοφιλής κόμβος"
+            AppLanguage.ALBANIAN -> "Nyje popullore"
+            else -> "Popular interchange"
+        }
+        POPULAR_STOP -> when (lang) {
+            AppLanguage.GREEK -> "Δημοφιλής στάση"
+            AppLanguage.ALBANIAN -> "Ndalesë popullore"
+            else -> "Popular stop"
+        }
+        LINES_LOWER -> when (lang) {
+            AppLanguage.GREEK -> "γραμμές"
+            AppLanguage.ALBANIAN -> "linja"
+            else -> "lines"
+        }
+        ROUTE_COMPARISON -> when (lang) {
+            AppLanguage.GREEK -> "Σύγκριση διαδρομών"
+            AppLanguage.ALBANIAN -> "Krahasim rrugësh"
+            else -> "Route comparison"
+        }
+        FASTEST -> when (lang) {
+            AppLanguage.GREEK -> "Ταχύτερη"
+            AppLanguage.ALBANIAN -> "Më e shpejta"
+            else -> "Fastest"
+        }
+        FEWEST_TRANSFERS -> when (lang) {
+            AppLanguage.GREEK -> "Λιγότερες μετεπιβιβάσεις"
+            AppLanguage.ALBANIAN -> "Më pak transferime"
+            else -> "Fewest transfers"
+        }
+        BEST_COVERAGE -> when (lang) {
+            AppLanguage.GREEK -> "Καλύτερη κάλυψη"
+            AppLanguage.ALBANIAN -> "Mbulimi më i mirë"
+            else -> "Best coverage"
+        }
+        ONE_TRANSFER -> when (lang) {
+            AppLanguage.GREEK -> "1 μετεπιβίβαση"
+            AppLanguage.ALBANIAN -> "1 transferim"
+            else -> "1 transfer"
+        }
+        SCHEDULE_BOARD -> when (lang) {
+            AppLanguage.GREEK -> "Πίνακας δρομολογίων"
+            AppLanguage.ALBANIAN -> "Tabela e orareve"
+            else -> "Schedule board"
+        }
+        EXPORT -> when (lang) {
+            AppLanguage.GREEK -> "Εξαγωγή"
+            AppLanguage.ALBANIAN -> "Eksporto"
+            else -> "Export"
+        }
+        PRINT_SCHEDULE -> when (lang) {
+            AppLanguage.GREEK -> "Εκτύπωση δρομολογίου"
+            AppLanguage.ALBANIAN -> "Printo orarin"
+            else -> "Print schedule"
+        }
+        DOWNLOAD_PDF -> when (lang) {
+            AppLanguage.GREEK -> "Λήψη PDF"
+            AppLanguage.ALBANIAN -> "Shkarko PDF"
+            else -> "Download PDF"
         }
     }
 }
