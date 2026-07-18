@@ -58,13 +58,13 @@ A rail companion for Greece. Athens (metro, tram, suburban), Thessaloniki (metro
 
 ## Coverage
 
-Greek passenger rail, city by city. 21 lines, four regions.
+Greek passenger rail, city by city. 23 lines, four regions.
 
 | Region | Lines | Operator |
 |--------|-------|----------|
 | **Athens** | Metro 1/2/3, Tram T6/T7, Suburban A1-A4 | STASY, Hellenic Train |
 | **Thessaloniki** | Metro TM1 (live), TM2 (Kalamaria, opening) &bull; Suburban Larisa, Florina, Sindos, Serres-Drama | Thessaloniki Metro, Hellenic Train |
-| **National** | InterCity Athens&ndash;Thessaloniki, Athens&ndash;Leianokladi | Hellenic Train |
+| **National** | InterCity Athens&ndash;Thessaloniki, Athens&ndash;Leianokladi, Alexandroupoli&ndash;Orestiada&ndash;Ormenio (Evros), Paleofarsalos&ndash;Kalambaka bus | Hellenic Train |
 | **Patras** | Suburban Kaminia & Rio branches, Kato Achaia connecting bus | Hellenic Train |
 
 Every timetable is transcribed from the official Hellenic Train / railway.gov.gr sources and stored as exact per-station times &mdash; never estimated. A line that is built but not yet open (Thessaloniki Line 2) renders greyed and carries no departures until it opens.
