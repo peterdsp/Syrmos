@@ -25,3 +25,24 @@ extension Color {
         )
     }
 }
+
+/// Verbatim Swift mirror of the shared map design tokens. Source of truth:
+/// core/common/src/commonMain/kotlin/com/syrmos/core/common/map/MapDesignTokens.kt
+/// (and composeApp/src/wasmJsMain/resources/web-map.js MAP_TOKENS). Keep in
+/// sync — change the Kotlin object, then update this and the web copy.
+enum MapDesignTokens {
+    // Station dot markers.
+    static let dotCountry: CGFloat = 10
+    static let dotCity: CGFloat = 13
+    static let dotSelected: CGFloat = 18
+    static let ringWidth: CGFloat = 1.5
+    static let selectedHaloWidth: CGFloat = 3
+    static let innerCapRatio: CGFloat = 0.34
+    static let interchangeRingRatio: CGFloat = 0.28
+    static let glyphMinZoom = 14
+
+    // Line strokes.
+    static let greyedColor = "#94A3B8"
+    static let busDash: [CGFloat] = [2, 7]
+    static let greyedDash: [CGFloat] = [6, 8]
+}

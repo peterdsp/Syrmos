@@ -655,19 +655,19 @@ struct StationDot: View {
     /// mode glyph only appears when the stop is selected so the map stays clean.
     /// Interchanges read as a white-cored "target" ring.
     private var midZoomBody: some View {
-        let size: CGFloat = isSelected ? 18 : 13
+        let size: CGFloat = isSelected ? MapDesignTokens.dotSelected : MapDesignTokens.dotCity
         return ZStack {
             if station.isInterchange {
                 Circle()
                     .fill(Color.white)
                     .frame(width: size, height: size)
-                    .overlay(Circle().stroke(primaryColor, lineWidth: size * 0.28))
+                    .overlay(Circle().stroke(primaryColor, lineWidth: size * MapDesignTokens.interchangeRingRatio))
                     .shadow(color: .black.opacity(0.25), radius: 1.5, y: 0.5)
             } else {
                 Circle()
                     .fill(primaryColor)
                     .frame(width: size, height: size)
-                    .overlay(Circle().stroke(.white, lineWidth: 1.5))
+                    .overlay(Circle().stroke(.white, lineWidth: MapDesignTokens.ringWidth))
                     .shadow(color: .black.opacity(0.25), radius: 1.5, y: 0.5)
             }
             if isSelected {
