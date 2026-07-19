@@ -161,10 +161,11 @@ internal actual fun PlatformMapView(
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
     // 0 = country, 1 = city, 2 = district, 3 = street. Mirrors web + iOS buckets.
     var zoomBucket by remember { mutableStateOf(2) }
-    // Zoom-tiered decluttering: below MINOR_STOP_MIN_ZOOM only the network
-    // skeleton (line strokes + interchange hubs) shows, so a regional view isn't
-    // a field of confetti. Mirrors the web + iOS rule.
-    var minorStopsVisible by remember { mutableStateOf(true) }
+    // Zoom-tiered decluttering, three bands (mirrors web + iOS): 0 = country
+    // (only major cross-modal hubs), 1 = regional (all interchanges), 2 = city
+    // (every stop). is_interchange is over-applied, so the country band tightens
+    // to genuine cross-modal transfers.
+    var mapBand by remember { mutableStateOf(2) }
 
     val appLang by com.syrmos.core.common.LocalizationManager.language.collectAsState()
 
@@ -202,8 +203,12 @@ internal actual fun PlatformMapView(
                             else -> 0
                         }
                         if (next != zoomBucket) zoomBucket = next
-                        val minorVisible = z >= com.syrmos.core.common.map.MapDesignTokens.MINOR_STOP_MIN_ZOOM
-                        if (minorVisible != minorStopsVisible) minorStopsVisible = minorVisible
+                        val band = when {
+                            z >= com.syrmos.core.common.map.MapDesignTokens.MINOR_STOP_MIN_ZOOM -> 2
+                            z >= com.syrmos.core.common.map.MapDesignTokens.MAJOR_HUB_MIN_ZOOM -> 1
+                            else -> 0
+                        }
+                        if (band != mapBand) mapBand = band
                         return false
                     }
                 })
@@ -283,14 +288,23 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.mapStations, uiState.selectedStation, zoomBucket, minorStopsVisible) {
-        // A stop is drawn when it's an interchange hub, the selection, or we're
-        // zoomed in past the confetti threshold. Everything else is pruned so a
-        // regional view shows only the network skeleton over the line strokes.
+    LaunchedEffect(uiState.mapStations, uiState.selectedStation, zoomBucket, mapBand) {
+        // A major hub is a genuine cross-modal transfer: its lines span 2+ distinct
+        // types. is_interchange is over-applied, so this tighter rule is what the
+        // country band shows. Same rule on web + iOS.
+        fun isMajorHub(station: MapStationNode): Boolean =
+            station.lineIds
+                .mapNotNull { lid -> uiState.lines.find { it.id == lid }?.type }
+                .distinct().size >= 2
+
+        // Three tiers: city shows every stop, regional all interchanges, country
+        // only major hubs. The selection is always drawn.
         fun shouldDraw(station: MapStationNode): Boolean =
-            station.isInterchange ||
-                minorStopsVisible ||
-                uiState.selectedStation?.id == station.id
+            when (mapBand) {
+                2 -> true
+                1 -> station.isInterchange
+                else -> isMajorHub(station)
+            } || uiState.selectedStation?.id == station.id
 
         val currentIds = uiState.mapStations.filter { shouldDraw(it) }.map { it.id }.toSet()
         val staleIds = stationMarkers.keys - currentIds

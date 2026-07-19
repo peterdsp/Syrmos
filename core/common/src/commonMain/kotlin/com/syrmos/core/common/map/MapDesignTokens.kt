@@ -44,6 +44,19 @@ object MapDesignTokens {
      */
     const val MINOR_STOP_MIN_ZOOM = 11
 
+    /**
+     * The `is_interchange` flag is over-applied in the data (a whole metro line
+     * can be flagged), so even the interchange set is ~58 loose dots, too busy
+     * for a whole-country view. Below this zoom we drop to only the *major* hubs:
+     * a station whose lines span 2+ distinct [line types][com.syrmos] (a genuine
+     * cross-modal transfer, e.g. metro + suburban, metro + tram, bus + suburban).
+     * That leaves ~16 real junctions Greece-wide and lets the line strokes carry
+     * the rest. Three tiers total: major hubs (< this) -> all interchanges
+     * (< [MINOR_STOP_MIN_ZOOM]) -> all stops. Each platform derives "major hub"
+     * from its own line-type lookup; the rule (2+ distinct types) is identical.
+     */
+    const val MAJOR_HUB_MIN_ZOOM = 9
+
     // --- Line strokes --------------------------------------------------------
     /** Suspended / not-yet-open lines render greyed. */
     const val GREYED_COLOR = "#94A3B8"
