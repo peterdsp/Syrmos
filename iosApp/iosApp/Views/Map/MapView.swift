@@ -1096,7 +1096,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         /// distinct types. The is_interchange flag is over-applied, so this
         /// tighter rule is what the country band shows. Same rule on web + Android.
         private func isMajorHub(_ station: MapStationNode) -> Bool {
-            let types = Set(station.lineIds.compactMap { TransitData.line(for: $0)?.type })
+            let types = Set(station.lineIds.compactMap { SyrmosData.line(for: $0)?.type })
             return types.count >= 2
         }
 
