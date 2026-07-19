@@ -890,26 +890,24 @@ body {
            Safari-chrome strip below the rounded card. */
         bottom: 0;
         width: 100%;
-        max-height: calc(64px + env(safe-area-inset-bottom, 0px));
+        /* Draggable bottom sheet (task T6): the height snaps between three
+           detents (peek / half / full) via --sheet-h, which the drag handler
+           sets live. .is-dragging drops the transition for 1:1 finger
+           tracking; on release the train-glide easing snaps to a detent. */
+        height: var(--sheet-h, calc(64px + env(safe-area-inset-bottom, 0px)));
+        max-height: 92dvh;
         padding-bottom: env(safe-area-inset-bottom, 0px);
         border-radius: 18px 18px 0 0;
-        background: rgba(255, 255, 255, 0.96);
+        background: var(--sy-surface-card, rgba(255, 255, 255, 0.96));
         backdrop-filter: blur(20px);
         box-shadow: 0 -4px 24px rgba(16, 20, 24, 0.12);
-        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: height var(--sy-duration-medium-ms, 300ms) var(--sy-ease-glide, cubic-bezier(0.16, 1, 0.3, 1));
         pointer-events: auto;
         overflow: hidden;
     }
 
-    .insight-panel--expanded {
-        max-height: calc(65vh + env(safe-area-inset-bottom, 0px));
-        max-height: calc(65svh + env(safe-area-inset-bottom, 0px));
-        max-height: calc(65dvh + env(safe-area-inset-bottom, 0px));
-        overflow-y: auto;
-        /* Inner clearance so the bottom-most card never gets trapped under
-           Android Chrome's translucent bottom toolbar during the show /
-           hide transition. */
-        padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+    .insight-panel.is-dragging {
+        transition: none;
     }
 
     .panel-peek {
@@ -922,13 +920,13 @@ body {
            (iOS Safari URL bar, Android Chrome bottom address bar) or
            hidden. */
         min-height: 56px;
-        cursor: pointer;
+        cursor: grab;
         user-select: none;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        /* touch-action lets the peek bar respond instantly to taps without
-           the 300ms click-delay some Android browsers still apply to
-           ambiguous touch targets. */
-        touch-action: manipulation;
+        /* touch-action: none so the peek bar owns vertical drags for the
+           three-detent sheet (task T6) instead of the browser scrolling the
+           page; a plain tap still cycles detents. */
+        touch-action: none;
     }
 
     .panel-peek__icon {
@@ -950,15 +948,14 @@ body {
         transition: transform 0.3s ease;
     }
 
-    .insight-panel--expanded .panel-peek__chevron {
+    .insight-panel.is-open .panel-peek__chevron {
         transform: rotate(180deg);
     }
 
     .panel-cards-wrap {
         padding: 8px 12px 20px;
-        max-height: calc(65vh - 54px);
-        max-height: calc(65svh - 54px);
-        max-height: calc(65dvh - 54px);
+        /* Fill the sheet below the 56px peek bar; grows with the detent. */
+        max-height: calc(var(--sheet-h, 64px) - 56px);
         overflow-y: auto;
         /* Prevent the page itself from scrolling while the user is panning
            inside the panel — solves the "tap goes through to the map"

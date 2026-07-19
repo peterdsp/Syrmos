@@ -452,9 +452,15 @@ to W4 (web phases, section 17.11).
   chrome consumes the `--sy-*` vars (brand accent -> Aegean, warm near-black text).
   Per-screen and component polish continues with T4. Depends on: T4 for full
   coverage; the foundation adoption depends only on T2 / T3.
-- T6 — Web app-shell [W1, web]. Responsive shell: mobile map + bottom sheet
-  (peek / half / full), desktop left rail, four shared surfaces over one context
-  stack (sections 17.1, 17.2). Replaces the floating-card layout. Depends on: T3, T4.
+- T6 — Web app-shell [W1, web] (started 2026-07-19: the sheet). The mobile
+  insight-panel is now a proper draggable bottom sheet with three detents (peek /
+  half / full), driven by `--sheet-h`: drag the handle to snap, or tap to cycle,
+  with the train-glide easing on release and `.is-dragging` dropping the transition
+  for 1:1 tracking. Token-styled; desktop keeps the fixed left rail unchanged.
+  Verified peek 64 -> half -> full (92dvh) on mobile and the left rail intact at
+  1200px. Remaining: unify search + Ariadne into the sheet as the four shared
+  surfaces over one context stack (currently the top-bar and Ariadne panel are
+  still separate). Depends on: T3, T4.
 - T7 — One-glance hero unified [M2 / W2, all surfaces]. The section 3 hero + 1s
   countdown on iOS home, watch, widgets, Android, and the web shell head (17.3).
   Depends on: T4; web needs T6.
