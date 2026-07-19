@@ -643,33 +643,40 @@ struct StationDot: View {
            let uiImage = UIImage(named: iconName) {
             Image(uiImage: uiImage)
                 .resizable()
-                .frame(width: isSelected ? 36 : 28, height: isSelected ? 36 : 28)
+                .frame(width: isSelected ? 30 : 22, height: isSelected ? 30 : 22)
                 .shadow(color: .black.opacity(isSelected ? 0.3 : 0.15), radius: isSelected ? 4 : 2, y: 1)
         } else {
             midZoomBody
         }
     }
 
-    /// District-level: colored teardrop pin with SF Symbol mode glyph.
+    /// District-level: a compact modern dot in the line colour with a crisp
+    /// white ring (mirrors the web map). Much smaller than the old teardrop; the
+    /// mode glyph only appears when the stop is selected so the map stays clean.
+    /// Interchanges read as a white-cored "target" ring.
     private var midZoomBody: some View {
-        let size: CGFloat = isSelected ? 30 : 24
+        let size: CGFloat = isSelected ? 18 : 13
         return ZStack {
-            Image(systemName: "mappin.circle.fill")
-                .resizable()
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(.white, primaryColor)
-                .frame(width: size, height: size)
-                .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
-            Image(systemName: primaryModeSymbol)
-                .font(.system(size: size * 0.42, weight: .bold))
-                .foregroundStyle(primaryColor)
-                .offset(y: -size * 0.04)
             if station.isInterchange {
-                interchangeRingsBadge
-                    .offset(x: size * 0.34, y: -size * 0.34)
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: size, height: size)
+                    .overlay(Circle().stroke(primaryColor, lineWidth: size * 0.28))
+                    .shadow(color: .black.opacity(0.25), radius: 1.5, y: 0.5)
+            } else {
+                Circle()
+                    .fill(primaryColor)
+                    .frame(width: size, height: size)
+                    .overlay(Circle().stroke(.white, lineWidth: 1.5))
+                    .shadow(color: .black.opacity(0.25), radius: 1.5, y: 0.5)
+            }
+            if isSelected {
+                Image(systemName: primaryModeSymbol)
+                    .font(.system(size: size * 0.5, weight: .bold))
+                    .foregroundStyle(station.isInterchange ? primaryColor : .white)
             }
         }
-        .scaleEffect(isSelected ? 1.1 : 1.0)
+        .scaleEffect(isSelected ? 1.15 : 1.0)
     }
 
     /// Country-level: tiny solid dot in line color, no glyph (would be unreadable).

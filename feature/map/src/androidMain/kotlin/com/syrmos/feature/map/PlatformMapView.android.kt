@@ -297,7 +297,7 @@ internal actual fun PlatformMapView(
             // colored pin so the country view doesn't look like a rice field.
             val icon = if (zoomBucket >= 3) {
                 resolveStationDrawable(context, primaryStationId, uiState.lineStations)
-                    ?: buildMarkerBitmap(tintArgb, station.isInterchange, isSelected)
+                    ?: buildZoomPin(tintArgb, station.isInterchange, isSelected, bucket = 2)
             } else {
                 buildZoomPin(
                     color = tintArgb,
@@ -457,12 +457,14 @@ private fun cr(a: Double, b: Double, c: Double, d: Double, t: Double): Double {
 // Fallback bitmap builders for when PNG drawables are not found
 
 /**
- * Low/mid-zoom pin. Teardrop-shape filled with the line color and a white
- * inner cap so it reads as a pin, not a rice grain, at country/city zoom.
+ * Compact modern dot marker (mirrors the web + iOS design). A small filled
+ * circle in the line colour with a crisp white ring, centred on the stop.
+ * Much smaller and lighter than the old teardrop pins.
  *
- * bucket 0 (country): small solid dot, no shape detail
- * bucket 1 (city):    teardrop, no inner cap (too small for it to matter)
- * bucket 2 (district): teardrop + inner cap; legible station at glance
+ * bucket 0 (country): tiny dot
+ * bucket 1 (city):    small dot
+ * bucket 2 (district): dot + white inner cap so it reads at a glance
+ * interchange: white core + coloured "target" ring
  */
 private fun buildZoomPin(
     color: Int,
@@ -471,93 +473,46 @@ private fun buildZoomPin(
     bucket: Int,
 ): android.graphics.drawable.Drawable {
     val baseSize = when (bucket) {
-        0 -> 20
-        1 -> 38
-        else -> 52
+        0 -> 15
+        1 -> 22
+        else -> 30
     }
-    val size = if (selected) (baseSize * 1.18f).toInt() else baseSize
+    // Extra room so the selected halo isn't clipped.
+    val pad = if (selected) (baseSize * 0.5f).toInt() else 2
+    val size = baseSize + pad * 2
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     val cx = size / 2f
     val cy = size / 2f
+    val r = baseSize / 2f
+    val ring = maxOf(1.5f, baseSize * 0.11f)
 
-    if (bucket <= 0) {
-        val outer = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
-        canvas.drawCircle(cx, cy, size / 2f, outer)
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-        canvas.drawCircle(cx, cy, size / 2f - 1.5f, fill)
-        return BitmapDrawable(null, bitmap)
-    }
-
-    // Teardrop body: circle + downward triangle. anchor center, so we draw
-    // a balanced teardrop that points "down" relative to the anchor point.
-    val pinFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-    val pinStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = 0xFFFFFFFF.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = size * 0.07f
-    }
-    val rBig = size * 0.36f
-    canvas.drawCircle(cx, cy - size * 0.06f, rBig, pinFill)
-    canvas.drawCircle(cx, cy - size * 0.06f, rBig, pinStroke)
-    // Pointer triangle
-    val path = android.graphics.Path().apply {
-        moveTo(cx - rBig * 0.55f, cy + rBig * 0.55f)
-        lineTo(cx + rBig * 0.55f, cy + rBig * 0.55f)
-        lineTo(cx, cy + size * 0.45f)
-        close()
-    }
-    canvas.drawPath(path, pinFill)
-    canvas.drawPath(path, pinStroke)
-
-    if (bucket >= 2) {
-        val cap = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
-        canvas.drawCircle(cx, cy - size * 0.06f, rBig * 0.42f, cap)
+    if (selected) {
+        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = (color and 0x00FFFFFF) or 0x66000000
+        }
+        canvas.drawCircle(cx, cy, r + ring + baseSize * 0.18f, halo)
     }
 
     if (interchange) {
-        // Tiny corner badge — two ring dots over the pin's shoulder.
-        val badgeR = size * 0.11f
-        val bx = cx + rBig * 0.78f
-        val by = cy - rBig * 0.5f
+        // White core + coloured ring so multi-line stops read without stacking dots.
         val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
-        canvas.drawCircle(bx, by, badgeR * 1.4f, white)
-        val tint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-        canvas.drawCircle(bx, by, badgeR, tint)
-    }
-
-    if (selected) {
-        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0x550072CE }
-        canvas.drawCircle(cx, cy - size * 0.06f, rBig * 1.35f, halo)
-    }
-
-    return BitmapDrawable(null, bitmap)
-}
-
-private fun buildMarkerBitmap(color: Int, interchange: Boolean, selected: Boolean): android.graphics.drawable.Drawable {
-    val size = if (interchange) 64 else 48
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val cx = size / 2f
-    val cy = size / 2f
-
-    if (selected) {
-        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0x330072CE }
-        canvas.drawCircle(cx, cy, if (interchange) 24f else 20f, halo)
-    }
-
-    if (interchange) {
-        val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
-        canvas.drawCircle(cx - 6f, cy, 10f, ring)
-        canvas.drawCircle(cx + 6f, cy, 10f, ring)
-        canvas.drawCircle(cx, cy - 6f, 10f, ring)
-        canvas.drawCircle(cx, cy, 6f, white)
+        canvas.drawCircle(cx, cy, r, white)
+        val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            style = Paint.Style.STROKE
+            strokeWidth = ring * 1.6f
+        }
+        canvas.drawCircle(cx, cy, r - ring * 0.8f, ringPaint)
     } else {
+        val whiteRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+        canvas.drawCircle(cx, cy, r, whiteRing)
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
-        canvas.drawCircle(cx, cy, 10f, fill)
-        canvas.drawCircle(cx, cy, 4f, white)
+        canvas.drawCircle(cx, cy, r - ring, fill)
+        if (bucket >= 2) {
+            val cap = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+            canvas.drawCircle(cx, cy, r * 0.34f, cap)
+        }
     }
 
     return BitmapDrawable(null, bitmap)
