@@ -1827,12 +1827,69 @@
         const peekText = document.getElementById("panelPeekText");
         if (!panel || !peek) return;
 
-        peek.addEventListener("click", () => {
-            panel.classList.toggle("insight-panel--expanded");
+        // --- Draggable bottom sheet with three detents (task T6) ---------
+        // Mobile only: drag the peek bar to snap between peek / half / full;
+        // a plain tap cycles through them. Desktop keeps the fixed left rail.
+        const isMobile = () => window.matchMedia("(max-width: 720px)").matches;
+        let detents = { peek: 64, half: 320, full: 640 };
+        function recomputeDetents() {
+            const vh = window.innerHeight;
+            detents = { peek: 64, half: Math.round(vh * 0.5), full: Math.round(vh * 0.9) };
+        }
+        recomputeDetents();
+
+        let currentDetent = "peek";
+        function applyDetent(name, animate) {
+            currentDetent = name;
+            if (!animate) panel.classList.add("is-dragging");
+            panel.style.setProperty("--sheet-h", detents[name] + "px");
+            panel.classList.toggle("is-open", name !== "peek");
+            if (!animate) requestAnimationFrame(() => panel.classList.remove("is-dragging"));
+        }
+        function nearestDetent(h) {
+            return Object.entries(detents)
+                .reduce((best, e) => Math.abs(e[1] - h) < Math.abs(detents[best] - h) ? e[0] : best, "peek");
+        }
+
+        window.addEventListener("resize", () => {
+            recomputeDetents();
+            if (currentDetent !== "peek") applyDetent(currentDetent, false);
         });
 
+        let dragging = false, startY = 0, startH = 0, moved = 0;
+        peek.addEventListener("pointerdown", (e) => {
+            if (!isMobile()) return;
+            dragging = true;
+            moved = 0;
+            startY = e.clientY;
+            startH = panel.getBoundingClientRect().height;
+            panel.classList.add("is-dragging");
+            try { peek.setPointerCapture(e.pointerId); } catch (_) {}
+        });
+        peek.addEventListener("pointermove", (e) => {
+            if (!dragging) return;
+            const dy = startY - e.clientY;
+            moved = Math.max(moved, Math.abs(dy));
+            const h = Math.min(detents.full, Math.max(detents.peek, startH + dy));
+            panel.style.setProperty("--sheet-h", h + "px");
+            panel.classList.toggle("is-open", h > detents.peek + 20);
+        });
+        function endDrag() {
+            if (!dragging) return;
+            dragging = false;
+            panel.classList.remove("is-dragging");
+            if (moved < 6) {
+                const next = currentDetent === "peek" ? "half" : currentDetent === "half" ? "full" : "peek";
+                applyDetent(next, true);
+            } else {
+                applyDetent(nearestDetent(panel.getBoundingClientRect().height), true);
+            }
+        }
+        peek.addEventListener("pointerup", endDrag);
+        peek.addEventListener("pointercancel", endDrag);
+
         map.on("click", () => {
-            panel.classList.remove("insight-panel--expanded");
+            if (isMobile()) applyDetent("peek", true);
         });
 
         const topBar = document.querySelector(".top-bar");
