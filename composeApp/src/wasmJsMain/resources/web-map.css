@@ -919,26 +919,61 @@ body {
 }
 
 @media (max-width: 720px) {
+    /* Compact mobile header: a thin bar with brand + only the essential controls
+       (language, dark mode, locate) over a full-width search. Store badges and the
+       zoom buttons are dropped on mobile so the row can't overflow (pinch-to-zoom
+       works on touch); the long "Locate" label becomes an icon. */
     .top-bar {
-        left: 12px;
-        right: 12px;
-        top: 12px;
-        padding: 12px;
-        align-items: flex-start;
+        left: 8px;
+        right: 8px;
+        top: 8px;
+        padding: 10px 12px;
+        gap: 8px;
+        align-items: center;
         flex-wrap: wrap;
     }
 
     .brand-block {
-        flex-basis: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .brand {
-        font-size: 24px;
+        font-size: 19px;
     }
 
+    .subtitle { display: none; }
+    .store-badges { display: none; }
+    .zoom-controls { display: none; }
+
     .map-controls {
-        width: 100%;
-        justify-content: space-between;
+        flex: 0 0 auto;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .control-button {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 20px;
+    }
+
+    .language-picker { border-radius: 12px; }
+    .language-pill { min-width: 30px; height: 32px; padding: 0 7px; }
+
+    /* Locate: icon-only pin so the Albanian "Vendndodhja ime" can't overflow. */
+    .ghost-button {
+        width: 40px;
+        padding: 0;
+        font-size: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ghost-button::before {
+        content: "📍";
+        font-size: 17px;
     }
 
     .search-card {
