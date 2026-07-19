@@ -808,6 +808,12 @@
 
     applyStationVisibility(map.getZoom());
 
+    // Initialise the draggable bottom sheet here, right after the markers (a
+    // point the init provably reaches), rather than at the tail of init where a
+    // later unhandled rejection could skip it. Wrapped so any failure surfaces
+    // instead of silently disabling the sheet.
+    try { setupPanelBehavior(); } catch (e) { console.error("setupPanelBehavior failed", e); }
+
     function modeGlyph(mode) {
         switch (mode) {
             case "metro": return "🚇";
@@ -1484,13 +1490,18 @@
     const simulatedTrainMarkers = new Map();
     let lastSimulatedTrains = [];
 
-    renderPopularPanel();
-    updateNearbyPanel();
-    connectLiveTrainStream();
-    pollLivePositions();
-    setupRightRail();
-    startTrainSimulation();
-    setupPanelBehavior();
+    // Each guarded so one panel's failure can't cascade and abort the rest of
+    // init (this is what previously left the bottom sheet uninitialised on the
+    // live build). Failures surface in the console instead of silently breaking.
+    const initStep = (name, fn) => { try { fn(); } catch (e) { console.error(`init ${name} failed`, e); } };
+    initStep("renderPopularPanel", renderPopularPanel);
+    initStep("updateNearbyPanel", updateNearbyPanel);
+    initStep("connectLiveTrainStream", connectLiveTrainStream);
+    initStep("pollLivePositions", pollLivePositions);
+    initStep("setupRightRail", setupRightRail);
+    initStep("startTrainSimulation", startTrainSimulation);
+    // setupPanelBehavior() runs earlier (right after the markers) so a later
+    // init failure can't skip the bottom sheet.
 
     function updateNearbyPanel() {
         if (userLocation) {
