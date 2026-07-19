@@ -15,6 +15,7 @@
         glyphMinZoom: 14,
         minorStopMinZoom: 11,
         majorHubMinZoom: 9,
+        linesOnlyMaxZoom: 7,
         greyedColor: "#94a3b8",
         busDash: "2 7",
         greyedDash: "6 8",
@@ -792,7 +793,8 @@
         if (station.id === selectedStationId) return true;
         if (z >= MAP_TOKENS.minorStopMinZoom) return true;        // city: every stop
         if (z >= MAP_TOKENS.majorHubMinZoom) return station.isInterchange; // regional: interchanges
-        return isMajorHub(station);                               // country: major hubs only
+        if (z <= MAP_TOKENS.linesOnlyMaxZoom) return false;       // country: lines only, no dots
+        return isMajorHub(station);                               // near-country: major hubs
     }
 
     function applyStationVisibility(z) {

@@ -1069,11 +1069,11 @@ struct SyrmosMKMapView: UIViewRepresentable {
         private weak var mapView: MKMapView?
         private var displayLink: CADisplayLink?
 
-        /// Zoom-tiered decluttering, three bands (mirrors web + Android):
-        /// 0 = country (only major cross-modal hubs), 1 = regional (all
-        /// interchanges), 2 = city (every stop). Starts at city (the initial
-        /// Athens region), corrected on the first region change.
-        private var currentBand = 2
+        /// Zoom-tiered decluttering, four bands (mirrors web + Android):
+        /// 0 = country (lines only, no dots), 1 = near-country (major cross-modal
+        /// hubs), 2 = regional (all interchanges), 3 = city (every stop). Starts
+        /// at city (the initial Athens region), corrected on the first region change.
+        private var currentBand = 3
 
         /// The visible zoom of an MKMapView isn't exposed directly, so we derive
         /// it from the longitude span and the view's pixel width using the same
@@ -1087,9 +1087,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
 
         private func band(for mapView: MKMapView) -> Int {
             let z = approxZoom(mapView)
-            if z >= MapDesignTokens.minorStopMinZoom { return 2 }
-            if z >= MapDesignTokens.majorHubMinZoom { return 1 }
-            return 0
+            if z >= MapDesignTokens.minorStopMinZoom { return 3 }   // city: all stops
+            if z >= MapDesignTokens.majorHubMinZoom { return 2 }    // regional: interchanges
+            if z <= MapDesignTokens.linesOnlyMaxZoom { return 0 }   // country: lines only
+            return 1                                                // near-country: major hubs
         }
 
         /// A major hub is a genuine cross-modal transfer: its lines span 2+
@@ -1102,9 +1103,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
 
         private func shouldShow(_ station: MapStationNode, band: Int) -> Bool {
             switch band {
-            case 2: return true
-            case 1: return station.isInterchange
-            default: return isMajorHub(station)
+            case 3: return true
+            case 2: return station.isInterchange
+            case 1: return isMajorHub(station)
+            default: return false   // country: lines only
             }
         }
 
