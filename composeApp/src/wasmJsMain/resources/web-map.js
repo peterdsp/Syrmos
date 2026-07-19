@@ -1499,20 +1499,20 @@
         }
     });
 
-    // Guard the initial fit: it sets the view synchronously (the map does move to
-    // Greece) but can then throw from a synchronous zoom/move handler firing during
-    // the fit, and an unguarded throw here aborts the ENTIRE rest of init (hero,
-    // popular, nearby, live trains, simulator). Catching it keeps init going.
+    // Declared BEFORE fitBounds: the fit synchronously fires a move/zoom handler
+    // that reads simulatedTrainMarkers, so if these sat after the fit (as they
+    // did) that handler hit a temporal-dead-zone ReferenceError which aborted the
+    // entire rest of init (hero, popular, nearby, live trains, simulator).
+    const simulatedTrainMarkers = new Map();
+    let lastSimulatedTrains = [];
+
+    // Guard the fit anyway, so no future handler throw during it can abort init.
     try {
         const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
         map.fitBounds(bounds.pad(0.12));
     } catch (e) {
         console.error("fitBounds failed", e);
-        (window.__initErrors = window.__initErrors || []).push(`fitBounds: ${e && e.message || e}`);
     }
-
-    const simulatedTrainMarkers = new Map();
-    let lastSimulatedTrains = [];
 
     // Each guarded so one panel's failure can't cascade and abort the rest of
     // init (this is what previously left the bottom sheet uninitialised on the
