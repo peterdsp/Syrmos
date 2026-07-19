@@ -166,6 +166,18 @@ class AthensTransitParser(
             }
         }
 
+        // 0d. Stop count / "how far" between two stations. Before planning, so
+        //     "how many stops from A to B" answers the count instead of routing.
+        if (containsAny(text, STOPS_BETWEEN_WORDS)) {
+            val (from, to) = resolveTripEndpoints(text, mentionedStations)
+            val base = AssistantIntent.StopsBetween(fromStationId = from, toStationId = to)
+            return when {
+                to == null -> AssistantIntent.NeedsClarification(base, MissingSlot.DESTINATION_STATION)
+                from == null -> AssistantIntent.NeedsClarification(base, MissingSlot.ORIGIN_STATION)
+                else -> base
+            }
+        }
+
         // 1. Plan a trip. Triggered by an explicit "how do I get" phrase, an
         //    explicit "to" frame with a station, weather routing, or two
         //    distinct stations named. A bare "trains FROM X" is departures, not
@@ -274,6 +286,22 @@ class AthensTransitParser(
         // 4. Open on the map.
         if (containsAny(text, MAP_WORDS)) {
             return AssistantIntent.OpenMap(stationId = mentionedStations.firstOrNull())
+        }
+
+        // 4b. Which lines serve a station: "what lines go through X?". Needs the
+        //     "which/what line(s)" cue and a station; placed before ExplainLine
+        //     and Departures so a station-scoped line question isn't read as a
+        //     line overview or a departures query.
+        if (containsAny(text, WHICH_LINES_WORDS) &&
+            (mentionedStations.isNotEmpty() || containsAny(text, STATION_NOUN_WORDS))
+        ) {
+            val station = mentionedStations.firstOrNull()
+            val base = AssistantIntent.WhichLines(stationId = station)
+            return if (station == null) {
+                AssistantIntent.NeedsClarification(base, MissingSlot.STATION)
+            } else {
+                base
+            }
         }
 
         // 5. Explain a line: a line is named with no station, no departures cue,
@@ -629,6 +657,20 @@ class AthensTransitParser(
             "i aksesueshem", "aksesueshem", "aksesi", "karrige me rrota", "ashensor",
             "per personat me aftesi", "personat me aftesi te kufizuara",
         )
+        // "which line(s) serve X" — list the lines at a station.
+        private val WHICH_LINES_WORDS = listOf(
+            "which line", "which lines", "what line", "what lines", "which metro", "what metro",
+            "lines serve", "lines serving", "lines at", "lines through", "lines that stop", "served by",
+            "ποια γραμμη", "ποιες γραμμες", "τι γραμμη", "τι γραμμες", "ποιες γραμμ", "γραμμες περνανε",
+            "cila linje", "cilat linja", "cilat linje", "linjat qe", "cila metro",
+        )
+        // "how many stops / how far from A to B" — stop count, not routing.
+        private val STOPS_BETWEEN_WORDS = listOf(
+            "how many stops", "how many stations", "number of stops", "number of stations",
+            "how many stops away", "stops away", "stops between", "stations between", "how far apart",
+            "ποσες στασεις", "ποσοι σταθμοι", "ποσους σταθμους", "ποσες σταθμοι", "ποσα στοπ",
+            "sa stacione", "sa ndalesa", "sa stacione ka", "sa ndalesa ka",
+        )
         // "and back" / "return" / "the other way" — reverse the last route.
         private val REVERSE_PHRASES = listOf(
             "and back", "way back", "the other way", "return trip", "round trip", "return journey",
@@ -755,6 +797,7 @@ class AthensTransitParser(
             TRANSIT_NOUNS + DEPARTURE_WORDS + FIND_WORDS + LINE_WORDS + FARE_WORDS +
                 FAVORITE_WORDS + AIRPORT_WORDS + ALERT_WORDS + MAP_WORDS + WEATHER_WORDS +
                 ACCESSIBILITY_WORDS + REVERSE_PHRASES + FIRST_TRAIN_PHRASES +
+                WHICH_LINES_WORDS + STOPS_BETWEEN_WORDS +
                 TOMORROW_WORDS + WEEKEND_WORDS + SATURDAY_WORDS + SUNDAY_WORDS
             ).map { fold(it) }.filter { it.length >= 4 && !it.contains(' ') }.toSet()
     }

@@ -90,6 +90,20 @@
         'i aksesueshem', 'aksesueshem', 'aksesi', 'karrige me rrota', 'ashensor',
         'per personat me aftesi',
     ];
+    // "which line(s) serve X" — list the lines at a station.
+    const WHICH_LINES_WORDS = [
+        'which line', 'which lines', 'what line', 'what lines', 'which metro', 'what metro',
+        'lines serve', 'lines serving', 'lines at', 'lines through', 'lines that stop', 'served by',
+        'ποια γραμμη', 'ποιες γραμμες', 'τι γραμμη', 'τι γραμμες', 'ποιες γραμμ', 'γραμμες περνανε',
+        'cila linje', 'cilat linja', 'cilat linje', 'linjat qe', 'cila metro',
+    ];
+    // "how many stops / how far from A to B" — stop count.
+    const STOPS_BETWEEN_WORDS = [
+        'how many stops', 'how many stations', 'number of stops', 'number of stations',
+        'how many stops away', 'stops away', 'stops between', 'stations between', 'how far apart',
+        'ποσες στασεις', 'ποσοι σταθμοι', 'ποσους σταθμους', 'ποσες σταθμοι', 'ποσα στοπ',
+        'sa stacione', 'sa ndalesa', 'sa stacione ka', 'sa ndalesa ka',
+    ];
     // "and back" / "return" / "the other way" — reverse the last route.
     const REVERSE_PHRASES = [
         'and back', 'way back', 'the other way', 'return trip', 'round trip', 'return journey',
@@ -181,6 +195,7 @@
             .concat(TRANSIT_NOUNS, DEPARTURE_WORDS, FIND_WORDS, LINE_WORDS,
                 FARE_WORDS, FAVORITE_WORDS, AIRPORT_WORDS, ALERT_WORDS, MAP_WORDS,
                 WEATHER_WORDS, ACCESSIBILITY_WORDS, REVERSE_PHRASES, FIRST_TRAIN_PHRASES,
+                WHICH_LINES_WORDS, STOPS_BETWEEN_WORDS,
                 TOMORROW_WORDS, WEEKEND_WORDS, SATURDAY_WORDS, SUNDAY_WORDS)
             .map(fold)
             .filter(function (w) { return w.length >= 4 && w.indexOf(' ') < 0; }),
@@ -572,6 +587,15 @@
             return st ? base : { kind: 'needsClarification', base: base, missing: 'STATION' };
         }
 
+        // Stop count / "how far" between two stations. Before planning.
+        if (containsAny(text, STOPS_BETWEEN_WORDS)) {
+            const ep = resolveTripEndpoints(text, mentionedStations);
+            const base = { kind: 'stopsBetween', from: ep.from, to: ep.to };
+            if (!ep.to) return { kind: 'needsClarification', base: base, missing: 'DESTINATION_STATION' };
+            if (!ep.from) return { kind: 'needsClarification', base: base, missing: 'ORIGIN_STATION' };
+            return base;
+        }
+
         // Plan a trip.
         const hasToMarker = TO_MARKERS.some(function (m) { return text.indexOf(m) >= 0; });
         const planning = containsAny(text, PLAN_PHRASES) ||
@@ -627,6 +651,14 @@
         // Open on map.
         if (containsAny(text, MAP_WORDS)) {
             return { kind: 'openMap', stationId: mentionedStations[0] || null };
+        }
+
+        // Which lines serve a station.
+        if (containsAny(text, WHICH_LINES_WORDS) &&
+            (mentionedStations.length > 0 || containsAny(text, STATION_NOUN_WORDS))) {
+            const st = mentionedStations[0] || null;
+            const base = { kind: 'whichLines', stationId: st };
+            return st ? base : { kind: 'needsClarification', base: base, missing: 'STATION' };
         }
 
         // Explain a line (line named, no station, no departures cue).
@@ -711,7 +743,7 @@
     function buildClassificationPrompt(input) {
         return [
             'Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.',
-            'Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).',
+            'Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), whichLines (which lines serve a station), stopsBetween (how many stops / how far between two stations), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).',
             'Fields: intent, station, toStation, line, query, airport(bool), lowExposure(bool), day(today/tomorrow/weekend/saturday/sunday), arriveByClock(HH:mm or empty), arriveInMinutes(int). Never output an id, a time, a fare, or a route.',
             '',
             'Message: next trains from ambelokipi',
@@ -724,6 +756,10 @@
             'JSON: {"intent":"stationAccessibility","station":"pireas","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
             'Message: and back',
             'JSON: {"intent":"reverseTrip","station":"","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
+            'Message: ποιες γραμμες περνανε απο το syntagma',
+            'JSON: {"intent":"whichLines","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
+            'Message: how many stops from monastiraki to piraeus',
+            'JSON: {"intent":"stopsBetween","station":"monastiraki","toStation":"piraeus","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
             'Message: how much is a ticket to the airport',
             'JSON: {"intent":"explainFare","station":"","toStation":"airport","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
             'Message: kur niset treni i fundit per Pire',
@@ -762,6 +798,11 @@
                 return station ? ('is ' + station + ' accessible') : null;
             case 'reverseTrip':
                 return 'and back';
+            case 'whichLines':
+                return station ? ('which lines serve ' + station) : null;
+            case 'stopsBetween':
+                if (station && toStation) return 'how many stops from ' + station + ' to ' + toStation;
+                return null;
             case 'findStation':
                 return query ? ('where is ' + query) : null;
             case 'planTrip':

@@ -401,6 +401,42 @@ final class AriadneParserTests: XCTestCase {
         XCTAssertEqual(parser.dayOf("και αύριο;"), .tomorrow)
         XCTAssertEqual(parser.dayOf("Syntagma"), .today)
     }
+
+    // MARK: - Which lines + stops between (v2 capabilities)
+
+    func test_whichLinesWithStation() {
+        guard case let .whichLines(stationId) = parser.parse("which lines serve Syntagma") else {
+            return XCTFail("expected which lines")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_whichLinesGreek() {
+        guard case .whichLines = parser.parse("ποιες γραμμές περνάνε από το Σύνταγμα") else {
+            return XCTFail("expected which lines")
+        }
+    }
+
+    func test_whichLinesAlbanian() {
+        guard case let .whichLines(stationId) = parser.parse("cilat linja shërbejnë Sintagma") else {
+            return XCTFail("expected which lines")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_stopsBetweenTwoStations() {
+        guard case let .stopsBetween(from, to) = parser.parse("how many stops from Piraeus to Syntagma") else {
+            return XCTFail("expected stops between")
+        }
+        XCTAssertEqual(from, "M1_PIR")
+        XCTAssertEqual(to, "M2_SYN")
+    }
+
+    func test_stopsBetweenNotReadAsPlan() {
+        guard case .stopsBetween = parser.parse("how many stops Piraeus to Syntagma") else {
+            return XCTFail("expected stops between")
+        }
+    }
 }
 
 /// Mirrors the KMP `ServiceAdvisoryMatcherTest`: Ariadne surfaces the same STASY

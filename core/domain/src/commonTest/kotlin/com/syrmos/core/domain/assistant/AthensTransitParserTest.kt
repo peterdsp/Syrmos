@@ -418,4 +418,57 @@ class AthensTransitParserTest {
         assertEquals(DayContext.WEEKEND, parser.dayOf("po fundjave"))
         assertEquals(DayContext.TODAY, parser.dayOf("Syntagma"))
     }
+
+    // MARK: - Which lines (v2 capability)
+
+    @Test
+    fun which_lines_with_station() {
+        val intent = parser.parse("which lines serve Syntagma")
+        val wl = assertIs<AssistantIntent.WhichLines>(intent)
+        assertEquals("M2_SYN", wl.stationId)
+    }
+
+    @Test
+    fun which_lines_greek() {
+        val intent = parser.parse("ποιες γραμμές περνάνε από το Σύνταγμα")
+        assertIs<AssistantIntent.WhichLines>(intent)
+    }
+
+    @Test
+    fun which_lines_albanian() {
+        val intent = parser.parse("cilat linja shërbejnë Sintagma")
+        val wl = assertIs<AssistantIntent.WhichLines>(intent)
+        assertEquals("M2_SYN", wl.stationId)
+    }
+
+    @Test
+    fun which_lines_without_station_asks() {
+        val intent = parser.parse("which lines serve this station")
+        val clar = assertIs<AssistantIntent.NeedsClarification>(intent)
+        assertIs<AssistantIntent.WhichLines>(clar.base)
+    }
+
+    // MARK: - Stops between (v2 capability)
+
+    @Test
+    fun stops_between_two_stations() {
+        val intent = parser.parse("how many stops from Piraeus to Syntagma")
+        val sb = assertIs<AssistantIntent.StopsBetween>(intent)
+        assertEquals("M1_PIR", sb.fromStationId)
+        assertEquals("M2_SYN", sb.toStationId)
+    }
+
+    @Test
+    fun stops_between_greek() {
+        val intent = parser.parse("πόσες στάσεις από Πειραιάς μέχρι Σύνταγμα")
+        val sb = assertIs<AssistantIntent.StopsBetween>(intent)
+        assertEquals("M1_PIR", sb.fromStationId)
+        assertEquals("M2_SYN", sb.toStationId)
+    }
+
+    @Test
+    fun stops_between_not_read_as_plan() {
+        // "how many stops A to B" must not fall through to a PlanTrip.
+        assertIs<AssistantIntent.StopsBetween>(parser.parse("how many stops Piraeus to Syntagma"))
+    }
 }
