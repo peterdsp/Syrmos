@@ -257,6 +257,19 @@ class AssistantViewModel(
             is AssistantIntent.FirstTrain -> pending.copy(stationId = stationId)
             is AssistantIntent.ShowDepartures -> pending.copy(stationId = stationId)
             is AssistantIntent.StationAccessibility -> pending.copy(stationId = stationId)
+            is AssistantIntent.WhichLines -> pending.copy(stationId = stationId)
+            is AssistantIntent.StopsBetween -> {
+                val patched = when (missing) {
+                    MissingSlot.ORIGIN_STATION -> pending.copy(fromStationId = stationId)
+                    MissingSlot.DESTINATION_STATION -> pending.copy(toStationId = stationId)
+                    else -> return raw
+                }
+                if (patched.fromStationId != null && patched.toStationId != null) patched
+                else AssistantIntent.NeedsClarification(
+                    patched,
+                    if (patched.fromStationId == null) MissingSlot.ORIGIN_STATION else MissingSlot.DESTINATION_STATION,
+                )
+            }
             is AssistantIntent.ToggleFavorite -> pending.copy(stationId = stationId)
             is AssistantIntent.TravelTime -> if (pending.toStationId == null)
                 pending.copy(toStationId = stationId) else pending
@@ -272,6 +285,8 @@ class AssistantViewModel(
         is AssistantIntent.FirstTrain -> resolveFirstTrain(intent)
         is AssistantIntent.StationAccessibility -> resolveAccessibility(intent)
         AssistantIntent.ReverseTrip -> resolveReverseTrip()
+        is AssistantIntent.WhichLines -> resolveWhichLines(intent)
+        is AssistantIntent.StopsBetween -> resolveStopsBetween(intent)
         is AssistantIntent.PlanTrip -> resolvePlanTrip(intent)
         is AssistantIntent.TravelTime -> resolveTravelTime(intent)
         is AssistantIntent.FindStation -> resolveFindStation(intent)
@@ -339,6 +354,20 @@ class AssistantViewModel(
                 currentStation = intent.stationId ?: session.currentStation,
                 lastIntent = intent,
             )
+            is AssistantIntent.WhichLines -> session.copy(
+                currentStation = intent.stationId ?: session.currentStation,
+                lastIntent = intent,
+            )
+            is AssistantIntent.StopsBetween -> {
+                val f = intent.fromStationId
+                val to = intent.toStationId
+                session.copy(
+                    currentStation = f ?: session.currentStation,
+                    lastDestination = to ?: session.lastDestination,
+                    lastRoute = if (f != null && to != null) RouteMemory(f, to) else session.lastRoute,
+                    lastIntent = intent,
+                )
+            }
             // "and back" flips the remembered route so a second "and back" flips
             // it right back, and the new current station becomes the return origin.
             AssistantIntent.ReverseTrip -> {
@@ -889,6 +918,51 @@ class AssistantViewModel(
                 preference = route.preference,
             ),
         )
+    }
+
+    /** "Which lines serve X?" — list the lines calling at a station. */
+    private suspend fun resolveWhichLines(intent: AssistantIntent.WhichLines): AssistantMessage {
+        val station = resolveStation(intent.stationId, null) ?: return botMessage(clarify(MissingSlot.STATION))
+        val lineIds = station.lineIds.map { normalizeLine(it) }.distinct()
+        val name = stationName(station)
+        if (lineIds.isEmpty()) {
+            return botMessage(t("I don't have any lines listed for $name.",
+                "Δεν έχω γραμμές καταχωρημένες για $name.",
+                "Nuk kam linja të regjistruara për $name."))
+        }
+        val list = lineIds.joinToString(", ") { displayLine(it) }
+        return AssistantMessage(
+            id = nextId++,
+            fromUser = false,
+            text = t("$name is served by: $list.",
+                "Ο $name εξυπηρετείται από: $list.",
+                "$name shërbehet nga: $list."),
+            action = AssistantAction.OpenStation(station.id),
+            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+        )
+    }
+
+    /** "How many stops / how far from A to B?" — stop count + rough duration. */
+    private suspend fun resolveStopsBetween(intent: AssistantIntent.StopsBetween): AssistantMessage {
+        val fromId = intent.fromStationId ?: session.currentStation
+            ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
+        val toId = intent.toStationId ?: return botMessage(clarify(MissingSlot.DESTINATION_STATION))
+        val route = planJourney.invoke(fromId, toId).first()
+            ?: return botMessage(t("I couldn't find a rail route between those.",
+                "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
+                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+        val stops = route.segments.sumOf { (it.stationCount - 1).coerceAtLeast(0) }
+        val fromN = stationNameById(fromId)
+        val toN = stationNameById(toId)
+        val changePart = if (route.transferCount == 0) {
+            t("direct", "απευθείας", "direkt")
+        } else {
+            t("${route.transferCount} change(s)", "${route.transferCount} αλλαγή/ές", "${route.transferCount} ndërrim(e)")
+        }
+        return botMessage(t(
+            "$fromN to $toN is $stops stops, about ${route.totalMinutes} min ($changePart).",
+            "$fromN προς $toN είναι $stops στάσεις, περίπου ${route.totalMinutes} λεπτά ($changePart).",
+            "$fromN te $toN janë $stops stacione, rreth ${route.totalMinutes} min ($changePart)."))
     }
 
     private suspend fun resolvePlanTrip(intent: AssistantIntent.PlanTrip): AssistantMessage {

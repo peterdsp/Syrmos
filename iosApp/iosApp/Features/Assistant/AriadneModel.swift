@@ -134,6 +134,18 @@ final class AriadneModel: ObservableObject {
             return .showDepartures(stationId: sid, lineId: lineId, day: day)
         case .stationAccessibility:
             return .stationAccessibility(stationId: sid)
+        case .whichLines:
+            return .whichLines(stationId: sid)
+        case let .stopsBetween(from, to):
+            var pf = from, pt = to
+            switch missing {
+            case .originStation: pf = sid
+            case .destinationStation: pt = sid
+            default: return raw
+            }
+            if pf != nil, pt != nil { return .stopsBetween(fromStationId: pf, toStationId: pt) }
+            return .needsClarification(base: .stopsBetween(fromStationId: pf, toStationId: pt),
+                                       missing: pf == nil ? .originStation : .destinationStation)
         case let .toggleFavorite(_):
             return .toggleFavorite(stationId: sid)
         case let .travelTime(to, from):
@@ -158,6 +170,10 @@ final class AriadneModel: ObservableObject {
             return resolveAccessibility(stationId: stationId)
         case .reverseTrip:
             return resolveReverseTrip()
+        case let .whichLines(stationId):
+            return resolveWhichLines(stationId: stationId)
+        case let .stopsBetween(from, to):
+            return resolveStopsBetween(from: from, to: to)
         case let .planTrip(from, to, lowExposure, preference):
             return resolvePlanTrip(from: from, to: to, lowExposure: lowExposure, preference: preference)
         case let .travelTime(to, from):
@@ -233,6 +249,16 @@ final class AriadneModel: ObservableObject {
             session.lastIntent = intent
         case let .firstTrain(stationId, _):
             session.currentStation = stationId ?? session.currentStation
+            session.lastIntent = intent
+        case let .whichLines(stationId):
+            session.currentStation = stationId ?? session.currentStation
+            session.lastIntent = intent
+        case let .stopsBetween(from, to):
+            session.currentStation = from ?? session.currentStation
+            session.lastDestination = to ?? session.lastDestination
+            if let from, let to {
+                session.lastRoute = RouteMemory(fromStationId: from, toStationId: to, preference: .balanced)
+            }
             session.lastIntent = intent
         // "and back" flips the remembered route so a second "and back" flips it
         // right back, and the return origin becomes the new current station.
@@ -760,6 +786,42 @@ final class AriadneModel: ObservableObject {
                 "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."))
         }
         return resolvePlanTrip(from: route.toStationId, to: route.fromStationId, lowExposure: false, preference: route.preference)
+    }
+
+    /// "Which lines serve X?" — list the lines calling at a station.
+    private func resolveWhichLines(stationId: String?) -> AriadneMessage {
+        guard let id = stationId, let st = station(id) else { return bot(clarify(.station)) }
+        let lineIds = Array(NSOrderedSet(array: st.lineIds.map { displayLine($0) })) as? [String] ?? st.lineIds
+        let n = name(st)
+        if lineIds.isEmpty {
+            return bot(t("I don't have any lines listed for \(n).",
+                "Δεν έχω γραμμές καταχωρημένες για \(n).",
+                "Nuk kam linja të regjistruara për \(n)."))
+        }
+        let list = lineIds.joined(separator: ", ")
+        return bot(t("\(n) is served by: \(list).",
+            "Ο \(n) εξυπηρετείται από: \(list).",
+            "\(n) shërbehet nga: \(list)."))
+    }
+
+    /// "How many stops / how far from A to B?" — stop count + rough duration.
+    private func resolveStopsBetween(from: String?, to: String?) -> AriadneMessage {
+        guard let fromId = from ?? session.currentStation else { return bot(clarify(.originStation)) }
+        guard let toId = to else { return bot(clarify(.destinationStation)) }
+        guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
+            return bot(t("I couldn't find a rail route between those.",
+                "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
+                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+        }
+        let stops = plan.legs.reduce(0) { $0 + $1.stops }
+        let fromN = station(fromId).map { name($0) } ?? fromId
+        let toN = station(toId).map { name($0) } ?? toId
+        let changePart = plan.transfers == 0
+            ? t("direct", "απευθείας", "direkt")
+            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
+        return bot(t("\(fromN) to \(toN) is \(stops) stops, about \(plan.totalMinutes) min (\(changePart)).",
+            "\(fromN) προς \(toN) είναι \(stops) στάσεις, περίπου \(plan.totalMinutes) λεπτά (\(changePart)).",
+            "\(fromN) te \(toN) janë \(stops) stacione, rreth \(plan.totalMinutes) min (\(changePart))."))
     }
 
     /// Full point-to-point routing via `JourneyPlanner` (Dijkstra), matching

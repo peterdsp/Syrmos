@@ -118,7 +118,7 @@ enum AriadneGuided {
     /// core/common AriadneGrammar.GBNF and the web grammar).
     private static let llamaGrammar = """
     root ::= "{\\"intent\\":" intent ",\\"station\\":" str ",\\"toStation\\":" str ",\\"line\\":" str ",\\"query\\":" str ",\\"airport\\":" bool ",\\"lowExposure\\":" bool ",\\"day\\":" day ",\\"arriveByClock\\":" str ",\\"arriveInMinutes\\":" int "}"
-    intent ::= "\\"showDepartures\\"" | "\\"lastTrain\\"" | "\\"firstTrain\\"" | "\\"stationAccessibility\\"" | "\\"reverseTrip\\"" | "\\"findStation\\"" | "\\"planTrip\\"" | "\\"planTripByArrival\\"" | "\\"travelTime\\"" | "\\"explainLine\\"" | "\\"explainFare\\"" | "\\"showAlerts\\"" | "\\"weatherAt\\"" | "\\"help\\"" | "\\"outOfScope\\""
+    intent ::= "\\"showDepartures\\"" | "\\"lastTrain\\"" | "\\"firstTrain\\"" | "\\"stationAccessibility\\"" | "\\"reverseTrip\\"" | "\\"whichLines\\"" | "\\"stopsBetween\\"" | "\\"findStation\\"" | "\\"planTrip\\"" | "\\"planTripByArrival\\"" | "\\"travelTime\\"" | "\\"explainLine\\"" | "\\"explainFare\\"" | "\\"showAlerts\\"" | "\\"weatherAt\\"" | "\\"help\\"" | "\\"outOfScope\\""
     day ::= "\\"today\\"" | "\\"tomorrow\\"" | "\\"weekend\\"" | "\\"saturday\\"" | "\\"sunday\\""
     bool ::= "true" | "false"
     int ::= "0" | [1-9] [0-9]{0,3}
@@ -130,7 +130,7 @@ enum AriadneGuided {
     private static func llamaClassificationPrompt(_ input: String) -> String {
         """
         Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.
-        Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).
+        Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), whichLines (which lines serve a station), stopsBetween (how many stops / how far between two stations), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).
 
         Message: last train from syntagma
         JSON: {"intent":"lastTrain","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
@@ -144,6 +144,10 @@ enum AriadneGuided {
         JSON: {"intent":"stationAccessibility","station":"Syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
         Message: and back?
         JSON: {"intent":"reverseTrip","station":"","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: which lines serve syntagma
+        JSON: {"intent":"whichLines","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: how many stops from monastiraki to piraeus
+        JSON: {"intent":"stopsBetween","station":"monastiraki","toStation":"piraeus","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
         Message: \(input.trimmingCharacters(in: .whitespacesAndNewlines))
         JSON:
         """
@@ -168,6 +172,10 @@ enum AriadneGuided {
         case "firstTrain": return .firstTrain(stationId: station, lineId: line)
         case "stationAccessibility": return station == nil ? nil : .stationAccessibility(stationId: station)
         case "reverseTrip": return .reverseTrip
+        case "whichLines": return station == nil ? nil : .whichLines(stationId: station)
+        case "stopsBetween":
+            if station == nil && toStation == nil { return nil }
+            return .stopsBetween(fromStationId: station, toStationId: toStation)
         case "findStation":
             let q = s("query").isEmpty ? s("station") : s("query")
             return q.isEmpty ? nil : .findStation(query: q)

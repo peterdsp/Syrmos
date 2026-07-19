@@ -32,6 +32,11 @@ object IntentGrounder {
             "firsttrain" -> AssistantIntent.FirstTrain(station, line)
             "stationaccessibility" -> station?.let { AssistantIntent.StationAccessibility(it) }
             "reversetrip" -> AssistantIntent.ReverseTrip
+            "whichlines" -> station?.let { AssistantIntent.WhichLines(it) }
+            "stopsbetween" -> {
+                if (station == null && toStation == null) null
+                else AssistantIntent.StopsBetween(station, toStation)
+            }
             "findstation" -> {
                 val q = str(json, "query").ifBlank { str(json, "station") }.trim()
                 if (q.isEmpty()) null else AssistantIntent.FindStation(q)
@@ -133,7 +138,7 @@ object IntentGrounder {
      */
     fun classificationPrompt(input: String): String = """
         Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.
-        Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).
+        Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), whichLines (which lines serve a station), stopsBetween (how many stops / how far between two stations), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).
         Fields: intent, station, toStation, line, query, airport(bool), lowExposure(bool), day(today/tomorrow/weekend/saturday/sunday), arriveByClock(HH:mm or empty), arriveInMinutes(int). Never output an id, a time, a fare, or a route.
 
         Message: next trains from ambelokipi
@@ -146,6 +151,10 @@ object IntentGrounder {
         JSON: {"intent":"stationAccessibility","station":"pireas","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
         Message: and back
         JSON: {"intent":"reverseTrip","station":"","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: ποιες γραμμες περνανε απο το syntagma
+        JSON: {"intent":"whichLines","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
+        Message: how many stops from monastiraki to piraeus
+        JSON: {"intent":"stopsBetween","station":"monastiraki","toStation":"piraeus","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
         Message: πως παω απο μοναστηρακι στο αεροδρομιο
         JSON: {"intent":"planTrip","station":"μοναστηρακι","toStation":"αεροδρομιο","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}
         Message: how much is a ticket to the airport

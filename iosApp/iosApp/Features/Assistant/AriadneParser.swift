@@ -18,6 +18,10 @@ indirect enum AssistantIntent: Equatable, Sendable {
     case stationAccessibility(stationId: String?)
     /// "and back?" / "return" — reverse the remembered route and re-plan.
     case reverseTrip
+    /// "Which lines serve X?" — list the lines calling at a station.
+    case whichLines(stationId: String?)
+    /// "How many stops / how far from A to B?" — stop count + rough duration.
+    case stopsBetween(fromStationId: String?, toStationId: String?)
     case findStation(query: String)
     case planTrip(fromStationId: String?, toStationId: String?, lowExposure: Bool, preference: RoutePreference)
     case travelTime(toStationId: String?, fromStationId: String?)
@@ -240,6 +244,15 @@ struct AthensTransitParser {
             return station == nil ? .needsClarification(base: base, missing: .station) : base
         }
 
+        // 0d. Stop count / "how far" between two stations. Before planning.
+        if containsAny(text, Self.stopsBetweenWords) {
+            let (from, to) = resolveTripEndpoints(text, stations)
+            let base = AssistantIntent.stopsBetween(fromStationId: from, toStationId: to)
+            if to == nil { return .needsClarification(base: base, missing: .destinationStation) }
+            if from == nil { return .needsClarification(base: base, missing: .originStation) }
+            return base
+        }
+
         // 1. Plan a trip. Triggered by an explicit "how do I get" phrase, an
         //    explicit "to" frame with a station, weather routing, a non-balanced
         //    preference with a station, or two distinct stations named.
@@ -320,6 +333,14 @@ struct AthensTransitParser {
 
         // 4. Map.
         if containsAny(text, Self.mapWords) { return .openMap(stationId: stations.first) }
+
+        // 4b. Which lines serve a station.
+        if containsAny(text, Self.whichLinesWords) &&
+            (!stations.isEmpty || containsAny(text, Self.stationNounWords)) {
+            let station = stations.first
+            let base = AssistantIntent.whichLines(stationId: station)
+            return station == nil ? .needsClarification(base: base, missing: .station) : base
+        }
 
         // 5. Explain line.
         if let line, stations.isEmpty, !containsAny(text, Self.departureWords),
@@ -589,6 +610,18 @@ struct AthensTransitParser {
         "προσβασιμ", "προσβαση αμεα", "για αμεα", "αναπηρικ", "αμαξιδι", "ασανσερ", "αναβατοριο", "αναπηρια",
         "i aksesueshem", "aksesueshem", "aksesi", "karrige me rrota", "ashensor",
         "per personat me aftesi", "personat me aftesi te kufizuara"]
+    // "which line(s) serve X" — list the lines at a station.
+    private static let whichLinesWords = ["which line", "which lines", "what line", "what lines",
+        "which metro", "what metro", "lines serve", "lines serving", "lines at", "lines through",
+        "lines that stop", "served by",
+        "ποια γραμμη", "ποιες γραμμες", "τι γραμμη", "τι γραμμες", "ποιες γραμμ", "γραμμες περνανε",
+        "cila linje", "cilat linja", "cilat linje", "linjat qe", "cila metro"]
+    // "how many stops / how far from A to B" — stop count.
+    private static let stopsBetweenWords = ["how many stops", "how many stations", "number of stops",
+        "number of stations", "how many stops away", "stops away", "stops between", "stations between",
+        "how far apart",
+        "ποσες στασεις", "ποσοι σταθμοι", "ποσους σταθμους", "ποσες σταθμοι", "ποσα στοπ",
+        "sa stacione", "sa ndalesa", "sa stacione ka", "sa ndalesa ka"]
     // "and back" / "return" / "the other way" — reverse the last route.
     private static let reversePhrases = ["and back", "way back", "the other way", "return trip", "round trip",
         "return journey", "reverse", "reverse trip", "back again", "other direction", "opposite direction",
@@ -667,6 +700,7 @@ struct AthensTransitParser {
         (transitNouns + departureWords + findWords + lineWords + fareWords + favoriteWords +
          airportWords + alertWords + mapWords + weatherWords +
          accessibilityWords + reversePhrases + firstTrainPhrases +
+         whichLinesWords + stopsBetweenWords +
          tomorrowWords + weekendWords + saturdayWords + sundayWords)
             .map { fold($0) }
             .filter { $0.count >= 4 && !$0.contains(" ") }

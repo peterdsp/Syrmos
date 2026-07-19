@@ -2781,6 +2781,25 @@
                     }
                     return respond({ kind: "plan", from: r.to, to: r.from, lowExposure: false });
                 }
+                case "whichLines": {
+                    const st = intent.stationId ? stationMap.get(intent.stationId) : null;
+                    if (!st) return { text: t("ariadne_no_station") };
+                    const ids = [...new Set((st.line_ids || st.lineIds || []).map((id) => String(id).split("_")[0]))];
+                    const nm = stationName(st.id);
+                    if (!ids.length) {
+                        return { text: currentLang === "el" ? `Δεν έχω γραμμές για ${nm}.`
+                            : currentLang === "sq" ? `Nuk kam linja për ${nm}.` : `I don't have any lines listed for ${nm}.` };
+                    }
+                    const list = ids.join(", ");
+                    return { text: currentLang === "el" ? `Ο ${nm} εξυπηρετείται από: ${list}.`
+                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.` : `${nm} is served by: ${list}.` };
+                }
+                case "stopsBetween": {
+                    // The web has no JS stop-counting planner, so delegate to the
+                    // route directions like a trip. Native computes the exact count.
+                    if (intent.from && intent.to) return respond({ kind: "plan", from: intent.from, to: intent.to, lowExposure: false });
+                    return { text: t("ariadne_no_station") };
+                }
                 case "openMap":
                     if (intent.stationId) {
                         return {
@@ -2880,7 +2899,12 @@
                     break;
                 case "departures":
                 case "firstTrain":
+                case "whichLines":
                     if (intent.stationId) aSession.currentStation = intent.stationId;
+                    break;
+                case "stopsBetween":
+                    if (intent.from) aSession.currentStation = intent.from;
+                    if (intent.from && intent.to) aSession.lastRoute = { from: intent.from, to: intent.to };
                     break;
                 case "reverseTrip":
                     if (aSession.lastRoute) {
@@ -2941,8 +2965,19 @@
                 return patched;
             }
             if (pendingIntent.kind === "lastTrain" || pendingIntent.kind === "departures" ||
-                pendingIntent.kind === "firstTrain" || pendingIntent.kind === "stationAccessibility") {
+                pendingIntent.kind === "firstTrain" || pendingIntent.kind === "stationAccessibility" ||
+                pendingIntent.kind === "whichLines") {
                 const patched = Object.assign({}, pendingIntent, { stationId: stationId });
+                return patched;
+            }
+            if (pendingIntent.kind === "stopsBetween") {
+                const patched = Object.assign({}, pendingIntent);
+                if (pendingMissing === "ORIGIN_STATION") patched.from = stationId;
+                else if (pendingMissing === "DESTINATION_STATION") patched.to = stationId;
+                else return null;
+                if (!patched.from || !patched.to) {
+                    return { kind: "needsClarification", base: patched, missing: !patched.from ? "ORIGIN_STATION" : "DESTINATION_STATION" };
+                }
                 return patched;
             }
             if (pendingIntent.kind === "toggleFavorite") {
