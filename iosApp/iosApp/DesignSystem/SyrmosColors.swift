@@ -57,6 +57,9 @@ enum MapDesignTokens {
     /// Below this zoom only the major cross-modal hubs (~16 Greece-wide) show,
     /// because is_interchange is over-applied. Mirrors MapDesignTokens.MAJOR_HUB_MIN_ZOOM.
     static let majorHubMinZoom: Double = 9
+    /// At or below this zoom (whole-Greece) no station dots draw; the line
+    /// network alone carries the map. Mirrors MapDesignTokens.LINES_ONLY_MAX_ZOOM.
+    static let linesOnlyMaxZoom: Double = 7
 
     // Line strokes.
     static let greyedColor = "#94A3B8"
