@@ -14,7 +14,9 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased (rolling web + data)
 
-**Modern dot markers on the map** (iOS, Android, Web). The big teardrop station pins are replaced by small, centre-anchored dots in the line colour with a crisp white ring — roughly half the size (10-13px vs 22-32px) so the now country-wide map stays clean and lightweight. The mode glyph only appears when a stop is selected or you zoom in; interchanges read as a white-cored "target" ring; suspended lines still grey out. Same design on all three platforms.
+**Modern dot markers on the map** (iOS, Android, Web). The big teardrop station pins are replaced by small, centre-anchored dots in the line colour with a crisp white ring — roughly half the size (10-13px vs 22-32px) so the now country-wide map stays clean and lightweight. The mode glyph only appears when a stop is selected or you zoom in; interchanges read as a white-cored "target" ring; suspended lines still grey out. The whole marker + line design (dot sizes, ring/halo widths, glyph rule, greyed colour, bus/greyed dash) now lives in **one shared source of truth** (`MapDesignTokens` in core:common), mirrored to iOS and web so the three maps can't drift.
+
+**Ariadne, cleverer again.** Two more grounded capabilities on top of the earlier batch: **which lines serve a station** ("ποιες γραμμές περνάνε από X" / "cilat linja shërbejnë X") and **how many stops / how far between two stations** (stop count + duration from the deterministic planner). All trilingual, across iOS/Android/Web, wired through the rule parser, dispatch, session memory and the on-device LLM tier.
 
 **Ariadne got cleverer** across iOS, Android and Web (shared KMP brain + Swift and JS mirrors, all trilingual, still tool-only — she never invents a transit fact):
 
