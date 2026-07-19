@@ -943,7 +943,9 @@ body {
     }
 
     .subtitle { display: none; }
-    .store-badges { display: none; }
+    /* .top-bar prefix so this beats the later, same-specificity base
+       .store-badges rule (defined further down the file). */
+    .top-bar .store-badges { display: none; }
     .zoom-controls { display: none; }
 
     .map-controls {
