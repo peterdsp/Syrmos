@@ -828,6 +828,7 @@
     // later unhandled rejection could skip it. Wrapped so any failure surfaces
     // instead of silently disabling the sheet.
     try { setupPanelBehavior(); } catch (e) { console.error("setupPanelBehavior failed", e); }
+    window.__mA = true;
 
     function modeGlyph(mode) {
         switch (mode) {
@@ -1397,6 +1398,7 @@
         }
     }
 
+    window.__mB = true;
     stationSearch.addEventListener("input", (event) => {
         const query = event.target.value.trim().toLowerCase();
         if (!query) {
@@ -1499,8 +1501,10 @@
         }
     });
 
+    window.__mC = true;
     const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
     map.fitBounds(bounds.pad(0.12));
+    window.__mD = true;
 
     const simulatedTrainMarkers = new Map();
     let lastSimulatedTrains = [];
