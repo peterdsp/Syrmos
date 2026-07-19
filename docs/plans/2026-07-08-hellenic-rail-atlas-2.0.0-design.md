@@ -436,9 +436,15 @@ to W4 (web phases, section 17.11).
   (marker block; the project lists files individually so a standalone file would
   not compile), and `tokens.generated.json`. Re-run after any token edit. Depends
   on: T2.
-- T4 — Shared component catalog [M1]. One spec + per-platform build for line badge,
-  departure row, one-glance hero, offline pill, source-confidence chip, map station
-  marker (section 11). Depends on: T3.
+- T4 — Shared component catalog [M1] (started 2026-07-19). The two new trust-layer
+  primitives landed on Compose (core:designsystem), token-driven: `SourceConfidenceChip`
+  (the section 7 live / scheduled / offline / estimated / operator-link / unknown
+  states) and `OfflinePill` (section 8). Line badge (`LineColorIndicator`), departure
+  row (`DepartureCard`), and map marker (`MapDesignTokens`) already exist and migrate
+  to tokens. Remaining: the one-glance hero (overlaps T7), the SwiftUI + web-DOM
+  mirrors of the chip / pill (added when first consumed, to avoid unused code and
+  iOS pbxproj churn), and wiring the chip into departure / station / route / Ariadne
+  surfaces (with T8). Depends on: T3.
 - T5 — Light-first restyle of existing screens [M1, iOS / Android / web] (started
   2026-07-19: identity adopted at the foundation). Android `SyrmosTheme` now draws
   the token-derived `SyrmosLightColorScheme` / `SyrmosDarkColorScheme`; iOS
