@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.2** (TestFlight), **Android 1.2.2** (Play, versionCode 106, released 2026-07-16), **Web** (rolling).
+Current shipping: **iOS 1.2.3** (TestFlight), **Android 1.2.3** (Play internal, versionCode 108), **Web** (rolling). 1.2.3 cut 2026-07-19 by the `v1.2.3` tag.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -34,6 +34,30 @@ All-Greece rail coverage, shipped as bundled data + web with no client-code chan
 - **Two more national corridors.** **AL1 Alexandroupoli - Orestiada - Ormenio** (Evros/Thrace, 31 stations, four daily trains 1680/1681/1682/1683 incl. the Orestiada short-turns) as a real suburban train; **KB1 Paleofarsalos - Kalambaka** (Sofades, Karditsa, Trikala) as a rail-replacement **bus** (C881/C1889/C1880/C888), which is how Hellenic Train serves that branch today. Every time transcribed from the official Hellenic Train timetable, stored as exact per-station departures; coordinates and track geometry from the OSM service relations (14122316/14122315 for AL1, 14007294/14007293 for KB1), never invented.
 - **Three rail-replacement bus corridors** (mode = bus, region national), completing the country's replacement-bus network alongside KB1: **VL1 Volos - Larisa** (Velestino; 7 buses each way daily), **DX1 Drama - Xanthi - Alexandroupoli** (15 stations, nine services with per-run stop patterns incl. the Drama-Alexandroupoli express C602 and the Xanthi-Drama C679 that skips Toxotes), and **KP1 Kiato - Patra** (via Diakopto on the longer runs; 40+ services incl. Friday and Friday+Sunday-only departures). Exact per-station times from the official Hellenic Train timetable. Geometry from OSM rail alignments; KP1's coastal Kiato-Patra segment was rebuilt by axis-projection ordering because relation 1769919's member order is scrambled (member-order and greedy stitching both produced 45-50 km phantom jumps). Total network is now **26 lines** across four regions (athens 10, national 7, thessaloniki 6, patras 3).
 - Fixed the nightly importer that scoped `DELETE` too broadly and wiped every non-Athens line overnight; corrected station-region tagging so Evros/Kalambaka read national and Patras reads patras.
+
+## 1.2.3 (2026-07-19)
+
+The first store binaries to carry the all-Greece network, the cleverer Ariadne, and
+the 2.0 design-system foundation. Everything in the rolling section above (modern dot
+markers, Ariadne v2, the 32-line all-Greece coverage with real OSM geometry) is now in
+the iOS + Android builds, plus:
+
+**Country-wide map legibility (iOS, Android, Web).** A three-tier zoom rule replaces
+the old "draw every stop" behaviour that turned the country view into confetti. At
+country zoom only the major cross-modal hubs show (a genuine transfer whose lines span
+2+ types, ~20 Greece-wide); at regional zoom all interchanges; in a city every stop.
+The coloured line strokes carry the network in between. Roughly 389 markers down to ~20
+at country zoom. A missing station smart-code icon now falls back to the dot instead of
+the browser's broken-image placeholder. The rule lives in the shared `MapDesignTokens`.
+
+**Design system 2.0 foundation (the "Hellenic Rail Atlas" light-first identity).** A
+canonical KMP design-token module (`core:designsystem` `theme/tokens/`) is now the single
+semantic source for colour, typography, spacing, shape, and the "train glide" motion
+easing. A generator emits the Swift and CSS-variable mirrors so the three platforms never
+drift. The identity is adopted at the foundation: the Android Compose theme, iOS adaptive
+semantic colours (dark mode preserved), and the web chrome (Aegean-blue brand, warm
+station-white surfaces, warm near-black text). Two new trust-layer catalog components
+landed — the source-confidence chip and the offline pill.
 
 ## 1.2.2 (2026-07-10)
 
