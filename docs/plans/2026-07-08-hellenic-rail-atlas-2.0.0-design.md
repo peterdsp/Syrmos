@@ -420,10 +420,15 @@ to W4 (web phases, section 17.11).
   terminus, ~10 to 12) via a new `MapDesignTokens.MAJOR_HUB_MIN_ZOOM`: below ~z9
   only major hubs, z9 to 11 all interchanges, z >= 11 all stops. Mirror web / iOS /
   Android. Depends on: nothing. Quick win, cleans the current country view now.
-- T2 — KMP design-token module [M1, foundation]. Build `core/designsystem-tokens`
-  (section 11): colour, typography, spacing, motion, shape. The scattered
-  `SyrmosColors.swift`, line-token files, and `MapDesignTokens` become mirror
-  targets. Depends on: nothing. Unblocks all visual work.
+- T2 — KMP design-token module [M1, foundation] (landed 2026-07-19). Built inside
+  the existing `core:designsystem` module (not a new `designsystem-tokens` module)
+  as `theme/tokens/`: `SyrmosColorTokens`, `SyrmosTypographyTokens`,
+  `SyrmosSpacingTokens`, `SyrmosShapeTokens`, `SyrmosMotionTokens` (section 11).
+  Each carries a platform-neutral `Raw` block (ARGB longs, sp / point ints, bezier
+  control points) as the mirror source for the T3 Swift / CSS exports, plus Compose
+  wrappers. `SyrmosColorSchemes` maps them to Material3 light / dark schemes ready
+  for T5. `SyrmosColors.swift`, the line-token files, and `MapDesignTokens` stay as
+  mirror targets to migrate. Additive: does not change the app's look yet (T5 does).
 - T3 — Token export path [M1, foundation]. Generate / mirror T2 outward: a Swift
   file, CSS custom properties (web has zero `:root` tokens today, section 17.7), and
   Compose. JSON only as an export artifact. Depends on: T2. Unblocks W1 + M1 restyle.
