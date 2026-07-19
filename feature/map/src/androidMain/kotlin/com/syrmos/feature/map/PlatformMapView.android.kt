@@ -161,6 +161,10 @@ internal actual fun PlatformMapView(
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
     // 0 = country, 1 = city, 2 = district, 3 = street. Mirrors web + iOS buckets.
     var zoomBucket by remember { mutableStateOf(2) }
+    // Zoom-tiered decluttering: below MINOR_STOP_MIN_ZOOM only the network
+    // skeleton (line strokes + interchange hubs) shows, so a regional view isn't
+    // a field of confetti. Mirrors the web + iOS rule.
+    var minorStopsVisible by remember { mutableStateOf(true) }
 
     val appLang by com.syrmos.core.common.LocalizationManager.language.collectAsState()
 
@@ -198,6 +202,8 @@ internal actual fun PlatformMapView(
                             else -> 0
                         }
                         if (next != zoomBucket) zoomBucket = next
+                        val minorVisible = z >= com.syrmos.core.common.map.MapDesignTokens.MINOR_STOP_MIN_ZOOM
+                        if (minorVisible != minorStopsVisible) minorStopsVisible = minorVisible
                         return false
                     }
                 })
@@ -277,8 +283,16 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.mapStations, uiState.selectedStation, zoomBucket) {
-        val currentIds = uiState.mapStations.map { it.id }.toSet()
+    LaunchedEffect(uiState.mapStations, uiState.selectedStation, zoomBucket, minorStopsVisible) {
+        // A stop is drawn when it's an interchange hub, the selection, or we're
+        // zoomed in past the confetti threshold. Everything else is pruned so a
+        // regional view shows only the network skeleton over the line strokes.
+        fun shouldDraw(station: MapStationNode): Boolean =
+            station.isInterchange ||
+                minorStopsVisible ||
+                uiState.selectedStation?.id == station.id
+
+        val currentIds = uiState.mapStations.filter { shouldDraw(it) }.map { it.id }.toSet()
         val staleIds = stationMarkers.keys - currentIds
         staleIds.forEach { id ->
             stationMarkers[id]?.let { mapView.overlays.remove(it) }
@@ -286,6 +300,7 @@ internal actual fun PlatformMapView(
         }
 
         uiState.mapStations.forEach { station ->
+            if (!shouldDraw(station)) return@forEach
             val existing = stationMarkers[station.id]
             val isSelected = uiState.selectedStation?.id == station.id
             val primaryStationId = station.stationIds.firstOrNull() ?: station.id
