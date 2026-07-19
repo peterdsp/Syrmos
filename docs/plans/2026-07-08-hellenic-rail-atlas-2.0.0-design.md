@@ -83,7 +83,7 @@ A single component, one spec, rendered natively per platform:
 - Android: the same hero and tokens via Compose; Glance widgets and (later) a
   Wear OS surface mirroring the watch.
 - Web: a fast PWA home with the same hero and live countdown, installable, works
-  offline from the bundled snapshot.
+  offline from the bundled snapshot. Detailed web design in section 17.
 
 ## 5. Information architecture and the region model
 
@@ -277,3 +277,118 @@ virality (share-worthy one-glance widgets and map), and acquisition interest
 - Exact codegen path from the KMP token module to the Swift and CSS exports.
 - Wear OS scope and timing relative to the watchOS surface.
 - Confirm Athens to Chalkida as M5 (Kiato/Corinth as M6).
+
+## 17. Web surface, detailed design (added 2026-07-19)
+
+This expands the web bullet in section 4 into a buildable spec and supersedes the
+older `2026-07-02-web-living-map-maplibre-design.md` draft (its living-map and
+motion ideas are folded in here). Drivers, chosen with the owner: rethink the IA
+(not a reskin), make web the flagship product surface (answer-first, not a
+marketing page wrapped around a map), and mobile-first (the web is many users'
+first touch, with no install to gate it). The web stays on Leaflet + the bundled
+snapshot; this is a structural and identity redesign, not a map-engine swap.
+
+### 17.1 Layout: one responsive app-shell
+
+One component model, two layouts off a single breakpoint (about 840px):
+
+- Mobile (the priority): the map is full-bleed. A draggable bottom sheet sits over
+  it with three detents, peek (about 30% height, the answer card + search visible),
+  half (browsing nearby / Ariadne), and full (station detail, a route, or a
+  conversation). The map dims slightly behind the sheet at full. A thin top status
+  bar carries only essentials: brand mark, language, dark mode, locate. Everything
+  is one-thumb reachable from the bottom.
+- Desktop: the same content becomes a fixed left rail (about 380px) beside a large
+  map. The current stack of cards floating over the map is replaced by the rail.
+
+This replaces today's biggest web problem: floating header + what's-new + panels
+competing over a full-bleed map with no hierarchy.
+
+### 17.2 The four shared surfaces
+
+Inside the sheet / rail, identical on both layouts:
+
+1. Answer card (the one-glance hero, section 3, on web).
+2. Search (station, line, place).
+3. Ariadne (the recovery layer, section 10).
+4. Context: a navigable stack that is nearby-list, then station detail, then route
+   result. Selecting a station on the map raises the sheet to half and swaps (4)
+   to that station; Ariadne answers push into (4) too. Map, list, and assistant all
+   drive one shared detail surface instead of three competing panels.
+
+### 17.3 The answer-first hero on web
+
+The section 3 hero, rendered in the sheet/rail head: line badge + destination +
+direction, the departure clock time, and a live countdown that ticks every second
+(the existing web interval ticker). A secondary "then 3m, 5m" line, a
+source-confidence chip (17.8), and one tap that deep-links to the station. It
+targets the nearest station (with location) or the last-used one, so a returning
+user sees an answer before asking. Imminent state is a calm red "now".
+
+### 17.4 Living map (crown jewel)
+
+The section 9 living map is the visual proof of the data model, expressed on web:
+
+- Zoom-tiered rendering, "skeleton at distance, detail on approach". Below
+  `MapDesignTokens.MINOR_STOP_MIN_ZOOM` (11) only the coloured line strokes and the
+  interchange hubs draw; minor stops resolve on zoom-in. Shipped 2026-07-19 (389
+  markers to 49 at country zoom), and mirrored on iOS + Android.
+- Real curved OSM track geometry (already seeded per corridor), trains gliding along
+  the polyline from live positions + the 1s simulator.
+- Compact modern dot markers with interchange target-rings; a station whose
+  smart-code SVG is missing falls back to the dot, never a broken image (shipped
+  2026-07-19, matching iOS/Android). Line colours are service data only (section 2).
+
+### 17.5 Region IA on web
+
+All-Greece, not Athens-shaped (section 5). Search spans every region; the map
+reveals coverage as the user pans; a lightweight region affordance (Nearby /
+region / Saved) sits in the context surface rather than as map chrome. `region`
+stays a domain concept, not a display filter.
+
+### 17.6 Identity and chrome
+
+- Drop the "Athens rail map" subtitle; the identity is Greece-wide rail. The brand
+  wordmark stays; the subtitle becomes a coverage line, not a city claim.
+- Light-first station-white surfaces with the Aegean-blue brand core (section 2).
+- Keep in the top bar: language (EN/EL/SQ), dark mode, locate, and a small install
+  nudge. Demote the App Store / Play badges out of the hero into a compact "get the
+  app" affordance. Demote what's-new to a small changelog entry point, not a modal
+  that blocks the map on load.
+
+### 17.7 Tokens as CSS variables
+
+Web has zero `:root` custom properties today, so "same tokens on web" (section 11)
+is currently aspiration. This redesign lands the web token layer: the 2.0.0 colour,
+type, spacing, shape, and motion tokens as CSS custom properties, hand-mirrored
+from the KMP token module until the codegen path exists (the same manual-mirror
+discipline already used for `MapDesignTokens` and `AriadneGrammar`). `MAP_TOKENS`
+in `web-map.js` becomes one consumer of that layer, not a separate island.
+
+### 17.8 Source-confidence on web
+
+The section 7 chips (live / scheduled / offline snapshot / estimated / operator link
+required / unknown disruption) render on the hero, station detail, route result, and
+every Ariadne answer, so the web states its certainty like the native apps do.
+
+### 17.9 PWA and offline
+
+Installable PWA, offline from the bundled snapshot, with the section 8 offline pill
+("offline snapshot active, updated 2h ago"). The map tiles remain online-only by
+design; schedules, stations, lines, and fares work offline.
+
+### 17.10 Motion and accessibility
+
+The "train glide" easing (section 2) on the sheet detents, list inserts, and route
+draw, degrading to a cross-fade under Reduce Motion. Full keyboard focus order,
+ARIA roles on the sheet/rail and the map controls, and WCAG-AA contrast on the
+light-first palette.
+
+### 17.11 Web phasing (maps to the M1 to M4 roadmap)
+
+- W1: token layer as CSS variables + the responsive app-shell (map + sheet/rail,
+  the four surfaces). Restyle to the light-first identity.
+- W2: the answer-first hero + 1s countdown in the shell head.
+- W3: source-confidence chips across hero, station, route, and Ariadne.
+- W4: living-map polish. The 2026-07-19 declutter + icon fallback are the first W4
+  step, already shipped.

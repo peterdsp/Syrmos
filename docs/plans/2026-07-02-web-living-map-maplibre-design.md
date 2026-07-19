@@ -1,6 +1,8 @@
 # Web living-map overhaul — MapLibre GL + Motion One
 
-Status: design (not yet implemented). Owner: web. Target: the release after 1.1.1.
+Status: superseded (2026-07-19) by section 17 of
+`2026-07-08-hellenic-rail-atlas-2.0.0-design.md`, which folds in this doc's
+living-map and motion ideas. Kept for history. Owner: web.
 
 ## Goal
 
