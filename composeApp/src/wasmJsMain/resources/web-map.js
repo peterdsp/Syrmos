@@ -1508,7 +1508,7 @@
     // Each guarded so one panel's failure can't cascade and abort the rest of
     // init (this is what previously left the bottom sheet uninitialised on the
     // live build). Failures surface in the console instead of silently breaking.
-    const initStep = (name, fn) => { try { fn(); } catch (e) { console.error(`init ${name} failed`, e); } };
+    const initStep = (name, fn) => { try { fn(); } catch (e) { console.error(`init ${name} failed`, e); (window.__initErrors = window.__initErrors || []).push(`${name}: ${e && e.message || e}`); } };
     initStep("renderPopularPanel", renderPopularPanel);
     initStep("updateNearbyPanel", updateNearbyPanel);
     initStep("connectLiveTrainStream", connectLiveTrainStream);
