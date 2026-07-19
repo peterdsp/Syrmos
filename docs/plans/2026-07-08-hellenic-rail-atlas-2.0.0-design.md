@@ -429,15 +429,23 @@ to W4 (web phases, section 17.11).
   wrappers. `SyrmosColorSchemes` maps them to Material3 light / dark schemes ready
   for T5. `SyrmosColors.swift`, the line-token files, and `MapDesignTokens` stay as
   mirror targets to migrate. Additive: does not change the app's look yet (T5 does).
-- T3 — Token export path [M1, foundation]. Generate / mirror T2 outward: a Swift
-  file, CSS custom properties (web has zero `:root` tokens today, section 17.7), and
-  Compose. JSON only as an export artifact. Depends on: T2. Unblocks W1 + M1 restyle.
+- T3 — Token export path [M1, foundation] (landed 2026-07-19).
+  `ops/designsystem/generate_tokens.py` parses the token `Raw` blocks and emits
+  `design-tokens.css` (`--sy-*`, wired into index.html, with a dark media
+  override), a `SyrmosTokens` Swift enum injected into `SyrmosColors.swift`
+  (marker block; the project lists files individually so a standalone file would
+  not compile), and `tokens.generated.json`. Re-run after any token edit. Depends
+  on: T2.
 - T4 — Shared component catalog [M1]. One spec + per-platform build for line badge,
   departure row, one-glance hero, offline pill, source-confidence chip, map station
   marker (section 11). Depends on: T3.
-- T5 — Light-first restyle of existing screens [M1, iOS / Android / web]. Restyle
-  current Athens surfaces to station-white + Aegean-blue; enforce the
-  line-colour-as-data rule (section 2). Depends on: T4.
+- T5 — Light-first restyle of existing screens [M1, iOS / Android / web] (started
+  2026-07-19: identity adopted at the foundation). Android `SyrmosTheme` now draws
+  the token-derived `SyrmosLightColorScheme` / `SyrmosDarkColorScheme`; iOS
+  `Color.syrmos*` aliases resolve to adaptive token colours (dark preserved); web
+  chrome consumes the `--sy-*` vars (brand accent -> Aegean, warm near-black text).
+  Per-screen and component polish continues with T4. Depends on: T4 for full
+  coverage; the foundation adoption depends only on T2 / T3.
 - T6 — Web app-shell [W1, web]. Responsive shell: mobile map + bottom sheet
   (peek / half / full), desktop left rail, four shared surfaces over one context
   stack (sections 17.1, 17.2). Replaces the floating-card layout. Depends on: T3, T4.

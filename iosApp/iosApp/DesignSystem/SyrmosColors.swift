@@ -7,13 +7,23 @@ extension Color {
     static let tramOrange = Color(hex: 0xE87722)
     static let suburbanPurple = Color(hex: 0x6F2DA8)
 
-    static let syrmosPrimary = Color.metroBlue
-    static let syrmosBackground = Color(uiColor: .systemGroupedBackground)
-    static let syrmosSurface = Color(uiColor: .secondarySystemGroupedBackground)
+    // The 2.0 light-first identity (task T5), drawn from the generated
+    // SyrmosTokens. Adaptive so dark mode still resolves to the graphite variant.
+    static let syrmosPrimary = Color.syrmosAdaptive(light: SyrmosTokens.brand, dark: SyrmosTokens.Dark.brand)
+    static let syrmosBackground = Color.syrmosAdaptive(light: SyrmosTokens.surface, dark: SyrmosTokens.Dark.surface)
+    static let syrmosSurface = Color.syrmosAdaptive(light: SyrmosTokens.surfaceCard, dark: SyrmosTokens.Dark.surfaceCard)
 
     static let arrivalSoon = Color(hex: 0x2E7D32)
     static let arrivalModerate = Color(hex: 0xE65100)
     static let arrivalFar = Color.secondary
+
+    /// A colour that resolves to [light] in light mode and [dark] in dark mode,
+    /// so token-driven surfaces keep automatic dark-mode support.
+    static func syrmosAdaptive(light: Color, dark: Color) -> Color {
+        Color(uiColor: UIColor { trait in
+            UIColor(trait.userInterfaceStyle == .dark ? dark : light)
+        })
+    }
 
     init(hex: UInt, alpha: Double = 1.0) {
         self.init(
