@@ -58,6 +58,23 @@ sealed interface AssistantIntent {
     /** Free-text station lookup. */
     data class FindStation(val query: String) : AssistantIntent
 
+    /**
+     * "Which lines serve X?" / "what line is X on?". Lists the lines that call
+     * at a station, from the bundled network. Null [stationId] asks which stop.
+     */
+    data class WhichLines(val stationId: String?) : AssistantIntent
+
+    /**
+     * "How many stops / how far from A to B?". Answers the stop count and rough
+     * duration of a trip using the deterministic planner. Distinct from
+     * [TravelTime] (which is about minutes) and [PlanTrip] (which routes): this
+     * one leads with the number of stops. Endpoints resolve like a trip.
+     */
+    data class StopsBetween(
+        val fromStationId: String?,
+        val toStationId: String?,
+    ) : AssistantIntent
+
     /** Point-to-point routing across the network. */
     data class PlanTrip(
         val fromStationId: String?,
