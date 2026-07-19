@@ -14,6 +14,8 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased (rolling web + data)
 
+**Modern dot markers on the map** (iOS, Android, Web). The big teardrop station pins are replaced by small, centre-anchored dots in the line colour with a crisp white ring — roughly half the size (10-13px vs 22-32px) so the now country-wide map stays clean and lightweight. The mode glyph only appears when a stop is selected or you zoom in; interchanges read as a white-cored "target" ring; suspended lines still grey out. Same design on all three platforms.
+
 **Ariadne got cleverer** across iOS, Android and Web (shared KMP brain + Swift and JS mirrors, all trilingual, still tool-only — she never invents a transit fact):
 
 - **Understands more phrasings.** Broadened the EN/EL/SQ cue vocabularies (departures, planning, arrivals, "I want to go", "navigate to", …) so far more natural wording resolves without a dead-end. Albanian station recall widened from ~4 stops to ~20 high-traffic ones, including real Albanian exonyms (Selanik → Thessaloniki, Athina → Athens) — and the web build now applies those aliases too (it previously didn't).
