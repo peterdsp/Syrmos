@@ -21,8 +21,8 @@ html, body {
     height: 100svh;
     height: 100dvh;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-    background: #eef3f8;
-    color: #101418;
+    background: var(--sy-surface, #eef3f8);
+    color: var(--sy-on-surface, #101418);
 }
 
 body {
@@ -343,7 +343,7 @@ body {
 
 .subtitle {
     margin-top: 1px;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted, #5f6b76);
     font-size: 13px;
     white-space: nowrap;
 }
@@ -384,8 +384,8 @@ body {
 }
 
 .control-button--active {
-    background: rgba(0, 114, 206, 0.18);
-    border-color: rgba(0, 114, 206, 0.6);
+    background: color-mix(in srgb, var(--sy-brand, #1466B8) 18%, transparent);
+    border-color: color-mix(in srgb, var(--sy-brand, #1466B8) 60%, transparent);
 }
 
 /* Three-pill language selector. Sits in the top-bar map-controls strip;
@@ -420,7 +420,7 @@ body {
 }
 
 .language-pill[aria-pressed="true"] {
-    background: rgba(0, 114, 206, 0.85);
+    background: var(--sy-brand, #1466B8);
     color: #ffffff;
 }
 
@@ -433,7 +433,7 @@ body {
 }
 
 .dark-mode .language-pill[aria-pressed="true"] {
-    background: rgba(0, 114, 206, 0.9);
+    background: var(--sy-brand, #1466B8);
     color: #ffffff;
 }
 
