@@ -828,7 +828,6 @@
     // later unhandled rejection could skip it. Wrapped so any failure surfaces
     // instead of silently disabling the sheet.
     try { setupPanelBehavior(); } catch (e) { console.error("setupPanelBehavior failed", e); }
-    window.__mA = true;
 
     function modeGlyph(mode) {
         switch (mode) {
@@ -1398,7 +1397,6 @@
         }
     }
 
-    window.__mB = true;
     stationSearch.addEventListener("input", (event) => {
         const query = event.target.value.trim().toLowerCase();
         if (!query) {
@@ -1501,10 +1499,17 @@
         }
     });
 
-    window.__mC = true;
-    const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
-    map.fitBounds(bounds.pad(0.12));
-    window.__mD = true;
+    // Guard the initial fit: it sets the view synchronously (the map does move to
+    // Greece) but can then throw from a synchronous zoom/move handler firing during
+    // the fit, and an unguarded throw here aborts the ENTIRE rest of init (hero,
+    // popular, nearby, live trains, simulator). Catching it keeps init going.
+    try {
+        const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
+        map.fitBounds(bounds.pad(0.12));
+    } catch (e) {
+        console.error("fitBounds failed", e);
+        (window.__initErrors = window.__initErrors || []).push(`fitBounds: ${e && e.message || e}`);
+    }
 
     const simulatedTrainMarkers = new Map();
     let lastSimulatedTrains = [];
@@ -1512,7 +1517,6 @@
     // Each guarded so one panel's failure can't cascade and abort the rest of
     // init (this is what previously left the bottom sheet uninitialised on the
     // live build). Failures surface in the console instead of silently breaking.
-    window.__reachedInit = true;
     const initStep = (name, fn) => { try { fn(); } catch (e) { console.error(`init ${name} failed`, e); (window.__initErrors = window.__initErrors || []).push(`${name}: ${e && e.message || e}`); } };
     initStep("renderPopularPanel", renderPopularPanel);
     initStep("updateNearbyPanel", updateNearbyPanel);
@@ -1862,12 +1866,9 @@
     // (with the other init state) to avoid a temporal-dead-zone ReferenceError,
     // since setupHero is invoked before this point in the init sequence.
     function setupHero() {
-        window.__heroCalled = (window.__heroCalled || 0) + 1;
         const wrap = document.querySelector("#insightPanel .panel-cards-wrap");
-        window.__heroWrap = !!wrap;
         const peekText = document.getElementById("panelPeekText");
         if (!wrap) return;
-        window.__heroPrepended = true;
 
         const card = document.createElement("div");
         card.className = "panel-card hero-card";
