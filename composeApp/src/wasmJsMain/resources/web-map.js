@@ -786,7 +786,7 @@
             const svgUrl = stationIconBySid.get(primarySid)
                 || station.stationIds.map((sid) => stationIconBySid.get(sid)).find(Boolean);
             if (svgUrl) {
-                const size = selected ? 36 : 28;
+                const size = selected ? 30 : 22;
                 return L.icon({
                     iconUrl: svgUrl,
                     iconSize: [size, size],
@@ -796,27 +796,30 @@
             }
         }
 
-        // Mid/low zoom: colored pin with mode glyph. Interchange shows a ring of line colors.
+        // Mid/low zoom: a compact modern dot centred on the stop. Much smaller
+        // than the old teardrop pins and centre-anchored (a dot sits ON the
+        // point, it doesn't "drop" onto it). The mode glyph only appears when
+        // the stop is selected or the user is zoomed in enough to read it, so
+        // the default map stays clean and lightweight.
         const glyph = modeGlyph(primaryMode);
-        const pinSize = selected ? 32 : (currentZoom >= 12 ? 26 : 22);
+        const pinSize = selected ? 18 : (currentZoom >= 12 ? 13 : 10);
+        const showGlyph = selected || currentZoom >= 14;
+        const glyphHtml = showGlyph ? `<span class="station-pin__glyph">${glyph}</span>` : "";
 
         if (station.isInterchange) {
-            const rings = stationLines.slice(0, 3).map((line, idx) =>
-                `<span class="station-pin__ring" style="background:${line.color};" data-i="${idx}"></span>`
-            ).join("");
             return L.divIcon({
                 className: `station-pin station-pin--interchange${selected ? " station-pin--selected" : ""}`,
-                html: `<span class="station-pin__core" style="background:${primaryColor};">${glyph}</span><span class="station-pin__rings">${rings}</span>`,
+                html: `<span class="station-pin__core" style="--pin:${primaryColor};">${glyphHtml}</span>`,
                 iconSize: [pinSize, pinSize],
-                iconAnchor: [pinSize / 2, pinSize],
+                iconAnchor: [pinSize / 2, pinSize / 2],
             });
         }
 
         return L.divIcon({
             className: `station-pin${selected ? " station-pin--selected" : ""}`,
-            html: `<span class="station-pin__core" style="background:${primaryColor};">${glyph}</span>`,
+            html: `<span class="station-pin__core" style="--pin:${primaryColor};">${glyphHtml}</span>`,
             iconSize: [pinSize, pinSize],
-            iconAnchor: [pinSize / 2, pinSize],
+            iconAnchor: [pinSize / 2, pinSize / 2],
         });
     }
 
