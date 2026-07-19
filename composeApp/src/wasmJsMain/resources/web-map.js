@@ -769,6 +769,10 @@
 
     let selectedStationId = null;
     let userLocation = null;
+    // Declared early (not next to setupHero) so it is initialised before both
+    // setupPanelBehavior and the hero run — a `let` next to the function would be
+    // in its temporal dead zone when setupHero is invoked earlier in init.
+    let heroActive = false;
 
     for (const station of stationNodes) {
         const marker = L.marker([station.latitude, station.longitude], {
@@ -1849,8 +1853,9 @@
     // countdown that ticks every second. Rendered both as a card at the top of
     // the sheet and, compactly, in the always-visible peek bar so the answer is
     // there before the user asks. Departures re-project every 15s; only the
-    // countdown recomputes each second (cheap).
-    let heroActive = false;
+    // countdown recomputes each second (cheap). heroActive is declared earlier
+    // (with the other init state) to avoid a temporal-dead-zone ReferenceError,
+    // since setupHero is invoked before this point in the init sequence.
     function setupHero() {
         const wrap = document.querySelector("#insightPanel .panel-cards-wrap");
         const peekText = document.getElementById("panelPeekText");
