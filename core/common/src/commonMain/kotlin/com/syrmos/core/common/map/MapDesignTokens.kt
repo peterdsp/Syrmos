@@ -36,6 +36,14 @@ object MapDesignTokens {
     /** Show the mode glyph only when the stop is selected or zoomed in this far. */
     const val GLYPH_MIN_ZOOM = 14
 
+    /**
+     * Below this zoom the country would be a field of confetti if every one of
+     * the ~390 stops were drawn, so minor stops are hidden and only the network
+     * skeleton shows: the coloured line strokes plus the interchange hubs (and
+     * any selected stop). Zoom into a city (>= this) to resolve every station.
+     */
+    const val MINOR_STOP_MIN_ZOOM = 11
+
     // --- Line strokes --------------------------------------------------------
     /** Suspended / not-yet-open lines render greyed. */
     const val GREYED_COLOR = "#94A3B8"

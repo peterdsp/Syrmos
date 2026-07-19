@@ -169,13 +169,26 @@ body {
     transition: transform 0.25s linear !important;
 }
 
+/* A smart-code station marker: the dot core sits underneath as the guaranteed
+   fallback, the SVG artwork is a CSS background layered on top. A 404 background
+   renders nothing, so the dot shows through instead of a broken-image icon.
+   Reset the Leaflet div-icon default box (this used to be an <img>, not a div). */
 .station-svg-icon {
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    position: relative;
+    background: none;
+    border: 0;
+}
+
+.station-svg-icon .station-svg-img {
+    position: absolute;
+    inset: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .station-svg-icon--selected {
-    border-radius: 6px;
+    border-radius: 8px;
     box-shadow: 0 0 0 3px rgba(0, 114, 206, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 

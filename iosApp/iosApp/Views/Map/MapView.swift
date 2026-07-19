@@ -1069,6 +1069,22 @@ struct SyrmosMKMapView: UIViewRepresentable {
         private weak var mapView: MKMapView?
         private var displayLink: CADisplayLink?
 
+        /// Zoom-tiered decluttering. Below MapDesignTokens.minorStopMinZoom the
+        /// ~340 minor stops are hidden so all-Greece isn't a field of confetti;
+        /// only the coloured line strokes and the interchange hubs carry the
+        /// network shape. Starts true, corrected on the first region change.
+        private var minorStopsVisible = true
+
+        /// The visible zoom of an MKMapView isn't exposed directly, so we derive
+        /// it from the longitude span and the view's pixel width using the same
+        /// slippy-map maths the web build uses, keeping the threshold consistent
+        /// with MapDesignTokens.minorStopMinZoom (a web tile zoom).
+        private func approxZoom(_ mapView: MKMapView) -> Double {
+            let widthPx = max(mapView.bounds.width, 1)
+            let lonDelta = max(mapView.region.span.longitudeDelta, 0.0001)
+            return log2(360.0 * Double(widthPx) / 256.0 / lonDelta)
+        }
+
         init(_ parent: SyrmosMKMapView) { self.parent = parent }
 
         // displayLink lives for the lifetime of the Coordinator. The
@@ -1274,6 +1290,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.image = image
                 v.frame.size = image.size
                 v.centerOffset = .zero
+                // Hide minor stops when zoomed out so the country isn't confetti.
+                v.isHidden = !minorStopsVisible && !station.station.isInterchange
                 return v
             }
             if let train = annotation as? SyrmosTrainAnnotation {
@@ -1287,6 +1305,18 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 return v
             }
             return nil
+        }
+
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            let visible = approxZoom(mapView) >= MapDesignTokens.minorStopMinZoom
+            guard visible != minorStopsVisible else { return }
+            minorStopsVisible = visible
+            for annotation in mapView.annotations {
+                guard let station = annotation as? SyrmosStationAnnotation,
+                      !station.station.isInterchange,
+                      let view = mapView.view(for: annotation) else { continue }
+                view.isHidden = !visible
+            }
         }
 
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {

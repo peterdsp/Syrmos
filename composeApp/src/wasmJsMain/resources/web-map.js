@@ -13,6 +13,7 @@
         dotCity: 13,
         dotSelected: 18,
         glyphMinZoom: 14,
+        minorStopMinZoom: 11,
         greyedColor: "#94a3b8",
         busDash: "2 7",
         greyedDash: "6 8",
@@ -762,7 +763,7 @@
         const marker = L.marker([station.latitude, station.longitude], {
             icon: buildStationIcon(station, false),
             keyboard: false,
-        }).addTo(map);
+        });
 
         marker.on("click", () => {
             selectStation(station.id, true);
@@ -770,6 +771,29 @@
 
         markers.set(station.id, marker);
     }
+
+    // Zoom-tiered decluttering. Drawing all ~390 stops at country zoom turns the
+    // map into confetti with no legible network, so below MINOR_STOP_MIN_ZOOM
+    // only the skeleton shows: coloured line strokes (always on) + interchange
+    // hubs + whatever stop is selected. Zoom into a city and every stop resolves.
+    function stationVisibleAt(station, z) {
+        return station.isInterchange
+            || z >= MAP_TOKENS.minorStopMinZoom
+            || station.id === selectedStationId;
+    }
+
+    function applyStationVisibility(z) {
+        for (const [id, marker] of markers) {
+            const station = stationNodeMap.get(id);
+            if (!station) continue;
+            const shouldShow = stationVisibleAt(station, z);
+            const onMap = map.hasLayer(marker);
+            if (shouldShow && !onMap) marker.addTo(map);
+            else if (!shouldShow && onMap) marker.remove();
+        }
+    }
+
+    applyStationVisibility(map.getZoom());
 
     function modeGlyph(mode) {
         switch (mode) {
@@ -801,11 +825,18 @@
                 || station.stationIds.map((sid) => stationIconBySid.get(sid)).find(Boolean);
             if (svgUrl) {
                 const size = selected ? 30 : 22;
-                return L.icon({
-                    iconUrl: svgUrl,
+                // The smart-code SVG is layered as a CSS background ON TOP of the
+                // normal dot rather than as an <img>. If the SVG 404s (a station
+                // with no artwork, a stale manifest index, a deploy gap) the
+                // background just renders nothing and the dot shows through -
+                // never the browser's broken-image placeholder. Matches the
+                // iOS / Android behaviour, which already fall back to the dot.
+                return L.divIcon({
+                    className: `station-svg-icon${selected ? " station-svg-icon--selected" : ""}`,
+                    html: `<span class="station-pin__core" style="--pin:${primaryColor};"></span>`
+                        + `<span class="station-svg-img" style="background-image:url('${svgUrl}');"></span>`,
                     iconSize: [size, size],
                     iconAnchor: [size / 2, size / 2],
-                    className: `station-svg-icon${selected ? " station-svg-icon--selected" : ""}`,
                 });
             }
         }
@@ -838,16 +869,29 @@
     }
 
     function updateMarkerSelection(nextId) {
-        if (selectedStationId && markers.has(selectedStationId)) {
-            const previous = stationNodeMap.get(selectedStationId);
-            markers.get(selectedStationId).setIcon(buildStationIcon(previous, false));
+        const previousId = selectedStationId;
+        if (previousId && markers.has(previousId)) {
+            const previous = stationNodeMap.get(previousId);
+            markers.get(previousId).setIcon(buildStationIcon(previous, false));
         }
 
         selectedStationId = nextId;
 
         if (nextId && markers.has(nextId)) {
             const selected = stationNodeMap.get(nextId);
-            markers.get(nextId).setIcon(buildStationIcon(selected, true));
+            const marker = markers.get(nextId);
+            marker.setIcon(buildStationIcon(selected, true));
+            // A selected stop is always shown, even a minor one at country zoom
+            // that the decluttering rule would otherwise hide.
+            if (!map.hasLayer(marker)) marker.addTo(map);
+        }
+
+        // If the previously selected stop was only visible because it was
+        // selected, hide it again now that it isn't.
+        const z = map.getZoom();
+        if (previousId && previousId !== nextId && markers.has(previousId)) {
+            const previous = stationNodeMap.get(previousId);
+            if (previous && !stationVisibleAt(previous, z)) markers.get(previousId).remove();
         }
     }
 
@@ -1406,6 +1450,7 @@
     let lastZoomBucket = INITIAL_ZOOM >= 14 ? 2 : INITIAL_ZOOM >= 12 ? 1 : 0;
     map.on("zoomend", () => {
         const z = map.getZoom();
+        applyStationVisibility(z);
         const bucket = z >= 14 ? 2 : z >= 12 ? 1 : 0;
         if (bucket !== lastZoomBucket) {
             lastZoomBucket = bucket;

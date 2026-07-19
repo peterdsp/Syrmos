@@ -40,6 +40,10 @@ enum MapDesignTokens {
     static let innerCapRatio: CGFloat = 0.34
     static let interchangeRingRatio: CGFloat = 0.28
     static let glyphMinZoom = 14
+    /// Below this zoom only the network skeleton shows (line strokes +
+    /// interchange hubs + selection); the ~340 minor stops are hidden so the
+    /// country isn't a field of confetti. Mirrors MapDesignTokens.MINOR_STOP_MIN_ZOOM.
+    static let minorStopMinZoom: Double = 11
 
     // Line strokes.
     static let greyedColor = "#94A3B8"
