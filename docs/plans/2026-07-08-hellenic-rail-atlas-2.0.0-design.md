@@ -392,3 +392,79 @@ light-first palette.
 - W3: source-confidence chips across hero, station, route, and Ariadne.
 - W4: living-map polish. The 2026-07-19 declutter + icon fallback are the first W4
   step, already shipped.
+
+## 18. Implementation task breakdown (added 2026-07-19)
+
+Grounded in sections 1 to 17. 2.0.0 is not greenfield; this records what already
+landed, then the ordered remaining tasks with dependencies, platforms, and the
+section each implements. Phase tags: M1 to M5 (native roadmap, section 13) and W1
+to W4 (web phases, section 17.11).
+
+### Already landed (partial 2.0 progress)
+
+- Region data model: `region` (athens / thessaloniki / national / patras) + `status`
+  on lines and stations; Greece-wide corridors seeded (sections 5, 6).
+- Multilingual station identity EN / EL / SQ (section 6).
+- Living-map foundations: real OSM curved geometry per corridor, trains gliding from
+  live + 1s simulator, compact dot markers, the zoom-tiered declutter + graceful
+  icon fallback shipped 2026-07-19 (sections 9, 17.4).
+- Ariadne recovery layer: tool-only trilingual router, source-honesty pattern for
+  weather (section 10, partial section 7).
+- Shared `MapDesignTokens` across the three platforms (a seed of section 11).
+
+### Ordered tasks
+
+- T1 — Map third tier: major hubs at country zoom [M4 / W4, all platforms].
+  `is_interchange` is over-applied (TM1 flags 11 stops), so country zoom still shows
+  ~58 loose dots. Add a major-hub class (true multi-mode interchange or national
+  terminus, ~10 to 12) via a new `MapDesignTokens.MAJOR_HUB_MIN_ZOOM`: below ~z9
+  only major hubs, z9 to 11 all interchanges, z >= 11 all stops. Mirror web / iOS /
+  Android. Depends on: nothing. Quick win, cleans the current country view now.
+- T2 — KMP design-token module [M1, foundation]. Build `core/designsystem-tokens`
+  (section 11): colour, typography, spacing, motion, shape. The scattered
+  `SyrmosColors.swift`, line-token files, and `MapDesignTokens` become mirror
+  targets. Depends on: nothing. Unblocks all visual work.
+- T3 — Token export path [M1, foundation]. Generate / mirror T2 outward: a Swift
+  file, CSS custom properties (web has zero `:root` tokens today, section 17.7), and
+  Compose. JSON only as an export artifact. Depends on: T2. Unblocks W1 + M1 restyle.
+- T4 — Shared component catalog [M1]. One spec + per-platform build for line badge,
+  departure row, one-glance hero, offline pill, source-confidence chip, map station
+  marker (section 11). Depends on: T3.
+- T5 — Light-first restyle of existing screens [M1, iOS / Android / web]. Restyle
+  current Athens surfaces to station-white + Aegean-blue; enforce the
+  line-colour-as-data rule (section 2). Depends on: T4.
+- T6 — Web app-shell [W1, web]. Responsive shell: mobile map + bottom sheet
+  (peek / half / full), desktop left rail, four shared surfaces over one context
+  stack (sections 17.1, 17.2). Replaces the floating-card layout. Depends on: T3, T4.
+- T7 — One-glance hero unified [M2 / W2, all surfaces]. The section 3 hero + 1s
+  countdown on iOS home, watch, widgets, Android, and the web shell head (17.3).
+  Depends on: T4; web needs T6.
+- T8 — Source-confidence system [M3, all surfaces]. The full chip set (live /
+  scheduled / offline / estimated / operator-link / unknown, section 7) across
+  departure cards, station detail, route results, Ariadne answers, widgets. Depends
+  on: T4.
+- T9 — Ariadne recovery intents [M3]. Add "wrong train", "missed my stop", "can I
+  still make it?"; every answer carries source-confidence (section 10). KMP parser +
+  LLM grammar + Swift / web mirrors. Depends on: T8.
+- T10 — Living-map polish [M4, all platforms]. Beyond T1: branch handling (airport
+  split, T7 loop, A4 Megara curve), station-aware animation, the "train glide"
+  easing (sections 9, 17.4, 17.10). Depends on: T1, T3.
+- T11 — Region model completion + first pilot [M5]. `RailRegion` + `operatorIds` +
+  per-station `sourceConfidence` (section 6) beyond today's region enum; the
+  Athens to Chalkida pilot UX with the same one-glance UX (section 13). Depends on:
+  T7, T8.
+- T12 — PWA + offline confidence on web [W1 / W3]. Installable PWA, offline snapshot
+  pill (sections 8, 17.9). Depends on: T6.
+- T13 — Accessibility pass [continuous, M1 to M4]. VoiceOver / TalkBack, Dynamic Type
+  / font scaling, Reduce Motion cross-fade, WCAG-AA on the light palette (sections
+  12, 17.10). Rides alongside T5 to T10.
+
+### Critical path
+
+T2 -> T3 -> T4 -> { T5, T6, T7, T8 }. T1 is independent, so it ships first and cleans
+the country map immediately. T9 / T10 / T11 follow once the trust + hero layers exist.
+
+### Out of scope (section 15 still holds)
+
+No dark-first, no full national planner, no new cities before the region model, no
+fake live status, no LLM-generated transit facts, no in-app ticketing.
