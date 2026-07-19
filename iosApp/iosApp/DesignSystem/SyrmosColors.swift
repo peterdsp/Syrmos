@@ -44,6 +44,9 @@ enum MapDesignTokens {
     /// interchange hubs + selection); the ~340 minor stops are hidden so the
     /// country isn't a field of confetti. Mirrors MapDesignTokens.MINOR_STOP_MIN_ZOOM.
     static let minorStopMinZoom: Double = 11
+    /// Below this zoom only the major cross-modal hubs (~16 Greece-wide) show,
+    /// because is_interchange is over-applied. Mirrors MapDesignTokens.MAJOR_HUB_MIN_ZOOM.
+    static let majorHubMinZoom: Double = 9
 
     // Line strokes.
     static let greyedColor = "#94A3B8"

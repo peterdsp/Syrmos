@@ -14,6 +14,7 @@
         dotSelected: 18,
         glyphMinZoom: 14,
         minorStopMinZoom: 11,
+        majorHubMinZoom: 9,
         greyedColor: "#94a3b8",
         busDash: "2 7",
         greyedDash: "6 8",
@@ -776,10 +777,22 @@
     // map into confetti with no legible network, so below MINOR_STOP_MIN_ZOOM
     // only the skeleton shows: coloured line strokes (always on) + interchange
     // hubs + whatever stop is selected. Zoom into a city and every stop resolves.
+    // A major hub is a genuine cross-modal transfer: its lines span 2+ distinct
+    // types (metro + suburban, metro + tram, bus + suburban). The is_interchange
+    // flag is over-applied in the data, so this tighter rule is what a country
+    // view shows. Same definition on iOS + Android.
+    function isMajorHub(station) {
+        const types = new Set(
+            station.lineIds.map((lineId) => lineMap.get(lineId)?.type).filter(Boolean)
+        );
+        return types.size >= 2;
+    }
+
     function stationVisibleAt(station, z) {
-        return station.isInterchange
-            || z >= MAP_TOKENS.minorStopMinZoom
-            || station.id === selectedStationId;
+        if (station.id === selectedStationId) return true;
+        if (z >= MAP_TOKENS.minorStopMinZoom) return true;        // city: every stop
+        if (z >= MAP_TOKENS.majorHubMinZoom) return station.isInterchange; // regional: interchanges
+        return isMajorHub(station);                               // country: major hubs only
     }
 
     function applyStationVisibility(z) {

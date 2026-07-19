@@ -1069,20 +1069,43 @@ struct SyrmosMKMapView: UIViewRepresentable {
         private weak var mapView: MKMapView?
         private var displayLink: CADisplayLink?
 
-        /// Zoom-tiered decluttering. Below MapDesignTokens.minorStopMinZoom the
-        /// ~340 minor stops are hidden so all-Greece isn't a field of confetti;
-        /// only the coloured line strokes and the interchange hubs carry the
-        /// network shape. Starts true, corrected on the first region change.
-        private var minorStopsVisible = true
+        /// Zoom-tiered decluttering, three bands (mirrors web + Android):
+        /// 0 = country (only major cross-modal hubs), 1 = regional (all
+        /// interchanges), 2 = city (every stop). Starts at city (the initial
+        /// Athens region), corrected on the first region change.
+        private var currentBand = 2
 
         /// The visible zoom of an MKMapView isn't exposed directly, so we derive
         /// it from the longitude span and the view's pixel width using the same
-        /// slippy-map maths the web build uses, keeping the threshold consistent
-        /// with MapDesignTokens.minorStopMinZoom (a web tile zoom).
+        /// slippy-map maths the web build uses, keeping the thresholds consistent
+        /// with MapDesignTokens (web tile zooms).
         private func approxZoom(_ mapView: MKMapView) -> Double {
             let widthPx = max(mapView.bounds.width, 1)
             let lonDelta = max(mapView.region.span.longitudeDelta, 0.0001)
             return log2(360.0 * Double(widthPx) / 256.0 / lonDelta)
+        }
+
+        private func band(for mapView: MKMapView) -> Int {
+            let z = approxZoom(mapView)
+            if z >= MapDesignTokens.minorStopMinZoom { return 2 }
+            if z >= MapDesignTokens.majorHubMinZoom { return 1 }
+            return 0
+        }
+
+        /// A major hub is a genuine cross-modal transfer: its lines span 2+
+        /// distinct types. The is_interchange flag is over-applied, so this
+        /// tighter rule is what the country band shows. Same rule on web + Android.
+        private func isMajorHub(_ station: MapStationNode) -> Bool {
+            let types = Set(station.lineIds.compactMap { TransitData.line(for: $0)?.type })
+            return types.count >= 2
+        }
+
+        private func shouldShow(_ station: MapStationNode, band: Int) -> Bool {
+            switch band {
+            case 2: return true
+            case 1: return station.isInterchange
+            default: return isMajorHub(station)
+            }
         }
 
         init(_ parent: SyrmosMKMapView) { self.parent = parent }
@@ -1290,8 +1313,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.image = image
                 v.frame.size = image.size
                 v.centerOffset = .zero
-                // Hide minor stops when zoomed out so the country isn't confetti.
-                v.isHidden = !minorStopsVisible && !station.station.isInterchange
+                // Three-tier decluttering: hide stops not in the current zoom band.
+                v.isHidden = !shouldShow(station.station, band: currentBand)
                 return v
             }
             if let train = annotation as? SyrmosTrainAnnotation {
@@ -1308,14 +1331,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-            let visible = approxZoom(mapView) >= MapDesignTokens.minorStopMinZoom
-            guard visible != minorStopsVisible else { return }
-            minorStopsVisible = visible
+            let b = band(for: mapView)
+            guard b != currentBand else { return }
+            currentBand = b
             for annotation in mapView.annotations {
                 guard let station = annotation as? SyrmosStationAnnotation,
-                      !station.station.isInterchange,
                       let view = mapView.view(for: annotation) else { continue }
-                view.isHidden = !visible
+                view.isHidden = !shouldShow(station.station, band: b)
             }
         }
 
