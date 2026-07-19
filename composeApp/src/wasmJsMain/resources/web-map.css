@@ -1113,6 +1113,9 @@ body {
 }
 
 /* --- Station pin (mid/low zoom) --- */
+/* Modern compact dot markers. A small filled circle in the line colour with a
+   crisp white ring, centred on the stop. Lightweight: no teardrop, no shadow
+   clutter, glyph only when selected / zoomed in. */
 .station-pin {
     position: relative;
     display: block;
@@ -1125,55 +1128,46 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    color: #ffffff;
-    font-size: 12px;
-    line-height: 1;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-    border: 2px solid rgba(255, 255, 255, 0.9);
-}
-
-.station-pin__core::before {
-    content: attr(data-glyph);
-    transform: rotate(45deg);
-}
-
-/* Counter-rotate the emoji so it stays upright inside the rotated teardrop. */
-.station-pin__core > * {
-    transform: rotate(45deg);
-}
-
-.station-pin--selected .station-pin__core {
-    border-color: #facc15;
-    transform: rotate(-45deg) scale(1.1);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
-}
-
-.station-pin--interchange .station-pin__rings {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 14px;
-    height: 14px;
-    pointer-events: none;
-}
-
-.station-pin__ring {
-    position: absolute;
-    width: 7px;
-    height: 7px;
     border-radius: 50%;
-    border: 1px solid #ffffff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    background: var(--pin, #2563eb);
+    color: #ffffff;
+    font-size: 9px;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    border: 1.5px solid #ffffff;
+    transition: transform 0.12s ease;
 }
 
-.station-pin__ring[data-i="0"] { top: 0; left: 0; }
-.station-pin__ring[data-i="1"] { top: 0; right: 0; }
-.station-pin__ring[data-i="2"] { bottom: 0; left: 3px; }
+.station-pin__glyph {
+    display: block;
+    transform: scale(0.85);
+}
+
+/* Selected: grow a little and add a soft colour halo, no jarring shape change. */
+.station-pin--selected .station-pin__core {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--pin, #2563eb) 45%, transparent),
+                0 2px 5px rgba(0, 0, 0, 0.35);
+    font-size: 10px;
+}
+
+/* Interchange: a white-cored "target" ring so multi-line stops read at a glance
+   without stacking colour dots. The line colour becomes the ring. */
+.station-pin--interchange .station-pin__core {
+    background: #ffffff;
+    border: 2.5px solid var(--pin, #2563eb);
+    box-shadow: 0 0 0 1.5px #ffffff, 0 1px 3px rgba(0, 0, 0, 0.3);
+    color: var(--pin, #2563eb);
+}
 
 .dark-mode .station-pin__core {
-    border-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(230, 236, 245, 0.95);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode .station-pin--interchange .station-pin__core {
+    background: #0f172a;
+    box-shadow: 0 0 0 1.5px rgba(230, 236, 245, 0.9), 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 
