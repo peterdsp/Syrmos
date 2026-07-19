@@ -461,9 +461,14 @@ to W4 (web phases, section 17.11).
   1200px. Remaining: unify search + Ariadne into the sheet as the four shared
   surfaces over one context stack (currently the top-bar and Ariadne panel are
   still separate). Depends on: T3, T4.
-- T7 — One-glance hero unified [M2 / W2, all surfaces]. The section 3 hero + 1s
-  countdown on iOS home, watch, widgets, Android, and the web shell head (17.3).
-  Depends on: T4; web needs T6.
+- T7 — One-glance hero unified [M2 / W2, all surfaces] (started 2026-07-19: the web
+  hero). The answer-first hero now sits at the top of the web sheet and, compactly,
+  in the always-visible peek bar: the next departure for the nearest (or busiest
+  fallback) station, with a live countdown that ticks every second (from the
+  absolute departure minute; re-projects every 15s, counts down each second), a
+  "then A, B" line, a source-confidence chip, and a red imminent state. Token-styled,
+  trilingual. Remaining: the native hero (iOS home, watch, widgets, Android) unifying
+  the 1.2.1 live surfaces onto the tokens. Depends on: T4; web needs T6.
 - T8 — Source-confidence system [M3, all surfaces]. The full chip set (live /
   scheduled / offline / estimated / operator-link / unknown, section 7) across
   departure cards, station detail, route results, Ariadne answers, widgets. Depends

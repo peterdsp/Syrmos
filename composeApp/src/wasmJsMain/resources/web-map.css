@@ -198,6 +198,73 @@ body {
     justify-content: center;
 }
 
+/* One-glance answer-first hero (task T7): the next departure + live countdown,
+   the first thing in the sheet. Token-styled; turns red when imminent. */
+.hero-card {
+    cursor: pointer;
+    border: 1px solid var(--sy-outline, #e0dacf);
+    background: var(--sy-surface-card, #ffffff);
+}
+.hero-card__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--sy-on-surface-muted, #5f6b76);
+}
+.hero-card__station {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sy-on-surface, #14181f);
+    margin: 2px 0 8px;
+}
+.hero-card__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.hero-card__badge {
+    flex: none;
+    min-width: 30px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+}
+.hero-card__dest { flex: 1; min-width: 0; }
+.hero-card__dir {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--sy-on-surface, #14181f);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.hero-card__then {
+    font-size: 12px;
+    color: var(--sy-on-surface-muted, #5f6b76);
+}
+.hero-card__count {
+    flex: none;
+    font-size: 26px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--sy-brand, #1466b8);
+    line-height: 1;
+}
+.hero-card--now .hero-card__count { color: var(--sy-disruption, #dc2626); }
+.hero-card__chip {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sy-scheduled, #2563eb);
+}
+.dark-mode .hero-card { background: rgba(27, 32, 40, 0.96); border-color: rgba(255,255,255,0.08); }
+.dark-mode .hero-card__station { color: #e6ecf5; }
+.dark-mode .hero-card__dir { color: #e6ecf5; }
+
 .sim-train__dot {
     display: flex;
     align-items: center;

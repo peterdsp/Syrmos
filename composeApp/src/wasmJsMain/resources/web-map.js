@@ -51,6 +51,9 @@
             no_departures: "No departures available for this station right now.",
             get_directions: "Get directions",
             now: "Now",
+            hero_next: "Next departure",
+            then: "then",
+            scheduled: "Scheduled",
             interchange: "Interchange",
             accessible: "Accessible",
             airport: "Airport",
@@ -108,6 +111,9 @@
             no_departures: "Δεν υπάρχουν διαθέσιμα δρομολόγια για αυτόν τον σταθμό αυτή τη στιγμή.",
             get_directions: "Οδηγίες",
             now: "Τώρα",
+            hero_next: "Επόμενη αναχώρηση",
+            then: "μετά",
+            scheduled: "Προγραμματισμένο",
             interchange: "Ανταπόκριση",
             accessible: "Προσβάσιμος",
             airport: "Αεροδρόμιο",
@@ -165,6 +171,9 @@
             no_departures: "Nuk ka nisje në dispozicion për këtë stacion në këtë moment.",
             get_directions: "Udhëzime",
             now: "Tani",
+            hero_next: "Nisja e radhës",
+            then: "pastaj",
+            scheduled: "Sipas orarit",
             interchange: "Korrespondencë",
             accessible: "I aksesueshëm",
             airport: "Aeroporti",
@@ -1502,6 +1511,7 @@
     initStep("pollLivePositions", pollLivePositions);
     initStep("setupRightRail", setupRightRail);
     initStep("startTrainSimulation", startTrainSimulation);
+    initStep("setupHero", setupHero);
     // setupPanelBehavior() runs earlier (right after the markers) so a later
     // init failure can't skip the bottom sheet.
 
@@ -1834,6 +1844,88 @@
         else mq.addListener(sync);
     }
 
+    // The one-glance answer-first hero (design doc section 3 / task T7): the
+    // next departure for the nearest (or busiest fallback) station, with a live
+    // countdown that ticks every second. Rendered both as a card at the top of
+    // the sheet and, compactly, in the always-visible peek bar so the answer is
+    // there before the user asks. Departures re-project every 15s; only the
+    // countdown recomputes each second (cheap).
+    let heroActive = false;
+    function setupHero() {
+        const wrap = document.querySelector("#insightPanel .panel-cards-wrap");
+        const peekText = document.getElementById("panelPeekText");
+        if (!wrap) return;
+
+        const card = document.createElement("div");
+        card.className = "panel-card hero-card";
+        card.innerHTML =
+            `<div class="hero-card__label"></div>` +
+            `<div class="hero-card__station"></div>` +
+            `<div class="hero-card__row">` +
+            `<span class="hero-card__badge"></span>` +
+            `<div class="hero-card__dest"><div class="hero-card__dir"></div><div class="hero-card__then"></div></div>` +
+            `<div class="hero-card__count"></div></div>` +
+            `<div class="hero-card__chip"></div>`;
+        wrap.prepend(card);
+        const el = (c) => card.querySelector(c);
+
+        function heroStation() {
+            if (userLocation) {
+                let best = null, bestD = Infinity;
+                for (const s of stationNodes) {
+                    const d = distanceMeters(userLocation.lat, userLocation.lon, s.latitude, s.longitude);
+                    if (d < bestD) { bestD = d; best = s; }
+                }
+                if (best) return best;
+            }
+            return stationNodes.slice().sort((a, b) =>
+                ((b.isInterchange ? 10 : 0) + b.lineIds.length) - ((a.isInterchange ? 10 : 0) + a.lineIds.length))[0] || null;
+        }
+
+        let data = null; // { station, deps }
+        function refreshData() {
+            const station = heroStation();
+            data = station ? { station, deps: buildStationDepartures(station) } : null;
+        }
+
+        card.addEventListener("click", () => { if (data?.station) selectStation(data.station.id, true); });
+
+        function tick() {
+            if (!data || !data.deps.length) { card.style.display = "none"; heroActive = false; return; }
+            card.style.display = "";
+            heroActive = true;
+            const next = data.deps[0];
+            const color = next.line?.color || "#64748b";
+            el(".hero-card__label").textContent = t("hero_next");
+            el(".hero-card__station").textContent = data.station.name || data.station.nameEl;
+            const badge = el(".hero-card__badge");
+            badge.textContent = next.line?.name || next.line?.id || "";
+            badge.style.background = color;
+            el(".hero-card__dir").textContent = next.direction ? `→ ${next.direction}` : "";
+            const then = data.deps.slice(1, 3).map((d) => formatMinutesAway(d.minutesAway)).filter(Boolean).join(", ");
+            el(".hero-card__then").textContent = then ? `${t("then")} ${then}` : "";
+
+            // Countdown from the absolute departure minute-of-day.
+            const now = new Date();
+            const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            let secAway = next.timeMinutes * 60 - nowSec;
+            if (secAway < -60) secAway = next.minutesAway * 60; // crossed midnight / stale
+            const countEl = el(".hero-card__count");
+            if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); }
+            else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now"); }
+            else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now"); }
+            el(".hero-card__chip").textContent = `● ${t("scheduled")}`;
+
+            // Answer-first peek line.
+            if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;
+        }
+
+        refreshData();
+        tick();
+        setInterval(refreshData, 15000);
+        setInterval(tick, 1000);
+    }
+
     function setupPanelBehavior() {
         const panel = document.getElementById("insightPanel");
         const peek = document.getElementById("panelPeek");
@@ -1917,6 +2009,7 @@
         }
 
         window._updatePeekText = function (count) {
+            if (heroActive) return; // the hero owns the peek line when it has an answer
             if (peekText) {
                 peekText.textContent = count > 0 ? t("trains_active", { n: count }) : t("live_trains");
             }
