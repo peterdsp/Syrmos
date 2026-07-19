@@ -57,6 +57,14 @@ object MapDesignTokens {
      */
     const val MAJOR_HUB_MIN_ZOOM = 9
 
+    /**
+     * At or below this zoom (the whole-Greece / country view) NO station dots
+     * draw at all: the coloured line network alone carries the map, which reads
+     * far cleaner than a scatter of ~20 hub rings floating over the sea-heavy
+     * Aegean view. Station dots begin resolving above this (major hubs first).
+     */
+    const val LINES_ONLY_MAX_ZOOM = 7
+
     // --- Line strokes --------------------------------------------------------
     /** Suspended / not-yet-open lines render greyed. */
     const val GREYED_COLOR = "#94A3B8"

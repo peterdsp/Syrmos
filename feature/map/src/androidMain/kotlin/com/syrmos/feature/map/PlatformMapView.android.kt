@@ -161,11 +161,10 @@ internal actual fun PlatformMapView(
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
     // 0 = country, 1 = city, 2 = district, 3 = street. Mirrors web + iOS buckets.
     var zoomBucket by remember { mutableStateOf(2) }
-    // Zoom-tiered decluttering, three bands (mirrors web + iOS): 0 = country
-    // (only major cross-modal hubs), 1 = regional (all interchanges), 2 = city
-    // (every stop). is_interchange is over-applied, so the country band tightens
-    // to genuine cross-modal transfers.
-    var mapBand by remember { mutableStateOf(2) }
+    // Zoom-tiered decluttering, four bands (mirrors web + iOS): 0 = country
+    // (lines only, no dots), 1 = near-country (major cross-modal hubs), 2 =
+    // regional (all interchanges), 3 = city (every stop).
+    var mapBand by remember { mutableStateOf(3) }
 
     val appLang by com.syrmos.core.common.LocalizationManager.language.collectAsState()
 
@@ -204,9 +203,10 @@ internal actual fun PlatformMapView(
                         }
                         if (next != zoomBucket) zoomBucket = next
                         val band = when {
-                            z >= com.syrmos.core.common.map.MapDesignTokens.MINOR_STOP_MIN_ZOOM -> 2
-                            z >= com.syrmos.core.common.map.MapDesignTokens.MAJOR_HUB_MIN_ZOOM -> 1
-                            else -> 0
+                            z >= com.syrmos.core.common.map.MapDesignTokens.MINOR_STOP_MIN_ZOOM -> 3
+                            z >= com.syrmos.core.common.map.MapDesignTokens.MAJOR_HUB_MIN_ZOOM -> 2
+                            z <= com.syrmos.core.common.map.MapDesignTokens.LINES_ONLY_MAX_ZOOM -> 0
+                            else -> 1
                         }
                         if (band != mapBand) mapBand = band
                         return false
@@ -301,9 +301,10 @@ internal actual fun PlatformMapView(
         // only major hubs. The selection is always drawn.
         fun shouldDraw(station: MapStationNode): Boolean =
             when (mapBand) {
-                2 -> true
-                1 -> station.isInterchange
-                else -> isMajorHub(station)
+                3 -> true
+                2 -> station.isInterchange
+                1 -> isMajorHub(station)
+                else -> false   // country: lines only
             } || uiState.selectedStation?.id == station.id
 
         val currentIds = uiState.mapStations.filter { shouldDraw(it) }.map { it.id }.toSet()
