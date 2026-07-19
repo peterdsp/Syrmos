@@ -244,7 +244,7 @@ internal actual fun PlatformMapView(
             // no trains or departures either (handled in the simulator/projector).
             val underConstruction = !line.isOperational
             val color = when {
-                underConstruction -> android.graphics.Color.parseColor("#94A3B8")
+                underConstruction -> android.graphics.Color.parseColor(com.syrmos.core.common.map.MapDesignTokens.GREYED_COLOR)
                 else -> override?.strokeColor?.let { parseHex(it) }
                     ?: line.color.toComposeColor().toArgb()
             }
@@ -472,10 +472,12 @@ private fun buildZoomPin(
     selected: Boolean,
     bucket: Int,
 ): android.graphics.drawable.Drawable {
+    // Sizes from the shared MapDesignTokens (scaled up for the Android bitmap,
+    // which is drawn at these px then centre-anchored).
     val baseSize = when (bucket) {
-        0 -> 15
-        1 -> 22
-        else -> 30
+        0 -> com.syrmos.core.common.map.MapDesignTokens.DOT_COUNTRY + 5   // 15
+        1 -> com.syrmos.core.common.map.MapDesignTokens.DOT_CITY + 9      // 22
+        else -> com.syrmos.core.common.map.MapDesignTokens.DOT_SELECTED + 12  // 30
     }
     // Extra room so the selected halo isn't clipped.
     val pad = if (selected) (baseSize * 0.5f).toInt() else 2

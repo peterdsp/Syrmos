@@ -4,6 +4,20 @@
     const DIRECTION_OUTBOUND = "outbound";
     const DIRECTION_INBOUND = "inbound";
 
+    // Shared map design tokens. Verbatim mirror of
+    // core/common/src/commonMain/kotlin/com/syrmos/core/common/map/MapDesignTokens.kt
+    // (and iosApp/.../DesignSystem/MapDesignTokens.swift). Change the Kotlin
+    // source of truth, then update these so the three maps never drift.
+    const MAP_TOKENS = {
+        dotCountry: 10,
+        dotCity: 13,
+        dotSelected: 18,
+        glyphMinZoom: 14,
+        greyedColor: "#94a3b8",
+        busDash: "2 7",
+        greyedDash: "6 8",
+    };
+
     // --- i18n -----------------------------------------------------------
     // Three-language UI for the web build. Mirrors the iOS / KMP enum so
     // a Greek or Albanian user sees the same vocabulary across every
@@ -689,7 +703,7 @@
         // A rail-replacement bus draws dashed in its own colour, so it reads as
         // "a bus stands in here" without ever looking like a rail line.
         const isBus = line.type === "bus";
-        const strokeColor = underConstruction ? "#94a3b8" : (ld?.strokeColor || line.color);
+        const strokeColor = underConstruction ? MAP_TOKENS.greyedColor : (ld?.strokeColor || line.color);
         const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (line.type === "suburban" || isBus ? 4 : 5));
         const polylineOpts = {
             color: strokeColor,
@@ -697,7 +711,7 @@
             opacity: underConstruction ? 0.55 : 0.9,
             lineCap: "round",
             lineJoin: "round",
-            dashArray: underConstruction ? "6 8" : (isBus ? "2 7" : (ld?.strokeDash || null)),
+            dashArray: underConstruction ? MAP_TOKENS.greyedDash : (isBus ? MAP_TOKENS.busDash : (ld?.strokeDash || null)),
         };
         if (feat && feat.geometry) {
             // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
@@ -802,8 +816,8 @@
         // the stop is selected or the user is zoomed in enough to read it, so
         // the default map stays clean and lightweight.
         const glyph = modeGlyph(primaryMode);
-        const pinSize = selected ? 18 : (currentZoom >= 12 ? 13 : 10);
-        const showGlyph = selected || currentZoom >= 14;
+        const pinSize = selected ? MAP_TOKENS.dotSelected : (currentZoom >= 12 ? MAP_TOKENS.dotCity : MAP_TOKENS.dotCountry);
+        const showGlyph = selected || currentZoom >= MAP_TOKENS.glyphMinZoom;
         const glyphHtml = showGlyph ? `<span class="station-pin__glyph">${glyph}</span>` : "";
 
         if (station.isInterchange) {
