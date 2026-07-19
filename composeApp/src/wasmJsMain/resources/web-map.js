@@ -1508,6 +1508,7 @@
     // Each guarded so one panel's failure can't cascade and abort the rest of
     // init (this is what previously left the bottom sheet uninitialised on the
     // live build). Failures surface in the console instead of silently breaking.
+    window.__reachedInit = true;
     const initStep = (name, fn) => { try { fn(); } catch (e) { console.error(`init ${name} failed`, e); (window.__initErrors = window.__initErrors || []).push(`${name}: ${e && e.message || e}`); } };
     initStep("renderPopularPanel", renderPopularPanel);
     initStep("updateNearbyPanel", updateNearbyPanel);
@@ -1857,9 +1858,12 @@
     // (with the other init state) to avoid a temporal-dead-zone ReferenceError,
     // since setupHero is invoked before this point in the init sequence.
     function setupHero() {
+        window.__heroCalled = (window.__heroCalled || 0) + 1;
         const wrap = document.querySelector("#insightPanel .panel-cards-wrap");
+        window.__heroWrap = !!wrap;
         const peekText = document.getElementById("panelPeekText");
         if (!wrap) return;
+        window.__heroPrepended = true;
 
         const card = document.createElement("div");
         card.className = "panel-card hero-card";
