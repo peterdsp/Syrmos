@@ -288,7 +288,7 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.mapStations, uiState.selectedStation, zoomBucket, mapBand) {
+    LaunchedEffect(uiState.mapStations, uiState.selectedStation, mapBand) {
         // A major hub is a genuine cross-modal transfer: its lines span 2+ distinct
         // types. is_interchange is over-applied, so this tighter rule is what the
         // country band shows. Same rule on web + iOS.
@@ -323,18 +323,16 @@ internal actual fun PlatformMapView(
                 uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
             }?.toArgb() ?: 0xFF64748B.toInt()
 
-            // High zoom: full station_smart_code PNG when we have one. Low/mid:
-            // colored pin so the country view doesn't look like a rice field.
-            val icon = if (zoomBucket >= 3) {
+            // Per-station artwork PNG ONLY for the selected stop (at any zoom); every
+            // other station keeps a single-size coloured pin. Previously each pin
+            // resized by zoom bucket and ballooned into a PNG at z14, so the whole map
+            // visibly churned when crossing thresholds ("everything moves"). One pin
+            // size keeps it calm; the tier decluttering (shouldDraw) still thins dots.
+            val icon = if (isSelected) {
                 resolveStationDrawable(context, primaryStationId, uiState.lineStations)
-                    ?: buildZoomPin(tintArgb, station.isInterchange, isSelected, bucket = 2)
+                    ?: buildZoomPin(tintArgb, station.isInterchange, true, bucket = 2)
             } else {
-                buildZoomPin(
-                    color = tintArgb,
-                    interchange = station.isInterchange,
-                    selected = isSelected,
-                    bucket = zoomBucket,
-                )
+                buildZoomPin(tintArgb, station.isInterchange, false, bucket = 2)
             }
 
             if (existing != null) {
@@ -439,11 +437,17 @@ internal actual fun PlatformMapView(
     }
 
     LaunchedEffect(uiState.mapStations) {
+        // Open framed on the Athens network, not the whole country. Fitting every
+        // station (Ioannina -> Alexandroupoli -> Kalamata) clamped to minZoom 9 and
+        // centred on the national centroid (central Greece / the sea), so Athens was
+        // off-screen and the map looked empty. A fixed Athens frame keeps metro +
+        // tram + suburban + live trains on screen at launch; GPS "locate me" still
+        // recenters on the user.
         if (!hasFittedBounds && uiState.mapStations.isNotEmpty()) {
             hasFittedBounds = true
-            val points = uiState.mapStations.map { GeoPoint(it.latitude, it.longitude) }
             mapView.post {
-                mapView.zoomToBoundingBox(BoundingBox.fromGeoPointsSafe(points), true, 96)
+                // BoundingBox(north, east, south, west) around the Athens metro core.
+                mapView.zoomToBoundingBox(BoundingBox(38.10, 23.95, 37.90, 23.55), false, 64)
             }
         }
     }
