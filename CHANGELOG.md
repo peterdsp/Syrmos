@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.3** (TestFlight), **Android 1.2.3** (Play internal, versionCode 108), **Web** (rolling). 1.2.3 cut 2026-07-19 by the `v1.2.3` tag.
+Current shipping: **iOS 1.2.4** (TestFlight), **Android 1.2.4** (Play internal, versionCode 109), **Web** (rolling). 1.2.4 cut 2026-07-19 by the `v1.2.4` tag.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -34,6 +34,21 @@ All-Greece rail coverage, shipped as bundled data + web with no client-code chan
 - **Two more national corridors.** **AL1 Alexandroupoli - Orestiada - Ormenio** (Evros/Thrace, 31 stations, four daily trains 1680/1681/1682/1683 incl. the Orestiada short-turns) as a real suburban train; **KB1 Paleofarsalos - Kalambaka** (Sofades, Karditsa, Trikala) as a rail-replacement **bus** (C881/C1889/C1880/C888), which is how Hellenic Train serves that branch today. Every time transcribed from the official Hellenic Train timetable, stored as exact per-station departures; coordinates and track geometry from the OSM service relations (14122316/14122315 for AL1, 14007294/14007293 for KB1), never invented.
 - **Three rail-replacement bus corridors** (mode = bus, region national), completing the country's replacement-bus network alongside KB1: **VL1 Volos - Larisa** (Velestino; 7 buses each way daily), **DX1 Drama - Xanthi - Alexandroupoli** (15 stations, nine services with per-run stop patterns incl. the Drama-Alexandroupoli express C602 and the Xanthi-Drama C679 that skips Toxotes), and **KP1 Kiato - Patra** (via Diakopto on the longer runs; 40+ services incl. Friday and Friday+Sunday-only departures). Exact per-station times from the official Hellenic Train timetable. Geometry from OSM rail alignments; KP1's coastal Kiato-Patra segment was rebuilt by axis-projection ordering because relation 1769919's member order is scrambled (member-order and greedy stitching both produced 45-50 km phantom jumps). Total network is now **26 lines** across four regions (athens 10, national 7, thessaloniki 6, patras 3).
 - Fixed the nightly importer that scoped `DELETE` too broadly and wiped every non-Athens line overnight; corrected station-region tagging so Evros/Kalambaka read national and Patras reads patras.
+
+## 1.2.4 (2026-07-19)
+
+Native store build to carry the country-zoom map change that shipped to web after
+1.2.3 was cut.
+
+**Lines-only country zoom (iOS + Android).** At the whole-Greece view the map now
+draws only the coloured line network, no station dots (below
+`MapDesignTokens.LINES_ONLY_MAX_ZOOM`); dots resolve on zoom-in (major cross-modal
+hubs, then all interchanges, then every stop). Matches the web behaviour and reads
+as a clean rail atlas instead of a scatter of hub rings over the Aegean.
+
+The web-only 2.0 work since 1.2.3 (the app-shell bottom sheet, the answer-first
+one-glance hero, the compact mobile header) is not in these native binaries; the
+native hero and app-shell remain to be built.
 
 ## 1.2.3 (2026-07-19)
 
