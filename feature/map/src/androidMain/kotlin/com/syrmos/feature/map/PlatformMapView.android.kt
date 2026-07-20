@@ -165,6 +165,9 @@ internal actual fun PlatformMapView(
     // (lines only, no dots), 1 = near-country (major cross-modal hubs), 2 =
     // regional (all interchanges), 3 = city (every stop).
     var mapBand by remember { mutableStateOf(3) }
+    // Bumped when the map pans/zooms so the station effect re-culls to the new
+    // viewport. Scroll is throttled (see the listener) so a drag doesn't storm.
+    var mapMoveTick by remember { mutableStateOf(0) }
 
     val appLang by com.syrmos.core.common.LocalizationManager.language.collectAsState()
 
@@ -192,7 +195,14 @@ internal actual fun PlatformMapView(
                 locationOverlay.enableMyLocation()
                 overlays.add(locationOverlay)
                 addMapListener(object : org.osmdroid.events.MapListener {
-                    override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean = false
+                    // Throttle so a drag (onScroll fires per frame) re-culls at most
+                    // ~3x/second instead of every frame.
+                    private var lastMoveBump = 0L
+                    override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
+                        val now = System.currentTimeMillis()
+                        if (now - lastMoveBump > 350) { lastMoveBump = now; mapMoveTick++ }
+                        return false
+                    }
                     override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
                         val z = event?.zoomLevel ?: zoomLevelDouble
                         val next = when {
@@ -209,6 +219,7 @@ internal actual fun PlatformMapView(
                             else -> 1
                         }
                         if (band != mapBand) mapBand = band
+                        mapMoveTick++
                         return false
                     }
                 })
@@ -288,7 +299,7 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.mapStations, uiState.selectedStation, mapBand) {
+    LaunchedEffect(uiState.mapStations, uiState.selectedStation, mapBand, mapMoveTick) {
         // A major hub is a genuine cross-modal transfer: its lines span 2+ distinct
         // types. is_interchange is over-applied, so this tighter rule is what the
         // country band shows. Same rule on web + iOS.
@@ -297,15 +308,30 @@ internal actual fun PlatformMapView(
                 .mapNotNull { lid -> uiState.lines.find { it.id == lid }?.type }
                 .distinct().size >= 2
 
+        // Viewport cull: only stations within the padded current view stay drawn,
+        // so the now-nationwide network (389 stops) doesn't keep distant coastal
+        // lines (Katakolo, Corinth-Patras) alive over the sea at the edges and the
+        // map stays light. Mirrors web (map.getBounds().pad) + iOS (padded region).
+        val bb = mapView.boundingBox
+        val spanLat = bb.latNorth - bb.latSouth
+        val spanLon = bb.lonEast - bb.lonWest
+        val boundsValid = spanLat in 0.0001..90.0 && spanLon > 0.0001
+        val nLat = bb.latNorth + spanLat * 0.5
+        val sLat = bb.latSouth - spanLat * 0.5
+        val eLon = bb.lonEast + spanLon * 0.5
+        val wLon = bb.lonWest - spanLon * 0.5
+        fun inView(s: MapStationNode): Boolean =
+            !boundsValid || (s.latitude in sLat..nLat && s.longitude in wLon..eLon)
+
         // Three tiers: city shows every stop, regional all interchanges, country
         // only major hubs. The selection is always drawn.
         fun shouldDraw(station: MapStationNode): Boolean =
-            when (mapBand) {
+            (inView(station) && when (mapBand) {
                 3 -> true
                 2 -> station.isInterchange
                 1 -> isMajorHub(station)
                 else -> false   // country: lines only
-            } || uiState.selectedStation?.id == station.id
+            }) || uiState.selectedStation?.id == station.id
 
         val currentIds = uiState.mapStations.filter { shouldDraw(it) }.map { it.id }.toSet()
         val staleIds = stationMarkers.keys - currentIds

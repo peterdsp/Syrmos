@@ -1360,12 +1360,25 @@ struct SyrmosMKMapView: UIViewRepresentable {
 
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
             let b = band(for: mapView)
-            guard b != currentBand else { return }
             currentBand = b
+            // Padded visible region: cull stations outside it so the now-nationwide
+            // network (389 stops) stays light and distant coastal lines (Katakolo,
+            // Corinth-Patras) don't render at the edges over the sea. Runs on every
+            // region change (pan + zoom), not just band changes.
+            let region = mapView.region
+            let padLat = region.span.latitudeDelta * 0.7
+            let padLon = region.span.longitudeDelta * 0.7
+            let minLat = region.center.latitude - region.span.latitudeDelta / 2 - padLat
+            let maxLat = region.center.latitude + region.span.latitudeDelta / 2 + padLat
+            let minLon = region.center.longitude - region.span.longitudeDelta / 2 - padLon
+            let maxLon = region.center.longitude + region.span.longitudeDelta / 2 + padLon
+            func inView(_ c: CLLocationCoordinate2D) -> Bool {
+                c.latitude >= minLat && c.latitude <= maxLat && c.longitude >= minLon && c.longitude <= maxLon
+            }
             for annotation in mapView.annotations {
                 guard let view = mapView.view(for: annotation) else { continue }
                 if let station = annotation as? SyrmosStationAnnotation {
-                    view.isHidden = !shouldShow(station.station, band: b)
+                    view.isHidden = !inView(station.coordinate) || !shouldShow(station.station, band: b)
                 } else if annotation is SyrmosTrainAnnotation {
                     // Vehicles follow the station decluttering rule: hidden below
                     // the regional band so the fleet never piles into a coastal blob.
