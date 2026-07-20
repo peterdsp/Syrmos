@@ -1523,19 +1523,18 @@
     // region so metro + tram + suburban + live trains are all on screen at launch;
     // zoom out for the country. (GPS "locate me" still recenters on the user.)
     try {
-        const ATHENS_LINE_IDS = new Set(
-            lines.filter((l) => l.region === "athens").map((l) => l.id)
+        // Frame the Athens METRO + TRAM core, not every athens-region stop. The
+        // suburban A-lines run out to Kiato (100km west) and Chalkida (80km north),
+        // so fitting them zoomed the launch view out to all of Attica and pushed the
+        // metro to the edge behind the panel. The core set opens tight on the network
+        // the user actually rides; suburban + the rest resolve as you pan / zoom out.
+        const CORE_LINE_IDS = new Set(["M1", "M2", "M3", "M3_AIR", "T6", "T7"]);
+        const coreStations = stationNodes.filter((s) =>
+            (s.line_ids || s.lineIds || []).some((id) => CORE_LINE_IDS.has(id))
         );
-        // Fallback for any build whose line objects lack `region`.
-        ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"].forEach((id) =>
-            ATHENS_LINE_IDS.add(id)
-        );
-        const athensStations = stationNodes.filter((s) =>
-            (s.line_ids || s.lineIds || []).some((id) => ATHENS_LINE_IDS.has(id))
-        );
-        const focus = athensStations.length ? athensStations : stationNodes;
+        const focus = coreStations.length ? coreStations : stationNodes;
         const bounds = L.latLngBounds(focus.map((station) => [station.latitude, station.longitude]));
-        map.fitBounds(bounds.pad(0.12));
+        map.fitBounds(bounds.pad(0.15));
     } catch (e) {
         console.error("fitBounds failed", e);
     }
