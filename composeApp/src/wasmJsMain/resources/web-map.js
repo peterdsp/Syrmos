@@ -2096,15 +2096,26 @@
     const stationArcCache = new Map();
     function linePolyline(lineId) {
         if (linePolyCache.has(lineId)) return linePolyCache.get(lineId);
-        const lngLat = geoCache.get(lineId)?.geometry?.coordinates;
+        const geom = geoCache.get(lineId)?.geometry;
         let poly = null;
-        if (lngLat && lngLat.length > 1) {
-            const coords = lngLat.map(([lng, lat]) => [lat, lng]);
-            const cum = [0];
-            for (let i = 1; i < coords.length; i++) {
-                cum[i] = cum[i - 1] + distanceMeters(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+        // geoCache holds either a LineString ([[lng,lat],...]) from shapes.json or
+        // a MultiLineString ([[[lng,lat],...],...]) from the API override; flatten
+        // both to one [lat,lng] polyline (same as the line-drawing code does).
+        if (geom && geom.coordinates) {
+            const segs = geom.type === "MultiLineString" ? geom.coordinates : [geom.coordinates];
+            const coords = [];
+            for (const seg of segs) {
+                for (const pt of seg) {
+                    if (Array.isArray(pt) && pt.length >= 2) coords.push([pt[1], pt[0]]);
+                }
             }
-            poly = { coords, cum };
+            if (coords.length > 1) {
+                const cum = [0];
+                for (let i = 1; i < coords.length; i++) {
+                    cum[i] = cum[i - 1] + distanceMeters(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+                }
+                poly = { coords, cum };
+            }
         }
         linePolyCache.set(lineId, poly);
         return poly;
@@ -2135,16 +2146,21 @@
         ];
     }
     function trainPosition(lineId, fromStation, toStation, frac) {
-        const poly = linePolyline(lineId);
-        if (poly) {
-            const arcFrom = stationArc(poly, lineId, fromStation);
-            const arcTo = stationArc(poly, lineId, toStation);
-            return pointAtArc(poly, arcFrom + (arcTo - arcFrom) * frac);
-        }
-        return [
+        const chord = [
             fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac,
             fromStation.longitude + (toStation.longitude - fromStation.longitude) * frac,
         ];
+        try {
+            const poly = linePolyline(lineId);
+            if (poly) {
+                const arcFrom = stationArc(poly, lineId, fromStation);
+                const arcTo = stationArc(poly, lineId, toStation);
+                const p = pointAtArc(poly, arcFrom + (arcTo - arcFrom) * frac);
+                // Never return a bad point that would throw at L.marker time.
+                if (p && isFinite(p[0]) && isFinite(p[1])) return p;
+            }
+        } catch (_) { /* fall through to the chord */ }
+        return chord;
     }
 
     function simulateAllTrains() {
