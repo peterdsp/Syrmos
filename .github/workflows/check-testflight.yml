@@ -1,0 +1,89 @@
+name: Check TestFlight
+
+# Reports the App Store Connect processing state of TestFlight builds for a
+# given marketing version, using the same App Store Connect API key that the
+# release workflow uses to upload. Read-only: it only calls GET /v1/builds.
+#
+# Manual dispatch only. Reuses:
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_API_KEY_P8_BASE64
+#
+# processingState VALID = ready to test in TestFlight; PROCESSING = Apple still
+# working; INVALID = rejected in processing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version to check (CFBundleShortVersionString)
+        required: true
+        default: "1.2.5"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+      VERSION: ${{ github.event.inputs.version }}
+    steps:
+      - name: Query App Store Connect builds
+        run: |
+          set -euo pipefail
+          if [ -z "${ASC_KEY_ID:-}" ] || [ -z "${ASC_ISSUER_ID:-}" ] || [ -z "${ASC_API_KEY_P8_BASE64:-}" ]; then
+            echo "::error::App Store Connect API secrets are not set; cannot query TestFlight."
+            exit 1
+          fi
+          python3 -m pip install --quiet pyjwt cryptography requests
+          echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > /tmp/asc.p8
+          python3 - <<'PY'
+          import os, time, jwt, requests
+          key_id = os.environ["ASC_KEY_ID"]
+          issuer = os.environ["ASC_ISSUER_ID"]
+          version = os.environ["VERSION"]
+          with open("/tmp/asc.p8") as f:
+              private_key = f.read()
+          now = int(time.time())
+          token = jwt.encode(
+              {"iss": issuer, "iat": now, "exp": now + 600, "aud": "appstoreconnect-v1"},
+              private_key,
+              algorithm="ES256",
+              headers={"kid": key_id, "typ": "JWT"},
+          )
+          headers = {"Authorization": f"Bearer {token}"}
+          url = (
+              "https://api.appstoreconnect.apple.com/v1/builds"
+              "?limit=20&sort=-uploadedDate"
+              "&fields[builds]=version,processingState,uploadedDate,expired"
+              "&include=preReleaseVersion&fields[preReleaseVersions]=version"
+          )
+          r = requests.get(url, headers=headers, timeout=60)
+          r.raise_for_status()
+          data = r.json()
+          pre = {i["id"]: i["attributes"]["version"]
+                 for i in data.get("included", []) if i["type"] == "preReleaseVersions"}
+          rows = []
+          for b in data.get("data", []):
+              a = b["attributes"]
+              rel = b.get("relationships", {}).get("preReleaseVersion", {}).get("data")
+              mv = pre.get(rel["id"]) if rel else "?"
+              rows.append((mv, a.get("version"), a.get("processingState"), a.get("uploadedDate"), a.get("expired")))
+          match = [x for x in rows if x[0] == version]
+          print(f"=== TestFlight builds for marketing version {version} ===")
+          if not match:
+              print(f"No build with version {version} found yet (recent builds below). "
+                    "Apple may still be ingesting the upload.")
+              for mv, bn, ps, up, ex in rows[:8]:
+                  print(f"  v{mv} build {bn}  {ps}  uploaded {up}")
+              raise SystemExit(0)
+          for mv, bn, ps, up, ex in match:
+              flag = "READY TO TEST" if ps == "VALID" and not ex else ps
+              print(f"  v{mv} build {bn}  ->  {ps}{' (expired)' if ex else ''}  [{flag}]  uploaded {up}")
+          states = {x[2] for x in match}
+          if "VALID" in states:
+              print("::notice::At least one 1.2.5 build is VALID and ready to test in TestFlight.")
+          elif states == {"PROCESSING"}:
+              print("::warning::1.2.5 is still PROCESSING on Apple's side. Re-run this in a few minutes.")
+          elif "INVALID" in states:
+              print("::error::A 1.2.5 build came back INVALID in processing.")
+          PY
