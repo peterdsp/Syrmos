@@ -1485,6 +1485,9 @@
     map.on("zoomend", () => {
         const z = map.getZoom();
         applyStationVisibility(z);
+        // Add/remove the vehicle markers for the new zoom (they hide below the
+        // regional threshold so the fleet never piles into a coastal blob).
+        renderSimulatedTrainsOnMap(lastSimulatedTrains);
         const bucket = z >= 14 ? 2 : z >= 12 ? 1 : 0;
         if (bucket !== lastZoomBucket) {
             lastZoomBucket = bucket;
@@ -2286,10 +2289,15 @@
         lastSimulatedTrains = trains;
         const activeIds = new Set(trains.map((t) => t.id));
 
-        // The Hide vehicles toggle: pull every simulated-train marker off the
-        // map. Coords keep accumulating in lastSimulatedTrains so toggling back
-        // restores positions without missing a beat.
-        if (window.__syrmosVehiclesHidden) {
+        // Pull every simulated-train marker off the map when EITHER the manual
+        // "Hide vehicles" toggle is on OR the map is zoomed out past the regional
+        // threshold. At country/regional zoom the entire Athens fleet collapses
+        // into a single ~15px pile on the coastline that reads as "trains in the
+        // sea"; stations already declutter to lines-only at this zoom, so the
+        // vehicles must follow the same rule. Coords keep accumulating in
+        // lastSimulatedTrains, so crossing back over the threshold restores every
+        // position without missing a beat.
+        if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
             simulatedTrainMarkers.forEach((marker) => marker.remove());
             simulatedTrainMarkers.clear();
             return;
