@@ -969,16 +969,24 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // rest of Greece is expected outside the box, so scope the audit to the
         // athens-region stations via their line ids.
         let athensLineIds: Set<String> = ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"]
-        let offshore = stations.filter { s in
-            s.lineIds.contains(where: { athensLineIds.contains($0) })
-                && (s.latitude < 37.70 || s.latitude > 38.25 || s.longitude < 23.30 || s.longitude > 24.15)
-        }
-        if offshore.isEmpty {
-            print("[syrmos] station audit: all Athens stations inside Attica box (\(stations.count) total)")
-        } else {
-            for s in offshore {
-                print("[syrmos] station \(s.id) OUTSIDE Attica: \(s.latitude), \(s.longitude)")
+        var offshoreCount = 0
+        for s in stations {
+            var onAthensLine = false
+            for lid in s.lineIds where athensLineIds.contains(lid) {
+                onAthensLine = true
+                break
             }
+            if !onAthensLine { continue }
+            let lat = s.latitude
+            let lon = s.longitude
+            let outside = lat < 37.70 || lat > 38.25 || lon < 23.30 || lon > 24.15
+            if outside {
+                offshoreCount += 1
+                print("[syrmos] station \(s.id) OUTSIDE Attica: \(lat), \(lon)")
+            }
+        }
+        if offshoreCount == 0 {
+            print("[syrmos] station audit: all Athens stations inside Attica box (\(stations.count) total)")
         }
 
         // Hook up the CADisplayLink that smoothly animates train
