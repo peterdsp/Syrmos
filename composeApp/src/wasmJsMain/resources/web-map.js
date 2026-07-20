@@ -2087,6 +2087,66 @@
         setInterval(tick, 15000);
     }
 
+    // Position a train ALONG the real line polyline instead of on the straight
+    // chord between its two stations. The chord cuts across water on curved /
+    // coastal segments (the T7 Voula bay) and jumps across the map when the
+    // station-offsets order is imperfect; following the polyline keeps every
+    // train on the track. Falls back to the chord for a line with no geometry.
+    const linePolyCache = new Map();
+    const stationArcCache = new Map();
+    function linePolyline(lineId) {
+        if (linePolyCache.has(lineId)) return linePolyCache.get(lineId);
+        const lngLat = geoCache.get(lineId)?.geometry?.coordinates;
+        let poly = null;
+        if (lngLat && lngLat.length > 1) {
+            const coords = lngLat.map(([lng, lat]) => [lat, lng]);
+            const cum = [0];
+            for (let i = 1; i < coords.length; i++) {
+                cum[i] = cum[i - 1] + distanceMeters(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+            }
+            poly = { coords, cum };
+        }
+        linePolyCache.set(lineId, poly);
+        return poly;
+    }
+    function stationArc(poly, lineId, station) {
+        const key = `${lineId}|${station.id}`;
+        if (stationArcCache.has(key)) return stationArcCache.get(key);
+        let best = 0, bestD = Infinity;
+        for (let i = 0; i < poly.coords.length; i++) {
+            const d = distanceMeters(poly.coords[i][0], poly.coords[i][1], station.latitude, station.longitude);
+            if (d < bestD) { bestD = d; best = i; }
+        }
+        const arc = poly.cum[best];
+        stationArcCache.set(key, arc);
+        return arc;
+    }
+    function pointAtArc(poly, arc) {
+        const { coords, cum } = poly;
+        const total = cum[cum.length - 1];
+        if (arc <= 0) return coords[0];
+        if (arc >= total) return coords[coords.length - 1];
+        let i = 1;
+        while (i < cum.length && cum[i] < arc) i++;
+        const f = (arc - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
+        return [
+            coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * f,
+            coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * f,
+        ];
+    }
+    function trainPosition(lineId, fromStation, toStation, frac) {
+        const poly = linePolyline(lineId);
+        if (poly) {
+            const arcFrom = stationArc(poly, lineId, fromStation);
+            const arcTo = stationArc(poly, lineId, toStation);
+            return pointAtArc(poly, arcFrom + (arcTo - arcFrom) * frac);
+        }
+        return [
+            fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac,
+            fromStation.longitude + (toStation.longitude - fromStation.longitude) * frac,
+        ];
+    }
+
     function simulateAllTrains() {
         // Bail until both snapshots have landed; the very first paint
         // shows no dots rather than haversine guesses that disagree
@@ -2135,8 +2195,7 @@
                 ? Math.min(Math.max((elapsed - fromStop.minutesFromOrigin) / segDuration, 0), 1)
                 : 0;
 
-            const lat = fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac;
-            const lng = fromStation.longitude + (toStation.longitude - fromStation.longitude) * frac;
+            const [lat, lng] = trainPosition(displayLineId, fromStation, toStation, frac);
             const dest = raw.directionKey === "outbound" ? line.terminalB : line.terminalA;
 
             result.push({
