@@ -580,9 +580,17 @@
     }
     function escapeAttr(s) { return escapeHtml(s); }
 
+    // preferCanvas renders every station/train dot and line stroke onto ONE
+    // shared canvas (like the MapLibre GL railway.gov.gr tracker), instead of a
+    // separate DOM <div> per marker. The GPU/canvas redraws all dots each frame
+    // at their correct scaled positions, so nothing lags behind the tiles during
+    // a zoom ("the data moves") and the DOM stays tiny even with the whole
+    // network on screen.
+    const DEBUG = new URLSearchParams(location.search).has("debug");
     const map = L.map("map", {
         zoomControl: false,
         attributionControl: true,
+        preferCanvas: true,
     }).setView(ATHENS_CENTER, INITIAL_ZOOM);
 
     // --- Localised tile layer --------------------------------------------
@@ -774,16 +782,40 @@
     // in its temporal dead zone when setupHero is invoked earlier in init.
     let heroActive = false;
 
+    // Lightweight canvas dots instead of DOM divIcons. Colour = primary line;
+    // interchanges get a slightly larger, heavier white ring; the selected stop
+    // is larger with a thicker ring. One size across zoom (no per-zoom restyle),
+    // which is what keeps the map calm and cheap.
+    function stationRadius(station, selected) {
+        if (selected) return 8;
+        return station.isInterchange ? 5.5 : 4.5;
+    }
+    function stationStyle(station, selected) {
+        const first = station.lineIds.map((id) => lineMap.get(id)).find(Boolean);
+        const color = first ? first.color : "#64748b";
+        return {
+            radius: stationRadius(station, selected),
+            color: "#ffffff",
+            weight: selected ? 3 : (station.isInterchange ? 2 : 1.5),
+            fillColor: color,
+            fillOpacity: 1,
+            opacity: 1,
+        };
+    }
+    function restyleStation(id, station, selected) {
+        const m = markers.get(id);
+        if (!m) return;
+        m.setStyle(stationStyle(station, selected));
+        m.setRadius(stationRadius(station, selected));
+        if (selected) m.bringToFront();
+    }
+
     for (const station of stationNodes) {
-        const marker = L.marker([station.latitude, station.longitude], {
-            icon: buildStationIcon(station, false),
-            keyboard: false,
-        });
-
-        marker.on("click", () => {
-            selectStation(station.id, true);
-        });
-
+        const marker = L.circleMarker(
+            [station.latitude, station.longitude],
+            stationStyle(station, false)
+        );
+        marker.on("click", () => selectStation(station.id, true));
         markers.set(station.id, marker);
     }
 
@@ -921,7 +953,7 @@
         const previousId = selectedStationId;
         if (previousId && markers.has(previousId)) {
             const previous = stationNodeMap.get(previousId);
-            markers.get(previousId).setIcon(buildStationIcon(previous, false));
+            restyleStation(previousId, previous, false);
         }
 
         selectedStationId = nextId;
@@ -929,7 +961,7 @@
         if (nextId && markers.has(nextId)) {
             const selected = stationNodeMap.get(nextId);
             const marker = markers.get(nextId);
-            marker.setIcon(buildStationIcon(selected, true));
+            restyleStation(nextId, selected, true);
             // A selected stop is always shown, even a minor one at country zoom
             // that the decluttering rule would otherwise hide.
             if (!map.hasLayer(marker)) marker.addTo(map);
@@ -1496,26 +1528,34 @@
         clearSelection();
     });
 
-    let lastZoomBucket = INITIAL_ZOOM >= 14 ? 2 : INITIAL_ZOOM >= 12 ? 1 : 0;
+    // Canvas dots are one fixed size across zoom, so there is no per-zoom icon
+    // rebucket any more (that mass re-render was part of the "everything moves"
+    // churn). Just refresh visibility + vehicles for the new zoom.
     map.on("zoomend", () => {
         const z = map.getZoom();
         applyStationVisibility(z);
-        // Add/remove the vehicle markers for the new zoom (they hide below the
-        // regional threshold so the fleet never piles into a coastal blob).
         renderSimulatedTrainsOnMap(lastSimulatedTrains);
-        const bucket = z >= 14 ? 2 : z >= 12 ? 1 : 0;
-        if (bucket !== lastZoomBucket) {
-            lastZoomBucket = bucket;
-            for (const [id, marker] of markers) {
-                const station = stationNodeMap.get(id);
-                if (station) marker.setIcon(buildStationIcon(station, id === selectedStationId));
-            }
-            for (const [id, marker] of simulatedTrainMarkers) {
-                const train = lastSimulatedTrains.find((t) => t.id === id);
-                if (train) marker.setIcon(trainMarkerIcon(train));
+        if (DEBUG) logMarkerAudit(z);
+    });
+
+    // Diagnostic: with ?debug in the URL, print how many markers are live and
+    // WARN on any whose real coordinate falls outside the Attica box. This is the
+    // definitive on-device check for the "dots in the sea" question - it reads
+    // each marker's actual getLatLng(), not a fragile pixel guess.
+    function logMarkerAudit(z) {
+        let onMap = 0, offAttica = 0;
+        for (const [id, m] of markers) {
+            if (!map.hasLayer(m)) continue;
+            onMap++;
+            const ll = m.getLatLng();
+            const outside = ll.lat < 37.7 || ll.lat > 38.25 || ll.lng < 23.3 || ll.lng > 24.15;
+            if (outside) {
+                offAttica++;
+                console.warn(`[syrmos] station ${id} OUTSIDE Attica: ${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}`);
             }
         }
-    });
+        console.log(`[syrmos] zoom=${z} stationsOnMap=${onMap} trainsOnMap=${simulatedTrainMarkers.size} offAttica=${offAttica}`);
+    }
 
     // Panning (not just zooming) has to re-cull the viewport too, otherwise
     // stations you scroll toward never appear and ones you leave behind linger.
@@ -2333,6 +2373,19 @@
         });
     }
 
+    // Trains are canvas dots too (ringed, one size), a touch larger than a stop
+    // and drawn on top. Same lightness + no-swim benefit as the stations.
+    function trainStyle(train) {
+        return {
+            radius: 6,
+            color: "#ffffff",
+            weight: 2,
+            fillColor: train.line.color || "#0072CE",
+            fillOpacity: 1,
+            opacity: 1,
+        };
+    }
+
     function renderSimulatedTrainsOnMap(trains) {
         lastSimulatedTrains = trains;
         const activeIds = new Set(trains.map((t) => t.id));
@@ -2362,11 +2415,8 @@
             if (simulatedTrainMarkers.has(train.id)) {
                 simulatedTrainMarkers.get(train.id).setLatLng([train.lat, train.lng]);
             } else {
-                const marker = L.marker([train.lat, train.lng], {
-                    icon: trainMarkerIcon(train),
-                    keyboard: false,
-                    zIndexOffset: 900,
-                }).addTo(map);
+                const marker = L.circleMarker([train.lat, train.lng], trainStyle(train)).addTo(map);
+                marker.bringToFront();
 
                 marker.bindTooltip(
                     `${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`,
