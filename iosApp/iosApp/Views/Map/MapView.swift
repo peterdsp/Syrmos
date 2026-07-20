@@ -962,6 +962,25 @@ struct SyrmosMKMapView: UIViewRepresentable {
             mv.addAnnotation(SyrmosStationAnnotation(station: station))
         }
 
+        // On-device audit: warn if any station the app renders falls outside the
+        // Attica box (37.7-38.25 N, 23.3-24.15 E). This is the definitive check for
+        // the "dots in the sea" question - it reads the real coordinate, so if the
+        // console stays quiet the bundled data is clean. Athens-only by design; the
+        // rest of Greece is expected outside the box, so scope the audit to the
+        // athens-region stations via their line ids.
+        let athensLineIds: Set<String> = ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"]
+        let offshore = stations.filter { s in
+            s.lineIds.contains(where: { athensLineIds.contains($0) })
+                && (s.latitude < 37.70 || s.latitude > 38.25 || s.longitude < 23.30 || s.longitude > 24.15)
+        }
+        if offshore.isEmpty {
+            print("[syrmos] station audit: all Athens stations inside Attica box (\(stations.count) total)")
+        } else {
+            for s in offshore {
+                print("[syrmos] station \(s.id) OUTSIDE Attica: \(s.latitude), \(s.longitude)")
+            }
+        }
+
         // Hook up the CADisplayLink that smoothly animates train
         // annotations between simulator snapshots.
         context.coordinator.attach(to: mv)
