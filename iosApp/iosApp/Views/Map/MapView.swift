@@ -939,9 +939,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
         mv.pointOfInterestFilter = .excludingAll
         mv.showsUserLocation = true
         mv.isPitchEnabled = false
+        // Open framed on the whole Athens network (Kifissia -> Elliniko / Piraeus),
+        // not just the central 6km. The app is nationwide now, but launching on
+        // Athens keeps metro + tram + suburban + trains on screen; the user zooms
+        // out for the country and GPS "locate me" recenters on them.
         mv.region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.980, longitude: 23.730),
-            span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
+            center: CLLocationCoordinate2D(latitude: 37.970, longitude: 23.730),
+            span: MKCoordinateSpan(latitudeDelta: 0.24, longitudeDelta: 0.30)
         )
 
         // Route polylines. ColoredPolyline carries colour + weight so the
@@ -971,8 +975,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // animate to it.
         if context.coordinator.lastRecenterPing != recenterToUserPing {
             context.coordinator.lastRecenterPing = recenterToUserPing
-            let loc = mv.userLocation.location?.coordinate
-                ?? mv.region.center
+            // Only jump to the user with a real fix; a nil or (0,0) coordinate at
+            // startup would fling the map into the Atlantic. Otherwise stay put.
+            let userLoc = mv.userLocation.location?.coordinate
+            let hasValidFix = userLoc.map {
+                CLLocationCoordinate2DIsValid($0) && (abs($0.latitude) > 0.001 || abs($0.longitude) > 0.001)
+            } ?? false
+            let loc = hasValidFix ? userLoc! : mv.region.center
             mv.setRegion(
                 MKCoordinateRegion(
                     center: loc,
@@ -1202,7 +1211,19 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 let startDist = arcDistance(to: fromCoord, cache: cache)
                 let endDist = arcDistance(to: toCoord, cache: cache)
                 let target = startDist + (endDist - startDist) * frac
-                return coordAt(distance: target, polyline: cache.polyline, cumulative: cache.cumulative)
+                let p = coordAt(distance: target, polyline: cache.polyline, cumulative: cache.cumulative)
+                // Guard against a wrong arc mapping (a station snapping to a far vertex
+                // on a looping / past-the-terminus shape, e.g. the T7 tram past Voula)
+                // flinging the dot into the sea: a point between two stations should
+                // sit within ~the segment length of BOTH. If it overshoots that (plus
+                // a curve margin), fall back to the honest chord.
+                let fromLoc = CLLocation(latitude: fromCoord.latitude, longitude: fromCoord.longitude)
+                let toLoc = CLLocation(latitude: toCoord.latitude, longitude: toCoord.longitude)
+                let pLoc = CLLocation(latitude: p.latitude, longitude: p.longitude)
+                let segLen = fromLoc.distance(from: toLoc)
+                if pLoc.distance(from: fromLoc) <= segLen + 600, pLoc.distance(from: toLoc) <= segLen + 600 {
+                    return p
+                }
             }
             // Chord fallback for lines without an OSM shape (A1-A4).
             return CLLocationCoordinate2D(

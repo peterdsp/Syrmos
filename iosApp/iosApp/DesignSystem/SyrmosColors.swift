@@ -53,10 +53,10 @@ enum MapDesignTokens {
     /// Below this zoom only the network skeleton shows (line strokes +
     /// interchange hubs + selection); the ~340 minor stops are hidden so the
     /// country isn't a field of confetti. Mirrors MapDesignTokens.MINOR_STOP_MIN_ZOOM.
-    static let minorStopMinZoom: Double = 11
+    static let minorStopMinZoom: Double = 10
     /// Below this zoom only the major cross-modal hubs (~16 Greece-wide) show,
     /// because is_interchange is over-applied. Mirrors MapDesignTokens.MAJOR_HUB_MIN_ZOOM.
-    static let majorHubMinZoom: Double = 9
+    static let majorHubMinZoom: Double = 8
     /// At or below this zoom (whole-Greece) no station dots draw; the line
     /// network alone carries the map. Mirrors MapDesignTokens.LINES_ONLY_MAX_ZOOM.
     static let linesOnlyMaxZoom: Double = 7

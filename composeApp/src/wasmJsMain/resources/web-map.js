@@ -13,8 +13,8 @@
         dotCity: 13,
         dotSelected: 18,
         glyphMinZoom: 14,
-        minorStopMinZoom: 11,
-        majorHubMinZoom: 9,
+        minorStopMinZoom: 10,
+        majorHubMinZoom: 8,
         linesOnlyMaxZoom: 7,
         greyedColor: "#94a3b8",
         busDash: "2 7",
@@ -848,8 +848,12 @@
         const primaryColor = primaryLine ? primaryLine.color : "#64748b";
         const primaryMode = primaryLine ? primaryLine.type : "metro";
 
-        // High zoom: per-station smart-code SVG when readable.
-        if (currentZoom >= 14) {
+        // Per-station smart-code SVG, ONLY for the selected stop (at any zoom).
+        // Previously every dot ballooned into a 22px artwork icon at z14, so the
+        // whole map visibly resized at once when you crossed that threshold — a big
+        // part of the "everything moves" churn. Now the dots keep one size and only
+        // the focused station shows its artwork.
+        if (selected) {
             const primarySid = station.stationIds[0];
             // A2 stations share most of their physical platforms with A1
             // (Doukissis Plakentias, Pallini, Metamorfosi, etc.). The icon
@@ -858,7 +862,7 @@
             const svgUrl = stationIconBySid.get(primarySid)
                 || station.stationIds.map((sid) => stationIconBySid.get(sid)).find(Boolean);
             if (svgUrl) {
-                const size = selected ? 30 : 22;
+                const size = 30;
                 // The smart-code SVG is layered as a CSS background ON TOP of the
                 // normal dot rather than as an <img>. If the SVG 404s (a station
                 // with no artwork, a stale manifest index, a deploy gap) the
@@ -881,7 +885,9 @@
         // the stop is selected or the user is zoomed in enough to read it, so
         // the default map stays clean and lightweight.
         const glyph = modeGlyph(primaryMode);
-        const pinSize = selected ? MAP_TOKENS.dotSelected : (currentZoom >= 12 ? MAP_TOKENS.dotCity : MAP_TOKENS.dotCountry);
+        // One dot size across zoom (only the selected stop differs). The old
+        // z>=12 country->city size swap made every dot resize mid-zoom.
+        const pinSize = selected ? MAP_TOKENS.dotSelected : MAP_TOKENS.dotCity;
         const showGlyph = selected || currentZoom >= MAP_TOKENS.glyphMinZoom;
         const glyphHtml = showGlyph ? `<span class="station-pin__glyph">${glyph}</span>` : "";
 
@@ -1510,8 +1516,25 @@
     let lastSimulatedTrains = [];
 
     // Guard the fit anyway, so no future handler throw during it can abort init.
+    // Open framed on the ATHENS network, not the whole country. The app went
+    // nationwide, but fitting every station Ioannina->Alexandroupoli->Kalamata
+    // opened on an all-Greece view where Athens was a 15px corner with no dots
+    // and no trains (decluttered away) — it read as "empty". Frame the Athens
+    // region so metro + tram + suburban + live trains are all on screen at launch;
+    // zoom out for the country. (GPS "locate me" still recenters on the user.)
     try {
-        const bounds = L.latLngBounds(stationNodes.map((station) => [station.latitude, station.longitude]));
+        const ATHENS_LINE_IDS = new Set(
+            lines.filter((l) => l.region === "athens").map((l) => l.id)
+        );
+        // Fallback for any build whose line objects lack `region`.
+        ["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"].forEach((id) =>
+            ATHENS_LINE_IDS.add(id)
+        );
+        const athensStations = stationNodes.filter((s) =>
+            (s.line_ids || s.lineIds || []).some((id) => ATHENS_LINE_IDS.has(id))
+        );
+        const focus = athensStations.length ? athensStations : stationNodes;
+        const bounds = L.latLngBounds(focus.map((station) => [station.latitude, station.longitude]));
         map.fitBounds(bounds.pad(0.12));
     } catch (e) {
         console.error("fitBounds failed", e);
@@ -2160,7 +2183,19 @@
                 const arcTo = stationArc(poly, lineId, toStation);
                 const p = pointAtArc(poly, arcFrom + (arcTo - arcFrom) * frac);
                 // Never return a bad point that would throw at L.marker time.
-                if (p && isFinite(p[0]) && isFinite(p[1])) return p;
+                if (p && isFinite(p[0]) && isFinite(p[1])) {
+                    // Guard against a wrong polyline mapping (a station snapping to a
+                    // far vertex on a looping / past-the-terminus shape, e.g. the T7
+                    // tram track running past Asklipiio Voulas) flinging the dot into
+                    // the sea. A point interpolated between two stations should sit
+                    // within roughly the segment length of BOTH; if it overshoots that
+                    // (plus a small curve margin), the arc mapping is wrong -> fall
+                    // back to the honest chord.
+                    const segLen = distanceMeters(fromStation.latitude, fromStation.longitude, toStation.latitude, toStation.longitude);
+                    const dF = distanceMeters(p[0], p[1], fromStation.latitude, fromStation.longitude);
+                    const dT = distanceMeters(p[0], p[1], toStation.latitude, toStation.longitude);
+                    if (dF <= segLen + 600 && dT <= segLen + 600) return p;
+                }
             }
         } catch (_) { /* fall through to the chord */ }
         return chord;

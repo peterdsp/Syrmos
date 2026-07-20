@@ -42,7 +42,7 @@ object MapDesignTokens {
      * skeleton shows: the coloured line strokes plus the interchange hubs (and
      * any selected stop). Zoom into a city (>= this) to resolve every station.
      */
-    const val MINOR_STOP_MIN_ZOOM = 11
+    const val MINOR_STOP_MIN_ZOOM = 10
 
     /**
      * The `is_interchange` flag is over-applied in the data (a whole metro line
@@ -55,7 +55,7 @@ object MapDesignTokens {
      * (< [MINOR_STOP_MIN_ZOOM]) -> all stops. Each platform derives "major hub"
      * from its own line-type lookup; the rule (2+ distinct types) is identical.
      */
-    const val MAJOR_HUB_MIN_ZOOM = 9
+    const val MAJOR_HUB_MIN_ZOOM = 8
 
     /**
      * At or below this zoom (the whole-Greece / country view) NO station dots
