@@ -2171,10 +2171,23 @@
 
         const nowEpoch = Date.now() / 1000;
         const linesById = new Map(lines.map((l) => [l.id, l]));
+        // Resolve offset stops to stations by id OR by name. The /api/station-offsets
+        // feed uses the server's station-id scheme (e.g. M1_THI, M1_KIF) which differs
+        // from the bundled snapshot's ids (M1_THE, M1_KHE) for the same physical
+        // stations, so an id-only lookup silently drops ~1/3 of stops and the trains
+        // between them. The station NAME (stationEn) is the one key both sides share.
         const stationById = new Map();
+        const stationByName = new Map();
         for (const stns of lineStations.values()) {
-            for (const s of stns) stationById.set(s.id, s);
+            for (const s of stns) {
+                stationById.set(s.id, s);
+                if (s.name) stationByName.set(s.name.toLowerCase(), s);
+                if (s.name_el) stationByName.set(s.name_el.toLowerCase(), s);
+                if (s.nameEl) stationByName.set(s.nameEl.toLowerCase(), s);
+            }
         }
+        const resolveStop = (stop) =>
+            stationById.get(stop.stationId) || stationByName.get((stop.stationEn || "").toLowerCase());
 
         const result = [];
         for (const raw of livePositionsSnapshot.trains) {
@@ -2203,8 +2216,8 @@
             }
             const fromStop = stops[segIdx];
             const toStop = stops[segIdx + 1];
-            const fromStation = stationById.get(fromStop.stationId);
-            const toStation = stationById.get(toStop.stationId);
+            const fromStation = resolveStop(fromStop);
+            const toStation = resolveStop(toStop);
             if (!fromStation || !toStation) continue;
             const segDuration = toStop.minutesFromOrigin - fromStop.minutesFromOrigin;
             const frac = segDuration > 0
