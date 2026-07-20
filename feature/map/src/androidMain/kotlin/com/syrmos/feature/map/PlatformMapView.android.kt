@@ -299,6 +299,22 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
+    // On-device audit: warn if any Athens station falls outside the Attica box
+    // (37.7-38.25 N, 23.3-24.15 E). Definitive "dots in the sea" check - reads the
+    // real coordinate, so a quiet logcat means the bundled data is clean.
+    LaunchedEffect(uiState.mapStations) {
+        val athensLineIds = setOf("M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4")
+        val offshore = uiState.mapStations.filter { s ->
+            s.lineIds.any { it in athensLineIds } &&
+                (s.latitude < 37.70 || s.latitude > 38.25 || s.longitude < 23.30 || s.longitude > 24.15)
+        }
+        if (offshore.isEmpty()) {
+            android.util.Log.d("Syrmos", "station audit: all Athens stations inside Attica box (${uiState.mapStations.size} total)")
+        } else {
+            offshore.forEach { android.util.Log.w("Syrmos", "station ${it.id} OUTSIDE Attica: ${it.latitude}, ${it.longitude}") }
+        }
+    }
+
     LaunchedEffect(uiState.mapStations, uiState.selectedStation, mapBand, mapMoveTick) {
         // A major hub is a genuine cross-modal transfer: its lines span 2+ distinct
         // types. is_interchange is over-applied, so this tighter rule is what the
