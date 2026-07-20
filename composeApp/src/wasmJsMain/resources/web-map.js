@@ -1548,7 +1548,11 @@
             if (!map.hasLayer(m)) continue;
             onMap++;
             const ll = m.getLatLng();
-            const outside = ll.lat < 37.7 || ll.lat > 38.25 || ll.lng < 23.3 || ll.lng > 24.15;
+            // Box covers the greater Athens rail region: north to the Thebes /
+            // Boeotia corridor + the A3 Chalkida line (~38.46 N), so those real
+            // stops don't read as anomalies. Only a genuine sea/way-off placement
+            // now trips the audit.
+            const outside = ll.lat < 37.7 || ll.lat > 38.55 || ll.lng < 23.25 || ll.lng > 24.15;
             if (outside) {
                 offAttica++;
                 console.warn(`[syrmos] station ${id} OUTSIDE Attica: ${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}`);
