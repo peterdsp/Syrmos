@@ -977,8 +977,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 break
             }
             if !onAthensLine { continue }
-            let lat = s.latitude
-            let lon = s.longitude
+            let lat = s.coordinate.latitude
+            let lon = s.coordinate.longitude
             let outside = lat < 37.70 || lat > 38.25 || lon < 23.30 || lon > 24.15
             if outside {
                 offshoreCount += 1
