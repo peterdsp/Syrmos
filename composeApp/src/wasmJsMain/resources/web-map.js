@@ -811,10 +811,19 @@
     }
 
     function applyStationVisibility(z) {
+        // Cull to the padded viewport: only stations you can actually see stay
+        // live on the map. The network went nationwide (389 stops across Greece),
+        // and keeping them all on the map at once made zooming heavy and painted
+        // distant coastal lines (Katakolo, Corinth-Patras) over the sea at the
+        // edges. The 0.4 pad keeps a ring just outside the frame so a small pan
+        // never flashes an empty border. The selected stop is always kept.
+        const bounds = map.getBounds().pad(0.4);
         for (const [id, marker] of markers) {
             const station = stationNodeMap.get(id);
             if (!station) continue;
-            const shouldShow = stationVisibleAt(station, z);
+            const inView = id === selectedStationId
+                || bounds.contains([station.latitude, station.longitude]);
+            const shouldShow = inView && stationVisibleAt(station, z);
             const onMap = map.hasLayer(marker);
             if (shouldShow && !onMap) marker.addTo(map);
             else if (!shouldShow && onMap) marker.remove();
@@ -1507,6 +1516,11 @@
             }
         }
     });
+
+    // Panning (not just zooming) has to re-cull the viewport too, otherwise
+    // stations you scroll toward never appear and ones you leave behind linger.
+    // moveend fires once at the end of a drag / inertia, so this stays cheap.
+    map.on("moveend", () => applyStationVisibility(map.getZoom()));
 
     // Declared BEFORE fitBounds: the fit synchronously fires a move/zoom handler
     // that reads simulatedTrainMarkers, so if these sat after the fit (as they
