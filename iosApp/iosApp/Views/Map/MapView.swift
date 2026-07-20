@@ -1327,6 +1327,11 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.canShowCallout = false
                 v.image = trainImage(for: train)
                 v.frame.size = CGSize(width: 28, height: 22)
+                // Same decluttering rule as stations: below the regional band the
+                // whole fleet would pile into one blob on the coastline, so hide
+                // vehicles until the map is zoomed in far enough to place them on
+                // their lines (band >= 2 == MapDesignTokens.majorHubMinZoom).
+                v.isHidden = currentBand < 2
                 return v
             }
             return nil
@@ -1337,9 +1342,14 @@ struct SyrmosMKMapView: UIViewRepresentable {
             guard b != currentBand else { return }
             currentBand = b
             for annotation in mapView.annotations {
-                guard let station = annotation as? SyrmosStationAnnotation,
-                      let view = mapView.view(for: annotation) else { continue }
-                view.isHidden = !shouldShow(station.station, band: b)
+                guard let view = mapView.view(for: annotation) else { continue }
+                if let station = annotation as? SyrmosStationAnnotation {
+                    view.isHidden = !shouldShow(station.station, band: b)
+                } else if annotation is SyrmosTrainAnnotation {
+                    // Vehicles follow the station decluttering rule: hidden below
+                    // the regional band so the fleet never piles into a coastal blob.
+                    view.isHidden = b < 2
+                }
             }
         }
 
