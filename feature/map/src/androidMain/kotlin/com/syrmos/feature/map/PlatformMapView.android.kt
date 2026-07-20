@@ -357,8 +357,18 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.simulatedTrains) {
+    LaunchedEffect(uiState.simulatedTrains, mapBand) {
         val res = context.resources
+        // Vehicles follow the same decluttering rule as stations: below the
+        // regional band (band 2 == MAJOR_HUB_MIN_ZOOM) the whole fleet collapses
+        // into one blob on the coastline that reads as trains in the sea, so pull
+        // every vehicle marker until the map is zoomed in far enough.
+        if (mapBand < 2) {
+            trainMarkers.values.forEach { mapView.overlays.remove(it) }
+            trainMarkers.clear()
+            mapView.invalidate()
+            return@LaunchedEffect
+        }
         val activeIds = uiState.simulatedTrains.map { it.id }.toSet()
         val staleIds = trainMarkers.keys - activeIds
         staleIds.forEach { id ->
@@ -392,8 +402,14 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.liveTrains) {
+    LaunchedEffect(uiState.liveTrains, mapBand) {
         val res = context.resources
+        if (mapBand < 2) {
+            liveTrainMarkers.values.forEach { mapView.overlays.remove(it) }
+            liveTrainMarkers.clear()
+            mapView.invalidate()
+            return@LaunchedEffect
+        }
         val activeIds = uiState.liveTrains.map { it.id }.toSet()
         val staleIds = liveTrainMarkers.keys - activeIds
         staleIds.forEach { id ->
