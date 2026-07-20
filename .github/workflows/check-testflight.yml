@@ -68,6 +68,12 @@ jobs:
               rel = b.get("relationships", {}).get("preReleaseVersion", {}).get("data")
               mv = pre.get(rel["id"]) if rel else "?"
               rows.append((mv, a.get("version"), a.get("processingState"), a.get("uploadedDate"), a.get("expired")))
+          # The newest upload (rows are sorted -uploadedDate) is the build we just
+          # shipped; flag it explicitly so the poller can read its state even when
+          # the marketing-version relationship is unresolved on older builds.
+          if rows:
+              mv, bn, ps, up, ex = rows[0]
+              print(f"NEWEST: v{mv} build {bn} state={ps}{' expired' if ex else ''} uploaded {up}")
           match = [x for x in rows if x[0] == version]
           print(f"=== TestFlight builds for marketing version {version} ===")
           if not match:
