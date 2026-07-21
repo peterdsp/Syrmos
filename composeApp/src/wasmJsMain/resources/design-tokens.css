@@ -71,14 +71,19 @@
   --sy-font-clock-line: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --sy-brand: #8ECAFF;
-    --sy-surface: #0F1216;
-    --sy-surface-muted: #171B21;
-    --sy-surface-card: #1B2028;
-    --sy-on-surface: #E6ECF5;
-    --sy-on-surface-muted: #9AA3AF;
-    --sy-outline: #2A2F37;
-  }
+/* Dark tokens follow the APP's own theme (the `.dark-mode` class the toggle
+   sets on <body>), NOT the OS `prefers-color-scheme`. Gating on the OS scheme
+   meant that with the OS in dark mode but the app toggled to LIGHT, every
+   --sy-on-surface text (station title, search-result names, departure line
+   names) flipped near-white and vanished on the light surfaces - the "white
+   mode is broken" bug. Body-level vars cascade to all content, overriding the
+   :root light defaults only when the app is actually dark. */
+body.dark-mode {
+  --sy-brand: #8ECAFF;
+  --sy-surface: #0F1216;
+  --sy-surface-muted: #171B21;
+  --sy-surface-card: #1B2028;
+  --sy-on-surface: #E6ECF5;
+  --sy-on-surface-muted: #9AA3AF;
+  --sy-outline: #2A2F37;
 }
