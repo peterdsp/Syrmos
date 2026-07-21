@@ -417,20 +417,29 @@ internal actual fun PlatformMapView(
         }
 
         uiState.simulatedTrains.forEach { train ->
+            val lineColor = train.lineColor.toComposeColor().toArgb()
+            // Suburban A-lines + national rail + rail-replacement buses have no
+            // directional sprite, so render them as a heading-rotated triangle
+            // (mirrors web). Metro/tram keep their per-line directional drawables.
+            val isTriangle = train.lineType == LineType.SUBURBAN || train.lineType == LineType.BUS
             val existing = trainMarkers[train.id]
-
             if (existing != null) {
                 existing.position = GeoPoint(train.latitude, train.longitude)
+                // The heading is baked into the triangle bitmap, so refresh it as
+                // the train changes segment.
+                if (isTriangle) existing.icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
             } else {
-                val vehicleIcon = resolveVehicleDrawable(context, train)
-                val lineColor = train.lineColor.toComposeColor().toArgb()
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(train.latitude, train.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = vehicleIcon ?: when {
-                        train.isAirportService -> buildAirportTrainBitmap(res)
-                        train.lineType == LineType.TRAM -> buildTramTrainBitmap(res, lineColor, train.lineId)
-                        else -> buildMetroTrainBitmap(res, lineColor, train.lineId)
+                    icon = if (isTriangle) {
+                        buildTriangleTrainBitmap(res, lineColor, train.bearing)
+                    } else {
+                        resolveVehicleDrawable(context, train) ?: when {
+                            train.isAirportService -> buildAirportTrainBitmap(res)
+                            train.lineType == LineType.TRAM -> buildTramTrainBitmap(res, lineColor, train.lineId)
+                            else -> buildMetroTrainBitmap(res, lineColor, train.lineId)
+                        }
                     }
                     title = "${train.lineName} → ${train.destinationName}"
                     snippet = "Near ${train.currentStationName}"
@@ -610,6 +619,34 @@ private fun buildZoomPin(
     }
 
     return BitmapDrawable(null, bitmap)
+}
+
+/// A directional triangle for national rail + rail-replacement buses + suburban
+/// A-lines (the vehicles with no per-line directional sprite). Points the way the
+/// train is heading (compass [bearingDeg], 0 = north), coloured by line with a
+/// white outline so it reads on the flat light/dark base - the native mirror of
+/// the web triangle markers.
+private fun buildTriangleTrainBitmap(res: android.content.res.Resources, color: Int, bearingDeg: Double): android.graphics.drawable.Drawable {
+    val size = 40
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val cx = size / 2f
+    val cy = size / 2f
+    val r = size * 0.40f
+    canvas.save()
+    canvas.rotate(bearingDeg.toFloat(), cx, cy) // clockwise; 0 = up = north
+    val path = android.graphics.Path().apply {
+        moveTo(cx, cy - r)
+        lineTo(cx + r * 0.82f, cy + r * 0.72f)
+        lineTo(cx - r * 0.82f, cy + r * 0.72f)
+        close()
+    }
+    canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; style = Paint.Style.FILL })
+    canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = 0xFFFFFFFF.toInt(); style = Paint.Style.STROKE; strokeWidth = size * 0.08f; strokeJoin = Paint.Join.ROUND
+    })
+    canvas.restore()
+    return BitmapDrawable(res, bitmap)
 }
 
 private fun buildMetroTrainBitmap(res: android.content.res.Resources, color: Int, lineLabel: String = ""): android.graphics.drawable.Drawable {

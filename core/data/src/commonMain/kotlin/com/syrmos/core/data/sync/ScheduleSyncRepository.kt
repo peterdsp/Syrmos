@@ -42,7 +42,16 @@ class ScheduleSyncRepository(
     suspend fun hydrateFromBundleIfNeeded() {
         if (_lineBundles.value.isNotEmpty()) return
         val reader = resourceReader ?: return
-        val knownLineIds = listOf("M1", "M2", "M3", "T6", "T7", "A1", "A2", "A3", "A4", "M3_AIR")
+        // Metro/tram/suburban + Thessaloniki + national rail + rail-replacement
+        // buses. The national/bus bundles carry per-trip timetables that the map's
+        // schedule projector interpolates into moving vehicles.
+        val knownLineIds = listOf(
+            "M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4",
+            "TM1", "TM2", "TP1", "TP2", "TP3", "TP4",
+            "IC1", "RG1", "AL1", "KO1", "PL1", "DK1",
+            "PS1", "PS2", "PSB", "PU1", "PU2",
+            "KB1", "VL1", "DX1", "KP1", "TL1",
+        )
         val out = mutableMapOf<String, LineSchedule>()
         for (lid in knownLineIds) {
             val body = runCatching {
