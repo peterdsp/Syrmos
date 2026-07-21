@@ -1526,8 +1526,22 @@
         });
     }
 
-    map.on("click", () => {
-        clearSelection();
+    map.on("click", (e) => {
+        // The canvas station dots are only ~5px, and a bare map click used to just
+        // clearSelection() - so taps that landed a hair off a dot (or that a canvas
+        // layer didn't claim) closed the sheet instead of opening the stop. Now the
+        // map itself selects the nearest VISIBLE station within a forgiving radius,
+        // so you don't need pixel-perfect aim; an empty tap still clears.
+        const cp = map.latLngToContainerPoint(e.latlng);
+        let bestId = null, bestD = Infinity;
+        for (const [id, m] of markers) {
+            if (!map.hasLayer(m)) continue;
+            const p = map.latLngToContainerPoint(m.getLatLng());
+            const d = Math.hypot(cp.x - p.x, cp.y - p.y);
+            if (d < bestD) { bestD = d; bestId = id; }
+        }
+        if (bestId && bestD <= 18) selectStation(bestId, true);
+        else clearSelection();
     });
 
     // Canvas dots are one fixed size across zoom, so there is no per-zoom icon
@@ -2278,17 +2292,29 @@
         // stations, so an id-only lookup silently drops ~1/3 of stops and the trains
         // between them. The station NAME (stationEn) is the one key both sides share.
         const stationById = new Map();
-        const stationByName = new Map();
         for (const stns of lineStations.values()) {
-            for (const s of stns) {
-                stationById.set(s.id, s);
-                if (s.name) stationByName.set(s.name.toLowerCase(), s);
-                if (s.name_el) stationByName.set(s.name_el.toLowerCase(), s);
-                if (s.nameEl) stationByName.set(s.nameEl.toLowerCase(), s);
-            }
+            for (const s of stns) stationById.set(s.id, s);
         }
-        const resolveStop = (stop) =>
-            stationById.get(stop.stationId) || stationByName.get((stop.stationEn || "").toLowerCase());
+        // Resolve a stop's NAME only among the train's OWN line. A global name map
+        // let a stop that shares a name with a station on a DIFFERENT line resolve
+        // to the wrong one, pulling the train onto the wrong track. The id map
+        // (shared across the network) is tried first; the name fallback is scoped.
+        const nameMapByLine = new Map();
+        const lineNameMap = (lineId) => {
+            let m = nameMapByLine.get(lineId);
+            if (!m) {
+                m = new Map();
+                for (const s of (lineStations.get(lineId) || [])) {
+                    if (s.name) m.set(s.name.toLowerCase(), s);
+                    if (s.name_el) m.set(s.name_el.toLowerCase(), s);
+                    if (s.nameEl) m.set(s.nameEl.toLowerCase(), s);
+                }
+                nameMapByLine.set(lineId, m);
+            }
+            return m;
+        };
+        const resolveStop = (stop, lineId) =>
+            stationById.get(stop.stationId) || lineNameMap(lineId).get((stop.stationEn || "").toLowerCase());
 
         const result = [];
         for (const raw of livePositionsSnapshot.trains) {
@@ -2317,8 +2343,8 @@
             }
             const fromStop = stops[segIdx];
             const toStop = stops[segIdx + 1];
-            const fromStation = resolveStop(fromStop);
-            const toStation = resolveStop(toStop);
+            const fromStation = resolveStop(fromStop, displayLineId);
+            const toStation = resolveStop(toStop, displayLineId);
             if (!fromStation || !toStation) continue;
             const segDuration = toStop.minutesFromOrigin - fromStop.minutesFromOrigin;
             const frac = segDuration > 0
@@ -2333,6 +2359,7 @@
                 line,
                 direction: raw.directionKey,
                 destination: dest,
+                bearing: bearingDeg(fromStation.latitude, fromStation.longitude, toStation.latitude, toStation.longitude),
                 fromStation: fromStation.name,
                 toStation: toStation.name,
                 lat,
@@ -2383,17 +2410,28 @@
         });
     }
 
-    // Trains are canvas dots too (ringed, one size), a touch larger than a stop
-    // and drawn on top. Same lightness + no-swim benefit as the stations.
-    function trainStyle(train) {
-        return {
-            radius: 6,
-            color: "#ffffff",
-            weight: 2,
-            fillColor: train.line.color || "#0072CE",
-            fillOpacity: 1,
-            opacity: 1,
-        };
+    // Compass bearing from -> to, so a train's triangle points the way it travels.
+    function bearingDeg(lat1, lon1, lat2, lon2) {
+        const toRad = (d) => (d * Math.PI) / 180;
+        const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+        const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+            Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+        return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    // Trains are DIRECTIONAL TRIANGLES (a small DOM divIcon), not dots, so they're
+    // instantly distinct from the round station stops and show which way each one
+    // is heading. Only ~50 of them, so the DOM cost is trivial vs the canvas dots.
+    function trainMarkerIcon(train) {
+        const color = train.line.color || "#0072CE";
+        const rot = Math.round(train.bearing || 0);
+        return L.divIcon({
+            className: "sim-train-tri",
+            html: `<svg width="20" height="20" viewBox="0 0 20 20" class="train-tri" style="transform: rotate(${rot}deg);">`
+                + `<path d="M10 2 L17 17 L3 17 Z" fill="${color}" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+        });
     }
 
     function renderSimulatedTrainsOnMap(trains) {
@@ -2423,14 +2461,19 @@
 
         for (const train of trains) {
             if (simulatedTrainMarkers.has(train.id)) {
-                simulatedTrainMarkers.get(train.id).setLatLng([train.lat, train.lng]);
+                const m = simulatedTrainMarkers.get(train.id);
+                m.setLatLng([train.lat, train.lng]);
+                m.setIcon(trainMarkerIcon(train)); // keep the heading current
             } else {
-                const marker = L.circleMarker([train.lat, train.lng], trainStyle(train)).addTo(map);
-                marker.bringToFront();
+                const marker = L.marker([train.lat, train.lng], {
+                    icon: trainMarkerIcon(train),
+                    keyboard: false,
+                    zIndexOffset: 1000,
+                }).addTo(map);
 
                 marker.bindTooltip(
                     `${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`,
-                    { direction: "top", offset: [0, -10] }
+                    { direction: "top", offset: [0, -12] }
                 );
 
                 simulatedTrainMarkers.set(train.id, marker);
