@@ -933,12 +933,33 @@ struct SyrmosMKMapView: UIViewRepresentable {
     let recenterToUserPing: Int
     let onStationTap: (String) -> Void
 
+    /// CARTO label-free minimal base tiles that replace Apple's map content.
+    static func makeCartoOverlay(dark: Bool) -> MKTileOverlay {
+        let style = dark ? "dark_nolabels" : "light_nolabels"
+        let overlay = MKTileOverlay(urlTemplate: "https://a.basemaps.cartocdn.com/\(style)/{z}/{x}/{y}@2x.png")
+        overlay.canReplaceMapContent = true
+        overlay.maximumZ = 20
+        return overlay
+    }
+
     func makeUIView(context: Context) -> MKMapView {
         let mv = MKMapView()
         mv.delegate = context.coordinator
         mv.pointOfInterestFilter = .excludingAll
         mv.showsUserLocation = true
         mv.isPitchEnabled = false
+
+        // Flat, label-free minimal base like the railway.gov.gr live tracker: a
+        // CARTO Positron (light) / Dark-Matter (dark) tile overlay that REPLACES
+        // Apple's detailed base map, so there is no street clutter or POI noise -
+        // our coloured line network + station/train dots are the whole picture.
+        // Added first (bottom of the overlay stack) so the route polylines drawn
+        // in the loop below render on top of it.
+        let dark = mv.traitCollection.userInterfaceStyle == .dark
+        let baseTiles = Self.makeCartoOverlay(dark: dark)
+        mv.addOverlay(baseTiles, level: .aboveLabels)
+        context.coordinator.baseTileOverlay = baseTiles
+        context.coordinator.baseTileDark = dark
         // Open framed on the whole Athens network (Kifissia -> Elliniko / Piraeus),
         // not just the central 6km. The app is nationwide now, but launching on
         // Athens keeps metro + tram + suburban + trains on screen; the user zooms
@@ -1001,6 +1022,16 @@ struct SyrmosMKMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ mv: MKMapView, context: Context) {
+        // Swap the flat base tiles when the app theme flips (light <-> dark).
+        let dark = mv.traitCollection.userInterfaceStyle == .dark
+        if context.coordinator.baseTileDark != dark {
+            context.coordinator.baseTileDark = dark
+            if let old = context.coordinator.baseTileOverlay { mv.removeOverlay(old) }
+            let overlay = SyrmosMKMapView.makeCartoOverlay(dark: dark)
+            mv.addOverlay(overlay, level: .aboveLabels)
+            context.coordinator.baseTileOverlay = overlay
+        }
+
         // Re-center on user when the ping changes. MKMapView already
         // tracks userLocation when showsUserLocation = true so we just
         // animate to it.
@@ -1077,6 +1108,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         let parent: SyrmosMKMapView
         var lastRecenterPing: Int = -1
+        /// The active flat base-map tile overlay + its theme, so a light/dark
+        /// flip can swap it without rebuilding the map.
+        var baseTileOverlay: MKTileOverlay?
+        var baseTileDark: Bool?
         /// Live train descriptor cache keyed by annotation id. The
         /// CADisplayLink ticks at the device's native refresh rate
         /// (60 / 120 Hz) and recomputes each train's position from
@@ -1337,6 +1372,9 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let tile = overlay as? MKTileOverlay {
+                return MKTileOverlayRenderer(tileOverlay: tile)
+            }
             if let p = overlay as? SyrmosColoredPolyline {
                 let r = MKPolylineRenderer(polyline: p)
                 r.strokeColor = p.color
