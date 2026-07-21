@@ -66,6 +66,7 @@ class MapViewModel(
     private val liveTrackerService: RailwayGovLiveTrackerService,
     private val livePositionsService: SyrmosLivePositionsService,
     private val stationOffsetsRepo: StationOffsetsRepository,
+    private val scheduleSyncRepository: com.syrmos.core.data.sync.ScheduleSyncRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
@@ -181,7 +182,17 @@ class MapViewModel(
                     // projected dot is the only thing the user sees.
                     val coveredByLive = state.liveTrains.map { it.lineId }.toSet()
                     val filtered = simulated.filter { it.lineId !in coveredByLive }
-                    _uiState.update { it.copy(simulatedTrains = filtered) }
+                    // National rail + rail-replacement buses have no live feed or
+                    // offsets, so project them from the bundled timetables.
+                    val now = currentAthensTime()
+                    val projected = projectScheduledTrains(
+                        lines = state.lines,
+                        lineStations = state.lineStations,
+                        bundles = scheduleSyncRepository.lineBundles.value,
+                        today = scheduleDayTypeString(),
+                        nowMinutes = now.hour * 60 + now.minute + now.second / 60.0,
+                    ).filter { it.lineId !in coveredByLive }
+                    _uiState.update { it.copy(simulatedTrains = filtered + projected) }
                 }
                 delay(1_000)
             }
@@ -342,6 +353,15 @@ class MapViewModel(
             DayOfWeek.SUNDAY -> DayType.SUNDAY
             else -> DayType.WEEKDAY
         }
+    }
+
+    /// The schedule day-type string the bundled national/bus trips are keyed by
+    /// ("mon_thu" / "fri" / "sat" / "sun"), matching the web projector.
+    private fun scheduleDayTypeString(): String = when (currentAthensDayOfWeek()) {
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+        else -> "mon_thu"
     }
 
     private fun Frequency.matchesCurrentTime(): Boolean {

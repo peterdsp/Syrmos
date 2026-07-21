@@ -5,7 +5,12 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.SyrmosLivePositionsService
+import com.syrmos.core.network.SyrmosSchedulesService
 import kotlinx.datetime.Clock
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 /// Snapshot of `/api/live-positions` + `/api/station-offsets` cached by the
 /// MapViewModel. Passing it in (rather than fetching inside the simulator)
@@ -102,8 +107,105 @@ fun simulateTrains(
             latitude = lat,
             longitude = lon,
             isAirportService = raw.lineId == "M3_AIR",
+            bearing = bearingDeg(fromStation.latitude, fromStation.longitude, toStation.latitude, toStation.longitude),
         )
     }
     return trains
 }
 
+
+/// Metro/tram/M3_AIR/suburban-A1-A4 come from the offsets-based [simulateTrains].
+private val LIVE_POSITION_LINES =
+    setOf("M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4")
+
+/// Project moving vehicles for NATIONAL rail + rail-replacement BUS lines, which
+/// have no live-position feed and no station-offsets on the Pi. For every trip
+/// running right now (by the Athens wall clock) we find the segment the clock
+/// lands in and interpolate the position between its two stations (a chord, like
+/// [simulateTrains]), tagging a compass [SimulatedTrain.bearing] so the map can
+/// point the triangle the right way. This is the "else interpolate from the
+/// timetable" path; if the Pi ever serves their live positions those win per line.
+///
+/// [today] is the schedule day-type string ("mon_thu" / "fri" / "sat" / "sun").
+/// [nowMinutes] is minutes since Athens midnight (fractional for smooth glide).
+fun projectScheduledTrains(
+    lines: List<Line>,
+    lineStations: Map<String, List<Station>>,
+    bundles: Map<String, SyrmosSchedulesService.LineSchedule>,
+    today: String,
+    nowMinutes: Double,
+): List<SimulatedTrain> {
+    if (bundles.isEmpty()) return emptyList()
+    val lineById = lines.filter { it.isOperational }.associateBy { it.id }
+    val stationById: Map<String, Station> = lineStations.values.flatten().associateBy { it.id }
+    val out = mutableListOf<SimulatedTrain>()
+
+    for (line in lineById.values) {
+        if (line.id in LIVE_POSITION_LINES) continue
+        val bundle = bundles[line.id] ?: continue
+        for (trip in bundle.trips) {
+            // dayType is authoritative; an empty dayType runs every day.
+            val td = trip.dayType.lowercase()
+            if (td.isNotEmpty() && td != today) continue
+            val stops = trip.stops
+            if (stops.size < 2) continue
+            val times = stops.map { toMinutesOfDay(it.departureTime) }
+            if (times.any { it == null }) continue
+            val t = times.map { it!! }
+            // Skip trips that wrap past midnight (non-monotonic) - rare on these lines.
+            var monotonic = true
+            for (i in 1 until t.size) if (t[i] < t[i - 1]) { monotonic = false; break }
+            if (!monotonic) continue
+            if (nowMinutes < t.first() || nowMinutes > t.last()) continue
+
+            var seg = 0
+            for (i in 0 until stops.size - 1) {
+                if (t[i] <= nowMinutes && nowMinutes < t[i + 1]) { seg = i; break }
+            }
+            val from = stationById[stops[seg].stationId] ?: continue
+            val to = stationById[stops[seg + 1].stationId] ?: continue
+            val dur = (t[seg + 1] - t[seg]).toDouble()
+            val frac = if (dur > 0) ((nowMinutes - t[seg]) / dur).coerceIn(0.0, 1.0) else 0.0
+            val lat = from.latitude + (to.latitude - from.latitude) * frac
+            val lon = from.longitude + (to.longitude - from.longitude) * frac
+            val direction = if (trip.direction.lowercase() == "outbound") Direction.OUTBOUND else Direction.INBOUND
+            val dest = stationById[stops.last().stationId]?.name ?: line.terminalB
+
+            out += SimulatedTrain(
+                id = "${line.id}_${trip.trainNo}_${trip.direction}",
+                lineId = line.id,
+                lineName = line.name,
+                lineColor = line.color,
+                lineType = line.type,
+                direction = direction,
+                originName = stationById[stops.first().stationId]?.name ?: line.terminalA,
+                destinationName = dest,
+                currentStationName = from.name,
+                nextStationName = to.name,
+                progress = frac,
+                latitude = lat,
+                longitude = lon,
+                isAirportService = false,
+                bearing = bearingDeg(from.latitude, from.longitude, to.latitude, to.longitude),
+            )
+        }
+    }
+    return out
+}
+
+private fun toMinutesOfDay(hhmm: String): Int? {
+    val parts = hhmm.split(":")
+    if (parts.size != 2) return null
+    val h = parts[0].toIntOrNull() ?: return null
+    val m = parts[1].toIntOrNull() ?: return null
+    return h * 60 + m
+}
+
+/// Compass bearing (0 = north) from one coordinate to another.
+fun bearingDeg(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    fun rad(d: Double) = d * PI / 180.0
+    val y = sin(rad(lon2 - lon1)) * cos(rad(lat2))
+    val x = cos(rad(lat1)) * sin(rad(lat2)) -
+        sin(rad(lat1)) * cos(rad(lat2)) * cos(rad(lon2 - lon1))
+    return (atan2(y, x) * 180.0 / PI + 360.0) % 360.0
+}
