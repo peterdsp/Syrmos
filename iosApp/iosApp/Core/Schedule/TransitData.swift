@@ -673,6 +673,18 @@ struct SimulatedTrain: Identifiable {
     /// Pre-resolved (stationId, minutesFromOrigin) for the train's
     /// direction. Already ordered by stop_sequence.
     let stops: [(stationId: String, minutesFromOrigin: Double)]
+    /// Compass heading (0 = north) of travel along the current segment, used to
+    /// rotate the directional triangle for suburban/national/bus vehicles.
+    var bearing: Double = 0.0
+}
+
+/// Compass bearing (0 = north) from one coordinate to another.
+func compassBearing(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double) -> Double {
+    let rad = { (d: Double) in d * .pi / 180.0 }
+    let y = sin(rad(toLon - fromLon)) * cos(rad(toLat))
+    let x = cos(rad(fromLat)) * sin(rad(toLat)) -
+        sin(rad(fromLat)) * cos(rad(toLat)) * cos(rad(toLon - fromLon))
+    return (atan2(y, x) * 180.0 / .pi + 360.0).truncatingRemainder(dividingBy: 360.0)
 }
 
 // MARK: - Train Simulator Service
@@ -800,7 +812,11 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
                 isAirportService: isAirport,
                 originEpoch: train.originDepartureEpoch,
                 totalTravelMinutes: train.totalTravelMinutes,
-                stops: stopTuples
+                stops: stopTuples,
+                bearing: compassBearing(
+                    fromLat: fromCoord.lat, fromLon: fromCoord.lon,
+                    toLat: toCoord.lat, toLon: toCoord.lon
+                )
             ))
         }
         return result
