@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.6** (TestFlight), **Android 1.2.6** (Play internal, versionCode 111), **Web** (rolling). 1.2.6 cut 2026-07-21 by the `v1.2.6` tag. Burned Android version codes never reusable: 105, 106, 109, 110. Next release must use 112+.
+Current shipping: **iOS 1.2.7** (TestFlight), **Android 1.2.7** (Play internal, versionCode 112), **Web** (rolling). 1.2.7 cut 2026-07-21 by the `v1.2.7` tag. Burned Android version codes never reusable: 105, 106, 109, 110, 111. Next release must use 113+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -40,6 +40,28 @@ All-Greece rail coverage, shipped as bundled data + web with no client-code chan
 - **Two more national corridors.** **AL1 Alexandroupoli - Orestiada - Ormenio** (Evros/Thrace, 31 stations, four daily trains 1680/1681/1682/1683 incl. the Orestiada short-turns) as a real suburban train; **KB1 Paleofarsalos - Kalambaka** (Sofades, Karditsa, Trikala) as a rail-replacement **bus** (C881/C1889/C1880/C888), which is how Hellenic Train serves that branch today. Every time transcribed from the official Hellenic Train timetable, stored as exact per-station departures; coordinates and track geometry from the OSM service relations (14122316/14122315 for AL1, 14007294/14007293 for KB1), never invented.
 - **Three rail-replacement bus corridors** (mode = bus, region national), completing the country's replacement-bus network alongside KB1: **VL1 Volos - Larisa** (Velestino; 7 buses each way daily), **DX1 Drama - Xanthi - Alexandroupoli** (15 stations, nine services with per-run stop patterns incl. the Drama-Alexandroupoli express C602 and the Xanthi-Drama C679 that skips Toxotes), and **KP1 Kiato - Patra** (via Diakopto on the longer runs; 40+ services incl. Friday and Friday+Sunday-only departures). Exact per-station times from the official Hellenic Train timetable. Geometry from OSM rail alignments; KP1's coastal Kiato-Patra segment was rebuilt by axis-projection ordering because relation 1769919's member order is scrambled (member-order and greedy stitching both produced 45-50 km phantom jumps). Total network is now **26 lines** across four regions (athens 10, national 7, thessaloniki 6, patras 3).
 - Fixed the nightly importer that scoped `DELETE` too broadly and wiped every non-Athens line overnight; corrected station-region tagging so Evros/Kalambaka read national and Patras reads patras.
+
+## 1.2.7 (2026-07-21)
+
+**A flat minimal map + moving vehicles for the whole network** (iOS, Android, Web).
+
+- **Flat, label-free base map** like the railway.gov.gr live tracker: CARTO Positron
+  (light) / Dark-Matter (dark), theme-aware, replacing the busy street map on all
+  three platforms. The coloured line network + station/train markers are the whole
+  picture - a clean transit diagram, not a road atlas.
+- **Moving vehicles for suburban, national rail, and rail-replacement buses**, not
+  just metro/tram. Suburban A1-A4 ride the Pi `/api/live-positions` feed online and
+  bundled station-offsets offline; national rail + buses (which have no live feed or
+  offsets) are projected client-side from the bundled timetables - every in-progress
+  trip is interpolated by the wall clock along its line. On native this is a new KMP
+  `projectScheduledTrains` wired into the map view-model; on web it's the JS twin.
+- **Directional triangles**: national/bus/suburban vehicles render as a triangle
+  pointing the way they travel (metro/tram keep their per-line directional sprites),
+  so a moving train is never mistaken for a station dot.
+- **Web map fixes** from the canvas rework: stations are tappable again (nearest-stop
+  within a forgiving radius), and the simulator's name-resolution is scoped per line
+  so a shared station name can't pull a train onto the wrong track.
+- Carries the tightened on-device coordinate audit from 1.2.6.
 
 ## 1.2.6 (2026-07-21)
 
