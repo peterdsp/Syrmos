@@ -45,6 +45,7 @@ enum class L {
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
     NEXT_TRAIN, TO, LIVE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE,
+    SOURCE_SCHEDULED, SOURCE_ESTIMATED, SOURCE_OFFLINE,
     LAST_TRAIN, LEAVE_BY, SERVICE_OVER, ENABLE_LOCATION_FOR_NEXT,
     DESKTOP_PLANNER, DESKTOP_SCHEDULES, DESKTOP_PASSES, DESKTOP_ACCOUNT,
     DESKTOP_SUBTITLE, NETWORK_STATUS, NETWORK_STATUS_BODY, DESKTOP_HEADER,
@@ -295,6 +296,21 @@ enum class L {
             AppLanguage.GREEK -> "Πρόβλεψη από το πρόγραμμα"
             AppLanguage.ALBANIAN -> "Parashikuar nga orari"
             else -> "Predicted from schedule"
+        }
+        SOURCE_SCHEDULED -> when (lang) {
+            AppLanguage.GREEK -> "Πρόγραμμα"
+            AppLanguage.ALBANIAN -> "Orar"
+            else -> "Scheduled"
+        }
+        SOURCE_ESTIMATED -> when (lang) {
+            AppLanguage.GREEK -> "Εκτίμηση"
+            AppLanguage.ALBANIAN -> "Vlerësim"
+            else -> "Estimated"
+        }
+        SOURCE_OFFLINE -> when (lang) {
+            AppLanguage.GREEK -> "Εκτός σύνδεσης"
+            AppLanguage.ALBANIAN -> "Pa internet"
+            else -> "Offline snapshot"
         }
         LAST_TRAIN -> when (lang) {
             AppLanguage.GREEK -> "Τελευταίος συρμός"
