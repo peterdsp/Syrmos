@@ -225,7 +225,9 @@ enum SyrmosData {
         case "M2": return .metroRed
         case "M3": return .metroBlue
         case "T6", "T7": return .tramOrange
-        default: return .suburbanPurple
+        // National/bus/regional lines carry their own hex in lines.json, so a
+        // Thessaloniki suburban or intercity triangle isn't drawn Athens-purple.
+        default: return line(for: id)?.color ?? .suburbanPurple
         }
     }
 
@@ -731,11 +733,16 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
         let service = await LivePositionsService.shared
         let activeTrains = await service.trains
         let offsetsByLine = await service.offsets
-        if activeTrains.isEmpty || offsetsByLine.isEmpty { return [] }
 
         let stationCoords = StationCoordinateLookup.shared
         let nowEpoch = Date().timeIntervalSince1970
 
+        var result: [SimulatedTrain] = []
+
+        // Metro / tram / A1-A4: interpolated from the live feed + offsets. The
+        // national/bus projection below is independent of this, so an empty
+        // live feed must not skip it.
+        if !activeTrains.isEmpty && !offsetsByLine.isEmpty {
         let lineMeta: [String: (name: String, type: TransitType, terminalA: String, terminalB: String)] = [
             "M1":     ("Line 1",      .metro, "Piraeus",          "Kifissia"),
             "M2":     ("Line 2",      .metro, "Anthoupoli",       "Elliniko"),
@@ -745,7 +752,6 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
             "T7":     ("Tram T7",     .tram,  "Akti Poseidonos",  "Asklipiio Voulas"),
         ]
 
-        var result: [SimulatedTrain] = []
         for train in activeTrains {
             guard let meta = lineMeta[train.lineId] else { continue }
             // station_offsets keys M3_AIR under M3; the projector uses that
@@ -819,6 +825,15 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
                 )
             ))
         }
+        } // end live-feed projection
+
+        // National rail + Thessaloniki/Patras suburban + rail-replacement buses:
+        // no live feed and no offsets on the Pi, so these vehicles are projected
+        // offline from the bundled trip timetables, mirroring the web + Android
+        // projectors. Rendered as directional triangles by the same triangle
+        // path metro/tram-free lines take in the map.
+        result.append(contentsOf: NationalVehicleProjector.shared.project(nowEpoch: nowEpoch))
+
         return result
     }
 
