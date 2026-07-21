@@ -105,17 +105,26 @@ enum PreloadedData {
         let coords: [CLLocationCoordinate2D]
         if let osm = osmCoords, osm.count >= 2 {
             coords = osm
-        } else if stations.count >= 2 {
-            coords = catmullRomSpline(stations.map { $0.coordinate })
         } else {
-            return nil
+            // No bundled OSM shape: spline through the line's ordered stations.
+            // Prefer the curated Athens coordinates; for every other line
+            // (national, Thessaloniki, Patras) read the ordered stations
+            // straight from lines.json, so the WHOLE network draws - not just
+            // Athens. Web does exactly this, which is why national lines showed
+            // on web but were blank on iOS.
+            let anchors = stations.count >= 2
+                ? stations.map { $0.coordinate }
+                : SyrmosLineGeometry.orderedCoordinates(for: line.id)
+            guard anchors.count >= 2 else { return nil }
+            coords = catmullRomSpline(anchors)
         }
         let underConstruction = !line.isOperational
+        // Web weights: metro/tram 5, suburban/bus 4, under-construction 3.
         return RouteLine(
             id: line.id,
             color: underConstruction ? Color(white: 0.62) : line.color,
             coordinates: coords,
-            lineWeight: underConstruction ? 2.5 : (line.type == .suburban ? 3 : 4),
+            lineWeight: underConstruction ? 3 : ((line.type == .suburban || line.type == .bus) ? 4 : 5),
             underConstruction: underConstruction
         )
     }
@@ -953,11 +962,16 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // CARTO Positron (light) / Dark-Matter (dark) tile overlay that REPLACES
         // Apple's detailed base map, so there is no street clutter or POI noise -
         // our coloured line network + station/train dots are the whole picture.
-        // Added first (bottom of the overlay stack) so the route polylines drawn
-        // in the loop below render on top of it.
+        // The base tiles MUST go at `.aboveRoads` (the LOWEST overlay level).
+        // They are opaque (`canReplaceMapContent`), so at `.aboveLabels` (the
+        // highest level) they painted straight over every route polyline and the
+        // whole coloured network vanished - the "no lines on the map" bug. Only
+        // the station/train annotation views survived, because annotations always
+        // draw above overlays regardless of level. Base at the bottom, polylines
+        // pinned to `.aboveLabels` below, so the lines sit on the flat base.
         let dark = mv.traitCollection.userInterfaceStyle == .dark
         let baseTiles = Self.makeCartoOverlay(dark: dark)
-        mv.addOverlay(baseTiles, level: .aboveLabels)
+        mv.addOverlay(baseTiles, level: .aboveRoads)
         context.coordinator.baseTileOverlay = baseTiles
         context.coordinator.baseTileDark = dark
         // Open framed on the whole Athens network (Kifissia -> Elliniko / Piraeus),
@@ -976,7 +990,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             poly.color = UIColor(route.color)
             poly.weight = route.lineWeight
             poly.dashed = route.underConstruction
-            mv.addOverlay(poly)
+            mv.addOverlay(poly, level: .aboveLabels)
         }
 
         for station in stations {
@@ -1028,7 +1042,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             context.coordinator.baseTileDark = dark
             if let old = context.coordinator.baseTileOverlay { mv.removeOverlay(old) }
             let overlay = SyrmosMKMapView.makeCartoOverlay(dark: dark)
-            mv.addOverlay(overlay, level: .aboveLabels)
+            mv.addOverlay(overlay, level: .aboveRoads)
             context.coordinator.baseTileOverlay = overlay
         }
 
@@ -1377,7 +1391,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
             if let p = overlay as? SyrmosColoredPolyline {
                 let r = MKPolylineRenderer(polyline: p)
-                r.strokeColor = p.color
+                // Web draws in-service lines at 0.9 opacity, round caps/joins.
+                r.strokeColor = p.color.withAlphaComponent(0.9)
                 r.lineWidth = p.weight
                 r.lineCap = .round
                 r.lineJoin = .round
@@ -1463,39 +1478,36 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         private func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
-            // Try the bundled per-station artwork first (M1_PIR -> the
-            // ISAP Piraeus icon, M3_SYN -> the Syntagma multi-line icon,
-            // T7_DIM -> the Dimotiko Theatro tram artwork etc). The
-            // mapping table lives on PreloadedData.stationIconMap and
-            // covers every M1/M2/M3/T6/T7 stop plus the curated multi-
-            // mode interchanges. Asset catalog supplies @1x/@2x/@3x.
-            let primaryStationId = station.stationIds.first ?? station.id
-            if let assetName = PreloadedData.stationIconMap[primaryStationId],
-               let raw = UIImage(named: assetName) {
-                let target = CGSize(width: 28, height: 28)
-                let renderer = UIGraphicsImageRenderer(size: target)
-                return renderer.image { _ in
-                    raw.draw(in: CGRect(origin: .zero, size: target))
-                }
-            }
-            // Fallback for suburban (A1-A4) and any station without a
-            // bundled SVG: a coloured teardrop pin with the line tint
-            // and a white outline so it reads on light + dark map tiles.
-            let size = CGSize(width: 22, height: 22)
+            // A clean line-coloured disc with a crisp white ring - a pixel
+            // mirror of the web Leaflet `circleMarker` (stationStyle). We used
+            // to draw bundled per-station artwork here (the ISAP/Syntagma icons
+            // with baked-in "M3 AM" text), which is why iOS looked nothing like
+            // web; web draws none of that, only these dots, with the per-station
+            // glyph appearing on selection. Colour is the primary line's raw hex
+            // from lines.json (same source web reads), so dots match the
+            // polylines exactly - not the hardcoded metro* theme constants.
+            let color = UIColor(SyrmosData.line(for: primaryLineId)?.color
+                ?? SyrmosData.lineColor(for: primaryLineId))
+            // Web radii: 4.5 default / 5.5 interchange (px, non-retina). Draw at
+            // 2x and let the annotation view show it crisp. Interchange reads as
+            // a white-cored "target" ring; a plain stop is a filled dot.
+            let diameter: CGFloat = 15
+            let ringWidth: CGFloat = 3
+            let size = CGSize(width: diameter, height: diameter)
             let renderer = UIGraphicsImageRenderer(size: size)
-            let color = UIColor(SyrmosData.lineColor(for: primaryLineId))
             return renderer.image { ctx in
                 let cg = ctx.cgContext
                 let outer = CGRect(origin: .zero, size: size)
-                let inner = outer.insetBy(dx: 3, dy: 3)
                 cg.setFillColor(UIColor.white.cgColor)
                 cg.fillEllipse(in: outer)
-                cg.setFillColor(color.cgColor)
-                cg.fillEllipse(in: inner)
                 if station.isInterchange {
-                    cg.setStrokeColor(UIColor.white.cgColor)
-                    cg.setLineWidth(1.5)
-                    cg.strokeEllipse(in: inner.insetBy(dx: 3, dy: 3))
+                    cg.setFillColor(color.cgColor)
+                    cg.fillEllipse(in: outer.insetBy(dx: ringWidth * 0.5, dy: ringWidth * 0.5))
+                    cg.setFillColor(UIColor.white.cgColor)
+                    cg.fillEllipse(in: outer.insetBy(dx: ringWidth * 1.8, dy: ringWidth * 1.8))
+                } else {
+                    cg.setFillColor(color.cgColor)
+                    cg.fillEllipse(in: outer.insetBy(dx: ringWidth, dy: ringWidth))
                 }
             }
         }
@@ -1525,47 +1537,22 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
-            // National rail + rail-replacement buses + suburban A-lines have no
-            // per-line sprite; render a heading-rotated triangle (mirrors web +
-            // Android). Metro/tram keep their directional artwork below.
-            if case .simulated(let t) = train.kind, t.lineType == .suburban || t.lineType == .bus {
-                return Self.triangleTrainImage(color: UIColor(SyrmosData.lineColor(for: t.lineId)), bearing: t.bearing)
-            }
-            // Prefer the bundled per-line, per-direction vehicle artwork
-            // (metro_m1_left_to_piraeus, tram_t7_right_to_asklipiio_voulas
-            // etc). Same path that VehicleIcons.imageName(for:) drives in
-            // the SwiftUI dot fallback. Only when no asset is bundled do we
-            // fall back to the coloured rounded rect.
-            let iconName: String?
+            // Every moving vehicle is a single heading-rotated directional
+            // triangle in the line colour - a pixel mirror of web's one
+            // `trainMarkerIcon` for the whole fleet. Native used to hand metro
+            // and tram their own per-line sprite artwork, which is exactly why
+            // the trains looked nothing like web; web draws only triangles.
+            // Colour is the primary line's raw hex from lines.json (same source
+            // web reads), so a moving train matches its own line.
+            let lineId: String
+            let bearing: Double
             switch train.kind {
-            case .simulated(let t): iconName = VehicleIcons.imageName(for: t)
-            case .live(let t):      iconName = VehicleIcons.imageName(for: t)
+            case .simulated(let t): lineId = t.lineId; bearing = t.bearing
+            case .live(let t):      lineId = t.lineId; bearing = 0
             }
-            if let n = iconName, let raw = UIImage(named: n) {
-                let target = CGSize(width: 44, height: 30)
-                let renderer = UIGraphicsImageRenderer(size: target)
-                return renderer.image { _ in
-                    raw.draw(in: CGRect(origin: .zero, size: target))
-                }
-            }
-            let size = CGSize(width: 28, height: 22)
-            let color: UIColor
-            switch train.kind {
-            case .simulated(let t): color = UIColor(SyrmosData.lineColor(for: t.lineId))
-            case .live(let t):      color = UIColor(SyrmosData.lineColor(for: t.lineId))
-            }
-            let renderer = UIGraphicsImageRenderer(size: size)
-            return renderer.image { ctx in
-                let cg = ctx.cgContext
-                let outer = CGRect(origin: .zero, size: size)
-                let path = UIBezierPath(roundedRect: outer, cornerRadius: 6)
-                cg.setFillColor(UIColor.white.cgColor)
-                cg.addPath(path.cgPath); cg.fillPath()
-                let inner = outer.insetBy(dx: 2, dy: 2)
-                let innerPath = UIBezierPath(roundedRect: inner, cornerRadius: 5)
-                cg.setFillColor(color.cgColor)
-                cg.addPath(innerPath.cgPath); cg.fillPath()
-            }
+            let color = UIColor(SyrmosData.line(for: lineId)?.color
+                ?? SyrmosData.lineColor(for: lineId))
+            return Self.triangleTrainImage(color: color, bearing: bearing)
         }
     }
 }

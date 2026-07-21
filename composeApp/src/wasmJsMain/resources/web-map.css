@@ -657,6 +657,11 @@ body {
     margin: 0;
     font-size: 26px;
     line-height: 1.1;
+    /* Explicit light colour. Without it this inherited body's --sy-on-surface,
+       which flips near-white under the OS `prefers-color-scheme: dark` media
+       query even when the app is toggled to LIGHT - so the title vanished on
+       the white sheet. The .dark-mode override below restores white in dark. */
+    color: #14181f;
 }
 
 .station-alt {
@@ -741,6 +746,10 @@ body {
     gap: 8px;
     font-size: 14px;
     font-weight: 700;
+    /* Explicit light colour for the same reason as #stationName: it otherwise
+       inherited the OS-dark --sy-on-surface token and washed out on the white
+       sheet in light mode. .dark-mode overrides restore the light colour. */
+    color: #14181f;
 }
 
 .departure-card__destination {
@@ -1183,6 +1192,7 @@ body {
 }
 
 .dark-mode #stationName { color: #f1f5f9; }
+.dark-mode .departure-card__line { color: #f1f5f9; }
 .dark-mode .station-alt { color: #94a3b8; }
 .dark-mode .meta-item { border-top-color: rgba(255, 255, 255, 0.06); }
 .dark-mode .meta-key { color: #94a3b8; }
@@ -1190,7 +1200,12 @@ body {
 .dark-mode .departure-card { background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.05); }
 .dark-mode .departure-empty { background: #0a0a0a; color: #94a3b8; }
 
-.dark-mode .leaflet-tile-pane { filter: brightness(0.6) contrast(1.15) saturate(0.75); }
+/* CARTO dark_nolabels (Dark Matter) is already a near-black basemap whose
+   streets are faint low-luminance strokes. A brightness(0.6) on top crushed
+   those strokes below the visible threshold, so the whole map read as flat
+   black. Lift brightness slightly instead so the street grid shows through
+   under the coloured line network, matching the light map's legibility. */
+.dark-mode .leaflet-tile-pane { filter: brightness(1.15) contrast(1.05); }
 
 /* OSM tile licensing requires attribution but the default Leaflet styling
    draws a stark cream-coloured bar across the bottom of the map that clashes

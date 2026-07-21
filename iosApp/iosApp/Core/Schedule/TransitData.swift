@@ -138,6 +138,52 @@ private struct SeedLinesPayload: Decodable {
     let lines: [SeedLine]
 }
 
+/// Ordered station coordinates per line, read from `lines.json`'s nested
+/// `stations[]` (which carry lat/lng for every line, including national,
+/// Thessaloniki and Patras corridors). Used by the map to spline a route
+/// polyline for any line that has no bundled OSM shape - so the whole network
+/// draws, exactly like the web map, instead of only the Athens M/T/A lines.
+enum SyrmosLineGeometry {
+    private struct Payload: Decodable {
+        struct Line: Decodable {
+            let id: String
+            let stations: [Station]?
+        }
+        struct Station: Decodable {
+            let lat: Double
+            let lng: Double
+            let stopSequence: Int?
+        }
+        let lines: [Line]
+    }
+
+    private static let byLine: [String: [CLLocationCoordinate2D]] = {
+        guard let url = Bundle.main.url(
+            forResource: "lines",
+            withExtension: "json",
+            subdirectory: "seed-schedules-v2"
+        ) ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(Payload.self, from: data)
+        else { return [:] }
+        var out: [String: [CLLocationCoordinate2D]] = [:]
+        for line in payload.lines {
+            guard let stations = line.stations, !stations.isEmpty else { continue }
+            let ordered = stations.enumerated().sorted { a, b in
+                (a.element.stopSequence ?? a.offset) < (b.element.stopSequence ?? b.offset)
+            }
+            out[line.id] = ordered.map {
+                CLLocationCoordinate2D(latitude: $0.element.lat, longitude: $0.element.lng)
+            }
+        }
+        return out
+    }()
+
+    static func orderedCoordinates(for lineId: String) -> [CLLocationCoordinate2D] {
+        byLine[lineId] ?? []
+    }
+}
+
 enum SyrmosData {
 
     /// Lines, loaded from the bundled payload.

@@ -79,6 +79,28 @@ private fun loadRouteShapes(context: Context): Map<String, List<GeoPoint>> {
     }.getOrDefault(emptyMap())
 }
 
+/**
+ * Per-line colour, read straight from `lines.json`'s raw hex - the SAME source
+ * the web map reads. The KMP `Line.color` collapses every line into one of five
+ * `LineColor` enum buckets, so national / Thessaloniki / Patras lines all came
+ * out purple and Athens hues drifted from web. Reading the hex here restores the
+ * true per-line colour so Android polylines, dots and triangles match web
+ * exactly. Falls back to the enum colour when a line is missing from the file.
+ */
+@Serializable
+private data class SeedLineColor(val id: String, val color: String? = null)
+
+@Serializable
+private data class SeedLinesColorPayload(val lines: List<SeedLineColor> = emptyList())
+
+private fun loadLineColors(context: Context): Map<String, Int> {
+    return runCatching {
+        val body = context.assets.open("files/seed/schedules-v2/lines.json").bufferedReader().use { it.readText() }
+        val payload = Json { ignoreUnknownKeys = true }.decodeFromString<SeedLinesColorPayload>(body)
+        payload.lines.mapNotNull { l -> l.color?.let { l.id to parseHex(it) } }.toMap()
+    }.getOrDefault(emptyMap())
+}
+
 private fun resolveVehicleDrawable(context: Context, train: SimulatedTrain): android.graphics.drawable.Drawable? {
     val drawableName = vehicleDrawableName(train) ?: return null
     val resId = context.resources.getIdentifier(drawableName, "drawable", context.packageName)
@@ -152,6 +174,7 @@ internal actual fun PlatformMapView(
     var hasFittedBounds by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val routeShapes = remember { loadRouteShapes(context) }
+    val lineColors = remember { loadLineColors(context) }
     val lineOverlays = remember { mutableListOf<Polyline>() }
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
     val trainMarkers = remember { mutableMapOf<String, Marker>() }
@@ -264,15 +287,20 @@ internal actual fun PlatformMapView(
             // real, but it reads as inert: muted grey, thinner, dashed. It carries
             // no trains or departures either (handled in the simulator/projector).
             val underConstruction = !line.isOperational
+            val isBus = line.type == LineType.BUS
+            // Raw per-line hex from lines.json (matches web); enum colour only if
+            // the line is somehow absent from the file.
             val color = when {
                 underConstruction -> android.graphics.Color.parseColor(com.syrmos.core.common.map.MapDesignTokens.GREYED_COLOR)
                 else -> override?.strokeColor?.let { parseHex(it) }
+                    ?: lineColors[line.id]
                     ?: line.color.toComposeColor().toArgb()
             }
+            // Web weights: metro/tram 5, suburban/bus 4, under-construction 3.
             val width = when {
-                underConstruction -> if (line.type == LineType.SUBURBAN) 5f else 6f
+                underConstruction -> 3f
                 else -> override?.strokeWeight?.toFloat()
-                    ?: (if (line.type == LineType.SUBURBAN) 7f else 10f)
+                    ?: (if (line.type == LineType.SUBURBAN || isBus) 4f else 5f)
             }
             val polyline = Polyline().apply {
                 outlinePaint.color = color
@@ -281,13 +309,17 @@ internal actual fun PlatformMapView(
                 outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
                 if (underConstruction) {
                     outlinePaint.alpha = 140
-                    outlinePaint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(12f, 16f), 0f)
+                    outlinePaint.pathEffect = android.graphics.DashPathEffect(
+                        com.syrmos.core.common.map.MapDesignTokens.GREYED_DASH.map { it.toFloat() }.toFloatArray(), 0f
+                    )
                 } else {
-                    override?.strokeDash?.let { dashSpec ->
-                        val parts = dashSpec.split(" ").mapNotNull { it.toFloatOrNull() }
-                        if (parts.size >= 2) {
-                            outlinePaint.pathEffect = android.graphics.DashPathEffect(parts.toFloatArray(), 0f)
-                        }
+                    // In-service lines at web's 0.9 opacity. Rail-replacement buses
+                    // draw dashed (web busDash "2 7") so they read as a bus, not rail.
+                    outlinePaint.alpha = 230
+                    val dash = override?.strokeDash?.split(" ")?.mapNotNull { it.toFloatOrNull() }
+                        ?: if (isBus) com.syrmos.core.common.map.MapDesignTokens.BUS_DASH.map { it.toFloat() } else null
+                    if (dash != null && dash.size >= 2) {
+                        outlinePaint.pathEffect = android.graphics.DashPathEffect(dash.toFloatArray(), 0f)
                     }
                 }
                 setPoints(smoothed)
@@ -360,22 +392,18 @@ internal actual fun PlatformMapView(
             if (!shouldDraw(station)) return@forEach
             val existing = stationMarkers[station.id]
             val isSelected = uiState.selectedStation?.id == station.id
-            val primaryStationId = station.stationIds.firstOrNull() ?: station.id
-            val tintArgb = station.lineIds.firstNotNullOfOrNull { lineId ->
-                uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
-            }?.toArgb() ?: 0xFF64748B.toInt()
+            // Raw per-line hex (matches web + the polylines); enum only as a last resort.
+            val tintArgb = station.lineIds.firstNotNullOfOrNull { lineColors[it] }
+                ?: station.lineIds.firstNotNullOfOrNull { lineId ->
+                    uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
+                }?.toArgb() ?: 0xFF64748B.toInt()
 
-            // Per-station artwork PNG ONLY for the selected stop (at any zoom); every
-            // other station keeps a single-size coloured pin. Previously each pin
-            // resized by zoom bucket and ballooned into a PNG at z14, so the whole map
-            // visibly churned when crossing thresholds ("everything moves"). One pin
-            // size keeps it calm; the tier decluttering (shouldDraw) still thins dots.
-            val icon = if (isSelected) {
-                resolveStationDrawable(context, primaryStationId, uiState.lineStations)
-                    ?: buildZoomPin(tintArgb, station.isInterchange, true, bucket = 2)
-            } else {
-                buildZoomPin(tintArgb, station.isInterchange, false, bucket = 2)
-            }
+            // A single clean coloured dot with a white ring, exactly like web's
+            // circleMarker. We used to swap in per-station artwork PNGs (the
+            // bullseye icons with baked-in "M3 AM" labels) on selection - that is
+            // precisely the "wrong icons" divergence from web, which draws none.
+            // Selection just grows the dot; the label lives in the sheet.
+            val icon = buildZoomPin(tintArgb, station.isInterchange, isSelected, bucket = if (isSelected) 2 else 1)
 
             if (existing != null) {
                 existing.position = GeoPoint(station.latitude, station.longitude)
@@ -417,30 +445,22 @@ internal actual fun PlatformMapView(
         }
 
         uiState.simulatedTrains.forEach { train ->
-            val lineColor = train.lineColor.toComposeColor().toArgb()
-            // Suburban A-lines + national rail + rail-replacement buses have no
-            // directional sprite, so render them as a heading-rotated triangle
-            // (mirrors web). Metro/tram keep their per-line directional drawables.
-            val isTriangle = train.lineType == LineType.SUBURBAN || train.lineType == LineType.BUS
+            // Every moving vehicle is one heading-rotated directional triangle in
+            // the line colour - a pixel mirror of web's single train marker for the
+            // whole fleet. Native used to give metro/tram their own per-line sprite
+            // badges, which is exactly why the trains looked nothing like web. Line
+            // colour comes from the raw lines.json hex, same as web.
+            val lineColor = lineColors[train.lineId] ?: train.lineColor.toComposeColor().toArgb()
             val existing = trainMarkers[train.id]
             if (existing != null) {
                 existing.position = GeoPoint(train.latitude, train.longitude)
-                // The heading is baked into the triangle bitmap, so refresh it as
-                // the train changes segment.
-                if (isTriangle) existing.icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
+                // Heading is baked into the triangle bitmap; refresh each segment.
+                existing.icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
             } else {
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(train.latitude, train.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = if (isTriangle) {
-                        buildTriangleTrainBitmap(res, lineColor, train.bearing)
-                    } else {
-                        resolveVehicleDrawable(context, train) ?: when {
-                            train.isAirportService -> buildAirportTrainBitmap(res)
-                            train.lineType == LineType.TRAM -> buildTramTrainBitmap(res, lineColor, train.lineId)
-                            else -> buildMetroTrainBitmap(res, lineColor, train.lineId)
-                        }
-                    }
+                    icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
                     title = "${train.lineName} → ${train.destinationName}"
                     snippet = "Near ${train.currentStationName}"
                 }
@@ -608,14 +628,12 @@ private fun buildZoomPin(
         }
         canvas.drawCircle(cx, cy, r - ring * 0.8f, ringPaint)
     } else {
+        // Solid line-coloured dot with a white ring - a plain stop on web is a
+        // filled circle, no inner cap.
         val whiteRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
         canvas.drawCircle(cx, cy, r, whiteRing)
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
         canvas.drawCircle(cx, cy, r - ring, fill)
-        if (bucket >= 2) {
-            val cap = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
-            canvas.drawCircle(cx, cy, r * 0.34f, cap)
-        }
     }
 
     return BitmapDrawable(null, bitmap)
