@@ -17,33 +17,14 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosShapeTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosTypographyTokens
+import com.syrmos.core.model.schedule.SourceConfidence
 
 /**
  * Syrmos knows what it knows and says so (design doc section 7, a headline 2.0.0
  * pillar). A calm, never-alarming chip that states how certain an answer is. It
  * appears on departure cards, station detail, route results, and Ariadne answers.
- * The catalog name is shared across platforms (task T4).
+ * The [SourceConfidence] catalog is shared across platforms (core:model).
  */
-enum class SourceConfidence {
-    /** A real-time position or arrival (for example a live suburban position). */
-    LIVE,
-
-    /** A scheduled timetable departure, not a live one. */
-    SCHEDULED,
-
-    /** Served from the bundled offline snapshot. */
-    OFFLINE,
-
-    /** Estimated from a frequency band rather than an exact time. */
-    ESTIMATED,
-
-    /** The operator must be checked for live status. */
-    OPERATOR_LINK,
-
-    /** No live disruption data is available. */
-    UNKNOWN,
-}
-
 private fun SourceConfidence.color(): Color = when (this) {
     SourceConfidence.LIVE -> SyrmosColorTokens.live
     SourceConfidence.SCHEDULED -> SyrmosColorTokens.scheduled

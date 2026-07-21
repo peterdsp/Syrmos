@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.designsystem.theme.ArrivalFar
 import com.syrmos.core.designsystem.theme.ArrivalModerate
 import com.syrmos.core.designsystem.theme.ArrivalSoon
+import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.LineColor
 import org.jetbrains.compose.resources.painterResource
 
@@ -34,6 +35,10 @@ fun DepartureCard(
     modifier: Modifier = Modifier,
     lineId: String? = null,
     isAirport: Boolean = false,
+    /** Where this departure came from; renders a source-confidence chip when set. */
+    sourceConfidence: SourceConfidence? = null,
+    /** Localised (EL/SQ) chip label; falls back to the chip's English default. */
+    sourceLabel: String? = null,
 ) {
     val vehicleResource = lineId?.let { VehicleIcons.resourceFor(it, direction, isAirport) }
     Card(
@@ -64,7 +69,7 @@ fun DepartureCard(
                 } else {
                     LineColorIndicator(lineColor = lineColor, size = 16.dp)
                 }
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = lineName,
                         style = MaterialTheme.typography.titleSmall,
@@ -74,6 +79,13 @@ fun DepartureCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (sourceConfidence != null) {
+                        if (sourceLabel != null) {
+                            SourceConfidenceChip(confidence = sourceConfidence, label = sourceLabel)
+                        } else {
+                            SourceConfidenceChip(confidence = sourceConfidence)
+                        }
+                    }
                 }
             }
             Column(horizontalAlignment = Alignment.End) {

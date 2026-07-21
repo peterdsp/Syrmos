@@ -8,6 +8,7 @@ import com.syrmos.core.common.extensions.toDisplayString
 import com.syrmos.core.data.repository.ScheduleRepositoryImpl
 import com.syrmos.core.model.schedule.DayType
 import com.syrmos.core.model.schedule.Departure
+import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.network.SyrmosSchedulesService
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,8 @@ data class UpcomingDeparture(
     val lineId: String,
     val notes: String? = null,
     val serviceType: String? = null,
+    /** Where this row came from, so the UI can show a source-confidence chip. */
+    val sourceConfidence: SourceConfidence = SourceConfidence.UNKNOWN,
 )
 
 class GetNextDeparturesUseCase(
@@ -94,12 +97,13 @@ class GetNextDeparturesUseCase(
     ): List<UpcomingDeparture> {
         val projector = bandProjector ?: return emptyList()
         val lineIds = if (lineId == "M3") listOf("M3", "M3_AIR") else listOf(lineId)
+        // Projected from a frequency band, not an exact timetabled minute.
         return projector.invoke(
             lineIds = lineIds,
             direction = direction,
             limit = limit,
             stationId = stationId,
-        )
+        ).map { it.copy(sourceConfidence = SourceConfidence.ESTIMATED) }
     }
 
     private fun fallbackDepartures(
@@ -129,6 +133,8 @@ class GetNextDeparturesUseCase(
                     direction = direction,
                     lineId = lineId,
                     notes = departure.notes,
+                    // Bundled seed timetable - the offline-first snapshot.
+                    sourceConfidence = SourceConfidence.OFFLINE,
                 )
             }
         }
@@ -150,6 +156,8 @@ class GetNextDeparturesUseCase(
             lineId = resolvedLineId,
             notes = direction.ifBlank { null },
             serviceType = serviceType.ifBlank { null },
+            // Timetabled departure served from the live schedules API.
+            sourceConfidence = SourceConfidence.SCHEDULED,
         )
     }
 
