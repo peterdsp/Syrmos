@@ -2140,6 +2140,8 @@
             if (timestamp - lastMapUpdate > 250) {
                 let trains = [];
                 try { trains = simulateAllTrains(); } catch (_) { trains = []; }
+                // Add the national + bus vehicles projected from the bundled timetables.
+                try { trains = trains.concat(projectScheduledTrains()); } catch (_) {}
                 try { renderSimulatedTrainsOnMap(trains); } catch (_) {}
                 lastMapUpdate = timestamp;
                 if (timestamp - lastPanelUpdate > 2000) {
@@ -2173,7 +2175,11 @@
     }
 
     async function pollLivePositions() {
-        const PROJECTED = "M1,M2,M3,M3_AIR,T6,T7";
+        // Metro + tram + Athens suburban A1-A4. The Pi projects all of these on
+        // /api/live-positions (online), and each has bundled station-offsets so the
+        // client interpolates them identically when offline. National + bus lines
+        // are handled by the schedule projector below (no offsets on the Pi yet).
+        const PROJECTED = "M1,M2,M3,M3_AIR,T6,T7,A1,A2,A3,A4";
         async function tick() {
             try {
                 const r = await fetch(`https://api-syrmos.peterdsp.dev/api/live-positions?lineIds=${PROJECTED}`);
@@ -2327,7 +2333,9 @@
 
             const displayLineId = raw.lineId === "M3_AIR" ? "M3" : raw.lineId;
             const line = linesById.get(displayLineId);
-            if (!line || line.type === "suburban") continue;
+            // Suburban A1-A4 are now projected too (they arrive in the poll and have
+            // bundled offsets); only skip a line we can't resolve.
+            if (!line) continue;
 
             const originEpoch = livePositionsSnapshot.generatedAtEpochSeconds - raw.elapsedMinutes * 60;
             const elapsed = (nowEpoch - originEpoch) / 60;
@@ -2371,44 +2379,68 @@
         return result;
     }
 
+    // Metro/tram/A-line vehicles come from /api/live-positions (simulateAllTrains).
+    const LIVE_POSITION_LINES = new Set(["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"]);
 
-    function trainMarkerIcon(train) {
-        const zoom = map.getZoom();
-        const manifestLine = lineIdToManifestLine[train.line.id] || train.line.id;
-
-        if (zoom < 12) {
-            const color = train.line.color || "#0072CE";
-            return L.divIcon({
-                className: "train-marker",
-                html: `<span class="train-marker__ring" style="background:${color}"></span>`,
-                iconSize: [14, 14],
-                iconAnchor: [7, 7],
-            });
+    // National rail + rail-replacement buses (IC/RG/KO/PL/DK/PS/bus corridors) have
+    // no live-position feed or station-offsets on the Pi, so project them CLIENT-side
+    // from the bundled timetables: for every trip running right now, find the segment
+    // the clock lands in and interpolate along the line's track. This is the "else
+    // interpolate from the timetable" path; if the Pi ever serves their live
+    // positions it flows through connectLiveTrainStream and wins per line.
+    function projectScheduledTrains() {
+        if (!apiSchedules || apiSchedules.size === 0) return [];
+        const out = [];
+        const now = new Date();
+        const today = dayTypeFor(now, resolveHolidayDayType(now));
+        const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+        for (const line of lines) {
+            if (LIVE_POSITION_LINES.has(line.id)) continue;          // handled above
+            if ((line.status || "operational") === "under_construction") continue;
+            const bundle = apiSchedules.get(line.id);
+            if (!bundle || !Array.isArray(bundle.trips)) continue;
+            for (const trip of bundle.trips) {
+                // dayType is authoritative (mon_thu / fri / sat / sun); an empty
+                // dayType means the trip runs every day.
+                const td = (trip.dayType || "").toLowerCase();
+                if (td && td !== today) continue;
+                const stops = trip.stops;
+                if (!Array.isArray(stops) || stops.length < 2) continue;
+                const times = stops.map((s) => minutesOfDay(s.departureTime));
+                if (times.some((t) => t == null)) continue;
+                // Skip trips that wrap past midnight (non-monotonic) - rare on these lines.
+                let monotonic = true;
+                for (let i = 1; i < times.length; i++) if (times[i] < times[i - 1]) { monotonic = false; break; }
+                if (!monotonic) continue;
+                if (nowMin < times[0] || nowMin > times[times.length - 1]) continue;
+                let seg = 0;
+                for (let i = 0; i < stops.length - 1; i++) {
+                    if (times[i] <= nowMin && nowMin < times[i + 1]) { seg = i; break; }
+                }
+                const from = stationMap.get(stops[seg].stationId);
+                const to = stationMap.get(stops[seg + 1].stationId);
+                if (!from || !to) continue;
+                const dur = times[seg + 1] - times[seg];
+                const frac = dur > 0 ? Math.min(Math.max((nowMin - times[seg]) / dur, 0), 1) : 0;
+                const [lat, lng] = trainPosition(line.id, from, to, frac);
+                const dest = stationMap.get(stops[stops.length - 1].stationId);
+                out.push({
+                    id: `${line.id}_${trip.trainNo || seg}_${trip.direction || ""}`,
+                    line,
+                    direction: trip.direction || "",
+                    destination: (dest && dest.name) || line.terminalB || "",
+                    fromStation: from.name,
+                    toStation: to.name,
+                    lat,
+                    lng,
+                    bearing: bearingDeg(from.latitude, from.longitude, to.latitude, to.longitude),
+                    scheduled: true,
+                });
+            }
         }
-
-        let svgKey;
-        if (train.isAirport) {
-            svgKey = vehicleIconMap.get(`${manifestLine}_airport`) || vehicleIconMap.get(`${manifestLine}_outbound`);
-        } else {
-            svgKey = vehicleIconMap.get(`${manifestLine}_${train.direction}`);
-        }
-        const size = zoom >= 14 ? 38 : 28;
-        if (svgKey) {
-            return L.icon({
-                iconUrl: svgKey,
-                iconSize: [size, size],
-                iconAnchor: [size / 2, size / 2],
-                className: "sim-train-marker",
-            });
-        }
-        const genericType = train.line.type === "tram" ? "tram" : train.line.type === "suburban" ? "train" : "metro";
-        return L.icon({
-            iconUrl: `icons/vehicles/generic_vehicle/vehicle_${genericType}.svg`,
-            iconSize: [size, size],
-            iconAnchor: [size / 2, size / 2],
-            className: "sim-train-marker",
-        });
+        return out;
     }
+
 
     // Compass bearing from -> to, so a train's triangle points the way it travels.
     function bearingDeg(lat1, lon1, lat2, lon2) {
