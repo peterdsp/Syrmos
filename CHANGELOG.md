@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.7** (TestFlight), **Android 1.2.7** (Play internal, versionCode 112), **Web** (rolling). 1.2.7 cut 2026-07-21 by the `v1.2.7` tag. Burned Android version codes never reusable: 105, 106, 109, 110, 111. Next release must use 113+.
+Current shipping: **iOS 1.2.8** (TestFlight, iOS-only catch-up for national/bus vehicles), **Android 1.2.7** (Play internal, versionCode 112, already carries national/bus), **Web** (rolling). 1.2.7 cut 2026-07-21 by the `v1.2.7` tag; 1.2.8 cut the same day for iOS. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112. Next Android release must use 113+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,10 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.8 (iOS) — 2026-07-21
+
+**iOS national + regional + bus moving vehicles.** iOS now shows moving vehicles for national intercity rail (IC/RG/KO/PL/DK/AL), the Thessaloniki and Patras suburban corridors, and the rail-replacement buses (KB/VL/DX/KP/TL/PU/PSB) — the same fleet Android and web already carry from 1.2.7. These lines have no live feed and no station-offsets table on the Pi, so iOS projects them entirely offline from the bundled timetables (`seed-schedules-v2/{lineId}.json` `trips[]`): for every trip whose day-type matches today, the current segment is found by wall clock and the chord between its two stations is interpolated. They render as the same directional triangles as the suburban fleet, and each carries its real line colour instead of a single purple. This closes the iOS-only gap that 1.2.7 deferred (iOS runs a separate Swift simulator from the KMP `MapViewModel`, so the KMP projector only reached Android). No Android or web change — both already ship this — so 1.2.8 is an iOS-only release; Android stays on versionCode 112 / 1.2.7.
 
 ## Unreleased (rolling web + data)
 
