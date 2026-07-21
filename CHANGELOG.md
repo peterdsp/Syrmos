@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.8** (TestFlight, iOS-only catch-up for national/bus vehicles), **Android 1.2.7** (Play internal, versionCode 112, already carries national/bus), **Web** (rolling). 1.2.7 cut 2026-07-21 by the `v1.2.7` tag; 1.2.8 cut the same day for iOS. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112. Next Android release must use 113+.
+Current shipping: **iOS 1.2.9** (TestFlight), **Android 1.2.9** (Play internal, versionCode 113), **Web** (rolling). 1.2.7 cut 2026-07-21 by the `v1.2.7` tag; 1.2.8 cut the same day for iOS; 1.2.9 (map cross-platform parity) cut the same day for all three via the `v1.2.9` tag. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113. Next Android release must use 114+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,19 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.9 — 2026-07-21
+
+**The map now looks the same on all three platforms.** Web was the reference (flat base, coloured line network, clean dots, directional-triangle trains); iOS and Android had drifted badly and web itself had two theme bugs. Fixed everywhere:
+
+- **iOS: the coloured line network was invisible.** The flat CARTO base tile layer, which is opaque and replaces the map, was drawn at the top overlay level, so it painted straight over every route line. Only station and train markers showed. The base now sits at the bottom and the lines render on top of it. National, Thessaloniki and Patras corridors also draw now (iOS previously only splined the Athens lines).
+- **iOS + Android: markers matched web.** Both platforms drew custom artwork - iOS bundled per-station icons with baked-in labels ("M3 AM"), Android per-station PNGs on selection - instead of web's clean coloured dot with a white ring. Both now draw the same simple dot (interchanges read as a white-cored ring), with the station name/detail living in the sheet, not the pin.
+- **Trains are one directional triangle everywhere.** Web draws the whole fleet as line-coloured triangles pointing the way of travel; native gave metro and tram their own sprite badges. Native now uses the same triangle for every vehicle.
+- **Line colours are the real per-line colours.** Web reads each line's exact colour from the data; Android was collapsing every line into one of five buckets, so national/Thessaloniki/Patras lines all came out purple. Android now reads the true per-line colour, matching web and iOS.
+- **Web dark mode was pure black.** A brightness filter meant to darken the map crushed the already-dark base map's streets to invisibility. Softened so the street grid shows under the coloured lines again.
+- **Web light mode sheet text was washed out.** The station title and line names had no explicit colour, so with the OS in dark mode but the app toggled to light they inherited a near-white colour and vanished on the white sheet. Given explicit colours for both themes.
+
+All platforms bumped to 1.2.9 (Android versionCode 113). Line weights, opacity (0.9), the bus dash and dot sizes were also aligned to web's exact values.
 
 ## 1.2.8 (iOS) — 2026-07-21
 
