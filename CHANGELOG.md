@@ -21,7 +21,7 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 - **Trains are one directional triangle everywhere.** Web draws the whole fleet as line-coloured triangles pointing the way of travel; native gave metro and tram their own sprite badges. Native now uses the same triangle for every vehicle.
 - **Line colours are the real per-line colours.** Web reads each line's exact colour from the data; Android was collapsing every line into one of five buckets, so national/Thessaloniki/Patras lines all came out purple. Android now reads the true per-line colour, matching web and iOS.
 - **Web dark mode was pure black.** A brightness filter meant to darken the map crushed the already-dark base map's streets to invisibility. Softened so the street grid shows under the coloured lines again.
-- **Web light mode sheet text was washed out.** The station title and line names had no explicit colour, so with the OS in dark mode but the app toggled to light they inherited a near-white colour and vanished on the white sheet. Given explicit colours for both themes.
+- **Web light mode text was washed out.** The app's dark colour tokens were keyed to the OS `prefers-color-scheme`, not the app's own light/dark toggle, so with the OS in dark mode but the app switched to light, every on-surface text (station title, search-result names, departure line names) went near-white and vanished on the light surfaces. The tokens now follow the app's own theme class, fixing contrast app-wide in every OS/app combination.
 
 All platforms bumped to 1.2.9 (Android versionCode 113). Line weights, opacity (0.9), the bus dash and dot sizes were also aligned to web's exact values.
 
