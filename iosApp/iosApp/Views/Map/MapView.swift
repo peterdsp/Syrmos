@@ -963,7 +963,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         // On-device audit: warn if any station the app renders falls outside the
-        // Attica box (37.7-38.55 N, 23.25-24.15 E). This is the definitive check for
+        // Attica box (37.7-38.55 N, 22.65-24.15 E; A4 Kiato W to A3 Chalkida N).
+        // This is the definitive check for
         // the "dots in the sea" question - it reads the real coordinate, so if the
         // console stays quiet the bundled data is clean. Athens-only by design; the
         // rest of Greece is expected outside the box, so scope the audit to the
@@ -979,9 +980,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
             if !onAthensLine { continue }
             let lat = s.coordinate.latitude
             let lon = s.coordinate.longitude
-            // Box covers the greater Athens rail region: north to the Thebes /
-            // Boeotia corridor + the A3 Chalkida line (~38.46 N).
-            let outside = lat < 37.70 || lat > 38.55 || lon < 23.25 || lon > 24.15
+            // Box covers the full Athens-line extent: north to the A3 Chalkida
+            // line (~38.46), west to the A4 Kiato terminus (~22.73). National lines
+            // (already excluded above) span all of Greece and aren't audited.
+            let outside = lat < 37.70 || lat > 38.55 || lon < 22.65 || lon > 24.15
             if outside {
                 offshoreCount += 1
                 print("[syrmos] station \(s.id) OUTSIDE Attica: \(lat), \(lon)")

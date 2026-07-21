@@ -1542,17 +1542,21 @@
     // WARN on any whose real coordinate falls outside the Attica box. This is the
     // definitive on-device check for the "dots in the sea" question - it reads
     // each marker's actual getLatLng(), not a fragile pixel guess.
+    const AUDIT_ATHENS_LINES = new Set(["M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4"]);
     function logMarkerAudit(z) {
         let onMap = 0, offAttica = 0;
         for (const [id, m] of markers) {
             if (!map.hasLayer(m)) continue;
             onMap++;
+            // Only audit ATHENS-network stops. The national lines (IC/RG toward
+            // Lamia/Thessaloniki, Patras, etc.) legitimately span all of Greece and
+            // can't be boxed into an Attica region, so they're not "in the sea"
+            // anomalies. The box covers the full Athens extent: north to the A3
+            // Chalkida line (~38.46), west to the A4 Kiato terminus (~22.73).
+            const st = stationNodeMap.get(id);
+            if (!st || !st.lineIds.some((l) => AUDIT_ATHENS_LINES.has(l))) continue;
             const ll = m.getLatLng();
-            // Box covers the greater Athens rail region: north to the Thebes /
-            // Boeotia corridor + the A3 Chalkida line (~38.46 N), so those real
-            // stops don't read as anomalies. Only a genuine sea/way-off placement
-            // now trips the audit.
-            const outside = ll.lat < 37.7 || ll.lat > 38.55 || ll.lng < 23.25 || ll.lng > 24.15;
+            const outside = ll.lat < 37.7 || ll.lat > 38.55 || ll.lng < 22.65 || ll.lng > 24.15;
             if (outside) {
                 offAttica++;
                 console.warn(`[syrmos] station ${id} OUTSIDE Attica: ${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}`);
