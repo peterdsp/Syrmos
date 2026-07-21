@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.ITileSource
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import androidx.compose.ui.graphics.luminance
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -34,29 +35,25 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 
-/// Carto Voyager raster: OSM data rendered with name:en preferred over the
-/// local language. Used for English + Albanian app modes (Albanian-specific
-/// label rendering isn't a free public tile service as of 2026). Greek mode
-/// uses the default OSM Mapnik tiles which carry Greek labels in Greece.
-private val CARTO_VOYAGER: ITileSource = XYTileSource(
-    "CartoVoyager",
-    0,
-    20,
-    256,
-    ".png",
+// Flat, label-free minimal base like the railway.gov.gr live tracker: CARTO
+// Positron (light) / Dark-Matter (dark), no streets, no place labels. Our coloured
+// line network + station/train markers carry the structure, so the map reads as a
+// clean transit diagram instead of a road atlas. Follows the app theme, not the
+// language (there are no labels to localise).
+private fun cartoNoLabels(name: String, style: String): ITileSource = XYTileSource(
+    name, 0, 20, 256, ".png",
     arrayOf(
-        "https://a.basemaps.cartocdn.com/rastertiles/voyager/",
-        "https://b.basemaps.cartocdn.com/rastertiles/voyager/",
-        "https://c.basemaps.cartocdn.com/rastertiles/voyager/",
-        "https://d.basemaps.cartocdn.com/rastertiles/voyager/",
+        "https://a.basemaps.cartocdn.com/$style/",
+        "https://b.basemaps.cartocdn.com/$style/",
+        "https://c.basemaps.cartocdn.com/$style/",
+        "https://d.basemaps.cartocdn.com/$style/",
     ),
     "© OpenStreetMap, © CARTO",
 )
+private val CARTO_LIGHT: ITileSource = cartoNoLabels("CartoLightNoLabels", "light_nolabels")
+private val CARTO_DARK: ITileSource = cartoNoLabels("CartoDarkNoLabels", "dark_nolabels")
 
-private fun tileSourceFor(lang: com.syrmos.core.common.AppLanguage): ITileSource = when (lang) {
-    com.syrmos.core.common.AppLanguage.GREEK -> TileSourceFactory.MAPNIK
-    else -> CARTO_VOYAGER
-}
+private fun tileSourceFor(dark: Boolean): ITileSource = if (dark) CARTO_DARK else CARTO_LIGHT
 
 /**
  * OSM-derived rail route geometry shipped at `assets/files/seed/schedules-v2/shapes.json`.
@@ -170,6 +167,9 @@ internal actual fun PlatformMapView(
     var mapMoveTick by remember { mutableStateOf(0) }
 
     val appLang by com.syrmos.core.common.LocalizationManager.language.collectAsState()
+    // Follow the applied Syrmos theme (respects the in-app light/dark/system
+    // override, not just the system setting) to pick the matching flat base map.
+    val darkMap = androidx.compose.material3.MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     DisposableEffect(context) {
         Configuration.getInstance().userAgentValue = context.packageName
@@ -180,7 +180,7 @@ internal actual fun PlatformMapView(
         modifier = modifier,
         factory = { ctx ->
             MapView(ctx).apply {
-                setTileSource(tileSourceFor(appLang))
+                setTileSource(tileSourceFor(darkMap))
                 setMultiTouchControls(true)
                 controller.setZoom(12.0)
                 controller.setCenter(GeoPoint(37.98, 23.73))
@@ -227,11 +227,10 @@ internal actual fun PlatformMapView(
             }
         },
         update = { mv ->
-            // Re-apply tile source when the active language flips so the
-            // Map tab picks up the localised labels without a process
-            // restart. osmdroid handles the swap and invalidates the
-            // tile cache for us.
-            val desired = tileSourceFor(appLang)
+            // Re-apply the base map when the theme flips (light <-> dark) so the
+            // Map tab swaps to the matching flat tiles without a process restart.
+            // osmdroid handles the swap and invalidates the tile cache for us.
+            val desired = tileSourceFor(darkMap)
             if (mv.tileProvider.tileSource !== desired) {
                 mv.setTileSource(desired)
                 mv.invalidate()
