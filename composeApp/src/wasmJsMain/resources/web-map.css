@@ -150,6 +150,19 @@ body {
     color: #f1f5f9;
 }
 
+/* Directional train triangle (divIcon) - distinct from the round station dots,
+   points the way the train is heading. The SVG carries the fill + white outline;
+   this just clears the divIcon chrome and centres the rotation. */
+.sim-train-tri {
+    background: transparent;
+    border: none;
+}
+.train-tri {
+    display: block;
+    transform-origin: 50% 50%;
+    filter: drop-shadow(0 1px 1.5px rgba(16, 20, 24, 0.35));
+}
+
 .train-marker {
     width: 16px;
     height: 16px;
