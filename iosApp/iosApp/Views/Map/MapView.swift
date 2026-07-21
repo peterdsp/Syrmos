@@ -1500,12 +1500,41 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
         }
 
+        /// A directional triangle for national rail + rail-replacement buses +
+        /// suburban A-lines (no per-line sprite). Rotated to the travel heading
+        /// (compass bearing, 0 = north), coloured by line with a white outline -
+        /// the iOS mirror of the web + Android triangle markers.
+        static func triangleTrainImage(color: UIColor, bearing: Double) -> UIImage {
+            let size = CGSize(width: 22, height: 22)
+            let renderer = UIGraphicsImageRenderer(size: size)
+            return renderer.image { ctx in
+                let cg = ctx.cgContext
+                cg.translateBy(x: size.width / 2, y: size.height / 2)
+                cg.rotate(by: CGFloat(bearing) * .pi / 180) // clockwise, 0 = up = north
+                let r = size.width * 0.42
+                let path = UIBezierPath()
+                path.move(to: CGPoint(x: 0, y: -r))
+                path.addLine(to: CGPoint(x: r * 0.82, y: r * 0.72))
+                path.addLine(to: CGPoint(x: -r * 0.82, y: r * 0.72))
+                path.close()
+                color.setFill(); path.fill()
+                path.lineWidth = size.width * 0.09
+                path.lineJoin = .round
+                UIColor.white.setStroke(); path.stroke()
+            }
+        }
+
         private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
+            // National rail + rail-replacement buses + suburban A-lines have no
+            // per-line sprite; render a heading-rotated triangle (mirrors web +
+            // Android). Metro/tram keep their directional artwork below.
+            if case .simulated(let t) = train.kind, t.lineType == .suburban || t.lineType == .bus {
+                return Self.triangleTrainImage(color: UIColor(SyrmosData.lineColor(for: t.lineId)), bearing: t.bearing)
+            }
             // Prefer the bundled per-line, per-direction vehicle artwork
             // (metro_m1_left_to_piraeus, tram_t7_right_to_asklipiio_voulas
             // etc). Same path that VehicleIcons.imageName(for:) drives in
-            // the SwiftUI dot fallback. Only when no asset is bundled
-            // (e.g. suburban A1-A4 don't ship train sprites yet) do we
+            // the SwiftUI dot fallback. Only when no asset is bundled do we
             // fall back to the coloured rounded rect.
             let iconName: String?
             switch train.kind {

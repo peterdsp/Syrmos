@@ -139,6 +139,27 @@ class SyrmosSchedulesService(
         /// Omonia, not Kifissia. Empty when the line has no short-turn
         /// data published yet (most lines other than M1).
         @SerialName("lastTrains") val lastTrains: List<LastTrainEntry> = emptyList(),
+        /// Full per-train timetable for lines that publish one (national rail +
+        /// rail-replacement buses). Metro/tram/suburban use bands instead; this is
+        /// what lets the map project moving vehicles for lines with no live feed or
+        /// station-offsets - each trip is interpolated by wall-clock along its stops.
+        @SerialName("trips") val trips: List<TripEntry> = emptyList(),
+    )
+
+    @Serializable
+    data class TripEntry(
+        @SerialName("trainNo") val trainNo: String = "",
+        @SerialName("dayType") val dayType: String = "",
+        @SerialName("direction") val direction: String = "",
+        @SerialName("serviceLabel") val serviceLabel: String = "",
+        val stops: List<TripStop> = emptyList(),
+    )
+
+    @Serializable
+    data class TripStop(
+        @SerialName("stationId") val stationId: String,
+        @SerialName("stopSequence") val stopSequence: Int = 0,
+        @SerialName("departureTime") val departureTime: String = "",
     )
 
     @Serializable

@@ -15,4 +15,8 @@ data class SimulatedTrain(
     val latitude: Double,
     val longitude: Double,
     val isAirportService: Boolean = false,
+    /// Compass heading (0 = north) of travel along the current segment. Used to
+    /// rotate the directional triangle for national/bus vehicles. 0.0 for the
+    /// metro/tram/suburban vehicles that render as directional sprites instead.
+    val bearing: Double = 0.0,
 )
