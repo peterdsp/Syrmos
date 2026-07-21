@@ -137,6 +137,10 @@ fun StationDetailScreen(
                         departureTime = departure.time,
                         modifier = Modifier.padding(horizontal = 16.dp),
                         lineId = departure.lineId,
+                        // Source-confidence chip (live / scheduled / estimated /
+                        // offline). Hidden for UNKNOWN so it never adds noise.
+                        sourceConfidence = departure.sourceConfidence
+                            .takeIf { it != com.syrmos.core.model.schedule.SourceConfidence.UNKNOWN },
                         // serviceType=="airport" covers both outbound (terminus
                         // "Airport") and inbound (terminus "Dimotiko Theatro"
                         // but originated at the Airport). Fall back to direction
