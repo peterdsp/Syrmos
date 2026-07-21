@@ -16,7 +16,7 @@ on:
       version:
         description: Marketing version to check (CFBundleShortVersionString)
         required: true
-        default: "1.2.5"
+        default: "1.2.8"
 
 jobs:
   check:
@@ -51,10 +51,15 @@ jobs:
               headers={"kid": key_id, "typ": "JWT"},
           )
           headers = {"Authorization": f"Bearer {token}"}
+          # preReleaseVersion MUST be listed in fields[builds]: a sparse
+          # fieldset limits the returned relationships too, so omitting it (even
+          # with &include=preReleaseVersion) strips each build's
+          # relationships.preReleaseVersion and leaves the marketing version
+          # unresolvable ("?"). That was the bug that forced manual matching.
           url = (
               "https://api.appstoreconnect.apple.com/v1/builds"
               "?limit=20&sort=-uploadedDate"
-              "&fields[builds]=version,processingState,uploadedDate,expired"
+              "&fields[builds]=version,processingState,uploadedDate,expired,preReleaseVersion"
               "&include=preReleaseVersion&fields[preReleaseVersions]=version"
           )
           r = requests.get(url, headers=headers, timeout=60)
@@ -87,9 +92,9 @@ jobs:
               print(f"  v{mv} build {bn}  ->  {ps}{' (expired)' if ex else ''}  [{flag}]  uploaded {up}")
           states = {x[2] for x in match}
           if "VALID" in states:
-              print("::notice::At least one 1.2.5 build is VALID and ready to test in TestFlight.")
+              print(f"::notice::At least one {version} build is VALID and ready to test in TestFlight.")
           elif states == {"PROCESSING"}:
-              print("::warning::1.2.5 is still PROCESSING on Apple's side. Re-run this in a few minutes.")
+              print(f"::warning::{version} is still PROCESSING on Apple's side. Re-run this in a few minutes.")
           elif "INVALID" in states:
-              print("::error::A 1.2.5 build came back INVALID in processing.")
+              print(f"::error::A {version} build came back INVALID in processing.")
           PY
