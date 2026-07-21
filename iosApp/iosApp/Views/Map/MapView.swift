@@ -1519,7 +1519,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 path.close()
                 color.setFill(); path.fill()
                 path.lineWidth = size.width * 0.09
-                path.lineJoin = .round
+                path.lineJoinStyle = .round
                 UIColor.white.setStroke(); path.stroke()
             }
         }
