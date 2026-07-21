@@ -54,8 +54,8 @@ android {
         // 105 (rejected) and 106 (released 2026-07-16) are consumed and can
         // never be reused. Bump this before every release; Play refuses a code
         // it has already seen, even from a discarded upload.
-        versionCode = 110
-        versionName = "1.2.5"
+        versionCode = 111
+        versionName = "1.2.6"
     }
     signingConfigs {
         create("release") {
