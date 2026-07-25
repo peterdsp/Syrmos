@@ -58,7 +58,9 @@ import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.designsystem.theme.MetroBlue
 import com.syrmos.core.designsystem.theme.SuburbanPurple
 import com.syrmos.core.designsystem.theme.TramOrange
@@ -147,6 +149,7 @@ fun HomeScreen(
                 AnswerHero(
                     next = uiState.nextDeparture,
                     line = uiState.nextDepartureLine,
+                    upcoming = uiState.upcomingDepartures,
                     hasLocation = uiState.nearestStations.isNotEmpty(),
                     isTracked = false,
                     lang = lang,
@@ -532,6 +535,7 @@ private fun emergencyLabelOASA(lang: AppLanguage): String = when (lang) {
 private fun AnswerHero(
     next: UpcomingDeparture?,
     line: Line?,
+    upcoming: List<UpcomingDeparture> = emptyList(),
     hasLocation: Boolean,
     isTracked: Boolean,
     lang: AppLanguage,
@@ -581,12 +585,29 @@ private fun AnswerHero(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        sourceConfidenceLabel(next.sourceConfidence, lang)?.let { chipLabel ->
+                            Spacer(modifier = Modifier.height(4.dp))
+                            SourceConfidenceChip(confidence = next.sourceConfidence, label = chipLabel)
+                        }
                     }
                     Text(
                         text = formatCountdown(next.minutesAway, lang),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = accent,
+                    )
+                }
+                // "then 13, 23 min": the next couple of departures after the
+                // featured one, so the hero answers "and after that?" at a glance
+                // (matches the web hero).
+                val thenTimes = upcoming.drop(1).take(2)
+                    .filter { it.minutesAway > next.minutesAway }
+                    .map { formatCountdown(it.minutesAway, lang) }
+                if (thenTimes.isNotEmpty()) {
+                    Text(
+                        text = "${thenWord(lang)} ${thenTimes.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Row(
@@ -1031,6 +1052,22 @@ private fun LivePulseDot(color: Color) {
             .clip(CircleShape)
             .background(color.copy(alpha = alpha)),
     )
+}
+
+/** Localised chip label for the hero's source-confidence, or null to hide it. */
+private fun sourceConfidenceLabel(sc: SourceConfidence, lang: AppLanguage): String? = when (sc) {
+    SourceConfidence.LIVE -> L.LIVE.text(lang)
+    SourceConfidence.SCHEDULED -> L.SOURCE_SCHEDULED.text(lang)
+    SourceConfidence.ESTIMATED -> L.SOURCE_ESTIMATED.text(lang)
+    SourceConfidence.OFFLINE -> L.SOURCE_OFFLINE.text(lang)
+    else -> null
+}
+
+/** "then" lead-in for the hero's follow-on departures list. */
+private fun thenWord(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "μετά"
+    AppLanguage.ALBANIAN -> "pastaj"
+    else -> "then"
 }
 
 private fun trackLabel(lang: AppLanguage) = when (lang) {

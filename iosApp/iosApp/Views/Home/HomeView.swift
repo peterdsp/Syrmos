@@ -272,12 +272,24 @@ struct HomeView: View {
                         Text(next.time)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
                     }
                     Spacer(minLength: 0)
                     Text(next.minutesAwayDisplay(language: loc.language))
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundStyle(SyrmosData.lineColor(for: next.lineId))
+                }
+                // "then 13, 23 min": the next couple of departures after the
+                // featured one, matching the web hero.
+                let thenTimes = nearestUpcoming().dropFirst().prefix(2)
+                    .filter { $0.minutesAway > next.minutesAway }
+                    .map { $0.minutesAwayDisplay(language: loc.language) }
+                if !thenTimes.isEmpty {
+                    let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : "then"
+                    Text("\(thenWord) \(thenTimes.joined(separator: ", "))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 let isTracked = tracking.active != nil
                 Button {
@@ -343,6 +355,19 @@ struct HomeView: View {
             }
         }
         return best
+    }
+
+    /// The soonest few departures across the nearest station's lines, sorted, so
+    /// the hero can show "then 13, 23 min" after the featured one.
+    private func nearestUpcoming() -> [Departure] {
+        guard let nearest = locationService.nearbyStations.first else { return [] }
+        let node = nearest.station
+        var all: [Departure] = []
+        for lineId in node.lineIds {
+            let stationId = node.stationIdByLineId[lineId] ?? node.stationIds.first ?? node.id
+            all += ScheduleProjector.nextDepartures(for: stationId, lineIds: [lineId], limit: 3)
+        }
+        return all.sorted { $0.minutesAway < $1.minutesAway }
     }
 
     /// Tonight's last train on the same line the next departure is on, so the

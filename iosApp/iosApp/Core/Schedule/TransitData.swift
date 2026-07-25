@@ -82,13 +82,17 @@ enum SourceConfidence: Equatable {
     case offline    // the bundled offline snapshot
     case unknown    // no source known - render nothing
 
+    // Self-contained RGB (no Color.* extension dependency) so this compiles in
+    // every target that includes TransitData - the app AND the widget extension,
+    // which doesn't link the DesignSystem Color palette. Values match the shared
+    // source-state tokens: live #059669, scheduled #2563EB, estimated #B45309,
+    // offline #6B7280.
     var color: Color {
         switch self {
-        case .live: return .live
-        case .scheduled: return .scheduled
-        case .estimated: return .estimated
-        case .offline: return .offline
-        case .unknown: return .offline
+        case .live: return Color(red: 0.020, green: 0.588, blue: 0.412)
+        case .scheduled: return Color(red: 0.145, green: 0.388, blue: 0.922)
+        case .estimated: return Color(red: 0.706, green: 0.325, blue: 0.035)
+        case .offline, .unknown: return Color(red: 0.420, green: 0.447, blue: 0.502)
         }
     }
 
