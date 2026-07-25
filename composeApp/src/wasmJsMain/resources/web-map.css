@@ -657,6 +657,25 @@ body {
     font-size: 13px;
 }
 
+/* Unified-search "Ask Ariadne" row: the owl mark beside the query, tinted with
+   the brand so it reads as the assistant hand-off, not another station. */
+.search-result--ariadne {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: color-mix(in srgb, var(--sy-brand, #1466B8) 8%, #f7fafc);
+}
+.search-result--ariadne:hover {
+    background: color-mix(in srgb, var(--sy-brand, #1466B8) 15%, #e9f2fb);
+}
+.search-result__owl {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    object-fit: contain;
+}
+.search-result--ariadne .search-result-name { color: var(--sy-brand, #1466B8); }
+
 .station-sheet {
     position: absolute;
     left: 16px;
