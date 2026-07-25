@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.9** (TestFlight), **Android 1.2.9** (Play internal, versionCode 113), **Web** (rolling). 1.2.7 cut 2026-07-21 by the `v1.2.7` tag; 1.2.8 cut the same day for iOS; 1.2.9 (map cross-platform parity) cut the same day for all three via the `v1.2.9` tag. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113. Next Android release must use 114+.
+Current shipping: **iOS 1.2.10** (TestFlight), **Android 1.2.10** (Play internal, versionCode 114), **Web** (rolling). 1.2.9 (map cross-platform parity) cut 2026-07-21 via `v1.2.9`; 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114. Next Android release must use 115+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,18 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.10 — 2026-07-26
+
+The batch that followed the map fix, brought native to parity with web and cleaned up a data seam.
+
+- **Source-confidence, everywhere (T8).** Departures now say where the answer comes from — a calm chip reading Live / Scheduled / Estimated / Offline snapshot — on iOS, Android and web, trilingually. So a schedule-based time never masquerades as a live one.
+- **Ariadne recovers instead of dead-ending (T9).** When she can't parse a question she no longer just declines: she offers the closest station ("did you mean Nikaia? Try 'next trains from Nikaia'") or nudges you toward what she can do — across the KMP brain, iOS and web, all offline.
+- **One-glance hero on native (T7).** The iOS and Android home hero now carries the source chip and a "then 13, 23 min" follow-on list, matching the web hero.
+- **Web: one search box (T6) + a cleaner face.** The search box now also asks Ariadne (type a question, get an "Ask Ariadne" row; press Enter and it routes to her) — no more two separate boxes. The header emoji controls are replaced with a clean line-icon set, and the Ariadne owl mark shows correctly (a circular launcher, the full lockup in the panel) instead of a squished logo.
+- **Station-ID reconcile.** The Pi's `/api/station-offsets` uses a different station-ID scheme than the bundled data, which silently dropped many metro/tram/suburban stops to coarse band-only timing. The client now maps every offset to the right station by name, line-scoped so a same-name stop can't land on the wrong line — 474/474 stops resolve, verified against the live API, so every stop gets its exact offset again.
+
+iOS 1.2.10 / Android versionCode 114. Web changes shipped rolling before this tag.
 
 ## 1.2.9 — 2026-07-21
 
