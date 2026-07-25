@@ -900,6 +900,7 @@ struct DepartureRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 1) {
