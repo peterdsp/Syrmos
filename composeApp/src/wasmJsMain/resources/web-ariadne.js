@@ -833,6 +833,11 @@
     // Returns 'today' | 'tomorrow' | 'weekend' | 'saturday' | 'sunday'.
     function dayOf(rawInput) { return matchDay(fold(rawInput || '')); }
 
+    // Best-effort closest-station id for the recovery path ("did you mean X?"),
+    // or null. The caller resolves the display name. Mirrors KMP/iOS
+    // suggestStation; the parser itself still returns outOfScope.
+    function suggestStationId(rawInput) { return fuzzyMatchStation(fold(rawInput || '')); }
+
     global.SyrmosAriadne = {
         init: init,
         parse: parse,
@@ -841,6 +846,7 @@
         clarify: clarify,
         fold: fold,
         dayOf: dayOf,
+        suggestStationId: suggestStationId,
         buildClassificationPrompt: buildClassificationPrompt,
         cleverQueryFromJson: cleverQueryFromJson,
     };
