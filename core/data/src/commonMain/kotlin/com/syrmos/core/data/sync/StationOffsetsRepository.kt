@@ -105,8 +105,10 @@ class StationOffsetsRepository(
             val m = out.getOrPut(r.lineId) { mutableMapOf() }
             for (sid in r.stationIds) {
                 val s = byId[sid] ?: continue
-                fold(s.name)?.let { m.putIfAbsent(it, sid) }
-                fold(s.nameEl)?.let { m.putIfAbsent(it, sid) }
+                // Not putIfAbsent: that's a JVM-only Map method (compiles on
+                // Android, breaks the wasmJs/web build).
+                fold(s.name)?.let { if (it !in m) m[it] = sid }
+                fold(s.nameEl)?.let { if (it !in m) m[it] = sid }
             }
         }
         canonicalByLine = out
