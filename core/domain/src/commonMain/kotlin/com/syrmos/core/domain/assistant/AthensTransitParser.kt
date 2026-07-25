@@ -373,6 +373,18 @@ class AthensTransitParser(
      * to avoid mapping gibberish onto a stop: up to 2 edits always, a 3rd only
      * when the first letter matches on a 6+ char word (the "nkiea" case).
      */
+    /**
+     * A best-effort station-name suggestion for the recovery path ("did you
+     * mean X?"), or null when nothing is close. Reuses the same conservative
+     * fuzzy matcher and returns the station's primary display name so the
+     * assistant can offer it back. The parser itself still returns OutOfScope -
+     * this is only consulted by the dispatch layer when a turn dead-ends.
+     */
+    fun suggestStation(text: String): String? {
+        val id = fuzzyMatchStation(text) ?: return null
+        return vocabulary.stations.firstOrNull { it.id == id }?.names?.firstOrNull()
+    }
+
     private fun fuzzyMatchStation(text: String): String? {
         val tokens = text.split(NON_ALNUM)
             .filter { it.length >= 4 && it !in STOPWORDS }

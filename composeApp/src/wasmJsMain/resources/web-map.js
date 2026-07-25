@@ -74,6 +74,8 @@
             ariadne_next_from: "Next from {station}:",
             ariadne_none_now: "No more trains from {station} right now.",
             ariadne_no_station: "I couldn't match that to an Athens station. Try Syntagma, Piraeus, Airport.",
+            ariadne_did_you_mean: "I didn't quite catch that — did you mean {station}? Try \"next trains from {station}\".",
+            ariadne_try_asking: "I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
             ariadne_open_map: "Opening {station} on the map.",
             ariadne_open_alerts: "Showing service alerts.",
             ariadne_open_route: "Opening directions from {from} to {to}.",
@@ -136,6 +138,8 @@
             ariadne_next_from: "Επόμενα από {station}:",
             ariadne_none_now: "Δεν υπάρχουν άλλα δρομολόγια από {station} τώρα.",
             ariadne_no_station: "Δεν αναγνώρισα σταθμό. Δοκίμασε Σύνταγμα, Πειραιά ή Αεροδρόμιο.",
+            ariadne_did_you_mean: "Δεν το κατάλαβα ακριβώς — μήπως εννοείς {station}; Δοκίμασε «επόμενα τρένα από {station}».",
+            ariadne_try_asking: "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
             ariadne_open_map: "Άνοιγμα του {station} στον χάρτη.",
             ariadne_open_alerts: "Εμφάνιση ειδοποιήσεων.",
             ariadne_open_route: "Άνοιγμα διαδρομής από {from} προς {to}.",
@@ -198,6 +202,8 @@
             ariadne_next_from: "Të ardhshmet nga {station}:",
             ariadne_none_now: "Nuk ka më trena nga {station} tani.",
             ariadne_no_station: "S'e njoha stacionin. Provo Syntagma, Piraeus ose Aeroporti.",
+            ariadne_did_you_mean: "Nuk e kuptova mirë — mos ke parasysh {station}? Provo «trenat e ardhshëm nga {station}».",
+            ariadne_try_asking: "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.",
             ariadne_open_map: "Po hap {station} në hartë.",
             ariadne_open_alerts: "Po tregoj njoftimet.",
             ariadne_open_route: "Po hap udhëzimet nga {from} te {to}.",
@@ -3601,6 +3607,17 @@
 
             const deliver = (finalIntent) => {
                 updateSession(finalIntent);
+                // Recovery: a genuine dead-end suggests the closest station or a
+                // warm capability nudge instead of flatly declining. Mirrors KMP/iOS.
+                if (finalIntent.kind === "outOfScope") {
+                    const sid = window.SyrmosAriadne.suggestStationId(value);
+                    const sname = sid ? stationName(sid) : null;
+                    const msg = sname
+                        ? t("ariadne_did_you_mean").replace(/\{station\}/g, sname)
+                        : t("ariadne_try_asking");
+                    appendMessage(msg, "assistant");
+                    return;
+                }
                 const reply = respond(finalIntent);
                 appendMessage(reply.text, "assistant");
                 // For a departures answer, follow the "Looking up X..." line with

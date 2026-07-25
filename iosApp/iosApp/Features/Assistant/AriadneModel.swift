@@ -72,7 +72,14 @@ final class AriadneModel: ObservableObject {
                 pendingMissing = nil
             }
             updateSession(intent)
-            let reply = await resolve(intent)
+            // Recovery: a genuine dead-end suggests the closest station or a warm
+            // capability nudge instead of flatly declining. Mirrors KMP.
+            let reply: AriadneMessage
+            if case .outOfScope = intent {
+                reply = recover(text)
+            } else {
+                reply = await resolve(intent)
+            }
             messages.append(reply)
             thinking = false
         }
@@ -1131,6 +1138,27 @@ final class AriadneModel: ObservableObject {
         t("I can only help with Syrmos and Athens public transport.",
             "Μπορώ να βοηθήσω μόνο με το Syrmos και τις συγκοινωνίες της Αθήνας.",
             "Mund të ndihmoj vetëm me Syrmos dhe transportin publik të Athinës.")
+    }
+
+    /// Graceful recovery for a dead-ended turn: suggest the closest station if
+    /// the text almost named one, else a warm nudge. Never a flat decline.
+    private func recover(_ text: String) -> AriadneMessage {
+        if let name = parser.suggestStation(text) {
+            return bot(didYouMeanStation(name))
+        }
+        return bot(recoveryHelp())
+    }
+
+    private func didYouMeanStation(_ name: String) -> String {
+        t("I didn't quite catch that — did you mean \(name)? Try \"next trains from \(name)\".",
+            "Δεν το κατάλαβα ακριβώς — μήπως εννοείς \(name); Δοκίμασε «επόμενα τρένα από \(name)».",
+            "Nuk e kuptova mirë — mos ke parasysh \(name)? Provo «trenat e ardhshëm nga \(name)».")
+    }
+
+    private func recoveryHelp() -> String {
+        t("I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
+            "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
+            "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.")
     }
 
     private func clarify(_ missing: MissingSlot) -> String {

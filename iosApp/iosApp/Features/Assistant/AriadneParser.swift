@@ -395,6 +395,14 @@ struct AthensTransitParser {
     /// station-name word and returns the closest station id, or nil. Kept tight
     /// to avoid mapping gibberish onto a stop: up to 2 edits always, a 3rd only
     /// when the first letter matches on a 6+ char word (the "nkiea" case).
+    /// A best-effort station-name suggestion for the recovery path ("did you
+    /// mean X?"), or nil. Mirrors the KMP `suggestStation`; the parser itself
+    /// still returns `.outOfScope`, this is only consulted on a dead-end.
+    func suggestStation(_ text: String) -> String? {
+        guard let id = fuzzyMatchStation(text) else { return nil }
+        return vocabulary.stations.first(where: { $0.id == id })?.names.first
+    }
+
     private func fuzzyMatchStation(_ text: String) -> String? {
         let tokens = text
             .split { !$0.isLetter && !$0.isNumber }

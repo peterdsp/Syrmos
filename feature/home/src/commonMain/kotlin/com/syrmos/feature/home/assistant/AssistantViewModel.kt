@@ -199,7 +199,10 @@ class AssistantViewModel(
                 pendingMissing = null
             }
             updateSession(intent)
-            val reply = resolve(intent)
+            // Recovery: a genuine dead-end no longer flatly declines. Offer the
+            // closest station or a warm capability nudge instead of "I can only
+            // help with Athens transport."
+            val reply = if (intent is AssistantIntent.OutOfScope) recover(text, p) else resolve(intent)
             _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
         }
     }
@@ -1335,6 +1338,28 @@ class AssistantViewModel(
         "I can only help with Syrmos and Athens public transport.",
         "Μπορώ να βοηθήσω μόνο με το Syrmos και τις συγκοινωνίες της Αθήνας.",
         "Mund të ndihmoj vetëm me Syrmos dhe transportin publik të Athinës.",
+    )
+
+    /**
+     * Graceful recovery for a dead-ended turn: suggest the closest station if
+     * the text almost named one, otherwise a warm nudge toward what Ariadne can
+     * do. Never a flat "I didn't understand."
+     */
+    private fun recover(text: String, p: AthensTransitParser): AssistantMessage {
+        val suggestion = p.suggestStation(text)
+        return botMessage(if (suggestion != null) didYouMeanStation(suggestion) else recoveryHelp())
+    }
+
+    private fun didYouMeanStation(name: String): String = t(
+        "I didn't quite catch that — did you mean $name? Try \"next trains from $name\".",
+        "Δεν το κατάλαβα ακριβώς — μήπως εννοείς $name; Δοκίμασε «επόμενα τρένα από $name».",
+        "Nuk e kuptova mirë — mos ke parasysh $name? Provo «trenat e ardhshëm nga $name».",
+    )
+
+    private fun recoveryHelp(): String = t(
+        "I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
+        "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
+        "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.",
     )
 
     private fun clarify(missing: MissingSlot): String = when (missing) {
