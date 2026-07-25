@@ -76,6 +76,7 @@
             ariadne_no_station: "I couldn't match that to an Athens station. Try Syntagma, Piraeus, Airport.",
             ariadne_did_you_mean: "I didn't quite catch that — did you mean {station}? Try \"next trains from {station}\".",
             ariadne_try_asking: "I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
+            search_ask_ariadne: "Ask Ariadne",
             ariadne_open_map: "Opening {station} on the map.",
             ariadne_open_alerts: "Showing service alerts.",
             ariadne_open_route: "Opening directions from {from} to {to}.",
@@ -140,6 +141,7 @@
             ariadne_no_station: "Δεν αναγνώρισα σταθμό. Δοκίμασε Σύνταγμα, Πειραιά ή Αεροδρόμιο.",
             ariadne_did_you_mean: "Δεν το κατάλαβα ακριβώς — μήπως εννοείς {station}; Δοκίμασε «επόμενα τρένα από {station}».",
             ariadne_try_asking: "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
+            search_ask_ariadne: "Ρώτησε την Αριάδνη",
             ariadne_open_map: "Άνοιγμα του {station} στον χάρτη.",
             ariadne_open_alerts: "Εμφάνιση ειδοποιήσεων.",
             ariadne_open_route: "Άνοιγμα διαδρομής από {from} προς {to}.",
@@ -204,6 +206,7 @@
             ariadne_no_station: "S'e njoha stacionin. Provo Syntagma, Piraeus ose Aeroporti.",
             ariadne_did_you_mean: "Nuk e kuptova mirë — mos ke parasysh {station}? Provo «trenat e ardhshëm nga {station}».",
             ariadne_try_asking: "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.",
+            search_ask_ariadne: "Pyet Ariadnen",
             ariadne_open_map: "Po hap {station} në hartë.",
             ariadne_open_alerts: "Po tregoj njoftimet.",
             ariadne_open_route: "Po hap udhëzimet nga {from} te {to}.",
@@ -1449,7 +1452,7 @@
         }
     }
 
-    function renderSearchResults(results) {
+    function renderSearchResults(results, rawQuery) {
         searchResults.innerHTML = "";
         for (const station of results.slice(0, 8)) {
             const row = document.createElement("div");
@@ -1465,10 +1468,43 @@
             });
             searchResults.appendChild(row);
         }
+        // Unified entry point (T6): the one search box also asks Ariadne. Any
+        // non-empty query gets an "Ask Ariadne" row (built with textContent so a
+        // typed query can't inject markup), so a natural-language question -
+        // even one that matches no station - routes to the assistant instead of
+        // needing a second, separate Ariadne box.
+        const q = (rawQuery || "").trim();
+        if (q) {
+            const ask = document.createElement("div");
+            ask.className = "search-result search-result--ariadne";
+            const owl = document.createElement("img");
+            owl.className = "search-result__owl";
+            owl.src = "ariadne-mark.png";
+            owl.alt = "";
+            owl.setAttribute("aria-hidden", "true");
+            const txt = document.createElement("div");
+            const nm = document.createElement("div");
+            nm.className = "search-result-name";
+            nm.textContent = t("search_ask_ariadne");
+            const meta = document.createElement("div");
+            meta.className = "search-result-meta";
+            meta.textContent = `“${q}”`;
+            txt.appendChild(nm);
+            txt.appendChild(meta);
+            ask.appendChild(owl);
+            ask.appendChild(txt);
+            ask.addEventListener("click", () => {
+                searchResults.innerHTML = "";
+                stationSearch.value = "";
+                if (window.__syrmosAskAriadne) window.__syrmosAskAriadne(q);
+            });
+            searchResults.appendChild(ask);
+        }
     }
 
     stationSearch.addEventListener("input", (event) => {
-        const query = event.target.value.trim().toLowerCase();
+        const raw = event.target.value.trim();
+        const query = raw.toLowerCase();
         if (!query) {
             searchResults.innerHTML = "";
             return;
@@ -1478,7 +1514,23 @@
             return station.name.toLowerCase().includes(query) || station.nameEl.toLowerCase().includes(query);
         });
 
-        renderSearchResults(filtered);
+        renderSearchResults(filtered, raw);
+    });
+
+    // Enter with no matching station routes the whole query to Ariadne, so the
+    // single box answers questions as well as finding stops.
+    stationSearch.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        const raw = stationSearch.value.trim();
+        if (!raw) return;
+        const q = raw.toLowerCase();
+        const exact = stationNodes.find((s) =>
+            s.name.toLowerCase() === q || s.nameEl.toLowerCase() === q);
+        if (exact) { searchResults.innerHTML = ""; selectStation(exact.id, true); return; }
+        event.preventDefault();
+        searchResults.innerHTML = "";
+        stationSearch.value = "";
+        if (window.__syrmosAskAriadne) window.__syrmosAskAriadne(raw);
     });
 
     sheetClose.addEventListener("click", () => {
@@ -3567,6 +3619,23 @@
 
         launcher.addEventListener("click", openPanel);
         closeBtn.addEventListener("click", closePanel);
+
+        // T6 bridge: let the unified search box hand a query straight to Ariadne.
+        // Open the panel, drop the text into the composer and submit it through
+        // the exact same path a typed question takes - one entry point, no
+        // second box.
+        window.__syrmosAskAriadne = function (query) {
+            const q = (query || "").trim();
+            if (!q) return;
+            openPanel();
+            input.value = q;
+            if (typeof form.requestSubmit === "function") {
+                form.requestSubmit();
+            } else {
+                form.dispatchEvent(new Event("submit", { cancelable: true }));
+            }
+        };
+
         form.addEventListener("submit", (ev) => {
             ev.preventDefault();
             const value = (input.value || "").trim();
