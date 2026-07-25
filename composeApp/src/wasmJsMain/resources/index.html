@@ -121,6 +121,22 @@
 <div class="app-shell">
     <div id="map"></div>
 
+    <!-- One inline icon sprite: monochrome line icons drawn with currentColor,
+         so they inherit each button's text colour and flip light/dark for free.
+         Replaces the emoji/text glyphs the header controls used to render. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+            <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="20.5" y1="20.5" x2="16.4" y2="16.4"/></symbol>
+            <symbol id="ic-theme" viewBox="0 0 24 24"><path d="M20.5 13.2A8.3 8.3 0 1 1 11 3.4a6.6 6.6 0 0 0 9.5 9.8Z"/></symbol>
+            <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.1"/><line x1="12" y1="1.8" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.2"/><line x1="1.8" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.2" y2="12"/><line x1="4.6" y1="4.6" x2="6.2" y2="6.2"/><line x1="17.8" y1="17.8" x2="19.4" y2="19.4"/><line x1="4.6" y1="19.4" x2="6.2" y2="17.8"/><line x1="17.8" y1="6.2" x2="19.4" y2="4.6"/></symbol>
+            <symbol id="ic-vehicles" viewBox="0 0 24 24"><rect x="6" y="3.4" width="12" height="14.2" rx="3.2"/><line x1="6" y1="11" x2="18" y2="11"/><circle cx="9.2" cy="14.3" r="1.05"/><circle cx="14.8" cy="14.3" r="1.05"/><line x1="8.5" y1="20.6" x2="6.6" y2="22.4"/><line x1="15.5" y1="20.6" x2="17.4" y2="22.4"/></symbol>
+            <symbol id="ic-zoom-in" viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></symbol>
+            <symbol id="ic-zoom-out" viewBox="0 0 24 24"><line x1="6" y1="12" x2="18" y2="12"/></symbol>
+            <symbol id="ic-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="7.4"/><line x1="12" y1="1.8" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22.2"/><line x1="1.8" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22.2" y2="12"/></symbol>
+            <symbol id="ic-brain" viewBox="0 0 24 24"><path d="M12 2.8l1.9 5.2 5.2 1.9-5.2 1.9L12 17l-1.9-5.2L4.9 9.9l5.2-1.9Z"/><path d="M18.5 15.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7Z"/></symbol>
+            <symbol id="ic-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+        </defs>
+    </svg>
     <header class="top-bar">
         <div class="brand-block">
             <div class="brand">Syrmos</div>
@@ -140,7 +156,7 @@
         </div>
         <section class="search-card">
             <div class="search-input-shell">
-                <span class="search-icon" aria-hidden="true">⌕</span>
+                <svg class="ic search-icon" aria-hidden="true"><use href="#ic-search"/></svg>
                 <input id="stationSearch" class="search-input" type="search" placeholder="Search station, Syntagma, Piraeus, Airport" data-i18n-placeholder="search_placeholder" data-i18n-aria="search_aria" aria-label="Search station">
             </div>
             <div id="searchResults" class="search-results"></div>
@@ -151,13 +167,15 @@
                 <button class="language-pill" type="button" data-lang="el" aria-pressed="false">EL</button>
                 <button class="language-pill" type="button" data-lang="sq" aria-pressed="false">SQ</button>
             </div>
-            <div class="zoom-controls" aria-label="Map zoom controls">
-                <button id="zoomOutButton" class="control-button" type="button" aria-label="Zoom out">−</button>
-                <button id="zoomInButton" class="control-button" type="button" aria-label="Zoom in">+</button>
+            <div class="control-cluster">
+                <div class="zoom-controls" aria-label="Map zoom controls">
+                    <button id="zoomOutButton" class="control-button" type="button" aria-label="Zoom out"><svg class="ic" aria-hidden="true"><use href="#ic-zoom-out"/></svg></button>
+                    <button id="zoomInButton" class="control-button" type="button" aria-label="Zoom in"><svg class="ic" aria-hidden="true"><use href="#ic-zoom-in"/></svg></button>
+                </div>
+                <button id="themeToggle" class="control-button" type="button" aria-label="Toggle dark mode"><svg class="ic" aria-hidden="true"><use href="#ic-theme"/></svg></button>
+                <button id="vehiclesToggle" class="control-button" type="button" data-i18n-aria="hide_vehicles" data-i18n-title="hide_vehicles" aria-label="Hide vehicles" title="Hide vehicles"><svg class="ic" aria-hidden="true"><use href="#ic-vehicles"/></svg></button>
+                <button id="locateButton" class="control-button" type="button" data-i18n-aria="locate_me" data-i18n-title="locate_me" aria-label="Locate me" title="Locate me"><svg class="ic" aria-hidden="true"><use href="#ic-locate"/></svg></button>
             </div>
-            <button id="themeToggle" class="control-button" type="button" aria-label="Toggle dark mode">☾</button>
-            <button id="vehiclesToggle" class="control-button" type="button" data-i18n-aria="hide_vehicles" data-i18n-title="hide_vehicles" aria-label="Hide vehicles" title="Hide vehicles">🚇</button>
-            <button id="locateButton" class="ghost-button" type="button" data-i18n="locate_me">Locate me</button>
         </div>
     </header>
 
@@ -245,17 +263,17 @@
          open Google Maps directions, show alerts). No LLM, no network for
          parsing. -->
     <button id="ariadneLauncher" class="ariadne-launcher" type="button" aria-label="Ask Ariadne" title="Ask Ariadne">
-        <img class="ariadne-launcher__img" src="ariadne-logo.png" alt="Ask Ariadne" width="56" height="56">
+        <img class="ariadne-launcher__img" src="ariadne-mark.png" alt="Ask Ariadne" width="40" height="40">
     </button>
 
     <aside id="ariadnePanel" class="ariadne-panel ariadne-panel--hidden" aria-hidden="true">
         <header class="ariadne-panel__head">
             <div class="ariadne-panel__title">
-                <img class="ariadne-panel__logo" src="ariadne-logo.png" alt="" width="24" height="24" aria-hidden="true">
-                <span data-i18n="ariadne_title">Ariadne</span>
+                <img class="ariadne-panel__lockup" src="ariadne-lockup.png" alt="Ariadne">
             </div>
-            <button id="ariadneBrain" class="ghost-button" type="button"
-                    title="Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)">🧠</button>
+            <button id="ariadneBrain" class="control-button" type="button"
+                    aria-label="Smarter answers"
+                    title="Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)"><svg class="ic" aria-hidden="true"><use href="#ic-brain"/></svg></button>
             <button id="ariadneClose" class="ghost-button" type="button" data-i18n="done">Done</button>
         </header>
         <div id="ariadneMessages" class="ariadne-panel__messages" aria-live="polite"></div>
