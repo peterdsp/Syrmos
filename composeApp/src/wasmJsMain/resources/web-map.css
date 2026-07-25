@@ -803,6 +803,25 @@ body {
     font-size: 13px;
 }
 
+/* Source-confidence chip: says whether a departure is live / scheduled /
+   estimated / an offline snapshot, in the shared source-state colours. */
+.src-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+.src-chip__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.src-chip--live { color: var(--sy-live, #059669); background: color-mix(in srgb, var(--sy-live, #059669) 12%, transparent); }
+.src-chip--scheduled { color: var(--sy-scheduled, #2563EB); background: color-mix(in srgb, var(--sy-scheduled, #2563EB) 12%, transparent); }
+.src-chip--estimated { color: var(--sy-estimated, #B45309); background: color-mix(in srgb, var(--sy-estimated, #B45309) 12%, transparent); }
+.src-chip--offline { color: var(--sy-offline, #6B7280); background: color-mix(in srgb, var(--sy-offline, #6B7280) 12%, transparent); }
+
 .departure-card__pill {
     display: inline-flex;
     align-items: center;
