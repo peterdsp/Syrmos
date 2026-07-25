@@ -59,6 +59,8 @@
             airport: "Airport",
             train: "Train",
             live: "Live",
+            estimated: "Estimated",
+            offline_snapshot: "Offline snapshot",
             unknown: "unknown",
             next: "next",
             reduced: "Reduced",
@@ -119,6 +121,8 @@
             airport: "Αεροδρόμιο",
             train: "Συρμός",
             live: "Ζωντανά",
+            estimated: "Εκτίμηση",
+            offline_snapshot: "Εκτός σύνδεσης",
             unknown: "άγνωστο",
             next: "επόμενος",
             reduced: "Μειωμένο",
@@ -179,6 +183,8 @@
             airport: "Aeroporti",
             train: "Tren",
             live: "Drejtpërdrejt",
+            estimated: "Vlerësim",
+            offline_snapshot: "Pa internet",
             unknown: "i panjohur",
             next: "tjetër",
             reduced: "Me zbritje",
@@ -1304,6 +1310,14 @@
             return;
         }
 
+        // Source-confidence: API departures are the live timetable feed
+        // (SCHEDULED); the bundled fallback is the offline snapshot. One source
+        // per render because both branches produce a single homogeneous list.
+        const fromApi = !!(apiDepartures && apiDepartures.length);
+        const sourceMod = fromApi ? "scheduled" : "offline";
+        const sourceLabel = t(fromApi ? "scheduled" : "offline_snapshot");
+        const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
+
         stationDepartures.innerHTML = departures.map((departure) => {
             const minutesLabel = formatMinutesAway(departure.minutesAway);
             const lineId = departure.line?.id || "";
@@ -1330,6 +1344,7 @@
                                 ${airportPill}
                             </div>
                             <div class="departure-card__destination">${destination}</div>
+                            ${sourceChip}
                         </div>
                         <div class="departure-card__eta">
                             <div class="departure-card__minutes">${minutesLabel}</div>
