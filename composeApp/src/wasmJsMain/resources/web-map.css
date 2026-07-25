@@ -431,28 +431,54 @@ body {
 .map-controls {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex: none;
+}
+
+/* The language segmented control and the icon buttons read as two groups,
+   separated by a hairline, so the toolbar scans as one tidy cluster. */
+.control-cluster {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 10px;
+    border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .zoom-controls {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+}
+
+/* Monochrome line icon: single-weight stroke in the button's own colour, so
+   it inherits light/dark automatically. Replaces every emoji/text glyph. */
+.ic {
+    width: 20px;
+    height: 20px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .control-button {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     border: 0;
-    border-radius: 13px;
+    border-radius: 12px;
     background: #1f2937;
     color: #f8fafc;
-    font-size: 24px;
     line-height: 1;
     cursor: pointer;
     box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
 }
 
 .control-button:hover {
@@ -466,6 +492,25 @@ body {
 .control-button--active {
     background: color-mix(in srgb, var(--sy-brand, #1466B8) 18%, transparent);
     border-color: color-mix(in srgb, var(--sy-brand, #1466B8) 60%, transparent);
+}
+
+/* On-device-brain download states, tinting the line icon rather than adding a
+   second glyph. */
+.control-button--ready { color: var(--sy-live, #059669); }
+.control-button--error { color: var(--sy-disruption, #DC2626); }
+
+/* Icon buttons that live inside the white Ariadne panel head read as light
+   ghost buttons, not the dark toolbar chips. */
+.ariadne-panel__head .control-button {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 600;
+}
+.ariadne-panel__head .control-button:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 /* Three-pill language selector. Sits in the top-bar map-controls strip;
@@ -546,7 +591,8 @@ body {
 .search-icon {
     flex: none;
     color: #6b7280;
-    font-size: 17px;
+    width: 18px;
+    height: 18px;
 }
 
 .search-input {
@@ -985,20 +1031,6 @@ body {
 
     .language-picker { border-radius: 12px; }
     .language-pill { min-width: 30px; height: 32px; padding: 0 7px; }
-
-    /* Locate: icon-only pin so the Albanian "Vendndodhja ime" can't overflow. */
-    .ghost-button {
-        width: 40px;
-        padding: 0;
-        font-size: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .ghost-button::before {
-        content: "📍";
-        font-size: 17px;
-    }
 
     .search-card {
         order: 3;
