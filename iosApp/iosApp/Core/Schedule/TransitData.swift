@@ -73,6 +73,58 @@ struct TransitStation: Identifiable {
     let isInterchange: Bool
 }
 
+/// Where an on-screen departure came from, so Syrmos can say how sure it is.
+/// Swift mirror of the KMP `SourceConfidence` (core:model) - keep in sync.
+enum SourceConfidence: Equatable {
+    case live       // a real-time position / arrival
+    case scheduled  // a timetabled departure from the live schedules API
+    case estimated  // projected from a frequency band, not an exact minute
+    case offline    // the bundled offline snapshot
+    case unknown    // no source known - render nothing
+
+    var color: Color {
+        switch self {
+        case .live: return .live
+        case .scheduled: return .scheduled
+        case .estimated: return .estimated
+        case .offline: return .offline
+        case .unknown: return .offline
+        }
+    }
+
+    func label(_ language: AppLanguage) -> String {
+        switch self {
+        case .live: return LocalizedKey.live.text(for: language)
+        case .scheduled: return LocalizedKey.sourceScheduled.text(for: language)
+        case .estimated: return LocalizedKey.sourceEstimated.text(for: language)
+        case .offline: return LocalizedKey.sourceOffline.text(for: language)
+        case .unknown: return ""
+        }
+    }
+}
+
+/// A calm chip stating how sure a departure is (live / scheduled / estimated /
+/// offline). Mirrors the KMP `SourceConfidenceChip`. Renders nothing for
+/// `.unknown` so it never adds noise.
+struct SourceConfidenceChip: View {
+    let confidence: SourceConfidence
+    let language: AppLanguage
+
+    var body: some View {
+        if confidence != .unknown {
+            HStack(spacing: 5) {
+                Circle().fill(confidence.color).frame(width: 6, height: 6)
+                Text(confidence.label(language))
+                    .font(.caption2).fontWeight(.semibold)
+                    .foregroundColor(confidence.color)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(confidence.color.opacity(0.12)))
+        }
+    }
+}
+
 struct Departure: Identifiable {
     let id = UUID()
     let time: String
@@ -80,6 +132,12 @@ struct Departure: Identifiable {
     let direction: String
     let minutesAway: Int
     let serviceType: String
+    /// Where this departure came from; drives the source-confidence chip.
+    /// Defaults to `.scheduled` because every iOS departure list is built from
+    /// timetable data (the offline projector or the server-projected API) - live
+    /// suburban positions are a separate model shown as moving map trains, not
+    /// rows here. Set explicitly if a genuinely live/estimated source is added.
+    var sourceConfidence: SourceConfidence = .scheduled
 
     /// Human-friendly arrival countdown. "Now" for the train that's
     /// already at the platform, "5 min" for the close ones, and

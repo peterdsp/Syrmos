@@ -134,6 +134,7 @@ struct StationDetailView: View {
                                     : "towards \(departure.direction)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
                             }
 
                             Spacer()
