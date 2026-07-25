@@ -2564,15 +2564,21 @@
 
     const themeToggle = document.getElementById("themeToggle");
     if (themeToggle) {
+        // Swap the line-icon (moon in light, sun in dark) instead of writing a
+        // text glyph, which would blow away the inline <svg><use>.
+        const setThemeIcon = (isDark) => {
+            const use = themeToggle.querySelector("use");
+            if (use) use.setAttribute("href", isDark ? "#ic-sun" : "#ic-theme");
+        };
         const saved = localStorage.getItem("syrmos-theme");
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         if (saved === "dark" || (!saved && prefersDark)) {
             document.body.classList.add("dark-mode");
-            themeToggle.textContent = "☀";
+            setThemeIcon(true);
         }
         themeToggle.addEventListener("click", () => {
             const isDark = document.body.classList.toggle("dark-mode");
-            themeToggle.textContent = isDark ? "☀" : "☾";
+            setThemeIcon(isDark);
             localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
             // Swap the base map to the matching light / dark minimal tiles.
             if (window.__syrmosApplyTileLayer) window.__syrmosApplyTileLayer();
@@ -2836,13 +2842,19 @@
                 right: 16px; bottom: 16px;
                 display: inline-flex; align-items: center; justify-content: center;
                 padding: 0; border: none; cursor: pointer;
-                width: 62px; height: 62px; border-radius: 16px;
-                background: #fff; overflow: hidden;
-                box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+                width: 56px; height: 56px; border-radius: 50%;
+                background: #fff;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.28),
+                            inset 0 0 0 2px color-mix(in srgb, var(--sy-brand, #1466B8) 26%, transparent);
+                transition: transform 0.15s ease, box-shadow 0.15s ease;
             }
-            .ariadne-launcher:hover { filter: brightness(1.03); transform: translateY(-1px); }
-            .ariadne-launcher__img { width: 100%; height: 100%; object-fit: contain; display: block; }
-            .ariadne-panel__logo { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; vertical-align: middle; }
+            .ariadne-launcher:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(0,0,0,0.32), inset 0 0 0 2px color-mix(in srgb, var(--sy-brand, #1466B8) 40%, transparent); }
+            /* The owl mark sits centred with breathing room inside the circle
+               (not stretched edge-to-edge like the old squished full lockup). A
+               permanent white disc keeps the navy owl legible in dark mode. */
+            .ariadne-launcher__img { width: 38px; height: 38px; object-fit: contain; display: block; }
+            /* Full Ariadne lockup at its true wide aspect - never squished. */
+            .ariadne-panel__lockup { height: 24px; width: auto; display: block; }
             .ariadne-panel {
                 position: fixed; z-index: 950;
                 right: 16px; bottom: 16px;
@@ -2948,10 +2960,21 @@
                 `;
                 document.head.appendChild(pbStyle);
 
+                const brainIcon = '<svg class="ic" aria-hidden="true"><use href="#ic-brain"/></svg>';
                 const paint = () => {
                     const s = llm.status();
                     const pct = Math.round((llm.progress ? llm.progress() : 0) * 100);
-                    brainBtn.textContent = s === "ready" ? "🧠✓" : s === "loading" ? (pct + "%") : s === "error" ? "🧠!" : "🧠";
+                    // Keep the line icon; show the download percentage as text only
+                    // while loading. A state class tints it (ready/error) without a
+                    // second emoji. Never write a bare glyph over the <svg>.
+                    brainBtn.classList.remove("control-button--ready", "control-button--error");
+                    if (s === "loading") {
+                        brainBtn.textContent = pct + "%";
+                    } else {
+                        brainBtn.innerHTML = brainIcon;
+                        if (s === "ready") brainBtn.classList.add("control-button--ready");
+                        else if (s === "error") brainBtn.classList.add("control-button--error");
+                    }
                     brainBtn.title = s === "ready"
                         ? "Smarter answers are on (on-device brain ready)"
                         : s === "loading"
