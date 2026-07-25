@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
@@ -45,16 +47,63 @@ class StationOffsetsRepository(
         val payload = runCatching {
             json.decodeFromString<StationOffsetsPayload>(body)
         }.getOrNull() ?: return
+        ensureNameIndex()
         _offsets.value = indexByDirection(payload.lines)
     }
 
     /** Network refresh. Silent on failure. */
     suspend fun refresh() {
         val payload = schedulesService.fetchStationOffsets().firstOrNull() ?: return
+        ensureNameIndex()
         val indexed = indexByDirection(payload.lines)
         if (indexed.isNotEmpty()) {
             _offsets.value = indexed
         }
+    }
+
+    // Station-ID reconciliation. The Pi's /api/station-offsets (and the STASY
+    // scraper that seeds it) use a different 3-letter abbreviation scheme than
+    // the bundled stations for ~53 metro/tram stops (e.g. server M1_THI vs
+    // bundle M1_THE for Thiseio). The projector looks offsets up by the BUNDLE
+    // stationId, so a mismatch silently dropped those stops to band-only timing.
+    // Each offset carries a `stationEn`, so we canonicalise every offset's
+    // stationId to the bundle id by matching the name (English or Greek). Stops
+    // that don't match keep their original id, so this can only improve, never
+    // regress. Canonical source of truth = the bundle stations.
+    private var canonicalIdByName: Map<String, String> = emptyMap()
+
+    @Serializable
+    private data class SeedStation(
+        val id: String = "",
+        val name: String = "",
+        @SerialName("name_el") val nameEl: String = "",
+    )
+
+    private suspend fun ensureNameIndex() {
+        if (canonicalIdByName.isNotEmpty()) return
+        val reader = resourceReader ?: return
+        val body = runCatching { reader.readText("files/seed/stations.json") }.getOrNull() ?: return
+        val stations = runCatching { json.decodeFromString<List<SeedStation>>(body) }.getOrNull() ?: return
+        val map = mutableMapOf<String, String>()
+        for (s in stations) {
+            if (s.id.isBlank()) continue
+            normalizeName(s.name)?.let { map.putIfAbsent(it, s.id) }
+            normalizeName(s.nameEl)?.let { map.putIfAbsent(it, s.id) }
+        }
+        canonicalIdByName = map
+    }
+
+    /** Fold a station name to a match key: lowercase, letters/digits only. */
+    private fun normalizeName(n: String): String? {
+        val cleaned = buildString {
+            for (c in n.lowercase()) if (c.isLetterOrDigit()) append(c)
+        }
+        return cleaned.ifBlank { null }
+    }
+
+    private fun canonicalize(stop: SyrmosSchedulesService.StationOffsetStop): SyrmosSchedulesService.StationOffsetStop {
+        val canonical = normalizeName(stop.stationEn)?.let { canonicalIdByName[it] }
+        return if (canonical != null && canonical != stop.stationId) stop.copy(stationId = canonical) else stop
     }
 
     /**
@@ -78,7 +127,7 @@ class StationOffsetsRepository(
         val out = mutableMapOf<String, List<SyrmosSchedulesService.StationOffsetStop>>()
         for (g in groups) {
             val key = "${g.lineId}|${g.direction}"
-            out[key] = g.stops.sortedBy { it.stopSequence }
+            out[key] = g.stops.map { canonicalize(it) }.sortedBy { it.stopSequence }
         }
         return out
     }
