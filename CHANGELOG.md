@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.10** (TestFlight), **Android 1.2.10** (Play internal, versionCode 114), **Web** (rolling). 1.2.9 (map cross-platform parity) cut 2026-07-21 via `v1.2.9`; 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114. Next Android release must use 115+.
+Current shipping: **iOS 1.2.11** (TestFlight), **Android 1.2.11** (Play internal, versionCode 115), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115. Next Android release must use 116+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,16 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.11 — 2026-07-26
+
+National + rail-replacement-bus departures now work, online and offline, plus the design-token foundation for the 2.0 redesign lands (spec only; no UI change yet). Tapping a national/IC/bus stop (Lamia, Lianokladi, Kalambaka, Volos, Kiato-Patra, Alexandroupoli, the tourist rails…) used to show a moving vehicle on the map but "no departures" in the sheet.
+
+- **Live API fix (server).** The national/bus timetables (real HH:MM from `seed_greek_corridors.py`, transcribed from Hellenic Train) were never seeded into the production Pi DB — the deployed nightly unit had drifted from the repo and dropped `seed_greek_corridors` + `seed_thessaloniki`, and the API caches its DB connection from startup. Seeded the corridors (20 lines / 300 trips / 6911 stops) and restarted `syrmos-admin.service`; `/api/departures/next` now returns real times for TL1/IC1/KB1/VL1/DX1/KP1/RG1/AL1/KO1/PL1/PU1/PU2, verified live on the web sheet with the T8 "Scheduled" chip. A corrected nightly unit (re-adds the seeds + auto-restarts the API) is staged on the Pi for install.
+- **Offline bundle fix (native, all platforms).** The apps bundle each line's per-train `trips`, but the boot seeder only fed metro/tram schedules into `schedule_entity`, so the offline departures fallback had nothing for the trip-based lines (the map's `TrainSimulator` read the same trips, which is why a bus animated while the stop stayed empty). `DataSeeder` now expands the bundled `trips` into `schedule_entity` — mapping the bundle's `mon_thu/fri/sat/sun` day-types to the query's `weekday/friday/saturday/sunday` — so iOS and Android show national/bus departures with no connection. `SEED_VERSION` bumped to 6 to re-seed existing installs. Verified the seed→query logic against the real bundle reproduces the live API's Lamia departures exactly.
+- **2.0 design-token foundation.** The full 2.0.0 redesign is specified in [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) + [docs/design/REDESIGN_DESCRIPTION.md](docs/design/REDESIGN_DESCRIPTION.md) (nationwide nav, universal departures, structured Ariadne cards, tablet/web layouts) but is NOT implemented yet — this release ships only its foundation: semantic token aliases (`--sy-accent`, `--sy-text-primary`, `--sy-status-*`) across the generated web CSS, JSON, and Swift token sets, generated deterministically by `ops/designsystem/generate_tokens.py`. No visual change: the alias vars map to the existing values and nothing consumes them yet. The redesigned UI lands across a later 2.0.x.
+
+iOS 1.2.11 / Android versionCode 115. The current app UI is unchanged; this is a data + foundation release.
 
 ## 1.2.10 — 2026-07-26
 
