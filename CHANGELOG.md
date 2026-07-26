@@ -24,6 +24,8 @@ The batch that followed the map fix, brought native to parity with web and clean
 
 iOS 1.2.10 / Android versionCode 114. Web changes shipped rolling before this tag.
 
+**Verified 2026-07-26.** iOS 1.2.10 (build 1785022495) reached VALID in TestFlight; Android versionCode 114 shipped to Play internal; web deployed (after fixing a wasmJs build break the reconcile had introduced with a JVM-only `Map.putIfAbsent`, which had silently blocked the T6 web deploy). On the live web the whole country renders on the CARTO base: searching a Thessaloniki metro stop (Sintrivani) flies to the red Line 1 / blue Line 2 network with the T8 "Scheduled" source chips on its departures, and searching "Patra" flies to the Patras suburban network (blue suburban + dashed rail-replacement bus + green national). The station-ID reconcile was verified against the live `/api/station-offsets` at **474/474** stops resolved, and re-hardened to be line-scoped so a same-name stop can never remap onto the wrong line. Android was confirmed rendering the Athens + national network live on an emulator; the iOS local simulator build is blocked by a watchOS 26.5-SDK / 26.2-runtime skew (the embedded watch app can't compile locally), so iOS is verified via the CI-built TestFlight artifact, not the local sim.
+
 ## 1.2.9 — 2026-07-21
 
 **The map now looks the same on all three platforms.** Web was the reference (flat base, coloured line network, clean dots, directional-triangle trains); iOS and Android had drifted badly and web itself had two theme bugs. Fixed everywhere:
