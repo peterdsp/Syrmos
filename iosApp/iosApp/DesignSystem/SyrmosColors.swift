@@ -39,7 +39,7 @@ extension Color {
 /// Verbatim Swift mirror of the shared map design tokens. Source of truth:
 /// core/common/src/commonMain/kotlin/com/syrmos/core/common/map/MapDesignTokens.kt
 /// (and composeApp/src/wasmJsMain/resources/web-map.js MAP_TOKENS). Keep in
-/// sync — change the Kotlin object, then update this and the web copy.
+/// sync. Change the Kotlin object, then update this and the web copy.
 enum MapDesignTokens {
     // Station dot markers.
     static let dotCountry: CGFloat = 10
@@ -67,7 +67,7 @@ enum MapDesignTokens {
     static let greyedDash: [CGFloat] = [6, 8]
 }
 
-// MARK: - Generated design tokens (T3) BEGIN — do not edit, run ops/designsystem/generate_tokens.py
+// MARK: - Generated design tokens (T3) BEGIN - do not edit, run ops/designsystem/generate_tokens.py
 // Canonical source: core/designsystem/.../theme/tokens/*.kt.
 enum SyrmosTokens {
     // Colors (light).

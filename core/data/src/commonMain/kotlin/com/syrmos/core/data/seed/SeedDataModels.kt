@@ -88,6 +88,33 @@ data class SeedFrequency(
     @SerialName("frequency_minutes") val frequencyMinutes: Int,
 )
 
+/**
+ * One `schedules-v2/{lineId}.json` file, only the bits the offline departures
+ * seed needs. National rail + rail-replacement buses publish a full per-train
+ * `trips` timetable (and no frequency `bands`); metro/tram/suburban use bands
+ * instead and carry an empty `trips`. The map's TrainSimulator already reads
+ * these trips to animate vehicles; we expand them into schedule_entity so the
+ * bottom-sheet departures work offline for the trip-based lines too.
+ */
+@Serializable
+data class SeedLineScheduleFile(
+    @SerialName("lineId") val lineId: String = "",
+    @SerialName("trips") val trips: List<SeedTripEntry> = emptyList(),
+)
+
+@Serializable
+data class SeedTripEntry(
+    @SerialName("direction") val direction: String = "",
+    @SerialName("dayType") val dayType: String = "",
+    @SerialName("stops") val stops: List<SeedTripStop> = emptyList(),
+)
+
+@Serializable
+data class SeedTripStop(
+    @SerialName("stationId") val stationId: String = "",
+    @SerialName("departureTime") val departureTime: String = "",
+)
+
 @Serializable
 data class SeedServicePattern(
     @SerialName("line_id") val lineId: String,

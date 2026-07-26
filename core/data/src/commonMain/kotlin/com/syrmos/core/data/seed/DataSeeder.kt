@@ -109,6 +109,7 @@ class DataSeeder(
         }
 
         seedSchedules()
+        seedTripSchedules(lines.map { it.id })
     }
 
     private suspend fun seedSchedules() {
@@ -148,9 +149,68 @@ class DataSeeder(
         }
     }
 
+    /**
+     * Expand the bundled per-train `trips` (national rail + rail-replacement
+     * buses) into schedule_entity so the offline departures fallback returns
+     * them. These lines carry a full timetable and no frequency bands, so
+     * without this the bottom sheet showed "no departures" offline even though
+     * the map animated a moving vehicle from the same trips. Metro/tram/suburban
+     * files have an empty `trips` and are skipped here (they use bands).
+     *
+     * The bundle's dayType vocabulary (mon_thu/fri/sat/sun) is mapped to the
+     * schedule_entity convention (weekday/friday/saturday/sunday) that
+     * getNextDepartures queries with, otherwise the rows never match.
+     */
+    private suspend fun seedTripSchedules(lineIds: List<String>) {
+        val files = lineIds.mapNotNull { lineId ->
+            try {
+                json.decodeFromString<SeedLineScheduleFile>(
+                    resourceReader.readText("files/seed/schedules-v2/$lineId.json")
+                )
+            } catch (_: Exception) {
+                null
+            }
+        }.filter { it.trips.isNotEmpty() }
+
+        if (files.isEmpty()) return
+
+        database.transaction {
+            files.forEach { file ->
+                file.trips.forEach { trip ->
+                    val dayType = mapBundleDayType(trip.dayType)
+                    val direction = trip.direction.lowercase()
+                    if (dayType == null || direction.isBlank()) return@forEach
+                    trip.stops.forEach { stop ->
+                        if (stop.stationId.isBlank() || stop.departureTime.isBlank()) return@forEach
+                        database.syrmosDatabaseQueries.insertSchedule(
+                            line_id = file.lineId.ifBlank { return@forEach },
+                            station_id = stop.stationId,
+                            direction = direction,
+                            day_type = dayType,
+                            departure_time = stop.departureTime,
+                            notes = null,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun mapBundleDayType(bundleDayType: String): String? = when (bundleDayType) {
+        "mon_thu" -> "weekday"
+        "fri" -> "friday"
+        "sat" -> "saturday"
+        "sun" -> "sunday"
+        // Already-canonical values pass through; anything unknown is skipped so
+        // it can never masquerade as today's service.
+        "weekday", "friday", "saturday", "sunday" -> bundleDayType
+        else -> null
+    }
+
     companion object {
-        // Bumped to 5: lines now come from schedules-v2 and carry region + status.
-        // Without a bump an existing install keeps its old rows and never sees them.
-        const val SEED_VERSION = "5"
+        // Bumped to 6: national rail + rail-replacement-bus trips are now
+        // expanded into schedule_entity for offline departures. Without a bump
+        // an existing install keeps its old rows and never sees them.
+        const val SEED_VERSION = "6"
     }
 }
