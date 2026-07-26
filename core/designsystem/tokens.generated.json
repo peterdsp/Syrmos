@@ -42,6 +42,24 @@
     "glideY1": 1.0,
     "glideY2": 1.0
   },
+  "semantic": {
+    "color": {
+      "accent": "{color.brand}",
+      "accentStrong": "{color.brandStrong}",
+      "backgroundCanvas": "{color.surface}",
+      "backgroundRaised": "{color.surfaceCard}",
+      "backgroundSubtle": "{color.surfaceMuted}",
+      "borderSubtle": "{color.outline}",
+      "statusCaution": "{color.estimated}",
+      "statusCritical": "{color.disruption}",
+      "statusInfo": "{color.scheduled}",
+      "statusNeutral": "{color.offline}",
+      "statusPositive": "{color.live}",
+      "statusWarning": "{color.warning}",
+      "textPrimary": "{color.onSurface}",
+      "textSecondary": "{color.onSurfaceMuted}"
+    }
+  },
   "shape": {
     "lg": 16,
     "md": 12,
