@@ -130,6 +130,21 @@ body {
     cursor: pointer;
 }
 
+/* Network sub-header inside the fares card (Athens / Thessaloniki / Patras / Intercity). */
+.fares-group__head {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sy-on-surface-muted, #5f6b76);
+    padding: 8px 10px 2px;
+}
+.fares-group__head:first-child { padding-top: 0; }
+
+/* The fares card now spans every network (Athens/Thessaloniki/Patras/intercity),
+   so let the list scroll inside the card instead of clipping the lower groups. */
+#faresList { max-height: 300px; overflow-y: auto; }
+
 .panel-item__title {
     font-size: 13px;
     font-weight: 650;
