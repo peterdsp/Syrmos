@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Button
@@ -43,7 +42,6 @@ import com.syrmos.core.designsystem.component.DepartureCard
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
 import com.syrmos.core.model.transit.LineColor
-import com.syrmos.core.model.transit.Region
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +49,6 @@ fun StationDetailScreen(
     viewModel: StationDetailViewModel,
     onBack: () -> Unit = {},
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
-    onOpenUrl: ((String) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showMapSheet by remember { mutableStateOf(false) }
@@ -127,41 +124,7 @@ fun StationDetailScreen(
                 }
             }
 
-            if (uiState.stationRegion != Region.ATHENS) {
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(
-                                    imageVector = Icons.Filled.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                                Text(
-                                    text = "Timetable data for this network is not available yet in Syrmos.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }
-                            uiState.externalTimetableUrl?.let { url ->
-                                Button(
-                                    onClick = { onOpenUrl?.invoke(url) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text("Check operator website")
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if (uiState.departures.isNotEmpty()) {
+            if (uiState.departures.isNotEmpty()) {
                 item { SectionHeader(title = "Next departures") }
                 items(uiState.departures) { departure ->
                     val direction = departure.notes ?: departure.direction.name.lowercase()
