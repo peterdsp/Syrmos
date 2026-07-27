@@ -2912,7 +2912,9 @@
         ariadneStyle.textContent = `
             .ariadne-launcher {
                 position: fixed; z-index: 900;
-                right: 16px; bottom: 16px;
+                /* Mobile: bottom-right, lifted clear of the CARTO attribution
+                   and the bottom sheet peek so it never overlaps them. */
+                right: 16px; bottom: 92px;
                 display: inline-flex; align-items: center; justify-content: center;
                 padding: 0; border: none; cursor: pointer;
                 width: 56px; height: 56px; border-radius: 50%;
@@ -2981,12 +2983,16 @@
                never runs into the right-hand info column. Mobile keeps
                the default bottom-right anchor. */
             @media (min-width: 721px) {
+                /* Desktop: bottom-right, just left of the right-hand info column
+                   (OASA / useful-info cards, ~300px at right:16), so the owl sits
+                   at the map's bottom-right above the controls and never overlaps
+                   the cards. Was bottom-left (left:312) which read as out of place. */
                 .ariadne-launcher {
-                    right: auto; left: 312px; bottom: 16px;
+                    left: auto; right: 332px; bottom: 20px;
                 }
                 .ariadne-panel {
-                    right: auto; left: 312px; bottom: 16px;
-                    width: min(360px, calc(100vw - 640px));
+                    left: auto; right: 332px; bottom: 20px;
+                    width: min(360px, calc(100vw - 680px));
                     max-height: min(440px, calc(100vh - 120px));
                 }
             }
