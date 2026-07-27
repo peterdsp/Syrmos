@@ -86,27 +86,23 @@ fun LinesScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                SearchBar(
-                    query = uiState.searchQuery,
-                    onQueryChange = viewModel::onSearchQueryChanged,
-                    lang = lang,
-                )
-            }
-
-            item {
-                RegionFilterRow(
-                    selectedRegion = uiState.selectedRegion,
-                    onRegionSelected = viewModel::onRegionSelected,
-                    lang = lang,
-                )
-            }
-
-            item {
-                TypeFilterRow(
-                    selectedType = uiState.selectedType,
-                    onTypeSelected = viewModel::onTypeSelected,
-                    lang = lang,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChange = viewModel::onSearchQueryChanged,
+                        lang = lang,
+                    )
+                    RegionFilterRow(
+                        selectedRegion = uiState.selectedRegion,
+                        onRegionSelected = viewModel::onRegionSelected,
+                        lang = lang,
+                    )
+                    TypeFilterRow(
+                        selectedType = uiState.selectedType,
+                        onTypeSelected = viewModel::onTypeSelected,
+                        lang = lang,
+                    )
+                }
             }
 
             if (filtered.isEmpty() && !uiState.isLoading) {

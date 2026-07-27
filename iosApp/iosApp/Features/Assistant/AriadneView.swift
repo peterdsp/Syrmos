@@ -349,9 +349,28 @@ private struct AriadneModelBanner: View {
             EmptyView()
         case .downloading(let p):
             card {
-                Text(downloadingText(Int(p * 100)))
-                    .font(.caption).foregroundStyle(.secondary)
-                ProgressView(value: p).tint(.accentColor)
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.accentColor.opacity(0.15), lineWidth: 4)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(p))
+                            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 0.4), value: p)
+                        Text("\(Int(p * 100))%")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(.accentColor)
+                    }
+                    .frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(downloadingText(Int(p * 100)))
+                            .font(.caption.weight(.medium))
+                        Text(downloadSubtext(p))
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
             }
         case .error:
             card {
@@ -393,9 +412,17 @@ private struct AriadneModelBanner: View {
     }
     private func downloadingText(_ pct: Int) -> String {
         switch loc.language {
-        case .greek: return "Λήψη του AI… \(pct)%"
-        case .albanian: return "Po shkarkohet AI… \(pct)%"
-        case .english: return "Downloading the on-device AI… \(pct)%"
+        case .greek: return "Ληψη μοντελου AI..."
+        case .albanian: return "Po shkarkohet modeli AI..."
+        case .english: return "Downloading AI model..."
+        }
+    }
+    private func downloadSubtext(_ p: Double) -> String {
+        let downloaded = String(format: "%.0f", p * 1100)
+        switch loc.language {
+        case .greek: return "\(downloaded) / 1100 MB"
+        case .albanian: return "\(downloaded) / 1100 MB"
+        case .english: return "\(downloaded) / 1100 MB"
         }
     }
     private var errorText: String {

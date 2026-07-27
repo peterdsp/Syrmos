@@ -23,52 +23,31 @@ struct LinesView: View {
         }
     }
 
+    private var hasActiveFilters: Bool {
+        !searchText.isEmpty || selectedRegion != nil || selectedType != nil
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    LinesSearchBar(
-                        text: $searchText,
-                        placeholder: searchPlaceholder
-                    )
+                linesToolbar
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                }
-
-                Section {
-                    RegionFilterChips(
-                        selected: $selectedRegion,
-                        lang: loc.language
-                    )
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-
-                Section {
-                    TypeFilterChips(
-                        selected: $selectedType,
-                        lang: loc.language
-                    )
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 4, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
 
                 if filteredLines.isEmpty {
-                    Section {
-                        Text(emptyMessage)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 24)
-                    }
+                    Text(emptyMessage)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 32)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 } else {
                     ForEach(TransitType.allCases, id: \.self) { type in
-                        let filtered = filteredLines.filter { $0.type == type }
-                        if !filtered.isEmpty {
+                        let typed = filteredLines.filter { $0.type == type }
+                        if !typed.isEmpty {
                             Section(type.localizedName(loc.language)) {
-                                ForEach(filtered) { line in
+                                ForEach(typed) { line in
                                     NavigationLink {
                                         LineDetailView(
                                             line: line,
@@ -92,6 +71,86 @@ struct LinesView: View {
         }
     }
 
+    // MARK: - Toolbar (search + filters in one block)
+
+    private var linesToolbar: some View {
+        VStack(spacing: 10) {
+            // Search
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.tertiary)
+                    .font(.subheadline)
+
+                TextField(searchPlaceholder, text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.subheadline)
+                    .autocorrectionDisabled()
+
+                if !searchText.isEmpty {
+                    Button { searchText = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            // Region chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(regionOptions.enumerated()), id: \.offset) { _, opt in
+                        ChipButton(
+                            label: opt.1,
+                            isSelected: selectedRegion == opt.0,
+                            tint: .syrmosPrimary
+                        ) { selectedRegion = opt.0 }
+                    }
+                }
+            }
+
+            // Type chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(typeOptions.enumerated()), id: \.offset) { _, opt in
+                        ChipButton(
+                            label: opt.1,
+                            isSelected: selectedType == opt.0,
+                            tint: .secondary
+                        ) { selectedType = opt.0 }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: - Filter data
+
+    private var regionOptions: [(TransitRegion?, String)] {
+        let l = loc.language
+        return [
+            (nil, l == .greek ? "Ολα" : l == .albanian ? "Te gjitha" : "All"),
+            (.athens, l == .greek ? "Αθηνα" : l == .albanian ? "Athine" : "Athens"),
+            (.thessaloniki, l == .greek ? "Θεσσαλονικη" : l == .albanian ? "Selanik" : "Thessaloniki"),
+            (.patras, l == .greek ? "Πατρα" : l == .albanian ? "Patra" : "Patras"),
+            (.national, l == .greek ? "Υπεραστικα" : l == .albanian ? "Nderqytetese" : "Intercity"),
+        ]
+    }
+
+    private var typeOptions: [(TransitType?, String)] {
+        let l = loc.language
+        return [
+            (nil, l == .greek ? "Ολα" : l == .albanian ? "Te gjitha" : "All"),
+            (.metro, "Metro"),
+            (.tram, l == .greek ? "Τραμ" : l == .albanian ? "Tramvaj" : "Tram"),
+            (.suburban, l == .greek ? "Προαστιακος" : l == .albanian ? "Periferike" : "Suburban"),
+        ]
+    }
+
     private var searchPlaceholder: String {
         switch loc.language {
         case .greek: return "Αναζητηση γραμμης η σταθμου..."
@@ -109,134 +168,30 @@ struct LinesView: View {
     }
 }
 
-// MARK: - Search Bar
+// MARK: - Chip
 
-private struct LinesSearchBar: View {
-    @Binding var text: String
-    let placeholder: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.subheadline)
-
-            TextField(placeholder, text: $text)
-                .textFieldStyle(.plain)
-                .font(.subheadline)
-                .autocorrectionDisabled()
-
-            if !text.isEmpty {
-                Button {
-                    text = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.subheadline)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-    }
-}
-
-// MARK: - Region Filter
-
-private struct RegionFilterChips: View {
-    @Binding var selected: TransitRegion?
-    let lang: AppLanguage
-
-    private var options: [(TransitRegion?, String)] {
-        [
-            (nil, lang == .greek ? "Ολα" : lang == .albanian ? "Te gjitha" : "All"),
-            (.athens, lang == .greek ? "Αθηνα" : lang == .albanian ? "Athine" : "Athens"),
-            (.thessaloniki, lang == .greek ? "Θεσσαλονικη" : lang == .albanian ? "Selanik" : "Thessaloniki"),
-            (.patras, lang == .greek ? "Πατρα" : lang == .albanian ? "Patra" : "Patras"),
-            (.national, lang == .greek ? "Υπεραστικα" : lang == .albanian ? "Nderqytetese" : "Intercity"),
-        ]
-    }
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(Array(options.enumerated()), id: \.offset) { _, option in
-                    FilterChipView(
-                        label: option.1,
-                        isSelected: selected == option.0,
-                        accentColor: .syrmosPrimary
-                    ) {
-                        selected = option.0
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Type Filter
-
-private struct TypeFilterChips: View {
-    @Binding var selected: TransitType?
-    let lang: AppLanguage
-
-    private var options: [(TransitType?, String)] {
-        [
-            (nil, lang == .greek ? "Ολα" : lang == .albanian ? "Te gjitha" : "All"),
-            (.metro, "Metro"),
-            (.tram, lang == .greek ? "Τραμ" : lang == .albanian ? "Tramvaj" : "Tram"),
-            (.suburban, lang == .greek ? "Προαστιακος" : lang == .albanian ? "Periferike" : "Suburban"),
-        ]
-    }
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(Array(options.enumerated()), id: \.offset) { _, option in
-                    FilterChipView(
-                        label: option.1,
-                        isSelected: selected == option.0,
-                        accentColor: .orange
-                    ) {
-                        selected = option.0
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Chip View
-
-private struct FilterChipView: View {
+private struct ChipButton: View {
     let label: String
     let isSelected: Bool
-    let accentColor: Color
+    let tint: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.caption)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .font(.caption2)
+                .fontWeight(isSelected ? .semibold : .medium)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .foregroundStyle(isSelected ? tint : .secondary)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(isSelected ? accentColor.opacity(0.18) : Color(.systemGray6))
+                        .fill(isSelected ? tint.opacity(0.12) : Color(.systemGray6))
                 )
                 .overlay(
                     Capsule(style: .continuous)
-                        .strokeBorder(isSelected ? accentColor.opacity(0.4) : Color.clear, lineWidth: 1)
+                        .strokeBorder(isSelected ? tint.opacity(0.3) : .clear, lineWidth: 1)
                 )
-                .foregroundStyle(isSelected ? accentColor : .primary)
         }
         .buttonStyle(.plain)
     }
