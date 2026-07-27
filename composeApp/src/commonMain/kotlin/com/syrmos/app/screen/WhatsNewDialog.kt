@@ -40,30 +40,30 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
     val items = buildList {
         add(
             t(
+                "Search and filter lines: find any line by city or transport type",
+                "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας",
+                "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit",
+            )
+        )
+        add(
+            t(
                 "Departures for Thessaloniki, Patras and national rail stations via live API",
-                "Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API",
-                "Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live",
+                "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API",
+                "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live",
             )
         )
         add(
             t(
                 "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
-                "Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train",
-                "Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
-            )
-        )
-        add(
-            t(
-                "Fresh Ariadne button with the owl mark, matching the web style",
-                "Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας, όπως στο web",
-                "Butoni i ri i Ariadnes me shenjën e bufit, si në web",
+                "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train",
+                "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
             )
         )
         add(
             t(
                 "Journey fare planner: pick two stations and see the price instantly",
-                "Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως",
-                "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë",
+                "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως",
+                "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere",
             )
         )
     }
