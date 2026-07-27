@@ -283,6 +283,46 @@ enum SyrmosData {
         }
     }
 
+    /// Every station in the network, built from `lines.json`'s nested
+    /// `stations[]` across ALL networks (Athens, Thessaloniki, Patras,
+    /// national) - the same 389-station set the web map reads from
+    /// `stations.json`. The map builds its dots from this so iOS draws every
+    /// station, not just the hardcoded Athens M/T/A lines. Empty only if the
+    /// bundle is missing, in which case the map falls back to `StationCoords`.
+    static let bundleStations: [TransitStation] = loadBundleStations()
+
+    private static func loadBundleStations() -> [TransitStation] {
+        struct P: Decodable {
+            struct L: Decodable { let id: String; let stations: [S]? }
+            struct S: Decodable { let id: String; let name: String; let nameEl: String; let lat: Double; let lng: Double }
+            let lines: [L]
+        }
+        guard let url = Bundle.main.url(
+            forResource: "lines", withExtension: "json", subdirectory: "seed-schedules-v2"
+        ) ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(P.self, from: data)
+        else { return [] }
+        // A station on several lines appears in each line's nested list; merge
+        // by id and collect every line it belongs to (so interchanges are right).
+        var firstSeen: [String: P.S] = [:]
+        var lineIdsById: [String: Set<String>] = [:]
+        for line in payload.lines {
+            for s in line.stations ?? [] {
+                if firstSeen[s.id] == nil { firstSeen[s.id] = s }
+                lineIdsById[s.id, default: []].insert(line.id)
+            }
+        }
+        return firstSeen.map { id, s in
+            let lineIds = (lineIdsById[id] ?? []).sorted()
+            return TransitStation(
+                id: id, name: s.name, nameEl: s.nameEl,
+                coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng),
+                lineIds: lineIds, isInterchange: lineIds.count > 1
+            )
+        }
+    }
+
     private static func transitType(for raw: String) -> TransitType {
         switch raw.lowercased() {
         case "metro": return .metro
@@ -481,7 +521,11 @@ enum SyrmosData {
 
 extension SyrmosData {
     static var mapStations: [MapStationNode] {
-        let grouped = Dictionary(grouping: StationCoords.allStations.sorted {
+        // Draw every station from the bundle (all networks), exactly like the
+        // web map; fall back to the hardcoded Athens list only if the bundle is
+        // unreadable.
+        let source = bundleStations.isEmpty ? StationCoords.allStations : bundleStations
+        let grouped = Dictionary(grouping: source.sorted {
             if $0.coordinate.latitude != $1.coordinate.latitude {
                 return $0.coordinate.latitude < $1.coordinate.latitude
             }
