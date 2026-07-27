@@ -69,7 +69,7 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
     val openStasyMap = rememberStasyMapOpener()
     val scope = rememberCoroutineScope()
 
-    // Native OASA tickets catalogue takes over the whole tab when shown.
+    // Tickets catalogue takes over the whole tab when shown.
     if (showFares) {
         FaresScreen(onBack = { showFares = false })
         return
@@ -219,9 +219,9 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                 }) {
                     SettingsRow(
                         title = when (lang) {
-                            AppLanguage.GREEK -> "Τιμοκατάλογος OASA"
-                            AppLanguage.ALBANIAN -> "Çmimet e biletave OASA"
-                            else -> "Ticket prices (OASA)"
+                            AppLanguage.GREEK -> "Τιμοκατάλογος εισιτηρίων"
+                            AppLanguage.ALBANIAN -> "Çmimet e biletave"
+                            else -> "Ticket prices"
                         },
                         value = "›",
                         onClick = { showFares = true },
@@ -254,9 +254,9 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                 }
                 Text(
                     text = when (lang) {
-                        AppLanguage.GREEK -> "Οι τιμές και η διαθεσιμότητα διαχειρίζονται από τον ΟΑΣΑ. Το Syrmos δεν αποθηκεύει τιμές, απλώς ανοίγει την επίσημη σελίδα."
-                        AppLanguage.ALBANIAN -> "Çmimet dhe disponueshmëria menaxhohen nga OASA. Syrmos nuk ruan çmime, thjesht hap faqen zyrtare."
-                        else -> "Prices and availability are managed by OASA. Syrmos does not store prices, it just opens the official page."
+                        AppLanguage.GREEK -> "Οι τιμές διαχειρίζονται από OASA, STASY και Hellenic Train. Το Syrmos εμφανίζει τις επίσημες τιμές."
+                        AppLanguage.ALBANIAN -> "Çmimet menaxhohen nga OASA, STASY dhe Hellenic Train. Syrmos shfaq çmimet zyrtare."
+                        else -> "Prices are managed by OASA, STASY and Hellenic Train. Syrmos displays the official prices."
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

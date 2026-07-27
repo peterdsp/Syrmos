@@ -12,7 +12,7 @@ import SwiftUI
 // the earlier 1.1.1 sheet.
 
 private let kWhatsNewVersionKey = "syrmos.whatsnew.version"
-private let kWhatsNewCurrentVersion = "1.1.1-r2"
+private let kWhatsNewCurrentVersion = "1.3.2"
 
 struct WhatsNewView: View {
     let onDismiss: () -> Void
@@ -30,58 +30,38 @@ struct WhatsNewView: View {
     }
 
     private var title: String {
-        isClever
-            ? t("What's new — clever mode",
-                "Τι νέο υπάρχει — έξυπνη λειτουργία",
-                "Çfarë ka të re — modaliteti i zgjuar")
-            : t("What's new in Syrmos",
-                "Τι νέο υπάρχει στο Syrmos",
-                "Çfarë ka të re në Syrmos")
+        t(“What's new in Syrmos 1.3”,
+          “Τι νέο υπάρχει στο Syrmos 1.3”,
+          “Çfarë ka të re në Syrmos 1.3”)
     }
 
     private var subtitle: String {
-        isClever
-            ? t("Your device supports Ariadne's on-device AI.",
-                "Η συσκευή σου υποστηρίζει το on-device AI της Ariadne.",
-                "Pajisja jote mbështet AI-në e Ariadnes në pajisje.")
-            : t("A quick tour of the new features.",
-                "Επισκόπηση των νέων δυνατοτήτων.",
-                "Përmbledhje e veçorive të reja.")
+        t(“Nationwide coverage and new Ariadne look.”,
+          “Πανελλαδική κάλυψη και νέα εμφάνιση Αριάδνης.”,
+          “Mbulim kombëtar dhe pamje e re e Ariadnes.”)
     }
 
     private var items: [String] {
         var list: [String] = []
-        if isClever {
-            list.append(t(
-                "Cleverer Ariadne — on-device AI reads your typos before the parser",
-                "Πιο έξυπνη Αριάδνη — το on-device AI διαβάζει τα λάθη σου πριν τον αναλυτή",
-                "Ariadne më e zgjuar — AI në pajisje lexon gabimet e tua përpara analizuesit"
-            ))
-        }
         list.append(t(
-            "Ask about weather — “weather at Piraeus”, offline-safe from the last snapshot",
-            "Ρώτα για τον καιρό — “καιρός στον Πειραιά”, offline-safe από το τελευταίο snapshot",
-            "Pyet për motin — “moti në Piraeus”, offline i sigurt nga snapshot-i i fundit"
+            “Departures for Thessaloniki, Patras and national rail stations via live API”,
+            “Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API”,
+            “Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live”
         ))
         list.append(t(
-            "Time-anchored planning — “airport by 21:30” answers when to leave",
-            "Σχεδιασμός με στόχο χρόνου — “αεροδρόμιο στις 21:30” σου λέει πότε να ξεκινήσεις",
-            "Planifikim me kohë objektiv — “aeroporti deri në 21:30” të thotë kur të nisesh"
+            “Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train”,
+            “Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train”,
+            “Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train”
         ))
         list.append(t(
-            "Severe-weather warnings on Home with emergency numbers (112, 199, 11185)",
-            "Προειδοποιήσεις κακοκαιρίας στην Αρχική με τηλέφωνα έκτακτης ανάγκης (112, 199, 11185)",
-            "Paralajmërime moti të keq në Home me numra emergjence (112, 199, 11185)"
+            “Fresh Ariadne button with the owl mark, matching the web style”,
+            “Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας, όπως στο web”,
+            “Butoni i ri i Ariadnes me shenjën e bufit, si në web”
         ))
         list.append(t(
-            "Redesigned tracking card with an animated station strip and a Live Activity",
-            "Ανανεωμένη κάρτα παρακολούθησης με στριπ σταθμών και Live Activity",
-            "Karta e ndjekjes e ridizajnuar me strip stacionesh dhe një Live Activity"
-        ))
-        list.append(t(
-            "Track any train — pick line, direction, station, departure",
-            "Παρακολούθηση οποιουδήποτε τρένου — γραμμή, κατεύθυνση, σταθμός, δρομολόγιο",
-            "Ndiq çdo tren — linjë, drejtim, stacion, nisje"
+            “Journey fare planner: pick two stations and see the price instantly”,
+            “Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως”,
+            “Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë”
         ))
         return list
     }

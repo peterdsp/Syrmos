@@ -16,10 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.syrmos.app.platform.provideQueryNormalizer
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
-import com.syrmos.core.domain.assistant.NoOpQueryNormalizer
 
 /**
  * One-time highlights shown after an install or update, gated by the stored
@@ -39,51 +37,33 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
         else -> en
     }
 
-    val hasLlm = provideQueryNormalizer() !== NoOpQueryNormalizer
-
     val items = buildList {
-        if (hasLlm) {
-            add(
-                t(
-                    "Cleverer Ariadne — on-device AI reads your typos and rough spelling before the parser",
-                    "Πιο έξυπνη Αριάδνη — το on-device AI διαβάζει τα λάθη σου πριν τον αναλυτή",
-                    "Ariadne më e zgjuar — AI në pajisje lexon gabimet e tua përpara analizuesit",
-                )
-            )
-        }
         add(
             t(
-                "Ask about weather — \"weather at Piraeus\", offline-safe from the last snapshot",
-                "Ρώτα για τον καιρό — \"καιρός στον Πειραιά\", offline-safe από το τελευταίο snapshot",
-                "Pyet për motin — \"moti në Piraeus\", offline i sigurt nga snapshot-i i fundit",
+                "Departures for Thessaloniki, Patras and national rail stations via live API",
+                "Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API",
+                "Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live",
             )
         )
         add(
             t(
-                "Time-anchored planning — \"airport by 21:30\" answers when to leave",
-                "Σχεδιασμός με στόχο χρόνου — \"αεροδρόμιο στις 21:30\" σου λέει πότε να ξεκινήσεις",
-                "Planifikim me kohë objektiv — \"aeroporti deri në 21:30\" të thotë kur të nisesh",
+                "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
+                "Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train",
+                "Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
             )
         )
         add(
             t(
-                "Severe-weather warnings on Home with emergency numbers (112, 199, 11185)",
-                "Προειδοποιήσεις κακοκαιρίας στην Αρχική με τηλέφωνα έκτακτης ανάγκης (112, 199, 11185)",
-                "Paralajmërime moti të keq në Home me numra emergjence (112, 199, 11185)",
+                "Fresh Ariadne button with the owl mark, matching the web style",
+                "Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας, όπως στο web",
+                "Butoni i ri i Ariadnes me shenjën e bufit, si në web",
             )
         )
         add(
             t(
-                "Redesigned tracking card with an animated station strip and a Live Activity",
-                "Ανανεωμένη κάρτα παρακολούθησης με στριπ σταθμών και Live Activity",
-                "Karta e ndjekjes e ridizajnuar me strip stacionesh dhe një Live Activity",
-            )
-        )
-        add(
-            t(
-                "Track any train — pick line, direction, station, departure",
-                "Παρακολούθηση οποιουδήποτε τρένου — γραμμή, κατεύθυνση, σταθμός, δρομολόγιο",
-                "Ndiq çdo tren — linjë, drejtim, stacion, nisje",
+                "Journey fare planner: pick two stations and see the price instantly",
+                "Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως",
+                "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë",
             )
         )
     }
@@ -94,12 +74,9 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 Text("🦉", style = MaterialTheme.typography.headlineMedium)
                 Text(
                     text = t(
-                        if (hasLlm) "What's new in Syrmos — clever mode"
-                        else "What's new in Syrmos",
-                        if (hasLlm) "Τι νέο υπάρχει στο Syrmos — έξυπνη λειτουργία"
-                        else "Τι νέο υπάρχει στο Syrmos",
-                        if (hasLlm) "Çfarë ka të re në Syrmos — modaliteti i zgjuar"
-                        else "Çfarë ka të re në Syrmos",
+                        "What's new in Syrmos 1.3",
+                        "Τι νέο υπάρχει στο Syrmos 1.3",
+                        "Çfarë ka të re në Syrmos 1.3",
                     ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,

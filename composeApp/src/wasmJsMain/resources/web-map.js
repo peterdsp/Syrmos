@@ -90,11 +90,11 @@
             ariadne_fare: "The standard Athens (OASA) integrated ticket is €1.20 (reduced €0.50). The airport metro single is €9. See Fares in the side panel for every network.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
-            whatsnew_title: "What's new in Syrmos",
-            whatsnew_i1: "Ask Ariadne — the offline assistant for departures, trips and last trains",
-            whatsnew_i2: "Smarter search that understands typos (nikea → Nikaia)",
-            whatsnew_i3: "\"How long to…\" travel-time answers from your location",
-            whatsnew_i4: "Track any train, and get live times on your Home Screen",
+            whatsnew_title: "What's new in Syrmos 1.3",
+            whatsnew_i1: "Departures for Thessaloniki, Patras and national rail stations via live API",
+            whatsnew_i2: "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
+            whatsnew_i3: "Fresh Ariadne button with the owl mark",
+            whatsnew_i4: "Journey fare planner: pick two stations and see the price instantly",
             whatsnew_get_app: "Get the app",
             whatsnew_stay: "Continue on web",
         },
@@ -161,11 +161,11 @@
             ariadne_fare: "Το ενιαίο εισιτήριο Αθήνας (OASA) είναι €1,20 (μειωμένο €0,50). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τις Τιμές στο πλαϊνό πάνελ για όλα τα δίκτυα.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
-            whatsnew_title: "Τι νέο υπάρχει στο Syrmos",
-            whatsnew_i1: "Ρώτα την Αριάδνη — τον offline βοηθό για αναχωρήσεις, διαδρομές και τελευταία τρένα",
-            whatsnew_i2: "Πιο έξυπνη αναζήτηση που καταλαβαίνει τα λάθη (nikea → Νίκαια)",
-            whatsnew_i3: "Απαντήσεις χρόνου \"Πόση ώρα για…\" από την τοποθεσία σου",
-            whatsnew_i4: "Παρακολούθησε κάθε τρένο και δες ζωντανούς χρόνους στην Αρχική οθόνη",
+            whatsnew_title: "Τι νέο υπάρχει στο Syrmos 1.3",
+            whatsnew_i1: "Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API",
+            whatsnew_i2: "Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train",
+            whatsnew_i3: "Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας",
+            whatsnew_i4: "Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως",
             whatsnew_get_app: "Κατέβασε την εφαρμογή",
             whatsnew_stay: "Συνέχεια στο web",
         },
@@ -232,11 +232,11 @@
             ariadne_fare: "Bileta e integruar e Athinës (OASA) është €1,20 (e reduktuar €0,50). Bileta metro për aeroport është €9. Shiko Çmimet në panelin anësor për të gjitha rrjetet.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
-            whatsnew_title: "Çfarë ka të re në Syrmos",
-            whatsnew_i1: "Pyet Ariadnen — asistenti offline për nisjet, udhëtimet dhe trenat e fundit",
-            whatsnew_i2: "Kërkim më i zgjuar që kupton gabimet (nikea → Nikaia)",
-            whatsnew_i3: "Përgjigje kohe \"Sa gjatë te…\" nga vendndodhja jote",
-            whatsnew_i4: "Ndiq çdo tren dhe merr kohët live në Ekranin Kryesor",
+            whatsnew_title: "Çfarë ka të re në Syrmos 1.3",
+            whatsnew_i1: "Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live",
+            whatsnew_i2: "Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
+            whatsnew_i3: "Butoni i ri i Ariadnes me shenjën e bufit",
+            whatsnew_i4: "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë",
             whatsnew_get_app: "Merr aplikacionin",
             whatsnew_stay: "Vazhdo në web",
         },
@@ -2824,7 +2824,7 @@
     // normalizer.
     (function whatsNewWeb() {
         const key = "syrmos.whatsnew.version";
-        const version = "1.1.1-r2";
+        const version = "1.3.2";
         try {
             if (localStorage.getItem(key) === version) return;
         } catch (_) { return; }
