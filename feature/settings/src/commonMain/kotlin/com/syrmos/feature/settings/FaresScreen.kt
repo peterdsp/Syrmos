@@ -20,16 +20,32 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.syrmos.core.data.repository.StationRepositoryImpl
+import com.syrmos.core.domain.fares.ComputeFareUseCase
+import com.syrmos.core.domain.fares.FareStation
+import com.syrmos.core.domain.usecase.GetLinesUseCase
+import com.syrmos.core.model.fares.FareQuote
+import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.LineType
+import com.syrmos.core.model.transit.Region
+import com.syrmos.core.model.transit.Station
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,6 +87,12 @@ fun FaresScreen(onBack: () -> Unit) {
     val updatedAt by faresRepo.updatedAt.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
 
+    // For the from -> to fare planner: stations + operational lines (region).
+    val stationRepo = koinInject<StationRepositoryImpl>()
+    val getLines = koinInject<GetLinesUseCase>()
+    val stations by stationRepo.getAllStations().collectAsState(initial = emptyList())
+    val lines by getLines.getOperationalLines().collectAsState(initial = emptyList())
+
     val bySection = products.groupBy { it.section }
 
     Scaffold(
@@ -103,6 +125,10 @@ fun FaresScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { Header(lang = lang, updatedAt = updatedAt) }
+
+            if (stations.isNotEmpty()) {
+                item { FarePlanner(stations = stations, lines = lines, lang = lang) }
+            }
 
             Networks.forEach { network ->
                 if (network.sections.none { bySection[it]?.isNotEmpty() == true }) return@forEach
@@ -398,6 +424,142 @@ private fun Footer(lang: AppLanguage) {
             })
         }
     }
+}
+
+/** From -> to fare picker: two station autocompletes -> a grounded fare card. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FarePlanner(stations: List<Station>, lines: List<Line>, lang: AppLanguage) {
+    var from by remember { mutableStateOf<Station?>(null) }
+    var to by remember { mutableStateOf<Station?>(null) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.GREEK -> "Υπολόγισε κόμιστρο"
+                    AppLanguage.ALBANIAN -> "Llogarit çmimin"
+                    else -> "Plan a trip — fare"
+                },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            StationField(
+                label = when (lang) { AppLanguage.GREEK -> "Από"; AppLanguage.ALBANIAN -> "Nga"; else -> "From" },
+                stations = stations, lang = lang, onSelect = { from = it },
+            )
+            StationField(
+                label = when (lang) { AppLanguage.GREEK -> "Προς"; AppLanguage.ALBANIAN -> "Te"; else -> "To" },
+                stations = stations, lang = lang, onSelect = { to = it },
+            )
+            val f = from
+            val t = to
+            if (f != null && t != null) {
+                val quote = remember(f, t, lines) {
+                    ComputeFareUseCase().invoke(fareStationOf(f, lines), fareStationOf(t, lines))
+                }
+                FareResult(quote = quote, lang = lang)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StationField(label: String, stations: List<Station>, lang: AppLanguage, onSelect: (Station) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    val filtered = remember(query, stations) {
+        if (query.length < 2) emptyList()
+        else stations.filter { stationLabel(it, lang).contains(query, ignoreCase = true) }.take(8)
+    }
+    ExposedDropdownMenuBox(
+        expanded = expanded && filtered.isNotEmpty(),
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it; expanded = true },
+            label = { Text(label) },
+            singleLine = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && filtered.isNotEmpty()) },
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded && filtered.isNotEmpty(),
+            onDismissRequest = { expanded = false },
+        ) {
+            filtered.forEach { st ->
+                DropdownMenuItem(
+                    text = { Text(stationLabel(st, lang)) },
+                    onClick = {
+                        onSelect(st)
+                        query = stationLabel(st, lang)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FareResult(quote: FareQuote, lang: AppLanguage) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = if (quote.dynamic) {
+                when (lang) { AppLanguage.GREEK -> "στην κράτηση"; AppLanguage.ALBANIAN -> "në rezervim"; else -> "at booking" }
+            } else {
+                val reducedWord = when (lang) { AppLanguage.GREEK -> "μειωμένο "; AppLanguage.ALBANIAN -> "e reduktuar "; else -> "reduced " }
+                formatEur(quote.fullPriceEur ?: 0.0) +
+                    (quote.reducedPriceEur?.let { " · $reducedWord${formatEur(it)}" } ?: "")
+            },
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "${quote.product} · ${quote.operator}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (!quote.note.isNullOrBlank() && quote.dynamic) {
+            Text(
+                text = quote.note!!,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun stationLabel(st: Station, lang: AppLanguage): String =
+    when (lang) { AppLanguage.GREEK -> st.nameEl.ifBlank { st.name }; else -> st.name }
+
+private fun fareStationOf(st: Station, lines: List<Line>): FareStation {
+    val regions = st.lineIds.mapNotNull { lid -> lines.firstOrNull { it.id == lid }?.region }.toSet()
+    val suburban = st.lineIds.any { lid ->
+        lines.firstOrNull { it.id == lid }?.let { it.region == Region.THESSALONIKI && it.type == LineType.SUBURBAN } == true
+    }
+    val name = (st.name + " " + st.nameEl).lowercase()
+    return FareStation(
+        id = st.id,
+        regions = regions.ifEmpty { setOf(Region.ATHENS) },
+        isAirport = "airport" in name || "αεροδρ" in name,
+        isSuburban = suburban,
+    )
 }
 
 private fun badgeColor(product: FareProduct): Color {
