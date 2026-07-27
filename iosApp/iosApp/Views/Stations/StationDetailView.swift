@@ -72,27 +72,58 @@ struct StationDetailView: View {
                 }
             }
 
-            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
-                if departures.isEmpty {
-                    // After the initial reload completes there's a real
-                    // distinction between "still loading" and "the
-                    // projector returned zero". hasLoadedOnce flips to
-                    // true the moment the first projection (local or
-                    // remote) lands, so subsequent empty results are
-                    // shown as a real end-of-service state instead of
-                    // an indefinite "loading" spinner.
-                    Text(hasLoadedOnce
-                         ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
-                            loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
-                            "No departures right now. The line is closed or today's service has ended.")
-                         : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
-                            loc.language == .albanian ? "Duke ngarkuar oraret..." :
-                            "Loading departures..."))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
-                } else {
-                    ForEach(departures.prefix(10)) { departure in
+            if isUnsupportedRegion {
+                Section(loc.language == .greek ? "Δρομολόγια" : loc.language == .albanian ? "Oraret" : "Timetables") {
+                    Label(
+                        loc.language == .greek
+                        ? "Τα δρομολόγια για αυτό το δίκτυο δεν είναι ακόμα διαθέσιμα στο Syrmos."
+                        : loc.language == .albanian
+                        ? "Oraret per kete rrjet nuk jane ende te disponueshme ne Syrmos."
+                        : "Timetable data for this network is not yet available in Syrmos.",
+                        systemImage: "info.circle"
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                    if let url = externalTimetableURL {
+                        Button {
+                            safariURL = url
+                        } label: {
+                            Label(
+                                loc.language == .greek
+                                ? "Δείτε δρομολόγια στο \(externalOperatorName)"
+                                : loc.language == .albanian
+                                ? "Shiko oraret ne \(externalOperatorName)"
+                                : "Check timetables on \(externalOperatorName)",
+                                systemImage: "safari"
+                            )
+                        }
+                    }
+                } footer: {
+                    Text(loc.language == .greek
+                         ? "Τα δρομολόγια για αυτό το δίκτυο θα προστεθούν σε μελλοντική ενημέρωση."
+                         : loc.language == .albanian
+                         ? "Oraret per kete rrjet do te shtohen ne nje perditesim te ardhshem."
+                         : "Timetables for this network will be added in a future update.")
+                        .font(.caption2)
+                }
+            }
+
+            if !isUnsupportedRegion {
+                Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
+                    if departures.isEmpty {
+                        Text(hasLoadedOnce
+                             ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
+                                loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
+                                "No departures right now. The line is closed or today's service has ended.")
+                             : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
+                                loc.language == .albanian ? "Duke ngarkuar oraret..." :
+                                "Loading departures..."))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    } else {
+                        ForEach(departures.prefix(10)) { departure in
                         let iconName = TimetablesIcons.vehicleImageName(
                             lineId: departure.lineId,
                             direction: departure.direction,
@@ -152,14 +183,16 @@ struct StationDetailView: View {
                     }
                 }
             }
+            }
         }
         .scrollContentBackground(.hidden)
         .background(Color.syrmosBackground)
         .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
-            reloadDepartures()
+            if !isUnsupportedRegion { reloadDepartures() }
         }
         .onReceive(refreshTimer) { _ in
+            guard !isUnsupportedRegion else { return }
             nowTick = Date()
             reloadDepartures()
         }
@@ -172,6 +205,42 @@ struct StationDetailView: View {
     /// True when this station belongs to a Hellenic Train suburban line (A1-A4).
     private var isSuburbanStation: Bool {
         station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
+    }
+
+    /// The region of this station, derived from the regions of its lines.
+    /// If all lines share a single non-Athens region, that is the station's region.
+    private var stationRegion: TransitRegion {
+        let regions = station.lineIds.compactMap { SyrmosData.line(for: $0)?.region }
+        guard !regions.isEmpty else { return .athens }
+        let unique = Set(regions)
+        if unique.count == 1, let single = unique.first { return single }
+        return .athens
+    }
+
+    /// True when the station is outside the Athens network and has no local
+    /// schedule data. We show external operator links instead of departures.
+    private var isUnsupportedRegion: Bool {
+        stationRegion != .athens
+    }
+
+    /// External operator website for this station's region.
+    private var externalTimetableURL: URL? {
+        switch stationRegion {
+        case .thessaloniki:
+            return URL(string: "https://www.oasth.gr")
+        case .national, .patras:
+            return URL(string: "https://www.hellenictrain.gr")
+        case .athens:
+            return nil
+        }
+    }
+
+    private var externalOperatorName: String {
+        switch stationRegion {
+        case .thessaloniki: return "OASTH"
+        case .national, .patras: return "Hellenic Train"
+        case .athens: return ""
+        }
     }
 
     /// 100% offline. The station-detail screen is reachable from the

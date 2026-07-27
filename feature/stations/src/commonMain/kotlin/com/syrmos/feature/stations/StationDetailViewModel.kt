@@ -5,6 +5,7 @@ import com.syrmos.core.domain.usecase.GetStationDetailUseCase
 import com.syrmos.core.domain.usecase.GetStationDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.Region
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,6 +27,8 @@ data class StationDetailUiState(
     val connectingLines: List<Line> = emptyList(),
     val departures: List<UpcomingDeparture> = emptyList(),
     val isLoading: Boolean = true,
+    val stationRegion: Region = Region.ATHENS,
+    val externalTimetableUrl: String? = null,
 )
 
 class StationDetailViewModel(
@@ -46,6 +49,16 @@ class StationDetailViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val detail = getStationDetail.invoke(stationId).first() ?: return@launch
 
+            val regions = detail.connectingLines.map { it.region }.distinct()
+            val region = if (regions.size == 1) regions.first() else Region.ATHENS
+
+            val externalUrl = when (region) {
+                Region.THESSALONIKI -> "https://www.oasth.gr"
+                Region.NATIONAL -> "https://www.hellenictrain.gr"
+                Region.PATRAS -> "https://www.hellenictrain.gr"
+                Region.ATHENS -> null
+            }
+
             _uiState.update {
                 it.copy(
                     stationName = detail.station.name,
@@ -54,10 +67,14 @@ class StationDetailViewModel(
                     longitude = detail.station.longitude,
                     connectingLines = detail.connectingLines,
                     isLoading = false,
+                    stationRegion = region,
+                    externalTimetableUrl = externalUrl,
                 )
             }
 
-            startRefreshLoop(stationId, detail.station.lineIds)
+            if (region == Region.ATHENS) {
+                startRefreshLoop(stationId, detail.station.lineIds)
+            }
         }
     }
 

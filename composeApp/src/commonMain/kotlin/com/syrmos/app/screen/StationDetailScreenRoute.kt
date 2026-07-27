@@ -1,6 +1,7 @@
 package com.syrmos.app.screen
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalUriHandler
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -12,11 +13,13 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val uriHandler = LocalUriHandler.current
         val viewModel = koinInject<StationDetailViewModel>()
         viewModel.loadStation(stationId)
         StationDetailScreen(
             viewModel = viewModel,
             onBack = { navigator.pop() },
+            onOpenUrl = { uriHandler.openUri(it) },
         )
     }
 }
