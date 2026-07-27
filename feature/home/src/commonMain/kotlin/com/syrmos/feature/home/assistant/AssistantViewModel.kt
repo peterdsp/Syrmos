@@ -1209,8 +1209,52 @@ class AssistantViewModel(
         )
     }
 
+    private val computeFare = com.syrmos.core.domain.fares.ComputeFareUseCase()
+
+    /** Build a [FareStation] for the fare engine from a station's lines. */
+    private fun fareStation(id: String): com.syrmos.core.domain.fares.FareStation? {
+        val st = stations.firstOrNull { it.id == id } ?: return null
+        val regions = st.lineIds.mapNotNull { lid -> lines.firstOrNull { it.id == lid }?.region }.toSet()
+        val suburban = st.lineIds.any { lid ->
+            lines.firstOrNull { it.id == lid }?.let {
+                it.region == com.syrmos.core.model.transit.Region.THESSALONIKI &&
+                    it.type == com.syrmos.core.model.transit.LineType.SUBURBAN
+            } == true
+        }
+        return com.syrmos.core.domain.fares.FareStation(
+            id = id,
+            regions = regions.ifEmpty { setOf(com.syrmos.core.model.transit.Region.ATHENS) },
+            isAirport = isAirportStation(id),
+            isSuburban = suburban,
+        )
+    }
+
+    private fun formatFareQuote(
+        from: com.syrmos.core.domain.fares.FareStation,
+        to: com.syrmos.core.domain.fares.FareStation,
+        q: com.syrmos.core.model.fares.FareQuote,
+    ): String {
+        val a = stationName(from.id); val b = stationName(to.id)
+        if (q.dynamic) {
+            return t(
+                "$a → $b is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
+                "$a → $b είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",
+                "$a → $b është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr.",
+            )
+        }
+        val reduced = q.reducedPriceEur?.let { " (${t("reduced", "μειωμένο", "e reduktuar")} ${money(it)})" } ?: ""
+        return "$a → $b: ${money(q.fullPriceEur)}$reduced. ${q.product} · ${q.operator}"
+    }
+
     private suspend fun resolveFare(intent: AssistantIntent.ExplainFare): AssistantMessage {
         faresRepository.hydrateFromBundleIfNeeded()
+        // Grounded from -> to fare (same engine as the web planner) when both
+        // endpoints are known; otherwise fall back to the generic product list.
+        val fareFrom = intent.fromStationId?.let { fareStation(it) }
+        val fareTo = intent.toStationId?.let { fareStation(it) }
+        if (fareFrom != null && fareTo != null) {
+            return botMessage(formatFareQuote(fareFrom, fareTo, computeFare.invoke(fareFrom, fareTo)))
+        }
         val products = faresRepository.products.value
         if (products.isEmpty()) {
             return botMessage(t("I don't have fare prices available offline right now.",
