@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.13** (TestFlight), **Android 1.2.13** (Play internal, versionCode 117), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116. Next Android release must use 117+.
+Current shipping: **iOS 1.2.14** (TestFlight), **Android 1.2.14** (Play internal, versionCode 118), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118. Next Android release must use 119+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,18 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.14 — 2026-07-27
+
+Fares, nationwide. A complete ticket-price feature across web, iOS and Android, on grounded operator data.
+
+- **Fares menu (all networks).** The tickets screen now spans every network — Athens (OASA), Thessaloniki (OSETH), all-Greece suburban (incl. the Patras A1/A/B/C zone grid), and intercity — grouped by operator, trilingual. Intercity is honestly shown as "at booking" rather than a made-up number. `/api/fares` grew from 14 OASA-only products to 24 across all operators; the bundle carries them so the native menu works offline.
+- **Journey fare planner (from → to → price).** Pick a start and destination station and get the exact grounded fare (full + reduced, product, operator), or the official booking path for intercity. On web (in the fares card), iOS (SwiftUI, searchable station pickers) and Android (Compose, autocomplete). Verified live: Syntagma→Airport €9.00/€4.50, Rio→Patra €1.40, Thessaloniki→Sindos €0.80 (OSETH).
+- **Ariadne answers fares.** "How much from X to Y" now returns the same grounded fare card in chat — KMP brain (Android), Swift mirror (iOS) and web — all offline. Fixed the stale "€0.90" canned answer to the current €1.20 integrated ticket.
+- **One shared engine.** A single fare model (`ComputeFareUseCase`, 6 unit tests) with Swift + JS mirrors sharing identical grounded tables. It charges a trip on the local network the two stations share, so a Thessaloniki interchange that also sits on the national line is billed as a local suburban trip, not intercity — a real bug the tests now lock.
+- All fare figures are transcribed from official operator sources (oasa.gr, oseth.com.gr, hellenictrain.gr); see docs/data/2026-07-27-fares-collection.md.
+
+iOS 1.2.14 / Android versionCode 118. First iOS build to type-check the new SwiftUI fares screens.
 
 ## 1.2.13 — 2026-07-27
 
