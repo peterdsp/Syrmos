@@ -43,7 +43,24 @@ import com.syrmos.core.network.SyrmosSchedulesService.FareProduct
 import com.syrmos.core.network.SyrmosSchedulesService.InfoLink
 import org.koin.compose.koinInject
 
-private val SectionOrder = listOf("single", "offers", "airport", "passes")
+/**
+ * The fares screen now spans every network, not just OASA. Products are grouped
+ * under a network header; Athens keeps its OASA sub-sections, the others are a
+ * single flat list. Sources per operator; see docs/data/2026-07-27-fares-collection.md.
+ */
+private data class FareNetwork(
+    val sections: List<String>,
+    val labelEn: String,
+    val labelEl: String,
+    val labelSq: String,
+)
+
+private val Networks = listOf(
+    FareNetwork(listOf("single", "offers", "airport", "passes"), "Athens — OASA", "Αθήνα — OASA", "Athinë — OASA"),
+    FareNetwork(listOf("thessaloniki"), "Thessaloniki — OSETH", "Θεσσαλονίκη — OSETH", "Selanik — OSETH"),
+    FareNetwork(listOf("patras"), "Patras suburban", "Προαστιακός Πάτρας", "Suburban Patra"),
+    FareNetwork(listOf("intercity"), "Intercity / regional", "Υπεραστικά / περιφερειακά", "Ndërqytetëse"),
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,8 +71,7 @@ fun FaresScreen(onBack: () -> Unit) {
     val updatedAt by faresRepo.updatedAt.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
 
-    val grouped = products.groupBy { it.section }
-    val ordered = SectionOrder.mapNotNull { key -> grouped[key]?.let { key to it } }
+    val bySection = products.groupBy { it.section }
 
     Scaffold(
         topBar = {
@@ -88,17 +104,39 @@ fun FaresScreen(onBack: () -> Unit) {
         ) {
             item { Header(lang = lang, updatedAt = updatedAt) }
 
-            ordered.forEach { (key, items) ->
+            Networks.forEach { network ->
+                if (network.sections.none { bySection[it]?.isNotEmpty() == true }) return@forEach
                 item {
                     Text(
-                        text = sectionTitle(key, lang),
+                        text = when (lang) {
+                            AppLanguage.GREEK -> network.labelEl
+                            AppLanguage.ALBANIAN -> network.labelSq
+                            else -> network.labelEn
+                        },
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
                     )
                 }
-                items(items) { product ->
-                    FareCard(product = product, lang = lang)
+                network.sections.forEach { section ->
+                    val secProducts = bySection[section].orEmpty()
+                    if (secProducts.isEmpty()) return@forEach
+                    // Sub-section header only where a network has several (Athens).
+                    if (network.sections.size > 1) {
+                        item {
+                            Text(
+                                text = sectionTitle(section, lang),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
+                            )
+                        }
+                    }
+                    items(secProducts) { product ->
+                        FareCard(product = product, lang = lang)
+                    }
                 }
             }
 
@@ -130,18 +168,18 @@ private fun Header(lang: AppLanguage, updatedAt: String) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = when (lang) {
-                AppLanguage.GREEK -> "Τιμές εισιτηρίων OASA"
-                AppLanguage.ALBANIAN -> "Çmimet e biletave OASA"
-                else -> "OASA ticket prices"
+                AppLanguage.GREEK -> "Τιμές εισιτηρίων"
+                AppLanguage.ALBANIAN -> "Çmimet e biletave"
+                else -> "Fares"
             },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
             text = when (lang) {
-                AppLanguage.GREEK -> "Συγχρονισμένο από τη επίσημη σελίδα τιμών της OASA. Οι ενημερώσεις γίνονται καθημερινά."
-                AppLanguage.ALBANIAN -> "Sinkronizuar nga faqja zyrtare e çmimeve të OASA. Përditësohet çdo ditë."
-                else -> "Synced from OASA's official prices page. Updated daily."
+                AppLanguage.GREEK -> "Τιμές από τους επίσημους φορείς (OASA, OSETH, Hellenic Train). Τα υπεραστικά τιμολογούνται στην κράτηση."
+                AppLanguage.ALBANIAN -> "Çmime nga operatorët zyrtarë (OASA, OSETH, Hellenic Train). Ndërqytetëset çmohen në rezervim."
+                else -> "Prices from the official operators (OASA, OSETH, Hellenic Train). Intercity is priced at booking."
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -186,14 +224,18 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                product.fullPriceEur?.let { full ->
-                    Text(
-                        text = formatEur(full),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+                Text(
+                    // Intercity has no fixed price (booking-time); show that
+                    // honestly instead of a fabricated number or a blank.
+                    text = product.fullPriceEur?.let { formatEur(it) } ?: when (lang) {
+                        AppLanguage.GREEK -> "στην κράτηση"
+                        AppLanguage.ALBANIAN -> "në rezervim"
+                        else -> "at booking"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
             product.discountedPriceEur?.let { disc ->
                 Text(
@@ -378,15 +420,19 @@ private fun formatEur(value: Double): String {
     return "€$euros.$rem"
 }
 
-private fun sectionTitle(key: String, lang: AppLanguage): String = when (key to lang) {
-    "single" to AppLanguage.ENGLISH -> "Single tickets"
-    "single" to AppLanguage.GREEK -> "Μονά εισιτήρια"
-    "offers" to AppLanguage.ENGLISH -> "Packs and offers"
-    "offers" to AppLanguage.GREEK -> "Πακέτα και προσφορές"
-    "airport" to AppLanguage.ENGLISH -> "Airport tickets"
-    "airport" to AppLanguage.GREEK -> "Εισιτήρια αεροδρομίου"
-    "passes" to AppLanguage.ENGLISH -> "Day passes"
-    "passes" to AppLanguage.GREEK -> "Ημερήσια εισιτήρια"
+private fun sectionTitle(key: String, lang: AppLanguage): String = when (key) {
+    "single" -> when (lang) {
+        AppLanguage.GREEK -> "Μονά εισιτήρια"; AppLanguage.ALBANIAN -> "Bileta të thjeshta"; else -> "Single tickets"
+    }
+    "offers" -> when (lang) {
+        AppLanguage.GREEK -> "Πακέτα και προσφορές"; AppLanguage.ALBANIAN -> "Paketa dhe oferta"; else -> "Packs and offers"
+    }
+    "airport" -> when (lang) {
+        AppLanguage.GREEK -> "Εισιτήρια αεροδρομίου"; AppLanguage.ALBANIAN -> "Bileta aeroporti"; else -> "Airport tickets"
+    }
+    "passes" -> when (lang) {
+        AppLanguage.GREEK -> "Ημερήσια εισιτήρια"; AppLanguage.ALBANIAN -> "Bileta ditore"; else -> "Day passes"
+    }
     else -> key.replaceFirstChar { it.uppercase() }
 }
 
