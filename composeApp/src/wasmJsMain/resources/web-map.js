@@ -503,18 +503,25 @@
     // empty state if the API is down rather than rendering nothing.
     (async () => {
         if (!faresList && !infoLinksList) return;
-        try {
-            const r = await fetch("https://api-syrmos.peterdsp.dev/api/fares");
-            if (!r.ok) throw new Error("fares fetch failed");
-            const payload = await r.json();
-            lastFaresPayload = payload;
-            renderFaresPanel(payload);
-            setupFarePlanner();
-            renderInfoLinksPanel(payload);
-        } catch (_) {
-            if (faresList) faresList.innerHTML = `<div class="panel-item__meta">${t("tickets_unavailable")}</div>`;
-            if (infoLinksList) infoLinksList.innerHTML = "";
+        let attempts = 0;
+        const maxAttempts = 3;
+        while (attempts < maxAttempts) {
+            try {
+                const r = await fetch("https://api-syrmos.peterdsp.dev/api/fares");
+                if (!r.ok) throw new Error("fares fetch " + r.status);
+                const payload = await r.json();
+                lastFaresPayload = payload;
+                renderFaresPanel(payload);
+                setupFarePlanner();
+                renderInfoLinksPanel(payload);
+                return;
+            } catch (_) {
+                attempts++;
+                if (attempts < maxAttempts) await new Promise(r => setTimeout(r, 2000 * attempts));
+            }
         }
+        if (faresList) faresList.innerHTML = `<div class="panel-item__meta">${t("tickets_unavailable")}</div>`;
+        if (infoLinksList) infoLinksList.innerHTML = "";
     })();
 
     /// Pick the localised value of a {baseKey}En / {baseKey}El / {baseKey}Sq

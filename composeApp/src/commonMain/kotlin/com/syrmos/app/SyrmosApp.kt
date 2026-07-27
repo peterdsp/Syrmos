@@ -62,7 +62,7 @@ import com.syrmos.app.screen.OnboardingScreen
 import com.syrmos.app.screen.WhatsNewDialog
 import org.jetbrains.compose.resources.painterResource
 import syrmos.composeapp.generated.resources.Res
-import syrmos.composeapp.generated.resources.ariadne_logo
+import syrmos.composeapp.generated.resources.ariadne_mark
 import syrmos.composeapp.generated.resources.start_screen
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -318,16 +318,16 @@ private fun LiquidGlassTabItem(
  */
 @Composable
 private fun AriadneLauncherPill(label: String, onClick: () -> Unit) {
-    // The Ariadne brand logo is the button (owl + labyrinth + thread).
     Image(
-        painter = painterResource(Res.drawable.ariadne_logo),
+        painter = painterResource(Res.drawable.ariadne_mark),
         contentDescription = label,
         modifier = Modifier
-            .size(60.dp)
-            .shadow(elevation = 12.dp, shape = RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
+            .size(56.dp)
+            .shadow(elevation = 8.dp, shape = CircleShape)
+            .clip(CircleShape)
             .background(Color.White)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(10.dp),
     )
 }
 

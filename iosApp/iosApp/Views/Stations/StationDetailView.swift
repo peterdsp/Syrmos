@@ -8,9 +8,8 @@ struct StationDetailView: View {
     @State private var nowTick = Date()
     @State private var showMapSheet = false
     @State private var safariURL: URL?
+    @State private var apiFailed = false
 
-    // Recompute departures every 15 seconds so the "5 min / 10 min" countdowns
-    // tick down in real time while the user is viewing this screen.
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -21,11 +20,6 @@ struct StationDetailView: View {
                 } label: {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
-                            // Show Latin name in non-Greek modes. The original
-                            // logic painted Greek text underneath the Latin nav
-                            // title for English+Albanian, which surprised Albanian
-                            // users who expect zero Greek when their app language
-                            // is not Greek.
                             Text(loc.language == .greek ? station.name : station.name)
                                 .font(.title3)
                                 .foregroundStyle(.secondary)
@@ -72,15 +66,15 @@ struct StationDetailView: View {
                 }
             }
 
-            if isUnsupportedRegion {
-                Section(loc.language == .greek ? "Δρομολόγια" : loc.language == .albanian ? "Oraret" : "Timetables") {
+            if isNonAthensRegion && apiFailed {
+                Section {
                     Label(
                         loc.language == .greek
-                        ? "Τα δρομολόγια για αυτό το δίκτυο δεν είναι ακόμα διαθέσιμα στο Syrmos."
+                        ? "Δεν ήταν δυνατή η φόρτωση δρομολογίων. Ελέγξτε τη σύνδεσή σας."
                         : loc.language == .albanian
-                        ? "Oraret per kete rrjet nuk jane ende te disponueshme ne Syrmos."
-                        : "Timetable data for this network is not yet available in Syrmos.",
-                        systemImage: "info.circle"
+                        ? "Nuk u arrit te ngarkoheshin oraret. Kontrollo lidhjen."
+                        : "Could not load departures. Check your connection.",
+                        systemImage: "wifi.exclamationmark"
                     )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -99,31 +93,23 @@ struct StationDetailView: View {
                             )
                         }
                     }
-                } footer: {
-                    Text(loc.language == .greek
-                         ? "Τα δρομολόγια για αυτό το δίκτυο θα προστεθούν σε μελλοντική ενημέρωση."
-                         : loc.language == .albanian
-                         ? "Oraret per kete rrjet do te shtohen ne nje perditesim te ardhshem."
-                         : "Timetables for this network will be added in a future update.")
-                        .font(.caption2)
                 }
             }
 
-            if !isUnsupportedRegion {
-                Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
-                    if departures.isEmpty {
-                        Text(hasLoadedOnce
-                             ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
-                                loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
-                                "No departures right now. The line is closed or today's service has ended.")
-                             : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
-                                loc.language == .albanian ? "Duke ngarkuar oraret..." :
-                                "Loading departures..."))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                    } else {
-                        ForEach(departures.prefix(10)) { departure in
+            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
+                if departures.isEmpty && !(isNonAthensRegion && apiFailed) {
+                    Text(hasLoadedOnce
+                         ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
+                            loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
+                            "No departures right now. The line is closed or today's service has ended.")
+                         : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
+                            loc.language == .albanian ? "Duke ngarkuar oraret..." :
+                            "Loading departures..."))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                } else {
+                    ForEach(departures.prefix(10)) { departure in
                         let iconName = TimetablesIcons.vehicleImageName(
                             lineId: departure.lineId,
                             direction: departure.direction,
@@ -183,16 +169,14 @@ struct StationDetailView: View {
                     }
                 }
             }
-            }
         }
         .scrollContentBackground(.hidden)
         .background(Color.syrmosBackground)
         .navigationTitle(loc.language == .greek ? station.nameEl : station.name)
         .onAppear {
-            if !isUnsupportedRegion { reloadDepartures() }
+            reloadDepartures()
         }
         .onReceive(refreshTimer) { _ in
-            guard !isUnsupportedRegion else { return }
             nowTick = Date()
             reloadDepartures()
         }
@@ -202,13 +186,10 @@ struct StationDetailView: View {
         .inAppSafari(url: $safariURL)
     }
 
-    /// True when this station belongs to a Hellenic Train suburban line (A1-A4).
     private var isSuburbanStation: Bool {
         station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
     }
 
-    /// The region of this station, derived from the regions of its lines.
-    /// If all lines share a single non-Athens region, that is the station's region.
     private var stationRegion: TransitRegion {
         let regions = station.lineIds.compactMap { SyrmosData.line(for: $0)?.region }
         guard !regions.isEmpty else { return .athens }
@@ -217,13 +198,10 @@ struct StationDetailView: View {
         return .athens
     }
 
-    /// True when the station is outside the Athens network and has no local
-    /// schedule data. We show external operator links instead of departures.
-    private var isUnsupportedRegion: Bool {
+    private var isNonAthensRegion: Bool {
         stationRegion != .athens
     }
 
-    /// External operator website for this station's region.
     private var externalTimetableURL: URL? {
         switch stationRegion {
         case .thessaloniki:
@@ -243,24 +221,27 @@ struct StationDetailView: View {
         }
     }
 
-    /// 100% offline. The station-detail screen is reachable from the
-    /// Lines list and from the Home nearest-stations card, both of
-    /// which want a deep "what's running today" view — 12 hours of
-    /// upcoming departures, drawn from the bundled schedule JSON +
-    /// station offsets. NO network call. Previously this method
-    /// queried /api/departures/next and replaced the offline result
-    /// with whatever the API returned, which meant any clock drift
-    /// or downtime on the Pi propagated straight into the UI even
-    /// though the offline projector had the right answer in hand.
     private func reloadDepartures() {
-        departures = currentDepartures()
-        hasLoadedOnce = true
+        if isNonAthensRegion {
+            Task {
+                if let apiResult = await SyrmosDeparturesService.nextDepartures(
+                    for: station.id,
+                    lineIds: station.lineIds,
+                    limit: 20
+                ) {
+                    departures = apiResult
+                    apiFailed = false
+                } else {
+                    apiFailed = true
+                }
+                hasLoadedOnce = true
+            }
+        } else {
+            departures = currentDepartures()
+            hasLoadedOnce = true
+        }
     }
 
-    /// Bundled-projector projection for the next 12 hours. 12 h is
-    /// long enough to cover an overnight gap (last train ~01:30, next
-    /// train ~05:00 next morning) so the "Next train tomorrow at HH:MM"
-    /// state always shows up without a separate lookahead pass.
     private func currentDepartures() -> [Departure] {
         return ScheduleProjector.nextDepartures(
             for: station.id,
@@ -281,10 +262,6 @@ struct StationDetailView: View {
 
 // MARK: - Line pills
 
-/// Wrapping row of glass-capsule line pills. Short label per pill
-/// (M1 / M3 / A1 / A4 / T6 etc.) so nothing ever hyphenates or
-/// wraps inside the capsule itself, and a coloured dot keyed to
-/// the line tint. Pills flow onto a second row when they overflow.
 private struct LinePillsRow: View {
     let lineIds: [String]
 
@@ -322,9 +299,6 @@ private struct StationLinePill: View {
         )
     }
 
-    /// Short, never-wrapping label. Strip the verbose suburban suffix
-    /// ("A1 Piraeus-Airport" -> "A1") and just keep the line id; users
-    /// recognise it from the legend / map.
     private var shortLabel: String {
         switch lineId {
         case "M1": return "M1"
@@ -341,9 +315,6 @@ private struct StationLinePill: View {
     }
 }
 
-/// Compact flow layout: lays children left-to-right, wraps when they
-/// exceed the proposed width. Avoids the hyphenated mess HStack
-/// produced when a long pill label hit the screen edge.
 private struct FlowLayout: Layout {
     var spacing: CGFloat = 6
 

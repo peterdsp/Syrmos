@@ -350,14 +350,15 @@ struct TransitMapView: View {
                     Button {
                         showAriadne = true
                     } label: {
-                        Image("AriadneLogo")
+                        Image("AriadneMark")
                             .resizable()
-                            .scaledToFill()
-                            .frame(width: 50, height: 50)
+                            .scaledToFit()
+                            .frame(width: 32, height: 32)
+                            .padding(9)
                             .background(Color.white)
                             .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.25), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
+                            .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
                     }
                     .accessibilityLabel(
                         loc.language == .greek ? "Ρώτα την Αριάδνη" :
