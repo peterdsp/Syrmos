@@ -114,7 +114,7 @@ S = {
     "GR_DAV": ("Davleia", "Δαύλεια", 38.535119, 22.811194),
     "GR_PAR": ("Parori", "Παρόρι", 38.574360, 22.762130),
     "GR_KIF": ("Kifissos", "Κηφισσός", 38.585710, 22.745148),
-    "GR_MYL": ("Mylos", "Μύλος", 38.800000, 22.480000),  # small halt, interpolated Tithorea-Leianokladi
+    "GR_MYL": ("Molos", "Μώλος", 38.812322, 22.657523),  # real OSM station on the Athens-Lamia line
     # Patras suburban (PS1 Kaminia branch, PS2 Rio branch, PSB Kato Achaia bus)
     "PA_AND": ("Agios Andreas", "Αγ. Ανδρέας", 38.239405, 21.727159),
     "PA_ANT": ("Antheia", "Άνθεια", 38.226000, 21.723000),   # small halt, interpolated
@@ -227,7 +227,7 @@ S = {
     "PU_UNP": ("University (Pedagogy)", "Πανεπιστήμιο (Παιδαγωγικό)", 38.288549, 21.787311),
     "PU_UNR": ("University (Rectory)", "Πανεπιστήμιο (Πρυτανεία)", 38.285915, 21.786802),
     "PU_OAE": ("OAED", "ΟΑΕΔ", 38.288000, 21.782000),                 # unmapped; on the loop, interpolated
-    "PU_AGV": ("Agios Vasileios", "Άγιος Βασίλειος", 38.295000, 21.762000),  # unmapped Rio suburb, interpolated
+    "PU_AGV": ("Agios Vasileios", "Άγιος Βασίλειος", 38.314371, 21.816880),  # real OSM Rio suburb (Agiou Vasileiou)
 }
 
 # Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
@@ -706,7 +706,7 @@ interval_trips("PU2", "inbound", ["PU_AGV", "PA_KST"], 61300,
                [0, 15])
 
 
-_NATIONAL_GR = ("GR_ATH", "GR_OIN", "GR_THI", "GR_LIV", "GR_TIT", "GR_LEI", "GR_PAL")
+_NATIONAL_GR = ("GR_ATH", "GR_OIN", "GR_THI", "GR_LIV", "GR_TIT", "GR_LEI", "GR_PAL", "GR_MYL")
 
 
 def station_region(sid: str) -> str:
