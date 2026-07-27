@@ -145,6 +145,23 @@ body {
    so let the list scroll inside the card instead of clipping the lower groups. */
 #faresList { max-height: 300px; overflow-y: auto; }
 
+/* Journey fare planner (from -> to -> price) at the top of the fares card. */
+.fare-planner { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.fare-planner__in {
+    padding: 8px 10px; border: 1px solid rgba(0,0,0,0.15); border-radius: 10px;
+    background: transparent; color: inherit; font: inherit; outline: none; width: 100%;
+}
+.fare-planner__in:focus { border-color: var(--sy-brand, #1466B8); }
+.dark-mode .fare-planner__in { border-color: rgba(255,255,255,0.18); }
+.dark-mode .fare-planner { border-bottom-color: rgba(255,255,255,0.08); }
+.fare-planner__result:empty { display: none; }
+.fare-planner__result { padding: 8px 10px; border-radius: 10px; background: #f7fafc; }
+.dark-mode .fare-planner__result { background: rgba(255,255,255,0.05); }
+.fare-planner__price { font-weight: 700; font-size: 16px; }
+.fare-planner__meta { font-size: 12px; color: var(--sy-on-surface-muted, #5f6b76); margin-top: 1px; }
+.fare-planner__src { font-size: 12px; }
+.fare-planner__src:empty { display: none; }
+
 .panel-item__title {
     font-size: 13px;
     font-weight: 650;

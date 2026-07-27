@@ -10,7 +10,14 @@ import com.syrmos.core.model.transit.Region
  */
 data class FareStation(
     val id: String,
-    val region: Region,
+    /**
+     * Every network this station belongs to (via its lines). A station can be on
+     * more than one: a Thessaloniki interchange like GR_THE is on the national
+     * IC1 AND the local TP suburban lines. Using the full set lets the engine
+     * charge a LOCAL trip locally (both stations share Thessaloniki) rather than
+     * as intercity just because one endpoint also sits on a national line.
+     */
+    val regions: Set<Region>,
     /** Athens airport (ATH) — triggers the airport metro fare, not the flat urban one. */
     val isAirport: Boolean = false,
     /** Thessaloniki suburban (TP*) vs urban metro/bus — different zone price. */
@@ -68,13 +75,11 @@ internal object FareTables {
  */
 class ComputeFareUseCase {
     fun invoke(from: FareStation, to: FareStation): FareQuote {
-        // Any national leg, or a trip crossing regions, is intercity.
-        if (from.region == Region.NATIONAL || to.region == Region.NATIONAL ||
-            from.region != to.region
-        ) {
-            return FareTables.intercity
-        }
-        return when (from.region) {
+        // Charge the trip on the LOCAL network the two stations share. If they
+        // share no local (non-national) network - a different city each, or the
+        // only link is a national line - it is intercity, booking-priced.
+        val local = (from.regions intersect to.regions).firstOrNull { it != Region.NATIONAL }
+        return when (local) {
             Region.ATHENS ->
                 if (from.isAirport || to.isAirport) FareTables.athensAirport
                 else FareTables.athensUrban
@@ -82,7 +87,7 @@ class ComputeFareUseCase {
                 if (from.isSuburban || to.isSuburban) FareTables.thessSuburban
                 else FareTables.thessUrban
             Region.PATRAS -> FareTables.patrasBase
-            Region.NATIONAL -> FareTables.intercity // unreachable, handled above
+            else -> FareTables.intercity
         }
     }
 }

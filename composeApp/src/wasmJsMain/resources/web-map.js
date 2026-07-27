@@ -41,6 +41,9 @@
             popular_stations: "Popular stations",
             oasa_tickets: "Fares",
             fare_at_booking: "at booking",
+            plan_trip: "Plan a trip — fare",
+            fare_from: "From station",
+            fare_to: "To station",
             view_on_oasa: "View on OASA ↗",
             useful_information: "Useful information",
             tickets_unavailable: "Tickets unavailable",
@@ -107,6 +110,9 @@
             popular_stations: "Δημοφιλείς σταθμοί",
             oasa_tickets: "Τιμές εισιτηρίων",
             fare_at_booking: "στην κράτηση",
+            plan_trip: "Υπολόγισε κόμιστρο",
+            fare_from: "Από σταθμό",
+            fare_to: "Προς σταθμό",
             view_on_oasa: "Άνοιγμα στην OASA ↗",
             useful_information: "Χρήσιμες πληροφορίες",
             tickets_unavailable: "Τα εισιτήρια δεν είναι διαθέσιμα",
@@ -173,6 +179,9 @@
             popular_stations: "Stacionet kryesore",
             oasa_tickets: "Çmimet e biletave",
             fare_at_booking: "në rezervim",
+            plan_trip: "Llogarit çmimin",
+            fare_from: "Nga stacioni",
+            fare_to: "Te stacioni",
             view_on_oasa: "Hap në OASA ↗",
             useful_information: "Informacione të dobishme",
             tickets_unavailable: "Biletat s'janë të disponueshme",
@@ -494,6 +503,7 @@
             const payload = await r.json();
             lastFaresPayload = payload;
             renderFaresPanel(payload);
+            setupFarePlanner();
             renderInfoLinksPanel(payload);
         } catch (_) {
             if (faresList) faresList.innerHTML = `<div class="panel-item__meta">${t("tickets_unavailable")}</div>`;
@@ -527,6 +537,96 @@
     // network. The fetch fires once on load; the cache holds whatever
     // came back.
     let lastFaresPayload = null;
+
+    // --- Journey fare planner (from -> to -> price) --------------------------
+    // JS mirror of the KMP ComputeFareUseCase (core/domain). Grounded operator
+    // tables (docs/data/2026-07-27-fares-collection.md); intercity is dynamic
+    // (booking-priced) so it returns no number, only the booking link.
+    const FARE_URLS = {
+        oasa: "https://www.oasa.gr/en/tickets/prices-of-products/",
+        oseth: "https://oseth.com.gr/en/tickets",
+        htPatras: "https://www.hellenictrain.gr/en/patras-suburban-railway",
+        htBook: "https://newtickets.hellenictrain.gr/",
+    };
+    const FARE_TABLES = {
+        athensUrban: { full: 1.20, reduced: 0.50, product: "90-minute integrated ticket", operator: "OASA", url: FARE_URLS.oasa },
+        athensAirport: { full: 9.00, reduced: 4.50, product: "Airport Metro ticket (Line 3)", operator: "OASA", url: FARE_URLS.oasa },
+        thessUrban: { full: 0.60, reduced: 0.30, product: "Urban single ticket", operator: "OSETH", url: FARE_URLS.oseth },
+        thessSuburban: { full: 0.80, reduced: 0.40, product: "Suburban single ticket", operator: "OSETH", url: FARE_URLS.oseth },
+        patrasBase: { full: 1.40, reduced: 1.00, product: "Suburban ticket (zone)", operator: "Hellenic Train", url: FARE_URLS.htPatras },
+        intercity: { full: null, reduced: null, product: "Intercity / regional ticket", operator: "Hellenic Train", url: FARE_URLS.htBook, dynamic: true },
+    };
+    const THESS_SUBURBAN_LINES = ["TP1", "TP2", "TP3", "TP4"];
+    // All networks a station belongs to (a Thessaloniki interchange sits on both
+    // the national IC line and the local TP lines) - see the KMP FareStation doc.
+    function stationRegions(st) {
+        const out = new Set();
+        for (const id of st.lineIds || []) {
+            const l = lineMap.get(id);
+            if (l && l.region) out.add(l.region);
+        }
+        if (!out.size) out.add("athens");
+        return out;
+    }
+    function isAirportStation(st) {
+        return /(^|_)AIR/.test(st.id || "") || /airport/i.test(st.name || "") || /Αεροδρ/.test(st.nameEl || "");
+    }
+    function isThessSuburbanStation(st) {
+        return (st.lineIds || []).some((id) => THESS_SUBURBAN_LINES.includes(id));
+    }
+    function computeFare(from, to) {
+        // Charge on the local network the two stations share; if none, intercity.
+        const fr = stationRegions(from), tr = stationRegions(to);
+        let local = null;
+        for (const r of fr) { if (r !== "national" && tr.has(r)) { local = r; break; } }
+        switch (local) {
+            case "athens": return (isAirportStation(from) || isAirportStation(to)) ? FARE_TABLES.athensAirport : FARE_TABLES.athensUrban;
+            case "thessaloniki": return (isThessSuburbanStation(from) || isThessSuburbanStation(to)) ? FARE_TABLES.thessSuburban : FARE_TABLES.thessUrban;
+            case "patras": return FARE_TABLES.patrasBase;
+            default: return FARE_TABLES.intercity;
+        }
+    }
+    function setupFarePlanner() {
+        if (!faresList) return;
+        const card = faresList.closest(".panel-card") || faresList.parentElement;
+        if (!card || card.querySelector(".fare-planner")) return;
+        const datalist = document.createElement("datalist");
+        datalist.id = "farePlannerStations";
+        const byName = new Map();
+        for (const s of stationNodes) {
+            const nm = s.name || s.id;
+            if (byName.has(nm)) continue;
+            byName.set(nm, s);
+            const o = document.createElement("option");
+            o.value = nm;
+            datalist.appendChild(o);
+        }
+        const planner = document.createElement("div");
+        planner.className = "fare-planner";
+        planner.innerHTML = `
+            <div class="fares-group__head">${escapeHtml(t("plan_trip"))}</div>
+            <input class="fare-planner__in" id="fareFrom" list="farePlannerStations" placeholder="${escapeHtml(t("fare_from"))}" autocomplete="off">
+            <input class="fare-planner__in" id="fareTo" list="farePlannerStations" placeholder="${escapeHtml(t("fare_to"))}" autocomplete="off">
+            <div class="fare-planner__result" id="fareResult"></div>`;
+        card.insertBefore(datalist, faresList);
+        card.insertBefore(planner, faresList);
+        const fromIn = planner.querySelector("#fareFrom");
+        const toIn = planner.querySelector("#fareTo");
+        const res = planner.querySelector("#fareResult");
+        function update() {
+            const f = byName.get(fromIn.value), to = byName.get(toIn.value);
+            if (!f || !to) { res.innerHTML = ""; return; }
+            const q = computeFare(f, to);
+            const price = q.full != null ? `€${q.full.toFixed(2)}` : t("fare_at_booking");
+            const reduced = q.reduced != null ? ` · ${t("reduced")} €${q.reduced.toFixed(2)}` : "";
+            res.innerHTML = `
+                <div class="fare-planner__price">${escapeHtml(price)}${escapeHtml(reduced)}</div>
+                <div class="fare-planner__meta">${escapeHtml(q.product)} · ${escapeHtml(q.operator)}</div>
+                <a class="fare-planner__src" href="${q.url}" target="_blank" rel="noopener">${escapeHtml(t("view_on_oasa"))}</a>`;
+        }
+        fromIn.addEventListener("input", update);
+        toIn.addEventListener("input", update);
+    }
 
     // Map each fare_products.section to a network group so the panel can show
     // the whole country's fares (Athens OASA, Thessaloniki OSETH, Patras

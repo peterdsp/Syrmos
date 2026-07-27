@@ -8,10 +8,12 @@ import kotlin.test.assertTrue
 
 class ComputeFareUseCaseTest {
     private val useCase = ComputeFareUseCase()
-    private fun ath(id: String, airport: Boolean = false) = FareStation(id, Region.ATHENS, isAirport = airport)
-    private fun thess(id: String, suburban: Boolean = false) = FareStation(id, Region.THESSALONIKI, isSuburban = suburban)
-    private fun patras(id: String) = FareStation(id, Region.PATRAS)
-    private fun national(id: String) = FareStation(id, Region.NATIONAL)
+    private fun ath(id: String, airport: Boolean = false) = FareStation(id, setOf(Region.ATHENS), isAirport = airport)
+    private fun thess(id: String, suburban: Boolean = false) = FareStation(id, setOf(Region.THESSALONIKI), isSuburban = suburban)
+    private fun patras(id: String) = FareStation(id, setOf(Region.PATRAS))
+    private fun national(id: String) = FareStation(id, setOf(Region.NATIONAL))
+    /** A Thessaloniki interchange that also sits on the national IC line. */
+    private fun thessHub(id: String) = FareStation(id, setOf(Region.NATIONAL, Region.THESSALONIKI))
 
     @Test
     fun athens_urban_trip_is_the_integrated_ticket() {
@@ -53,5 +55,17 @@ class ComputeFareUseCaseTest {
         val cross = useCase.invoke(ath("M2_SYN"), thess("TM1_A"))
         assertTrue(cross.dynamic)
         assertNull(cross.fullPriceEur)
+    }
+
+    @Test
+    fun shared_local_network_wins_over_a_national_leg_at_an_interchange() {
+        // GR_THE is on both IC1 (national) and the TP suburban lines. A trip to a
+        // Thessaloniki-only suburban stop must be the OSETH suburban fare, not
+        // intercity, because both stations share the local Thessaloniki network.
+        val q = useCase.invoke(thessHub("GR_THE"), thess("TP3_SIN", suburban = true))
+        assertEquals(0.80, q.fullPriceEur)
+        assertTrue(!q.dynamic)
+        // But the same hub -> an Athens stop (no shared local network) is intercity.
+        assertTrue(useCase.invoke(thessHub("GR_THE"), ath("M2_SYN")).dynamic)
     }
 }
