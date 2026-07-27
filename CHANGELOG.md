@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.11** (TestFlight), **Android 1.2.11** (Play internal, versionCode 115), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115. Next Android release must use 116+.
+Current shipping: **iOS 1.2.12** (TestFlight), **Android 1.2.12** (Play internal, versionCode 116), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116. Next Android release must use 117+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,14 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.12 — 2026-07-27
+
+Native map line geometry fix. On iOS and Android the national / intercity / rail-replacement-bus / Thessaloniki / Patras lines were drawn by splining through each line's own stations, so where an intercity line (few stops) and a suburban line (every stop) share a corridor they diverged instead of overlapping — the "lines are wrong on mobile" bug. Cause: the bundled `shapes.json` (OSM track geometry) shipped in the native apps carried only the 9 original Athens lines (A1-A4, M1-M3, T6, T7), while web's `shapes.json` carries all 31. So every nationwide line fell back to the station-spline on mobile.
+
+- Synced the full 31-line `shapes.json` into all three native bundles (`core/data` composeResources, `androidApp` assets, `iosApp` Resources). Schema is byte-identical to web; the map reads it directly at mount (no seed-version bump needed). Now iOS/Android draw the exact real-track geometry web does, and shared corridors overlap correctly. Verified on the Android emulator: the red suburban (A3→Chalkida) and blue intercity (IC1→Thessaloniki) share the northbound Athens corridor and split at the real junction.
+
+iOS 1.2.12 / Android versionCode 116.
 
 ## 1.2.11 — 2026-07-26
 
