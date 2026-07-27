@@ -360,7 +360,7 @@ private struct AriadneModelBanner: View {
                             .animation(.easeInOut(duration: 0.4), value: p)
                         Text("\(Int(p * 100))%")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .frame(width: 44, height: 44)
                     VStack(alignment: .leading, spacing: 3) {
