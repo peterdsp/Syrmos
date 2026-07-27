@@ -6,10 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class LineColor(val hex: String) {
     @SerialName("green") GREEN("#00843D"),
-    @SerialName("red") RED("#E61E2A"),
-    @SerialName("blue") BLUE("#0083C9"),
+    @SerialName("red") RED("#DA291C"),
+    @SerialName("blue") BLUE("#0072CE"),
     @SerialName("tram") TRAM_ORANGE("#F39800"),
-    @SerialName("suburban") SUBURBAN_PURPLE("#EE2625"),
+    @SerialName("suburban") SUBURBAN_PURPLE("#6F2DA8"),
     ;
 
     companion object {

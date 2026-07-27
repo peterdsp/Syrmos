@@ -40,7 +40,7 @@ import com.syrmos.core.common.L
 import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import com.syrmos.core.designsystem.component.toComposeColor
-import com.syrmos.core.designsystem.theme.MetroBlue
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
@@ -434,7 +434,7 @@ private fun DepartureList(
                     text = trackVerbLabel(lang),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MetroBlue,
+                    color = SyrmosColorTokens.metroBlue,
                 )
             }
         }
