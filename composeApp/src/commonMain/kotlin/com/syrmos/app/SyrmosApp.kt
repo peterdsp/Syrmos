@@ -146,7 +146,7 @@ fun SyrmosApp() {
         } else {
             // One-time highlights after an install/update. The web build shows
             // its own card (web-map.js), so this is effectively the native path.
-            val whatsNewVersion = "1.3.2"
+            val whatsNewVersion = "1.3.3"
             var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
             if (showWhatsNew) {
                 WhatsNewDialog(onDismiss = {
