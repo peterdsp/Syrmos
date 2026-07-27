@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.14** (TestFlight), **Android 1.2.14** (Play internal, versionCode 118), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118. Next Android release must use 119+.
+Current shipping: **iOS 1.3.0** (TestFlight), **Android 1.3.0** (Play internal, versionCode 119), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119. Next Android release must use 120+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,16 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.3.0 — 2026-07-27
+
+iOS map parity — the whole country's stations, plus the missing controls.
+
+- **Every station on the iOS map (all networks).** The iOS map drew station dots from a hardcoded Athens-only list (`StationCoords`: M1-M3, T6/T7, A1-A4), so Thessaloniki metro + suburban, the national/intercity corridors and the Patras suburban had lines but no stations. It now reads the same bundled `seed-schedules-v2/lines.json` as the polylines and web — 389 stations across Athens, Thessaloniki, national and Patras — merging each station's line memberships so interchanges are right. Falls back to the old list only if the bundle is unreadable. Web and Android already drew all networks (Android seeds every station from `lines.json` into its DB); this brings iOS to parity.
+- **Ariadne owl on the map.** The Map tab suppresses the app-level Ask-Ariadne pill (the Locate + Vehicles buttons own the corner), which left iOS with no way to reach Ariadne from the map. Added a circular owl launcher at the top of the map's control column — same round owl mark as web and Android — opening the assistant sheet.
+- **Compass no longer overlaps the header.** MapKit's default compass floated into the top-right under the `CompactTabHeader` (the map ignores the top safe area). Hidden it: this is a flat, north-up transit map with pitch disabled, and web + Android carry no compass either, so the header is now clean and consistent across platforms.
+
+iOS 1.3.0 / Android versionCode 119. iOS-led release; Android + web rebuild unchanged for version alignment.
 
 ## 1.2.14 — 2026-07-27
 
