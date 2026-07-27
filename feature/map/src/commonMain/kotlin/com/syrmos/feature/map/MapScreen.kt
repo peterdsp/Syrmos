@@ -62,9 +62,7 @@ import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.formatMinutesAway
 import com.syrmos.core.designsystem.component.liquidGlassOverlay
-import com.syrmos.core.designsystem.theme.ArrivalFar
-import com.syrmos.core.designsystem.theme.ArrivalModerate
-import com.syrmos.core.designsystem.theme.ArrivalSoon
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import kotlin.math.roundToInt
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
@@ -349,9 +347,9 @@ private fun StationSheetCard(
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = when {
-                                        departure.minutesAway <= 2 -> ArrivalSoon
-                                        departure.minutesAway <= 5 -> ArrivalModerate
-                                        else -> ArrivalFar
+                                        departure.minutesAway <= 2 -> SyrmosColorTokens.arrivalSoon
+                                        departure.minutesAway <= 5 -> SyrmosColorTokens.arrivalModerate
+                                        else -> SyrmosColorTokens.arrivalFar
                                     },
                                 )
                                 Text(

@@ -3,16 +3,18 @@ package com.syrmos.android.widget
 import androidx.compose.ui.graphics.Color
 
 /**
- * Android mirror of the iOS `SyrmosLineTokens`: single source of truth for line
- * colors and labels in the Glance widgets. Kept in sync with the Swift values.
+ * Android widget line colors, kept in sync with the canonical SyrmosColorTokens
+ * in core/designsystem/.../theme/tokens/SyrmosColorTokens.kt. The androidApp
+ * module does not depend on core:designsystem (widget APK size), so these are
+ * mirrored values. Update here when the tokens change.
  */
 object AndroidLineTokens {
     fun color(lineId: String): Color = when (normalize(lineId)) {
-        "M1" -> Color(0xFF30A050)      // metro green
-        "M2" -> Color(0xFFD93333)      // metro red
-        "M3" -> Color(0xFF1A5CB8)      // metro blue
-        "T6", "T7" -> Color(0xFFF28C1C) // tram orange
-        else -> Color(0xFF6B4DA8)      // suburban purple
+        "M1" -> Color(0xFF00843D)      // SyrmosColorTokens.Raw.metroGreen
+        "M2" -> Color(0xFFDA291C)      // SyrmosColorTokens.Raw.metroRed
+        "M3" -> Color(0xFF0072CE)      // SyrmosColorTokens.Raw.metroBlue
+        "T6", "T7" -> Color(0xFFF39800) // SyrmosColorTokens.Raw.tram
+        else -> Color(0xFF6F2DA8)      // SyrmosColorTokens.Raw.suburban
     }
 
     fun label(lineId: String): String = normalize(lineId)
