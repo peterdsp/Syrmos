@@ -39,7 +39,8 @@
             trains_active: "{n} trains active",
             nearby_stations: "Nearby stations",
             popular_stations: "Popular stations",
-            oasa_tickets: "OASA tickets",
+            oasa_tickets: "Fares",
+            fare_at_booking: "at booking",
             view_on_oasa: "View on OASA ↗",
             useful_information: "Useful information",
             tickets_unavailable: "Tickets unavailable",
@@ -104,7 +105,8 @@
             trains_active: "{n} ενεργά τρένα",
             nearby_stations: "Κοντινοί σταθμοί",
             popular_stations: "Δημοφιλείς σταθμοί",
-            oasa_tickets: "Εισιτήρια OASA",
+            oasa_tickets: "Τιμές εισιτηρίων",
+            fare_at_booking: "στην κράτηση",
             view_on_oasa: "Άνοιγμα στην OASA ↗",
             useful_information: "Χρήσιμες πληροφορίες",
             tickets_unavailable: "Τα εισιτήρια δεν είναι διαθέσιμα",
@@ -169,7 +171,8 @@
             trains_active: "{n} trena aktiv",
             nearby_stations: "Stacionet pranë",
             popular_stations: "Stacionet kryesore",
-            oasa_tickets: "Biletat OASA",
+            oasa_tickets: "Çmimet e biletave",
+            fare_at_booking: "në rezervim",
             view_on_oasa: "Hap në OASA ↗",
             useful_information: "Informacione të dobishme",
             tickets_unavailable: "Biletat s'janë të disponueshme",
@@ -525,6 +528,20 @@
     // came back.
     let lastFaresPayload = null;
 
+    // Map each fare_products.section to a network group so the panel can show
+    // the whole country's fares (Athens OASA, Thessaloniki OSETH, Patras
+    // suburban, intercity) under clear headers instead of one flat OASA list.
+    const FARE_GROUPS = [
+        { key: "athens", sections: ["single", "airport", "offers", "passes"],
+          label: { en: "Athens — OASA", el: "Αθήνα — OASA", sq: "Athinë — OASA" } },
+        { key: "thessaloniki", sections: ["thessaloniki"],
+          label: { en: "Thessaloniki — OSETH", el: "Θεσσαλονίκη — OSETH", sq: "Selanik — OSETH" } },
+        { key: "patras", sections: ["patras"],
+          label: { en: "Patras suburban", el: "Προαστιακός Πάτρας", sq: "Suburban Patra" } },
+        { key: "intercity", sections: ["intercity"],
+          label: { en: "Intercity / regional", el: "Υπεραστικά / περιφερειακά", sq: "Ndërqytetëse" } },
+    ];
+
     function renderFaresPanel(payload) {
         if (!faresList) return;
         const products = (payload && payload.products) || [];
@@ -532,24 +549,30 @@
             faresList.innerHTML = `<div class="panel-item__meta">${t("no_fare_data")}</div>`;
             return;
         }
-        // Show top 6 in a compact "title — €price" list so the panel doesn't
-        // dominate the sidebar. Verify-on-OASA link below carries the user
-        // to the full price list.
-        const top = products.slice(0, 6);
-        faresList.innerHTML = top.map((p) => {
-            const eur = p.fullPriceEur != null ? `€${p.fullPriceEur.toFixed(2)}` : "";
-            const validityLocalised = pickLocalised(p, "validity") || p.validity || "";
-            const sub = p.discountedPriceEur != null
-                ? `${t("reduced")} €${p.discountedPriceEur.toFixed(2)}`
-                : validityLocalised;
-            return `
-                <div class="panel-item">
-                    <div class="panel-item__title">${escapeHtml(pickLocalised(p, "title"))}</div>
-                    <div class="panel-item__meta">${escapeHtml(sub)}</div>
-                    <div class="panel-item__count">${eur}</div>
-                </div>
-            `;
+        const html = FARE_GROUPS.map((g) => {
+            const rows = products
+                .filter((p) => g.sections.includes(p.section))
+                .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+            if (!rows.length) return "";
+            const items = rows.map((p) => {
+                // Dynamic (intercity) products have no fixed price: show a
+                // "price at booking" chip and lean on the note, never a number.
+                const eur = p.fullPriceEur != null ? `€${p.fullPriceEur.toFixed(2)}` : t("fare_at_booking");
+                const validityLocalised = pickLocalised(p, "validity") || p.validity || "";
+                const sub = p.discountedPriceEur != null
+                    ? `${t("reduced")} €${p.discountedPriceEur.toFixed(2)}`
+                    : validityLocalised;
+                return `
+                    <div class="panel-item">
+                        <div class="panel-item__title">${escapeHtml(pickLocalised(p, "title"))}</div>
+                        <div class="panel-item__meta">${escapeHtml(sub)}</div>
+                        <div class="panel-item__count">${escapeHtml(eur)}</div>
+                    </div>`;
+            }).join("");
+            const label = g.label[lang] || g.label.en;
+            return `<div class="fares-group__head">${escapeHtml(label)}</div>${items}`;
         }).join("");
+        faresList.innerHTML = html;
     }
 
     function renderInfoLinksPanel(payload) {

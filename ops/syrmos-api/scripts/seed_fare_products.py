@@ -20,6 +20,9 @@ from __future__ import annotations
 from syrmos_admin import db as dbmod
 
 OASA_URL = "https://www.oasa.gr/en/tickets/prices-of-products/"
+OSETH_URL = "https://oseth.com.gr/en/tickets"
+HT_PATRAS_URL = "https://www.hellenictrain.gr/en/patras-suburban-railway"
+HT_BOOK_URL = "https://newtickets.hellenictrain.gr/"
 SOURCE_URL = OASA_URL
 
 # (section, sort_order, title_en, title_el, full_price_eur,
@@ -130,6 +133,40 @@ PRODUCTS = [
      "365 days, all",
      "Unlimited urban plus Airport metro and X95 Express for 365 days from purchase.",
      "annual,airport_included"),
+
+    # ---- Thessaloniki (OSETH). Metro + bus not yet interoperable; single-mode.
+    # Source: https://oseth.com.gr (fetched 2026-07-27). 10th field = source_url.
+    ("thessaloniki", 1, "Urban single ticket", "Αστικό εισιτήριο",
+     0.60, 0.30, "70 minutes", "Thessaloniki metro or city bus (separate products - not yet interoperable).",
+     "thessaloniki", OSETH_URL),
+    ("thessaloniki", 2, "Suburban (peri-urban) single", "Υπεραστικό εισιτήριο",
+     0.80, 0.40, "70 minutes", "Thessaloniki peri-urban zone.", "thessaloniki,suburban", OSETH_URL),
+    ("thessaloniki", 3, "Special bus (X1/X2 Airport, Route 50)", "Ειδική γραμμή (X1/X2 Αεροδρ., 50)",
+     2.00, 1.00, "single", "Airport express X1/X2 and cultural Route 50.", "thessaloniki,airport", OSETH_URL),
+    ("thessaloniki", 4, "24-hour ticket", "Ημερήσιο 24 ωρών",
+     2.50, None, "24 hours", "Unlimited single-mode travel for 24 hours.", "thessaloniki", OSETH_URL),
+    ("thessaloniki", 5, "Monthly card", "Μηνιαία κάρτα",
+     16.00, 8.00, "30 days", "Unlimited single-mode travel for 30 days.", "thessaloniki,monthly", OSETH_URL),
+
+    # ---- Patras suburban (Hellenic Train) zone grid A1/A/B/C.
+    # Source: HT Patras Suburban map PDF (2025-07). 10th field = source_url.
+    ("patras", 1, "Suburban ticket (single zone A1/A/B/C)", "Εισιτήριο προαστιακού (μία ζώνη)",
+     1.40, 1.00, "single zone", "Patras suburban within one zone (A1, A, B or C).", "patras", HT_PATRAS_URL),
+    ("patras", 2, "Suburban ticket (two zones)", "Εισιτήριο προαστιακού (δύο ζώνες)",
+     2.00, 1.00, "A+B or B+C", "Patras suburban across two adjacent zones.", "patras", HT_PATRAS_URL),
+    ("patras", 3, "Suburban ticket (all zones A+B+C)", "Εισιτήριο προαστιακού (όλες οι ζώνες)",
+     3.00, 1.40, "A+B+C", "Patras suburban across the full network (e.g. to Kato Achaia).", "patras", HT_PATRAS_URL),
+    ("patras", 4, "Monthly card (single zone)", "Μηνιαία κάρτα (μία ζώνη)",
+     25.00, 15.00, "30 days, zone A1", "Patras suburban monthly, single zone (A1 shown; A/B/C €30/€20).", "patras,monthly", HT_PATRAS_URL),
+
+    # ---- Intercity / regional (Hellenic Train). Booking-time price, not fixed.
+    # Source: https://www.hellenictrain.gr/en/tickets-ticket-discounts-offers.
+    ("intercity", 1, "Intercity / regional ticket", "Εισιτήριο υπεραστικό / περιφερειακό",
+     None, None, "price set at booking",
+     "Booking-time price (route, class, date). Discounts: early-booking up to 15%, return 20%, "
+     "students 25-50%, youth <24 25%, children 4-12 50%, reduced mobility 50% (total capped at 40%). "
+     "Rail-replacement buses use the same ticket as the segment they cover.",
+     "intercity,dynamic", HT_BOOK_URL),
 ]
 
 
@@ -139,15 +176,19 @@ def main() -> None:
         # Wipe and re-seed so dropped products go away too. Admin UI overrides
         # belong on a separate row; this table is OASA-canonical only.
         conn.execute("DELETE FROM fare_products")
-        for section, sort_order, t_en, t_el, full, disc, validity, notes, tags in PRODUCTS:
+        for p in PRODUCTS:
+            section, sort_order, t_en, t_el, full, disc, validity, notes, tags = p[:9]
+            # OASA rows are 9-tuples (default to the OASA source); the other
+            # networks carry their own operator source_url as a 10th field.
+            source_url = p[9] if len(p) > 9 else SOURCE_URL
             conn.execute(
                 "INSERT INTO fare_products(section, sort_order, title_en, title_el,"
                 " full_price_eur, discounted_price_eur, validity, notes, tags, source_url)"
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (section, sort_order, t_en, t_el, full, disc, validity, notes, tags, SOURCE_URL),
+                (section, sort_order, t_en, t_el, full, disc, validity, notes, tags, source_url),
             )
         count = conn.execute("SELECT COUNT(*) FROM fare_products").fetchone()[0]
-        print(f"seeded {count} OASA fare products")
+        print(f"seeded {count} fare products (OASA + OSETH + Patras + intercity)")
 
 
 if __name__ == "__main__":
