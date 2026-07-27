@@ -18,7 +18,7 @@ work now that Syrmos contains nationwide data, 31 lines, 389 unique stations,
 four regions, four transport modes, live and scheduled states, and three
 languages.
 
-The proposed product navigation is Home, Network, Map, Departures, and More.
+The proposed product navigation is Home, Explore, Map, Departures, and More.
 The old Airport tab becomes a useful shortcut inside a universal Departures
 area. Ariadne remains available everywhere as a contextual assistant instead
 of becoming an isolated tab.
@@ -63,8 +63,9 @@ I redesigned the app architecture around the current data volume:
 
 - **Home** gives one immediate travel answer, current tracking, relevant saved
   journeys, and only the service information that matters now.
-- **Network** replaces the flat Lines catalog and organizes all lines and
-  stations by region, mode, status, favorites, and search.
+- **Explore** replaces the flat Lines catalog with a destination-first,
+  engagement-driven surface: curated destination cards + personal gravity
+  (recent trips, saved stations, smart suggestions).
 - **Map** keeps the live geographic network as the main canvas with one
   selected context panel or sheet.
 - **Departures** replaces the airport-only timetable and supports any station,
@@ -83,14 +84,19 @@ tracking card replaces the normal departure hero. Search, Plan, and Track form
 one compact action row. Saved or nearby journeys, relevant service status, and
 travel-impacting weather follow below.
 
-The full line catalog and static network totals move to Network, where they are
-easier to browse.
+The full line catalog and static network totals move to Explore, where they are
+organized by destination and personal relevance rather than flat infrastructure
+lists.
 
-### Network and entity redesign
+### Explore and entity redesign
 
-I designed a region-first Network for Athens, Thessaloniki, Patras, and
-National services. It includes search, Nearby, Regions, Saved, mode filters,
-service filters, and complete support for metro, tram, rail, and bus.
+I designed a destination-first Explore tab replacing the old Lines catalog. It has
+two segments: Destinations (curated place cards with emotional hooks, like "Athens
+Airport: your fastest route to the terminal") and Your Network (recent trips, saved
+stations, smart suggestions based on time/location/usage). A "Browse all 389
+stations" row at the bottom opens the full region-grouped station list. The tab
+covers Athens, Thessaloniki, Patras, and National services with search, Nearby,
+Regions, Saved, mode filters, and complete support for metro, tram, rail, and bus.
 
 I defined a shared line detail with a service hero, source freshness, primary
 actions, direction switch, next departure, journey strip, live vehicles,
@@ -195,7 +201,7 @@ Syrmos design system.
 
 I designed one reusable search and entity selector for stations, lines,
 regions, operators, saved journeys, actions, and natural-language questions.
-The same selector is used by Network, Departures, Track, and Ariadne.
+The same selector is used by Explore, Departures, Track, and Ariadne.
 
 Tracking no longer forces a fixed four-step flow when the app already knows the
 line or station. Context pre-fills known values, reducing unnecessary steps.
@@ -211,7 +217,7 @@ bottom navigation and adaptive sheets. Tablets can use list and detail
 layouts. Desktop web uses a navigation rail, one context rail, and a bounded
 main canvas.
 
-The design contract requires the same Home priority, Network filters,
+The design contract requires the same Home priority, Explore filters,
 departure answers, station and line state, Ariadne answer cards, confidence,
 freshness, and current logo on iOS, Android, and web.
 
@@ -221,7 +227,7 @@ I documented a phased migration:
 
 1. Token and typography foundation
 2. Answer and tracking surfaces
-3. Network, station, departures, fares, settings, and search
+3. Explore, station, departures, fares, settings, and search
 4. Ariadne, alerts, weather, and recovery states
 5. Map, widgets, Live Activities, watch, and store visuals
 

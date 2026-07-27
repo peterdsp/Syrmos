@@ -1,11 +1,11 @@
 import SwiftUI
 
 extension Color {
-    static let metroGreen = Color(hex: 0x00843D)
-    static let metroRed = Color(hex: 0xDA291C)
-    static let metroBlue = Color(hex: 0x0072CE)
-    static let tramOrange = Color(hex: 0xE87722)
-    static let suburbanPurple = Color(hex: 0x6F2DA8)
+    static let metroGreen = SyrmosTokens.metroGreen
+    static let metroRed = SyrmosTokens.metroRed
+    static let metroBlue = SyrmosTokens.metroBlue
+    static let tramOrange = SyrmosTokens.tram
+    static let suburbanPurple = SyrmosTokens.suburban
 
     // The 2.0 light-first identity (task T5), drawn from the generated
     // SyrmosTokens. Adaptive so dark mode still resolves to the graphite variant.
@@ -13,9 +13,9 @@ extension Color {
     static let syrmosBackground = Color.syrmosAdaptive(light: SyrmosTokens.surface, dark: SyrmosTokens.Dark.surface)
     static let syrmosSurface = Color.syrmosAdaptive(light: SyrmosTokens.surfaceCard, dark: SyrmosTokens.Dark.surfaceCard)
 
-    static let arrivalSoon = Color(hex: 0x2E7D32)
-    static let arrivalModerate = Color(hex: 0xE65100)
-    static let arrivalFar = Color.secondary
+    static let arrivalSoon = SyrmosTokens.arrivalSoon
+    static let arrivalModerate = SyrmosTokens.arrivalModerate
+    static let arrivalFar = SyrmosTokens.arrivalFar
 
     /// A colour that resolves to [light] in light mode and [dark] in dark mode,
     /// so token-driven surfaces keep automatic dark-mode support.

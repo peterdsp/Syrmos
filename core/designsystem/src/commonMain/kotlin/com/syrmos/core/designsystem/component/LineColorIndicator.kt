@@ -10,11 +10,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.syrmos.core.designsystem.theme.MetroBlue
-import com.syrmos.core.designsystem.theme.MetroGreen
-import com.syrmos.core.designsystem.theme.MetroRed
-import com.syrmos.core.designsystem.theme.SuburbanPurple
-import com.syrmos.core.designsystem.theme.TramOrange
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.LineColor
 
 @Composable
@@ -32,9 +28,9 @@ fun LineColorIndicator(
 }
 
 fun LineColor.toComposeColor(): Color = when (this) {
-    LineColor.GREEN -> MetroGreen
-    LineColor.RED -> MetroRed
-    LineColor.BLUE -> MetroBlue
-    LineColor.TRAM_ORANGE -> TramOrange
-    LineColor.SUBURBAN_PURPLE -> SuburbanPurple
+    LineColor.GREEN -> SyrmosColorTokens.metroGreen
+    LineColor.RED -> SyrmosColorTokens.metroRed
+    LineColor.BLUE -> SyrmosColorTokens.metroBlue
+    LineColor.TRAM_ORANGE -> SyrmosColorTokens.tram
+    LineColor.SUBURBAN_PURPLE -> SyrmosColorTokens.suburban
 }

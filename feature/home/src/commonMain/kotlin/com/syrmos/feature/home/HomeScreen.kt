@@ -61,9 +61,7 @@ import kotlinx.datetime.Clock
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.schedule.SourceConfidence
-import com.syrmos.core.designsystem.theme.MetroBlue
-import com.syrmos.core.designsystem.theme.SuburbanPurple
-import com.syrmos.core.designsystem.theme.TramOrange
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
@@ -113,7 +111,7 @@ fun HomeScreen(
         if (activeTrack != null) {
             item {
                 val trackedLine = uiState.lines.firstOrNull { it.id == activeTrack.lineId }
-                val accent = trackedLine?.color?.toComposeColor() ?: MetroBlue
+                val accent = trackedLine?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
                 TrackingCard(
                     tracked = activeTrack,
                     nowEpoch = nowEpoch,
@@ -309,7 +307,7 @@ private fun TrackAnyTrainChip(lang: AppLanguage, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(MetroBlue.copy(alpha = 0.14f))
+            .background(SyrmosColorTokens.metroBlue.copy(alpha = 0.14f))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -320,7 +318,7 @@ private fun TrackAnyTrainChip(lang: AppLanguage, onClick: () -> Unit) {
             text = trackAnyLabel(lang),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color = MetroBlue,
+            color = SyrmosColorTokens.metroBlue,
         )
     }
 }
@@ -542,7 +540,7 @@ private fun AnswerHero(
     onStationClick: () -> Unit,
     onTrack: () -> Unit,
 ) {
-    val accent = line?.color?.toComposeColor() ?: MetroBlue
+    val accent = line?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1152,19 +1150,19 @@ private fun NetworkOverview(
         StatCard(
             value = if (metroCount > 0) metroCount.toString() else "3",
             label = L.METRO.text(lang),
-            color = MetroBlue,
+            color = SyrmosColorTokens.metroBlue,
             modifier = Modifier.weight(1f),
         )
         StatCard(
             value = if (tramCount > 0) tramCount.toString() else "2",
             label = L.TRAM.text(lang),
-            color = TramOrange,
+            color = SyrmosColorTokens.tram,
             modifier = Modifier.weight(1f),
         )
         StatCard(
             value = if (suburbanCount > 0) suburbanCount.toString() else "4",
             label = L.SUBURBAN.text(lang),
-            color = SuburbanPurple,
+            color = SyrmosColorTokens.suburban,
             modifier = Modifier.weight(1f),
         )
     }

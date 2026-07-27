@@ -18,9 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.syrmos.core.designsystem.theme.ArrivalFar
-import com.syrmos.core.designsystem.theme.ArrivalModerate
-import com.syrmos.core.designsystem.theme.ArrivalSoon
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.LineColor
 import org.jetbrains.compose.resources.painterResource
@@ -94,9 +92,9 @@ fun DepartureCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = when {
-                        minutesAway <= 2 -> ArrivalSoon
-                        minutesAway <= 5 -> ArrivalModerate
-                        else -> ArrivalFar
+                        minutesAway <= 2 -> SyrmosColorTokens.arrivalSoon
+                        minutesAway <= 5 -> SyrmosColorTokens.arrivalModerate
+                        else -> SyrmosColorTokens.arrivalFar
                     },
                 )
                 Text(

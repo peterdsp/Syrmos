@@ -83,18 +83,86 @@ A single component, one spec, rendered natively per platform:
 - Android: the same hero and tokens via Compose; Glance widgets and (later) a
   Wear OS surface mirroring the watch.
 - Web: a fast PWA home with the same hero and live countdown, installable, works
-  offline from the bundled snapshot. Detailed web design in section 17.
+  offline from the bundled snapshot. Detailed web design in section 18.
 
 ## 5. Information architecture and the region model
 
 Athens is the launch surface, not the final identity. The IA must scale by region
-rather than becoming one giant list of lines:
+rather than becoming one giant list of lines.
+
+### 5.1 Tab bar (five tabs)
+
+Home | Explore | Map | Departures | More
+
+This replaces the 1.x bar (Home | Lines | Map | Airport | Settings). The changes:
+- **Lines becomes Explore**: shifts from a flat infrastructure catalog to a
+  destination-first, engagement-driven surface (see 5.2).
+- **Airport becomes Departures**: generalizes to any station, not just the airport.
+- **Settings becomes More**: a hub for fares, settings, about, and future features.
+
+### 5.2 Explore tab (F+G hybrid: Destinations + Your Network)
+
+The Explore tab replaces the old Lines catalog with two interlocking halves:
+destinations (places, not infrastructure) and your network (personal gravity).
+
+**Top: segmented header**
+Two segments: "Destinations" and "Your Network", with a persistent search bar
+above. The search bar supports station, line, and place search across all regions.
+
+**Destinations segment** (the default view)
+
+Organized by curated destination cards, not by line type. Each card is a place
+the rail network can take you, presented with its emotional hook:
+
+- Athens Airport (ATH): "Your fastest route to the terminal". Shows next A3
+  departure, travel time, fare. One tap to track.
+- Piraeus Port: "Ferries, cruises, coastal connections". Next M1/A1 departure.
+- Monastiraki: "Historic heart, two metro lines". M1+M3 interchange info.
+- Kifisia: "Northern suburbs, green line terminus". Next M1 departure.
+- Thessaloniki Central: "Greece's second city by rail". Next IC departure + time.
+- Meteora / Kalampaka: "Monasteries in the sky". Next train, travel time, scenic badge.
+- Patras: "Gateway to the Peloponnese". Suburban connections.
+- Diakopto Rack Railway: "One of Europe's most scenic rides". Seasonal info.
+
+Each card shows: destination name (trilingual), a one-line emotional hook, the
+best rail connection with next departure time, travel duration, fare preview, and
+a source-confidence chip. Cards link to full station detail on tap.
+
+Below the cards: a "Browse all 389 stations" row that opens a searchable,
+region-grouped full station list (the old Lines view content, reorganized by
+geography rather than transit type).
+
+**Your Network segment**
+
+Personal gravity and smart suggestions based on usage patterns:
+
+- **Recent trips**: last 5 station pairs visited, with quick "go again" action
+  that pre-fills the departure tracker.
+- **Saved stations**: user-pinned stations with live next-departure previews.
+- **Smart suggestions**: context-aware cards (time of day, day of week, location).
+  Example: "Heading home? M2 from Syntagma, 3 min" at 18:00 on weekdays near
+  Syntagma. Example: "Weekend trip? Meteora is 4h by train" on Saturday morning.
+- **Your lines**: the lines the user actually rides, determined by usage frequency,
+  with live status summaries. Not every line in the network, just theirs.
+- **Network pulse**: a compact all-lines status strip (green = normal, amber =
+  delays, red = disruption) so the user can glance at system health.
+
+**Cross-linking and engagement**
+
+Every element in Explore leads somewhere: destination cards to station detail,
+recent trips to departure tracking, smart suggestions to the relevant departure
+or route, saved stations to live countdowns. No dead ends.
+
+### 5.3 Region model in IA
+
+The IA scales by region rather than becoming one giant list:
 
 - Home: Nearby, Athens, Saved (and later: Greece Rail).
 - Map: Athens urban, then Regional/National, then Scenic.
-- Lines grouped by region: Athens (M1/M2/M3, T6/T7, A1-A4), Attica and nearby
-  (Airport, Kiato/Corinth, Chalkida), Central (Lamia, Volos, Kalampaka/Meteora),
-  Northern (Thessaloniki routes), Peloponnese/scenic (Diakopto-Kalavryta Odontotos).
+- Explore: destinations organized geographically, not by transit type.
+  Athens (M1/M2/M3, T6/T7, A1-A4), Attica and nearby (Airport, Kiato/Corinth,
+  Chalkida), Central (Lamia, Volos, Kalampaka/Meteora), Northern (Thessaloniki
+  routes), Peloponnese/scenic (Diakopto-Kalavryta Odontotos).
 - Ariadne: ask about any station, route, or train.
 
 The app still opens on "nearest station, next train instantly". Only the data
@@ -259,7 +327,116 @@ Usability and UI awards (Apple Design Award, Google Play/Material), organic
 virality (share-worthy one-glance widgets and map), and acquisition interest
 (a serious, offline, geography-scaling rail product, not a metro countdown toy).
 
-## 15. Out of scope for 2.0.0 (YAGNI, explicit)
+## 15. Animation and motion specification (added 2026-07-27)
+
+The Syrmos motion language reinforces the rail identity. Every animation uses the
+"train glide" easing from section 2 (`cubic-bezier(0.16, 1, 0.30, 1)`) unless
+stated otherwise. All animations respect Reduce Motion (degrade to a cross-fade
+or static state).
+
+### 15.1 Signature easing: "train glide"
+
+Named for how a train decelerates into a platform: fast start, long gentle coast
+to a stop. Applied to every transition in the app.
+
+```
+cubic-bezier(0.16, 1, 0.30, 1)
+Duration tiers (from SyrmosMotionTokens):
+  quick:    150ms  (chips, toggles, micro-feedback)
+  standard: 300ms  (card transitions, tab switches, sheet snaps)
+  emphasis: 450ms  (hero entrances, route drawing, screen transitions)
+```
+
+### 15.2 Staggered entrances
+
+Lists and card grids animate in with a stagger: each item enters with a
+translate-Y(12dp) + fade, delayed by `index * 40ms`, capped at 8 items (items
+beyond 8 appear instantly to avoid sluggish long lists). Used on:
+
+- Home screen sections (answer hero, nearby, lines)
+- Explore destination cards
+- Departures list rows
+- Station detail departure rows
+- Search results
+
+### 15.3 Live pulse indicator
+
+A calm breathing pulse on live-data indicators: the green dot on "Live" source-
+confidence chips, the countdown timer when a train is imminent. Implemented as a
+scale(1.0 to 1.15) + opacity(1.0 to 0.7) cycle, 2s period, ease-in-out. Not
+distracting; conveys "this data is alive". The pulse stops under Reduce Motion.
+
+### 15.4 Train parade (decorative loading)
+
+The app's loading and splash state features a train parade: small train carriages
+glide across the screen in the brand's line colors (M1 green, M2 red, M3 blue,
+tram orange, suburban purple). Each carriage is a minimal SVG rectangle with
+rounded ends and small wheel circles, sliding left-to-right at staggered speeds
+and vertical positions. Below the parade: the Syrmos wordmark and a pulsing
+"Loading..." or progress indicator.
+
+Used on:
+- App cold start / splash screen
+- Data sync progress overlay
+- Pull-to-refresh animation (compact single-train variant)
+
+The parade is purely decorative and time-limited (fades out after data loads or
+3s max).
+
+### 15.5 Map vehicle motion
+
+Trains on the living map glide along their polyline geometry using the train-glide
+easing, interpolating between position updates every 1s (from the simulator) or
+on live-position SSE events. The motion is continuous, not teleporting. When a
+train reaches a station, it pauses briefly (300ms hold) before continuing.
+
+Vehicles are directional triangles (pointing in travel direction) with a subtle
+shadow. Color matches the line service color. At low zoom, vehicles fade out
+below `MapDesignTokens.MINOR_STOP_MIN_ZOOM` to prevent visual clutter.
+
+### 15.6 Screen transitions
+
+- Tab switches: cross-fade (150ms, train-glide ease).
+- Push navigation (station detail, line detail): slide-from-right with a slight
+  scale-down on the departing screen (iOS-native feel on iOS, matched in Compose).
+- Bottom sheet snap: train-glide ease between detents (300ms). While dragging,
+  the transition drops to 0ms for 1:1 tracking.
+- Modal presentation (Ariadne, search): slide-up from bottom with backdrop dim.
+
+### 15.7 Micro-interactions
+
+- Departure countdown flip: the countdown digits change with a subtle vertical
+  slide (the departing digit slides up and fades, the arriving digit slides in
+  from below). 150ms, train-glide ease.
+- Favorite/save toggle: a brief scale-up bounce (1.0 to 1.2 to 1.0, 200ms) on
+  the star/heart icon.
+- Pull-to-refresh: a single small train carriage slides across above the list
+  while refreshing.
+- Source-confidence chip entrance: fade + scale-from-80% (150ms) when first
+  appearing on a departure card.
+- Line badge color: no animation on the badge itself (color is instant, static
+  data). The badge's container may animate in with the stagger.
+
+### 15.8 Ariadne animations
+
+- Message bubbles: slide-in from bottom-left (user) or bottom-right (Ariadne)
+  with the staggered entrance timing.
+- Typing indicator: three dots with a sequential bounce (each dot 200ms offset),
+  using the Ariadne accent color.
+- Suggestion chips: fade-in with a horizontal stagger (left to right, 60ms delay).
+
+### 15.9 Reduce Motion behavior
+
+When the system Reduce Motion preference is active:
+
+- All translate/scale animations become instant opacity cross-fades (150ms).
+- The live pulse stops (static green dot).
+- The train parade becomes a static centered train icon.
+- Map vehicle motion uses instant position jumps (no interpolation).
+- The countdown digit flip becomes a simple text swap.
+- Sheet dragging still tracks 1:1 but snaps instantly (no ease).
+
+## 16. Out of scope for 2.0.0 (YAGNI, explicit)
 
 - No dark-first redesign. Light-first is the foundation.
 - No full national rail planner or full national coverage in 2.0.0 (pilot one
@@ -271,14 +448,14 @@ virality (share-worthy one-glance widgets and map), and acquisition interest
 - No in-app ticketing/payments, no turn-by-turn walking.
 - No redesign that slows the "next train instantly" path.
 
-## 16. Open questions
+## 17. Open questions
 
 - National rail data source and licensing (Hellenic Train feeds, per-operator).
 - Exact codegen path from the KMP token module to the Swift and CSS exports.
 - Wear OS scope and timing relative to the watchOS surface.
 - Confirm Athens to Chalkida as M5 (Kiato/Corinth as M6).
 
-## 17. Web surface, detailed design (added 2026-07-19)
+## 18. Web surface, detailed design (added 2026-07-19)
 
 This expands the web bullet in section 4 into a buildable spec and supersedes the
 older `2026-07-02-web-living-map-maplibre-design.md` draft (its living-map and
@@ -288,7 +465,7 @@ marketing page wrapped around a map), and mobile-first (the web is many users'
 first touch, with no install to gate it). The web stays on Leaflet + the bundled
 snapshot; this is a structural and identity redesign, not a map-engine swap.
 
-### 17.1 Layout: one responsive app-shell
+### 18.1 Layout: one responsive app-shell
 
 One component model, two layouts off a single breakpoint (about 840px):
 
@@ -304,7 +481,7 @@ One component model, two layouts off a single breakpoint (about 840px):
 This replaces today's biggest web problem: floating header + what's-new + panels
 competing over a full-bleed map with no hierarchy.
 
-### 17.2 The four shared surfaces
+### 18.2 The four shared surfaces
 
 Inside the sheet / rail, identical on both layouts:
 
@@ -316,16 +493,16 @@ Inside the sheet / rail, identical on both layouts:
    to that station; Ariadne answers push into (4) too. Map, list, and assistant all
    drive one shared detail surface instead of three competing panels.
 
-### 17.3 The answer-first hero on web
+### 18.3 The answer-first hero on web
 
 The section 3 hero, rendered in the sheet/rail head: line badge + destination +
 direction, the departure clock time, and a live countdown that ticks every second
 (the existing web interval ticker). A secondary "then 3m, 5m" line, a
-source-confidence chip (17.8), and one tap that deep-links to the station. It
+source-confidence chip (18.8), and one tap that deep-links to the station. It
 targets the nearest station (with location) or the last-used one, so a returning
 user sees an answer before asking. Imminent state is a calm red "now".
 
-### 17.4 Living map (crown jewel)
+### 18.4 Living map (crown jewel)
 
 The section 9 living map is the visual proof of the data model, expressed on web:
 
@@ -339,14 +516,14 @@ The section 9 living map is the visual proof of the data model, expressed on web
   smart-code SVG is missing falls back to the dot, never a broken image (shipped
   2026-07-19, matching iOS/Android). Line colours are service data only (section 2).
 
-### 17.5 Region IA on web
+### 18.5 Region IA on web
 
 All-Greece, not Athens-shaped (section 5). Search spans every region; the map
 reveals coverage as the user pans; a lightweight region affordance (Nearby /
 region / Saved) sits in the context surface rather than as map chrome. `region`
 stays a domain concept, not a display filter.
 
-### 17.6 Identity and chrome
+### 18.6 Identity and chrome
 
 - Drop the "Athens rail map" subtitle; the identity is Greece-wide rail. The brand
   wordmark stays; the subtitle becomes a coverage line, not a city claim.
@@ -356,7 +533,7 @@ stays a domain concept, not a display filter.
   app" affordance. Demote what's-new to a small changelog entry point, not a modal
   that blocks the map on load.
 
-### 17.7 Tokens as CSS variables
+### 18.7 Tokens as CSS variables
 
 Web has zero `:root` custom properties today, so "same tokens on web" (section 11)
 is currently aspiration. This redesign lands the web token layer: the 2.0.0 colour,
@@ -365,26 +542,26 @@ from the KMP token module until the codegen path exists (the same manual-mirror
 discipline already used for `MapDesignTokens` and `AriadneGrammar`). `MAP_TOKENS`
 in `web-map.js` becomes one consumer of that layer, not a separate island.
 
-### 17.8 Source-confidence on web
+### 18.8 Source-confidence on web
 
 The section 7 chips (live / scheduled / offline snapshot / estimated / operator link
 required / unknown disruption) render on the hero, station detail, route result, and
 every Ariadne answer, so the web states its certainty like the native apps do.
 
-### 17.9 PWA and offline
+### 18.9 PWA and offline
 
 Installable PWA, offline from the bundled snapshot, with the section 8 offline pill
 ("offline snapshot active, updated 2h ago"). The map tiles remain online-only by
 design; schedules, stations, lines, and fares work offline.
 
-### 17.10 Motion and accessibility
+### 18.10 Motion and accessibility
 
 The "train glide" easing (section 2) on the sheet detents, list inserts, and route
 draw, degrading to a cross-fade under Reduce Motion. Full keyboard focus order,
 ARIA roles on the sheet/rail and the map controls, and WCAG-AA contrast on the
 light-first palette.
 
-### 17.11 Web phasing (maps to the M1 to M4 roadmap)
+### 18.11 Web phasing (maps to the M1 to M4 roadmap)
 
 - W1: token layer as CSS variables + the responsive app-shell (map + sheet/rail,
   the four surfaces). Restyle to the light-first identity.
@@ -393,12 +570,12 @@ light-first palette.
 - W4: living-map polish. The 2026-07-19 declutter + icon fallback are the first W4
   step, already shipped.
 
-## 18. Implementation task breakdown (added 2026-07-19)
+## 19. Implementation task breakdown (added 2026-07-19)
 
-Grounded in sections 1 to 17. 2.0.0 is not greenfield; this records what already
+Grounded in sections 1 to 18. 2.0.0 is not greenfield; this records what already
 landed, then the ordered remaining tasks with dependencies, platforms, and the
 section each implements. Phase tags: M1 to M5 (native roadmap, section 13) and W1
-to W4 (web phases, section 17.11).
+to W4 (web phases, section 18.11).
 
 ### Already landed (partial 2.0 progress)
 
@@ -407,7 +584,7 @@ to W4 (web phases, section 17.11).
 - Multilingual station identity EN / EL / SQ (section 6).
 - Living-map foundations: real OSM curved geometry per corridor, trains gliding from
   live + 1s simulator, compact dot markers, the zoom-tiered declutter + graceful
-  icon fallback shipped 2026-07-19 (sections 9, 17.4).
+  icon fallback shipped 2026-07-19 (sections 9, 18.4).
 - Ariadne recovery layer: tool-only trilingual router, source-honesty pattern for
   weather (section 10, partial section 7).
 - Shared `MapDesignTokens` across the three platforms (a seed of section 11).
@@ -478,23 +655,244 @@ to W4 (web phases, section 17.11).
   LLM grammar + Swift / web mirrors. Depends on: T8.
 - T10 — Living-map polish [M4, all platforms]. Beyond T1: branch handling (airport
   split, T7 loop, A4 Megara curve), station-aware animation, the "train glide"
-  easing (sections 9, 17.4, 17.10). Depends on: T1, T3.
+  easing (sections 9, 18.4, 18.10). Depends on: T1, T3.
 - T11 — Region model completion + first pilot [M5]. `RailRegion` + `operatorIds` +
   per-station `sourceConfidence` (section 6) beyond today's region enum; the
   Athens to Chalkida pilot UX with the same one-glance UX (section 13). Depends on:
   T7, T8.
 - T12 — PWA + offline confidence on web [W1 / W3]. Installable PWA, offline snapshot
-  pill (sections 8, 17.9). Depends on: T6.
+  pill (sections 8, 18.9). Depends on: T6.
 - T13 — Accessibility pass [continuous, M1 to M4]. VoiceOver / TalkBack, Dynamic Type
   / font scaling, Reduce Motion cross-fade, WCAG-AA on the light palette (sections
-  12, 17.10). Rides alongside T5 to T10.
+  12, 18.10). Rides alongside T5 to T10.
 
 ### Critical path
 
 T2 -> T3 -> T4 -> { T5, T6, T7, T8 }. T1 is independent, so it ships first and cleans
 the country map immediately. T9 / T10 / T11 follow once the trust + hero layers exist.
 
-### Out of scope (section 15 still holds)
+### Out of scope (section 16 still holds)
 
 No dark-first, no full national planner, no new cities before the region model, no
 fake live status, no LLM-generated transit facts, no in-app ticketing.
+
+## 20. Codebase audit for 2.0.0 readiness (added 2026-07-27)
+
+Audit of the current 1.2.14 codebase against the 2.0.0 design spec, identifying
+what exists, what needs changing, and what risks to watch.
+
+### 20.1 Current tab structure (to become Home | Explore | Map | Departures | More)
+
+| Platform | Current tabs | Tab enum / config |
+|----------|-------------|-------------------|
+| iOS | Home, Lines, Map, Airport, Settings | `SyrmosTab` enum in `SyrmosApp.swift:141` |
+| Android/KMP | HomeTab, LinesTab, MapTab, TimetablesTab, SettingsTab | Voyager `TabNavigator` in `SyrmosApp.kt:161` |
+| Web (narrow) | No tab bar; map-first with bottom sheet | `index.html` single-page |
+| Web (wide) | Sidebar: Planner, Schedules, Passes, Account | `DesktopWebApp.kt` |
+
+Changes needed: rename Lines to Explore, Airport to Departures, Settings to More
+on iOS and KMP. Add a tab bar to web narrow. Restructure web wide sidebar.
+
+### 20.2 Design token system status
+
+The token system is already built and generating to all 3 platforms:
+
+- **Canonical source**: `core/designsystem/src/commonMain/.../theme/tokens/` (5 files:
+  SyrmosColorTokens, SyrmosTypographyTokens, SyrmosSpacingTokens, SyrmosShapeTokens,
+  SyrmosMotionTokens). Note: the spec's section 11 references `core/designsystem-tokens/`
+  as a separate module, but the actual implementation lives inside `core/designsystem`.
+- **Generator**: `ops/designsystem/generate_tokens.py` parses Raw blocks and emits CSS,
+  Swift (injected into SyrmosColors.swift), and JSON.
+- **CSS export**: `design-tokens.css` with `--sy-*` variables, dark mode override.
+- **Swift export**: `SyrmosTokens` enum injected into `SyrmosColors.swift`.
+- **JSON export**: `tokens.generated.json`.
+
+### 20.3 Line color drift (risk)
+
+Line colors exist in 5 separate locations with inconsistent values:
+
+| Source | M1 green | M2 red | M3 blue | Tram | Suburban |
+|--------|----------|--------|---------|------|----------|
+| `LineColor.kt` enum | #00843D | #E61E2A | #0083C9 | #F39800 | #EE2625 (wrong!) |
+| `Color.kt` legacy | #00843D | #DA291C | #0072CE | #E87722 | #6F2DA8 |
+| `SyrmosColorTokens` | #00843D | #DA291C | #0072CE | #F39800 | #6F2DA8 |
+| iOS widget tokens | ~#30A050 | ~#D93333 | ~#1A5CB8 | ~#F28C1C | -- |
+| Android widget tokens | #30A050 | #D93333 | #1A5CB8 | #F28C1C | #6B4DA8 |
+
+**Action**: M1 migration task must unify all 5 to the canonical `SyrmosColorTokens`
+values. The `LineColor.kt` enum `SUBURBAN_PURPLE` with hex `#EE2625` is a bug
+(that is a red, not a purple).
+
+### 20.4 Dual design system (legacy + tokens)
+
+`Color.kt` (`MetroGreen`, `SyrmosPrimary`, etc.) coexists with the new token system.
+`LineColorIndicator.kt` still references legacy `Color.kt` values. M1 must migrate
+`LineColorIndicator` and all remaining legacy color consumers to the token system,
+then delete `Color.kt`.
+
+### 20.5 Screen inventory for redesign
+
+Screens that exist and need restyling vs. screens that must be created:
+
+**Existing (restyle to tokens + light-first identity):**
+- Home: iOS `HomeView.swift`, KMP `HomeScreen.kt`
+- Lines (becomes Explore): iOS `LinesView.swift`, KMP `LinesScreen.kt`
+- Line detail: iOS `LineDetailView.swift`, KMP `LineDetailScreen.kt`
+- Station detail: iOS `StationDetailView.swift`, KMP `StationDetailScreen.kt`
+- Map: iOS `MapView.swift`, KMP `MapScreen.kt`
+- Timetables (becomes Departures): iOS `TimetablesView.swift`, KMP `ScheduleScreen.kt`
+- Settings (becomes More): iOS `SettingsView.swift`, KMP `SettingsScreen.kt`
+- Fares: iOS `FaresView.swift`, KMP `FaresScreen.kt`
+- Ariadne: iOS `AriadneView.swift`, KMP `AssistantScreen.kt`
+- Onboarding: iOS `OnboardingView.swift`
+
+**New screens needed for 2.0.0:**
+- Explore destinations view (the F+G hybrid, section 5.2)
+- Explore "Your Network" view (personal gravity, section 5.2)
+- Generalized Departures screen (any station, not airport-only)
+- "More" hub (fares, settings, about, contact)
+
+### 20.6 iOS architecture note
+
+iOS uses native SwiftUI, not Compose Multiplatform. The iOS app has its own view
+layer at `iosApp/iosApp/Views/` and `iosApp/iosApp/Features/`. The generated Swift
+token file (`SyrmosTokens` enum in `SyrmosColors.swift`) bridges the KMP token
+system to SwiftUI. Any new Compose shared component (like `SourceConfidenceChip`)
+needs a SwiftUI mirror when consumed by iOS.
+
+### 20.7 Ariadne integration status
+
+Ariadne is deeply integrated across all 3 platforms with platform-specific
+implementations. The launcher pill floats above the tab bar on Home/Lines/Airport
+tabs. The 2.0.0 redesign keeps Ariadne as an ambient recovery affordance, not a
+primary navigation element. No structural Ariadne changes needed for M1.
+
+## 21. File-level M1 implementation plan (added 2026-07-27)
+
+M1 is the design system foundation: unify tokens, restyle existing screens to the
+light-first identity, and land the new tab bar. This plan maps every M1 task to
+specific files across all 3 platforms.
+
+### M1-PR1: Unify line colors and kill legacy Color.kt
+
+**Goal**: Single source of truth for all colors. Fix the suburban purple bug.
+
+Files to change:
+- `core/model/.../LineColor.kt` -- fix SUBURBAN_PURPLE hex from #EE2625 to #6F2DA8,
+  align all hex values with SyrmosColorTokens
+- `core/designsystem/.../theme/Color.kt` -- delete after migrating all consumers
+- `core/designsystem/.../component/LineColorIndicator.kt` -- switch from Color.kt
+  imports to SyrmosColorTokens line service colors
+- `iosApp/.../DesignSystem/WidgetKit/SyrmosLineTokens.swift` -- align with token
+  values, or replace with generated SyrmosTokens references
+- `androidApp/.../widget/AndroidLineTokens.kt` -- same alignment
+- `ops/designsystem/generate_tokens.py` -- verify line colors are included in
+  the CSS/Swift/JSON export
+
+Tests: all existing map + line color tests must pass with the new values.
+
+### M1-PR2: Tab bar rename (Lines to Explore, Airport to Departures, Settings to More)
+
+**Goal**: Land the new 5-tab IA on all platforms.
+
+Files to change:
+- **iOS**: `iosApp/.../App/SyrmosApp.swift` -- rename `SyrmosTab` cases
+  (`lines` to `explore`, `timetables` to `departures`, `settings` to `more`),
+  update tab labels and SF Symbols (tram to compass, airplane to clock, gearshape
+  to ellipsis.circle)
+- **KMP/Android**: `composeApp/.../app/SyrmosApp.kt` -- update `TabNavigator`
+  tab list, rename `LiquidGlassTabBar` icon mapping
+- **KMP tab files**: rename `composeApp/.../tab/LinesTab.kt` to `ExploreTab.kt`,
+  `TimetablesTab.kt` to `DeparturesTab.kt`, `SettingsTab.kt` to `MoreTab.kt`
+- **Feature modules**: `feature/lines/` stays as the backing module for now (the
+  Explore content is a superset), `feature/schedule/` backs Departures,
+  `feature/settings/` backs More
+- **Web**: `index.html` -- add a mobile bottom tab bar in the sheet chrome;
+  `DesktopWebApp.kt` -- restructure sidebar sections to match
+
+### M1-PR3: Light-first restyle pass
+
+**Goal**: Every screen uses token colors, not hardcoded values. Warm station-white
+surfaces, Aegean-blue brand accent, near-black text.
+
+Files to change:
+- **KMP theme**: `core/designsystem/.../theme/SyrmosTheme.kt` -- verify light
+  scheme is the foundation, dark is the variant
+- `core/designsystem/.../theme/SyrmosColorSchemes.kt` -- ensure Material3
+  scheme maps to token values
+- **iOS theme**: `iosApp/.../DesignSystem/ThemeManager.swift` -- verify light-first
+- `iosApp/.../DesignSystem/SyrmosColors.swift` -- run `generate_tokens.py` to
+  refresh the injected `SyrmosTokens` block
+- **Web**: `design-tokens.css` -- run generator, verify `--sy-*` variables
+- **Per-screen restyle** (touch each to replace any hardcoded colors):
+  - iOS: HomeView, LinesView, LineDetailView, StationDetailView, MapView,
+    TimetablesView, SettingsView, FaresView, AriadneView
+  - KMP: HomeScreen, LinesScreen, LineDetailScreen, StationDetailScreen,
+    MapScreen, ScheduleScreen, SettingsScreen, FaresScreen, AssistantScreen
+
+### M1-PR4: Source-confidence chip and offline pill components
+
+**Goal**: Land the two trust-layer primitives on all platforms.
+
+Files to create/change:
+- **KMP (already started)**: `core/designsystem/.../component/SourceConfidenceChip.kt`
+  and `OfflinePill.kt` -- verify they use token colors, add unit tests
+- **iOS mirrors**: create `iosApp/.../DesignSystem/SourceConfidenceChip.swift` and
+  `OfflinePill.swift` -- SwiftUI components using SyrmosTokens
+- **Web**: style the chips via `--sy-*` CSS variables in the HTML shell
+- **Wiring**: add the chip to `DepartureCard.kt` (KMP), departure rows in
+  `HomeScreen`, `ScheduleScreen`, and their iOS mirrors
+
+### M1-PR5: Staggered entrance animations
+
+**Goal**: Land the animation system from section 15.
+
+Files to create/change:
+- **KMP**: create `core/designsystem/.../animation/SyrmosAnimations.kt` with
+  `staggeredEntrance()` modifier, `trainGlideSpec()` animation spec, and
+  `livePulse()` modifier
+- **iOS**: create `iosApp/.../DesignSystem/SyrmosAnimations.swift` with matching
+  SwiftUI animation helpers (`.syrmosEntrance(index:)` view modifier,
+  `Animation.trainGlide` extension)
+- **Web**: add CSS `@keyframes` for train-glide, stagger, and pulse in
+  `design-tokens.css` or a new `syrmos-motion.css`
+- **Apply to existing screens**: HomeView/HomeScreen list sections, LinesView/
+  LinesScreen line list, station detail departure rows
+
+### M1-PR6: Explore tab content (Destinations + Your Network)
+
+**Goal**: Replace the flat Lines catalog with the F+G hybrid.
+
+Files to create/change:
+- **KMP**: create `feature/explore/` module (or extend `feature/lines/`):
+  `ExploreScreen.kt` with two segments, `DestinationsView.kt` (curated cards),
+  `YourNetworkView.kt` (recent trips, saved stations, smart suggestions),
+  `ExploreViewModel.kt`
+- **iOS**: create `iosApp/.../Views/Explore/ExploreView.swift` with matching
+  segmented layout, `DestinationsView.swift`, `YourNetworkView.swift`
+- **Data layer**: create `core/domain/.../usecase/GetRecentTripsUseCase.kt`,
+  `GetSmartSuggestionsUseCase.kt`, `GetSavedStationsUseCase.kt`
+- **Persistence**: add recent trips and saved stations tables to the SQLDelight
+  schema in `core/database/`
+- **Web**: add Explore content to the bottom sheet / sidebar
+
+### M1 critical path
+
+PR1 (color unification) and PR2 (tab rename) are independent and can land first.
+PR3 (restyle) depends on PR1. PR4 (chips) depends on PR3 for consistent theming.
+PR5 (animations) depends on PR3. PR6 (Explore content) depends on PR2 + PR3.
+
+```
+PR1 (colors) -----> PR3 (restyle) ---> PR4 (chips) ---> wire chips into screens
+PR2 (tabs)   -----> PR6 (Explore) -/
+                \--> PR5 (animations)
+```
+
+### Build verification checklist
+
+Before merging each PR, verify:
+- [ ] `./gradlew check` passes (KMP/Android unit tests)
+- [ ] `:composeApp:compileKotlinWasmJs` passes (web build)
+- [ ] iOS builds in Xcode (SwiftUI mirrors compile)
+- [ ] `ops/designsystem/generate_tokens.py` runs clean
+- [ ] Token generator output matches the committed CSS/Swift/JSON files
