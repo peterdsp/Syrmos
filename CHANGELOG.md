@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.2.12** (TestFlight), **Android 1.2.12** (Play internal, versionCode 116), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116. Next Android release must use 117+.
+Current shipping: **iOS 1.2.13** (TestFlight), **Android 1.2.13** (Play internal, versionCode 117), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116. Next Android release must use 117+.
 
 How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
 
@@ -11,6 +11,17 @@ The release secrets are now set, so a `v*` tag ships Android automatically along
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 1.2.13 — 2026-07-27
+
+Station-position corrections + Ariadne button placement.
+
+- **Molos** (was "Mylos") — the station on the Athens–Lamia line was an interpolated placeholder 3 km off the track. Corrected to the real Hellenic Train station **Molos** (Μώλος) at its OSM coordinates and re-tagged national.
+- **Agios Vasileios** (Patras) — the PU2 terminus was interpolated in the sea; moved to the real OSM Rio suburb, and the PU2 line no longer runs into the water. Coords are real OSM, never invented. Fixed at the Pi source, reseeded, and propagated to all bundles.
+- **Ariadne owl button (web)** moved from bottom-left (out of place) to bottom-right, clear of the info column, and lifted above the attribution/sheet on mobile so it never overlaps. Verified live.
+- **Robustness:** the nightly seed refresh now preserves the full 31-line `shapes.json` (national geometry), so the 1.2.12 line-geometry fix can't silently revert.
+
+iOS 1.2.13 / Android versionCode 117.
 
 ## 1.2.12 — 2026-07-27
 
