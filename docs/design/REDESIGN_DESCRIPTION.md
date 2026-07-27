@@ -134,6 +134,34 @@ This prevents an Athens pass from appearing to cover a nationwide trip and
 provides a safe official operator action when Syrmos does not have a grounded
 price.
 
+### Journey fare planner (from -> to -> price)  [added 2026-07-27]
+
+A dedicated fares menu lives in the right rail (desktop) and as a Tickets tab
+entry (mobile). It carries the complete, grounded fare tables for every network:
+
+- Athens metro / tram / suburban (OASA/STASY zones + airport products).
+- Thessaloniki metro + suburban.
+- All Greece suburban (Athens proastiakos, Patras suburban zone grid A1/A/B/C,
+  Thessaloniki suburban), each with full price + discounted price + monthly card.
+- All intercity (IC / regional) fares.
+- All rail-replacement bus fares (the corridors served by coach: TL1, KB1, VL1,
+  DX1, KP1, and any others).
+
+On top of the tables sits a journey fare planner: the traveler picks a start
+station and a destination station, and Syrmos returns the exact price (full and
+discounted), the operator, the ticket product, and the official-source link.
+The picker is station-to-station across the whole nationwide network, not just
+Athens, and it resolves the correct zone/operator automatically.
+
+Ariadne must carry and provide the same capability conversationally: "how much
+from X to Y" returns a grounded fare card (price, discounted price, product,
+operator, source, freshness), and "cheapest way from X to Y" reasons over the
+zone/product options. Fares are grounded data only - when Syrmos lacks a real
+price for a pair, Ariadne says so and offers the official operator link rather
+than estimating. Source of truth for the fare data: the operators' own tables
+(hellenictrain.gr, oasa.gr, oasth.gr), transcribed like the timetables, never
+invented.
+
 ### Ariadne redesign
 
 I redesigned Ariadne as the intelligence layer across the whole product, not
