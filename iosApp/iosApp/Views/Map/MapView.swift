@@ -252,11 +252,6 @@ struct TransitMapView: View {
     /// The map asks us to recenter via this trigger. UIViewRepresentable
     /// reads it in update() and calls setRegion on the wrapped MKMapView.
     @State private var recenterToUserPing: Int = 0
-    /// Presents Ariadne from the map's own owl button. The Map tab hides the
-    /// app-level launcher pill (the FABs own the bottom-right corner), so the
-    /// owl lives inside the FAB column here and drives its own sheet.
-    @State private var showAriadne = false
-
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
 
@@ -284,9 +279,6 @@ struct TransitMapView: View {
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
                     .presentationContentInteraction(.scrolls)
-            }
-            .sheet(isPresented: $showAriadne) {
-                AriadneView()
             }
             .alert(
                 loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
@@ -343,28 +335,6 @@ struct TransitMapView: View {
                 .ignoresSafeArea(.container, edges: [.top, .bottom])
 
                 VStack(spacing: 12) {
-                    // Ariadne owl launcher. The app-level pill is suppressed on
-                    // the Map tab, so the assistant gets its own circular button
-                    // at the top of the control column, matching the round owl
-                    // mark on web and Android.
-                    Button {
-                        showAriadne = true
-                    } label: {
-                        Image("AriadneMark")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 32, height: 32)
-                            .padding(9)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
-                    }
-                    .accessibilityLabel(
-                        loc.language == .greek ? "Ρώτα την Αριάδνη" :
-                        loc.language == .albanian ? "Pyet Ariadnën" : "Ask Ariadne"
-                    )
-
                     Button {
                         vehiclesHidden.toggle()
                     } label: {
