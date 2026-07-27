@@ -507,16 +507,20 @@
         const maxAttempts = 3;
         while (attempts < maxAttempts) {
             try {
-                const r = await fetch("https://api-syrmos.peterdsp.dev/api/fares");
+                const r = await fetch("https://api-syrmos.peterdsp.dev/api/fares", { cache: "no-store" });
                 if (!r.ok) throw new Error("fares fetch " + r.status);
+                const ct = r.headers.get("content-type") || "";
+                if (!ct.includes("json")) throw new Error("fares not json: " + ct);
                 const payload = await r.json();
+                if (!payload || !Array.isArray(payload.products)) throw new Error("fares payload missing products");
                 lastFaresPayload = payload;
                 renderFaresPanel(payload);
                 setupFarePlanner();
                 renderInfoLinksPanel(payload);
                 return;
-            } catch (_) {
+            } catch (e) {
                 attempts++;
+                console.warn("[syrmos] fares attempt " + attempts + " failed:", e.message);
                 if (attempts < maxAttempts) await new Promise(r => setTimeout(r, 2000 * attempts));
             }
         }
@@ -698,7 +702,7 @@
                         <div class="panel-item__count">${escapeHtml(eur)}</div>
                     </div>`;
             }).join("");
-            const label = g.label[lang] || g.label.en;
+            const label = g.label[currentLang] || g.label.en;
             return `<div class="fares-group__head">${escapeHtml(label)}</div>${items}`;
         }).join("");
         faresList.innerHTML = html;
