@@ -12,7 +12,7 @@ import SwiftUI
 // the earlier 1.1.1 sheet.
 
 private let kWhatsNewVersionKey = "syrmos.whatsnew.version"
-private let kWhatsNewCurrentVersion = "1.3.2"
+private let kWhatsNewCurrentVersion = "1.3.3"
 
 struct WhatsNewView: View {
     let onDismiss: () -> Void
@@ -30,38 +30,38 @@ struct WhatsNewView: View {
     }
 
     private var title: String {
-        t(“What's new in Syrmos 1.3”,
-          “Τι νέο υπάρχει στο Syrmos 1.3”,
-          “Çfarë ka të re në Syrmos 1.3”)
+        t("What's new in Syrmos",
+          "Τι νεο υπαρχει στο Syrmos",
+          "Çfare ka te re ne Syrmos")
     }
 
     private var subtitle: String {
-        t(“Nationwide coverage and new Ariadne look.”,
-          “Πανελλαδική κάλυψη και νέα εμφάνιση Αριάδνης.”,
-          “Mbulim kombëtar dhe pamje e re e Ariadnes.”)
+        t("Nationwide coverage and new Ariadne look.",
+          "Πανελλαδική κάλυψη και νέα εμφάνιση Αριάδνης.",
+          "Mbulim kombëtar dhe pamje e re e Ariadnes.")
     }
 
     private var items: [String] {
         var list: [String] = []
         list.append(t(
-            “Departures for Thessaloniki, Patras and national rail stations via live API”,
-            “Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API”,
-            “Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live”
+            "Search and filter lines: find any line by city or transport type",
+            "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας",
+            "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit"
         ))
         list.append(t(
-            “Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train”,
-            “Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train”,
-            “Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train”
+            "Departures for Thessaloniki, Patras and national rail stations via live API",
+            "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API",
+            "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live"
         ))
         list.append(t(
-            “Fresh Ariadne button with the owl mark, matching the web style”,
-            “Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας, όπως στο web”,
-            “Butoni i ri i Ariadnes me shenjën e bufit, si në web”
+            "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
+            "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train",
+            "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train"
         ))
         list.append(t(
-            “Journey fare planner: pick two stations and see the price instantly”,
-            “Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως”,
-            “Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë”
+            "Journey fare planner: pick two stations and see the price instantly",
+            "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως",
+            "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere"
         ))
         return list
     }

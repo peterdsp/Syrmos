@@ -74,9 +74,9 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 Text("🦉", style = MaterialTheme.typography.headlineMedium)
                 Text(
                     text = t(
-                        "What's new in Syrmos 1.3",
-                        "Τι νέο υπάρχει στο Syrmos 1.3",
-                        "Çfarë ka të re në Syrmos 1.3",
+                        "What's new in Syrmos",
+                        "Τι νεο υπαρχει στο Syrmos",
+                        "Çfare ka te re ne Syrmos",
                     ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,

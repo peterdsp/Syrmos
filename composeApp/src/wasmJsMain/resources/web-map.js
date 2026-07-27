@@ -90,7 +90,7 @@
             ariadne_fare: "The standard Athens (OASA) integrated ticket is €1.20 (reduced €0.50). The airport metro single is €9. See Fares in the side panel for every network.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
-            whatsnew_title: "What's new in Syrmos 1.3",
+            whatsnew_title: "What's new in Syrmos",
             whatsnew_i1: "Departures for Thessaloniki, Patras and national rail stations via live API",
             whatsnew_i2: "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
             whatsnew_i3: "Fresh Ariadne button with the owl mark",
@@ -161,7 +161,7 @@
             ariadne_fare: "Το ενιαίο εισιτήριο Αθήνας (OASA) είναι €1,20 (μειωμένο €0,50). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τις Τιμές στο πλαϊνό πάνελ για όλα τα δίκτυα.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
-            whatsnew_title: "Τι νέο υπάρχει στο Syrmos 1.3",
+            whatsnew_title: "Τι νεο υπαρχει στο Syrmos",
             whatsnew_i1: "Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API",
             whatsnew_i2: "Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train",
             whatsnew_i3: "Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας",
@@ -232,7 +232,7 @@
             ariadne_fare: "Bileta e integruar e Athinës (OASA) është €1,20 (e reduktuar €0,50). Bileta metro për aeroport është €9. Shiko Çmimet në panelin anësor për të gjitha rrjetet.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
-            whatsnew_title: "Çfarë ka të re në Syrmos 1.3",
+            whatsnew_title: "Çfare ka te re ne Syrmos",
             whatsnew_i1: "Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live",
             whatsnew_i2: "Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
             whatsnew_i3: "Butoni i ri i Ariadnes me shenjën e bufit",
@@ -666,9 +666,9 @@
     // suburban, intercity) under clear headers instead of one flat OASA list.
     const FARE_GROUPS = [
         { key: "athens", sections: ["single", "airport", "offers", "passes"],
-          label: { en: "Athens — OASA", el: "Αθήνα — OASA", sq: "Athinë — OASA" } },
+          label: { en: "Athens - OASA", el: "Αθηνα - OASA", sq: "Athine - OASA" } },
         { key: "thessaloniki", sections: ["thessaloniki"],
-          label: { en: "Thessaloniki — OSETH", el: "Θεσσαλονίκη — OSETH", sq: "Selanik — OSETH" } },
+          label: { en: "Thessaloniki - OSETH", el: "Θεσσαλονικη - OSETH", sq: "Selanik - OSETH" } },
         { key: "patras", sections: ["patras"],
           label: { en: "Patras suburban", el: "Προαστιακός Πάτρας", sq: "Suburban Patra" } },
         { key: "intercity", sections: ["intercity"],
@@ -2824,7 +2824,7 @@
     // normalizer.
     (function whatsNewWeb() {
         const key = "syrmos.whatsnew.version";
-        const version = "1.3.2";
+        const version = "1.3.3";
         try {
             if (localStorage.getItem(key) === version) return;
         } catch (_) { return; }
@@ -2833,24 +2833,21 @@
             : lang === "sq" ? "Çfarë ka të re në Syrmos"
             : "What's new in Syrmos";
         const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : "Got it";
-        const bullets = lang === "el" ? [
-            "Ρώτα την Αριάδνη για τον καιρό — «καιρός στον Πειραιά», offline-safe.",
-            "Σχεδιασμός με στόχο χρόνου — «αεροδρόμιο στις 21:30» σου λέει πότε να ξεκινήσεις.",
-            "Προειδοποίηση κακοκαιρίας με τηλέφωνα έκτακτης ανάγκης (112, 199, 11185).",
-            "Ανανεωμένη κάρτα παρακολούθησης με στριπ σταθμών.",
-            "Παρακολούθηση οποιουδήποτε τρένου — γραμμή, κατεύθυνση, σταθμός, δρομολόγιο.",
-        ] : lang === "sq" ? [
-            "Pyet Ariadnen për motin — “moti në Piraeus”, offline i sigurt.",
-            "Planifikim me kohë objektiv — “aeroporti deri në 21:30” të thotë kur të nisesh.",
-            "Paralajmërim moti me numra emergjence (112, 199, 11185).",
-            "Karta e ndjekjes e ridizajnuar me strip stacionesh.",
-            "Ndiq çdo tren — linjë, drejtim, stacion, nisje.",
+        const bullets = lang === “el” ? [
+            “Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας.”,
+            “Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API.”,
+            “Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train.”,
+            “Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως.”,
+        ] : lang === “sq” ? [
+            “Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit.”,
+            “Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live.”,
+            “Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train.”,
+            “Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere.”,
         ] : [
-            "Ask Ariadne about weather — “weather at Piraeus”, offline-safe.",
-            "Time-anchored planning — “airport by 21:30” answers when to leave.",
-            "Severe-weather warning with emergency numbers (112, 199, 11185).",
-            "Redesigned tracking card with an animated station strip.",
-            "Track any train — pick line, direction, station, departure.",
+            “Search and filter lines: find any line by city or transport type.”,
+            “Departures for Thessaloniki, Patras and national rail via live API.”,
+            “Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train.”,
+            “Journey fare planner: pick two stations and see the price instantly.”,
         ];
 
         const scrim = document.createElement("div");
