@@ -277,14 +277,15 @@ private struct AriadneLauncherPill: View {
                 onTap()
             }
         } label: {
-            // The Ariadne brand logo is the button (owl + labyrinth + thread).
-            Image("AriadneLogo")
+            Image("AriadneMark")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 60, height: 60)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.28), radius: 12, y: 6)
+                .frame(width: 32, height: 32)
+                .padding(12)
+                .background(Color.white)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
+                .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                 .scaleEffect(pressed ? 0.92 : 1.0)
                 .accessibilityLabel(label)
         }

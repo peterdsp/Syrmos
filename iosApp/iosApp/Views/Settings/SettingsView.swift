@@ -68,7 +68,7 @@ struct SyrmosSettingsView: View {
                         FaresView()
                     } label: {
                         Label(
-                            loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων (OASA)" : loc.language == .albanian ? "Çmimet e biletave (OASA)" : "Ticket prices (OASA)",
+                            loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων" : loc.language == .albanian ? "Çmimet e biletave" : "Ticket prices",
                             systemImage: "eurosign.circle"
                         )
                     }
@@ -91,10 +91,10 @@ struct SyrmosSettingsView: View {
                     Text(loc.language == .greek ? "Εισιτήρια" : loc.language == .albanian ? "Bileta" : "Tickets")
                 } footer: {
                     Text(loc.language == .greek
-                         ? "Οι τιμές και η διαθεσιμότητα διαχειρίζονται από τον ΟΑΣΑ. Το Syrmos δεν αποθηκεύει τιμές — απλώς ανοίγει την επίσημη σελίδα."
+                         ? "Οι τιμές διαχειρίζονται από OASA, STASY και Hellenic Train. Το Syrmos εμφανίζει τις επίσημες τιμές."
                          : loc.language == .albanian
-                         ? "Çmimet dhe disponueshmëria menaxhohen nga OASA. Syrmos nuk ruan çmime, thjesht hap faqen zyrtare."
-                         : "Prices and availability are managed by OASA. Syrmos does not store prices — it just opens the official page.")
+                         ? "Çmimet menaxhohen nga OASA, STASY dhe Hellenic Train. Syrmos shfaq çmimet zyrtare."
+                         : "Prices are managed by OASA, STASY and Hellenic Train. Syrmos displays the official prices.")
                         .font(.caption2)
                 }
 
