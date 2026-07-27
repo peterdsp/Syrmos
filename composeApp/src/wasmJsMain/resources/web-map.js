@@ -87,7 +87,9 @@
             ariadne_eta_locating: "Getting your location to estimate the trip to {station}…",
             ariadne_eta_ask_origin: "I couldn't get your location. Which station are you starting from?",
             ariadne_line: "Line {id} runs between {a} and {b}. Tap the line on the map to see all stations.",
-            ariadne_fare: "Standard OASA single is €0.90 (Metro/Tram). Airport metro single is €9. See OASA tickets in the side panel for the full list.",
+            ariadne_fare: "The standard Athens (OASA) integrated ticket is €1.20 (reduced €0.50). The airport metro single is €9. See Fares in the side panel for every network.",
+            ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
+            ariadne_fare_booking: "{from} → {to} is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
             whatsnew_title: "What's new in Syrmos",
             whatsnew_i1: "Ask Ariadne — the offline assistant for departures, trips and last trains",
             whatsnew_i2: "Smarter search that understands typos (nikea → Nikaia)",
@@ -156,7 +158,9 @@
             ariadne_eta_locating: "Εντοπίζω την τοποθεσία σου για τον χρόνο προς {station}…",
             ariadne_eta_ask_origin: "Δεν βρήκα την τοποθεσία σου. Από ποιον σταθμό ξεκινάς;",
             ariadne_line: "Η Γραμμή {id} συνδέει {a} και {b}. Πάτα τη γραμμή στον χάρτη για όλους τους σταθμούς.",
-            ariadne_fare: "Το βασικό εισιτήριο OASA είναι €0,90 (Μετρό/Τραμ). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τα εισιτήρια OASA στο πλαϊνό πάνελ.",
+            ariadne_fare: "Το ενιαίο εισιτήριο Αθήνας (OASA) είναι €1,20 (μειωμένο €0,50). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τις Τιμές στο πλαϊνό πάνελ για όλα τα δίκτυα.",
+            ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
+            ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
             whatsnew_title: "Τι νέο υπάρχει στο Syrmos",
             whatsnew_i1: "Ρώτα την Αριάδνη — τον offline βοηθό για αναχωρήσεις, διαδρομές και τελευταία τρένα",
             whatsnew_i2: "Πιο έξυπνη αναζήτηση που καταλαβαίνει τα λάθη (nikea → Νίκαια)",
@@ -225,7 +229,9 @@
             ariadne_eta_locating: "Po marr vendndodhjen tënde për kohën te {station}…",
             ariadne_eta_ask_origin: "S'e mora dot vendndodhjen. Nga cili stacion po nisesh?",
             ariadne_line: "Linja {id} lidh {a} me {b}. Prek linjën në hartë për të gjitha stacionet.",
-            ariadne_fare: "Bileta standarde OASA është €0,90 (Metro/Tram). Bileta metro për aeroport është €9. Shiko biletat OASA në panelin anësor.",
+            ariadne_fare: "Bileta e integruar e Athinës (OASA) është €1,20 (e reduktuar €0,50). Bileta metro për aeroport është €9. Shiko Çmimet në panelin anësor për të gjitha rrjetet.",
+            ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
+            ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
             whatsnew_title: "Çfarë ka të re në Syrmos",
             whatsnew_i1: "Pyet Ariadnen — asistenti offline për nisjet, udhëtimet dhe trenat e fundit",
             whatsnew_i2: "Kërkim më i zgjuar që kupton gabimet (nikea → Nikaia)",
@@ -569,7 +575,8 @@
         return out;
     }
     function isAirportStation(st) {
-        return /(^|_)AIR/.test(st.id || "") || /airport/i.test(st.name || "") || /Αεροδρ/.test(st.nameEl || "");
+        // Airport ids appear as M3_AER (metro) and A1_AIR/A2_AIR (suburban).
+        return /(^|_)(AIR|AER)/.test(st.id || "") || /airport/i.test(st.name || "") || /Αεροδρ/.test(st.nameEl || "");
     }
     function isThessSuburbanStation(st) {
         return (st.lineIds || []).some((id) => THESS_SUBURBAN_LINES.includes(id));
@@ -586,6 +593,21 @@
             default: return FARE_TABLES.intercity;
         }
     }
+    function stationDisplayName(st) { return (st.name || st.id).split(" /")[0].trim(); }
+    // Ariadne's grounded fare answer for a from -> to question. Reuses the same
+    // computeFare engine the planner uses; intercity defers to booking, never a
+    // fabricated price.
+    function fareAnswerText(from, to) {
+        const q = computeFare(from, to);
+        const a = stationDisplayName(from), b = stationDisplayName(to);
+        if (q.dynamic) return t("ariadne_fare_booking", { from: a, to: b });
+        const reduced = q.reduced != null ? ` (${t("reduced")} €${q.reduced.toFixed(2)})` : "";
+        return t("ariadne_fare_trip", {
+            from: a, to: b, price: `€${q.full.toFixed(2)}${reduced}`,
+            product: q.product, operator: q.operator,
+        });
+    }
+
     function setupFarePlanner() {
         if (!faresList) return;
         const card = faresList.closest(".panel-card") || faresList.parentElement;
@@ -3622,8 +3644,14 @@
                     });
                     return { text: ragEnrich(base, { id: "line_" + String(intent.lineId).split("_")[0], query: intent.lineId + " line overview", types: ["line"] }) };
                 }
-                case "explainFare":
+                case "explainFare": {
+                    // Grounded from -> to fare when both endpoints are known;
+                    // otherwise the general ticket-price guidance.
+                    const fareFrom = intent.from ? stationMap.get(intent.from) : null;
+                    const fareTo = intent.to ? stationMap.get(intent.to) : null;
+                    if (fareFrom && fareTo) return { text: fareAnswerText(fareFrom, fareTo) };
                     return { text: ragEnrich(t("ariadne_fare"), { query: "ticket validation fare price airport points of supply", types: ["fare_info", "fare"] }) };
+                }
                 case "find":
                     return { text: t("ariadne_no_station") };
                 default:
