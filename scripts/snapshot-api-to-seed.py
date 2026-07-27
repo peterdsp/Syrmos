@@ -104,6 +104,21 @@ def main() -> None:
         "source": "OpenStreetMap (ODbL) via api-syrmos.peterdsp.dev/line-geometry",
         "shapes": {},
     }
+    # Seed from the full OSM-derived file (all 31 lines) FIRST. The API's
+    # /line-geometry only serves the 9 Athens lines (IC1/TL1/... return 404),
+    # so rebuilding shapes from the API alone drops every national / bus /
+    # Thessaloniki / Patras corridor and the native maps fall back to a
+    # station-spline that diverges on shared track (the 1.2.12 bug). Starting
+    # from the OSM file keeps all 31; the API loop below overlays the 9 Athens
+    # lines with whatever geometry is currently deployed.
+    osm_shapes_file = ROOT / "assets/line-geometry/shapes.json"
+    if osm_shapes_file.exists():
+        try:
+            base_shapes = json.loads(osm_shapes_file.read_text(encoding="utf-8")).get("shapes", {})
+            shapes_payload["shapes"].update(base_shapes)
+            print(f"  seeded shapes from OSM file: {len(base_shapes)} lines")
+        except Exception as e:  # noqa: BLE001
+            print(f"  WARN: OSM shapes base load failed, API-only shapes: {e}")
     for lid in line_ids:
         feature = fetch_geojson_optional(f"/line-geometry/{lid}.geojson")
         if not feature:
