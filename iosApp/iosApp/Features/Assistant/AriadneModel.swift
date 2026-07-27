@@ -680,7 +680,56 @@ final class AriadneModel: ObservableObject {
         }
     }
 
+    // Swift mirror of the KMP ComputeFareUseCase (core/domain) + the web engine.
+    // Grounded operator tables; intercity is dynamic (booking-priced), never a
+    // fabricated number. See docs/data/2026-07-27-fares-collection.md.
+    private struct FareResult {
+        let full: Double?; let reduced: Double?; let product: String; let op: String; let dynamic: Bool
+    }
+    private func stationRegions(_ st: TransitStation) -> Set<TransitRegion> {
+        Set(st.lineIds.compactMap { SyrmosData.line(for: $0)?.region })
+    }
+    private func isThessSuburbanStation(_ st: TransitStation) -> Bool {
+        st.lineIds.contains { id in
+            guard let l = SyrmosData.line(for: id) else { return false }
+            return l.region == .thessaloniki && l.type == .suburban
+        }
+    }
+    private func computeFare(_ from: TransitStation, _ to: TransitStation) -> FareResult {
+        // Charge on the local network the two stations SHARE; else intercity.
+        let fr = stationRegions(from), tr = stationRegions(to)
+        let local = fr.first { $0 != .national && tr.contains($0) }
+        switch local {
+        case .athens:
+            return (isAirportStation(from.id) || isAirportStation(to.id))
+                ? FareResult(full: 9.00, reduced: 4.50, product: "Airport Metro ticket (Line 3)", op: "OASA", dynamic: false)
+                : FareResult(full: 1.20, reduced: 0.50, product: "90-minute integrated ticket", op: "OASA", dynamic: false)
+        case .thessaloniki:
+            return (isThessSuburbanStation(from) || isThessSuburbanStation(to))
+                ? FareResult(full: 0.80, reduced: 0.40, product: "Suburban single", op: "OSETH", dynamic: false)
+                : FareResult(full: 0.60, reduced: 0.30, product: "Urban single", op: "OSETH", dynamic: false)
+        case .patras:
+            return FareResult(full: 1.40, reduced: 1.00, product: "Suburban zone ticket", op: "Hellenic Train", dynamic: false)
+        default:
+            return FareResult(full: nil, reduced: nil, product: "Intercity / regional", op: "Hellenic Train", dynamic: true)
+        }
+    }
+
     private func resolveFare(airport: Bool, from: String?, to: String?) -> AriadneMessage {
+        // Grounded from -> to fare when both endpoints are known (same engine as
+        // the web planner + KMP); otherwise the generic product list below.
+        if let fid = from, let tid = to, let fs = station(fid), let ts = station(tid) {
+            let q = computeFare(fs, ts)
+            let a = name(fs); let b = name(ts)
+            if q.dynamic {
+                return bot(t(
+                    "\(a) → \(b) is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
+                    "\(a) → \(b) είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",
+                    "\(a) → \(b) është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr."))
+            }
+            let reduced = q.reduced.map { " (\(t("reduced", "μειωμένο", "e reduktuar")) \(money($0)))" } ?? ""
+            return bot("\(a) → \(b): \(money(q.full))\(reduced). \(q.product) · \(q.op)")
+        }
         let products = SyrmosFaresStore.shared.products
         if products.isEmpty {
             return bot(t("I don't have fare prices available offline right now.",
