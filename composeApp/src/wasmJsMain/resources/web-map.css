@@ -150,6 +150,7 @@ body {
 .fare-planner__in {
     padding: 8px 10px; border: 1px solid rgba(0,0,0,0.15); border-radius: 10px;
     background: transparent; color: inherit; font: inherit; outline: none; width: 100%;
+    box-sizing: border-box;
 }
 .fare-planner__in:focus { border-color: var(--sy-brand, #1466B8); }
 .dark-mode .fare-planner__in { border-color: rgba(255,255,255,0.18); }
