@@ -56,6 +56,7 @@ export SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
 .venv/bin/python -m scripts.seed_fare_products
 .venv/bin/python -m scripts.seed_station_offsets
 .venv/bin/python -m syrmos_admin.scraper_24mmm || echo "scraper failed, continuing"
+.venv/bin/python -m syrmos_admin.scraper_rail_news || echo "rail news scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.generator
 REMOTE
 
@@ -69,12 +70,15 @@ ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-seed-daily.service /etc/systemd/s
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-seed-daily.timer /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-osm-shapes.service /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-osm-shapes.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-rail-news.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-rail-news.timer /etc/systemd/system/"
 ssh "$PI" "sudo systemctl daemon-reload"
 ssh "$PI" "sudo systemctl enable --now syrmos-admin.service"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-24mmm.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-backup.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-seed-daily.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-osm-shapes.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-scraper-rail-news.timer"
 
 echo ">>> patching ~/syrmos-proxy/nginx.conf with /api/departures/next + reloading nginx"
 ssh "$PI" bash <<'REMOTE'
