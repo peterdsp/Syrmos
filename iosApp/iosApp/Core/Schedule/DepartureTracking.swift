@@ -150,15 +150,16 @@ final class DepartureTracking: ObservableObject {
         livePositionTimer = nil
     }
 
-    private static let suburbanLineIds: Set<String> = ["A1", "A2", "A3", "A4"]
+    private static let gpsLineIds: Set<String> = ["A1", "A2", "A3", "A4"]
 
     private func pollLivePosition() {
         guard let d = active else { return }
         Task {
-            let stationName: String?
-            if Self.suburbanLineIds.contains(d.lineId) {
-                stationName = await resolveSuburbanStation(d)
-            } else {
+            var stationName: String?
+            if Self.gpsLineIds.contains(d.lineId) {
+                stationName = await resolveGPSStation(d)
+            }
+            if stationName == nil {
                 stationName = await resolveProjectorStation(d)
             }
             guard let name = stationName, var updated = active else { return }
@@ -167,10 +168,11 @@ final class DepartureTracking: ObservableObject {
         }
     }
 
-    private func resolveSuburbanStation(_ d: TrackedDeparture) async -> String? {
+    private func resolveGPSStation(_ d: TrackedDeparture) async -> String? {
         let service = LiveTrainService.shared
         await service.refresh()
         let trains = service.trains.filter { $0.lineId == d.lineId }
+        if trains.isEmpty { return nil }
         let match = trains.first {
             $0.destination.localizedCaseInsensitiveContains(d.destination)
         } ?? trains.first
