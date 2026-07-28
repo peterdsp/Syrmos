@@ -40,7 +40,12 @@ final class SyrmosSchedulesService: ObservableObject {
     /// projector has correct data even before the first network refresh.
     private func hydrateFromBundleIfNeeded() {
         guard bundles.isEmpty else { return }
-        let lineIds = ["M1", "M2", "M3", "T6", "T7", "A1", "A2", "A3", "A4", "M3_AIR"]
+        let lineIds = [
+            "M1", "M2", "M3", "T6", "T7", "A1", "A2", "A3", "A4", "M3_AIR",
+            "IC1", "TP1", "TP2", "TP3", "TP4", "RG1", "AL1", "KB1", "VL1",
+            "DX1", "KP1", "TL1", "KO1", "PL1", "DK1", "PS1", "PS2", "PSB",
+            "PU1", "PU2", "TM1", "TM2",
+        ]
         var out: [String: LineSchedule] = [:]
         for lid in lineIds {
             guard let url = Bundle.main.url(
@@ -153,6 +158,7 @@ final class SyrmosSchedulesService: ObservableObject {
         let lineId: String
         let rules: [RuleEntry]
         let bands: [BandEntry]
+        let trips: [TripEntry]
         /// Per-(direction, fromStation, time) endpoint scraped from
         /// stasy.gr. When a band's emitted slot matches one of these
         /// rows, the projector overrides the displayed destination
@@ -168,15 +174,45 @@ final class SyrmosSchedulesService: ObservableObject {
             return copy
         }
 
-        private enum CodingKeys: String, CodingKey { case lineId, rules, bands, lastTrains }
+        private enum CodingKeys: String, CodingKey { case lineId, rules, bands, trips, lastTrains }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             lineId = try c.decode(String.self, forKey: .lineId)
             rules = try c.decode([RuleEntry].self, forKey: .rules)
             bands = try c.decode([BandEntry].self, forKey: .bands)
+            trips = (try? c.decode([TripEntry].self, forKey: .trips)) ?? []
             lastTrains = (try? c.decode([LastTrainEntry].self, forKey: .lastTrains)) ?? []
         }
+    }
+
+    struct TripEntry: Decodable {
+        let trainNo: String
+        let dayType: String
+        let direction: String
+        let serviceLabel: String
+        let validDates: String?
+        let stops: [TripStop]
+
+        private enum CodingKeys: String, CodingKey {
+            case trainNo, dayType, direction, serviceLabel, validDates, stops
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            trainNo = try c.decode(String.self, forKey: .trainNo)
+            dayType = try c.decode(String.self, forKey: .dayType)
+            direction = try c.decode(String.self, forKey: .direction)
+            serviceLabel = (try? c.decode(String.self, forKey: .serviceLabel)) ?? ""
+            validDates = try? c.decode(String.self, forKey: .validDates)
+            stops = try c.decode([TripStop].self, forKey: .stops)
+        }
+    }
+
+    struct TripStop: Decodable {
+        let stationId: String
+        let stopSequence: Int
+        let departureTime: String
     }
 
     struct LastTrainEntry: Decodable {

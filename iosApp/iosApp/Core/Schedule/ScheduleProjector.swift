@@ -52,9 +52,24 @@ enum ScheduleProjector {
         // Resolve which set of M3 bundles to use for this station.
         let resolvedLineIds = expandLineIds(stationId: stationId, lineIds: lineIds)
 
+        let todayISO = String(format: "%04d-%02d-%02d",
+                              nowComp.year ?? 2026, nowComp.month ?? 1, nowComp.day ?? 1)
         var results: [Departure] = []
         for lineId in resolvedLineIds {
             guard let bundle = bundles[lineId] else { continue }
+            if !bundle.trips.isEmpty {
+                projectScheduledTrips(
+                    bundle: bundle,
+                    weekday: nowComp.weekday ?? 1,
+                    nowMinutes: nowMinutes,
+                    holidayDayType: holidayDayType,
+                    lineId: lineId,
+                    stationId: stationId,
+                    todayISO: todayISO,
+                    limit: limit,
+                    into: &results
+                )
+            }
             project(
                 bundle: bundle,
                 weekday: nowComp.weekday ?? 1,  // 1 = Sunday
@@ -814,5 +829,69 @@ enum ScheduleProjector {
         if lineId == "M3_AIR" { return "airport" }
         if label.contains("late") || label.contains("overnight") { return "late_night" }
         return "regular"
+    }
+
+    // MARK: - Scheduled trip projection (non-Athens lines)
+
+    private static func projectScheduledTrips(
+        bundle: SyrmosSchedulesService.LineSchedule,
+        weekday: Int,
+        nowMinutes: Int,
+        holidayDayType: String?,
+        lineId: String,
+        stationId: String,
+        todayISO: String,
+        limit: Int,
+        into out: inout [Departure]
+    ) {
+        let dt = dayType(for: weekday, holiday: holidayDayType)
+        let matching = bundle.trips.filter { trip in
+            guard trip.dayType == dt else { return false }
+            if let vd = trip.validDates, !vd.isEmpty {
+                let dates = vd.split(separator: ",").map { String($0) }
+                if !dates.contains(todayISO) { return false }
+            }
+            return true
+        }
+        for trip in matching {
+            guard let stop = trip.stops.first(where: { $0.stationId == stationId }) else { continue }
+            guard let depMin = minutesOfDay(stop.departureTime) else { continue }
+            let delta = depMin - nowMinutes
+            if delta < -1 { continue }
+            let terminus: String
+            if trip.direction == "outbound" {
+                terminus = trip.stops.last?.stationId ?? ""
+            } else {
+                terminus = trip.stops.first?.stationId ?? ""
+            }
+            let dirLabel = scheduledTripDestination(lineId: lineId, direction: trip.direction, lastStationId: terminus)
+            out.append(Departure(
+                time: stop.departureTime,
+                lineId: displayLineId(for: lineId),
+                direction: dirLabel,
+                minutesAway: max(0, delta),
+                serviceType: "regular"
+            ))
+        }
+    }
+
+    private static func scheduledTripDestination(lineId: String, direction: String, lastStationId: String) -> String {
+        let aliases: [String: String] = [
+            "A1_AIR": "Airport", "A1_PIR": "Piraeus", "A1_TAY": "Tavros",
+            "A2_AIR": "Airport", "A2_ANO": "Ano Liosia",
+            "A3_CHA": "Chalkida", "A3_ATH": "Athens", "A3_AYL": "Avlonas",
+            "A4_KIA": "Kiato", "A4_PIR": "Piraeus", "A4_NEA": "Nea Peramos",
+            "PL_ALE": "Ano Lechonia", "PL_MIL": "Milies",
+            "PA_AND": "Agios Andreas", "PA_KAM": "Kaminia", "PA_RIO": "Rio",
+            "PA_KST": "Kastelokampos", "PU_AGV": "Agios Vasileios",
+            "KO_KAT": "Katakolo", "KO_OLY": "Olympia",
+            "GR_ATH": "Athens", "GR_THE": "Thessaloniki",
+            "GR_LAR": "Larisa", "GR_FLO": "Florina",
+        ]
+        if let label = aliases[lastStationId] { return label }
+        if let line = SyrmosData.line(for: lineId) {
+            return direction == "outbound" ? line.terminalB : line.terminalA
+        }
+        return direction == "outbound" ? "Outbound" : "Inbound"
     }
 }
