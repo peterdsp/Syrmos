@@ -392,8 +392,37 @@ enum SyrmosData {
         case "A2": return StationCoords.suburbanA2.map { makeStation($0, primaryLine: "A2") }
         case "A3": return StationCoords.suburbanA3.map { makeStation($0, primaryLine: "A3") }
         case "A4": return StationCoords.suburbanA4.map { makeStation($0, primaryLine: "A4") }
-        default: return []
+        default: return bundleStationsPerLine[lineId] ?? []
         }
+    }
+
+    private static let bundleStationsPerLine: [String: [TransitStation]] = loadBundleStationsPerLine()
+
+    private static func loadBundleStationsPerLine() -> [String: [TransitStation]] {
+        struct P: Decodable {
+            struct L: Decodable { let id: String; let stations: [S]? }
+            struct S: Decodable { let id: String; let name: String; let nameEl: String; let lat: Double; let lng: Double }
+            let lines: [L]
+        }
+        guard let url = Bundle.main.url(
+            forResource: "lines", withExtension: "json", subdirectory: "seed-schedules-v2"
+        ) ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(P.self, from: data)
+        else { return [:] }
+
+        var result: [String: [TransitStation]] = [:]
+        for line in payload.lines {
+            guard let raw = line.stations, !raw.isEmpty else { continue }
+            result[line.id] = raw.map { s in
+                TransitStation(
+                    id: s.id, name: s.name, nameEl: s.nameEl,
+                    coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng),
+                    lineIds: [line.id], isInterchange: false
+                )
+            }
+        }
+        return result
     }
 
     private static func makeStation(_ s: (id: String, name: String, nameEl: String, lat: Double, lon: Double), primaryLine: String) -> TransitStation {
