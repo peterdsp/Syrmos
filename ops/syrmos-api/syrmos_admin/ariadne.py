@@ -27,9 +27,9 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
-CEREBRAS_MODEL = "llama-3.3-70b"
-CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
+SAMBANOVA_API_KEY = os.environ.get("SAMBANOVA_API_KEY", "")
+SAMBANOVA_MODEL = "Meta-Llama-3.3-70B-Instruct"
+SAMBANOVA_URL = "https://api.sambanova.ai/v1/chat/completions"
 
 TIMEOUT_SECONDS = 15
 
@@ -96,32 +96,103 @@ def _build_request_body(
 
 
 def _get_transit_context() -> str | None:
-    """Pull current alerts and news for the LLM context."""
+    """Pull live transit data from the DB so the LLM answers from real info."""
     try:
         conn = dbmod.connect()
         dbmod.migrate(conn)
         parts = []
 
-        # Recent STASY announcements
+        # Active lines with terminals
         try:
             rows = conn.execute(
-                "SELECT title_en, severity FROM stasy_announcements"
-                " ORDER BY published_at DESC LIMIT 3"
+                "SELECT id, name_en, terminal_a, terminal_b, mode, status"
+                " FROM lines WHERE status != 'inactive' ORDER BY sort_order"
             ).fetchall()
             if rows:
-                alerts = [f"- {r[0]} (severity: {r[1]})" for r in rows]
-                parts.append("Active STASY alerts:\n" + "\n".join(alerts))
+                lines = [f"- {r[0]}: {r[1]} ({r[4]}, {r[2]} to {r[3]}, {r[5]})" for r in rows]
+                parts.append("Active lines:\n" + "\n".join(lines))
         except sqlite3.OperationalError:
+            pass
+
+        # STASY service status
+        try:
+            row = conn.execute(
+                "SELECT status, raw_message_en FROM stasy_status LIMIT 1"
+            ).fetchone()
+            if row:
+                parts.append(f"STASY service: {row[0]}. {row[1] or ''}")
+        except sqlite3.OperationalError:
+            pass
+
+        # Announcements (alerts, disruptions)
+        try:
+            rows = conn.execute(
+                "SELECT title_en, summary_en, severity, affected_lines"
+                " FROM announcements ORDER BY date DESC LIMIT 5"
+            ).fetchall()
+            if rows:
+                alerts = []
+                for r in rows:
+                    line = f"- {r[0]}"
+                    if r[2]:
+                        line += f" (severity: {r[2]})"
+                    if r[3]:
+                        line += f" [lines: {r[3]}]"
+                    alerts.append(line)
+                parts.append("Active announcements:\n" + "\n".join(alerts))
+        except sqlite3.OperationalError:
+            pass
+
+        # Fare products
+        try:
+            rows = conn.execute(
+                "SELECT title_en, full_price_eur, validity FROM fare_products"
+                " ORDER BY sort_order LIMIT 12"
+            ).fetchall()
+            if rows:
+                fares = [f"- {r[0]}: EUR {r[1]}" + (f" ({r[2]})" if r[2] else "") for r in rows]
+                parts.append("Current fares:\n" + "\n".join(fares))
+        except sqlite3.OperationalError:
+            pass
+
+        # Operating hours (schedule rules)
+        try:
+            rows = conn.execute(
+                "SELECT line_id, day_type, open_time, close_time, notes"
+                " FROM schedule_rules ORDER BY line_id"
+            ).fetchall()
+            if rows:
+                hours = [f"- {r[0]} ({r[1]}): {r[2]}-{r[3]}" + (f" ({r[4]})" if r[4] else "") for r in rows]
+                parts.append("Operating hours:\n" + "\n".join(hours))
+        except sqlite3.OperationalError:
+            pass
+
+        # Current frequency bands
+        try:
+            from datetime import datetime, timezone, timedelta
+            athens_tz = timezone(timedelta(hours=3))
+            now_hour = datetime.now(athens_tz).strftime("%H:%M")
+            rows = conn.execute(
+                "SELECT line_id, day_type, headway_minutes, label"
+                " FROM frequency_bands"
+                " WHERE time_start <= ? AND time_end > ?"
+                " ORDER BY line_id",
+                (now_hour, now_hour),
+            ).fetchall()
+            if rows:
+                freqs = [f"- {r[0]} ({r[1]}): every {r[2]} min" + (f" ({r[3]})" if r[3] else "") for r in rows]
+                parts.append(f"Current frequencies (Athens time {now_hour}):\n" + "\n".join(freqs))
+        except (sqlite3.OperationalError, Exception):
             pass
 
         # Recent rail news
         try:
             rows = conn.execute(
-                "SELECT title_en FROM rail_news"
+                "SELECT title_en, summary_en FROM rail_news"
                 " ORDER BY published_at DESC LIMIT 3"
             ).fetchall()
             if rows:
-                news = [f"- {r[0]}" for r in rows]
+                news = [f"- {r[0]}" + (f": {r[1][:120]}" if r[1] else "") for r in rows]
                 parts.append("Recent rail news:\n" + "\n".join(news))
         except sqlite3.OperationalError:
             pass
@@ -199,11 +270,11 @@ def _call_groq(
     return None
 
 
-def _call_cerebras(
+def _call_sambanova(
     messages: list[dict[str, str]], transit_ctx: str | None,
 ) -> str | None:
-    """Try Cerebras (Llama 3.3 70B). Returns reply text or None on failure."""
-    if not CEREBRAS_API_KEY:
+    """Try SambaNova (Llama 3.3 70B). Returns reply text or None on failure."""
+    if not SAMBANOVA_API_KEY:
         return None
     system_text = SYSTEM_PROMPT
     if transit_ctx:
@@ -213,17 +284,17 @@ def _call_cerebras(
         role = "user" if msg.get("role") == "user" else "assistant"
         oai_messages.append({"role": role, "content": msg["text"]})
     body = {
-        "model": CEREBRAS_MODEL,
+        "model": SAMBANOVA_MODEL,
         "messages": oai_messages,
         "temperature": 0.7,
         "max_tokens": 300,
     }
     req = Request(
-        CEREBRAS_URL,
+        SAMBANOVA_URL,
         data=json.dumps(body).encode(),
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+            "Authorization": f"Bearer {SAMBANOVA_API_KEY}",
             "User-Agent": "Syrmos-Ariadne/1.0",
         },
         method="POST",
@@ -239,19 +310,19 @@ def _call_cerebras(
     return None
 
 
-def chat(messages: list[dict[str, str]]) -> str:
+def chat(messages: list[dict[str, str]]) -> dict:
     """Try Gemini, fall back to Groq, then Cerebras, then offline."""
     transit_ctx = _get_transit_context()
     reply = _call_gemini(messages, transit_ctx)
     if reply:
-        return reply
+        return {"reply": reply, "provider": "gemini"}
     reply = _call_groq(messages, transit_ctx)
     if reply:
-        return reply
-    reply = _call_cerebras(messages, transit_ctx)
+        return {"reply": reply, "provider": "groq"}
+    reply = _call_sambanova(messages, transit_ctx)
     if reply:
-        return reply
-    return _offline_fallback(messages)
+        return {"reply": reply, "provider": "sambanova"}
+    return {"reply": _offline_fallback(messages), "provider": "offline"}
 
 
 def _offline_fallback(messages: list[dict[str, str]]) -> str:
