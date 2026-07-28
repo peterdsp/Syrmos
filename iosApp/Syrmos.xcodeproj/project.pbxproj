@@ -106,6 +106,7 @@
 		DA7A0150F00D0150F00D0150 /* iosApp/Features/Assistant/AriadneBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0151F00D0151F00D0151 /* iosApp/Features/Assistant/AriadneBrain.swift */; };
 		DA7A0211F00D0211F00D0211 /* iosApp/Features/Assistant/AriadneDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */; };
 		DA7A0A16F00D0A16F00D0A16 /* iosApp/Features/Assistant/AriadneGuided.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */; };
+		B1A2C3D4E5F60718293A1B01 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A1B00 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift */; };
 		DB4E28495C2C4563A4A26795 /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */; };
 		DF3C6FE39FA544239D09EE50 /* iosApp/Core/Persistence/SyrmosFaresStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E4CA5A03BC488B882F9BB0 /* iosApp/Core/Persistence/SyrmosFaresStore.swift */; };
 		E1A2B3C4D5E60718293A4B5C /* iosApp/Core/Networking/SyrmosDeparturesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B5D /* iosApp/Core/Networking/SyrmosDeparturesService.swift */; };
@@ -285,6 +286,7 @@
 		DA7A0151F00D0151F00D0151 /* iosApp/Features/Assistant/AriadneBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneBrain.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneDomain.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneGuided.swift; sourceTree = SOURCE_ROOT; };
+		B1A2C3D4E5F60718293A1B00 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/SiriIntents/SyrmosAppIntents.swift; sourceTree = SOURCE_ROOT; };
 		DBADA13AF3954288A721329B /* iosApp/Features/Timetables/TimetablesIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesIcons.swift; sourceTree = SOURCE_ROOT; };
 		DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WidgetBridge.swift; sourceTree = SOURCE_ROOT; };
 		DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Fares/FaresView.swift; sourceTree = SOURCE_ROOT; };
@@ -614,6 +616,7 @@
 				DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */,
 				DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */,
 				DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */,
+				B1A2C3D4E5F60718293A1B00 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift */,
 				DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */,
 				DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */,
 				DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */,
@@ -889,6 +892,7 @@
 				DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */,
 				DA7A0211F00D0211F00D0211 /* iosApp/Features/Assistant/AriadneDomain.swift in Sources */,
 				DA7A0A16F00D0A16F00D0A16 /* iosApp/Features/Assistant/AriadneGuided.swift in Sources */,
+				B1A2C3D4E5F60718293A1B01 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift in Sources */,
 				DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */,
 				DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */,
 				DA7A0130F00D0130F00D0130 /* iosApp/Features/Assistant/JourneyPlanner.swift in Sources */,
@@ -1038,7 +1042,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SyrmosWatch/Complications-Info.plist";
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp.complications;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1173,7 +1177,7 @@
 					"@executable_path/Frameworks",
 					"$(inherited) @executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
@@ -1202,7 +1206,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SyrmosWatch/Info.plist;
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1223,7 +1227,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SyrmosWatch/Complications-Info.plist";
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp.complications;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1258,7 +1262,7 @@
 					"@executable_path/Frameworks",
 					"$(inherited) @executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
@@ -1351,7 +1355,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1380,7 +1384,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1404,7 +1408,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SyrmosWatch/Info.plist;
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

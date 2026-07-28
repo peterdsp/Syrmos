@@ -5,4 +5,6 @@
     <string name="widget_live_departures_description">The next five departures from your station.</string>
     <string name="widget_line_status_description">Service status for every metro, tram, and suburban line.</string>
     <string name="widget_near_me_description">Your station and its next departures, with a nearby framing.</string>
+    <string name="shortcut_next_departure">Next Departure</string>
+    <string name="shortcut_service_alerts">Service Alerts</string>
 </resources>

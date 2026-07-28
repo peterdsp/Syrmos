@@ -29,3 +29,5 @@ actual fun readLastWhatsNewVersion(): String? =
 actual fun markWhatsNewSeen(version: String) {
     NSUserDefaults.standardUserDefaults.setObject(version, WHATS_NEW_KEY)
 }
+
+actual fun consumePendingAssistantQuery(): String? = null
