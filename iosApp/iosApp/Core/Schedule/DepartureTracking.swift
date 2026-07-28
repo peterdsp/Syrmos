@@ -34,6 +34,8 @@ struct TrackedDeparture: Equatable {
     /// caller couldn't resolve the line's stations; the tracking card
     /// falls back to a plain progress bar.
     let routeStations: [TrackedRouteStop]
+    let directionKey: String
+    var currentStationName: String?
 
     init(
         lineId: String,
@@ -42,7 +44,9 @@ struct TrackedDeparture: Equatable {
         destination: String,
         scheduledTime: String,
         targetEpoch: TimeInterval,
-        routeStations: [TrackedRouteStop] = []
+        routeStations: [TrackedRouteStop] = [],
+        directionKey: String = "outbound",
+        currentStationName: String? = nil
     ) {
         self.lineId = lineId
         self.stationId = stationId
@@ -51,6 +55,8 @@ struct TrackedDeparture: Equatable {
         self.scheduledTime = scheduledTime
         self.targetEpoch = targetEpoch
         self.routeStations = routeStations
+        self.directionKey = directionKey
+        self.currentStationName = currentStationName
     }
 
     func minutesRemaining(_ now: TimeInterval) -> Int {
@@ -106,10 +112,8 @@ final class DepartureTracking: ObservableObject {
     /// Last minutes value pushed to the Watch, so we push on minute changes
     /// rather than every one-second tick.
     private var lastWatchMinute: Int = -1
-    // Wall clock at which tracking of `active` began. Anchors the progress
-    // value we push into the Live Activity so the widget renders a
-    // predictable 0 -> 1 bar as the countdown ticks down.
     private var startedEpoch: TimeInterval = 0
+    private var livePositionTimer: Timer?
 
     private init() {}
 
@@ -119,12 +123,85 @@ final class DepartureTracking: ObservableObject {
         startActivity(departure)
         lastWatchMinute = -1
         pushToWatch(departure)
+        startLivePositionPolling()
     }
 
     func stop() {
         active = nil
         startedEpoch = 0
         endActivity()
+        stopLivePositionPolling()
+    }
+
+    private func startLivePositionPolling() {
+        stopLivePositionPolling()
+        pollLivePosition()
+        livePositionTimer = Timer.scheduledTimer(
+            withTimeInterval: 30, repeats: true
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.pollLivePosition()
+            }
+        }
+    }
+
+    private func stopLivePositionPolling() {
+        livePositionTimer?.invalidate()
+        livePositionTimer = nil
+    }
+
+    private static let suburbanLineIds: Set<String> = ["A1", "A2", "A3", "A4"]
+
+    private func pollLivePosition() {
+        guard let d = active else { return }
+        Task {
+            let stationName: String?
+            if Self.suburbanLineIds.contains(d.lineId) {
+                stationName = await resolveSuburbanStation(d)
+            } else {
+                stationName = await resolveProjectorStation(d)
+            }
+            guard let name = stationName, var updated = active else { return }
+            updated.currentStationName = name
+            active = updated
+        }
+    }
+
+    private func resolveSuburbanStation(_ d: TrackedDeparture) async -> String? {
+        let service = LiveTrainService.shared
+        await service.refresh()
+        let trains = service.trains.filter { $0.lineId == d.lineId }
+        let match = trains.first {
+            $0.destination.localizedCaseInsensitiveContains(d.destination)
+        } ?? trains.first
+        return match?.nextStation
+    }
+
+    private func resolveProjectorStation(_ d: TrackedDeparture) async -> String? {
+        let service = LivePositionsService.shared
+        await service.refresh()
+        let dirKey = d.directionKey == "airport" ? "outbound" : d.directionKey
+        let trains = service.trains.filter {
+            $0.lineId == d.lineId && $0.directionKey == dirKey
+        }
+        guard let stops = service.offsets[d.lineId]?[dirKey], !trains.isEmpty else { return nil }
+        guard let targetOffset = stops.first(where: { $0.stationId == d.stationId }) else { return nil }
+        let now = Date().timeIntervalSince1970
+        let bestTrain = trains
+            .filter { train in
+                let elapsed = (now - train.originDepartureEpoch) / 60.0
+                return elapsed < targetOffset.minutesFromOrigin + 2
+            }
+            .min { a, b in
+                let elA = (now - a.originDepartureEpoch) / 60.0
+                let elB = (now - b.originDepartureEpoch) / 60.0
+                return (targetOffset.minutesFromOrigin - elA) < (targetOffset.minutesFromOrigin - elB)
+            }
+        guard let train = bestTrain else { return nil }
+        let elapsed = (now - train.originDepartureEpoch) / 60.0
+        let currentStop = stops.last { $0.minutesFromOrigin <= elapsed }
+        guard let stop = currentStop else { return nil }
+        return SyrmosData.bundleStations.first { $0.id == stop.stationId }?.name ?? stop.stationId
     }
 
     private func progress(for d: TrackedDeparture, now: TimeInterval) -> Double {
@@ -214,7 +291,8 @@ final class DepartureTracking: ObservableObject {
                 routeStations: d.routeStations.map { $0.stationName },
                 targetEpoch: d.targetEpoch,
                 upcoming: upcomingTrains(for: d),
-                lastTrain: lastTrainTonight(for: d)
+                lastTrain: lastTrainTonight(for: d),
+                currentStation: d.currentStationName
             )
             do {
                 let activity = try Activity.request(
@@ -242,7 +320,8 @@ final class DepartureTracking: ObservableObject {
                 routeStations: d.routeStations.map { $0.stationName },
                 targetEpoch: d.targetEpoch,
                 upcoming: upcomingTrains(for: d),
-                lastTrain: lastTrainTonight(for: d)
+                lastTrain: lastTrainTonight(for: d),
+                currentStation: d.currentStationName
             )
             Task {
                 for activity in Activity<SyrmosTrackingAttributes>.activities where activity.id == id {

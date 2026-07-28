@@ -45,6 +45,7 @@ struct SyrmosTrackingAttributes: ActivityAttributes {
         // Tonight's last train on the tracked line ("01:23"), for the Lock
         // Screen footer. Optional so older shapes decode.
         var lastTrain: String? = nil
+        var currentStation: String? = nil
     }
 
     var lineId: String
