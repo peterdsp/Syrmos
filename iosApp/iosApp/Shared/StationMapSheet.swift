@@ -17,6 +17,10 @@ struct StationMapSheet: View {
     let station: TransitStation
     @ObservedObject private var loc = LocalizationManager.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var departures: [Departure] = []
+    @State private var hasLoaded = false
+
+    private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,9 +29,6 @@ struct StationMapSheet: View {
                     Text(loc.language == .greek ? station.nameEl : station.name)
                         .font(.title3)
                         .fontWeight(.semibold)
-                    // Subtitle only meaningful in Greek mode (the Greek title
-                    // benefits from a Latin transliteration underneath). Non-
-                    // Greek users get a single Latin name, no Greek subtitle.
                     if loc.language == .greek {
                         Text(station.name)
                             .font(.caption)
@@ -49,7 +50,7 @@ struct StationMapSheet: View {
 
             StationFocusedMap(station: station, routes: routePolylines)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 240)
+                .frame(minHeight: 200)
 
             VStack(spacing: 12) {
                 HStack(spacing: 6) {
@@ -78,13 +79,53 @@ struct StationMapSheet: View {
                     Spacer()
                 }
 
-                // Custom tappable view (not Button) because iOS 26 keeps
-                // re-applying its bordered-prominent treatment to any
-                // SwiftUI Button inside a sheet even when we set
-                // .buttonStyle(.plain) — the screenshot showed a solid
-                // accent-fill rectangle with white text instead of the
-                // glass capsule we configured. An onTapGesture HStack
-                // sidesteps every default Button style.
+                if !departures.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(loc.language == .greek ? "ΕΠΟΜΕΝΑ ΔΡΟΜΟΛΟΓΙΑ" : loc.language == .albanian ? "NISJET E ARDHSHME" : "NEXT DEPARTURES")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        ForEach(departures.prefix(4)) { dep in
+                            HStack {
+                                Circle()
+                                    .fill(SyrmosData.lineColor(for: dep.lineId))
+                                    .frame(width: 8, height: 8)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(SyrmosData.line(for: dep.lineId)?.name ?? dep.lineId)
+                                        .font(.caption.weight(.medium))
+                                    Text(dep.direction)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 1) {
+                                    Text(dep.minutesAwayDisplay(language: loc.language))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(dep.minutesAway <= 5 ? Color.arrivalSoon : .primary)
+                                    Text(dep.time)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(.ultraThinMaterial)
+                            )
+                        }
+                    }
+                } else if !hasLoaded {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text(loc.language == .greek ? "Φόρτωση..." : loc.language == .albanian ? "Duke ngarkuar..." : "Loading...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
                         .font(.headline)
@@ -111,9 +152,6 @@ struct StationMapSheet: View {
             .padding(.bottom, 12)
         }
         .background(
-            // Liquid-glass sheet body. The material picks up colour from
-            // whatever's behind the sheet (map tiles) and keeps the sheet
-            // feeling translucent rather than a solid card pasted on top.
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
@@ -121,6 +159,30 @@ struct StationMapSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
+        .onAppear { loadDepartures() }
+        .onReceive(refreshTimer) { _ in loadDepartures() }
+    }
+
+    private func loadDepartures() {
+        let isNonAthens = station.lineIds.allSatisfy { lineId in
+            let region = SyrmosData.line(for: lineId)?.region ?? .athens
+            return region != .athens
+        }
+        if isNonAthens {
+            Task {
+                if let result = await SyrmosDeparturesService.nextDepartures(
+                    for: station.id, lineIds: station.lineIds, limit: 8
+                ) {
+                    departures = result
+                }
+                hasLoaded = true
+            }
+        } else {
+            departures = ScheduleProjector.nextDepartures(
+                for: station.id, lineIds: station.lineIds, limit: 8
+            )
+            hasLoaded = true
+        }
     }
 
     private func shortLineLabel(for lineId: String) -> String {
@@ -134,7 +196,7 @@ struct StationMapSheet: View {
         case "A2": return "A2"
         case "A3": return "A3"
         case "A4": return "A4"
-        default:   return lineId
+        default: return SyrmosData.line(for: lineId)?.name ?? lineId
         }
     }
 
