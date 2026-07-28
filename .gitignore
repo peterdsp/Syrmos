@@ -30,6 +30,8 @@ xcuserdata/
 *.p8
 *.p12
 *.key
+admin.env
+*.env.local
 
 # Logs and diagnostics
 *.hprof

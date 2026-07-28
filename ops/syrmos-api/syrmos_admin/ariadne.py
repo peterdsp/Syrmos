@@ -27,6 +27,10 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+CEREBRAS_MODEL = "llama-3.3-70b"
+CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
+
 TIMEOUT_SECONDS = 15
 
 SYSTEM_PROMPT = """\
@@ -195,13 +199,56 @@ def _call_groq(
     return None
 
 
+def _call_cerebras(
+    messages: list[dict[str, str]], transit_ctx: str | None,
+) -> str | None:
+    """Try Cerebras (Llama 3.3 70B). Returns reply text or None on failure."""
+    if not CEREBRAS_API_KEY:
+        return None
+    system_text = SYSTEM_PROMPT
+    if transit_ctx:
+        system_text += f"\n\nCurrent transit context:\n{transit_ctx}"
+    oai_messages = [{"role": "system", "content": system_text}]
+    for msg in messages:
+        role = "user" if msg.get("role") == "user" else "assistant"
+        oai_messages.append({"role": role, "content": msg["text"]})
+    body = {
+        "model": CEREBRAS_MODEL,
+        "messages": oai_messages,
+        "temperature": 0.7,
+        "max_tokens": 300,
+    }
+    req = Request(
+        CEREBRAS_URL,
+        data=json.dumps(body).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+            "User-Agent": "Syrmos-Ariadne/1.0",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+            result = json.loads(resp.read())
+        choices = result.get("choices", [])
+        if choices:
+            return choices[0].get("message", {}).get("content", "").strip()
+    except (URLError, TimeoutError, json.JSONDecodeError, KeyError):
+        pass
+    return None
+
+
 def chat(messages: list[dict[str, str]]) -> str:
-    """Try Gemini, fall back to Groq, then offline fallback."""
+    """Try Gemini, fall back to Groq, then Cerebras, then offline."""
     transit_ctx = _get_transit_context()
     reply = _call_gemini(messages, transit_ctx)
     if reply:
         return reply
     reply = _call_groq(messages, transit_ctx)
+    if reply:
+        return reply
+    reply = _call_cerebras(messages, transit_ctx)
     if reply:
         return reply
     return _offline_fallback(messages)
