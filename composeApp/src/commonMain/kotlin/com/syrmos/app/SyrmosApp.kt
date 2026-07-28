@@ -37,10 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsTransit
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
@@ -73,11 +73,11 @@ import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import com.syrmos.app.tab.DeparturesTab
+import com.syrmos.app.tab.ExploreTab
 import com.syrmos.app.tab.HomeTab
-import com.syrmos.app.tab.LinesTab
 import com.syrmos.app.tab.MapTab
-import com.syrmos.app.tab.SettingsTab
-import com.syrmos.app.tab.TimetablesTab
+import com.syrmos.app.tab.MoreTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.data.sync.FaresRepository
@@ -165,10 +165,10 @@ fun SyrmosApp() {
                         val lang by LocalizationManager.language.collectAsState()
                         val tabNavigator = LocalTabNavigator.current
                         val currentTab = tabNavigator.current
-                        // Hide the launcher on Settings (would sit on the
+                        // Hide the launcher on More (would sit on the
                         // scrolling controls) and on Map (the Locate +
                         // Vehicles buttons already own bottom-right).
-                        val showLauncher = currentTab != SettingsTab && currentTab != MapTab
+                        val showLauncher = currentTab != MoreTab && currentTab != MapTab
 
                         Box(modifier = Modifier.fillMaxSize()) {
                             CurrentTab()
@@ -180,10 +180,10 @@ fun SyrmosApp() {
                             )
 
                             // App-level Ariadne launcher pill: floats above
-                            // the tab bar on Home / Lines / Map / Airport.
-                            // Hidden on Settings so the settings scroll
-                            // isn't obstructed by a chat pill. Slides in
-                            // with a spring so tab changes feel physical.
+                            // the tab bar on Home / Explore / Map / Departures.
+                            // Hidden on More so the settings scroll isn't
+                            // obstructed by a chat pill. Slides in with a
+                            // spring so tab changes feel physical.
                             AnimatedVisibility(
                                 visible = showLauncher && !showAriadne,
                                 enter = fadeIn() + slideInVertically(
@@ -279,10 +279,10 @@ private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LiquidGlassTabItem(HomeTab, Icons.Filled.Home)
-            LiquidGlassTabItem(LinesTab, Icons.Filled.DirectionsTransit)
+            LiquidGlassTabItem(ExploreTab, Icons.Filled.Search)
             LiquidGlassTabItem(MapTab, Icons.Filled.Map)
-            LiquidGlassTabItem(TimetablesTab, Icons.Filled.FlightTakeoff)
-            LiquidGlassTabItem(SettingsTab, Icons.Filled.Settings)
+            LiquidGlassTabItem(DeparturesTab, Icons.Filled.AccessTime)
+            LiquidGlassTabItem(MoreTab, Icons.Filled.Settings)
         }
     }
 }
@@ -315,7 +315,7 @@ private fun LiquidGlassTabItem(
 /**
  * App-level Ariadne launcher. Owl glyph (Athena's owl -> wisdom /
  * Athens) matches the branding on the web. Sits above the tab bar
- * across Home / Lines / Map / Airport; hidden on Settings.
+ * across Home / Explore / Map / Departures; hidden on More.
  */
 @Composable
 private fun AriadneLauncherPill(label: String, onClick: () -> Unit) {

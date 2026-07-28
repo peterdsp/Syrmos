@@ -349,7 +349,7 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
     }
 
     com.syrmos.core.designsystem.component.CompactTabHeader(
-        title = L.SETTINGS.text(lang),
+        title = L.MORE_TAB.text(lang),
         modifier = Modifier
             .align(Alignment.TopCenter)
             .zIndex(1f),

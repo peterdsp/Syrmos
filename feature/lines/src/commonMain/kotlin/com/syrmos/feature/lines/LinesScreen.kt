@@ -160,7 +160,7 @@ fun LinesScreen(
         }
 
         com.syrmos.core.designsystem.component.CompactTabHeader(
-            title = L.LINES.text(lang),
+            title = L.EXPLORE.text(lang),
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .zIndex(1f),
