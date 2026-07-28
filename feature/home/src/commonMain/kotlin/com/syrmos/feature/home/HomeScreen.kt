@@ -68,9 +68,11 @@ import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.SyrmosLivePositionsService
+import kotlinx.coroutines.flow.firstOrNull
 import org.koin.compose.koinInject
 
 @Composable
@@ -93,41 +95,52 @@ fun HomeScreen(
     }
 
     val livePositionsService: SyrmosLivePositionsService = koinInject()
+    val suburbanTracker: RailwayGovLiveTrackerService = koinInject()
+    val gpsLineIds = setOf("A1", "A2", "A3", "A4")
     LaunchedEffect(tracked?.lineId, tracked?.targetEpochSeconds) {
         val t = tracked ?: return@LaunchedEffect
         val offsets = livePositionsService.fetchStationOffsets() ?: return@LaunchedEffect
         val offsetMap = offsets.lines.associate { (it.lineId to it.direction) to it.stops }
         while (true) {
             val current = DepartureTracking.active.value ?: break
-            val trains = livePositionsService.fetchActiveTrains(listOf(current.lineId))
-            if (trains != null) {
-                val dirKey = if (current.directionKey == "airport") "outbound" else current.directionKey
-                val lineTrains = trains.trains.filter {
-                    it.lineId == current.lineId && it.directionKey == dirKey
-                }
-                val stops = offsetMap[current.lineId to dirKey]
-                if (stops != null && lineTrains.isNotEmpty()) {
-                    val stationMinutes = stops.firstOrNull {
-                        it.stationId == current.stationId
-                    }?.minutesFromOrigin ?: -1
-                    if (stationMinutes >= 0) {
-                        val bestTrain = lineTrains
-                            .filter { it.elapsedMinutes < stationMinutes + 2 }
-                            .minByOrNull { stationMinutes - it.elapsedMinutes }
-                        if (bestTrain != null) {
-                            val elapsed = bestTrain.elapsedMinutes
-                            val currentStop = stops.lastOrNull {
-                                it.minutesFromOrigin.toDouble() <= elapsed
-                            }
-                            if (currentStop != null) {
-                                val updated = current.copy(
-                                    currentStationName = currentStop.stationEn,
-                                )
-                                DepartureTracking.track(updated)
+            var resolved: String? = null
+            if (current.lineId in gpsLineIds) {
+                val gpsList = suburbanTracker.observeSuburbanTrains(current.lineId).firstOrNull()
+                val match = gpsList?.firstOrNull {
+                    it.destination?.contains(current.destination, ignoreCase = true) == true
+                } ?: gpsList?.firstOrNull()
+                resolved = match?.nextStation
+            }
+            if (resolved == null) {
+                val trains = livePositionsService.fetchActiveTrains(listOf(current.lineId))
+                if (trains != null) {
+                    val dirKey = if (current.directionKey == "airport") "outbound" else current.directionKey
+                    val lineTrains = trains.trains.filter {
+                        it.lineId == current.lineId && it.directionKey == dirKey
+                    }
+                    val stops = offsetMap[current.lineId to dirKey]
+                    if (stops != null && lineTrains.isNotEmpty()) {
+                        val stationMinutes = stops.firstOrNull {
+                            it.stationId == current.stationId
+                        }?.minutesFromOrigin ?: -1
+                        if (stationMinutes >= 0) {
+                            val bestTrain = lineTrains
+                                .filter { it.elapsedMinutes < stationMinutes + 2 }
+                                .minByOrNull { stationMinutes - it.elapsedMinutes }
+                            if (bestTrain != null) {
+                                val elapsed = bestTrain.elapsedMinutes
+                                val currentStop = stops.lastOrNull {
+                                    it.minutesFromOrigin.toDouble() <= elapsed
+                                }
+                                resolved = currentStop?.stationEn
                             }
                         }
                     }
                 }
+            }
+            if (resolved != null) {
+                val updated = current.copy(currentStationName = resolved)
+                DepartureTracking.track(updated)
             }
             delay(30_000)
         }
