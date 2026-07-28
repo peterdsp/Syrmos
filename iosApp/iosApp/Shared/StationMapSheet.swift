@@ -174,6 +174,10 @@ struct StationMapSheet: View {
                     for: station.id, lineIds: station.lineIds, limit: 8
                 ) {
                     departures = result
+                } else {
+                    departures = ScheduleProjector.nextDepartures(
+                        for: station.id, lineIds: station.lineIds, limit: 8
+                    )
                 }
                 hasLoaded = true
             }

@@ -232,7 +232,12 @@ struct StationDetailView: View {
                     departures = apiResult
                     apiFailed = false
                 } else {
-                    apiFailed = true
+                    departures = ScheduleProjector.nextDepartures(
+                        for: station.id,
+                        lineIds: station.lineIds,
+                        limit: 20
+                    )
+                    apiFailed = departures.isEmpty
                 }
                 hasLoadedOnce = true
             }
