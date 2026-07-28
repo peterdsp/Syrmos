@@ -631,12 +631,18 @@ TRIPS += [
     trip("KO1", "inbound", "1383", MON_SAT, KO_O2PYR, ["10:15", "10:20", "10:22", "10:27", "10:30", "10:35", "10:44"]),
 ]
 
-# ---- PL1 Pelion tourist rail, weekends. Hellenic Train publishes only the
-# origin departure (intermediate + arrival "not separately published"), so we
-# seed exactly that single call and invent nothing. ----
+# ---- PL1 Pelion tourist rail. Hellenic Train publishes only the origin
+# departure (intermediate + arrival "not separately published"), so we seed
+# exactly that single call and invent nothing.
+# Base service: Sat+Sun year-round.
+# August 2026 extras: every Friday (7, 14, 21, 28 Aug) plus Mon 17 Aug.
+# We add FRI as a standing day type so the app shows Friday departures.
+# The Mon 17 Aug one-off cannot be expressed with day masks alone. ----
 TRIPS += [
     trip("PL1", "outbound", "3800", SAT_SUN, ["PL_ALE"], ["10:00"]),
     trip("PL1", "inbound", "3801", SAT_SUN, ["PL_MIL"], ["15:00"]),
+    trip("PL1", "outbound", "3800F", FRI, ["PL_ALE"], ["10:00"]),
+    trip("PL1", "inbound", "3801F", FRI, ["PL_MIL"], ["15:00"]),
 ]
 # DK1 Diakopto - Kalavryta rack railway: SUSPENDED since 13 Mar 2026. Seeded as a
 # greyed line (status under_construction) with NO trips, so it shows on the map
