@@ -40,6 +40,18 @@ final class AriadneModel: ObservableObject {
     init() {
         messages = [greeting()]
         location.requestIfNeeded()
+        Task { await loadAlertNote() }
+    }
+
+    private func loadAlertNote() async {
+        await alertsService.fetchAnnouncements()
+        let alerts = alertsService.announcements.filter { $0.category == .serviceAlert }
+        guard !alerts.isEmpty else { return }
+        let titles = alerts.prefix(3).map { $0.displayTitle(language: loc.language) }.joined(separator: ". ")
+        messages.append(bot(t(
+            "Heads up: \(titles)",
+            "Προσοχή: \(titles)",
+            "Kujdes: \(titles)")))
     }
 
     func ask(_ input: String) {
@@ -48,11 +60,15 @@ final class AriadneModel: ObservableObject {
         messages.append(AriadneMessage(fromUser: true, text: text))
         thinking = true
         Task {
-            // Clever mode: when Apple Foundation Models is available, the
-            // on-device model classifies the message into a grounded intent
-            // (station / line resolved to ids by Swift, never invented). When it
-            // is unavailable or can't ground the result, fall back to the rule
-            // parser, first letting the model at least normalize fuzzy input.
+            // Online mode: try cloud Ariadne first. The Pi backend has live
+            // transit data (lines, fares, alerts, frequencies) and chains
+            // three LLMs, so it gives richer answers than local parsing.
+            if let cloudReply = await askLLM(text) {
+                messages.append(cloudReply)
+                thinking = false
+                return
+            }
+            // Offline fallback: local Ariadne (rule-based parser + resolver).
             var raw: AssistantIntent
             if let guided = await AriadneGuided.classify(text, vocabulary: parser.vocabulary) {
                 raw = guided
@@ -61,8 +77,6 @@ final class AriadneModel: ObservableObject {
                 raw = parser.parse(cleaned)
             }
             raw = applyDayFollowUp(text, raw)
-            // Fill a missing origin from the known current station before asking,
-            // so "I'm at Syntagma" then "go airport faster" needs no follow-up.
             let intent = fillFromContext(mergePendingIfApplicable(raw))
             if case let .needsClarification(base, missing) = intent {
                 pendingIntent = base
@@ -72,13 +86,7 @@ final class AriadneModel: ObservableObject {
                 pendingMissing = nil
             }
             updateSession(intent)
-            let reply: AriadneMessage
-            if case .outOfScope = intent {
-                let llmReply = await askLLM(text)
-                reply = llmReply ?? recover(text)
-            } else {
-                reply = await resolve(intent)
-            }
+            let reply = await resolve(intent)
             messages.append(reply)
             thinking = false
         }
