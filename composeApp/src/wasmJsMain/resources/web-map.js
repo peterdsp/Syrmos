@@ -2633,6 +2633,10 @@
                 // dayType means the trip runs every day.
                 const td = (trip.dayType || "").toLowerCase();
                 if (td && td !== today) continue;
+                if (trip.validDates) {
+                    const isoToday = now.toISOString().slice(0, 10);
+                    if (!trip.validDates.split(",").includes(isoToday)) continue;
+                }
                 const stops = trip.stops;
                 if (!Array.isArray(stops) || stops.length < 2) continue;
                 const times = stops.map((s) => minutesOfDay(s.departureTime));

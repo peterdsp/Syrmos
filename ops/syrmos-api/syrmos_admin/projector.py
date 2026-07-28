@@ -112,6 +112,7 @@ def project_next_departures(
                 now_minutes=now_minutes,
                 limit=limit,
                 out=out,
+                today_iso=now.date().isoformat(),
             )
             continue
         bundle = bundles.get(lid)
@@ -596,19 +597,36 @@ def _project_scheduled_trip_departures(
     now_minutes: int,
     limit: int,
     out: list[Departure],
+    today_iso: str = "",
 ) -> None:
     """Departures path for suburban lines. Reads scheduled_trip_stops
-    directly so the output mirrors Hellenic Train's published HH:MM."""
-    rows = conn.execute(
-        "SELECT s.train_no, s.direction, s.departure_time"
-        " FROM scheduled_trip_stops s"
-        " WHERE s.line_id=? AND s.day_type=? AND s.station_id=?"
-        " ORDER BY s.departure_time",
-        (line_id, day_type, station_id),
-    ).fetchall()
+    directly so the output mirrors Hellenic Train's published HH:MM.
+    Trips with valid_dates are only shown when today_iso matches."""
+    try:
+        rows = conn.execute(
+            "SELECT s.train_no, s.direction, s.departure_time, t.valid_dates"
+            " FROM scheduled_trip_stops s"
+            " JOIN scheduled_trips t"
+            "   ON t.train_no=s.train_no AND t.line_id=s.line_id"
+            "      AND t.day_type=s.day_type AND t.direction=s.direction"
+            " WHERE s.line_id=? AND s.day_type=? AND s.station_id=?"
+            " ORDER BY s.departure_time",
+            (line_id, day_type, station_id),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = conn.execute(
+            "SELECT s.train_no, s.direction, s.departure_time"
+            " FROM scheduled_trip_stops s"
+            " WHERE s.line_id=? AND s.day_type=? AND s.station_id=?"
+            " ORDER BY s.departure_time",
+            (line_id, day_type, station_id),
+        ).fetchall()
     candidates: list[Departure] = []
     for r in rows:
         if direction_filter and r["direction"] != direction_filter:
+            continue
+        vd = r["valid_dates"] if "valid_dates" in r.keys() else None
+        if vd and today_iso not in vd.split(","):
             continue
         raw = _hhmm_to_minutes(r["departure_time"])
         if raw is None:
@@ -671,6 +689,7 @@ def _project_scheduled_trip_active(
     now_minutes: float,
     out: list[dict],
     seen: set,
+    today_iso: str = "",
 ) -> None:
     """active_trains path for suburban lines."""
     rows = conn.execute(
@@ -682,7 +701,20 @@ def _project_scheduled_trip_active(
         " GROUP BY train_no, direction",
         (line_id, day_type),
     ).fetchall()
+    vd_cache: dict[tuple[str, str], str | None] = {}
+    try:
+        for vr in conn.execute(
+            "SELECT train_no, direction, valid_dates FROM scheduled_trips"
+            " WHERE line_id=? AND day_type=?",
+            (line_id, day_type),
+        ).fetchall():
+            vd_cache[(vr["train_no"], vr["direction"])] = vr["valid_dates"]
+    except sqlite3.OperationalError:
+        pass
     for r in rows:
+        vd = vd_cache.get((r["train_no"], r["direction"]))
+        if vd and today_iso not in vd.split(","):
+            continue
         # The seed encodes stop_sequence in canonical (outbound) station
         # order, so for inbound trips the first stop_sequence isn't the
         # actual trip origin. Sort the stops by departure_time instead, and
@@ -794,6 +826,7 @@ def active_trains(
                 now_minutes=now_minutes,
                 out=out,
                 seen=seen,
+                today_iso=now.date().isoformat(),
             )
             continue
         bundle = _load_bundle(conn, line_id)

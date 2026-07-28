@@ -766,7 +766,7 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
     try:
         trips_rows = conn.execute(
             "SELECT t.train_no, t.line_id, t.direction, t.day_type, t.service_label,"
-            "       s.station_id, s.stop_sequence, s.departure_time"
+            "       t.valid_dates, s.station_id, s.stop_sequence, s.departure_time"
             " FROM scheduled_trips t"
             " JOIN scheduled_trip_stops s"
             "   ON s.train_no=t.train_no AND s.line_id=t.line_id"
@@ -790,6 +790,9 @@ def _line_schedule(conn: sqlite3.Connection, line_id: str) -> dict:
                 "serviceLabel": r["service_label"] or "",
                 "stops": [],
             }
+            vd = r["valid_dates"] if "valid_dates" in r.keys() else None
+            if vd:
+                bucket["validDates"] = vd
             trips_by_key[key] = bucket
         bucket["stops"].append({
             "stationId": r["station_id"],
