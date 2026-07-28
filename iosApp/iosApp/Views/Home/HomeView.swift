@@ -628,9 +628,7 @@ struct HomeView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(railNewsService.news.prefix(10)) { item in
-                            NewsCard(item: item, language: loc.language, onTap: { url in
-                                webViewURL = url
-                            })
+                            NewsCard(item: item, language: loc.language)
                         }
                     }
                 }
@@ -908,38 +906,31 @@ struct AlertCard: View {
 struct NewsCard: View {
     let item: RailNewsItem
     let language: AppLanguage
-    let onTap: (URL) -> Void
 
     var body: some View {
-        Button {
-            if let url = item.url { onTap(url) }
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(item.displayTitle(language: language))
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(.primary)
-                    .lineLimit(3)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(item.displayTitle(language: language))
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .multilineTextAlignment(.leading)
+                .foregroundStyle(.primary)
+                .lineLimit(3)
 
-                if !item.formattedDate.isEmpty {
-                    Text(item.formattedDate)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-
-                if !item.displaySummary(language: language).isEmpty {
-                    Text(item.displaySummary(language: language))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
+            if !item.formattedDate.isEmpty {
+                Text(item.formattedDate)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
-            .frame(width: 220, alignment: .leading)
-            .padding(12)
-            .contentShape(Rectangle())
+
+            if !item.displaySummary(language: language).isEmpty {
+                Text(item.displaySummary(language: language))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(4)
+            }
         }
-        .buttonStyle(.plain)
+        .frame(width: 260, alignment: .leading)
+        .padding(14)
         .background(Color.syrmosSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }

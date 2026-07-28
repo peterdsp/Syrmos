@@ -28,10 +28,21 @@ MAX_ENTRIES = 50
 
 ATOM_NS = "http://www.w3.org/2005/Atom"
 
-RAIL_KEYWORDS_GR = (
-    "hellenic train", "ελληνικα σιδηροδρομικα", "τρενα", "τραινοσε",
-    "trainose", "προαστιακ", "proastiakos",
-    "μετρο", "τραμ", "ησαπ", "στασυ", "stasy", "oasa",
+GREECE_KEYWORDS = (
+    "hellenic train", "ελληνικα σιδηροδρομικα", "τραινοσε", "trainose",
+    "οσε", "ose",
+    "προαστιακ", "proastiakos",
+    "μετρο αθην", "μετρο θεσσαλονικ",
+    "στασυ", "stasy", "oasa", "οασα",
+    "αθην", "θεσσαλονικ", "πατρ", "λαρισ", "βολο",
+    "πειραι", "κιατο", "λιοσι", "αχαρν",
+    "τεμπ", "tempe",
+    "athens", "thessaloniki", "patras", "piraeus",
+    "ελλαδ", "ελλάδ", "greece", "greek",
+    "πηλιο", "pelion",
+)
+
+RAIL_KEYWORDS = (
     "σιδηροδρομ", "σιδηρόδρομ",
     "καθυστερ", "καθυστέρ",
     "ακυρωσ", "ακύρωσ", "ματαιωσ", "ματαίωσ",
@@ -39,17 +50,14 @@ RAIL_KEYWORDS_GR = (
     "κλειστ", "κλειστό",
     "πυρκαγ", "φωτια", "φωτιά",
     "απεργ", "απεργία",
-    "κυκλοφοριακ",
     "δρομολογ", "δρομολόγ",
-    "σταθμ",
-    "επιβατ",
     "αμαξοστοιχ",
+    "τρενα", "τρένα",
+    "μετρο", "τραμ", "ησαπ",
     "λεωφορει", "λεωφορεί",
     "intercity",
     "delay", "disruption", "cancellation",
-    "closure", "fire", "strike",
-    "railway", "railroad", "rail",
-    "passengers",
+    "closure", "strike",
 )
 
 ANTI_KEYWORDS = (
@@ -59,6 +67,10 @@ ANTI_KEYWORDS = (
     "privacy policy", "cookies",
     "διαγωνισμ", "προμηθει", "θεση εργασιας",
     "ισολογισμ", "πολιτικη απορρητου",
+    "hong kong", "japan", "china", "india", "bangladesh",
+    "australia", "new south wales", "czech", "italy",
+    "orient express", "world ranking", "longest rail",
+    "deepest subway", "deepest metro",
 )
 
 _GREEK_LETTER_RE = re.compile(r"[Ͱ-Ͽἀ-῿]")
@@ -90,11 +102,18 @@ def _translate_sq(text: str) -> str:
 
 def is_rail_relevant(text: str) -> bool:
     lowered = text.lower()
-    rail_hits = sum(1 for k in RAIL_KEYWORDS_GR if k in lowered)
     anti_hits = sum(1 for k in ANTI_KEYWORDS if k in lowered)
-    if rail_hits == 0:
+    if anti_hits > 0:
         return False
-    return rail_hits > anti_hits
+    has_greece = any(k in lowered for k in GREECE_KEYWORDS)
+    has_rail = any(k in lowered for k in RAIL_KEYWORDS)
+    has_greek_org = any(k in lowered for k in (
+        "hellenic train", "τραινοσε", "trainose", "στασυ", "stasy",
+        "oasa", "οασα", "προαστιακ", "proastiakos",
+    ))
+    if has_greek_org:
+        return True
+    return has_greece and has_rail
 
 
 @dataclass

@@ -43,6 +43,7 @@ val featureModule = module {
             queryNormalizer = com.syrmos.app.platform.provideQueryNormalizer(),
             assistantClassifier = com.syrmos.app.platform.provideAssistantClassifier(),
             modelDownloader = com.syrmos.app.platform.provideModelDownloader(),
+            ariadneChatService = get(),
         )
     }
     factory { LinesViewModel(getLinesUseCase = get()) }

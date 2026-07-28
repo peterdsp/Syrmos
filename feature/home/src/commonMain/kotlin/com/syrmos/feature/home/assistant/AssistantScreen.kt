@@ -275,9 +275,9 @@ private fun MessageBubble(
 }
 
 private fun subtitle(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Οδηγός συγκοινωνιών, εκτός σύνδεσης"
-    AppLanguage.ALBANIAN -> "Udhëzues transporti, pa internet"
-    else -> "Offline transit guide"
+    AppLanguage.GREEK -> "Ο έξυπνος οδηγός συγκοινωνιών σου"
+    AppLanguage.ALBANIAN -> "Udhezuesi yt i mencur i transportit"
+    else -> "Your smart transit guide"
 }
 
 private fun placeholder(lang: AppLanguage) = when (lang) {

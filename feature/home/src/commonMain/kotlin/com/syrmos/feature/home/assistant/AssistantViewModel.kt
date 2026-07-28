@@ -23,6 +23,8 @@ import com.syrmos.core.domain.assistant.AssistantClassifier
 import com.syrmos.core.common.AriadneModelDownloader
 import com.syrmos.core.common.AriadneModelState
 import com.syrmos.core.common.NoOpAriadneModelDownloader
+import com.syrmos.core.network.AriadneChatMessage
+import com.syrmos.core.network.AriadneChatService
 import com.syrmos.core.domain.assistant.AssistantVocabularyBuilder
 import com.syrmos.core.domain.assistant.NoOpQueryNormalizer
 import com.syrmos.core.domain.assistant.NoOpAssistantClassifier
@@ -116,6 +118,7 @@ class AssistantViewModel(
      * shared download UI stays hidden where it does not apply (iOS/Web).
      */
     private val modelDownloader: AriadneModelDownloader = NoOpAriadneModelDownloader,
+    private val ariadneChatService: AriadneChatService? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -199,10 +202,12 @@ class AssistantViewModel(
                 pendingMissing = null
             }
             updateSession(intent)
-            // Recovery: a genuine dead-end no longer flatly declines. Offer the
-            // closest station or a warm capability nudge instead of "I can only
-            // help with Athens transport."
-            val reply = if (intent is AssistantIntent.OutOfScope) recover(text, p) else resolve(intent)
+            val reply = if (intent is AssistantIntent.OutOfScope) {
+                val llmReply = askCloudLLM(text)
+                llmReply ?: recover(text, p)
+            } else {
+                resolve(intent)
+            }
             _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
         }
     }
@@ -1389,6 +1394,18 @@ class AssistantViewModel(
      * the text almost named one, otherwise a warm nudge toward what Ariadne can
      * do. Never a flat "I didn't understand."
      */
+    private suspend fun askCloudLLM(text: String): AssistantMessage? {
+        val service = ariadneChatService ?: return null
+        val history = _uiState.value.messages.takeLast(10).map { msg ->
+            AriadneChatMessage(
+                role = if (msg.fromUser) "user" else "assistant",
+                text = msg.text,
+            )
+        } + AriadneChatMessage(role = "user", text = text)
+        val reply = service.chat(history) ?: return null
+        return botMessage(reply)
+    }
+
     private fun recover(text: String, p: AthensTransitParser): AssistantMessage {
         val suggestion = p.suggestStation(text)
         return botMessage(if (suggestion != null) didYouMeanStation(suggestion) else recoveryHelp())

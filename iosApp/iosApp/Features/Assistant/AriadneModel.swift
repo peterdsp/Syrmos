@@ -72,11 +72,10 @@ final class AriadneModel: ObservableObject {
                 pendingMissing = nil
             }
             updateSession(intent)
-            // Recovery: a genuine dead-end suggests the closest station or a warm
-            // capability nudge instead of flatly declining. Mirrors KMP.
             let reply: AriadneMessage
             if case .outOfScope = intent {
-                reply = recover(text)
+                let llmReply = await askLLM(text)
+                reply = llmReply ?? recover(text)
             } else {
                 reply = await resolve(intent)
             }
@@ -1141,6 +1140,23 @@ final class AriadneModel: ObservableObject {
         }
         return bot(t("Open the Map tab to see live train positions.",
             "Άνοιξε τον Χάρτη για ζωντανές θέσεις συρμών.", "Hap Hartën për pozicionet e trenave."))
+    }
+
+    // MARK: - LLM fallback
+
+    private func askLLM(_ text: String) async -> AriadneMessage? {
+        var chatHistory: [AriadneChatMessage] = []
+        for msg in messages.suffix(10) {
+            chatHistory.append(AriadneChatMessage(
+                role: msg.fromUser ? "user" : "assistant",
+                text: msg.text
+            ))
+        }
+        chatHistory.append(AriadneChatMessage(role: "user", text: text))
+        guard let reply = await AriadneAPIService.shared.chat(messages: chatHistory) else {
+            return nil
+        }
+        return bot(reply)
     }
 
     // MARK: - Helpers

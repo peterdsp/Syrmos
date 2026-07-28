@@ -23,10 +23,6 @@ struct AriadneView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 8)
 
-                    AriadneModelBanner()
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: 12) {
@@ -281,9 +277,9 @@ struct AriadneView: View {
 
     private var subtitle: String {
         switch loc.language {
-        case .greek: return "Οδηγός συγκοινωνιών, εκτός σύνδεσης"
-        case .albanian: return "Udhëzues transporti, pa internet"
-        default: return "Offline transit guide"
+        case .greek: return "Ο έξυπνος οδηγός συγκοινωνιών σου"
+        case .albanian: return "Udhëzuesi yt i zgjuar i transportit"
+        default: return "Your smart transit guide"
         }
     }
 

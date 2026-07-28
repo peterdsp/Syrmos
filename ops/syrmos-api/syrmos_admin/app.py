@@ -21,6 +21,7 @@ from typing import Any, Iterator
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
+from . import ariadne as ariadne_mod
 from . import db as dbmod
 from . import generator
 from . import projector as projector_mod
@@ -1053,6 +1054,26 @@ def _trigger_seed_refresh() -> None:
     except (urllib.error.URLError, TimeoutError, OSError):
         # Non-blocking; the nightly cron is the safety net.
         pass
+
+
+# Ariadne chat (unauthenticated, rate-limited by Gemini quota)
+
+@app.post("/api/ariadne/chat")
+async def api_ariadne_chat(request: Request) -> JSONResponse:
+    """Ariadne LLM chat endpoint. Accepts JSON with a `messages` array
+    of {role: "user"|"assistant", text: "..."} objects. Returns
+    {reply: "...", ok: true}."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid JSON")
+    messages = body.get("messages", [])
+    if not messages or not isinstance(messages, list):
+        raise HTTPException(status_code=400, detail="messages array required")
+    if len(messages) > 20:
+        messages = messages[-20:]
+    reply = ariadne_mod.chat(messages)
+    return JSONResponse({"reply": reply, "ok": True})
 
 
 # Health (unauthenticated)
