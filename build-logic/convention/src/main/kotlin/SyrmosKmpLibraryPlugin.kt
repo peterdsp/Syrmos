@@ -28,7 +28,7 @@ class SyrmosKmpLibraryPlugin : Plugin<Project> {
 
         extensions.configure<com.android.build.gradle.LibraryExtension> {
             namespace = "com.syrmos.${project.path.removePrefix(":").replace(":", ".")}"
-            compileSdk = 35
+            compileSdk = 36
             defaultConfig {
                 minSdk = 26
             }
