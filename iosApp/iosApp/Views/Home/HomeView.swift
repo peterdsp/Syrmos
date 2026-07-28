@@ -28,7 +28,6 @@ struct HomeView: View {
                     networkOverview
                     nearMeSection
                     liveTrainsSection
-                    linesSection
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -79,10 +78,24 @@ struct HomeView: View {
     }
 
     private var networkOverview: some View {
-        HStack(spacing: 12) {
-            StatCard(value: "3", label: loc[.metro], color: .metroBlue)
-            StatCard(value: "2", label: loc[.tram], color: .tramOrange)
-            StatCard(value: "4", label: loc[.suburban], color: .suburbanPurple)
+        let lines = SyrmosData.operationalLines
+        let metroCount = lines.filter { $0.type == .metro }.count
+        let tramCount = lines.filter { $0.type == .tram }.count
+        let suburbanCount = lines.filter { $0.type == .suburban }.count
+        let busCount = lines.filter { $0.type == .bus }.count
+        return VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                StatCard(value: "\(metroCount)", label: loc[.metro], color: .metroBlue)
+                StatCard(value: "\(tramCount)", label: loc[.tram], color: .tramOrange)
+            }
+            HStack(spacing: 12) {
+                StatCard(value: "\(suburbanCount)", label: loc[.suburban], color: .suburbanPurple)
+                StatCard(
+                    value: "\(busCount)",
+                    label: loc.language == .greek ? "Λεωφορεια" : loc.language == .albanian ? "Autobuse" : "Bus",
+                    color: .gray
+                )
+            }
         }
     }
 
@@ -688,32 +701,6 @@ struct HomeView: View {
             : "Trains until \(latest)"
     }
 
-    private var linesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(loc[.lines])
-                .font(.title3)
-                .fontWeight(.semibold)
-
-            ForEach(TransitType.allCases, id: \.self) { type in
-                let filtered = SyrmosData.operationalLines.filter { $0.type == type }
-                if !filtered.isEmpty {
-                    VStack(spacing: 8) {
-                        ForEach(filtered) { line in
-                            NavigationLink {
-                                LineDetailView(
-                                    line: line,
-                                    stations: SyrmosData.stations(for: line.id)
-                                )
-                            } label: {
-                                LineCard(line: line)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Nearby Station Destination
@@ -884,46 +871,6 @@ struct AlertCard: View {
                     lineWidth: 1
                 )
         )
-    }
-}
-
-// MARK: - Line Card
-
-struct LineCard: View {
-    let line: TransitLine
-    @ObservedObject private var loc = LocalizationManager.shared
-
-    var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(line.color)
-                .frame(width: 4, height: 44)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(line.localizedName(loc.language))
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
-                Text("\(line.terminalA) - \(line.terminalB)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Text("\(line.stationCount)")
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(.secondary)
-
-            Image(systemName: "chevron.right")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.syrmosSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
