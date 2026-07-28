@@ -165,6 +165,18 @@ private struct LockScreenView: View {
                 ProgressView(value: context.state.progress ?? 0).tint(tint)
             }
 
+            // Current station label when live position is available.
+            if let currentStation = context.state.currentStation {
+                HStack(spacing: 4) {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 8))
+                        .foregroundStyle(tint)
+                    Text(currentStation)
+                        .font(.caption2).fontWeight(.semibold)
+                        .foregroundStyle(tint)
+                }
+            }
+
             // Line pill + destination, with the "last train" footer trailing.
             HStack(spacing: 8) {
                 LinePill(lineId: context.attributes.lineId, size: .regular)

@@ -62,6 +62,18 @@ struct TrackingCardBody: View {
                     .tint(accent)
             }
 
+            if let currentStation = tracked.currentStationName {
+                HStack(spacing: 6) {
+                    Image(systemName: "location.fill")
+                        .font(.caption2)
+                        .foregroundStyle(accent)
+                    Text(currentStation)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(accent)
+                }
+            }
+
             HStack(spacing: 8) {
                 Text(tracked.lineId)
                     .font(.caption).fontWeight(.bold)

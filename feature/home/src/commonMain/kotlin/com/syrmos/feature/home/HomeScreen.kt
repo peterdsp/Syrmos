@@ -70,6 +70,7 @@ import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
+import com.syrmos.core.network.SyrmosLivePositionsService
 import org.koin.compose.koinInject
 
 @Composable
@@ -88,6 +89,47 @@ fun HomeScreen(
         while (true) {
             delay(1000)
             nowEpoch = Clock.System.now().epochSeconds
+        }
+    }
+
+    val livePositionsService: SyrmosLivePositionsService = koinInject()
+    LaunchedEffect(tracked?.lineId, tracked?.targetEpochSeconds) {
+        val t = tracked ?: return@LaunchedEffect
+        val offsets = livePositionsService.fetchStationOffsets() ?: return@LaunchedEffect
+        val offsetMap = offsets.lines.associate { (it.lineId to it.direction) to it.stops }
+        while (true) {
+            val current = DepartureTracking.active.value ?: break
+            val trains = livePositionsService.fetchActiveTrains(listOf(current.lineId))
+            if (trains != null) {
+                val dirKey = if (current.directionKey == "airport") "outbound" else current.directionKey
+                val lineTrains = trains.trains.filter {
+                    it.lineId == current.lineId && it.directionKey == dirKey
+                }
+                val stops = offsetMap[current.lineId to dirKey]
+                if (stops != null && lineTrains.isNotEmpty()) {
+                    val stationMinutes = stops.firstOrNull {
+                        it.stationId == current.stationId
+                    }?.minutesFromOrigin ?: -1
+                    if (stationMinutes >= 0) {
+                        val bestTrain = lineTrains
+                            .filter { it.elapsedMinutes < stationMinutes + 2 }
+                            .minByOrNull { stationMinutes - it.elapsedMinutes }
+                        if (bestTrain != null) {
+                            val elapsed = bestTrain.elapsedMinutes
+                            val currentStop = stops.lastOrNull {
+                                it.minutesFromOrigin.toDouble() <= elapsed
+                            }
+                            if (currentStop != null) {
+                                val updated = current.copy(
+                                    currentStationName = currentStop.stationEn,
+                                )
+                                DepartureTracking.track(updated)
+                            }
+                        }
+                    }
+                }
+            }
+            delay(30_000)
         }
     }
 
@@ -818,6 +860,26 @@ private fun TrackingCard(
                     color = lineAccent,
                     trackColor = lineAccent.copy(alpha = 0.20f),
                 )
+            }
+
+            tracked.currentStationName?.let { stName ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = "📍",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                    Text(
+                        text = stName,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = lineAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             Row(

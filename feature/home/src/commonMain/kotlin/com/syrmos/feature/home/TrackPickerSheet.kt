@@ -190,6 +190,11 @@ fun TrackPickerSheet(
                         // Airport trains share the outbound corridor, so route
                         // the preview outbound toward the tracked station.
                         val routeDir = if (pickDir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
+                        val dirKey = when (pickDir) {
+                            TrackDir.OUTBOUND -> "outbound"
+                            TrackDir.INBOUND -> "inbound"
+                            TrackDir.AIRPORT -> "airport"
+                        }
                         DepartureTracking.track(
                             TrackedDeparture(
                                 lineId = line.id,
@@ -204,6 +209,7 @@ fun TrackPickerSheet(
                                     direction = routeDir,
                                     lang = lang,
                                 ),
+                                directionKey = dirKey,
                             ),
                         )
                         onDismiss()
