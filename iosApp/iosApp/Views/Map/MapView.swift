@@ -60,10 +60,8 @@ struct RouteLine: Identifiable {
     let color: Color
     let coordinates: [CLLocationCoordinate2D]
     let lineWeight: CGFloat
-    // A line that is built but not open draws greyed and dashed, because the
-    // track is real but carries no service. It has no trains or departures
-    // either (handled in the projector/simulator).
     var underConstruction: Bool = false
+    var isBus: Bool = false
 }
 
 private func catmullRomSpline(_ points: [CLLocationCoordinate2D], segments: Int = 5) -> [CLLocationCoordinate2D] {
@@ -119,13 +117,13 @@ enum PreloadedData {
             coords = catmullRomSpline(anchors)
         }
         let underConstruction = !line.isOperational
-        // Web weights: metro/tram 5, suburban/bus 4, under-construction 3.
         return RouteLine(
             id: line.id,
-            color: underConstruction ? Color(white: 0.62) : line.color,
+            color: underConstruction ? Color(hex: 0x94a3b8) : line.color,
             coordinates: coords,
             lineWeight: underConstruction ? 3 : ((line.type == .suburban || line.type == .bus) ? 4 : 5),
-            underConstruction: underConstruction
+            underConstruction: underConstruction,
+            isBus: line.type == .bus
         )
     }
     static let stationIconMap: [String: String] = {
@@ -997,6 +995,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             poly.color = UIColor(route.color)
             poly.weight = route.lineWeight
             poly.dashed = route.underConstruction
+            poly.isBus = route.isBus
             mv.addOverlay(poly, level: .aboveLabels)
         }
 
@@ -1398,16 +1397,15 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
             if let p = overlay as? SyrmosColoredPolyline {
                 let r = MKPolylineRenderer(polyline: p)
-                // Web draws in-service lines at 0.9 opacity, round caps/joins.
                 r.strokeColor = p.color.withAlphaComponent(0.9)
                 r.lineWidth = p.weight
                 r.lineCap = .round
                 r.lineJoin = .round
                 if p.dashed {
-                    // Dashed + translucent so track that is built but not open
-                    // reads as inert and can never be mistaken for live service.
                     r.lineDashPattern = [6, 8]
-                    r.strokeColor = p.color.withAlphaComponent(0.6)
+                    r.strokeColor = p.color.withAlphaComponent(0.55)
+                } else if p.isBus {
+                    r.lineDashPattern = [2, 7]
                 }
                 return r
             }
@@ -1572,6 +1570,7 @@ final class SyrmosColoredPolyline: MKPolyline {
     var color: UIColor = .systemBlue
     var weight: CGFloat = 4
     var dashed: Bool = false
+    var isBus: Bool = false
 }
 
 final class SyrmosStationAnnotation: NSObject, MKAnnotation {
