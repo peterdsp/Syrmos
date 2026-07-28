@@ -12,7 +12,7 @@ import SwiftUI
 // the earlier 1.1.1 sheet.
 
 private let kWhatsNewVersionKey = "syrmos.whatsnew.version"
-private let kWhatsNewCurrentVersion = "1.3.3"
+private let kWhatsNewCurrentVersion = "1.4.0"
 
 struct WhatsNewView: View {
     let onDismiss: () -> Void

@@ -31,3 +31,5 @@ actual fun readLastWhatsNewVersion(): String? = localStorage.getItem(WHATS_NEW_K
 actual fun markWhatsNewSeen(version: String) {
     localStorage.setItem(WHATS_NEW_KEY, version)
 }
+
+actual fun consumePendingAssistantQuery(): String? = null

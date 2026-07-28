@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- "Hey Google, next train from Syntagma on Syrmos" -->
+    <capability android:name="actions.intent.GET_TRANSIT_SCHEDULE">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.syrmos.app"
+            android:targetClass="com.syrmos.app.MainActivity">
+            <parameter
+                android:name="transitSchedule.departureStation.name"
+                android:key="station" />
+        </intent>
+    </capability>
+
+    <!-- "Hey Google, transit alerts on Syrmos" -->
+    <capability android:name="actions.intent.GET_TRANSIT_OBSERVATION">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.syrmos.app"
+            android:targetClass="com.syrmos.app.MainActivity">
+            <parameter
+                android:name="transitObservation.transitLine.lineName"
+                android:key="line" />
+        </intent>
+    </capability>
+
+    <!-- "Hey Google, ask Syrmos about ticket prices" -->
+    <capability android:name="custom.actions.intent.ASK_ARIADNE">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.syrmos.app"
+            android:targetClass="com.syrmos.app.MainActivity">
+            <parameter
+                android:name="question"
+                android:key="question" />
+        </intent>
+    </capability>
+
+    <!-- Static shortcuts for quick access -->
+    <shortcut
+        android:shortcutId="next_departure"
+        android:shortcutShortLabel="@string/shortcut_next_departure"
+        android:enabled="true">
+        <capability-binding android:key="actions.intent.GET_TRANSIT_SCHEDULE" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="service_alerts"
+        android:shortcutShortLabel="@string/shortcut_service_alerts"
+        android:enabled="true">
+        <capability-binding android:key="actions.intent.GET_TRANSIT_OBSERVATION" />
+    </shortcut>
+</shortcuts>

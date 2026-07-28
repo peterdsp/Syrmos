@@ -16,3 +16,5 @@ expect fun markOnboardingCompleted()
  *  show the highlights once per release after an install or update. */
 expect fun readLastWhatsNewVersion(): String?
 expect fun markWhatsNewSeen(version: String)
+
+expect fun consumePendingAssistantQuery(): String?

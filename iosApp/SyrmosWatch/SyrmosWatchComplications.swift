@@ -50,7 +50,11 @@ struct SyrmosWatchComplications: Widget {
         }
         .configurationDisplayName("Next Train")
         .description("Your next Syrmos departure.")
+        #if os(watchOS)
         .supportedFamilies([.accessoryCorner, .accessoryCircular, .accessoryRectangular])
+        #else
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        #endif
     }
 }
 
@@ -60,10 +64,12 @@ struct ComplicationView: View {
 
     var body: some View {
         switch family {
+        #if os(watchOS)
         case .accessoryCorner:
             Text(entry.minutes <= 1 ? "now" : "\(entry.minutes)m")
                 .font(.headline).monospacedDigit()
                 .widgetLabel(entry.lineId)
+        #endif
         case .accessoryCircular:
             ZStack {
                 AccessoryWidgetBackground()

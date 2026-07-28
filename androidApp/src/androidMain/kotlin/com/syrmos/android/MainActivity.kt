@@ -1,6 +1,7 @@
 package com.syrmos.android
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.syrmos.app.SyrmosApp
 import com.syrmos.app.platform.setLocationPermissionRequester
+import com.syrmos.app.platform.setPendingAssistantQuery
 import kotlinx.coroutines.CompletableDeferred
 
 class MainActivity : ComponentActivity() {
@@ -87,8 +89,27 @@ class MainActivity : ComponentActivity() {
             deferred.await()
         }
 
+        handleAssistantIntent(intent)
+
         setContent {
             SyrmosApp()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleAssistantIntent(intent)
+    }
+
+    private fun handleAssistantIntent(intent: Intent?) {
+        val question = intent?.getStringExtra("question")
+        val station = intent?.getStringExtra("station")
+        val line = intent?.getStringExtra("line")
+        val query = question
+            ?: station?.let { "Next departure from $it" }
+            ?: line?.let { "Service alerts for line $it" }
+        if (query != null) {
+            setPendingAssistantQuery(query)
         }
     }
 

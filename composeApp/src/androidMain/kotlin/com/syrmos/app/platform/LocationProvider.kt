@@ -75,6 +75,19 @@ actual fun markWhatsNewSeen(version: String) {
         ?.edit()?.putString(WHATS_NEW_KEY, version)?.apply()
 }
 
+private val _pendingAssistantQuery = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+val pendingAssistantQuery: kotlinx.coroutines.flow.StateFlow<String?> = _pendingAssistantQuery
+
+fun setPendingAssistantQuery(query: String?) {
+    _pendingAssistantQuery.value = query
+}
+
+actual fun consumePendingAssistantQuery(): String? {
+    val current = _pendingAssistantQuery.value
+    _pendingAssistantQuery.value = null
+    return current
+}
+
 @SuppressLint("MissingPermission")
 actual suspend fun requestUserLocation(): UserLocation? = withContext(Dispatchers.IO) {
     val ctx = appContext ?: return@withContext null

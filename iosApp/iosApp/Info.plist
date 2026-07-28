@@ -28,6 +28,8 @@
 	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Syrmos uses your location to find the nearest metro, tram, and suburban railway stations so you can see upcoming departures.</string>
+	<key>NSSiriUsageDescription</key>
+	<string>Syrmos uses Siri to let you ask about departures, service alerts, and ticket prices hands-free.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>
