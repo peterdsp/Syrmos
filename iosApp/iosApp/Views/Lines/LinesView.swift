@@ -148,6 +148,7 @@ struct LinesView: View {
             (.metro, "Metro"),
             (.tram, l == .greek ? "Τραμ" : l == .albanian ? "Tramvaj" : "Tram"),
             (.suburban, l == .greek ? "Προαστιακος" : l == .albanian ? "Periferike" : "Suburban"),
+            (.bus, l == .greek ? "Λεωφορεια" : l == .albanian ? "Autobuse" : "Bus"),
         ]
     }
 
