@@ -73,6 +73,9 @@ enum LocalizedKey {
     case settings
     case home
     case map
+    case explore
+    case departures
+    case moreTab
     case language
     case theme
     case systemDefault
@@ -149,6 +152,15 @@ enum LocalizedKey {
         case (.map, .english): return "Map"
         case (.map, .greek): return "Χάρτης"
         case (.map, .albanian): return "Harta"
+        case (.explore, .english): return "Explore"
+        case (.explore, .greek): return "Εξερεύνηση"
+        case (.explore, .albanian): return "Eksploro"
+        case (.departures, .english): return "Departures"
+        case (.departures, .greek): return "Αναχωρήσεις"
+        case (.departures, .albanian): return "Nisjet"
+        case (.moreTab, .english): return "More"
+        case (.moreTab, .greek): return "Περισσότερα"
+        case (.moreTab, .albanian): return "Më shumë"
         case (.language, .english): return "Language"
         case (.language, .greek): return "Γλώσσα"
         case (.language, .albanian): return "Gjuha"
