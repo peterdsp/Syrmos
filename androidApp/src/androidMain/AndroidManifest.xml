@@ -12,7 +12,7 @@
         android:icon="@mipmap/ic_launcher"
         android:name=".SyrmosApplication"
         android:allowBackup="true"
-        android:label="Syrmos"
+        android:label="Syrmos: Greece Rail Times"
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.Syrmos">
