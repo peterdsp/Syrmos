@@ -178,7 +178,7 @@ struct SyrmosSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
-                CompactTabHeader(loc[.settings])
+                CompactTabHeader(loc[.moreTab])
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showSystemMap) {

@@ -31,7 +31,7 @@ enum class L {
     METRO, TRAM, SUBURBAN,
     SERVICE_ALERTS, LATEST_FROM_STASY,
     READ_MORE, SHOW_MORE, SHOW_LESS,
-    LINES, SETTINGS, HOME, MAP,
+    LINES, SETTINGS, HOME, MAP, EXPLORE, DEPARTURES, MORE_TAB,
     LANGUAGE, THEME, SYSTEM_DEFAULT,
     PREFERENCES, DATA,
     SCHEDULE_VERSION, STATIONS,
@@ -121,6 +121,21 @@ enum class L {
             AppLanguage.GREEK -> "Χάρτης"
             AppLanguage.ALBANIAN -> "Harta"
             else -> "Map"
+        }
+        EXPLORE -> when (lang) {
+            AppLanguage.GREEK -> "Εξερεύνηση"
+            AppLanguage.ALBANIAN -> "Eksploro"
+            else -> "Explore"
+        }
+        DEPARTURES -> when (lang) {
+            AppLanguage.GREEK -> "Αναχωρήσεις"
+            AppLanguage.ALBANIAN -> "Nisjet"
+            else -> "Departures"
+        }
+        MORE_TAB -> when (lang) {
+            AppLanguage.GREEK -> "Περισσότερα"
+            AppLanguage.ALBANIAN -> "Më shumë"
+            else -> "More"
         }
         LANGUAGE -> when (lang) {
             AppLanguage.GREEK -> "Γλώσσα"
