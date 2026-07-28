@@ -118,6 +118,58 @@
     <link rel="stylesheet" href="web-map.css">
 </head>
 <body>
+<script>
+(function(){
+  if (sessionStorage.getItem('syrmos_force_web') === '1') return;
+  var ua = navigator.userAgent || '';
+  var mobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  if (!mobile) return;
+  document.documentElement.innerHTML = '<head>' +
+    '<meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+    '<title>Syrmos - Download the App</title>' +
+    '<meta name="theme-color" content="#0072CE">' +
+    '<link rel="icon" type="image/png" href="favicon.png">' +
+    '<style>' +
+    '*{margin:0;padding:0;box-sizing:border-box}' +
+    'body{font-family:system-ui,-apple-system,sans-serif;min-height:100dvh;display:flex;align-items:center;justify-content:center;' +
+    'background:linear-gradient(160deg,#f0f4fa 0%,#dce6f5 40%,#c8d8ec 100%);color:#1a2a3a;padding:24px;text-align:center}' +
+    '@media(prefers-color-scheme:dark){body{background:linear-gradient(160deg,#0a1120 0%,#111d33 40%,#162644 100%);color:#e0e8f4}}' +
+    '.card{max-width:380px;width:100%}' +
+    '.logo{width:80px;height:80px;border-radius:20px;margin:0 auto 20px;box-shadow:0 8px 24px rgba(0,0,0,.15)}' +
+    'h1{font-size:28px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em}' +
+    '.subtitle{font-size:15px;color:#5a6f8a;margin-bottom:28px;line-height:1.5}' +
+    '@media(prefers-color-scheme:dark){.subtitle{color:#8fa6c8}}' +
+    '.features{text-align:left;margin-bottom:32px;padding:0 8px}' +
+    '.feature{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:14px;line-height:1.4}' +
+    '.feature-icon{flex-shrink:0;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;' +
+    'background:rgba(26,92,184,.1);color:#1A5CB8}' +
+    '@media(prefers-color-scheme:dark){.feature-icon{background:rgba(100,160,255,.12);color:#7ab4ff}}' +
+    '.badges{display:flex;flex-direction:column;gap:12px;align-items:center;margin-bottom:24px}' +
+    '.badge-link{display:block;height:48px}' +
+    '.badge-link img{height:48px;width:auto}' +
+    '.web-link{font-size:13px;color:#5a6f8a}' +
+    '.web-link a{color:#1A5CB8;text-decoration:none;font-weight:500}' +
+    '@media(prefers-color-scheme:dark){.web-link{color:#8fa6c8}.web-link a{color:#7ab4ff}}' +
+    '</style></head><body>' +
+    '<div class="card">' +
+    '<img class="logo" src="favicon.png" alt="Syrmos">' +
+    '<h1>Syrmos</h1>' +
+    '<p class="subtitle">Greece Rail Times - live departures, schedules, and maps for Metro, Tram, Suburban, and Intercity trains.</p>' +
+    '<div class="features">' +
+    '<div class="feature"><div class="feature-icon">&#x1F687;</div><div>Live departure countdowns and GPS nearest station</div></div>' +
+    '<div class="feature"><div class="feature-icon">&#x1F4F1;</div><div>Works offline with full schedule data</div></div>' +
+    '<div class="feature"><div class="feature-icon">&#x1F30D;</div><div>English, Greek, and Albanian languages</div></div>' +
+    '<div class="feature"><div class="feature-icon">&#x1F514;</div><div>Service alerts and real-time train positions</div></div>' +
+    '</div>' +
+    '<div class="badges">' +
+    '<a class="badge-link" href="https://apps.apple.com/app/id6777650671"><img src="app-store.svg" alt="Download on the App Store"></a>' +
+    '<a class="badge-link" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="google-play.svg" alt="Get it on Google Play"></a>' +
+    '</div>' +
+    '<p class="web-link">Or <a href="javascript:void(0)" onclick="sessionStorage.setItem(\'syrmos_force_web\',\'1\');location.reload()">continue on web</a></p>' +
+    '</div></body>';
+})();
+</script>
 <div class="app-shell">
     <div id="map"></div>
 
