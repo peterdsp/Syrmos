@@ -1,0 +1,15 @@
+[Unit]
+Description=Rail news scraper one-shot (sidirodromikanea.blogspot.com)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
+Environment=SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.scraper_rail_news
+ExecStartPost=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.generator
+StandardOutput=append:/home/peterdsp/syrmos-api/scraper.log
+StandardError=append:/home/peterdsp/syrmos-api/scraper.log
