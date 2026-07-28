@@ -3,6 +3,7 @@ import WebKit
 
 struct HomeView: View {
     @StateObject private var stasyService = STASYService()
+    @StateObject private var railNewsService = RailNewsService()
     // Shared instance so HomeView and MapView don't each poll the live trains
     // endpoint in parallel.
     @ObservedObject private var liveTrainService = LiveTrainService.shared
@@ -25,6 +26,7 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     answerSection
                     alertsSection
+                    railNewsSection
                     networkOverview
                     nearMeSection
                     liveTrainsSection
@@ -49,6 +51,7 @@ struct HomeView: View {
                 locationService.requestIfNeeded()
                 await weather.refresh()
                 await stasyService.fetchAnnouncements()
+                await railNewsService.fetchNews()
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
@@ -609,6 +612,32 @@ struct HomeView: View {
         serviceStatusPill
     }
 
+    @ViewBuilder
+    private var railNewsSection: some View {
+        if !railNewsService.news.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: "newspaper.fill")
+                        .foregroundStyle(.blue)
+                    Text(loc.language == .greek ? "Σιδηροδρομικα Νεα" : loc.language == .albanian ? "Lajme Hekurudhore" : "Rail News")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    Spacer()
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(railNewsService.news.prefix(10)) { item in
+                            NewsCard(item: item, language: loc.language, onTap: { url in
+                                webViewURL = url
+                            })
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Compact status row that replaces the prior "Could not reach stasy.gr"
     /// error banner. Surfaces /api/announcements.status: normal operation
     /// gets a green checkmark; an alert (e.g. "Trains until 21:40") shows
@@ -871,6 +900,48 @@ struct AlertCard: View {
                     lineWidth: 1
                 )
         )
+    }
+}
+
+// MARK: - News Card
+
+struct NewsCard: View {
+    let item: RailNewsItem
+    let language: AppLanguage
+    let onTap: (URL) -> Void
+
+    var body: some View {
+        Button {
+            if let url = item.url { onTap(url) }
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(item.displayTitle(language: language))
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.primary)
+                    .lineLimit(3)
+
+                if !item.formattedDate.isEmpty {
+                    Text(item.formattedDate)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                if !item.displaySummary(language: language).isEmpty {
+                    Text(item.displaySummary(language: language))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            .frame(width: 220, alignment: .leading)
+            .padding(12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(Color.syrmosSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

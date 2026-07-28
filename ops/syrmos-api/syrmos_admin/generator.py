@@ -321,6 +321,49 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _build_news(conn: sqlite3.Connection) -> dict:
+    """Rail news from sidirodromikanea.blogspot.com, scraped daily.
+    Returns items from the last 30 days for the Home news carousel."""
+    try:
+        rows = conn.execute(
+            "SELECT id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+            " url, published_at, thumbnail_url, categories"
+            " FROM rail_news ORDER BY published_at DESC LIMIT 20"
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return {"updatedAt": _now_iso(), "count": 0, "news": []}
+
+    cutoff = (_date.today() - _timedelta(days=30)).isoformat()
+    news = []
+    for r in rows:
+        pub = r["published_at"] or ""
+        if pub and pub[:10] < cutoff:
+            continue
+        cats = []
+        try:
+            cats = json.loads(r["categories"]) if r["categories"] else []
+        except (TypeError, ValueError):
+            pass
+        news.append({
+            "id": r["id"],
+            "title": r["title"],
+            "titleEn": r["title_en"] or r["title"],
+            "titleSq": r["title_sq"] or "",
+            "summary": r["summary"],
+            "summaryEn": r["summary_en"] or r["summary"],
+            "summarySq": r["summary_sq"] or "",
+            "url": r["url"],
+            "publishedAt": pub,
+            "thumbnailUrl": r["thumbnail_url"] or "",
+            "categories": cats,
+        })
+    return {
+        "updatedAt": _now_iso(),
+        "count": len(news),
+        "news": news,
+    }
+
+
 def _build_station_offsets(conn: sqlite3.Connection) -> dict:
     """STASY per-station minutes-from-origin grouped by (line, direction).
     Apps multiply the headway grid by these offsets to compute exact HH:MM
@@ -922,6 +965,11 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             out_dir / "announcements.json", announcements_payload
         )
 
+        # /api/news - rail news from sidirodromikanea.blogspot.com scraped
+        # daily. Apps show a horizontally scrollable news carousel on Home.
+        news_payload = _build_news(conn)
+        news_hash = _atomic_write_json(out_dir / "news.json", news_payload)
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -960,6 +1008,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "trainTimestampsHash": train_timestamps_hash,
             "stationOffsetsHash": station_offsets_hash,
             "announcementsHash": announcements_hash,
+            "newsHash": news_hash,
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 
