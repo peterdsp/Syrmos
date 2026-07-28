@@ -54,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.syrmos.app.platform.consumePendingAssistantQuery
 import com.syrmos.app.platform.markOnboardingCompleted
 import com.syrmos.app.platform.readOnboardingCompleted
 import com.syrmos.app.platform.readLastWhatsNewVersion
@@ -146,7 +147,7 @@ fun SyrmosApp() {
         } else {
             // One-time highlights after an install/update. The web build shows
             // its own card (web-map.js), so this is effectively the native path.
-            val whatsNewVersion = "1.3.3"
+            val whatsNewVersion = "1.4.0"
             var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
             if (showWhatsNew) {
                 WhatsNewDialog(onDismiss = {
@@ -159,7 +160,8 @@ fun SyrmosApp() {
                     DesktopWebApp()
                 } else {
                     TabNavigator(HomeTab) {
-                        var showAriadne by remember { mutableStateOf(false) }
+                        val pendingQuery = remember { consumePendingAssistantQuery() }
+                        var showAriadne by remember { mutableStateOf(pendingQuery != null) }
                         val lang by LocalizationManager.language.collectAsState()
                         val tabNavigator = LocalTabNavigator.current
                         val currentTab = tabNavigator.current
@@ -212,13 +214,12 @@ fun SyrmosApp() {
 
                             if (showAriadne) {
                                 val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
-                                // Feed the assistant the current location so
-                                // "how long to X" uses the nearest station as
-                                // the origin; if unavailable the ETA resolver
-                                // falls back to asking for an origin station.
                                 androidx.compose.runtime.LaunchedEffect(Unit) {
                                     com.syrmos.app.platform.requestUserLocation()?.let {
                                         assistantViewModel.onLocationUpdate(it.latitude, it.longitude)
+                                    }
+                                    if (pendingQuery != null) {
+                                        assistantViewModel.ask(pendingQuery)
                                     }
                                 }
                                 Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
