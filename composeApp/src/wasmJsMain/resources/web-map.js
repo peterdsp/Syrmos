@@ -2837,21 +2837,21 @@
             : lang === "sq" ? "Çfarë ka të re në Syrmos"
             : "What's new in Syrmos";
         const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : "Got it";
-        const bullets = lang === “el” ? [
-            “Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας.”,
-            “Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API.”,
-            “Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train.”,
-            “Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως.”,
-        ] : lang === “sq” ? [
-            “Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit.”,
-            “Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live.”,
-            “Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train.”,
-            “Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere.”,
+        const bullets = lang === "el" ? [
+            "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας.",
+            "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API.",
+            "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train.",
+            "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως.",
+        ] : lang === "sq" ? [
+            "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit.",
+            "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live.",
+            "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train.",
+            "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere.",
         ] : [
-            “Search and filter lines: find any line by city or transport type.”,
-            “Departures for Thessaloniki, Patras and national rail via live API.”,
-            “Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train.”,
-            “Journey fare planner: pick two stations and see the price instantly.”,
+            "Search and filter lines: find any line by city or transport type.",
+            "Departures for Thessaloniki, Patras and national rail via live API.",
+            "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train.",
+            "Journey fare planner: pick two stations and see the price instantly.",
         ];
 
         const scrim = document.createElement("div");
