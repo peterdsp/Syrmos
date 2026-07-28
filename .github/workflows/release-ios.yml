@@ -113,22 +113,17 @@ jobs:
           write_profile widget       "$IOS_PROFILE_WIDGET_BASE64"
           ls -la "$DIR"
 
-      # Auto-increment the build number so a tag never collides with a build
-      # already on App Store Connect. CFBundleVersion is hardcoded in the app +
-      # watch Info.plist, and the widget/complication read $(CURRENT_PROJECT_VERSION),
-      # so stamp both to one unique, monotonic value (Unix epoch seconds). The
-      # marketing version (CFBundleShortVersionString) is intentionally left to
-      # the human to bump per release.
-      - name: Stamp a unique build number
+      # Read the build number from the Xcode project so the value you set
+      # locally (CURRENT_PROJECT_VERSION) is what appears in App Store Connect.
+      # Bump it in the project before each release to avoid collisions.
+      - name: Read build number from project
         if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
         run: |
           set -euo pipefail
-          BUILD="$(date +%s)"
+          BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' iosApp/iosApp/Info.plist)"
           echo "BUILD_NUMBER=$BUILD" >> "$GITHUB_ENV"
-          for p in iosApp/iosApp/Info.plist iosApp/SyrmosWatch/Info.plist; do
-            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$p"
-          done
-          echo "Build number stamped: $BUILD"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" iosApp/SyrmosWatch/Info.plist
+          echo "Build number: $BUILD"
 
       # Archive UNSIGNED, then sign everything during export with the explicit
       # profiles + cert from scripts/export-options.plist. Signing all four
