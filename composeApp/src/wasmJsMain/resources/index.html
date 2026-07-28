@@ -120,7 +120,6 @@
 <body>
 <script>
 (function(){
-  if (sessionStorage.getItem('syrmos_force_web') === '1') return;
   var ua = navigator.userAgent || '';
   var mobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   if (!mobile) return;
@@ -166,7 +165,7 @@
     '<a class="badge-link" href="https://apps.apple.com/app/id6777650671"><img src="app-store.svg" alt="Download on the App Store"></a>' +
     '<a class="badge-link" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="google-play.svg" alt="Get it on Google Play"></a>' +
     '</div>' +
-    '<p class="web-link">Or <a href="javascript:void(0)" onclick="sessionStorage.setItem(\'syrmos_force_web\',\'1\');location.reload()">continue on web</a></p>' +
+    '<p class="web-link">Syrmos web is available on desktop only.</p>' +
     '</div></body>';
 })();
 </script>
