@@ -1072,8 +1072,8 @@ async def api_ariadne_chat(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="messages array required")
     if len(messages) > 20:
         messages = messages[-20:]
-    reply = ariadne_mod.chat(messages)
-    return JSONResponse({"reply": reply, "ok": True})
+    result = ariadne_mod.chat(messages)
+    return JSONResponse({"reply": result["reply"], "ok": True, "provider": result["provider"]})
 
 
 # Health (unauthenticated)

@@ -159,21 +159,33 @@ class AssistantViewModel(
     init {
         scope.launch {
             stations = stationRepository.getAllStations().first()
-            // Ariadne must never offer a line that does not run: she answers
-            // departures, last trains and routes, all of which are actionable.
             lines = getLinesUseCase.getOperationalLines().first()
             parser = AthensTransitParser(AssistantVocabularyBuilder.build(stations, lines))
             val nowAthens = com.syrmos.core.common.extensions.currentAthensTime()
             val severe = weatherRepository.cached?.current?.condition?.isSevere == true
+            val msgs = mutableListOf(greeting())
+            val alertNote = activeAlertNote()
+            if (alertNote != null) msgs.add(alertNote)
             _uiState.update {
                 it.copy(
                     ready = true,
-                    messages = listOf(greeting()),
+                    messages = msgs,
                     severeWeather = severe,
                     athensHour = nowAthens.hour,
                 )
             }
         }
+    }
+
+    private suspend fun activeAlertNote(): AssistantMessage? {
+        val notices = currentNotices()
+        if (notices.isEmpty()) return null
+        val titles = notices.take(3).joinToString(". ") { it.text }
+        return botMessage(t(
+            "Heads up: $titles",
+            "Προσοχή: $titles",
+            "Kujdes: $titles",
+        ))
     }
 
     fun ask(input: String) {
@@ -184,16 +196,18 @@ class AssistantViewModel(
             it.copy(messages = it.messages + userMessage(text), thinking = true)
         }
         scope.launch {
-            // Clever tier: when an on-device classifier (Gemini Nano) is present
-            // and can ground the message, use its intent directly. Otherwise fall
-            // back to normalizing fuzzy input and running the deterministic parser.
+            // Online mode: try cloud Ariadne first. The Pi backend has live
+            // transit data (lines, fares, alerts, frequencies) and chains
+            // three LLMs, so it gives richer answers than local parsing.
+            val cloudReply = askCloudLLM(text)
+            if (cloudReply != null) {
+                _uiState.update { it.copy(messages = it.messages + cloudReply, thinking = false) }
+                return@launch
+            }
+            // Offline fallback: local Ariadne (rule-based parser + resolver).
             val raw = applyDayFollowUp(text, assistantClassifier.classify(text, p.vocabulary)
                 ?: p.parse(queryNormalizer.normalize(text) ?: text), p)
-            // Fill a missing origin from the known current station before asking,
-            // so "I'm at Syntagma" then "go airport faster" needs no follow-up.
             val intent = fillFromContext(mergePendingIfApplicable(raw))
-            // Update pending state before we resolve, so the answer's
-            // side effects can rely on it being fresh.
             if (intent is AssistantIntent.NeedsClarification) {
                 pendingIntent = intent.base
                 pendingMissing = intent.missing
@@ -202,12 +216,7 @@ class AssistantViewModel(
                 pendingMissing = null
             }
             updateSession(intent)
-            val reply = if (intent is AssistantIntent.OutOfScope) {
-                val llmReply = askCloudLLM(text)
-                llmReply ?: recover(text, p)
-            } else {
-                resolve(intent)
-            }
+            val reply = resolve(intent)
             _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
         }
     }
