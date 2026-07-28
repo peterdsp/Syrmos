@@ -344,9 +344,9 @@ TP2_EDE_OUT = TP2_OUT[:17]
 TP2_EDE_IN = list(reversed(TP2_EDE_OUT))
 
 
-def trip(line, direction, no, days, ids, times):
+def trip(line, direction, no, days, ids, times, valid_dates=None):
     assert len(ids) == len(times), f"{no}: {len(ids)} stops vs {len(times)} times"
-    return (line, direction, no, days, list(zip(ids, times)))
+    return (line, direction, no, days, list(zip(ids, times)), valid_dates)
 
 
 TRIPS = [
@@ -636,13 +636,16 @@ TRIPS += [
 # exactly that single call and invent nothing.
 # Base service: Sat+Sun year-round.
 # August 2026 extras: every Friday (7, 14, 21, 28 Aug) plus Mon 17 Aug.
-# We add FRI as a standing day type so the app shows Friday departures.
-# The Mon 17 Aug one-off cannot be expressed with day masks alone. ----
+# Fridays added as a standing day type; Mon 17 Aug uses valid_dates. ----
 TRIPS += [
     trip("PL1", "outbound", "3800", SAT_SUN, ["PL_ALE"], ["10:00"]),
     trip("PL1", "inbound", "3801", SAT_SUN, ["PL_MIL"], ["15:00"]),
     trip("PL1", "outbound", "3800F", FRI, ["PL_ALE"], ["10:00"]),
     trip("PL1", "inbound", "3801F", FRI, ["PL_MIL"], ["15:00"]),
+    trip("PL1", "outbound", "3800M", ("mon_thu",), ["PL_ALE"], ["10:00"],
+         valid_dates="2026-08-17"),
+    trip("PL1", "inbound", "3801M", ("mon_thu",), ["PL_MIL"], ["15:00"],
+         valid_dates="2026-08-17"),
 ]
 # DK1 Diakopto - Kalavryta rack railway: SUSPENDED since 13 Mar 2026. Seeded as a
 # greyed line (status under_construction) with NO trips, so it shows on the map
@@ -766,14 +769,16 @@ def main() -> None:
         conn.execute(f"DELETE FROM scheduled_trip_stops WHERE line_id IN ({ph})", line_ids)
         conn.execute(f"DELETE FROM scheduled_trips WHERE line_id IN ({ph})", line_ids)
         trips_rows, stop_rows = [], []
-        for line, direction, no, days, stops in TRIPS:
+        for line, direction, no, days, stops, vdates in TRIPS:
             for dt in days:
-                trips_rows.append((no, line, direction, dt, "daily" if days == DAILY else "weekday"))
+                trips_rows.append((no, line, direction, dt,
+                                   "daily" if days == DAILY else "weekday",
+                                   vdates))
                 for seq, (sid, tm) in enumerate(stops):
                     stop_rows.append((no, line, direction, dt, sid, seq, tm))
         conn.executemany(
-            "INSERT INTO scheduled_trips(train_no,line_id,direction,day_type,service_label)"
-            " VALUES(?,?,?,?,?)", trips_rows)
+            "INSERT INTO scheduled_trips(train_no,line_id,direction,day_type,service_label,valid_dates)"
+            " VALUES(?,?,?,?,?,?)", trips_rows)
         conn.executemany(
             "INSERT INTO scheduled_trip_stops(train_no,line_id,direction,day_type,"
             "station_id,stop_sequence,departure_time) VALUES(?,?,?,?,?,?,?)", stop_rows)
