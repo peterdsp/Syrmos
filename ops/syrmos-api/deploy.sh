@@ -18,6 +18,7 @@ rsync -avz --delete \
   --exclude '*.log' \
   --exclude __pycache__ \
   --exclude '*.pyc' \
+  --exclude admin.env \
   "$HERE"/ "$PI:$REMOTE_HOME"/
 
 echo ">>> syncing icon package to $PI"
@@ -80,7 +81,7 @@ ssh "$PI" "sudo systemctl enable --now syrmos-seed-daily.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-osm-shapes.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-rail-news.timer"
 
-echo ">>> patching ~/syrmos-proxy/nginx.conf with /api/departures/next + reloading nginx"
+echo ">>> patching ~/syrmos-proxy/nginx.conf with /api/departures/next + /api/ariadne/chat + reloading nginx"
 ssh "$PI" bash <<'REMOTE'
 set -e
 conf=~/syrmos-proxy/nginx.conf
@@ -104,7 +105,37 @@ block = """        # --- server-side projector: next departures per station ---
 
         """
 p.write_text(txt.replace(marker, block + marker, 1))
-print("patched")
+print("patched departures")
+PY
+fi
+if ! grep -q "/api/ariadne/chat" "$conf"; then
+  cp "$conf" "$conf.bak.ariadne.$(date +%s)"
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "syrmos-proxy/nginx.conf"
+txt = p.read_text()
+marker = "# --- admin UI (FastAPI"
+block = """        # --- Ariadne LLM chat (proxied to FastAPI) ---
+        location = /api/ariadne/chat {
+            proxy_pass http://127.0.0.1:8092/api/ariadne/chat;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Content-Type $content_type;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "POST, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Content-Type" always;
+            add_header Cache-Control "no-store" always;
+            proxy_read_timeout 30s;
+            if ($request_method = OPTIONS) {
+                return 204;
+            }
+        }
+
+        """
+p.write_text(txt.replace(marker, block + marker, 1))
+print("patched ariadne")
 PY
 fi
 /usr/sbin/nginx -t -c "$conf" -p ~/syrmos-proxy/
