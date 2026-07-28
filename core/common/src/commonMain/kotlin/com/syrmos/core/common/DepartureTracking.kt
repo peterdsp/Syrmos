@@ -42,6 +42,8 @@ data class TrackedDeparture(
      * bar in that case.
      */
     val routeStations: List<TrackedRouteStop> = emptyList(),
+    val directionKey: String = "outbound",
+    val currentStationName: String? = null,
 ) {
     /** Whole minutes left until the train, floored at 0. Null once it's due. */
     fun minutesRemaining(nowEpochSeconds: Long): Int {

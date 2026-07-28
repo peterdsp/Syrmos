@@ -18,7 +18,7 @@ from urllib.request import Request, urlopen
 from . import db as dbmod
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash-lite"
+GEMINI_MODEL = "gemini-flash-latest"
 GEMINI_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 )
@@ -210,11 +210,14 @@ def _call_gemini(
     if not GEMINI_API_KEY:
         return None
     body = _build_request_body(messages, transit_ctx)
-    url = f"{GEMINI_URL}?key={GEMINI_API_KEY}"
     req = Request(
-        url,
+        GEMINI_URL,
         data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json", "User-Agent": "Syrmos-Ariadne/1.0"},
+        headers={
+            "Content-Type": "application/json",
+            "X-goog-api-key": GEMINI_API_KEY,
+            "User-Agent": "Syrmos-Ariadne/1.0",
+        },
         method="POST",
     )
     try:

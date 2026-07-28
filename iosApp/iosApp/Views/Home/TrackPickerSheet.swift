@@ -228,6 +228,12 @@ struct TrackPickerSheet: View {
                                 direction: direction,
                                 language: loc.language
                             )
+                            let dirKey: String
+                            switch direction {
+                            case .outbound: dirKey = "outbound"
+                            case .inbound: dirKey = "inbound"
+                            case .airport: dirKey = "airport"
+                            }
                             DepartureTracking.shared.track(
                                 TrackedDeparture(
                                     lineId: line.id,
@@ -236,7 +242,8 @@ struct TrackPickerSheet: View {
                                     destination: terminal,
                                     scheduledTime: dep.time,
                                     targetEpoch: Date().timeIntervalSince1970 + Double(dep.minutesAway) * 60,
-                                    routeStations: route
+                                    routeStations: route,
+                                    directionKey: dirKey
                                 )
                             )
                             onDismiss()
