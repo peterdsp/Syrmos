@@ -1,0 +1,10 @@
+[Unit]
+Description=Hellenic Train news daily scrape
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 Europe/Athens
+Persistent=true
+Unit=syrmos-scraper-hellenic-train.service
+
+[Install]
+WantedBy=timers.target

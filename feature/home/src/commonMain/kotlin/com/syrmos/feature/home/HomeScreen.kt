@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,12 +64,14 @@ import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
+import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.RailwayGovLiveTrackerService
+import com.syrmos.core.network.RailNewsItem
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.SyrmosLivePositionsService
@@ -97,12 +100,54 @@ fun HomeScreen(
     val livePositionsService: SyrmosLivePositionsService = koinInject()
     val suburbanTracker: RailwayGovLiveTrackerService = koinInject()
     val gpsLineIds = setOf("A1", "A2", "A3", "A4")
+    val getNextDeparturesForTrack = koinInject<GetNextDeparturesUseCase>()
     LaunchedEffect(tracked?.lineId, tracked?.targetEpochSeconds) {
         val t = tracked ?: return@LaunchedEffect
         val offsets = livePositionsService.fetchStationOffsets() ?: return@LaunchedEffect
         val offsetMap = offsets.lines.associate { (it.lineId to it.direction) to it.stops }
         while (true) {
             val current = DepartureTracking.active.value ?: break
+            val nowEpochSec = Clock.System.now().epochSeconds
+            if (current.isStationMode && current.isDue(nowEpochSec)) {
+                val lineIds = current.stationLineIds.ifEmpty { listOf(current.lineId) }
+                val allDeps = mutableListOf<UpcomingDeparture>()
+                for (lid in lineIds) {
+                    val deps = getNextDeparturesForTrack.invoke(
+                        stationId = current.stationId,
+                        lineId = lid,
+                        direction = Direction.OUTBOUND,
+                        limit = 4,
+                    ).firstOrNull().orEmpty()
+                    allDeps.addAll(deps)
+                }
+                val next = allDeps
+                    .filter { it.minutesAway > 0 }
+                    .minByOrNull { it.minutesAway }
+                if (next != null) {
+                    val stationsOnLine = uiState.stationsByLine[next.lineId].orEmpty()
+                    DepartureTracking.track(
+                        TrackedDeparture(
+                            lineId = next.lineId,
+                            stationId = current.stationId,
+                            stationName = current.stationName,
+                            destination = next.direction.name.lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            scheduledTime = next.time,
+                            targetEpochSeconds = nowEpochSec + next.minutesAway * 60L,
+                            routeStations = computeRouteStations(
+                                stations = stationsOnLine,
+                                targetStationId = current.stationId,
+                                direction = next.direction,
+                                lang = lang,
+                            ),
+                            isStationMode = true,
+                            stationLineIds = current.stationLineIds,
+                        ),
+                    )
+                }
+                delay(30_000)
+                continue
+            }
             var resolved: String? = null
             if (current.lineId in gpsLineIds) {
                 val gpsList = suburbanTracker.observeSuburbanTrains(current.lineId).firstOrNull()
@@ -231,6 +276,8 @@ fun HomeScreen(
                                         direction = next.direction,
                                         lang = lang,
                                     ),
+                                    isStationMode = true,
+                                    stationLineIds = station.lineIds,
                                 ),
                             )
                         }
@@ -292,6 +339,16 @@ fun HomeScreen(
         if (status != null && !pillRedundant) {
             item {
                 ServiceStatusPill(status = status, lang = lang)
+            }
+        }
+
+        if (uiState.railNews.isNotEmpty()) {
+            item {
+                RailNewsSection(
+                    news = uiState.railNews,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
             }
         }
 
@@ -422,8 +479,8 @@ private fun EmergencyWeatherCard(
     // instead of washing out light-on-cream. Badge fill stays deep orange
     // (see EmergencyNumberRow) because its white glyphs need a dark chip.
     val isDark = isSystemInDarkTheme()
-    val amber = if (isDark) Color(0xFFFF9E42) else Color(0xFFE65100)
-    val bg = if (isDark) Color(0xFF291705) else Color(0xFFFFF3E0)
+    val amber = if (isDark) SyrmosColorTokens.warning else SyrmosColorTokens.arrivalModerate
+    val bg = if (isDark) SyrmosColorTokens.warningContainerDark else SyrmosColorTokens.warningContainer
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -515,7 +572,7 @@ private fun EmergencyNumberRow(label: String, sub: String) {
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFFE65100))
+                .background(SyrmosColorTokens.arrivalModerate)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -718,8 +775,8 @@ private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
 @Composable
 private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
     val live = freshness == DataFreshness.LIVE
-    val dot = if (live) Color(0xFF2E7D32) else Color(0xFFB26A00)
-    val bg = if (live) Color(0x1A2E7D32) else Color(0x1AB26A00)
+    val dot = if (live) SyrmosColorTokens.arrivalSoon else SyrmosColorTokens.estimated
+    val bg = if (live) SyrmosColorTokens.arrivalSoon.copy(alpha = 0.1f) else SyrmosColorTokens.estimated.copy(alpha = 0.1f)
     val label = if (live) {
         L.LIVE.text(lang)
     } else {
@@ -841,7 +898,8 @@ private fun TrackingCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = arrivingLabel(lang, tracked.stationName),
+                    text = if (tracked.isStationMode) tracked.stationName
+                           else arrivingLabel(lang, tracked.stationName),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -1289,8 +1347,8 @@ private fun ServiceStatusPill(
         else -> status.rawMessageEn.ifEmpty { status.rawMessage }
     }
     if (message.isBlank()) return
-    val bg = if (status.isAlert) Color(0x1FFF9800) else Color(0x1A4CAF50)
-    val accent = if (status.isAlert) Color(0xFFE65100) else Color(0xFF2E7D32)
+    val bg = if (status.isAlert) SyrmosColorTokens.warning.copy(alpha = 0.12f) else SyrmosColorTokens.live.copy(alpha = 0.1f)
+    val accent = if (status.isAlert) SyrmosColorTokens.arrivalModerate else SyrmosColorTokens.arrivalSoon
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1329,13 +1387,92 @@ private fun AlertsSection(
             Text(text = "⚠", style = MaterialTheme.typography.titleSmall)
             SectionTitle(text = L.SERVICE_ALERTS.text(lang))
         }
-        alerts.take(3).forEach { alert ->
-            AlertCard(
-                announcement = alert,
-                isAlert = true,
-                lang = lang,
-                onOpenUrl = onOpenUrl,
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(alerts.take(10)) { alert ->
+                AlertCard(
+                    modifier = Modifier.width(280.dp),
+                    announcement = alert,
+                    isAlert = true,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RailNewsSection(
+    news: List<RailNewsItem>,
+    lang: AppLanguage,
+    onOpenUrl: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(text = "📰", style = MaterialTheme.typography.titleSmall)
+            SectionTitle(text = when (lang) {
+                AppLanguage.GREEK -> "Σιδηροδρομικά Νέα"
+                AppLanguage.ALBANIAN -> "Lajme Hekurudhore"
+                else -> "Rail News"
+            })
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(news.take(10)) { item ->
+                NewsCard(
+                    item = item,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NewsCard(
+    item: RailNewsItem,
+    lang: AppLanguage,
+    onOpenUrl: (String) -> Unit,
+) {
+    val title = when (lang) {
+        AppLanguage.GREEK -> item.title
+        AppLanguage.ALBANIAN -> item.titleSq.ifEmpty { item.titleEn.ifEmpty { item.title } }
+        else -> item.titleEn.ifEmpty { item.title }
+    }
+    val date = item.publishedAt.take(10)
+    val hasUrl = item.url.isNotBlank()
+    Card(
+        modifier = Modifier
+            .width(220.dp)
+            .then(if (hasUrl) Modifier.clickable { onOpenUrl(item.url) } else Modifier),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
             )
+            if (date.isNotBlank()) {
+                Text(
+                    text = date,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -1449,6 +1586,7 @@ private fun LatestNewsSection(
 
 @Composable
 private fun AlertCard(
+    modifier: Modifier = Modifier,
     announcement: STASYAnnouncement,
     isAlert: Boolean,
     lang: AppLanguage,
@@ -1457,15 +1595,15 @@ private fun AlertCard(
     val hasUrl = announcement.url.isNotBlank()
     // Warm advisory tint for alerts. Flips to a dark warm fill in dark mode so
     // the onSurface text stays legible instead of washing out on light cream.
-    val alertBg = if (isSystemInDarkTheme()) Color(0xFF2A2016) else Color(0xFFFFF3E0)
+    val alertBg = if (isSystemInDarkTheme()) SyrmosColorTokens.warningContainerDark else SyrmosColorTokens.warningContainer
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .then(if (hasUrl) Modifier.clickable { onOpenUrl(announcement.url) } else Modifier),
         colors = CardDefaults.cardColors(
             containerColor = if (isAlert) alertBg else MaterialTheme.colorScheme.surface,
         ),
-        border = if (isAlert) BorderStroke(1.dp, Color(0x33E87722)) else null,
+        border = if (isAlert) BorderStroke(1.dp, SyrmosColorTokens.warning.copy(alpha = 0.2f)) else null,
         shape = RoundedCornerShape(10.dp),
     ) {
         Row(

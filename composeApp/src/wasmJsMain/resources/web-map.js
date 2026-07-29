@@ -965,7 +965,7 @@
     }
     function stationStyle(station, selected) {
         const first = station.lineIds.map((id) => lineMap.get(id)).find(Boolean);
-        const color = first ? first.color : "#64748b";
+        const color = first ? first.color : "#6B7280";
         return {
             radius: stationRadius(station, selected),
             color: "#ffffff",
@@ -1059,7 +1059,7 @@
             .map((lineId) => lineMap.get(lineId))
             .filter(Boolean);
         const primaryLine = stationLines[0];
-        const primaryColor = primaryLine ? primaryLine.color : "#64748b";
+        const primaryColor = primaryLine ? primaryLine.color : "#6B7280";
         const primaryMode = primaryLine ? primaryLine.type : "metro";
 
         // Per-station smart-code SVG, ONLY for the selected stop (at any zoom).
@@ -1369,7 +1369,7 @@
             const displayLineId = lineId === "M3_AIR" ? "M3" : lineId;
             const line = lineMap.get(displayLineId);
             for (let i = before; i < result.length; i++) {
-                result[i].line = line || { id: displayLineId, name: displayLineId, color: "#64748b" };
+                result[i].line = line || { id: displayLineId, name: displayLineId, color: "#6B7280" };
                 if (!result[i].direction) {
                     // Both-direction lines: alternate between terminalA / terminalB for the next two
                     const slot = result[i].timeMinutes - (result[before]?.timeMinutes ?? 0);
@@ -1449,7 +1449,7 @@
             const data = await r.json();
             const items = (data.departures || []).map((dep) => {
                 const lineKey = dep.lineId === "M3_AIR" ? "M3" : dep.lineId;
-                const line = lineMap.get(lineKey) || { id: lineKey, name: dep.line || lineKey, color: "#64748b" };
+                const line = lineMap.get(lineKey) || { id: lineKey, name: dep.line || lineKey, color: "#6B7280" };
                 return {
                     line,
                     direction: dep.direction || "",
@@ -2241,7 +2241,7 @@
             card.style.display = "";
             heroActive = true;
             const next = data.deps[0];
-            const color = next.line?.color || "#64748b";
+            const color = next.line?.color || "#6B7280";
             el(".hero-card__label").textContent = t("hero_next");
             el(".hero-card__station").textContent = data.station.name || data.station.nameEl;
             const badge = el(".hero-card__badge");
@@ -2918,7 +2918,7 @@
                 width: 100%; padding: 12px 16px;
                 border: none; cursor: pointer;
                 border-radius: 14px; font: inherit; font-weight: 600; font-size: 15px;
-                background: #0072CE; color: #fff;
+                background: var(--sy-brand); color: #fff;
             }
         `;
         document.head.appendChild(s);
@@ -3016,7 +3016,7 @@
                 position: fixed; z-index: 960;
                 top: 90px; left: 50%; transform: translateX(-50%);
                 width: min(520px, calc(100vw - 32px));
-                background: #FFF3E0; color: #111;
+                background: var(--sy-warning-container); color: #111;
                 border: 1px solid rgba(230, 81, 0, 0.35);
                 border-radius: 18px;
                 padding: 14px 18px;
@@ -3032,20 +3032,20 @@
             .severe-weather-banner__drop {
                 position: absolute; left: 18px; top: 22px;
                 width: 4px; height: 10px; border-radius: 2px;
-                background: #E65100;
+                background: var(--sy-arrival-moderate);
                 animation: severeWeatherDrop 900ms ease-in-out infinite;
             }
             @keyframes severeWeatherDrop {
                 0%   { transform: translateY(0);  opacity: 1; }
                 100% { transform: translateY(16px); opacity: 0; }
             }
-            .severe-weather-banner__title { font-weight: 700; color: #E65100; font-size: 14px; }
+            .severe-weather-banner__title { font-weight: 700; color: var(--sy-arrival-moderate); font-size: 14px; }
             .severe-weather-banner__sub { color: inherit; opacity: 0.9; }
             .severe-weather-banner__numbers { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
             .severe-weather-banner__numbers-header { font-size: 11px; font-weight: 600; opacity: 0.7; letter-spacing: 0.03em; }
             .severe-weather-banner__badge {
                 display: inline-block; padding: 3px 10px;
-                background: #E65100; color: #fff; font-weight: 700;
+                background: var(--sy-arrival-moderate); color: #fff; font-weight: 700;
                 border-radius: 6px; font-size: 12px; margin-right: 8px;
                 min-width: 44px; text-align: center;
                 text-decoration: none;
@@ -3117,7 +3117,7 @@
             }
             .ariadne-msg--assistant { align-self: flex-start; background: rgba(0,114,206,0.10); }
             body.dark-mode .ariadne-msg--assistant { background: rgba(120,170,255,0.15); }
-            .ariadne-msg--user { align-self: flex-end; background: #0072CE; color: #fff; }
+            .ariadne-msg--user { align-self: flex-end; background: var(--sy-brand); color: #fff; }
             .ariadne-panel__composer {
                 display: flex; gap: 8px; padding: 12px 16px;
                 border-top: 1px solid rgba(0,0,0,0.08);
@@ -3130,7 +3130,7 @@
                 outline: none;
             }
             body.dark-mode .ariadne-panel__input { border-color: rgba(255,255,255,0.15); }
-            .ariadne-panel__input:focus { border-color: #0072CE; }
+            .ariadne-panel__input:focus { border-color: var(--sy-brand); }
             .ariadne-panel__send { padding: 8px 14px; }
             /* On wide desktop the left and right columns are already
                taken by the Live-trains / Nearby-stations and STASY /
@@ -3192,7 +3192,7 @@
                     .ariadne-progress__label { font-size: 12px; opacity: 0.75; margin-bottom: 5px; }
                     .ariadne-progress__track { height: 6px; border-radius: 999px; background: rgba(0,0,0,0.12); overflow: hidden; }
                     body.dark-mode .ariadne-progress__track { background: rgba(255,255,255,0.16); }
-                    .ariadne-progress__fill { height: 100%; width: 0%; border-radius: 999px; background: #0072CE; transition: width 300ms ease; }
+                    .ariadne-progress__fill { height: 100%; width: 0%; border-radius: 999px; background: var(--sy-brand); transition: width 300ms ease; }
                 `;
                 document.head.appendChild(pbStyle);
 

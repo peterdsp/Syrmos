@@ -50,5 +50,11 @@ enum BackgroundRefresh {
         // Service alerts → App Group (WidgetBridge.publishAlerts → reloadAllTimelines).
         let stasy = STASYService()
         await stasy.fetchAnnouncements()
+
+        // Check for new alerts and severe weather, post local notifications
+        // if the user has them enabled.
+        let notif = NotificationService.shared
+        notif.checkForNewAlerts(stasy.announcements)
+        notif.checkWeather(WeatherStore.shared.snapshot)
     }
 }
