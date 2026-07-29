@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,6 +70,7 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.RailwayGovLiveTrackerService
+import com.syrmos.core.network.RailNewsItem
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.SyrmosLivePositionsService
@@ -292,6 +294,16 @@ fun HomeScreen(
         if (status != null && !pillRedundant) {
             item {
                 ServiceStatusPill(status = status, lang = lang)
+            }
+        }
+
+        if (uiState.railNews.isNotEmpty()) {
+            item {
+                RailNewsSection(
+                    news = uiState.railNews,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
             }
         }
 
@@ -1329,13 +1341,92 @@ private fun AlertsSection(
             Text(text = "⚠", style = MaterialTheme.typography.titleSmall)
             SectionTitle(text = L.SERVICE_ALERTS.text(lang))
         }
-        alerts.take(3).forEach { alert ->
-            AlertCard(
-                announcement = alert,
-                isAlert = true,
-                lang = lang,
-                onOpenUrl = onOpenUrl,
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(alerts.take(10)) { alert ->
+                AlertCard(
+                    modifier = Modifier.width(280.dp),
+                    announcement = alert,
+                    isAlert = true,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RailNewsSection(
+    news: List<RailNewsItem>,
+    lang: AppLanguage,
+    onOpenUrl: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(text = "📰", style = MaterialTheme.typography.titleSmall)
+            SectionTitle(text = when (lang) {
+                AppLanguage.GREEK -> "Σιδηροδρομικά Νέα"
+                AppLanguage.ALBANIAN -> "Lajme Hekurudhore"
+                else -> "Rail News"
+            })
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(news.take(10)) { item ->
+                NewsCard(
+                    item = item,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NewsCard(
+    item: RailNewsItem,
+    lang: AppLanguage,
+    onOpenUrl: (String) -> Unit,
+) {
+    val title = when (lang) {
+        AppLanguage.GREEK -> item.title
+        AppLanguage.ALBANIAN -> item.titleSq.ifEmpty { item.titleEn.ifEmpty { item.title } }
+        else -> item.titleEn.ifEmpty { item.title }
+    }
+    val date = item.publishedAt.take(10)
+    val hasUrl = item.url.isNotBlank()
+    Card(
+        modifier = Modifier
+            .width(220.dp)
+            .then(if (hasUrl) Modifier.clickable { onOpenUrl(item.url) } else Modifier),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
             )
+            if (date.isNotBlank()) {
+                Text(
+                    text = date,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -1449,6 +1540,7 @@ private fun LatestNewsSection(
 
 @Composable
 private fun AlertCard(
+    modifier: Modifier = Modifier,
     announcement: STASYAnnouncement,
     isAlert: Boolean,
     lang: AppLanguage,
@@ -1459,7 +1551,7 @@ private fun AlertCard(
     // the onSurface text stays legible instead of washing out on light cream.
     val alertBg = if (isSystemInDarkTheme()) SyrmosColorTokens.warningContainerDark else SyrmosColorTokens.warningContainer
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .then(if (hasUrl) Modifier.clickable { onOpenUrl(announcement.url) } else Modifier),
         colors = CardDefaults.cardColors(

@@ -1,0 +1,10 @@
+[Unit]
+Description=Thessaloniki Metro announcements bi-hourly scrape
+
+[Timer]
+OnCalendar=*-*-* 00/2:30:00 Europe/Athens
+Persistent=true
+Unit=syrmos-scraper-thessmetro.service
+
+[Install]
+WantedBy=timers.target
