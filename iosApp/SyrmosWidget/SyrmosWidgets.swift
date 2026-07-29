@@ -157,6 +157,9 @@ struct SyrmosEntry: TimelineEntry {
     let statuses: [WLineStatus]
     let weather: WWeather?
     let alerts: [String]
+    var liveTrainCount: Int = 0
+    var liveUpdatedEpoch: Double = 0
+    var isLiveDataFresh: Bool { liveTrainCount > 0 && (Date().timeIntervalSince1970 - liveUpdatedEpoch) < 300 }
 }
 
 // MARK: - Configuration intent
@@ -252,10 +255,24 @@ struct SyrmosProvider: AppIntentTimelineProvider {
     /// (the default) tracks the closest station, falling back to the app's
     /// published coordinate when the widget process has no fix; otherwise it
     /// shows the pinned station. An optional line filter narrows the rows.
+    ///
+    /// Wrapped in a catch-all so a single corrupt schedule or unexpected nil
+    /// never leaves the widget stuck on its redacted placeholder.
     private func entry(for configuration: SyrmosWidgetConfigurationIntent) async -> SyrmosEntry {
+        let live = cachedLiveInfo()
+        do {
+            return try await buildEntry(for: configuration, live: live)
+        } catch {
+            widgetLog.error("entry build failed: \(error.localizedDescription, privacy: .public)")
+            var fallback = Self.sample
+            fallback.liveTrainCount = live.count
+            fallback.liveUpdatedEpoch = live.updated
+            return fallback
+        }
+    }
+
+    private func buildEntry(for configuration: SyrmosWidgetConfigurationIntent, live: (count: Int, updated: Double)) async throws -> SyrmosEntry {
         await MainActor.run { _ = SyrmosSchedulesStore.shared }
-        // Best-known location: the widget's own fix, else the coordinate the app
-        // published to the App Group (the extension often gets no fix of its own).
         let location = await WidgetLocation().current() ?? cachedLocation()
         let station = resolveStation(configuration, location: location)
         let nearby = nearbyStations(from: location)
@@ -263,9 +280,10 @@ struct SyrmosProvider: AppIntentTimelineProvider {
 
         guard let station else {
             widgetLog.error("no station resolved (no location fix)")
-            return SyrmosEntry(date: .now, stationName: "—", rows: [], routeStops: [],
+            return SyrmosEntry(date: .now, stationName: "-", rows: [], routeStops: [],
                                lastTrain: nil, nearby: nearby, statuses: lineStatuses(),
-                               weather: cachedWeather(), alerts: cachedAlerts())
+                               weather: cachedWeather(), alerts: cachedAlerts(),
+                               liveTrainCount: live.count, liveUpdatedEpoch: live.updated)
         }
         let rows = await MainActor.run { departureRows(for: station, lineFilter: lineFilter) }
         let last = await MainActor.run { lastTrainString(for: station, lineFilter: lineFilter) }
@@ -273,7 +291,8 @@ struct SyrmosProvider: AppIntentTimelineProvider {
         widgetLog.debug("entry ready: \(station.name, privacy: .public), \(rows.count) rows")
         return SyrmosEntry(date: .now, stationName: station.name, rows: rows, routeStops: stops,
                            lastTrain: last, nearby: nearby, statuses: lineStatuses(),
-                           weather: cachedWeather(), alerts: cachedAlerts())
+                           weather: cachedWeather(), alerts: cachedAlerts(),
+                           liveTrainCount: live.count, liveUpdatedEpoch: live.updated)
     }
 
     /// The station to show: the user's pinned pick when nearest mode is off,
@@ -408,6 +427,13 @@ struct SyrmosProvider: AppIntentTimelineProvider {
         UserDefaults(suiteName: "group.com.syrmosApp.ios")?.stringArray(forKey: "alerts") ?? []
     }
 
+    /// Live train count and freshness from the shared App Group, written by
+    /// the app's LiveTrainService after each successful API poll.
+    private func cachedLiveInfo() -> (count: Int, updated: Double) {
+        guard let d = UserDefaults(suiteName: "group.com.syrmosApp.ios") else { return (0, 0) }
+        return (d.integer(forKey: "live.count"), d.double(forKey: "live.updated"))
+    }
+
     static let sample = SyrmosEntry(
         date: .now, stationName: "Syntagma",
         rows: [
@@ -426,7 +452,9 @@ struct SyrmosProvider: AppIntentTimelineProvider {
         ],
         statuses: SyrmosLineTokens.allLines.map { WLineStatus(lineId: $0, ok: true, label: "Good Service") },
         weather: WWeather(temperature: 27, symbol: "sun.max.fill", high: 31, low: 22),
-        alerts: []
+        alerts: [],
+        liveTrainCount: 28,
+        liveUpdatedEpoch: Date().timeIntervalSince1970
     )
 }
 
@@ -475,9 +503,19 @@ struct NextTrainView: View {
                     Text(entry.stationName).font(.headline).lineLimit(1)
                     Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme")).font(.caption).foregroundStyle(.secondary)
                 }
-                if family == .systemSmall, !entry.routeStops.isEmpty {
-                    StationStripCompact(stops: entry.routeStops, tint: SyrmosLineTokens.color(for: lead?.lineId ?? "M3"), showLabels: false)
-                        .frame(height: 16)
+                if family == .systemSmall {
+                    if !entry.routeStops.isEmpty {
+                        StationStripCompact(stops: entry.routeStops, tint: SyrmosLineTokens.color(for: lead?.lineId ?? "M3"), showLabels: false)
+                            .frame(height: 16)
+                    }
+                    if entry.isLiveDataFresh {
+                        HStack(spacing: 3) {
+                            Image(systemName: "circle.fill").font(.system(size: 5)).foregroundStyle(.green)
+                                .symbolEffect(.pulse.wholeSymbol, options: .repeating)
+                            Text("\(entry.liveTrainCount) " + WLoc.t("trains live", "τρένα ζωντ.", "trena live"))
+                                .font(.system(size: 9)).foregroundStyle(.green)
+                        }
+                    }
                 }
             }
             if family == .systemMedium {
@@ -509,10 +547,14 @@ struct LiveDeparturesView: View {
             HStack {
                 Text(entry.stationName).font(.headline).lineLimit(1)
                 Spacer()
-                Image(systemName: "tram.fill").font(.caption).foregroundStyle(.secondary)
+                if entry.isLiveDataFresh {
+                    LiveBadge(count: entry.liveTrainCount)
+                } else {
+                    Image(systemName: "tram.fill").font(.caption).foregroundStyle(.secondary)
+                }
             }
             if entry.rows.isEmpty {
-                Spacer(); Text("No upcoming departures").font(.caption).foregroundStyle(.secondary); Spacer()
+                Spacer(); Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme")).font(.caption).foregroundStyle(.secondary); Spacer()
             } else {
                 ForEach(entry.rows.prefix(5)) { row in
                     DepartureRowCompact(lineId: row.lineId, destination: row.destination,
@@ -520,18 +562,40 @@ struct LiveDeparturesView: View {
                                         target: row.target)
                 }
                 Spacer(minLength: 0)
-                if !entry.nearby.isEmpty {
-                    Divider()
-                    HStack(spacing: 4) {
-                        Image(systemName: "location.fill").font(.system(size: 9)).foregroundStyle(.secondary)
-                        Text(WLoc.t("Near me", "Κοντά μου", "Pranë meje") + ": " + entry.nearby.prefix(2).map { "\($0.name) \($0.walkMinutes)m" }.joined(separator: " · "))
-                            .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                HStack(spacing: 0) {
+                    if !entry.nearby.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "location.fill").font(.system(size: 9)).foregroundStyle(.secondary)
+                            Text(entry.nearby.prefix(2).map { "\($0.name) \($0.walkMinutes)m" }.joined(separator: " · "))
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    if let last = entry.lastTrain {
+                        Text(WLoc.t("Last", "Τελ.", "Fund.") + " \(last)")
+                            .font(.caption2).foregroundStyle(.secondary)
                     }
                 }
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+@available(iOS 17.0, *)
+struct LiveBadge: View {
+    let count: Int
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "circle.fill")
+                .font(.system(size: 6))
+                .foregroundStyle(.green)
+                .symbolEffect(.pulse.wholeSymbol, options: .repeating)
+            Text("\(count) " + WLoc.t("live", "ζωντ.", "drejtpërdrejt"))
+                .font(.caption2).fontWeight(.semibold)
+                .foregroundStyle(.green)
+        }
     }
 }
 
@@ -581,7 +645,13 @@ struct AllLinesStatusView: View {
     var entry: SyrmosEntry
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(WLoc.t("Network status", "Κατάσταση δικτύου", "Statusi i rrjetit")).font(.headline)
+            HStack {
+                Text(WLoc.t("Network status", "Κατάσταση δικτύου", "Statusi i rrjetit")).font(.headline)
+                Spacer()
+                if entry.isLiveDataFresh {
+                    LiveBadge(count: entry.liveTrainCount)
+                }
+            }
             let cols = [GridItem(.adaptive(minimum: 150), spacing: 10)]
             LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
                 ForEach(entry.statuses) { st in
@@ -648,7 +718,13 @@ struct WeatherAlertsView: View {
 
             // Next-train column.
             VStack(alignment: .leading, spacing: 6) {
-                Text(entry.stationName).font(.caption).fontWeight(.semibold).lineLimit(1)
+                HStack {
+                    Text(entry.stationName).font(.caption).fontWeight(.semibold).lineLimit(1)
+                    Spacer()
+                    if entry.isLiveDataFresh {
+                        LiveBadge(count: entry.liveTrainCount)
+                    }
+                }
                 ForEach(entry.rows.prefix(3)) { row in
                     DepartureRowCompact(lineId: row.lineId, destination: row.destination,
                                         minutesAway: row.minutesAway, isAirport: row.isAirport,
@@ -681,12 +757,22 @@ struct TrioView: View {
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
             Divider()
-            // Alerts.
+            // Status.
             VStack(alignment: .leading, spacing: 4) {
-                Text(WLoc.t("Alerts", "Ειδοποιήσεις", "Njoftime")).font(.caption2).fontWeight(.semibold).foregroundStyle(.secondary)
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.seal.fill").font(.caption2).foregroundStyle(.green)
-                    Text(WLoc.t("All clear", "Όλα καλά", "Gjithçka në rregull")).font(.caption2)
+                if entry.isLiveDataFresh {
+                    HStack(spacing: 3) {
+                        Image(systemName: "circle.fill").font(.system(size: 5)).foregroundStyle(.green)
+                            .symbolEffect(.pulse.wholeSymbol, options: .repeating)
+                        Text(WLoc.t("Live", "Ζωντανά", "Live")).font(.caption2).fontWeight(.semibold).foregroundStyle(.green)
+                    }
+                    Text("\(entry.liveTrainCount) " + WLoc.t("trains", "τρένα", "trena"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                } else {
+                    Text(WLoc.t("Alerts", "Ειδοποιήσεις", "Njoftime")).font(.caption2).fontWeight(.semibold).foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.seal.fill").font(.caption2).foregroundStyle(.green)
+                        Text(WLoc.t("All clear", "Όλα καλά", "Gjithçka në rregull")).font(.caption2)
+                    }
                 }
                 Spacer(minLength: 0)
             }

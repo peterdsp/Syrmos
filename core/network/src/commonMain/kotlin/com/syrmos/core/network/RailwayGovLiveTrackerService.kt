@@ -74,11 +74,24 @@ class RailwayGovLiveTrackerService(
             nextStation = nextStation.takeIf { it.isNotBlank() },
             delayMinutes = delayMinutes,
             serviceType = serviceType,
-            progress = null,
-            speedKph = null,
+            progress = progress,
+            speedKph = speed,
             latitude = lat,
             longitude = lng,
             updatedAt = "",
+            course = course,
+            altitude = altitude,
+            locomotiveNumber = locomotiveNumber,
+            distanceToDestination = distanceToDestination,
+            distanceToNextStation = distanceToNextStation,
+            signalStatus = signalStatus,
+            corridor = corridor,
+            trainType = trainType,
+            scheduledDeparture = scheduledDeparture,
+            scheduledArrival = scheduledArrival,
+            scheduleStatus = scheduleStatus,
+            trainId = trainId,
+            liveStreamUrl = liveStream?.playlistUrl?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -87,6 +100,12 @@ class RailwayGovLiveTrackerService(
         @SerialName("updatedAt") val updatedAt: String? = null,
         val count: Int = 0,
         val trains: List<TrainItem> = emptyList(),
+    )
+
+    @Serializable
+    private data class LiveStreamInfo(
+        val playlistUrl: String = "",
+        val streamingStatus: String = "",
     )
 
     @Serializable
@@ -101,6 +120,21 @@ class RailwayGovLiveTrackerService(
         val serviceType: String = "",
         val lat: Double,
         val lng: Double,
+        val speed: Double? = null,
+        val course: Double? = null,
+        val altitude: Double? = null,
+        val progress: Double? = null,
+        val locomotiveNumber: String? = null,
+        val distanceToDestination: Int? = null,
+        val distanceToNextStation: Int? = null,
+        val signalStatus: String? = null,
+        val corridor: String? = null,
+        val trainType: String? = null,
+        val scheduledDeparture: String? = null,
+        val scheduledArrival: String? = null,
+        val scheduleStatus: String? = null,
+        val trainId: String? = null,
+        val liveStream: LiveStreamInfo? = null,
     )
 
     private companion object {

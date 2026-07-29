@@ -40,6 +40,15 @@ enum WidgetBridge {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Publish the live suburban train count and freshness so widgets can show
+    /// a "N trains running" badge and a live-data indicator.
+    static func publishLiveTrains(count: Int, updatedEpoch: Double) {
+        guard let d = defaults else { return }
+        d.set(count, forKey: "live.count")
+        d.set(updatedEpoch, forKey: "live.updated")
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Mirror the app's selected language into the App Group so the widgets
     /// render in EN / EL / SQ to match the app (they run in a separate process
     /// and can't read the app's standard UserDefaults).
