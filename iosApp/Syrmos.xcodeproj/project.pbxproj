@@ -63,6 +63,7 @@
 		AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */; };
 		AA11BB22CC33DD44EE55BE01 /* EmergencyWeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */; };
+		B1C2D3E4F5A607182939AAAA /* LiveStreamPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A607182939AABB /* LiveStreamPlayerView.swift */; };
 		AAAA111111111111111111B1 /* iosApp/Features/Onboarding/OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */; };
 		AAAA111111111111111111B3 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */; };
 		AABB01CD02EF030405060708 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
@@ -247,6 +248,7 @@
 		AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPickerSheet.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyWeatherCard.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationIconNames.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A607182939AABB /* LiveStreamPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStreamPlayerView.swift; sourceTree = "<group>"; };
 		AAAA111111111111111111B2 /* iosApp/Features/Onboarding/OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
 		AAAA111111111111111111B4 /* iosApp/Features/Onboarding/OnboardingMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Onboarding/OnboardingMeshBackground.swift; sourceTree = SOURCE_ROOT; };
 		AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Resources/seed-schedules-v2"; sourceTree = "<group>"; };
@@ -401,6 +403,7 @@
 			isa = PBXGroup;
 			children = (
 				7FD822CADE700A3FA325710D /* MapView.swift */,
+				B1C2D3E4F5A607182939AABB /* LiveStreamPlayerView.swift */,
 				AA11BB22CC33DD44EE55FF67 /* StationIconNames.swift */,
 			);
 			path = Map;
@@ -921,6 +924,7 @@
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
+				B1C2D3E4F5A607182939AAAA /* LiveStreamPlayerView.swift in Sources */,
 				AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */,
 				03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */,
 				E1A2B3C4D5E60718293A4C70 /* ContactDeveloperView.swift in Sources */,

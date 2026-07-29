@@ -56,17 +56,21 @@ struct WatchDeparture: Codable, Identifiable, Hashable {
 struct WatchSnapshot: Codable, Equatable {
     let stationName: String
     let departures: [WatchDeparture]
-    /// Epoch seconds the snapshot was produced, so the Watch can age it.
     let updatedEpoch: Double
-    /// App language the phone is set to ("en"/"el"/"sq"), so the Watch's
-    /// voiced read-back matches the app. Optional for legacy payloads.
     let language: String?
+    let liveTrainCount: Int?
 
-    init(stationName: String, departures: [WatchDeparture], updatedEpoch: Double, language: String? = nil) {
+    var isLiveDataFresh: Bool {
+        guard let count = liveTrainCount, count > 0 else { return false }
+        return (Date().timeIntervalSince1970 - updatedEpoch) < 300
+    }
+
+    init(stationName: String, departures: [WatchDeparture], updatedEpoch: Double, language: String? = nil, liveTrainCount: Int? = nil) {
         self.stationName = stationName
         self.departures = departures
         self.updatedEpoch = updatedEpoch
         self.language = language
+        self.liveTrainCount = liveTrainCount
     }
 
     static let placeholder: WatchSnapshot = {
@@ -79,7 +83,8 @@ struct WatchSnapshot: Codable, Equatable {
                 WatchDeparture(lineId: "M2", destination: "Elliniko", minutes: 4, time: "17:48", targetEpoch: now + 4 * 60),
             ],
             updatedEpoch: now,
-            language: "en"
+            language: "en",
+            liveTrainCount: 28
         )
     }()
 }

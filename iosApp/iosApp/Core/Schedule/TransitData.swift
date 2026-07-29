@@ -653,12 +653,19 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
 
     @MainActor @Published var trains: [LiveTrain] = []
 
+    @MainActor static var onLiveDataRefreshed: ((Int) -> Void)?
+
     private var task: Task<Void, Never>?
 
     private struct TrainsPayload: Decodable {
         let updatedAt: String?
         let count: Int
         let trains: [TrainItem]
+    }
+
+    private struct LiveStreamInfo: Decodable {
+        let playlistUrl: String
+        let streamingStatus: String?
     }
 
     private struct TrainItem: Decodable {
@@ -672,6 +679,21 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
         let serviceType: String
         let lat: Double
         let lng: Double
+        let speed: Double?
+        let course: Double?
+        let altitude: Double?
+        let progress: Double?
+        let locomotiveNumber: String?
+        let distanceToDestination: Int?
+        let distanceToNextStation: Int?
+        let signalStatus: String?
+        let corridor: String?
+        let trainType: String?
+        let scheduledDeparture: String?
+        let scheduledArrival: String?
+        let scheduleStatus: String?
+        let trainId: String?
+        let liveStream: LiveStreamInfo?
     }
 
     init() {
@@ -709,14 +731,29 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     nextStation: t.nextStation,
                     delayMinutes: t.delayMinutes,
                     serviceType: t.serviceType,
-                    coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng)
+                    coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng),
+                    speed: t.speed,
+                    course: t.course,
+                    altitude: t.altitude,
+                    progress: t.progress,
+                    locomotiveNumber: t.locomotiveNumber,
+                    distanceToDestination: t.distanceToDestination,
+                    distanceToNextStation: t.distanceToNextStation,
+                    signalStatus: t.signalStatus,
+                    corridor: t.corridor,
+                    trainType: t.trainType,
+                    scheduledDeparture: t.scheduledDeparture,
+                    scheduledArrival: t.scheduledArrival,
+                    scheduleStatus: t.scheduleStatus,
+                    trainId: t.trainId,
+                    liveStreamUrl: t.liveStream?.playlistUrl
                 )
             }
+            let trainCount = parsed.count
             await MainActor.run {
                 instance?.trains = parsed
-                // Live suburban positions came back from the API: we're
-                // online. Surface it on the home offline-alive pill.
                 LiveDataFreshness.shared.markLive()
+                LiveTrainService.onLiveDataRefreshed?(trainCount)
             }
         } catch {
             // Silent — the user's previous Check now still has whatever
@@ -736,6 +773,21 @@ struct LiveTrain: Identifiable {
     let delayMinutes: Int
     let serviceType: String
     let coordinate: CLLocationCoordinate2D
+    let speed: Double?
+    let course: Double?
+    let altitude: Double?
+    let progress: Double?
+    let locomotiveNumber: String?
+    let distanceToDestination: Int?
+    let distanceToNextStation: Int?
+    let signalStatus: String?
+    let corridor: String?
+    let trainType: String?
+    let scheduledDeparture: String?
+    let scheduledArrival: String?
+    let scheduleStatus: String?
+    let trainId: String?
+    let liveStreamUrl: String?
 }
 
 struct MapStationNode: Identifiable {

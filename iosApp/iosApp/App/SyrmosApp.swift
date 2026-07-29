@@ -228,12 +228,9 @@ struct ContentView: View {
             // Mirror the selected language into the widgets' App Group so
             // they render in EN / EL / SQ to match the app.
             WidgetBridge.publishLanguage(loc.language.rawValue)
-            // Live train positions are runtime data by nature, not bundled —
-            // the whole point is "where are the trains RIGHT NOW". Skipping
-            // these refreshes on launch left the map with zero moving dots
-            // until the user tapped Settings → Check now. Schedules / fares /
-            // station-offsets / visual overrides stay bundled-only; only the
-            // two LIVE feeds fire here.
+            LiveTrainService.onLiveDataRefreshed = { count in
+                WidgetBridge.publishLiveTrains(count: count, updatedEpoch: Date().timeIntervalSince1970)
+            }
             await LivePositionsService.shared.refresh()
             await LiveTrainService.shared.refresh()
             DiagnosticsCenter.shared.leaveBreadcrumb("app", "Initial live refresh done")

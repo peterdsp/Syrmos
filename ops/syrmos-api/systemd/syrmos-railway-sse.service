@@ -1,0 +1,19 @@
+[Unit]
+Description=Syrmos railway.gov.gr SSE daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=peterdsp
+Environment=TRAINS_OUT=/home/peterdsp/syrmos-api/out/trains.json
+Environment=STREAM_CHECK=1
+ExecStart=/usr/bin/python3 /home/peterdsp/syrmos-api/scripts/railway-gov-sse.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=syrmos-railway-sse
+
+[Install]
+WantedBy=multi-user.target

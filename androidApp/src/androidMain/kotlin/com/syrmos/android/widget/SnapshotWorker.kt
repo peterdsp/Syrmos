@@ -17,8 +17,11 @@ import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.model.transit.Direction
 import kotlinx.coroutines.flow.firstOrNull
+import org.json.JSONObject
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,10 +42,11 @@ class SnapshotWorker(
 
     override suspend fun doWork(): Result {
         val now = System.currentTimeMillis()
+        val live = runCatching { fetchLiveTrainCount() }.getOrDefault(0 to 0L)
         val snapshot = runCatching { project(now) }.getOrNull()
             ?: BundledFallback.snapshot(now)
-        SnapshotStore.write(applicationContext, snapshot)
-        // Push the fresh snapshot to every Glance family.
+        val enriched = snapshot.copy(liveTrainCount = live.first, liveUpdatedEpoch = live.second)
+        SnapshotStore.write(applicationContext, enriched)
         runCatching {
             NextTrainGlanceWidget().updateAll(applicationContext)
             LiveDeparturesGlanceWidget().updateAll(applicationContext)
@@ -122,7 +126,23 @@ class SnapshotWorker(
         return best.latitude to best.longitude
     }
 
+    private fun fetchLiveTrainCount(): Pair<Int, Long> {
+        val conn = URL(TRAINS_URL).openConnection() as HttpURLConnection
+        conn.connectTimeout = 5_000
+        conn.readTimeout = 5_000
+        conn.setRequestProperty("User-Agent", "syrmos-widget/1.0")
+        try {
+            if (conn.responseCode != 200) return 0 to 0L
+            val body = conn.inputStream.bufferedReader().readText()
+            val json = JSONObject(body)
+            return json.optInt("count", 0) to System.currentTimeMillis()
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     companion object {
+        private const val TRAINS_URL = "https://api-syrmos.peterdsp.dev/api/trains"
         private const val PRIMARY_STATION_ID = "syntagma"
         private const val PRIMARY_STATION_NAME = "Syntagma"
         private const val PRIMARY_LINE = "M3"

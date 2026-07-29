@@ -15,8 +15,12 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.GlanceTheme
 import androidx.glance.text.FontWeight
@@ -41,11 +45,19 @@ class LiveDeparturesGlanceWidget : GlanceAppWidget() {
                         .padding(14.dp)
                         .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
                 ) {
-                    Text(
-                        text = snapshot.stationName,
-                        style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp),
-                        modifier = GlanceModifier.padding(bottom = 6.dp),
-                    )
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth().padding(bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = snapshot.stationName,
+                            style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                        )
+                        Spacer(GlanceModifier.defaultWeight())
+                        if (snapshot.isLiveDataFresh) {
+                            GlanceLiveBadge(snapshot.liveTrainCount)
+                        }
+                    }
                     LazyColumn {
                         items(snapshot.rows.take(5)) { row ->
                             GlanceDepartureRow(

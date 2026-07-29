@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -552,6 +553,8 @@ private fun TrainDetailCard(
     modifier: Modifier = Modifier,
 ) {
     train ?: return
+    val uriHandler = LocalUriHandler.current
+    val lineColor = line?.color?.toComposeColor() ?: MaterialTheme.colorScheme.primary
 
     Card(
         modifier = modifier,
@@ -579,6 +582,7 @@ private fun TrainDetailCard(
                 .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top,
@@ -601,12 +605,24 @@ private fun TrainDetailCard(
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    if (train.serviceType.isNotBlank()) {
-                        Text(
-                            text = train.serviceType.replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (train.serviceType.isNotBlank()) {
+                            Text(
+                                text = train.serviceType.replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (!train.locomotiveNumber.isNullOrBlank()) {
+                            Text(
+                                text = "Loco ${train.locomotiveNumber}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                        }
                     }
                 }
                 IconButton(onClick = onClose) {
@@ -614,87 +630,305 @@ private fun TrainDetailCard(
                 }
             }
 
+            // Route with progress
             if (train.origin != null || train.destination != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.DirectionsRailway,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = line?.color?.toComposeColor()
-                            ?: MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = buildString {
-                            append(train.origin ?: "?")
-                            append("  →  ")
-                            append(train.destination ?: "?")
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = train.origin ?: "?",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                val dep = train.scheduledDeparture
+                                if (dep != null) {
+                                    Text(
+                                        text = dep,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = Icons.Filled.SwapHoriz,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp).padding(horizontal = 4.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.End,
+                            ) {
+                                Text(
+                                    text = train.destination ?: "?",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                val arr = train.scheduledArrival
+                                if (arr != null) {
+                                    Text(
+                                        text = arr,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    )
+                                }
+                            }
+                        }
+
+                        val prog = train.progress
+                        if (prog != null && prog > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .background(lineColor.copy(alpha = 0.15f), RoundedCornerShape(3.dp)),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction = prog.coerceIn(0.0, 1.0).toFloat())
+                                        .height(6.dp)
+                                        .background(lineColor, RoundedCornerShape(3.dp)),
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "${(prog * 100).toInt()}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                val distDest = train.distanceToDestination
+                                if (distDest != null) {
+                                    Text(
+                                        text = formatDistance(distDest),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            if (train.nextStation != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Place,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "Next: ${train.nextStation}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = if (train.delayMinutes > 0)
-                    SyrmosColorTokens.disruption.copy(alpha = 0.12f)
-                else
-                    SyrmosColorTokens.live.copy(alpha = 0.12f),
+            // Status row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = if (train.delayMinutes > 0)
+                        SyrmosColorTokens.disruption.copy(alpha = 0.12f)
+                    else
+                        SyrmosColorTokens.live.copy(alpha = 0.12f),
                 ) {
-                    if (train.delayMinutes > 0) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        if (train.delayMinutes > 0) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = SyrmosColorTokens.disruption,
+                            )
+                            Text(
+                                text = "+${train.delayMinutes} min",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SyrmosColorTokens.disruption,
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(SyrmosColorTokens.live, CircleShape),
+                            )
+                            Text(
+                                text = "On time",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SyrmosColorTokens.live,
+                            )
+                        }
+                    }
+                }
+
+                val nextStn = train.nextStation
+                if (nextStn != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         Icon(
-                            imageVector = Icons.Filled.Warning,
+                            imageVector = Icons.Filled.Place,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = SyrmosColorTokens.disruption,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = "+${train.delayMinutes} min delay",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SyrmosColorTokens.disruption,
-                        )
-                    } else {
-                        Text(
-                            text = "On time",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SyrmosColorTokens.live,
+                            text = nextStn,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
+
+            // Telemetry grid
+            val speed = train.speedKph
+            val crs = train.course
+            val alt = train.altitude
+            if (speed != null || crs != null || alt != null) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                ) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        maxItemsInEachRow = 3,
+                    ) {
+                        if (speed != null) {
+                            TelemetryCell(
+                                value = "${speed.toInt()}",
+                                unit = "km/h",
+                                accent = if (speed > 100) SyrmosColorTokens.disruption else lineColor,
+                            )
+                        }
+                        if (crs != null) {
+                            TelemetryCell(
+                                value = "${crs.toInt()}",
+                                unit = headingLabel(crs),
+                                accent = lineColor,
+                            )
+                        }
+                        if (alt != null) {
+                            TelemetryCell(
+                                value = "${alt.toInt()}",
+                                unit = "m alt",
+                                accent = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        val distNext = train.distanceToNextStation
+                        if (distNext != null) {
+                            TelemetryCell(
+                                value = formatDistanceShort(distNext),
+                                unit = "to next",
+                                accent = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        val sig = train.signalStatus
+                        if (!sig.isNullOrBlank()) {
+                            TelemetryCell(
+                                value = sig.replaceFirstChar { c -> c.uppercase() },
+                                unit = "signal",
+                                accent = if (sig.lowercase() == "good") SyrmosColorTokens.live else SyrmosColorTokens.warning,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Live stream button
+            val streamUrl = train.liveStreamUrl
+            if (!streamUrl.isNullOrBlank()) {
+                Button(
+                    onClick = { uriHandler.openUri(streamUrl) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = "Watch Live",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(Color.Red, CircleShape),
+                    )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text(
+                        text = "LIVE",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red,
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun TelemetryCell(
+    value: String,
+    unit: String,
+    accent: Color,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = accent,
+        )
+        Text(
+            text = unit,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        )
+    }
+}
+
+private fun headingLabel(degrees: Double): String {
+    val dirs = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+    val idx = ((degrees + 22.5) % 360 / 45).toInt().coerceIn(0, dirs.lastIndex)
+    return "${dirs[idx]}°"
+}
+
+private fun formatDistance(meters: Int): String {
+    return if (meters >= 1000) {
+        "${(meters / 1000.0).let { "%.1f".format(it) }} km left"
+    } else {
+        "$meters m left"
+    }
+}
+
+private fun formatDistanceShort(meters: Int): String {
+    return if (meters >= 1000) {
+        "${(meters / 1000.0).let { "%.1f".format(it) }} km"
+    } else {
+        "$meters m"
     }
 }
 

@@ -59,7 +59,11 @@ private struct DeparturesList: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                WatchHeader(stationName: snapshot.stationName)
+                WatchHeader(
+                    stationName: snapshot.stationName,
+                    liveTrainCount: snapshot.liveTrainCount ?? 0,
+                    isLive: snapshot.isLiveDataFresh
+                )
 
                 if heroActive, let hero = soonest {
                     HeroDeparture(departure: hero, now: now)
@@ -103,14 +107,28 @@ private struct DeparturesList: View {
 
 private struct WatchHeader: View {
     let stationName: String
+    var liveTrainCount: Int = 0
+    var isLive: Bool = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(stationName)
                 .font(.title3).fontWeight(.bold)
                 .lineLimit(1).minimumScaleFactor(0.7)
-            Text("Syrmos Watch")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                if isLive {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 5))
+                        .foregroundStyle(.green)
+                        .symbolEffect(.pulse.wholeSymbol, options: .repeating)
+                    Text("\(liveTrainCount) trains live")
+                        .font(.caption2).fontWeight(.semibold)
+                        .foregroundStyle(.green)
+                } else {
+                    Text("Syrmos Watch")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 2)
@@ -128,6 +146,10 @@ private struct HeroDeparture: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 LineBadge(lineId: departure.lineId)
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 5))
+                    .foregroundStyle(.red)
+                    .symbolEffect(.pulse.wholeSymbol, options: .repeating)
                 Text(departure.time)
                     .font(.caption2).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
@@ -136,6 +158,7 @@ private struct HeroDeparture: View {
                 .font(.system(size: 44, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.red)
+                .contentTransition(.numericText())
             Text(departure.destination)
                 .font(.callout).fontWeight(.semibold)
                 .lineLimit(1)
@@ -166,10 +189,12 @@ private struct DepartureCard: View {
             Text(minutes <= 0 ? "now" : "\(minutes)m")
                 .font(.callout).fontWeight(.semibold).monospacedDigit()
                 .foregroundStyle(imminent ? .red : .primary)
+                .contentTransition(.numericText())
         }
         .padding(10)
         .background(Color.gray.opacity(0.14),
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .animation(.easeInOut(duration: 0.3), value: minutes)
     }
 }
 

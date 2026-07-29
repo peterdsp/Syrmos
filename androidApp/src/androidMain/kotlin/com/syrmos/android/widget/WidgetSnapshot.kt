@@ -29,9 +29,12 @@ data class WidgetSnapshot(
     val rows: List<WidgetRow>,
     val updatedEpoch: Long,
     val nearby: List<NearbyStation> = emptyList(),
+    val liveTrainCount: Int = 0,
+    val liveUpdatedEpoch: Long = 0,
 ) {
+    val isLiveDataFresh: Boolean get() = liveTrainCount > 0 && (System.currentTimeMillis() - liveUpdatedEpoch) < 300_000
     companion object {
-        val empty = WidgetSnapshot(stationName = "—", lastTrain = null, rows = emptyList(), updatedEpoch = 0)
+        val empty = WidgetSnapshot(stationName = "-", lastTrain = null, rows = emptyList(), updatedEpoch = 0)
     }
 }
 
@@ -42,6 +45,8 @@ object SnapshotStore {
     private const val KEY_ROWS = "rows"
     private const val KEY_NEARBY = "nearby"
     private const val KEY_UPDATED = "updated"
+    private const val KEY_LIVE_COUNT = "live_count"
+    private const val KEY_LIVE_UPDATED = "live_updated"
     private const val ROW_SEP = ""
     private const val FIELD_SEP = ""
 
@@ -58,6 +63,8 @@ object SnapshotStore {
             .putString(KEY_ROWS, encoded)
             .putString(KEY_NEARBY, encodedNearby)
             .putLong(KEY_UPDATED, snapshot.updatedEpoch)
+            .putInt(KEY_LIVE_COUNT, snapshot.liveTrainCount)
+            .putLong(KEY_LIVE_UPDATED, snapshot.liveUpdatedEpoch)
             .apply()
     }
 
@@ -84,6 +91,8 @@ object SnapshotStore {
             rows = rows,
             updatedEpoch = p.getLong(KEY_UPDATED, 0),
             nearby = nearby,
+            liveTrainCount = p.getInt(KEY_LIVE_COUNT, 0),
+            liveUpdatedEpoch = p.getLong(KEY_LIVE_UPDATED, 0),
         )
     }
 
