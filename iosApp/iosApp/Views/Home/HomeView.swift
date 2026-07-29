@@ -595,7 +595,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var alertsSection: some View {
-        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
+        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert && !$0.affectedLines.isEmpty }
 
         if !alerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {

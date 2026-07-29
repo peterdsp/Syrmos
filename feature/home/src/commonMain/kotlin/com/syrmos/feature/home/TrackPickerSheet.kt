@@ -272,7 +272,7 @@ private enum class TrackMode { SPECIFIC_TRAIN, STATION_ALL }
 
 private enum class TrackDir { OUTBOUND, INBOUND, AIRPORT }
 
-private val metroLineIds = setOf("M1", "M2", "M3")
+private val frequentLineIds = setOf("M1", "M2", "M3", "T6", "T7")
 
 @Composable
 private fun PickHeader(
@@ -399,45 +399,34 @@ private fun LineList(
     trackMode: TrackMode?,
     onSelect: (Line) -> Unit,
 ) {
+    val trackableLines = lines.filter { it.id !in frequentLineIds }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(lines) { line ->
+        items(trackableLines) { line ->
             val accent = line.color.toComposeColor()
-            val isMetro = line.id in metroLineIds
-            val disabled = isMetro && trackMode == TrackMode.SPECIFIC_TRAIN
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surface)
-                    .then(if (disabled) Modifier else Modifier.clickable { onSelect(line) })
-                    .alpha(if (disabled) 0.55f else 1f)
+                    .clickable { onSelect(line) }
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                LineBadgeSmall(id = line.id, accent = if (disabled) Color.Gray else accent)
+                LineBadgeSmall(id = line.id, accent = accent)
                 Column(modifier = Modifier.padding(end = 8.dp)) {
                     Text(
                         text = if (lang == AppLanguage.GREEK && line.nameEl.isNotBlank()) line.nameEl else line.name,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (disabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     )
-                    if (disabled) {
-                        Text(
-                            text = metroFrequentNote(lang),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFFFF9800),
-                        )
-                    } else {
-                        Text(
-                            text = "${line.terminalA} - ${line.terminalB}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    Text(
+                        text = "${line.terminalA} - ${line.terminalB}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -569,7 +558,7 @@ private fun DepartureList(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "${dep.minutesAway} min",
+                        text = formatCountdown(dep.minutesAway, lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

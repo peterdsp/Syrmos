@@ -135,16 +135,13 @@ struct TrackPickerSheet: View {
 
     // MARK: - Line step
 
-    private static let metroLineIds: Set<String> = ["M1", "M2", "M3"]
+    private static let frequentLineIds: Set<String> = ["M1", "M2", "M3", "T6", "T7"]
 
     private var lineList: some View {
         ScrollView {
             VStack(spacing: 8) {
-                ForEach(SyrmosData.operationalLines) { line in
-                    let isMetro = Self.metroLineIds.contains(line.id)
-                    let disabled = isMetro && trackMode == .specificTrain
+                ForEach(SyrmosData.operationalLines.filter { !Self.frequentLineIds.contains($0.id) }) { line in
                     Button {
-                        guard !disabled else { return }
                         selectedLine = line
                         step = .direction
                     } label: {
@@ -153,22 +150,16 @@ struct TrackPickerSheet: View {
                                 .font(.caption).fontWeight(.bold)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8).padding(.vertical, 4)
-                                .background(disabled ? Color.gray : line.color)
+                                .background(line.color)
                                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(loc.language == .greek ? line.nameEl : line.name)
                                     .font(.body).fontWeight(.semibold)
-                                    .foregroundStyle(disabled ? .secondary : .primary)
-                                if disabled {
-                                    Text(metroFrequentNote)
-                                        .font(.caption2)
-                                        .foregroundStyle(.orange)
-                                } else {
-                                    Text("\(line.terminalA) - \(line.terminalB)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
+                                    .foregroundStyle(.primary)
+                                Text("\(line.terminalA) - \(line.terminalB)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
                             }
                             Spacer(minLength: 0)
                         }
@@ -176,10 +167,8 @@ struct TrackPickerSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.syrmosSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .opacity(disabled ? 0.55 : 1.0)
                     }
                     .buttonStyle(.plain)
-                    .disabled(disabled)
                 }
             }
         }
@@ -372,7 +361,7 @@ struct TrackPickerSheet: View {
                                     Text(dep.time)
                                         .font(.body).fontWeight(.semibold)
                                         .foregroundStyle(.primary)
-                                    Text("\(dep.minutesAway) min")
+                                    Text(dep.minutesAwayDisplay(language: loc.language))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }

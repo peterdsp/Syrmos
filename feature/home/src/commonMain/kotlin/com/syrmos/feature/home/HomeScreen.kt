@@ -318,7 +318,7 @@ fun HomeScreen(
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
-        val alerts = uiState.announcements.filter { it.isServiceAlert }
+        val alerts = uiState.announcements.filter { it.isServiceAlert && it.affectedLines.isNotEmpty() }
         if (alerts.isNotEmpty()) {
             item {
                 AlertsSection(
@@ -948,7 +948,7 @@ private fun TrackingCard(
             }
 
             Text(
-                text = if (due) dueLabel(lang) else "$remaining min",
+                text = if (due) dueLabel(lang) else formatCountdown(remaining, lang),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = lineAccent,
@@ -1261,7 +1261,7 @@ private fun dueLabel(lang: AppLanguage) = when (lang) {
 }
 
 /** Mirrors iOS Departure.minutesAwayDisplay: "Now", "5 min", "3h 21min". */
-private fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
+internal fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
     if (minutesAway <= 1) {
         return when (lang) {
             AppLanguage.GREEK -> "Τώρα"
