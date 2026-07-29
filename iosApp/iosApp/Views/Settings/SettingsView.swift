@@ -314,7 +314,7 @@ struct DiagnosticsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(hang.durationMs) ms")
                                 .font(.headline)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(SyrmosTokens.warning)
                             Text(hang.timestamp, style: .relative)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -332,7 +332,7 @@ struct DiagnosticsView: View {
                                 .fontWeight(.semibold)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15))
+                                .background(Color.syrmosOnSurfaceMuted.opacity(0.15))
                                 .clipShape(Capsule())
                             Spacer()
                             Text(crumb.timestamp, style: .time)

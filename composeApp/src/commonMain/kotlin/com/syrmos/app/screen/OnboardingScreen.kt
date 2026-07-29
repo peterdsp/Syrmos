@@ -51,6 +51,7 @@ import com.syrmos.app.platform.requestLocationPermission
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
@@ -69,19 +70,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val pages = listOf(
         OnboardingPage(
             icon = Icons.Filled.DirectionsTransit,
-            tint = Color(0xFF0083C9),
+            tint = SyrmosColorTokens.brand,
             title = L.ONBOARD_WELCOME_TITLE,
             body = L.ONBOARD_WELCOME_BODY,
         ),
         OnboardingPage(
             icon = Icons.Filled.AccessTime,
-            tint = Color(0xFFE2231A),
+            tint = SyrmosColorTokens.metroRed,
             title = L.ONBOARD_LIVE_TITLE,
             body = L.ONBOARD_LIVE_BODY,
         ),
         OnboardingPage(
             icon = Icons.Filled.LocationOn,
-            tint = Color(0xFFF8C31E),
+            tint = SyrmosColorTokens.tram,
             title = L.ONBOARD_LOCATION_TITLE,
             body = L.ONBOARD_LOCATION_BODY,
             ctaLabel = L.ONBOARD_LOCATION_CTA,
@@ -89,7 +90,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         ),
         OnboardingPage(
             icon = Icons.Filled.Verified,
-            tint = Color(0xFF0083C9),
+            tint = SyrmosColorTokens.brand,
             title = L.ONBOARD_PRIVACY_TITLE,
             body = L.ONBOARD_PRIVACY_BODY,
         ),

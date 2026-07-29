@@ -96,7 +96,7 @@ struct HomeView: View {
                 StatCard(
                     value: "\(busCount)",
                     label: loc.language == .greek ? "Λεωφορεια" : loc.language == .albanian ? "Autobuse" : "Bus",
-                    color: .gray
+                    color: SyrmosTokens.offline
                 )
             }
         }
@@ -210,7 +210,7 @@ struct HomeView: View {
 
     private var freshnessPill: some View {
         let isLive = freshnessStore.freshness == .live
-        let tint: Color = isLive ? .green : .orange
+        let tint: Color = isLive ? SyrmosTokens.live : SyrmosTokens.warning
         let label = isLive
             ? loc[.live]
             : "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
@@ -319,9 +319,9 @@ struct HomeView: View {
                             .fontWeight(.semibold)
                     }
                     .font(.caption)
-                    .foregroundStyle(isTracked ? Color.secondary : SyrmosData.lineColor(for: next.lineId))
+                    .foregroundStyle(isTracked ? Color.syrmosOnSurfaceMuted : SyrmosData.lineColor(for: next.lineId))
                     .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background((isTracked ? Color.gray : SyrmosData.lineColor(for: next.lineId)).opacity(0.14))
+                    .background((isTracked ? SyrmosTokens.offline : SyrmosData.lineColor(for: next.lineId)).opacity(0.14))
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -551,13 +551,13 @@ struct HomeView: View {
                                 if train.delayMinutes > 0 {
                                     Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
                                         .font(.caption2)
-                                        .foregroundStyle(.orange)
+                                        .foregroundStyle(SyrmosTokens.warning)
                                 }
                             }
                         }
                         Spacer()
                         Circle()
-                            .fill(Color.green)
+                            .fill(SyrmosTokens.live)
                             .frame(width: 8, height: 8)
                     }
                     .padding(12)
@@ -576,7 +576,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(SyrmosTokens.warning)
                     Text(loc[.serviceAlerts])
                         .font(.title3)
                         .fontWeight(.semibold)
@@ -665,7 +665,7 @@ struct HomeView: View {
                       ? "exclamationmark.triangle.fill"
                       : "checkmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(isAlert ? .orange : .green)
+                    .foregroundStyle(isAlert ? SyrmosTokens.warning : SyrmosTokens.live)
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.primary)
@@ -676,7 +676,7 @@ struct HomeView: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(isAlert ? Color.orange.opacity(0.12) : Color.green.opacity(0.10))
+                    .fill(isAlert ? SyrmosTokens.warning.opacity(0.12) : SyrmosTokens.live.opacity(0.10))
             )
         }
     }
@@ -885,7 +885,7 @@ struct AlertCard: View {
         .disabled(announcement.url == nil)
         .background(
             announcement.category == .serviceAlert
-                ? Color.orange.opacity(0.08)
+                ? SyrmosTokens.warning.opacity(0.08)
                 : Color.syrmosSurface
         )
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -893,7 +893,7 @@ struct AlertCard: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(
                     announcement.category == .serviceAlert
-                        ? Color.orange.opacity(0.2)
+                        ? SyrmosTokens.warning.opacity(0.2)
                         : Color.clear,
                     lineWidth: 1
                 )

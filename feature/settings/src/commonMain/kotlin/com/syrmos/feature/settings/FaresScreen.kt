@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.FaresRepository
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.network.SyrmosSchedulesService.FareProduct
 import com.syrmos.core.network.SyrmosSchedulesService.InfoLink
 import org.koin.compose.koinInject
@@ -565,9 +566,9 @@ private fun fareStationOf(st: Station, lines: List<Line>): FareStation {
 private fun badgeColor(product: FareProduct): Color {
     val tag = product.tags.firstOrNull().orEmpty()
     return when {
-        tag == "airport_express" || product.tags.contains("tourist") -> Color(0xFF0072CE)
-        tag == "airport_excluded" -> Color(0xFFEA580C)
-        else -> Color.Gray
+        tag == "airport_express" || product.tags.contains("tourist") -> SyrmosColorTokens.metroBlue
+        tag == "airport_excluded" -> SyrmosColorTokens.estimated
+        else -> SyrmosColorTokens.offline
     }
 }
 

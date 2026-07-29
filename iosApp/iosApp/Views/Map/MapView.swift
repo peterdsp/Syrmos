@@ -340,7 +340,7 @@ struct TransitMapView: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(vehiclesHidden ? .white : Color.accentColor)
                             .frame(width: 50, height: 50)
-                            .background(vehiclesHidden ? Color.accentColor : Color(uiColor: .systemBackground))
+                            .background(vehiclesHidden ? Color.accentColor : Color.syrmosSurface)
                             .clipShape(Circle())
                             .overlay(
                                 Circle().strokeBorder(
@@ -570,7 +570,7 @@ private struct FactChip: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color(uiColor: .secondarySystemBackground))
+        .background(Color.syrmosSurfaceMuted)
         .clipShape(Capsule())
     }
 }
