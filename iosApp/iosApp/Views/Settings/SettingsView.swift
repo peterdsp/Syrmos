@@ -38,9 +38,51 @@ struct SyrmosSettingsView: View {
                     }
                 }
 
+                Section(loc.language == .greek ? "Ειδοποιησεις" : loc.language == .albanian ? "Njoftimet" : "Notifications") {
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.serviceAlertsEnabled },
+                        set: { NotificationPreferences.serviceAlertsEnabled = $0 }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Ειδοποιησεις υπηρεσιας" : loc.language == .albanian ? "Njoftimet e sherbimit" : "Service alerts",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                    }
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.weatherAlertsEnabled },
+                        set: { NotificationPreferences.weatherAlertsEnabled = $0 }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Καιρικες ειδοποιησεις" : loc.language == .albanian ? "Njoftimet e motit" : "Weather alerts",
+                            systemImage: "cloud.bolt.rain"
+                        )
+                    }
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.nearbyAlertsEnabled },
+                        set: { NotificationPreferences.nearbyAlertsEnabled = $0 }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Ειδοποιησεις κοντινου σταθμου" : loc.language == .albanian ? "Njoftimet e stacionit te afert" : "Nearby station alerts",
+                            systemImage: "location.circle"
+                        )
+                    }
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.morningDigestEnabled },
+                        set: {
+                            NotificationPreferences.morningDigestEnabled = $0
+                            NotificationService.shared.scheduleMorningDigest()
+                        }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Πρωινη ενημερωση (07:00)" : loc.language == .albanian ? "Perditesimi i mengjesit (07:00)" : "Morning digest (07:00)",
+                            systemImage: "sunrise"
+                        )
+                    }
+                }
+
                 Section(loc[.data]) {
-                    LabeledContent(loc[.stations], value: "90+")
-                    LabeledContent(loc[.lines], value: "9")
+                    LabeledContent(loc[.stations], value: "380+")
+                    LabeledContent(loc[.lines], value: "31")
                     LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
                     Button {
                         Task { await runRefresh() }
@@ -178,7 +220,7 @@ struct SyrmosSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
-                CompactTabHeader(loc[.settings])
+                CompactTabHeader(loc[.moreTab])
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showSystemMap) {
@@ -314,7 +356,7 @@ struct DiagnosticsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(hang.durationMs) ms")
                                 .font(.headline)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(SyrmosTokens.warning)
                             Text(hang.timestamp, style: .relative)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -332,7 +374,7 @@ struct DiagnosticsView: View {
                                 .fontWeight(.semibold)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15))
+                                .background(Color.syrmosOnSurfaceMuted.opacity(0.15))
                                 .clipShape(Capsule())
                             Spacer()
                             Text(crumb.timestamp, style: .time)

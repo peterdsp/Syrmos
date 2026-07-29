@@ -44,6 +44,10 @@ data class TrackedDeparture(
     val routeStations: List<TrackedRouteStop> = emptyList(),
     val directionKey: String = "outbound",
     val currentStationName: String? = null,
+    /** When true, auto-advances to the next departure once this one is due. */
+    val isStationMode: Boolean = false,
+    /** All line IDs to show when in station mode (multiple lines at one station). */
+    val stationLineIds: List<String> = emptyList(),
 ) {
     /** Whole minutes left until the train, floored at 0. Null once it's due. */
     fun minutesRemaining(nowEpochSeconds: Long): Int {

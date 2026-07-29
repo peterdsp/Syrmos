@@ -15,14 +15,14 @@ import com.syrmos.core.common.LocalizationManager
 import com.syrmos.app.platform.provideAriadneEngineStatus
 import com.syrmos.feature.settings.SettingsScreen
 
-object SettingsTab : Tab {
+object MoreTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
             val lang by LocalizationManager.language.collectAsState()
             return TabOptions(
-                index = 3u,
-                title = L.SETTINGS.text(lang),
+                index = 4u,
+                title = L.MORE_TAB.text(lang),
                 icon = null,
             )
         }

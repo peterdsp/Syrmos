@@ -32,6 +32,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         // the user opening the app. Register before launch finishes.
         BackgroundRefresh.register()
         BackgroundRefresh.schedule()
+
+        // Request notification permissions and schedule the daily morning digest.
+        Task { @MainActor in
+            await NotificationService.shared.requestAuthorization()
+            NotificationService.shared.scheduleMorningDigest()
+        }
+
         return true
     }
 
@@ -146,7 +153,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Color.syrmosBackground.ignoresSafeArea()
             TabView(selection: $selectedTab) {
                 // Each non-Settings tab reserves 60pt at the bottom via a
                 // safeAreaInset so the last row/item in its scrollable
@@ -162,9 +169,9 @@ struct ContentView: View {
                 LinesView()
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
-                        Label(loc[.lines], systemImage: "tram")
+                        Label(loc[.explore], systemImage: "compass")
                     }
-                    .tag(SyrmosTab.lines)
+                    .tag(SyrmosTab.explore)
 
                 TransitMapView()
                     .tabItem {
@@ -175,29 +182,25 @@ struct ContentView: View {
                 TimetablesView()
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
-                        Label(
-                            loc.language == .greek ? "Αεροδρόμιο" :
-                            loc.language == .albanian ? "Aeroporti" : "Airport",
-                            systemImage: "airplane"
-                        )
+                        Label(loc[.departures], systemImage: "clock")
                     }
-                    .tag(SyrmosTab.timetables)
+                    .tag(SyrmosTab.departures)
 
                 SyrmosSettingsView()
                     .tabItem {
-                        Label(loc[.settings], systemImage: "gearshape")
+                        Label(loc[.moreTab], systemImage: "ellipsis.circle")
                     }
-                    .tag(SyrmosTab.settings)
+                    .tag(SyrmosTab.more)
             }
             .tint(.syrmosPrimary)
 
             // Ariadne launcher lives at the app level so it's available on
-            // Home / Lines / Airport. Hidden on Settings (the pill would
+            // Home / Explore / Departures. Hidden on More (the pill would
             // sit on top of the settings scroll controls) AND on Map
             // (the Locate + Vehicles buttons already own that bottom-
             // right corner). The pill fades and slides on tab change so
             // it never abruptly appears mid-transition.
-            if selectedTab != .settings && selectedTab != .map {
+            if selectedTab != .more && selectedTab != .map {
                 VStack {
                     Spacer()
                     HStack {
@@ -254,7 +257,7 @@ struct ContentView: View {
 }
 
 enum SyrmosTab {
-    case home, lines, map, timetables, settings
+    case home, explore, map, departures, more
 }
 
 /// The launcher pill users tap to open Ariadne. Springs on press so the
@@ -282,9 +285,9 @@ private struct AriadneLauncherPill: View {
                 .scaledToFit()
                 .frame(width: 32, height: 32)
                 .padding(12)
-                .background(Color.white)
+                .background(Color.syrmosSurface)
                 .clipShape(Circle())
-                .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Color.syrmosPrimary.opacity(0.2), lineWidth: 1))
                 .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                 .scaleEffect(pressed ? 0.92 : 1.0)
                 .accessibilityLabel(label)

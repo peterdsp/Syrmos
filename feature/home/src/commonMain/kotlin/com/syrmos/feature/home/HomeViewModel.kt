@@ -17,6 +17,8 @@ import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.network.RailNewsItem
+import com.syrmos.core.network.RailNewsService
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.RailwayGovLiveTrackerService
@@ -58,6 +60,7 @@ data class HomeUiState(
      */
     val stationsByLine: Map<String, List<Station>> = emptyMap(),
     val announcements: List<STASYAnnouncement> = emptyList(),
+    val railNews: List<RailNewsItem> = emptyList(),
     val serviceStatus: STASYServiceStatus? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -72,6 +75,7 @@ class HomeViewModel(
     private val announcementsRepository: AnnouncementsRepository,
     private val liveTrackerService: RailwayGovLiveTrackerService,
     private val weatherRepository: WeatherRepository,
+    private val railNewsService: RailNewsService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -84,6 +88,7 @@ class HomeViewModel(
         observeLiveTrains()
         observeFreshness()
         observeWeather()
+        observeRailNews()
     }
 
     private fun observeWeather() {
@@ -114,6 +119,16 @@ class HomeViewModel(
                 _uiState.update { state -> state.copy(freshness = LiveDataFreshness.freshnessNow()) }
                 delay(15_000)
             }
+        }
+    }
+
+    private fun observeRailNews() {
+        scope.launch {
+            railNewsService.fetchNews()
+                .catch { /* ignore */ }
+                .collect { news ->
+                    _uiState.update { it.copy(railNews = news) }
+                }
         }
     }
 
