@@ -282,6 +282,7 @@ class SyrmosSchedulesService(
         val time: String = "",
         val minutesAway: Int = 0,
         val serviceType: String = "",
+        val trainNo: String? = null,
     )
 
     private companion object {

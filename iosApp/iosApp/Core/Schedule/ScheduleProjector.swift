@@ -111,7 +111,8 @@ enum ScheduleProjector {
                         lineId: dep.lineId,
                         direction: dep.direction,
                         minutesAway: max(0, absolute),
-                        serviceType: dep.serviceType
+                        serviceType: dep.serviceType,
+                        trainNo: dep.trainNo
                     )
                 }
                 if shifted.isEmpty { continue }
@@ -142,7 +143,8 @@ enum ScheduleProjector {
                         lineId: dep.lineId,
                         direction: dep.direction,
                         minutesAway: max(0, absolute),
-                        serviceType: dep.serviceType
+                        serviceType: dep.serviceType,
+                        trainNo: dep.trainNo
                     )
                 }
                 let trimmed = shifted.filter { $0.minutesAway <= timeHorizonMinutes }
@@ -240,7 +242,8 @@ enum ScheduleProjector {
                         lineId: "M3",
                         direction: "Airport",
                         minutesAway: mins,
-                        serviceType: "airport"
+                        serviceType: "airport",
+                        trainNo: nil
                     )
                 }
             }
@@ -459,7 +462,8 @@ enum ScheduleProjector {
                             lineId: lineId,
                             direction: label,
                             minutesAway: max(0, timeMin - cutoffMinutes),
-                            serviceType: "airport"
+                            serviceType: "airport",
+                            trainNo: nil
                         ))
                     }
                     slot += band.headwayMinutes
@@ -762,7 +766,8 @@ enum ScheduleProjector {
                 lineId: displayLineId(for: lineId),
                 direction: resolvedDirection,
                 minutesAway: mins,
-                serviceType: serviceTypeLabel(for: lineId, label: band.label)
+                serviceType: serviceTypeLabel(for: lineId, label: band.label),
+                trainNo: nil
             ))
             slot += band.headwayMinutes
             added += 1
@@ -870,7 +875,8 @@ enum ScheduleProjector {
                 lineId: displayLineId(for: lineId),
                 direction: dirLabel,
                 minutesAway: max(0, delta),
-                serviceType: "regular"
+                serviceType: "regular",
+                trainNo: trip.trainNo
             ))
         }
     }

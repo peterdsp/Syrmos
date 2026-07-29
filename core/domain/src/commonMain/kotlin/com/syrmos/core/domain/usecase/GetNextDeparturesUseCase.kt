@@ -25,7 +25,7 @@ data class UpcomingDeparture(
     val lineId: String,
     val notes: String? = null,
     val serviceType: String? = null,
-    /** Where this row came from, so the UI can show a source-confidence chip. */
+    val trainNo: String? = null,
     val sourceConfidence: SourceConfidence = SourceConfidence.UNKNOWN,
 )
 
@@ -156,7 +156,7 @@ class GetNextDeparturesUseCase(
             lineId = resolvedLineId,
             notes = direction.ifBlank { null },
             serviceType = serviceType.ifBlank { null },
-            // Timetabled departure served from the live schedules API.
+            trainNo = trainNo,
             sourceConfidence = SourceConfidence.SCHEDULED,
         )
     }

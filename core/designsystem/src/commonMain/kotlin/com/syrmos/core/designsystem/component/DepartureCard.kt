@@ -32,6 +32,7 @@ fun DepartureCard(
     departureTime: String,
     modifier: Modifier = Modifier,
     lineId: String? = null,
+    trainNo: String? = null,
     isAirport: Boolean = false,
     /** Where this departure came from; renders a source-confidence chip when set. */
     sourceConfidence: SourceConfidence? = null,
@@ -73,7 +74,7 @@ fun DepartureCard(
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
-                        text = direction,
+                        text = if (trainNo != null) "$direction  #$trainNo" else direction,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
