@@ -60,9 +60,9 @@ enum class L {
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> when (lang) {
-            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας"
-            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta të hekurudhave të Athinës"
-            else -> "Live Athens rail times"
+            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Ελλάδας"
+            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta te hekurudhave te Greqise"
+            else -> "Live Greece rail times"
         }
         METRO -> when (lang) {
             AppLanguage.GREEK -> "Μετρό"
@@ -395,9 +395,9 @@ enum class L {
             else -> "Account"
         }
         DESKTOP_SUBTITLE -> when (lang) {
-            AppLanguage.GREEK -> "Κέντρο ελέγχου σιδηροδρόμων Αθήνας"
-            AppLanguage.ALBANIAN -> "Qendra e kontrollit të hekurudhave të Athinës"
-            else -> "Athens rail command center"
+            AppLanguage.GREEK -> "Κέντρο ελέγχου σιδηροδρόμων Ελλάδας"
+            AppLanguage.ALBANIAN -> "Qendra e kontrollit te hekurudhave te Greqise"
+            else -> "Greece rail command center"
         }
         NETWORK_STATUS -> when (lang) {
             AppLanguage.GREEK -> "Κατάσταση δικτύου"
