@@ -25,8 +25,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  ci:
+    name: CI gate
+    uses: ./.github/workflows/ci.yml
+
   release:
     name: Signed AAB to Play (internal track)
+    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
