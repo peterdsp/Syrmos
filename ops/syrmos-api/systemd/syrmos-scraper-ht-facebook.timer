@@ -1,0 +1,10 @@
+[Unit]
+Description=Hellenic Train Facebook page daily scrape
+
+[Timer]
+OnCalendar=*-*-* 07:30:00 Europe/Athens
+Persistent=true
+Unit=syrmos-scraper-ht-facebook.service
+
+[Install]
+WantedBy=timers.target

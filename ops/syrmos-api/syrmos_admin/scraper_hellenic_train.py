@@ -1,14 +1,16 @@
-"""Daily scraper for hellenictrain.gr/anakoinoseis-ht (announcements page).
+"""Daily scraper for hellenictrain.gr/important-information.
 
-Fetches the HTML announcements index, extracts announcement links, titles,
-dates and summaries, translates from Greek to English and Albanian, and
-stores them in the `rail_news` table for the Home news carousel.
+Fetches the Important Information page, extracts service disruptions
+grouped by line category and issue type, translates from Greek to
+English and Albanian, and stores them in the `rail_news` table for the
+Home news carousel.
 
 Run: python3 -m syrmos_admin.scraper_hellenic_train
 Cron: daily via systemd timer (see systemd/syrmos-scraper-hellenic-train.timer)
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sqlite3
@@ -20,21 +22,53 @@ from urllib.request import Request, urlopen
 from . import db as dbmod
 
 USER_AGENT = "syrmos-ht-scraper/1.0 (+https://syrmos.peterdsp.dev)"
-INDEX_URL = "https://www.hellenictrain.gr/anakoinoseis-ht"
+INDEX_URL = "https://www.hellenictrain.gr/important-information"
 TIMEOUT_SECONDS = 30
 MAX_ENTRIES = 50
 
 _GREEK_LETTER_RE = re.compile(r"[Ͱ-Ͽἀ-῿]")
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
-# Match announcement links: <a href="/news/anakoinosi-...">TITLE</a>
-_ANNOUNCE_LINK_RE = re.compile(
-    r'<a[^>]+href=["\'](/news/[^"\']+)["\'][^>]*>(.*?)</a>',
-    re.IGNORECASE | re.DOTALL,
+# Parse the date header: DD/MM/YYYY
+_DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
+
+# Parse itinerary groups: class="itinerary-group <slug>"
+_ITINERARY_GROUP_RE = re.compile(
+    r'<div\s+class="itinerary-group\s+([^"]+)">(.*?)</div>\s*(?=<div\s+class="itinerary-group|$)',
+    re.DOTALL,
 )
 
-# Extract date from title text: "ΑΝΑΚΟΙΝΩΣΗ DD/MM/YYYY"
-_TITLE_DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
+# Parse issue-type groups within an itinerary group
+_ISSUE_GROUP_RE = re.compile(
+    r'<div\s+class="issue-type-group">(.*?)</div>\s*</div>',
+    re.DOTALL,
+)
+
+# Parse the itinerary title (line category)
+_ITINERARY_TITLE_RE = re.compile(
+    r'<div\s+class="itinerary-title">(.*?)</div>',
+    re.DOTALL,
+)
+
+# Parse the issue type title
+_ISSUE_TYPE_TITLE_RE = re.compile(
+    r'<div\s+class="issue-type-title">(.*?)</div>',
+    re.DOTALL,
+)
+
+# Parse result items
+_RESULT_ITEM_RE = re.compile(
+    r'<li\s+class="result-item">\s*'
+    r'<div\s+class="created-time">(.*?)</div>\s*'
+    r'<div\s+class="result-content">(.*?)</div>',
+    re.DOTALL,
+)
+
+# Parse expiration-date
+_EXPIRATION_DATE_RE = re.compile(
+    r'<div\s+class="expiration-date">(.*?)</div>',
+    re.DOTALL,
+)
 
 
 def _has_greek(text: str) -> bool:
@@ -80,23 +114,23 @@ class NewsItem:
     categories: list[str] = field(default_factory=list)
 
 
-def _slug_from_path(path: str) -> str:
-    """Extract a stable slug from the URL path, e.g. /news/anakoinosi-2025-foo
-    becomes anakoinosi-2025-foo."""
-    return path.rstrip("/").rsplit("/", 1)[-1]
-
-
-def _parse_date_from_title(title: str) -> str:
-    """Extract DD/MM/YYYY from the title and return ISO date string.
-    Falls back to empty string if no date found."""
-    m = _TITLE_DATE_RE.search(title)
+def _parse_date(text: str) -> str:
+    """Extract DD/MM/YYYY and return ISO date string."""
+    m = _DATE_RE.search(text)
     if not m:
-        return ""
+        return date.today().isoformat()
     try:
         day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
         return date(year, month, day).isoformat()
     except (ValueError, OverflowError):
-        return ""
+        return date.today().isoformat()
+
+
+def _make_id(line_cat: str, issue_type: str, content: str) -> str:
+    """Create a stable entry ID from the content."""
+    raw = f"{line_cat}|{issue_type}|{content[:100]}"
+    digest = hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
+    return f"ht-info-{digest}"
 
 
 def fetch_page(url: str = INDEX_URL) -> str:
@@ -108,65 +142,81 @@ def fetch_page(url: str = INDEX_URL) -> str:
         return resp.read().decode("utf-8", errors="replace")
 
 
-def parse_announcements(html: str) -> list[NewsItem]:
-    """Parse the announcements index page and return NewsItem list."""
+def parse_important_info(html: str) -> list[NewsItem]:
+    """Parse the important-information page and return NewsItem list."""
     items: list[NewsItem] = []
     seen: set[str] = set()
 
-    for match in _ANNOUNCE_LINK_RE.finditer(html):
-        path = match.group(1)
-        raw_title = _strip_html(match.group(2)).strip()
+    # Extract date
+    date_match = _EXPIRATION_DATE_RE.search(html)
+    published_at = _parse_date(date_match.group(1) if date_match else "")
 
-        if not path.startswith("/news/"):
-            continue
-        if not raw_title:
-            continue
+    # Find all itinerary-group sections by splitting on the class marker
+    group_starts = list(re.finditer(
+        r'<div\s+class="itinerary-group\s+([^"]+)">',
+        html,
+    ))
 
-        slug = _slug_from_path(path)
-        entry_id = f"ht-{slug}"
+    for gi, group_match in enumerate(group_starts):
+        group_slug = group_match.group(1).strip()
+        start = group_match.end()
+        end = group_starts[gi + 1].start() if gi + 1 < len(group_starts) else len(html)
+        group_html = html[start:end]
 
-        if entry_id in seen:
-            continue
-        seen.add(entry_id)
-
-        url = f"https://www.hellenictrain.gr{path}"
-        published_at = _parse_date_from_title(raw_title)
-
-        # Extract summary: look for text after this link up to the next
-        # announcement link or "read more" marker.
-        link_end = match.end()
-        next_link = _ANNOUNCE_LINK_RE.search(html, link_end)
-        chunk_end = next_link.start() if next_link else link_end + 2000
-        chunk = html[link_end:chunk_end]
-        summary = _strip_html(chunk).strip()
-        # Remove "read more" tail
-        for marker in ("Διαβάστε περισσότερα", "Read more"):
-            idx = summary.find(marker)
-            if idx >= 0:
-                summary = summary[:idx].strip()
-        summary = summary[:500]
-
-        title_en = _translate_en(raw_title)
-        title_sq = _translate_sq(raw_title)
-        summary_en = _translate_en(summary) if summary else ""
-        summary_sq = _translate_sq(summary) if summary else ""
-
-        items.append(NewsItem(
-            entry_id=entry_id,
-            title=raw_title,
-            title_en=title_en,
-            title_sq=title_sq,
-            summary=summary,
-            summary_en=summary_en,
-            summary_sq=summary_sq,
-            url=url,
-            published_at=published_at,
-            thumbnail_url="",
-            categories=["Hellenic Train"],
+        # Find all issue-type-group sections within this group
+        issue_starts = list(re.finditer(
+            r'<div\s+class="issue-type-group">',
+            group_html,
         ))
 
-        if len(items) >= MAX_ENTRIES:
-            break
+        for ii, issue_match in enumerate(issue_starts):
+            istart = issue_match.end()
+            iend = issue_starts[ii + 1].start() if ii + 1 < len(issue_starts) else len(group_html)
+            issue_html = group_html[istart:iend]
+
+            # Extract line category and issue type
+            itinerary_m = _ITINERARY_TITLE_RE.search(issue_html)
+            issue_type_m = _ISSUE_TYPE_TITLE_RE.search(issue_html)
+            line_category = _strip_html(itinerary_m.group(1)) if itinerary_m else group_slug.replace("_", " ").title()
+            issue_type = _strip_html(issue_type_m.group(1)) if issue_type_m else ""
+
+            # Extract individual result items
+            for result_m in _RESULT_ITEM_RE.finditer(issue_html):
+                time_str = _strip_html(result_m.group(1))
+                content = _strip_html(result_m.group(2))[:500]
+
+                if not content:
+                    continue
+
+                entry_id = _make_id(line_category, issue_type, content)
+                if entry_id in seen:
+                    continue
+                seen.add(entry_id)
+
+                title = f"{line_category}: {issue_type}" if issue_type else line_category
+                summary = content
+
+                title_en = _translate_en(title)
+                title_sq = _translate_sq(title)
+                summary_en = _translate_en(summary) if summary else ""
+                summary_sq = _translate_sq(summary) if summary else ""
+
+                items.append(NewsItem(
+                    entry_id=entry_id,
+                    title=title,
+                    title_en=title_en,
+                    title_sq=title_sq,
+                    summary=summary,
+                    summary_en=summary_en,
+                    summary_sq=summary_sq,
+                    url=INDEX_URL,
+                    published_at=published_at,
+                    thumbnail_url="",
+                    categories=["Hellenic Train", line_category],
+                ))
+
+                if len(items) >= MAX_ENTRIES:
+                    return items
 
     return items
 
@@ -218,7 +268,7 @@ def run_once() -> int:
                 pass
         return 0
 
-    items = parse_announcements(html)
+    items = parse_important_info(html)
 
     with dbmod.connect() as conn:
         dbmod.migrate(conn)
