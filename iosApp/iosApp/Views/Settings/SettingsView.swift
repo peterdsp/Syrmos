@@ -81,8 +81,8 @@ struct SyrmosSettingsView: View {
                 }
 
                 Section(loc[.data]) {
-                    LabeledContent(loc[.stations], value: "90+")
-                    LabeledContent(loc[.lines], value: "9")
+                    LabeledContent(loc[.stations], value: "380+")
+                    LabeledContent(loc[.lines], value: "31")
                     LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
                     Button {
                         Task { await runRefresh() }

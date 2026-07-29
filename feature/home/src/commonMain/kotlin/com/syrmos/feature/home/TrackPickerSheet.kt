@@ -11,11 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -29,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -52,16 +58,10 @@ import kotlinx.datetime.Clock
 import org.koin.compose.koinInject
 
 /**
- * Bottom sheet that lets the user pick any train to track. The flow is a
- * linear four-step drill-down (Line -> Direction -> Station -> Departure)
- * because that mirrors how commuters actually think about a train they
- * want to catch: "which line", "which way", "from which station", "which
- * specific departure". Each step is a plain list so it works cleanly on
- * iOS, Android, and Web via the shared Compose runtime.
- *
- * The sheet stays open across steps so back navigation is one tap. Picking
- * a departure calls onTrack with a fully-hydrated [TrackedDeparture] and
- * dismisses the sheet.
+ * Bottom sheet that lets the user pick any train to track. Two modes:
+ * 1. Track a specific train: Line -> Direction -> Station -> Departure
+ * 2. Track all trains at a station: Line -> Direction -> Station (station mode)
+ * Metro lines are grayed out in specific-train mode.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +74,8 @@ fun TrackPickerSheet(
     val getLineDetail = koinInject<GetLineDetailUseCase>()
     val getNextDepartures = koinInject<GetNextDeparturesUseCase>()
 
-    var step by remember { mutableStateOf(PickStep.LINE) }
+    var step by remember { mutableStateOf(PickStep.CHOICE) }
+    var trackMode by remember { mutableStateOf<TrackMode?>(null) }
     var selectedLine by remember { mutableStateOf<Line?>(null) }
     var selectedDirection by remember { mutableStateOf<TrackDir?>(null) }
     var selectedStation by remember { mutableStateOf<Station?>(null) }
@@ -92,9 +93,6 @@ fun TrackPickerSheet(
         val dir = selectedDirection
         val station = selectedStation
         if (line != null && dir != null && station != null) {
-            // Airport trains (M3_AIR) travel outbound, so query OUTBOUND and
-            // then split by service type: the Airport option keeps only airport
-            // trains; the regular outbound option drops them so they don't leak.
             val queryDir = if (dir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
             getNextDepartures.invoke(
                 stationId = station.id,
@@ -132,7 +130,11 @@ fun TrackPickerSheet(
                 lang = lang,
                 onBack = {
                     step = when (step) {
-                        PickStep.LINE -> PickStep.LINE
+                        PickStep.CHOICE -> PickStep.CHOICE
+                        PickStep.LINE -> {
+                            trackMode = null
+                            PickStep.CHOICE
+                        }
                         PickStep.DIRECTION -> {
                             selectedLine = null
                             PickStep.LINE
@@ -150,9 +152,17 @@ fun TrackPickerSheet(
             )
 
             when (step) {
+                PickStep.CHOICE -> ChoiceList(
+                    lang = lang,
+                    onSelect = { mode ->
+                        trackMode = mode
+                        step = PickStep.LINE
+                    },
+                )
                 PickStep.LINE -> LineList(
                     lines = lines,
                     lang = lang,
+                    trackMode = trackMode,
                     onSelect = {
                         selectedLine = it
                         step = PickStep.DIRECTION
@@ -169,9 +179,48 @@ fun TrackPickerSheet(
                 PickStep.STATION -> StationList(
                     stations = stations,
                     lang = lang,
-                    onSelect = {
-                        selectedStation = it
-                        step = PickStep.DEPARTURE
+                    onSelect = { station ->
+                        selectedStation = station
+                        if (trackMode == TrackMode.STATION_ALL) {
+                            val line = selectedLine ?: return@StationList
+                            val dir = selectedDirection ?: return@StationList
+                            val nowEpoch = Clock.System.now().epochSeconds
+                            val routeDir = if (dir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
+                            val dirKey = when (dir) {
+                                TrackDir.OUTBOUND -> "outbound"
+                                TrackDir.INBOUND -> "inbound"
+                                TrackDir.AIRPORT -> "airport"
+                            }
+                            val stationName = if (lang == AppLanguage.GREEK) station.nameEl else station.name
+                            val lineIds = station.lineIds.ifEmpty { listOf(line.id) }
+                            val route = computeRouteStations(
+                                stations = stations,
+                                targetStationId = station.id,
+                                direction = routeDir,
+                                lang = lang,
+                            )
+                            DepartureTracking.track(
+                                TrackedDeparture(
+                                    lineId = line.id,
+                                    stationId = station.id,
+                                    stationName = stationName,
+                                    destination = when (dir) {
+                                        TrackDir.OUTBOUND -> line.terminalB
+                                        TrackDir.INBOUND -> line.terminalA
+                                        TrackDir.AIRPORT -> airportLabel(lang)
+                                    },
+                                    scheduledTime = "",
+                                    targetEpochSeconds = nowEpoch + 300L,
+                                    routeStations = route,
+                                    directionKey = dirKey,
+                                    isStationMode = true,
+                                    stationLineIds = lineIds,
+                                ),
+                            )
+                            onDismiss()
+                        } else {
+                            step = PickStep.DEPARTURE
+                        }
                     },
                 )
                 PickStep.DEPARTURE -> DepartureList(
@@ -187,8 +236,6 @@ fun TrackPickerSheet(
                             TrackDir.INBOUND -> line.terminalA
                             TrackDir.AIRPORT -> airportLabel(lang)
                         }
-                        // Airport trains share the outbound corridor, so route
-                        // the preview outbound toward the tracked station.
                         val routeDir = if (pickDir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
                         val dirKey = when (pickDir) {
                             TrackDir.OUTBOUND -> "outbound"
@@ -220,12 +267,12 @@ fun TrackPickerSheet(
     }
 }
 
-private enum class PickStep { LINE, DIRECTION, STATION, DEPARTURE }
+private enum class PickStep { CHOICE, LINE, DIRECTION, STATION, DEPARTURE }
+private enum class TrackMode { SPECIFIC_TRAIN, STATION_ALL }
 
-/** UI-level track direction. AIRPORT is M3's airport branch (queried as
- *  outbound, then filtered to airport service); the shared Direction model
- *  stays binary. */
 private enum class TrackDir { OUTBOUND, INBOUND, AIRPORT }
+
+private val metroLineIds = setOf("M1", "M2", "M3")
 
 @Composable
 private fun PickHeader(
@@ -239,7 +286,7 @@ private fun PickHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (step != PickStep.LINE) {
+        if (step != PickStep.CHOICE) {
             Text(
                 text = "←",
                 style = MaterialTheme.typography.titleMedium,
@@ -253,9 +300,10 @@ private fun PickHeader(
         }
         Text(
             text = when (step) {
+                PickStep.CHOICE -> trackHeader(lang)
                 PickStep.LINE -> pickLineHeader(lang)
-                PickStep.DIRECTION -> "${selectedLine?.id ?: ""} · ${pickDirectionHeader(lang)}"
-                PickStep.STATION -> "${selectedLine?.id ?: ""} · ${pickStationHeader(lang)}"
+                PickStep.DIRECTION -> "${selectedLine?.id ?: ""} - ${pickDirectionHeader(lang)}"
+                PickStep.STATION -> "${selectedLine?.id ?: ""} - ${pickStationHeader(lang)}"
                 PickStep.DEPARTURE -> "${selectedStation?.let { if (lang == AppLanguage.GREEK) it.nameEl else it.name } ?: ""}"
             },
             style = MaterialTheme.typography.titleMedium,
@@ -267,38 +315,129 @@ private fun PickHeader(
 }
 
 @Composable
+private fun ChoiceList(
+    lang: AppLanguage,
+    onSelect: (TrackMode) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable { onSelect(TrackMode.SPECIFIC_TRAIN) }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Train,
+                contentDescription = null,
+                tint = SyrmosColorTokens.metroBlue,
+                modifier = Modifier.size(28.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = specificTrainTitle(lang),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = specificTrainSubtitle(lang),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "›",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable { onSelect(TrackMode.STATION_ALL) }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.LocationOn,
+                contentDescription = null,
+                tint = SyrmosColorTokens.suburban,
+                modifier = Modifier.size(28.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stationAllTitle(lang),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stationAllSubtitle(lang),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "›",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun LineList(
     lines: List<Line>,
     lang: AppLanguage,
+    trackMode: TrackMode?,
     onSelect: (Line) -> Unit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(lines) { line ->
             val accent = line.color.toComposeColor()
+            val isMetro = line.id in metroLineIds
+            val disabled = isMetro && trackMode == TrackMode.SPECIFIC_TRAIN
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surface)
-                    .clickable { onSelect(line) }
+                    .then(if (disabled) Modifier else Modifier.clickable { onSelect(line) })
+                    .alpha(if (disabled) 0.55f else 1f)
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                LineBadgeSmall(id = line.id, accent = accent)
+                LineBadgeSmall(id = line.id, accent = if (disabled) Color.Gray else accent)
                 Column(modifier = Modifier.padding(end = 8.dp)) {
                     Text(
                         text = if (lang == AppLanguage.GREEK && line.nameEl.isNotBlank()) line.nameEl else line.name,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
+                        color = if (disabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     )
-                    Text(
-                        text = "${line.terminalA} - ${line.terminalB}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (disabled) {
+                        Text(
+                            text = metroFrequentNote(lang),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFFFF9800),
+                        )
+                    } else {
+                        Text(
+                            text = "${line.terminalA} - ${line.terminalB}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -323,7 +462,6 @@ private fun DirectionList(
             accent = accent,
             onClick = { onSelect(TrackDir.INBOUND) },
         )
-        // M3 also runs the airport branch (M3_AIR); let the user track it.
         if (line.id == "M3") {
             DirectionRow(
                 label = "${L.TO.text(lang)} ${airportLabel(lang)}",
@@ -464,9 +602,14 @@ private fun LineBadgeSmall(id: String, accent: Color) {
     }
 }
 
+private fun trackHeader(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Παρακολούθηση"
+    AppLanguage.ALBANIAN -> "Ndiq"
+    else -> "Track"
+}
 private fun pickLineHeader(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Επίλεξε γραμμή"
-    AppLanguage.ALBANIAN -> "Zgjidh linjën"
+    AppLanguage.ALBANIAN -> "Zgjidh linjen"
     else -> "Pick a line"
 }
 private fun pickDirectionHeader(lang: AppLanguage) = when (lang) {
@@ -481,7 +624,7 @@ private fun pickStationHeader(lang: AppLanguage) = when (lang) {
 }
 private fun noDeparturesLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Δεν υπάρχουν επόμενες αναχωρήσεις."
-    AppLanguage.ALBANIAN -> "S'ka nisje të radhës."
+    AppLanguage.ALBANIAN -> "S'ka nisje te radhes."
     else -> "No upcoming departures."
 }
 private fun trackVerbLabel(lang: AppLanguage) = when (lang) {
@@ -493,4 +636,29 @@ private fun airportLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Αεροδρόμιο"
     AppLanguage.ALBANIAN -> "Aeroporti"
     else -> "Airport"
+}
+private fun specificTrainTitle(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Συγκεκριμένο δρομολόγιο"
+    AppLanguage.ALBANIAN -> "Nje tren specifik"
+    else -> "A specific train"
+}
+private fun specificTrainSubtitle(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Επιλέξτε γραμμή, σταθμό και δρομολόγιο"
+    AppLanguage.ALBANIAN -> "Zgjidhni linjen, stacionin dhe nisjen"
+    else -> "Pick a line, station and departure"
+}
+private fun stationAllTitle(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Ολα τα δρομολόγια σε σταθμό"
+    AppLanguage.ALBANIAN -> "Te gjitha trenet ne stacion"
+    else -> "All trains at a station"
+}
+private fun stationAllSubtitle(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Παρακολουθήστε συνεχώς τα δρομολόγια"
+    AppLanguage.ALBANIAN -> "Ndiqni vazhdimisht trenet"
+    else -> "Continuously track departures"
+}
+private fun metroFrequentNote(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
+    AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevoje per ndjekje"
+    else -> "Metro runs frequently, no need to track"
 }
