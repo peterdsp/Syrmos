@@ -534,7 +534,7 @@ private struct FeaturedRow: View {
             case .english: return "Now"
             }
         }
-        return "\(departure.minutesAway) min"
+        return departure.minutesAwayDisplay(language: loc.language)
     }
 
     private var directionLabel: String {
@@ -568,7 +568,7 @@ private struct ExpandedRow: View {
 
             HStack(spacing: 6) {
                 if isToday, departure.minutesAway > 0 {
-                    Text("\(departure.minutesAway) min")
+                    Text(departure.minutesAwayDisplay(language: loc.language))
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
                 }

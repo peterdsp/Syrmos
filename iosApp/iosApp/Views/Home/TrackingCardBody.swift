@@ -46,7 +46,7 @@ struct TrackingCardBody: View {
                     .truncationMode(.tail)
             }
 
-            Text(due ? dueLabel : "\(remaining) min")
+            Text(due ? dueLabel : formatRemaining(remaining))
                 .font(.system(size: 44, weight: .bold, design: .rounded))
                 .foregroundStyle(accent)
 
@@ -148,6 +148,15 @@ struct TrackingCardBody: View {
         case .english: return "Stop tracking"
         }
     }
+    private func formatRemaining(_ mins: Int) -> String {
+        if mins >= 60 {
+            let h = mins / 60
+            let m = mins % 60
+            return m > 0 ? "\(h)h \(m)min" : "\(h)h"
+        }
+        return "\(mins) min"
+    }
+
     private var arrivingLabel: String {
         if tracked.isStationMode {
             switch lang {

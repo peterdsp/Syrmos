@@ -119,9 +119,9 @@ enum LocalizedKey {
 
     func text(for lang: AppLanguage) -> String {
         switch (self, lang) {
-        case (.appSubtitle, .english): return "Live Athens rail times"
-        case (.appSubtitle, .greek): return "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας"
-        case (.appSubtitle, .albanian): return "Oraret e drejtpërdrejta të hekurudhave të Athinës"
+        case (.appSubtitle, .english): return "Live Greece rail times"
+        case (.appSubtitle, .greek): return "Ζωντανοί χρόνοι σιδηροδρόμων Ελλάδας"
+        case (.appSubtitle, .albanian): return "Oraret e drejtpërdrejta te hekurudhave te Greqise"
         case (.metro, .english): return "Metro"
         case (.metro, .greek): return "Μετρό"
         case (.metro, .albanian): return "Metro"
