@@ -93,6 +93,9 @@ enum LocalizedKey {
     case onboardLocationTitle
     case onboardLocationBody
     case onboardLocationCta
+    case onboardNotifTitle
+    case onboardNotifBody
+    case onboardNotifCta
     case onboardPrivacyTitle
     case onboardPrivacyBody
     case onboardContinue
@@ -215,6 +218,15 @@ enum LocalizedKey {
         case (.onboardLocationCta, .english): return "Allow location"
         case (.onboardLocationCta, .greek): return "Επίτρεψε την τοποθεσία"
         case (.onboardLocationCta, .albanian): return "Lejo vendndodhjen"
+        case (.onboardNotifTitle, .english): return "Stay informed"
+        case (.onboardNotifTitle, .greek): return "Μεινε ενημερος"
+        case (.onboardNotifTitle, .albanian): return "Qendro i informuar"
+        case (.onboardNotifBody, .english): return "Get alerts for service disruptions near you, weather warnings that may affect your commute, and a morning briefing with the latest updates."
+        case (.onboardNotifBody, .greek): return "Λαβε ειδοποιησεις για διακοπες υπηρεσιων κοντα σου, καιρικες προειδοποιησεις που μπορει να επηρεασουν τη μετακινηση σου, και πρωινη ενημερωση με τα τελευταια νεα."
+        case (.onboardNotifBody, .albanian): return "Merr njoftime per nderprerje sherbimesh prane teje, paralajmerime moti qe mund te ndikojne udhetimin tend, dhe informim mengjesit me perditesimet me te fundit."
+        case (.onboardNotifCta, .english): return "Allow notifications"
+        case (.onboardNotifCta, .greek): return "Επιτρεψε τις ειδοποιησεις"
+        case (.onboardNotifCta, .albanian): return "Lejo njoftimet"
         case (.onboardPrivacyTitle, .english): return "No accounts. No tracking."
         case (.onboardPrivacyTitle, .greek): return "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."
         case (.onboardPrivacyTitle, .albanian): return "Pa llogari. Pa gjurmim."

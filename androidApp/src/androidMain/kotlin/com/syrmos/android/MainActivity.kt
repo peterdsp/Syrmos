@@ -11,12 +11,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.syrmos.app.SyrmosApp
 import com.syrmos.app.platform.setLocationPermissionRequester
+import com.syrmos.app.platform.setNotificationPermissionRequester
 import com.syrmos.app.platform.setPendingAssistantQuery
 import kotlinx.coroutines.CompletableDeferred
 
 class MainActivity : ComponentActivity() {
 
     private var pending: CompletableDeferred<Unit>? = null
+    private var notifPending: CompletableDeferred<Unit>? = null
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -25,12 +27,12 @@ class MainActivity : ComponentActivity() {
         pending = null
     }
 
-    // Lets the departure-tracking ongoing notification show on Android 13+.
-    // Asked once on launch; declining just means no Lock Screen countdown, the
-    // in-app card still works.
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { }
+    ) {
+        notifPending?.complete(Unit)
+        notifPending = null
+    }
 
     // Location for the "Near Me" Glance widget (nearest station + walking
     // distance). Asked once on launch when not already granted; declining just
@@ -53,13 +55,6 @@ class MainActivity : ComponentActivity() {
         setTheme(R.style.Theme_Syrmos)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
 
         // Ask for location on launch when it hasn't been granted, so the
         // "Near Me" widget can resolve the nearest station. The OS stops
@@ -86,6 +81,13 @@ class MainActivity : ComponentActivity() {
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                 )
             )
+            deferred.await()
+        }
+
+        setNotificationPermissionRequester {
+            val deferred = CompletableDeferred<Unit>()
+            notifPending = deferred
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             deferred.await()
         }
 

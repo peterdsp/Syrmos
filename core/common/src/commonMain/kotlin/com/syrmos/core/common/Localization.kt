@@ -42,6 +42,7 @@ enum class L {
     ONBOARD_WELCOME_TITLE, ONBOARD_WELCOME_BODY,
     ONBOARD_LIVE_TITLE, ONBOARD_LIVE_BODY,
     ONBOARD_LOCATION_TITLE, ONBOARD_LOCATION_BODY, ONBOARD_LOCATION_CTA,
+    ONBOARD_NOTIF_TITLE, ONBOARD_NOTIF_BODY, ONBOARD_NOTIF_CTA,
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
     NEXT_TRAIN, TO, LIVE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE,
@@ -261,6 +262,21 @@ enum class L {
             AppLanguage.GREEK -> "Επίτρεψε την τοποθεσία"
             AppLanguage.ALBANIAN -> "Lejo vendndodhjen"
             else -> "Allow location"
+        }
+        ONBOARD_NOTIF_TITLE -> when (lang) {
+            AppLanguage.GREEK -> "Μεινε ενημερος"
+            AppLanguage.ALBANIAN -> "Qendro i informuar"
+            else -> "Stay informed"
+        }
+        ONBOARD_NOTIF_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Λαβε ειδοποιησεις για διακοπες υπηρεσιων κοντα σου, καιρικες προειδοποιησεις που μπορει να επηρεασουν τη μετακινηση σου, και πρωινη ενημερωση με τα τελευταια νεα."
+            AppLanguage.ALBANIAN -> "Merr njoftime per nderprerje sherbimesh prane teje, paralajmerime moti qe mund te ndikojne udhetimin tend, dhe informim mengjesit me perditesimet me te fundit."
+            else -> "Get alerts for service disruptions near you, weather warnings that may affect your commute, and a morning briefing with the latest updates."
+        }
+        ONBOARD_NOTIF_CTA -> when (lang) {
+            AppLanguage.GREEK -> "Επιτρεψε τις ειδοποιησεις"
+            AppLanguage.ALBANIAN -> "Lejo njoftimet"
+            else -> "Allow notifications"
         }
         ONBOARD_PRIVACY_TITLE -> when (lang) {
             AppLanguage.GREEK -> "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."

@@ -63,6 +63,11 @@ struct WhatsNewView: View {
             "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως",
             "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere"
         ))
+        list.append(t(
+            "Push notifications: service alerts near you, weather warnings and a morning briefing",
+            "Ειδοποιησεις: ειδοποιησεις υπηρεσιων κοντα σου, καιρικες προειδοποιησεις και πρωινη ενημερωση",
+            "Njoftime push: njoftime sherbimi prane teje, paralajmerime moti dhe informim mengjesit"
+        ))
         return list
     }
 
@@ -125,6 +130,7 @@ struct WhatsNewView: View {
             .padding(.top, 12)
             .padding(.bottom, 24)
         }
+        .task { await NotificationService.shared.requestAuthorization() }
         .background(backdrop.ignoresSafeArea())
         .presentationDetents([.large])
         .presentationCornerRadius(28)

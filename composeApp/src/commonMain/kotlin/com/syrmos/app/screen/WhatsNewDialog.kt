@@ -9,15 +9,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.syrmos.app.platform.requestNotificationPermission
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import kotlinx.coroutines.launch
 
 /**
  * One-time highlights shown after an install or update, gated by the stored
@@ -66,7 +70,18 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere",
             )
         )
+        add(
+            t(
+                "Push notifications: service alerts near you, weather warnings and a morning briefing",
+                "Ειδοποιησεις: ειδοποιησεις υπηρεσιων κοντα σου, καιρικες προειδοποιησεις και πρωινη ενημερωση",
+                "Njoftime push: njoftime sherbimi prane teje, paralajmerime moti dhe informim mengjesit",
+            )
+        )
     }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) { requestNotificationPermission() }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {

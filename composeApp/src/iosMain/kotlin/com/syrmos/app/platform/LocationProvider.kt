@@ -31,3 +31,7 @@ actual fun markWhatsNewSeen(version: String) {
 }
 
 actual fun consumePendingAssistantQuery(): String? = null
+
+actual suspend fun requestNotificationPermission() {
+    // iOS uses native SwiftUI onboarding which calls NotificationService directly.
+}
