@@ -1,0 +1,83 @@
+package com.syrmos.core.network
+
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+data class RailNewsItem(
+    val id: String,
+    val title: String,
+    val titleEn: String,
+    val titleSq: String = "",
+    val summary: String = "",
+    val summaryEn: String = "",
+    val summarySq: String = "",
+    val url: String,
+    val publishedAt: String,
+    val thumbnailUrl: String = "",
+    val categories: List<String> = emptyList(),
+)
+
+class RailNewsService(private val httpClient: HttpClient) {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    fun fetchNews(): Flow<List<RailNewsItem>> = flow {
+        emit(fetchOnce())
+    }
+
+    private suspend fun fetchOnce(): List<RailNewsItem> {
+        return try {
+            val response = httpClient.get(NEWS_URL)
+            val body = response.bodyAsText()
+            val payload = json.decodeFromString<NewsPayload>(body)
+            payload.news.map { item ->
+                RailNewsItem(
+                    id = item.id,
+                    title = item.title,
+                    titleEn = item.titleEn.ifBlank { item.title },
+                    titleSq = item.titleSq,
+                    summary = item.summary,
+                    summaryEn = item.summaryEn,
+                    summarySq = item.summarySq,
+                    url = item.url,
+                    publishedAt = item.publishedAt,
+                    thumbnailUrl = item.thumbnailUrl,
+                    categories = item.categories,
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    @Serializable
+    private data class NewsPayload(
+        @SerialName("updatedAt") val updatedAt: String? = null,
+        val count: Int = 0,
+        val news: List<NewsItemPayload> = emptyList(),
+    )
+
+    @Serializable
+    private data class NewsItemPayload(
+        val id: String,
+        val title: String,
+        @SerialName("titleEn") val titleEn: String = "",
+        @SerialName("titleSq") val titleSq: String = "",
+        val summary: String = "",
+        @SerialName("summaryEn") val summaryEn: String = "",
+        @SerialName("summarySq") val summarySq: String = "",
+        val url: String = "",
+        @SerialName("publishedAt") val publishedAt: String = "",
+        @SerialName("thumbnailUrl") val thumbnailUrl: String = "",
+        val categories: List<String> = emptyList(),
+    )
+
+    private companion object {
+        private const val NEWS_URL = "https://api-syrmos.peterdsp.dev/api/news"
+    }
+}

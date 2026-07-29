@@ -1,6 +1,7 @@
 package com.syrmos.core.network.di
 
 import com.syrmos.core.network.AriadneChatService
+import com.syrmos.core.network.RailNewsService
 import com.syrmos.core.network.STASYAnnouncementService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLinesService
@@ -28,6 +29,7 @@ val networkModule = module {
             }
         }
     }
+    single { RailNewsService(httpClient = get()) }
     single { STASYAnnouncementService(httpClient = get()) }
     single { RailwayGovLiveTrackerService(httpClient = get()) }
     single { SyrmosLinesService(httpClient = get()) }

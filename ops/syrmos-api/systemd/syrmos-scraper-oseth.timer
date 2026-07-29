@@ -1,0 +1,10 @@
+[Unit]
+Description=OSETH announcements bi-hourly scrape
+
+[Timer]
+OnCalendar=*-*-* 00/2:15:00 Europe/Athens
+Persistent=true
+Unit=syrmos-scraper-oseth.service
+
+[Install]
+WantedBy=timers.target
