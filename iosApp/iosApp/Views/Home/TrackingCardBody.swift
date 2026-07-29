@@ -149,6 +149,13 @@ struct TrackingCardBody: View {
         }
     }
     private var arrivingLabel: String {
+        if tracked.isStationMode {
+            switch lang {
+            case .greek: return "Σταθμός \(tracked.stationName)"
+            case .albanian: return "Stacioni \(tracked.stationName)"
+            case .english: return "\(tracked.stationName)"
+            }
+        }
         switch lang {
         case .greek: return "Φτάνει \(tracked.stationName)"
         case .albanian: return "Po arrin \(tracked.stationName)"

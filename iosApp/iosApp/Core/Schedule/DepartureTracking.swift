@@ -36,6 +36,8 @@ struct TrackedDeparture: Equatable {
     let routeStations: [TrackedRouteStop]
     let directionKey: String
     var currentStationName: String?
+    let isStationMode: Bool
+    let stationLineIds: [String]
 
     init(
         lineId: String,
@@ -46,7 +48,9 @@ struct TrackedDeparture: Equatable {
         targetEpoch: TimeInterval,
         routeStations: [TrackedRouteStop] = [],
         directionKey: String = "outbound",
-        currentStationName: String? = nil
+        currentStationName: String? = nil,
+        isStationMode: Bool = false,
+        stationLineIds: [String] = []
     ) {
         self.lineId = lineId
         self.stationId = stationId
@@ -57,6 +61,8 @@ struct TrackedDeparture: Equatable {
         self.routeStations = routeStations
         self.directionKey = directionKey
         self.currentStationName = currentStationName
+        self.isStationMode = isStationMode
+        self.stationLineIds = stationLineIds
     }
 
     func minutesRemaining(_ now: TimeInterval) -> Int {
@@ -154,6 +160,11 @@ final class DepartureTracking: ObservableObject {
 
     private func pollLivePosition() {
         guard let d = active else { return }
+        let now = Date().timeIntervalSince1970
+        if d.isStationMode && d.isDue(now) {
+            advanceToNextDeparture(d)
+            return
+        }
         Task {
             var stationName: String?
             if Self.gpsLineIds.contains(d.lineId) {
@@ -166,6 +177,50 @@ final class DepartureTracking: ObservableObject {
             updated.currentStationName = name
             active = updated
         }
+    }
+
+    private func advanceToNextDeparture(_ d: TrackedDeparture) {
+        let lineIds = d.stationLineIds.isEmpty ? [d.lineId] : d.stationLineIds
+        let departures = ScheduleProjector.nextDepartures(
+            for: d.stationId, lineIds: lineIds, limit: 10, timeHorizonMinutes: 3 * 60
+        ).filter { $0.minutesAway > 0 }
+        guard let next = departures.first else { return }
+        let lang = LocalizationManager.shared.language
+        let stations = SyrmosData.stations(for: next.lineId)
+        let direction: TransitDirection = {
+            guard let line = SyrmosData.line(for: next.lineId) else { return .outbound }
+            return line.terminalA.localizedCaseInsensitiveContains(next.direction)
+                ? .inbound : .outbound
+        }()
+        let route = TrackedDeparture.computeRouteStations(
+            stations: stations,
+            targetStationId: d.stationId,
+            direction: direction,
+            language: lang
+        )
+        let dirKey: String
+        switch direction {
+        case .outbound: dirKey = "outbound"
+        case .inbound: dirKey = "inbound"
+        case .airport: dirKey = "airport"
+        }
+        let updated = TrackedDeparture(
+            lineId: next.lineId,
+            stationId: d.stationId,
+            stationName: d.stationName,
+            destination: next.direction,
+            scheduledTime: next.time,
+            targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60,
+            routeStations: route,
+            directionKey: dirKey,
+            isStationMode: true,
+            stationLineIds: d.stationLineIds
+        )
+        active = updated
+        startedEpoch = Date().timeIntervalSince1970
+        startActivity(updated)
+        lastWatchMinute = -1
+        pushToWatch(updated)
     }
 
     private func resolveGPSStation(_ d: TrackedDeparture) async -> String? {

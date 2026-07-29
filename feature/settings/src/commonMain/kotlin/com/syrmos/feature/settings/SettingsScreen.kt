@@ -199,12 +199,12 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             SettingsSection(title = L.DATA.text(lang)) {
                 SettingsRow(
                     title = L.STATIONS.text(lang),
-                    value = "90+",
+                    value = "380+",
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 SettingsRow(
                     title = L.LINES.text(lang),
-                    value = "9",
+                    value = "31",
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 SettingsRow(

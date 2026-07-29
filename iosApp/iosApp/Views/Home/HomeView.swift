@@ -190,8 +190,6 @@ struct HomeView: View {
         let stationId = node.stationIdByLineId[next.lineId] ?? node.stationIds.first ?? node.id
         let stations = SyrmosData.stations(for: next.lineId)
         let terminal = SyrmosData.line(for: next.lineId).map { line in
-            // Direction on iOS is a free-form label ("to Airport"); take the
-            // matching terminal so route slicing goes in the right direction.
             line.terminalB.localizedCaseInsensitiveContains(next.direction)
                 ? TransitDirection.outbound
                 : TransitDirection.inbound
@@ -202,6 +200,7 @@ struct HomeView: View {
             direction: terminal,
             language: loc.language
         )
+        let allLineIds = node.lineIds
         DepartureTracking.shared.track(
             TrackedDeparture(
                 lineId: next.lineId,
@@ -210,7 +209,9 @@ struct HomeView: View {
                 destination: next.direction,
                 scheduledTime: next.time,
                 targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60,
-                routeStations: route
+                routeStations: route,
+                isStationMode: true,
+                stationLineIds: allLineIds
             )
         )
     }

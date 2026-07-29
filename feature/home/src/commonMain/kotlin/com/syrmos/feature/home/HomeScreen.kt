@@ -64,6 +64,7 @@ import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
+import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
@@ -99,12 +100,54 @@ fun HomeScreen(
     val livePositionsService: SyrmosLivePositionsService = koinInject()
     val suburbanTracker: RailwayGovLiveTrackerService = koinInject()
     val gpsLineIds = setOf("A1", "A2", "A3", "A4")
+    val getNextDeparturesForTrack = koinInject<GetNextDeparturesUseCase>()
     LaunchedEffect(tracked?.lineId, tracked?.targetEpochSeconds) {
         val t = tracked ?: return@LaunchedEffect
         val offsets = livePositionsService.fetchStationOffsets() ?: return@LaunchedEffect
         val offsetMap = offsets.lines.associate { (it.lineId to it.direction) to it.stops }
         while (true) {
             val current = DepartureTracking.active.value ?: break
+            val nowEpochSec = Clock.System.now().epochSeconds
+            if (current.isStationMode && current.isDue(nowEpochSec)) {
+                val lineIds = current.stationLineIds.ifEmpty { listOf(current.lineId) }
+                val allDeps = mutableListOf<UpcomingDeparture>()
+                for (lid in lineIds) {
+                    val deps = getNextDeparturesForTrack.invoke(
+                        stationId = current.stationId,
+                        lineId = lid,
+                        direction = Direction.OUTBOUND,
+                        limit = 4,
+                    ).firstOrNull().orEmpty()
+                    allDeps.addAll(deps)
+                }
+                val next = allDeps
+                    .filter { it.minutesAway > 0 }
+                    .minByOrNull { it.minutesAway }
+                if (next != null) {
+                    val stationsOnLine = uiState.stationsByLine[next.lineId].orEmpty()
+                    DepartureTracking.track(
+                        TrackedDeparture(
+                            lineId = next.lineId,
+                            stationId = current.stationId,
+                            stationName = current.stationName,
+                            destination = next.direction.name.lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            scheduledTime = next.time,
+                            targetEpochSeconds = nowEpochSec + next.minutesAway * 60L,
+                            routeStations = computeRouteStations(
+                                stations = stationsOnLine,
+                                targetStationId = current.stationId,
+                                direction = next.direction,
+                                lang = lang,
+                            ),
+                            isStationMode = true,
+                            stationLineIds = current.stationLineIds,
+                        ),
+                    )
+                }
+                delay(30_000)
+                continue
+            }
             var resolved: String? = null
             if (current.lineId in gpsLineIds) {
                 val gpsList = suburbanTracker.observeSuburbanTrains(current.lineId).firstOrNull()
@@ -233,6 +276,8 @@ fun HomeScreen(
                                         direction = next.direction,
                                         lang = lang,
                                     ),
+                                    isStationMode = true,
+                                    stationLineIds = station.lineIds,
                                 ),
                             )
                         }
@@ -853,7 +898,8 @@ private fun TrackingCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = arrivingLabel(lang, tracked.stationName),
+                    text = if (tracked.isStationMode) tracked.stationName
+                           else arrivingLabel(lang, tracked.stationName),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
