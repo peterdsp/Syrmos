@@ -22,6 +22,7 @@ private var permissionRequester: (suspend () -> Unit)? = null
 fun initAndroidPlatform(context: Context) {
     com.syrmos.core.common.initLocalization(context)
     com.syrmos.core.common.initThemePlatform(context)
+    com.syrmos.core.common.initNotificationSettingsPlatform(context)
 }
 
 fun initLocationProvider(context: Context) {

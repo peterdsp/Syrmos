@@ -37,11 +37,13 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.Switch
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.AppThemeMode
 import com.syrmos.core.common.AriadneEngineStatus
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.NotificationSettings
 import com.syrmos.core.common.ThemeManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import kotlin.time.ExperimentalTime
@@ -137,6 +139,59 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                         }
                     }
                 }
+            }
+        }
+
+        item {
+            val serviceAlertsOn by NotificationSettings.serviceAlerts.collectAsState()
+            val weatherAlertsOn by NotificationSettings.weatherAlerts.collectAsState()
+            val nearbyAlertsOn by NotificationSettings.nearbyAlerts.collectAsState()
+            val morningDigestOn by NotificationSettings.morningDigest.collectAsState()
+
+            SettingsSection(title = when (lang) {
+                AppLanguage.GREEK -> "Ειδοποιησεις"
+                AppLanguage.ALBANIAN -> "Njoftimet"
+                else -> "Notifications"
+            }) {
+                NotifToggleRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Ειδοποιησεις υπηρεσιας"
+                        AppLanguage.ALBANIAN -> "Njoftimet e sherbimit"
+                        else -> "Service alerts"
+                    },
+                    checked = serviceAlertsOn,
+                    onCheckedChange = { NotificationSettings.setServiceAlerts(it) },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                NotifToggleRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Καιρικες ειδοποιησεις"
+                        AppLanguage.ALBANIAN -> "Njoftimet e motit"
+                        else -> "Weather alerts"
+                    },
+                    checked = weatherAlertsOn,
+                    onCheckedChange = { NotificationSettings.setWeatherAlerts(it) },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                NotifToggleRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Ειδοποιησεις κοντινου σταθμου"
+                        AppLanguage.ALBANIAN -> "Njoftimet e stacionit te afert"
+                        else -> "Nearby station alerts"
+                    },
+                    checked = nearbyAlertsOn,
+                    onCheckedChange = { NotificationSettings.setNearbyAlerts(it) },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                NotifToggleRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Πρωινη ενημερωση (07:00)"
+                        AppLanguage.ALBANIAN -> "Perditesimi i mengjesit (07:00)"
+                        else -> "Morning digest (07:00)"
+                    },
+                    checked = morningDigestOn,
+                    onCheckedChange = { NotificationSettings.setMorningDigest(it) },
+                )
             }
         }
 
@@ -404,6 +459,31 @@ private fun SettingsRow(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun NotifToggleRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
         )
     }
 }
