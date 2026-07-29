@@ -146,7 +146,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Color.syrmosBackground.ignoresSafeArea()
             TabView(selection: $selectedTab) {
                 // Each non-Settings tab reserves 60pt at the bottom via a
                 // safeAreaInset so the last row/item in its scrollable
@@ -278,9 +278,9 @@ private struct AriadneLauncherPill: View {
                 .scaledToFit()
                 .frame(width: 32, height: 32)
                 .padding(12)
-                .background(Color.white)
+                .background(Color.syrmosSurface)
                 .clipShape(Circle())
-                .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Color.syrmosPrimary.opacity(0.2), lineWidth: 1))
                 .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                 .scaleEffect(pressed ? 0.92 : 1.0)
                 .accessibilityLabel(label)

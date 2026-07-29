@@ -512,7 +512,7 @@ private fun StationRow(
                 modifier = Modifier
                     .size(12.dp)
                     .clip(CircleShape)
-                    .background(if (station.isInterchange) Color.White else color),
+                    .background(if (station.isInterchange) MaterialTheme.colorScheme.surface else color),
                 contentAlignment = Alignment.Center,
             ) {
                 if (station.isInterchange) {
@@ -533,7 +533,7 @@ private fun StationRow(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White),
+                                    .background(MaterialTheme.colorScheme.surface),
                             )
                         }
                     }

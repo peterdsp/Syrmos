@@ -96,7 +96,7 @@ struct LinesView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(Color.syrmosSurfaceMuted, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             // Region chips
             ScrollView(.horizontal, showsIndicators: false) {
@@ -187,7 +187,7 @@ private struct ChipButton: View {
                 .foregroundStyle(isSelected ? tint : .secondary)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(isSelected ? tint.opacity(0.12) : Color(.systemGray6))
+                        .fill(isSelected ? tint.opacity(0.12) : Color.syrmosSurfaceMuted)
                 )
                 .overlay(
                     Capsule(style: .continuous)

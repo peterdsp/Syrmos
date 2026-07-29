@@ -24,6 +24,7 @@
   --sy-estimated: #B45309;
   --sy-warning: #D97706;
   --sy-disruption: #DC2626;
+  --sy-warning-container: #FFF3E0;
   --sy-arrival-soon: #2E7D32;
   --sy-arrival-moderate: #E65100;
   --sy-arrival-far: #757575;
@@ -98,4 +99,5 @@ body.dark-mode {
   --sy-on-surface: #E6ECF5;
   --sy-on-surface-muted: #9AA3AF;
   --sy-outline: #2A2F37;
+  --sy-warning-container: #291705;
 }

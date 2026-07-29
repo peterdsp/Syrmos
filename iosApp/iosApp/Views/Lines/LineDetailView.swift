@@ -38,7 +38,7 @@ struct LineDetailView: View {
                                     .fill(index == 0 ? .clear : line.color)
                                     .frame(width: 3, height: 12)
                                 Circle()
-                                    .fill(station.isInterchange ? .white : line.color)
+                                    .fill(station.isInterchange ? Color.syrmosSurface : line.color)
                                     .frame(width: 12, height: 12)
                                     .overlay(
                                         Circle()

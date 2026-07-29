@@ -422,8 +422,8 @@ private fun EmergencyWeatherCard(
     // instead of washing out light-on-cream. Badge fill stays deep orange
     // (see EmergencyNumberRow) because its white glyphs need a dark chip.
     val isDark = isSystemInDarkTheme()
-    val amber = if (isDark) Color(0xFFFF9E42) else Color(0xFFE65100)
-    val bg = if (isDark) Color(0xFF291705) else Color(0xFFFFF3E0)
+    val amber = if (isDark) SyrmosColorTokens.warning else SyrmosColorTokens.arrivalModerate
+    val bg = if (isDark) SyrmosColorTokens.warningContainerDark else SyrmosColorTokens.warningContainer
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -515,7 +515,7 @@ private fun EmergencyNumberRow(label: String, sub: String) {
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFFE65100))
+                .background(SyrmosColorTokens.arrivalModerate)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -718,8 +718,8 @@ private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
 @Composable
 private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
     val live = freshness == DataFreshness.LIVE
-    val dot = if (live) Color(0xFF2E7D32) else Color(0xFFB26A00)
-    val bg = if (live) Color(0x1A2E7D32) else Color(0x1AB26A00)
+    val dot = if (live) SyrmosColorTokens.arrivalSoon else SyrmosColorTokens.estimated
+    val bg = if (live) SyrmosColorTokens.arrivalSoon.copy(alpha = 0.1f) else SyrmosColorTokens.estimated.copy(alpha = 0.1f)
     val label = if (live) {
         L.LIVE.text(lang)
     } else {
@@ -1289,8 +1289,8 @@ private fun ServiceStatusPill(
         else -> status.rawMessageEn.ifEmpty { status.rawMessage }
     }
     if (message.isBlank()) return
-    val bg = if (status.isAlert) Color(0x1FFF9800) else Color(0x1A4CAF50)
-    val accent = if (status.isAlert) Color(0xFFE65100) else Color(0xFF2E7D32)
+    val bg = if (status.isAlert) SyrmosColorTokens.warning.copy(alpha = 0.12f) else SyrmosColorTokens.live.copy(alpha = 0.1f)
+    val accent = if (status.isAlert) SyrmosColorTokens.arrivalModerate else SyrmosColorTokens.arrivalSoon
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1457,7 +1457,7 @@ private fun AlertCard(
     val hasUrl = announcement.url.isNotBlank()
     // Warm advisory tint for alerts. Flips to a dark warm fill in dark mode so
     // the onSurface text stays legible instead of washing out on light cream.
-    val alertBg = if (isSystemInDarkTheme()) Color(0xFF2A2016) else Color(0xFFFFF3E0)
+    val alertBg = if (isSystemInDarkTheme()) SyrmosColorTokens.warningContainerDark else SyrmosColorTokens.warningContainer
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1465,7 +1465,7 @@ private fun AlertCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isAlert) alertBg else MaterialTheme.colorScheme.surface,
         ),
-        border = if (isAlert) BorderStroke(1.dp, Color(0x33E87722)) else null,
+        border = if (isAlert) BorderStroke(1.dp, SyrmosColorTokens.warning.copy(alpha = 0.2f)) else null,
         shape = RoundedCornerShape(10.dp),
     ) {
         Row(
