@@ -59,6 +59,11 @@ struct HomeView: View {
                     nearbyStations: locationService.nearbyStations,
                     alerts: stasyService.announcements
                 )
+
+                freshnessStore.onRetryRequested = { [weak stasyService] in
+                    guard let svc = stasyService else { return }
+                    Task { await svc.fetchAnnouncements() }
+                }
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
@@ -219,9 +224,7 @@ struct HomeView: View {
     private var freshnessPill: some View {
         let isLive = freshnessStore.freshness == .live
         let tint: Color = isLive ? SyrmosTokens.live : SyrmosTokens.warning
-        let label = isLive
-            ? loc[.live]
-            : "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
+        let label = isLive ? loc[.runningOnline] : loc[.runningOffline]
         return HStack(spacing: 6) {
             Circle()
                 .fill(tint)
@@ -230,6 +233,20 @@ struct HomeView: View {
                 .font(.caption)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
+            if !isLive {
+                Button {
+                    Task { await stasyService.fetchAnnouncements() }
+                } label: {
+                    Text(loc[.retry])
+                        .font(.caption)
+                        .foregroundStyle(Color.suburbanPurple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.suburbanPurple.opacity(0.1))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -642,6 +659,9 @@ struct HomeView: View {
                     HStack(spacing: 12) {
                         ForEach(railNewsService.news.prefix(10)) { item in
                             NewsCard(item: item, language: loc.language)
+                                .onTapGesture {
+                                    if let url = item.url { webViewURL = url }
+                                }
                         }
                     }
                 }

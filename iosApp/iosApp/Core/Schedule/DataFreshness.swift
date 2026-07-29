@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Network
 
 /// Whether the arrivals on screen came from a recent live network fetch, or
 /// are being predicted from the bundled schedule + projector.
@@ -39,21 +40,40 @@ final class LiveDataFreshness: ObservableObject {
     static let windowSeconds: TimeInterval = 90
 
     @Published private(set) var lastLiveUpdate: Date?
+    @Published private(set) var isNetworkAvailable: Bool = true
     private var ticker: Timer?
+    private var connectivityTimer: Timer?
+    private let monitor = NWPathMonitor()
+    var onRetryRequested: (() -> Void)?
 
     private init() {
-        // Re-publish periodically so a screen left open downgrades from .live
-        // back to .predicted once the last fetch ages past the window, without
-        // needing a fresh fetch to trigger the change.
         ticker = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.objectWillChange.send() }
         }
+        connectivityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.freshness == .predicted else { return }
+                self.onRetryRequested?()
+            }
+        }
+        monitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor in
+                let available = path.status == .satisfied
+                self?.isNetworkAvailable = available
+                if available, self?.freshness == .predicted {
+                    self?.onRetryRequested?()
+                }
+            }
+        }
+        monitor.start(queue: DispatchQueue(label: "syrmos.connectivity"))
     }
 
-    /// Called by live network paths (suburban trains, live positions,
-    /// announcements) on a successful fetch.
     func markLive(at date: Date = Date()) {
         lastLiveUpdate = date
+    }
+
+    func requestRetry() {
+        onRetryRequested?()
     }
 
     var freshness: DataFreshness {

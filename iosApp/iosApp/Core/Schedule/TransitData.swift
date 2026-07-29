@@ -667,6 +667,7 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
         let destination: String
         let nextStation: String
         let delayMinutes: Int
+        let serviceType: String
         let lat: Double
         let lng: Double
     }
@@ -705,6 +706,7 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     destination: t.destination,
                     nextStation: t.nextStation,
                     delayMinutes: t.delayMinutes,
+                    serviceType: t.serviceType,
                     coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng)
                 )
             }
@@ -730,6 +732,7 @@ struct LiveTrain: Identifiable {
     let destination: String
     let nextStation: String
     let delayMinutes: Int
+    let serviceType: String
     let coordinate: CLLocationCoordinate2D
 }
 
