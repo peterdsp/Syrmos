@@ -2807,10 +2807,12 @@
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         if (saved === "dark" || (!saved && prefersDark)) {
             document.body.classList.add("dark-mode");
+            document.documentElement.classList.add("dark-mode");
             setThemeIcon(true);
         }
         themeToggle.addEventListener("click", () => {
             const isDark = document.body.classList.toggle("dark-mode");
+            document.documentElement.classList.toggle("dark-mode", isDark);
             setThemeIcon(isDark);
             localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
             // Swap the base map to the matching light / dark minimal tiles.
