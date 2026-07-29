@@ -167,6 +167,7 @@ private fun findDrawableByPrefix(context: Context, prefix: String): Int {
 internal actual fun PlatformMapView(
     uiState: MapUiState,
     onStationSelected: (String) -> Unit,
+    onTrainSelected: (String) -> Unit,
     modifier: Modifier,
     initialScale: Float,
 ) {
@@ -494,11 +495,16 @@ internal actual fun PlatformMapView(
                 existing.position = GeoPoint(train.latitude, train.longitude)
                 existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
             } else {
+                val trainId = train.id
                 val marker = Marker(mapView).apply {
                     position = GeoPoint(train.latitude, train.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
                     title = "${train.lineId} ${train.trainNumber}"
+                    setOnMarkerClickListener { _, _ ->
+                        onTrainSelected(trainId)
+                        true
+                    }
                 }
                 liveTrainMarkers[train.id] = marker
                 mapView.overlays.add(marker)

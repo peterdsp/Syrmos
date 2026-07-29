@@ -4,7 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,23 +27,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessible
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DirectionsRailway
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +67,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
@@ -94,6 +106,7 @@ fun MapScreen(
                     liveTrains = emptyList(),
                 ),
                 onStationSelected = viewModel::selectStation,
+                onTrainSelected = viewModel::selectTrain,
                 modifier = Modifier.fillMaxSize(),
                 initialScale = initialScale,
             )
@@ -117,6 +130,25 @@ fun MapScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.End,
         ) {
+            if (uiState.liveTrains.isNotEmpty()) {
+                Surface(
+                    onClick = { viewModel.toggleLiveTrainsSheet() },
+                    modifier = Modifier.size(56.dp).liquidGlassOverlay(),
+                    shape = CircleShape,
+                    color = SyrmosColorTokens.suburban,
+                    shadowElevation = 6.dp,
+                    tonalElevation = 2.dp,
+                ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.DirectionsRailway,
+                            contentDescription = "Live trains",
+                            tint = Color.White,
+                        )
+                    }
+                }
+            }
+
             Surface(
                 onClick = { viewModel.toggleTrainVisibility() },
                 modifier = Modifier.size(56.dp).liquidGlassOverlay(),
@@ -201,6 +233,62 @@ fun MapScreen(
                         )
                     }
                     .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.selectedTrain != null && uiState.selectedStation == null,
+            enter = slideInVertically(
+                animationSpec = tween(350),
+                initialOffsetY = { it },
+            ),
+            exit = slideOutVertically(
+                animationSpec = tween(300),
+                targetOffsetY = { it },
+            ),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .zIndex(2f),
+        ) {
+            val density = LocalDensity.current
+            var offsetY by remember { mutableStateOf(0f) }
+            val dismissThreshold = with(density) { 100.dp.toPx() }
+
+            TrainDetailCard(
+                train = uiState.selectedTrain,
+                line = uiState.lines.find { it.id == uiState.selectedTrain?.lineId },
+                onClose = viewModel::clearTrainSelection,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset { IntOffset(0, offsetY.coerceAtLeast(0f).roundToInt()) }
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragEnd = {
+                                if (offsetY > dismissThreshold) {
+                                    viewModel.clearTrainSelection()
+                                }
+                                offsetY = 0f
+                            },
+                            onDragCancel = { offsetY = 0f },
+                            onVerticalDrag = { change, dragAmount ->
+                                if (dragAmount > 0 || offsetY > 0) {
+                                    change.consume()
+                                    offsetY += dragAmount
+                                }
+                            },
+                        )
+                    }
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+            )
+        }
+
+        if (uiState.showLiveTrainsSheet) {
+            LiveTrainsSheet(
+                trains = uiState.liveTrains,
+                lines = uiState.lines,
+                onTrainSelected = viewModel::flyToTrain,
+                onDismiss = viewModel::toggleLiveTrainsSheet,
             )
         }
     }
@@ -452,6 +540,356 @@ private fun FactChip(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
             )
+        }
+    }
+}
+
+@Composable
+private fun TrainDetailCard(
+    train: com.syrmos.core.model.transit.LiveSuburbanTrain?,
+    line: Line?,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    train ?: return
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .background(
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        RoundedCornerShape(2.dp),
+                    ),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (line != null) {
+                            LineBadge(line = line)
+                        }
+                        Text(
+                            text = "Train ${train.trainNumber}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    if (train.serviceType.isNotBlank()) {
+                        Text(
+                            text = train.serviceType.replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close train details")
+                }
+            }
+
+            if (train.origin != null || train.destination != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.DirectionsRailway,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = line?.color?.toComposeColor()
+                            ?: MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = buildString {
+                            append(train.origin ?: "?")
+                            append("  →  ")
+                            append(train.destination ?: "?")
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+
+            if (train.nextStation != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Place,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "Next: ${train.nextStation}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = if (train.delayMinutes > 0)
+                    SyrmosColorTokens.disruption.copy(alpha = 0.12f)
+                else
+                    SyrmosColorTokens.live.copy(alpha = 0.12f),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (train.delayMinutes > 0) {
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = SyrmosColorTokens.disruption,
+                        )
+                        Text(
+                            text = "+${train.delayMinutes} min delay",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SyrmosColorTokens.disruption,
+                        )
+                    } else {
+                        Text(
+                            text = "On time",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SyrmosColorTokens.live,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LiveTrainsSheet(
+    trains: List<com.syrmos.core.model.transit.LiveSuburbanTrain>,
+    lines: List<Line>,
+    onTrainSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    var selectedFilter by remember { mutableStateOf<String?>(null) }
+
+    val lineCategories = remember(trains) {
+        trains.map { it.lineId }.distinct().sorted()
+    }
+
+    val filteredTrains = remember(trains, selectedFilter) {
+        if (selectedFilter == null) trains
+        else trains.filter { it.lineId == selectedFilter }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column {
+                    Text(
+                        text = "Live trains",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "${filteredTrains.size} trains running",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Filled.DirectionsRailway,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = SyrmosColorTokens.suburban,
+                )
+            }
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterPill(
+                    label = "All",
+                    selected = selectedFilter == null,
+                    color = MaterialTheme.colorScheme.primary,
+                    onClick = { selectedFilter = null },
+                )
+                lineCategories.forEach { lineId ->
+                    val line = lines.find { it.id == lineId }
+                    FilterPill(
+                        label = lineId,
+                        selected = selectedFilter == lineId,
+                        color = line?.color?.toComposeColor()
+                            ?: MaterialTheme.colorScheme.primary,
+                        onClick = { selectedFilter = lineId },
+                    )
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+            LazyColumn(
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(filteredTrains, key = { it.id }) { train ->
+                    val line = lines.find { it.id == train.lineId }
+                    TrainListRow(
+                        train = train,
+                        line = line,
+                        onClick = { onTrainSelected(train.id) },
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+    }
+}
+
+@Composable
+private fun FilterPill(
+    label: String,
+    selected: Boolean,
+    color: Color,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(999.dp),
+        color = if (selected) color.copy(alpha = 0.18f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        border = if (selected) BorderStroke(1.5.dp, color) else null,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun TrainListRow(
+    train: com.syrmos.core.model.transit.LiveSuburbanTrain,
+    line: Line?,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (line != null) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = line.color.toComposeColor().copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        text = train.lineId,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = line.color.toComposeColor(),
+                    )
+                }
+                Spacer(modifier = Modifier.size(10.dp))
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = buildString {
+                        append(train.origin ?: "?")
+                        append(" → ")
+                        append(train.destination ?: "?")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                if (train.nextStation != null) {
+                    Text(
+                        text = "Next: ${train.nextStation}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (train.delayMinutes > 0) {
+                Text(
+                    text = "+${train.delayMinutes}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = SyrmosColorTokens.disruption,
+                )
+            } else {
+                Text(
+                    text = "OK",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = SyrmosColorTokens.live,
+                )
+            }
         }
     }
 }

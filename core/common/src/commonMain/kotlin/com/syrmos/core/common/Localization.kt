@@ -45,7 +45,7 @@ enum class L {
     ONBOARD_NOTIF_TITLE, ONBOARD_NOTIF_BODY, ONBOARD_NOTIF_CTA,
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
-    NEXT_TRAIN, TO, LIVE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE,
+    NEXT_TRAIN, TO, LIVE, RUNNING_ONLINE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE, RETRY,
     SOURCE_SCHEDULED, SOURCE_ESTIMATED, SOURCE_OFFLINE,
     LAST_TRAIN, LEAVE_BY, SERVICE_OVER, ENABLE_LOCATION_FOR_NEXT,
     DESKTOP_PLANNER, DESKTOP_SCHEDULES, DESKTOP_PASSES, DESKTOP_ACCOUNT,
@@ -318,10 +318,20 @@ enum class L {
             AppLanguage.ALBANIAN -> "Drejtpërdrejt"
             else -> "Live"
         }
+        RUNNING_ONLINE -> when (lang) {
+            AppLanguage.GREEK -> "Σε σύνδεση"
+            AppLanguage.ALBANIAN -> "Me internet"
+            else -> "Running online"
+        }
         RUNNING_OFFLINE -> when (lang) {
             AppLanguage.GREEK -> "Εκτός σύνδεσης"
             AppLanguage.ALBANIAN -> "Pa internet"
             else -> "Running offline"
+        }
+        RETRY -> when (lang) {
+            AppLanguage.GREEK -> "Δοκιμή"
+            AppLanguage.ALBANIAN -> "Riprovo"
+            else -> "Retry"
         }
         PREDICTED_FROM_SCHEDULE -> when (lang) {
             AppLanguage.GREEK -> "Πρόβλεψη από το πρόγραμμα"

@@ -491,6 +491,32 @@
     }
 
     const liveTrainList = document.getElementById("liveTrainList");
+    const trainSheet = document.getElementById("trainSheet");
+    const trainSheetTitle = document.getElementById("trainSheetTitle");
+    const trainSheetSubtitle = document.getElementById("trainSheetSubtitle");
+    const trainSheetBadge = document.getElementById("trainSheetBadge");
+    const trainSheetRoute = document.getElementById("trainSheetRoute");
+    const trainSheetDelay = document.getElementById("trainSheetDelay");
+    const trainSheetClose = document.getElementById("trainSheetClose");
+    const liveTrainsDrawer = document.getElementById("liveTrainsDrawer");
+    const liveTrainsCount = document.getElementById("liveTrainsCount");
+    const liveTrainsFilters = document.getElementById("liveTrainsFilters");
+    const liveTrainsDrawerList = document.getElementById("liveTrainsDrawerList");
+    const liveTrainsDrawerClose = document.getElementById("liveTrainsDrawerClose");
+    let lastLiveTrains = [];
+    let liveTrainsActiveFilter = null;
+
+    if (trainSheetClose) {
+        trainSheetClose.addEventListener("click", () => {
+            trainSheet.classList.add("station-sheet--hidden");
+        });
+    }
+    if (liveTrainsDrawerClose) {
+        liveTrainsDrawerClose.addEventListener("click", () => {
+            liveTrainsDrawer.classList.add("station-sheet--hidden");
+        });
+    }
+
     const nearbyStationList = document.getElementById("nearbyStationList");
     const popularStationList = document.getElementById("popularStationList");
     const faresList = document.getElementById("faresList");
@@ -1608,6 +1634,143 @@
         }
     }
 
+    function selectLiveTrain(trainId) {
+        const train = lastLiveTrains.find((t) => t.id === trainId);
+        if (!train || !trainSheet) return;
+
+        clearSelection();
+        trainSheet.classList.add("station-sheet--hidden");
+
+        const line = lineMap.get(train.lineId);
+        const lineColor = line ? line.color : "#6F2DA8";
+        const lineName = line ? line.name : train.lineId;
+
+        trainSheetTitle.textContent = `Train ${train.trainNumber}`;
+        trainSheetSubtitle.textContent = train.serviceType
+            ? train.serviceType.charAt(0).toUpperCase() + train.serviceType.slice(1)
+            : "";
+
+        trainSheetBadge.innerHTML = `
+            <div class="line-badge" style="background:${lineColor}18;color:${lineColor}">
+                <span class="line-dot" style="background:${lineColor}"></span>
+                <span>${lineName}</span>
+            </div>
+        `;
+
+        const origin = train.origin || "?";
+        const dest = train.destination || "?";
+        const nextHtml = train.nextStation
+            ? `<div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${train.nextStation}</div>`
+            : "";
+        trainSheetRoute.innerHTML = `
+            <div style="font-size:15px;font-weight:500">${origin}  &rarr;  ${dest}</div>
+            ${nextHtml}
+        `;
+
+        if (train.delayMinutes > 0) {
+            trainSheetDelay.innerHTML = `
+                <span class="meta-chip" style="background:var(--sy-disruption,#DC2626)18;color:var(--sy-disruption,#DC2626)">
+                    <span class="meta-chip-icon">&#9888;</span>
+                    <span class="meta-chip-label">+${train.delayMinutes} min delay</span>
+                </span>
+            `;
+        } else {
+            trainSheetDelay.innerHTML = `
+                <span class="meta-chip" style="background:var(--sy-live,#059669)18;color:var(--sy-live,#059669)">
+                    <span class="meta-chip-label">On time</span>
+                </span>
+            `;
+        }
+
+        map.flyTo([train.lat, train.lng], Math.max(map.getZoom(), 14), { duration: 0.45 });
+        trainSheet.classList.remove("station-sheet--hidden");
+    }
+
+    function openLiveTrainsDrawer() {
+        if (!liveTrainsDrawer) return;
+        clearSelection();
+        if (trainSheet) trainSheet.classList.add("station-sheet--hidden");
+        renderLiveTrainsDrawer();
+        liveTrainsDrawer.classList.remove("station-sheet--hidden");
+    }
+
+    function renderLiveTrainsDrawer() {
+        const trains = liveTrainsActiveFilter
+            ? lastLiveTrains.filter((t) => t.lineId === liveTrainsActiveFilter)
+            : lastLiveTrains;
+
+        liveTrainsCount.textContent = `${trains.length} train${trains.length !== 1 ? "s" : ""} running`;
+
+        const lineIds = [...new Set(lastLiveTrains.map((t) => t.lineId))].sort();
+        liveTrainsFilters.innerHTML = "";
+        const allPill = document.createElement("button");
+        allPill.className = "line-badge";
+        allPill.textContent = "All";
+        allPill.style.cursor = "pointer";
+        if (!liveTrainsActiveFilter) {
+            allPill.style.background = "var(--sy-brand)";
+            allPill.style.color = "#fff";
+        }
+        allPill.addEventListener("click", () => {
+            liveTrainsActiveFilter = null;
+            renderLiveTrainsDrawer();
+        });
+        liveTrainsFilters.appendChild(allPill);
+
+        for (const lid of lineIds) {
+            const line = lineMap.get(lid);
+            const color = line ? line.color : "#6F2DA8";
+            const pill = document.createElement("button");
+            pill.className = "line-badge";
+            pill.style.cursor = "pointer";
+            if (liveTrainsActiveFilter === lid) {
+                pill.style.background = color;
+                pill.style.color = "#fff";
+            } else {
+                pill.style.background = `${color}18`;
+                pill.style.color = color;
+            }
+            pill.innerHTML = `<span class="line-dot" style="background:${color}"></span><span>${lid}</span>`;
+            pill.addEventListener("click", () => {
+                liveTrainsActiveFilter = lid;
+                renderLiveTrainsDrawer();
+            });
+            liveTrainsFilters.appendChild(pill);
+        }
+
+        liveTrainsDrawerList.innerHTML = "";
+        for (const train of trains) {
+            const line = lineMap.get(train.lineId);
+            const color = line ? line.color : "#6F2DA8";
+            const row = document.createElement("div");
+            row.className = "departure-row";
+            row.style.cursor = "pointer";
+            row.style.padding = "10px 0";
+            const delayHtml = train.delayMinutes > 0
+                ? `<span style="color:var(--sy-disruption,#DC2626);font-weight:600;font-size:13px">+${train.delayMinutes}</span>`
+                : `<span style="color:var(--sy-live,#059669);font-weight:600;font-size:13px">OK</span>`;
+            row.innerHTML = `
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span class="line-badge" style="background:${color}18;color:${color};font-size:11px;padding:2px 6px">
+                        <span class="line-dot" style="background:${color}"></span>${train.lineId}
+                    </span>
+                    <div style="flex:1">
+                        <div style="font-size:14px;font-weight:500">${train.origin || "?"} &rarr; ${train.destination || "?"}</div>
+                        ${train.nextStation ? `<div style="font-size:12px;color:var(--sy-on-surface-muted)">Next: ${train.nextStation}</div>` : ""}
+                    </div>
+                    ${delayHtml}
+                </div>
+            `;
+            row.addEventListener("click", () => {
+                liveTrainsDrawer.classList.add("station-sheet--hidden");
+                selectLiveTrain(train.id);
+            });
+            liveTrainsDrawerList.appendChild(row);
+        }
+    }
+
+    window.__openLiveTrainsDrawer = openLiveTrainsDrawer;
+
     function renderSearchResults(results, rawQuery) {
         searchResults.innerHTML = "";
         for (const station of results.slice(0, 8)) {
@@ -1753,6 +1916,11 @@
                 renderSimulatedTrainsOnMap(lastSimulatedTrains);
             }
         });
+    }
+
+    const liveTrainsBtn = document.getElementById("liveTrainsButton");
+    if (liveTrainsBtn) {
+        liveTrainsBtn.addEventListener("click", () => openLiveTrainsDrawer());
     }
 
     map.on("click", (e) => {
@@ -1948,19 +2116,23 @@
                 origin: t.origin || "",
                 destination: t.destination || "",
                 nextStation: t.nextStation || "",
-                delay: t.delayMinutes || 0,
-                speed: null,
+                delayMinutes: t.delayMinutes || 0,
+                serviceType: t.serviceType || "",
                 lat: t.lat,
                 lng: t.lng,
-                timestamp: "",
             }));
 
+        lastLiveTrains = trains;
         renderLiveTrains(trains);
     }
 
     function renderLiveTrains(trains) {
         liveTrainMarkers.forEach((marker) => marker.remove());
         liveTrainMarkers.clear();
+
+        if (liveTrainsBtn) {
+            liveTrainsBtn.style.display = trains.length > 0 ? "" : "none";
+        }
 
         if (trains.length) {
             const suburbanHtml = trains.slice(0, 5).map((train) => {
@@ -2011,6 +2183,8 @@
                 `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
                 { direction: "top", offset: [0, -10] }
             );
+            const trainId = train.id;
+            marker.on("click", () => selectLiveTrain(trainId));
             liveTrainMarkers.set(train.id, marker);
         }
     }
