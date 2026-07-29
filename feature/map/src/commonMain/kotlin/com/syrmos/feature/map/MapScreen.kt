@@ -918,7 +918,9 @@ private fun headingLabel(degrees: Double): String {
 
 private fun formatDistance(meters: Int): String {
     return if (meters >= 1000) {
-        "${(meters / 1000.0).let { "%.1f".format(it) }} km left"
+        val km = meters / 1000.0
+        val rounded = (km * 10).toInt() / 10.0
+        "$rounded km left"
     } else {
         "$meters m left"
     }
@@ -926,7 +928,9 @@ private fun formatDistance(meters: Int): String {
 
 private fun formatDistanceShort(meters: Int): String {
     return if (meters >= 1000) {
-        "${(meters / 1000.0).let { "%.1f".format(it) }} km"
+        val km = meters / 1000.0
+        val rounded = (km * 10).toInt() / 10.0
+        "$rounded km"
     } else {
         "$meters m"
     }
