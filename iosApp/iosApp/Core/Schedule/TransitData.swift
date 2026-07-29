@@ -136,6 +136,7 @@ struct Departure: Identifiable {
     let direction: String
     let minutesAway: Int
     let serviceType: String
+    let trainNo: String?
     /// Where this departure came from; drives the source-confidence chip.
     /// Defaults to `.scheduled` because every iOS departure list is built from
     /// timetable data (the offline projector or the server-projected API) - live
@@ -475,7 +476,8 @@ enum SyrmosData {
                         lineId: pattern.lineId,
                         direction: pattern.direction,
                         minutesAway: max(mins, 0),
-                        serviceType: pattern.serviceType
+                        serviceType: pattern.serviceType,
+                        trainNo: nil
                     ))
                     nextSlot += freq
                 }

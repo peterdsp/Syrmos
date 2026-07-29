@@ -969,6 +969,14 @@ extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
 }
 
+private func cityLabel(for url: URL) -> String {
+    let host = url.host?.lowercased() ?? ""
+    if host.contains("oseth") || host.contains("thessmetro") { return "Thessaloniki" }
+    if host.contains("stasy") { return "Athens" }
+    if host.contains("hellenictrain") { return "Greece" }
+    return url.host ?? "Syrmos"
+}
+
 struct InAppWebView: View {
     let url: URL
     @Environment(\.dismiss) private var dismiss
@@ -982,7 +990,7 @@ struct InAppWebView: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("stasy.gr")
+            .navigationTitle(cityLabel(for: url))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

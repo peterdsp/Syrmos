@@ -144,6 +144,7 @@ fun StationDetailScreen(
                         departureTime = departure.time,
                         modifier = Modifier.padding(horizontal = 16.dp),
                         lineId = departure.lineId,
+                        trainNo = departure.trainNo,
                         sourceConfidence = departure.sourceConfidence
                             .takeIf { it != com.syrmos.core.model.schedule.SourceConfidence.UNKNOWN },
                         isAirport = departure.serviceType == "airport" ||

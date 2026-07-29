@@ -925,14 +925,22 @@ struct DepartureRowView: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text(loc.language == .greek
-                    ? "προς \(departure.direction)"
-                    : loc.language == .albanian
-                    ? "drejt \(departure.direction)"
-                    : "to \(departure.direction)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(loc.language == .greek
+                        ? "προς \(departure.direction)"
+                        : loc.language == .albanian
+                        ? "drejt \(departure.direction)"
+                        : "to \(departure.direction)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    if let trainNo = departure.trainNo {
+                        Text("#\(trainNo)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
             }
             Spacer(minLength: 8)
