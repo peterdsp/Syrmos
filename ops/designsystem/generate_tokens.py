@@ -82,6 +82,7 @@ DARK_MAP = {
     "onSurfaceMutedDark": "onSurfaceMuted",
     "outlineDark": "outline",
     "brandOnDark": "brand",
+    "warningContainerDark": "warningContainer",
 }
 WEIGHT_NAMES = {"regular", "medium", "semibold", "bold"}
 

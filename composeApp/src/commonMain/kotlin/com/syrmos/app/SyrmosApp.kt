@@ -326,7 +326,7 @@ private fun AriadneLauncherPill(label: String, onClick: () -> Unit) {
             .size(56.dp)
             .shadow(elevation = 8.dp, shape = CircleShape)
             .clip(CircleShape)
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(10.dp),
     )
