@@ -5,28 +5,13 @@ html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    /* Viewport height fallbacks, in order from most-supported to most-correct:
-       - 100vh: old browsers (pre-Safari 15.4, Chrome 107-, Firefox 100-).
-         Behind the browser chrome on mobile but at least renders.
-       - 100svh: smallest viewport — always-visible area assuming all browser
-         chrome is on screen. Safe baseline for the peek button.
-       - 100dvh: dynamic viewport — adjusts as Safari / Chrome Android /
-         Firefox / Brave show or hide their address bars. The browser picks
-         this when supported.
-       Result: peek button is tappable on every modern mobile browser
-       (iOS Safari, iOS Chrome/Brave/Firefox, Android Chrome / Brave /
-       Firefox / Samsung Internet) regardless of whether the address bar
-       is currently visible. */
     height: 100vh;
     height: 100svh;
     height: 100dvh;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-    color: var(--sy-on-surface, #101418);
-}
-
-body {
     overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
     background: var(--sy-surface, #eef3f8);
+    color: var(--sy-on-surface, #101418);
 }
 
 .app-shell {
