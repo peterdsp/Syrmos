@@ -52,7 +52,9 @@ data class MapUiState(
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val simulatedTrains: List<SimulatedTrain> = emptyList(),
+    val selectedTrain: LiveSuburbanTrain? = null,
     val showTrains: Boolean = true,
+    val showLiveTrainsSheet: Boolean = false,
     val isLoading: Boolean = true,
     val locateUserRequest: Long = 0L,
 )
@@ -155,10 +157,37 @@ class MapViewModel(
         }
     }
 
+    fun selectTrain(trainId: String) {
+        val train = _uiState.value.liveTrains.find { it.id == trainId } ?: return
+        clearSelection()
+        _uiState.update { it.copy(selectedTrain = train) }
+    }
+
+    fun clearTrainSelection() {
+        _uiState.update { it.copy(selectedTrain = null) }
+    }
+
+    fun toggleLiveTrainsSheet() {
+        _uiState.update { it.copy(showLiveTrainsSheet = !it.showLiveTrainsSheet) }
+    }
+
+    fun flyToTrain(trainId: String) {
+        selectTrain(trainId)
+        _uiState.update { it.copy(showLiveTrainsSheet = false) }
+    }
+
     private fun observeLiveTrains() {
         scope.launch {
-            liveTrackerService.observeSuburbanTrains(setOf("A1", "A2", "A3", "A4")).collect { trains ->
-                _uiState.update { it.copy(liveTrains = trains) }
+            liveTrackerService.observeSuburbanTrains().collect { trains ->
+                _uiState.update { state ->
+                    val refreshedSelection = state.selectedTrain?.let { sel ->
+                        trains.find { it.id == sel.id }
+                    }
+                    state.copy(
+                        liveTrains = trains,
+                        selectedTrain = refreshedSelection ?: state.selectedTrain,
+                    )
+                }
             }
         }
     }

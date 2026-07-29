@@ -242,6 +242,8 @@ struct TransitMapView: View {
     @ObservedObject private var trainSimulator = TrainSimulatorService.shared
     @StateObject private var locationManager = MapLocationManager()
     @State private var tappedStation: MapStationNode?
+    @State private var tappedTrain: LiveTrain?
+    @State private var showLiveTrainsSheet = false
     @State private var showLocationDeniedAlert = false
     /// When true, hide all moving train/tram annotations so the user can see
     /// just the lines + stations. Persists across navigation but resets on
@@ -277,6 +279,22 @@ struct TransitMapView: View {
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
                     .presentationContentInteraction(.scrolls)
+            }
+            .sheet(item: $tappedTrain) { train in
+                TrainDetailSheet(train: train)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showLiveTrainsSheet) {
+                LiveTrainsListSheet(
+                    trains: liveTrainService.trains,
+                    onSelect: { train in
+                        showLiveTrainsSheet = false
+                        tappedTrain = train
+                    }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
             .alert(
                 loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
@@ -324,6 +342,9 @@ struct TransitMapView: View {
                     recenterToUserPing: recenterToUserPing,
                     onStationTap: { stationId in
                         tappedStation = stations.first(where: { $0.id == stationId })
+                    },
+                    onTrainTap: { train in
+                        tappedTrain = train
                     }
                 )
                 // Extend the map underneath the CompactTabHeader at the
@@ -333,6 +354,21 @@ struct TransitMapView: View {
                 .ignoresSafeArea(.container, edges: [.top, .bottom])
 
                 VStack(spacing: 12) {
+                    if !liveTrainService.trains.isEmpty {
+                        Button {
+                            showLiveTrainsSheet = true
+                        } label: {
+                            Image(systemName: "train.side.front.car")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 50, height: 50)
+                                .background(Color.suburbanPurple)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
+                        }
+                        .accessibilityLabel("Live trains")
+                    }
+
                     Button {
                         vehiclesHidden.toggle()
                     } label: {
@@ -939,6 +975,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
     /// apart from the no-op redraws triggered by annotation churn.
     let recenterToUserPing: Int
     let onStationTap: (String) -> Void
+    var onTrainTap: ((LiveTrain) -> Void)?
 
     /// CARTO label-free minimal base tiles that replace Apple's map content.
     static func makeCartoOverlay(dark: Bool) -> MKTileOverlay {
@@ -1477,9 +1514,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-            guard let station = view.annotation as? SyrmosStationAnnotation else { return }
             mapView.deselectAnnotation(view.annotation, animated: false)
-            parent.onStationTap(station.station.id)
+            if let station = view.annotation as? SyrmosStationAnnotation {
+                parent.onStationTap(station.station.id)
+            } else if let trainAnnotation = view.annotation as? SyrmosTrainAnnotation,
+                      case .live(let train) = trainAnnotation.kind {
+                parent.onTrainTap?(train)
+            }
         }
 
         private func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
@@ -1607,5 +1648,212 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
     init(live: LiveTrain) {
         self.kind = .live(live)
         self.coordinate = live.coordinate
+    }
+}
+
+// MARK: - Train Detail Sheet
+
+struct TrainDetailSheet: View {
+    let train: LiveTrain
+
+    private var lineColor: Color {
+        SyrmosData.lineColor(for: train.lineId)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 10) {
+                Text(train.lineId)
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(lineColor.opacity(0.15))
+                    .foregroundStyle(lineColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Train \(train.trainNumber)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    if !train.serviceType.isEmpty {
+                        Text(train.serviceType.prefix(1).uppercased() + train.serviceType.dropFirst())
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            if !train.origin.isEmpty || !train.destination.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "train.side.front.car")
+                        .foregroundStyle(lineColor)
+                    Text("\(train.origin.isEmpty ? "?" : train.origin)  \u{2192}  \(train.destination.isEmpty ? "?" : train.destination)")
+                        .fontWeight(.medium)
+                }
+            }
+
+            if !train.nextStation.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin.circle")
+                        .foregroundStyle(.secondary)
+                    Text("Next: \(train.nextStation)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if train.delayMinutes > 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                    Text("+\(train.delayMinutes) min delay")
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(SyrmosTokens.disruption)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(SyrmosTokens.disruption.opacity(0.12))
+                .clipShape(Capsule())
+            } else {
+                Text("On time")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(SyrmosTokens.live)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(SyrmosTokens.live.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+
+            Spacer()
+        }
+        .padding(20)
+    }
+}
+
+// MARK: - Live Trains List Sheet
+
+struct LiveTrainsListSheet: View {
+    let trains: [LiveTrain]
+    let onSelect: (LiveTrain) -> Void
+    @State private var selectedFilter: String?
+
+    private var lineIds: [String] {
+        Array(Set(trains.map(\.lineId))).sorted()
+    }
+
+    private var filteredTrains: [LiveTrain] {
+        guard let filter = selectedFilter else { return trains }
+        return trains.filter { $0.lineId == filter }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Live trains")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text("\(filteredTrains.count) train\(filteredTrains.count == 1 ? "" : "s") running")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "train.side.front.car")
+                    .font(.title2)
+                    .foregroundStyle(Color.suburbanPurple)
+            }
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    filterPill(label: "All", id: nil)
+                    ForEach(lineIds, id: \.self) { lineId in
+                        filterPill(label: lineId, id: lineId)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+
+            Divider().padding(.horizontal, 20)
+
+            List(filteredTrains) { train in
+                Button {
+                    onSelect(train)
+                } label: {
+                    trainRow(train)
+                }
+                .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+            }
+            .listStyle(.plain)
+        }
+        .padding(.top, 8)
+    }
+
+    @ViewBuilder
+    private func filterPill(label: String, id: String?) -> some View {
+        let isSelected = selectedFilter == id
+        let color: Color = {
+            guard let id else { return .accentColor }
+            return SyrmosData.line(for: id)?.color ?? SyrmosData.lineColor(for: id)
+        }()
+
+        Button {
+            selectedFilter = id
+        } label: {
+            Text(label)
+                .font(.caption)
+                .fontWeight(isSelected ? .semibold : .medium)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(isSelected ? color.opacity(0.18) : Color(.systemGray5))
+                .foregroundStyle(isSelected ? color : .secondary)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().strokeBorder(isSelected ? color : .clear, lineWidth: 1.5)
+                )
+        }
+    }
+
+    @ViewBuilder
+    private func trainRow(_ train: LiveTrain) -> some View {
+        let lineColor = SyrmosData.line(for: train.lineId)?.color
+            ?? SyrmosData.lineColor(for: train.lineId)
+
+        HStack(spacing: 10) {
+            Text(train.lineId)
+                .font(.caption2)
+                .fontWeight(.bold)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(lineColor.opacity(0.15))
+                .foregroundStyle(lineColor)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(train.origin.isEmpty ? "?" : train.origin) \u{2192} \(train.destination.isEmpty ? "?" : train.destination)")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
+                if !train.nextStation.isEmpty {
+                    Text("Next: \(train.nextStation)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if train.delayMinutes > 0 {
+                Text("+\(train.delayMinutes)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(SyrmosTokens.disruption)
+            } else {
+                Text("OK")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(SyrmosTokens.live)
+            }
+        }
     }
 }

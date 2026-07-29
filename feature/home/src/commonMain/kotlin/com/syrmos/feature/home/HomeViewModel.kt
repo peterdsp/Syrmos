@@ -101,13 +101,6 @@ class HomeViewModel(
         scope.launch { runCatching { weatherRepository.refresh() } }
     }
 
-    /**
-     * Keeps the offline-alive pill honest. The flow emits immediately whenever
-     * a live fetch lands (markLive), and the 15s tick downgrades the pill back
-     * to PREDICTED once the last live data ages past the freshness window. The
-     * value is recomputed from the clock each tick, so a screen left open does
-     * not stay falsely "live".
-     */
     private fun observeFreshness() {
         scope.launch {
             LiveDataFreshness.lastLiveUpdate.collect {
@@ -116,9 +109,24 @@ class HomeViewModel(
         }
         scope.launch {
             while (true) {
-                _uiState.update { state -> state.copy(freshness = LiveDataFreshness.freshnessNow()) }
-                delay(15_000)
+                val freshness = LiveDataFreshness.freshnessNow()
+                _uiState.update { state -> state.copy(freshness = freshness) }
+                if (freshness == DataFreshness.PREDICTED) {
+                    triggerConnectivityProbe()
+                }
+                delay(60_000)
             }
+        }
+        scope.launch {
+            LiveDataFreshness.retryRequested.collect { epoch ->
+                if (epoch > 0) triggerConnectivityProbe()
+            }
+        }
+    }
+
+    private fun triggerConnectivityProbe() {
+        scope.launch {
+            runCatching { announcementsRepository.refresh() }
         }
     }
 

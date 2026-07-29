@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 internal actual fun PlatformMapView(
     uiState: MapUiState,
     onStationSelected: (String) -> Unit,
+    onTrainSelected: (String) -> Unit,
     modifier: Modifier,
     initialScale: Float,
 ) {

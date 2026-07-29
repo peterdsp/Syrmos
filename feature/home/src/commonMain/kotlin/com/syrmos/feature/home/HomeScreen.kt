@@ -31,7 +31,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.DataFreshness
+import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
@@ -59,6 +63,7 @@ import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import com.syrmos.core.designsystem.component.PlatformWebView
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.schedule.SourceConfidence
@@ -88,6 +93,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     var showTrackPicker by remember { mutableStateOf(false) }
+    var selectedNewsUrl by remember { mutableStateOf<String?>(null) }
     val tracked by DepartureTracking.active.collectAsState()
     var nowEpoch by remember { mutableStateOf(Clock.System.now().epochSeconds) }
     LaunchedEffect(Unit) {
@@ -347,7 +353,7 @@ fun HomeScreen(
                 RailNewsSection(
                     news = uiState.railNews,
                     lang = lang,
-                    onOpenUrl = onOpenUrl,
+                    onOpenUrl = { url -> selectedNewsUrl = url },
                 )
             }
         }
@@ -409,6 +415,14 @@ fun HomeScreen(
             lines = uiState.lines,
             lang = lang,
             onDismiss = { showTrackPicker = false },
+        )
+    }
+
+    val newsUrl = selectedNewsUrl
+    if (newsUrl != null) {
+        NewsWebSheet(
+            url = newsUrl,
+            onDismiss = { selectedNewsUrl = null },
         )
     }
     }
@@ -777,11 +791,7 @@ private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
     val live = freshness == DataFreshness.LIVE
     val dot = if (live) SyrmosColorTokens.arrivalSoon else SyrmosColorTokens.estimated
     val bg = if (live) SyrmosColorTokens.arrivalSoon.copy(alpha = 0.1f) else SyrmosColorTokens.estimated.copy(alpha = 0.1f)
-    val label = if (live) {
-        L.LIVE.text(lang)
-    } else {
-        "${L.RUNNING_OFFLINE.text(lang)} · ${L.PREDICTED_FROM_SCHEDULE.text(lang)}"
-    }
+    val label = if (live) L.RUNNING_ONLINE.text(lang) else L.RUNNING_OFFLINE.text(lang)
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -802,6 +812,35 @@ private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
+        )
+        if (!live) {
+            Text(
+                text = L.RETRY.text(lang),
+                style = MaterialTheme.typography.labelSmall,
+                color = SyrmosColorTokens.suburban,
+                maxLines = 1,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { LiveDataFreshness.requestRetry() }
+                    .background(SyrmosColorTokens.suburban.copy(alpha = 0.1f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewsWebSheet(url: String, onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        PlatformWebView(
+            url = url,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(500.dp),
         )
     }
 }

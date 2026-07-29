@@ -73,6 +73,7 @@ class RailwayGovLiveTrackerService(
             destination = destination.takeIf { it.isNotBlank() },
             nextStation = nextStation.takeIf { it.isNotBlank() },
             delayMinutes = delayMinutes,
+            serviceType = serviceType,
             progress = null,
             speedKph = null,
             latitude = lat,

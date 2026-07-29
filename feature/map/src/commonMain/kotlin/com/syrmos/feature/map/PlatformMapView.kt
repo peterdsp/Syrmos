@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 internal expect fun PlatformMapView(
     uiState: MapUiState,
     onStationSelected: (String) -> Unit,
+    onTrainSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     initialScale: Float = 1f,
 )

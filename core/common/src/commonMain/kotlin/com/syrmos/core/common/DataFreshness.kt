@@ -56,8 +56,15 @@ object LiveDataFreshness {
     private val _lastLiveUpdate = MutableStateFlow<Instant?>(null)
     val lastLiveUpdate: StateFlow<Instant?> = _lastLiveUpdate.asStateFlow()
 
+    private val _retryRequested = MutableStateFlow(0L)
+    val retryRequested: StateFlow<Long> = _retryRequested.asStateFlow()
+
     fun markLive(at: Instant = Clock.System.now()) {
         _lastLiveUpdate.value = at
+    }
+
+    fun requestRetry() {
+        _retryRequested.value = Clock.System.now().epochSeconds
     }
 
     fun freshnessNow(windowSeconds: Long = FreshnessEvaluator.DEFAULT_WINDOW_SECONDS): DataFreshness =

@@ -224,6 +224,7 @@
                     <button id="zoomInButton" class="control-button" type="button" aria-label="Zoom in"><svg class="ic" aria-hidden="true"><use href="#ic-zoom-in"/></svg></button>
                 </div>
                 <button id="themeToggle" class="control-button" type="button" aria-label="Toggle dark mode"><svg class="ic" aria-hidden="true"><use href="#ic-theme"/></svg></button>
+                <button id="liveTrainsButton" class="control-button" type="button" aria-label="Live trains" title="Live trains" style="display:none"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l0 2a3 3 0 0 0 3 3l10 0a3 3 0 0 0 3-3l0-2"/><path d="M4 11l0-3a3 3 0 0 1 3-3l10 0a3 3 0 0 1 3 3l0 3"/><path d="M12 4l0 4"/><path d="M4 11l16 0"/><circle cx="8.5" cy="14.5" r="1"/><circle cx="15.5" cy="14.5" r="1"/></svg></button>
                 <button id="vehiclesToggle" class="control-button" type="button" data-i18n-aria="hide_vehicles" data-i18n-title="hide_vehicles" aria-label="Hide vehicles" title="Hide vehicles"><svg class="ic" aria-hidden="true"><use href="#ic-vehicles"/></svg></button>
                 <button id="locateButton" class="control-button" type="button" data-i18n-aria="locate_me" data-i18n-title="locate_me" aria-label="Locate me" title="Locate me"><svg class="ic" aria-hidden="true"><use href="#ic-locate"/></svg></button>
             </div>
@@ -306,6 +307,52 @@
         <a id="directionsLink" class="primary-button sheet-footer-action" href="#" target="_blank" rel="noreferrer" data-i18n="get_directions">
             Get directions
         </a>
+    </section>
+
+    <section id="trainSheet" class="station-sheet station-sheet--hidden" aria-live="polite">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div>
+                <h2 id="trainSheetTitle">Train</h2>
+                <p id="trainSheetSubtitle" class="station-alt"></p>
+            </div>
+            <button id="trainSheetClose" class="ghost-button" type="button" data-i18n="done">Done</button>
+        </div>
+
+        <div class="sheet-content">
+            <div class="sheet-block">
+                <div id="trainSheetBadge" class="badge-row"></div>
+            </div>
+
+            <div class="sheet-block">
+                <div class="sheet-label">Route</div>
+                <div id="trainSheetRoute" class="departure-list"></div>
+            </div>
+
+            <div class="sheet-block">
+                <div id="trainSheetDelay" class="meta-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="liveTrainsDrawer" class="station-sheet station-sheet--hidden" aria-live="polite">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div>
+                <h2>Live trains</h2>
+                <p id="liveTrainsCount" class="station-alt"></p>
+            </div>
+            <button id="liveTrainsDrawerClose" class="ghost-button" type="button" data-i18n="done">Done</button>
+        </div>
+
+        <div class="sheet-content">
+            <div class="sheet-block">
+                <div id="liveTrainsFilters" class="badge-row" style="flex-wrap:wrap;gap:6px"></div>
+            </div>
+            <div class="sheet-block">
+                <div id="liveTrainsDrawerList" class="departure-list"></div>
+            </div>
+        </div>
     </section>
 
     <!-- Ariadne: offline assistant. Floating pill opens a slide-in panel

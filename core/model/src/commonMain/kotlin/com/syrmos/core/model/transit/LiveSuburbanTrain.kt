@@ -8,6 +8,7 @@ data class LiveSuburbanTrain(
     val destination: String?,
     val nextStation: String?,
     val delayMinutes: Int,
+    val serviceType: String,
     val progress: Double?,
     val speedKph: Double?,
     val latitude: Double,

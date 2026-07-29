@@ -104,8 +104,10 @@ enum LocalizedKey {
     case nextTrain
     case to
     case live
+    case runningOnline
     case runningOffline
     case predictedFromSchedule
+    case retry
     case sourceScheduled
     case sourceEstimated
     case sourceOffline
@@ -251,9 +253,15 @@ enum LocalizedKey {
         case (.live, .english): return "Live"
         case (.live, .greek): return "Ζωντανά"
         case (.live, .albanian): return "Drejtpërdrejt"
+        case (.runningOnline, .english): return "Running online"
+        case (.runningOnline, .greek): return "Σε σύνδεση"
+        case (.runningOnline, .albanian): return "Me internet"
         case (.runningOffline, .english): return "Running offline"
         case (.runningOffline, .greek): return "Εκτός σύνδεσης"
         case (.runningOffline, .albanian): return "Pa internet"
+        case (.retry, .english): return "Retry"
+        case (.retry, .greek): return "Δοκιμή"
+        case (.retry, .albanian): return "Riprovo"
         case (.predictedFromSchedule, .english): return "Predicted from schedule"
         case (.predictedFromSchedule, .greek): return "Πρόβλεψη από το πρόγραμμα"
         case (.predictedFromSchedule, .albanian): return "Parashikuar nga orari"
