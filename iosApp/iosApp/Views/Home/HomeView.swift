@@ -588,10 +588,15 @@ struct HomeView: View {
                     }
                 }
 
-                ForEach(alerts.prefix(3)) { alert in
-                    AlertCard(announcement: alert, onReadMore: { url in
-                        webViewURL = url
-                    })
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(alerts.prefix(10)) { alert in
+                            AlertCard(announcement: alert, onReadMore: { url in
+                                webViewURL = url
+                            })
+                            .frame(width: 280)
+                        }
+                    }
                 }
             }
         } else if let first = stasyService.announcements.first {
@@ -922,14 +927,8 @@ struct NewsCard: View {
                     .foregroundStyle(.tertiary)
             }
 
-            if !item.displaySummary(language: language).isEmpty {
-                Text(item.displaySummary(language: language))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(4)
-            }
         }
-        .frame(width: 260, alignment: .leading)
+        .frame(width: 220, alignment: .leading)
         .padding(14)
         .background(Color.syrmosSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
