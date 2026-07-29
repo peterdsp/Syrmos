@@ -115,6 +115,7 @@ enum LocalizedKey {
     case leaveBy
     case serviceOver
     case enableLocationForNext
+    case serviceAlertAffectsLine
 
     func text(for lang: AppLanguage) -> String {
         switch (self, lang) {
@@ -286,6 +287,10 @@ enum LocalizedKey {
         case (.enableLocationForNext, .english): return "Enable location to see your next train"
         case (.enableLocationForNext, .greek): return "Ενεργοποίησε την τοποθεσία για τον επόμενο συρμό σου"
         case (.enableLocationForNext, .albanian): return "Aktivizo vendndodhjen për trenin tënd të ardhshëm"
+        case (.serviceAlertAffectsLine, .english): return "Active alerts may affect departures"
+        case (.serviceAlertAffectsLine, .greek): return "Ενεργές ειδοποιήσεις μπορεί να επηρεάζουν τα δρομολόγια"
+        case (.serviceAlertAffectsLine, .albanian): return "Njoftimet aktive mund te ndikojne nisjet"
+        default: return text(for: .english)
         }
     }
 }

@@ -55,7 +55,8 @@ enum class L {
     LIVE_TRAINS, SUBURBAN_RAILWAY, NEAR, NEXT_SHORT, NO_LIVE_TRAINS_NOW,
     NEARBY_POPULAR, POPULAR_INTERCHANGE, POPULAR_STOP, LINES_LOWER,
     ROUTE_COMPARISON, FASTEST, FEWEST_TRANSFERS, BEST_COVERAGE, ONE_TRANSFER,
-    SCHEDULE_BOARD, EXPORT, PRINT_SCHEDULE, DOWNLOAD_PDF;
+    SCHEDULE_BOARD, EXPORT, PRINT_SCHEDULE, DOWNLOAD_PDF,
+    SERVICE_ALERT_AFFECTS_LINE;
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> when (lang) {
@@ -547,6 +548,11 @@ enum class L {
             AppLanguage.GREEK -> "Λήψη PDF"
             AppLanguage.ALBANIAN -> "Shkarko PDF"
             else -> "Download PDF"
+        }
+        SERVICE_ALERT_AFFECTS_LINE -> when (lang) {
+            AppLanguage.GREEK -> "Ενεργές ειδοποιήσεις μπορεί να επηρεάζουν τα δρομολόγια"
+            AppLanguage.ALBANIAN -> "Njoftimet aktive mund te ndikojne nisjet"
+            else -> "Active alerts may affect departures"
         }
     }
 }
