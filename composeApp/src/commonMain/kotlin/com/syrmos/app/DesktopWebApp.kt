@@ -59,6 +59,7 @@ import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
@@ -691,8 +692,8 @@ private fun UpdatesCard(
         if (status != null) {
             val message = if (lang == AppLanguage.GREEK) status.rawMessage else status.rawMessageEn
             if (message.isNotBlank()) {
-                val bg = if (status.isAlert) Color(0x1FFF9800) else Color(0x1A4CAF50)
-                val accent = if (status.isAlert) Color(0xFFE65100) else Color(0xFF2E7D32)
+                val bg = if (status.isAlert) SyrmosColorTokens.warning.copy(alpha = 0.12f) else SyrmosColorTokens.live.copy(alpha = 0.1f)
+                val accent = if (status.isAlert) SyrmosColorTokens.arrivalModerate else SyrmosColorTokens.arrivalSoon
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -729,7 +730,7 @@ private fun UpdatesCard(
                 Text(
                     text = if (ann.isServiceAlert) "⚠" else "•",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (ann.isServiceAlert) Color(0xFFE65100) else MaterialTheme.colorScheme.primary,
+                    color = if (ann.isServiceAlert) SyrmosColorTokens.arrivalModerate else MaterialTheme.colorScheme.primary,
                 )
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(

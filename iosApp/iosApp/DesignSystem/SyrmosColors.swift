@@ -12,6 +12,8 @@ extension Color {
     static let syrmosPrimary = Color.syrmosAdaptive(light: SyrmosTokens.brand, dark: SyrmosTokens.Dark.brand)
     static let syrmosBackground = Color.syrmosAdaptive(light: SyrmosTokens.surface, dark: SyrmosTokens.Dark.surface)
     static let syrmosSurface = Color.syrmosAdaptive(light: SyrmosTokens.surfaceCard, dark: SyrmosTokens.Dark.surfaceCard)
+    static let syrmosSurfaceMuted = Color.syrmosAdaptive(light: SyrmosTokens.surfaceMuted, dark: SyrmosTokens.Dark.surfaceMuted)
+    static let syrmosOnSurfaceMuted = Color.syrmosAdaptive(light: SyrmosTokens.onSurfaceMuted, dark: SyrmosTokens.Dark.onSurfaceMuted)
 
     static let arrivalSoon = SyrmosTokens.arrivalSoon
     static let arrivalModerate = SyrmosTokens.arrivalModerate
@@ -93,6 +95,7 @@ enum SyrmosTokens {
     static let estimated = Color(hex: 0xB45309)
     static let warning = Color(hex: 0xD97706)
     static let disruption = Color(hex: 0xDC2626)
+    static let warningContainer = Color(hex: 0xFFF3E0)
     static let arrivalSoon = Color(hex: 0x2E7D32)
     static let arrivalModerate = Color(hex: 0xE65100)
     static let arrivalFar = Color(hex: 0x757575)
@@ -104,6 +107,7 @@ enum SyrmosTokens {
         static let onSurface = Color(hex: 0xE6ECF5)
         static let onSurfaceMuted = Color(hex: 0x9AA3AF)
         static let outline = Color(hex: 0x2A2F37)
+        static let warningContainer = Color(hex: 0x291705)
     }
     enum Space {
         static let none: CGFloat = 0

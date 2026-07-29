@@ -31,7 +31,9 @@
     "surfaceMuted": "#EFEBE4",
     "surfaceMutedDark": "#171B21",
     "tram": "#F39800",
-    "warning": "#D97706"
+    "warning": "#D97706",
+    "warningContainer": "#FFF3E0",
+    "warningContainerDark": "#291705"
   },
   "motion": {
     "durationFastMs": 150,

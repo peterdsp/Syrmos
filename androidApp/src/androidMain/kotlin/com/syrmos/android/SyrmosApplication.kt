@@ -25,5 +25,9 @@ class SyrmosApplication : Application() {
         // plus an immediate one so a freshly added widget has data quickly.
         com.syrmos.android.widget.SnapshotWorker.enqueuePeriodic(this)
         com.syrmos.android.widget.SnapshotWorker.refreshNow(this)
+
+        // Periodic alert and weather checks, posts local notifications
+        // when new service alerts appear or severe weather is detected.
+        com.syrmos.android.notification.AlertCheckWorker.enqueuePeriodic(this)
     }
 }

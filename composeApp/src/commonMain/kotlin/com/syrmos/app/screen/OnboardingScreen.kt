@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -48,9 +49,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.syrmos.app.platform.requestLocationPermission
+import com.syrmos.app.platform.requestNotificationPermission
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
@@ -60,6 +63,7 @@ private data class OnboardingPage(
     val body: L,
     val ctaLabel: L? = null,
     val isLocationStep: Boolean = false,
+    val isNotificationStep: Boolean = false,
 )
 
 @Composable
@@ -69,27 +73,35 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val pages = listOf(
         OnboardingPage(
             icon = Icons.Filled.DirectionsTransit,
-            tint = Color(0xFF0083C9),
+            tint = SyrmosColorTokens.brand,
             title = L.ONBOARD_WELCOME_TITLE,
             body = L.ONBOARD_WELCOME_BODY,
         ),
         OnboardingPage(
             icon = Icons.Filled.AccessTime,
-            tint = Color(0xFFE2231A),
+            tint = SyrmosColorTokens.metroRed,
             title = L.ONBOARD_LIVE_TITLE,
             body = L.ONBOARD_LIVE_BODY,
         ),
         OnboardingPage(
             icon = Icons.Filled.LocationOn,
-            tint = Color(0xFFF8C31E),
+            tint = SyrmosColorTokens.tram,
             title = L.ONBOARD_LOCATION_TITLE,
             body = L.ONBOARD_LOCATION_BODY,
             ctaLabel = L.ONBOARD_LOCATION_CTA,
             isLocationStep = true,
         ),
         OnboardingPage(
+            icon = Icons.Filled.Notifications,
+            tint = SyrmosColorTokens.metroRed,
+            title = L.ONBOARD_NOTIF_TITLE,
+            body = L.ONBOARD_NOTIF_BODY,
+            ctaLabel = L.ONBOARD_NOTIF_CTA,
+            isNotificationStep = true,
+        ),
+        OnboardingPage(
             icon = Icons.Filled.Verified,
-            tint = Color(0xFF0083C9),
+            tint = SyrmosColorTokens.brand,
             title = L.ONBOARD_PRIVACY_TITLE,
             body = L.ONBOARD_PRIVACY_BODY,
         ),
@@ -138,6 +150,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     onClick = {
                         if (currentPage.isLocationStep) {
                             scope.launch { requestLocationPermission() }
+                        }
+                        if (currentPage.isNotificationStep) {
+                            scope.launch { requestNotificationPermission() }
                         }
                         if (isLast) {
                             onComplete()

@@ -40,7 +40,7 @@ body {
 #map {
     width: 100%;
     height: 100%;
-    background: #dfe9f3;
+    background: var(--sy-surface-muted);
 }
 
 .insight-panel {
@@ -109,7 +109,7 @@ body {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
 }
 
 .panel-list {
@@ -126,7 +126,7 @@ body {
     gap: 2px;
     padding: 8px 10px;
     border-radius: 12px;
-    background: #f7fafc;
+    background: var(--sy-surface);
     cursor: pointer;
 }
 
@@ -156,7 +156,7 @@ body {
 .dark-mode .fare-planner__in { border-color: rgba(255,255,255,0.18); }
 .dark-mode .fare-planner { border-bottom-color: rgba(255,255,255,0.08); }
 .fare-planner__result:empty { display: none; }
-.fare-planner__result { padding: 8px 10px; border-radius: 10px; background: #f7fafc; }
+.fare-planner__result { padding: 8px 10px; border-radius: 10px; background: var(--sy-surface); }
 .dark-mode .fare-planner__result { background: rgba(255,255,255,0.05); }
 .fare-planner__price { font-weight: 700; font-size: 16px; }
 .fare-planner__meta { font-size: 12px; color: var(--sy-on-surface-muted, #5f6b76); margin-top: 1px; }
@@ -170,17 +170,13 @@ body {
 
 .panel-item__meta {
     font-size: 11px;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
 }
 
 .panel-item__count {
     font-size: 13px;
     font-weight: 650;
-    color: #1a1a2e;
-}
-
-.dark-mode .panel-item__count {
-    color: #f1f5f9;
+    color: var(--sy-on-surface);
 }
 
 /* Directional train triangle (divIcon) - distinct from the round station dots,
@@ -308,8 +304,6 @@ body {
     color: var(--sy-scheduled, #2563eb);
 }
 .dark-mode .hero-card { background: rgba(27, 32, 40, 0.96); border-color: rgba(255,255,255,0.08); }
-.dark-mode .hero-card__station { color: #e6ecf5; }
-.dark-mode .hero-card__dir { color: #e6ecf5; }
 
 .sim-train__dot {
     display: flex;
@@ -330,7 +324,7 @@ body {
     width: 26px;
     height: 26px;
     font-size: 14px;
-    border-color: #0072CE;
+    border-color: var(--sy-metro-blue);
     box-shadow: 0 2px 12px rgba(0, 114, 206, 0.4);
 }
 
@@ -346,7 +340,7 @@ body {
 .panel-item__count {
     font-size: 12px;
     font-weight: 600;
-    color: #1a1a2e;
+    color: var(--sy-on-surface);
     padding: 4px 0;
 }
 
@@ -356,7 +350,7 @@ body {
     padding: 8px 10px;
     border-radius: 12px;
     background: rgba(0, 114, 206, 0.10);
-    color: #0072CE;
+    color: var(--sy-brand);
     font-size: 12px;
     font-weight: 650;
     text-align: center;
@@ -372,7 +366,7 @@ body {
 .info-link {
     padding: 10px 12px;
     border-radius: 12px;
-    background: #f7fafc;
+    background: var(--sy-surface);
 }
 .info-link__head {
     display: flex;
@@ -385,24 +379,24 @@ body {
     margin: 0;
     font-size: 13px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--sy-on-surface);
 }
 .info-link__op {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
 }
 .info-link__summary {
     margin: 4px 0;
     font-size: 12px;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
 }
 .info-link__bullets {
     margin: 4px 0 8px;
     padding-left: 18px;
     font-size: 12px;
-    color: #2d3748;
+    color: var(--sy-on-surface);
 }
 .info-link__bullets li { margin-bottom: 3px; }
 .info-link__verify {
@@ -411,7 +405,7 @@ body {
     padding: 6px 10px;
     border-radius: 999px;
     background: rgba(0, 114, 206, 0.12);
-    color: #0072CE;
+    color: var(--sy-brand);
     font-size: 11px;
     font-weight: 700;
     text-decoration: none;
@@ -419,11 +413,8 @@ body {
 .info-link__verify:hover { background: rgba(0, 114, 206, 0.20); }
 
 .dark-mode .info-link {
-    background: #0a0a0a;
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
-.dark-mode .info-link__title { color: #f1f5f9; }
-.dark-mode .info-link__summary { color: #94a3b8; }
 .dark-mode .info-link__bullets { color: #cbd5e1; }
 
 .top-bar {
@@ -604,7 +595,7 @@ body {
 .sheet-label {
     display: block;
     margin-bottom: 8px;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
     font-size: 13px;
     font-weight: 600;
     text-transform: uppercase;
@@ -623,7 +614,7 @@ body {
 
 .search-icon {
     flex: none;
-    color: #6b7280;
+    color: var(--sy-on-surface-muted);
     width: 18px;
     height: 18px;
 }
@@ -672,7 +663,7 @@ body {
 .search-result {
     padding: 11px 12px;
     border-radius: 12px;
-    background: #f7fafc;
+    background: var(--sy-surface);
     cursor: pointer;
 }
 
@@ -686,7 +677,7 @@ body {
 
 .search-result-meta {
     margin-top: 4px;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
     font-size: 13px;
 }
 
@@ -696,10 +687,10 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: color-mix(in srgb, var(--sy-brand, #1466B8) 8%, #f7fafc);
+    background: color-mix(in srgb, var(--sy-brand) 8%, var(--sy-surface));
 }
 .search-result--ariadne:hover {
-    background: color-mix(in srgb, var(--sy-brand, #1466B8) 15%, #e9f2fb);
+    background: color-mix(in srgb, var(--sy-brand) 15%, var(--sy-surface-muted));
 }
 .search-result__owl {
     width: 26px;
@@ -755,16 +746,14 @@ body {
     margin: 0;
     font-size: 26px;
     line-height: 1.1;
-    /* Explicit light colour. Without it this inherited body's --sy-on-surface,
-       which flips near-white under the OS `prefers-color-scheme: dark` media
-       query even when the app is toggled to LIGHT - so the title vanished on
-       the white sheet. The .dark-mode override below restores white in dark. */
-    color: #14181f;
+    /* Now driven by the design token which switches via body.dark-mode,
+       not prefers-color-scheme, so the OS/app mismatch is resolved. */
+    color: var(--sy-on-surface);
 }
 
 .station-alt {
     margin: 6px 0 0;
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
 }
 
 .sheet-content {
@@ -822,7 +811,7 @@ body {
     gap: 8px;
     padding: 12px 14px;
     border-radius: 16px;
-    background: #f7fafc;
+    background: var(--sy-surface);
 }
 
 .departure-card__header {
@@ -844,14 +833,13 @@ body {
     gap: 8px;
     font-size: 14px;
     font-weight: 700;
-    /* Explicit light colour for the same reason as #stationName: it otherwise
-       inherited the OS-dark --sy-on-surface token and washed out on the white
-       sheet in light mode. .dark-mode overrides restore the light colour. */
-    color: #14181f;
+    /* Now driven by the design token which switches via body.dark-mode,
+       not prefers-color-scheme, so the OS/app mismatch is resolved. */
+    color: var(--sy-on-surface);
 }
 
 .departure-card__destination {
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
     font-size: 13px;
 }
 
@@ -887,7 +875,7 @@ body {
 
 .departure-card__pill--airport {
     background: rgba(0, 114, 206, 0.12);
-    color: #0072ce;
+    color: var(--sy-metro-blue);
 }
 
 .departure-card__eta {
@@ -897,19 +885,19 @@ body {
 .departure-card__minutes {
     font-size: 18px;
     font-weight: 700;
-    color: #0072ce;
+    color: var(--sy-brand);
 }
 
 .departure-card__time {
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
     font-size: 13px;
 }
 
 .departure-empty {
     padding: 14px;
     border-radius: 16px;
-    background: #f7fafc;
-    color: #5f6b76;
+    background: var(--sy-surface);
+    color: var(--sy-on-surface-muted);
     font-size: 14px;
 }
 
@@ -927,7 +915,7 @@ body {
 }
 
 .meta-key {
-    color: #5f6b76;
+    color: var(--sy-on-surface-muted);
 }
 
 .meta-value {
@@ -950,7 +938,7 @@ body {
     background: rgba(16, 20, 24, 0.06);
     font-size: 13px;
     font-weight: 500;
-    color: #2d3748;
+    color: var(--sy-on-surface);
 }
 
 .meta-chip-icon {
@@ -982,15 +970,15 @@ body {
 .ghost-button {
     padding: 0 18px;
     height: 44px;
-    background: #eef4f9;
-    color: #18324a;
+    background: var(--sy-surface-muted);
+    color: var(--sy-on-surface);
 }
 
 .primary-button {
     display: block;
     margin-top: 20px;
     padding: 14px 16px;
-    background: #0072CE;
+    background: var(--sy-brand);
     color: white;
     text-align: center;
 }
@@ -1168,7 +1156,7 @@ body {
         flex: 1;
         font-size: 14px;
         font-weight: 650;
-        color: #1a1a2e;
+        color: var(--sy-on-surface);
     }
 
     .panel-peek__chevron {
@@ -1195,7 +1183,7 @@ body {
 
     .panel-card {
         box-shadow: none;
-        background: #f7fafc;
+        background: var(--sy-surface);
         backdrop-filter: none;
     }
 
@@ -1217,7 +1205,6 @@ body {
    giving us the deep black look users expect from a modern dark UI. */
 .dark-mode {
     background: #000000;
-    color: #e2e8f0;
 }
 
 .dark-mode .top-bar {
@@ -1272,21 +1259,8 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.dark-mode .panel-card__title {
-    color: #94a3b8;
-}
-
 .dark-mode .panel-item {
-    background: #0a0a0a;
     border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dark-mode .panel-item__title {
-    color: #f1f5f9;
-}
-
-.dark-mode .panel-item__meta {
-    color: #94a3b8;
 }
 
 .dark-mode .station-sheet {
@@ -1294,14 +1268,9 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.dark-mode #stationName { color: #f1f5f9; }
-.dark-mode .departure-card__line { color: #f1f5f9; }
-.dark-mode .station-alt { color: #94a3b8; }
 .dark-mode .meta-item { border-top-color: rgba(255, 255, 255, 0.06); }
-.dark-mode .meta-key { color: #94a3b8; }
 .dark-mode .meta-value { color: #e2e8f0; }
-.dark-mode .departure-card { background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.05); }
-.dark-mode .departure-empty { background: #0a0a0a; color: #94a3b8; }
+.dark-mode .departure-card { border: 1px solid rgba(255, 255, 255, 0.05); }
 
 /* CARTO dark_nolabels (Dark Matter) is already a near-black basemap whose
    streets are faint low-luminance strokes. A brightness(0.6) on top crushed
@@ -1354,7 +1323,6 @@ body {
         border-bottom-color: rgba(255, 255, 255, 0.06);
     }
 
-    .dark-mode .panel-peek__text { color: #e2e8f0; }
 }
 
 /* --- Station pin (mid/low zoom) --- */

@@ -18,14 +18,14 @@ struct EmergencyWeatherCard: View {
     /// Deep orange used for the phone-number badges and their white glyphs.
     /// Kept constant across schemes because white text needs a dark fill to
     /// stay readable, and this reads fine on both the cream and dark cards.
-    private let badgeAmber = Color(red: 0.90, green: 0.32, blue: 0.00)
+    private let badgeAmber = SyrmosTokens.warning
 
     /// Title, raindrop, and border accent. Brighter in dark mode so the
     /// thin strokes and headline don't muddy against the dark card.
     private var amber: Color {
         colorScheme == .dark
-            ? Color(red: 1.00, green: 0.62, blue: 0.26)
-            : Color(red: 0.90, green: 0.32, blue: 0.00)
+            ? SyrmosTokens.warning
+            : SyrmosTokens.arrivalModerate
     }
 
     /// Card fill. In light mode the warm cream reads as "advisory"; in dark
@@ -33,8 +33,8 @@ struct EmergencyWeatherCard: View {
     /// semantic `.primary` / `.secondary` text stay legible on top.
     private var bg: Color {
         colorScheme == .dark
-            ? Color(red: 0.16, green: 0.09, blue: 0.02)
-            : Color(red: 1.00, green: 0.95, blue: 0.88)
+            ? SyrmosTokens.Dark.warningContainer
+            : SyrmosTokens.warningContainer
     }
 
     var body: some View {

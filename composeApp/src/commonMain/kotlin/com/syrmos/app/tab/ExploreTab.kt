@@ -15,25 +15,25 @@ import com.syrmos.feature.lines.LinesScreen
 import com.syrmos.feature.lines.LinesViewModel
 import org.koin.compose.koinInject
 
-object LinesTab : Tab {
+object ExploreTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
             val lang by LocalizationManager.language.collectAsState()
             return TabOptions(
                 index = 1u,
-                title = L.LINES.text(lang),
+                title = L.EXPLORE.text(lang),
                 icon = null,
             )
         }
 
     @Composable
     override fun Content() {
-        Navigator(LinesListScreen())
+        Navigator(ExploreListScreen())
     }
 }
 
-private class LinesListScreen : cafe.adriel.voyager.core.screen.Screen {
+private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow

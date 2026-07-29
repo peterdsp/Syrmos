@@ -63,6 +63,10 @@ object SyrmosColorTokens {
         const val warning = 0xFFD97706
         const val disruption = 0xFFDC2626
 
+        // Warning / emergency containers (alert card backgrounds).
+        const val warningContainer = 0xFFFFF3E0
+        const val warningContainerDark = 0xFF291705
+
         // Arrival urgency (existing functional colours, kept).
         const val arrivalSoon = 0xFF2E7D32
         const val arrivalModerate = 0xFFE65100
@@ -107,6 +111,10 @@ object SyrmosColorTokens {
     val estimated = Color(Raw.estimated)
     val warning = Color(Raw.warning)
     val disruption = Color(Raw.disruption)
+
+    // --- Warning containers --------------------------------------------------
+    val warningContainer = Color(Raw.warningContainer)
+    val warningContainerDark = Color(Raw.warningContainerDark)
 
     // --- Arrival urgency ---------------------------------------------------
     val arrivalSoon = Color(Raw.arrivalSoon)
