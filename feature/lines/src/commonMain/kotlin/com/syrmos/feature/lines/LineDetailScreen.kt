@@ -53,6 +53,8 @@ import com.syrmos.core.model.transit.LineColor
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.designsystem.component.AlertBannerInfo
+import com.syrmos.core.designsystem.component.ServiceAlertBanner
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -171,6 +173,7 @@ class LineDetailViewModel(
 @Composable
 fun LineDetailScreen(
     viewModel: LineDetailViewModel,
+    alertBanner: AlertBannerInfo? = null,
     onStationClick: (String) -> Unit = {},
     onBack: () -> Unit = {},
 ) {
@@ -216,6 +219,10 @@ fun LineDetailScreen(
                         liveTrainCount = uiState.liveTrains.size,
                         lang = lang,
                     )
+                }
+
+                if (alertBanner != null) {
+                    item { ServiceAlertBanner(info = alertBanner) }
                 }
 
                 if (line.type == LineType.SUBURBAN) {

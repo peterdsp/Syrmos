@@ -3,6 +3,7 @@ import SwiftUI
 struct StationDetailView: View {
     let station: TransitStation
     @ObservedObject private var loc = LocalizationManager.shared
+    @StateObject private var stasyService = STASYService()
     @State private var departures: [Departure] = []
     @State private var hasLoadedOnce: Bool = false
     @State private var nowTick = Date()
@@ -12,8 +13,23 @@ struct StationDetailView: View {
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
+    private var stationAlerts: [STASYAnnouncement] {
+        stasyService.announcements.filter { ann in
+            ann.category == .serviceAlert
+            && ann.affectedLines.contains(where: { affected in
+                station.lineIds.contains(where: { $0.caseInsensitiveCompare(affected) == .orderedSame })
+            })
+        }
+    }
+
     var body: some View {
         List {
+            if !stationAlerts.isEmpty {
+                Section {
+                    ServiceAlertBanner(alert: stationAlerts[0], language: loc.language)
+                }
+            }
+
             Section(loc[.stations]) {
                 Button {
                     showMapSheet = true
@@ -317,6 +333,29 @@ private struct StationLinePill: View {
         case "A4": return "A4"
         default:   return lineId
         }
+    }
+}
+
+struct ServiceAlertBanner: View {
+    let alert: STASYAnnouncement
+    let language: AppLanguage
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("⚠️")
+                .font(.subheadline)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(LocalizedKey.serviceAlertAffectsLine.text(for: language))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.orange)
+                Text(alert.displayTitle(language: language))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
