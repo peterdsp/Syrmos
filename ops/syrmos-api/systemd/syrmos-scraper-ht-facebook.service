@@ -1,5 +1,5 @@
 [Unit]
-Description=Rail news scraper one-shot (sidirodromikanea.blogspot.com)
+Description=Hellenic Train Facebook page scraper one-shot
 After=network-online.target
 Wants=network-online.target
 
@@ -9,7 +9,7 @@ User=peterdsp
 WorkingDirectory=/home/peterdsp/syrmos-api
 Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
 Environment=SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
-ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.scraper_rail_news
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.scraper_ht_facebook
 ExecStartPost=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.generator
 StandardOutput=append:/home/peterdsp/syrmos-api/scraper.log
 StandardError=append:/home/peterdsp/syrmos-api/scraper.log
