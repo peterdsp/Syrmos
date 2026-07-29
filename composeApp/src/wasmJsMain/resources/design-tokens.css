@@ -91,6 +91,7 @@ body {
 }
 
 /* Dark values follow the app theme toggle, not the OS preference. */
+html.dark-mode,
 body.dark-mode {
   --sy-brand: #8ECAFF;
   --sy-surface: #0F1216;
