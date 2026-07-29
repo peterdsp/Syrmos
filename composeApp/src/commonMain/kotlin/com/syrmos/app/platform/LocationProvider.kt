@@ -18,3 +18,5 @@ expect fun readLastWhatsNewVersion(): String?
 expect fun markWhatsNewSeen(version: String)
 
 expect fun consumePendingAssistantQuery(): String?
+
+expect suspend fun requestNotificationPermission()

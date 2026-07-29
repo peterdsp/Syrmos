@@ -18,6 +18,7 @@ import kotlin.coroutines.resume
 
 private var appContext: Context? = null
 private var permissionRequester: (suspend () -> Unit)? = null
+private var notifPermissionRequester: (suspend () -> Unit)? = null
 
 fun initAndroidPlatform(context: Context) {
     com.syrmos.core.common.initLocalization(context)
@@ -38,6 +39,10 @@ fun setLocationPermissionRequester(requester: (suspend () -> Unit)?) {
     permissionRequester = requester
 }
 
+fun setNotificationPermissionRequester(requester: (suspend () -> Unit)?) {
+    notifPermissionRequester = requester
+}
+
 fun hasLocationPermission(): Boolean {
     val ctx = appContext ?: return false
     return ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -47,6 +52,16 @@ fun hasLocationPermission(): Boolean {
 actual suspend fun requestLocationPermission() {
     if (hasLocationPermission()) return
     permissionRequester?.invoke()
+}
+
+actual suspend fun requestNotificationPermission() {
+    val ctx = appContext ?: return
+    if (android.os.Build.VERSION.SDK_INT >= 33 &&
+        ctx.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+        android.content.pm.PackageManager.PERMISSION_GRANTED
+    ) {
+        notifPermissionRequester?.invoke()
+    }
 }
 
 private const val ONBOARDING_KEY = "syrmos.onboarding.completed.v1"

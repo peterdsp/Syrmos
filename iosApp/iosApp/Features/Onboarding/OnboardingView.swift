@@ -34,6 +34,14 @@ struct OnboardingView: View {
                 primaryAction: { location.requestIfNeeded() }
             ),
             Page(
+                icon: "bell.badge.fill",
+                tint: tramRed,
+                title: loc[.onboardNotifTitle],
+                subtitle: loc[.onboardNotifBody],
+                primaryActionKey: .onboardNotifCta,
+                primaryAction: { Task { await NotificationService.shared.requestAuthorization() } }
+            ),
+            Page(
                 icon: "checkmark.seal.fill",
                 tint: metroBlue,
                 title: loc[.onboardPrivacyTitle],
