@@ -76,6 +76,7 @@
 		B3621A83DE8D374BF385359C /* SyrmosWatch/WatchNearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */; };
 		B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */; };
 		BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */; };
+		CCDD11223344556677880011 /* iosApp/Core/Notifications/NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDD11223344556677880012 /* iosApp/Core/Notifications/NotificationService.swift */; };
 		BB96CED5F61B446CBA6D87C5 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
 		BCB2D8DDE0D14B2D8664EC16 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */; };
 		C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
@@ -253,6 +254,7 @@
 		B321F78C955813F66BA4C930 /* SyrmosWatch/SyrmosWatchComplications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/SyrmosWatchComplications.swift; sourceTree = SOURCE_ROOT; };
 		B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NearbyStationDestinationTests.swift; sourceTree = "<group>"; };
 		BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Location/LocationService.swift; sourceTree = SOURCE_ROOT; };
+		CCDD11223344556677880012 /* iosApp/Core/Notifications/NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Notifications/NotificationService.swift; sourceTree = SOURCE_ROOT; };
 		BD63C5586DB5B3F0921AC1D6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuburbanProjectionTests.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Localization/Localization.swift; sourceTree = SOURCE_ROOT; };
@@ -506,6 +508,7 @@
 			isa = PBXGroup;
 			children = (
 				BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */,
+				CCDD11223344556677880012 /* iosApp/Core/Notifications/NotificationService.swift */,
 			);
 			name = Location;
 			sourceTree = "<group>";
@@ -931,6 +934,7 @@
 				EEC6AA6A80ADDB9629326CDF /* iosApp/Core/Networking/RailNewsService.swift in Sources */,
 				A1C2D3E4F50607182930A1B3 /* iosApp/Core/Networking/AriadneAPIService.swift in Sources */,
 				BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */,
+				CCDD11223344556677880011 /* iosApp/Core/Notifications/NotificationService.swift in Sources */,
 				C5D6E7F8A9B0C1D2E3F40506 /* iosApp/Core/Networking/SyrmosLinesService.swift in Sources */,
 				D7E8F9A0B1C2D3E4F5060708 /* iosApp/Core/Diagnostics/Diagnostics.swift in Sources */,
 				980A534651EFC2013B8ED38F /* iosApp/Core/Schedule/TransitData.swift in Sources */,

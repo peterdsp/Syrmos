@@ -38,6 +38,48 @@ struct SyrmosSettingsView: View {
                     }
                 }
 
+                Section(loc.language == .greek ? "Ειδοποιησεις" : loc.language == .albanian ? "Njoftimet" : "Notifications") {
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.serviceAlertsEnabled },
+                        set: { NotificationPreferences.serviceAlertsEnabled = $0 }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Ειδοποιησεις υπηρεσιας" : loc.language == .albanian ? "Njoftimet e sherbimit" : "Service alerts",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                    }
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.weatherAlertsEnabled },
+                        set: { NotificationPreferences.weatherAlertsEnabled = $0 }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Καιρικες ειδοποιησεις" : loc.language == .albanian ? "Njoftimet e motit" : "Weather alerts",
+                            systemImage: "cloud.bolt.rain"
+                        )
+                    }
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.nearbyAlertsEnabled },
+                        set: { NotificationPreferences.nearbyAlertsEnabled = $0 }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Ειδοποιησεις κοντινου σταθμου" : loc.language == .albanian ? "Njoftimet e stacionit te afert" : "Nearby station alerts",
+                            systemImage: "location.circle"
+                        )
+                    }
+                    Toggle(isOn: Binding(
+                        get: { NotificationPreferences.morningDigestEnabled },
+                        set: {
+                            NotificationPreferences.morningDigestEnabled = $0
+                            NotificationService.shared.scheduleMorningDigest()
+                        }
+                    )) {
+                        Label(
+                            loc.language == .greek ? "Πρωινη ενημερωση (07:00)" : loc.language == .albanian ? "Perditesimi i mengjesit (07:00)" : "Morning digest (07:00)",
+                            systemImage: "sunrise"
+                        )
+                    }
+                }
+
                 Section(loc[.data]) {
                     LabeledContent(loc[.stations], value: "90+")
                     LabeledContent(loc[.lines], value: "9")

@@ -32,6 +32,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         // the user opening the app. Register before launch finishes.
         BackgroundRefresh.register()
         BackgroundRefresh.schedule()
+
+        // Request notification permissions and schedule the daily morning digest.
+        Task { @MainActor in
+            await NotificationService.shared.requestAuthorization()
+            NotificationService.shared.scheduleMorningDigest()
+        }
+
         return true
     }
 

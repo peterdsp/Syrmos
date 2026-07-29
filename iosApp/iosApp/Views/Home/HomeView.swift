@@ -52,6 +52,13 @@ struct HomeView: View {
                 await weather.refresh()
                 await stasyService.fetchAnnouncements()
                 await railNewsService.fetchNews()
+
+                NotificationService.shared.checkForNewAlerts(stasyService.announcements)
+                NotificationService.shared.checkWeather(weather.snapshot)
+                NotificationService.shared.checkNearbyStationAlerts(
+                    nearbyStations: locationService.nearbyStations,
+                    alerts: stasyService.announcements
+                )
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
