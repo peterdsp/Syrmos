@@ -67,6 +67,27 @@ private data class RouteShape(val coordinates: List<List<Double>>)
 @Serializable
 private data class RouteShapesPayload(val shapes: Map<String, RouteShape>)
 
+private fun snapToPolyline(lat: Double, lng: Double, lineId: String, shapes: Map<String, List<GeoPoint>>): GeoPoint {
+    val poly = shapes[lineId] ?: return GeoPoint(lat, lng)
+    if (poly.size < 2) return GeoPoint(lat, lng)
+    var bestDist = Double.MAX_VALUE
+    var bestLat = lat
+    var bestLng = lng
+    for (i in 0 until poly.size - 1) {
+        val ax = poly[i].latitude; val ay = poly[i].longitude
+        val bx = poly[i + 1].latitude; val by = poly[i + 1].longitude
+        val dx = bx - ax; val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        var t = if (len2 > 0) ((lat - ax) * dx + (lng - ay) * dy) / len2 else 0.0
+        t = t.coerceIn(0.0, 1.0)
+        val px = ax + t * dx; val py = ay + t * dy
+        val dlat = lat - px; val dlng = lng - py
+        val d = dlat * dlat + dlng * dlng
+        if (d < bestDist) { bestDist = d; bestLat = px; bestLng = py }
+    }
+    return GeoPoint(bestLat, bestLng)
+}
+
 private fun loadRouteShapes(context: Context): Map<String, List<GeoPoint>> {
     return runCatching {
         val body = context.assets.open("files/seed/schedules-v2/shapes.json").bufferedReader().use { it.readText() }
@@ -452,17 +473,18 @@ internal actual fun PlatformMapView(
             // badges, which is exactly why the trains looked nothing like web. Line
             // colour comes from the raw lines.json hex, same as web.
             val lineColor = lineColors[train.lineId] ?: train.lineColor.toComposeColor().toArgb()
+            val snappedSimPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
             val existing = trainMarkers[train.id]
             if (existing != null) {
-                existing.position = GeoPoint(train.latitude, train.longitude)
+                existing.position = snappedSimPos
                 // Heading is baked into the triangle bitmap; refresh each segment.
                 existing.icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
             } else {
                 val marker = Marker(mapView).apply {
-                    position = GeoPoint(train.latitude, train.longitude)
+                    position = snappedSimPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
-                    title = "${train.lineName} → ${train.destinationName}"
+                    title = "${train.lineName} > ${train.destinationName}"
                     snippet = "Near ${train.currentStationName}"
                 }
                 trainMarkers[train.id] = marker
@@ -490,14 +512,15 @@ internal actual fun PlatformMapView(
         uiState.liveTrains.forEach { train ->
             val color = uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
                 ?: 0xFF7C4DFF.toInt()
+            val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
-                existing.position = GeoPoint(train.latitude, train.longitude)
+                existing.position = snappedPos
                 existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
             } else {
                 val trainId = train.id
                 val marker = Marker(mapView).apply {
-                    position = GeoPoint(train.latitude, train.longitude)
+                    position = snappedPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
                     title = "${train.lineId} ${train.trainNumber}"

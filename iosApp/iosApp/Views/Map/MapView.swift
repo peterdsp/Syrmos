@@ -1151,13 +1151,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
         for train in simulatedTrains where !seenSim.contains(train.id) {
             let ann = SyrmosTrainAnnotation(simulated: train)
             mv.addAnnotation(ann)
-            ann.coordinate = train.coordinate
+            ann.coordinate = context.coordinator.snapToPolyline(coord: train.coordinate, lineId: train.lineId)
             context.coordinator.updateDescriptor(for: ann.id, train: train)
         }
         for train in liveTrains where !seenLive.contains(train.id) {
             let ann = SyrmosTrainAnnotation(live: train)
             mv.addAnnotation(ann)
-            ann.coordinate = train.coordinate
+            ann.coordinate = context.coordinator.snapToPolyline(coord: train.coordinate, lineId: train.lineId)
         }
     }
 
@@ -1385,11 +1385,24 @@ struct SyrmosMKMapView: UIViewRepresentable {
             return nil
         }
 
+        func snapToPolyline(coord: CLLocationCoordinate2D, lineId: String) -> CLLocationCoordinate2D {
+            guard let cache = cachedPolyline(for: lineId), cache.polyline.count >= 2 else { return coord }
+            var bestDist = Double.greatestFiniteMagnitude
+            var bestPt = coord
+            for i in 0..<(cache.polyline.count - 1) {
+                let a = cache.polyline[i], b = cache.polyline[i + 1]
+                let dx = b.latitude - a.latitude, dy = b.longitude - a.longitude
+                let len2 = dx * dx + dy * dy
+                var t: Double = len2 > 0 ? ((coord.latitude - a.latitude) * dx + (coord.longitude - a.longitude) * dy) / len2 : 0
+                t = min(max(t, 0), 1)
+                let p = CLLocationCoordinate2D(latitude: a.latitude + t * dx, longitude: a.longitude + t * dy)
+                let d = haversineMeters(p, coord)
+                if d < bestDist { bestDist = d; bestPt = p }
+            }
+            return bestDist < 2000 ? bestPt : coord
+        }
+
         private func arcDistance(to coord: CLLocationCoordinate2D, cache: PolylineCache) -> Double {
-            // Snap to closest polyline vertex by haversine. Good enough
-            // because the polyline is dense — using closest-segment
-            // perpendicular projection would be more accurate but the
-            // gain is sub-metre and not visually relevant at city zoom.
             var bestIdx = 0
             var bestDist = Double.greatestFiniteMagnitude
             for (i, p) in cache.polyline.enumerated() {
@@ -1663,58 +1676,159 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
 
 struct TrainDetailSheet: View {
     let train: LiveTrain
+    @State private var showLiveStream = false
 
     private var lineColor: Color {
         SyrmosData.lineColor(for: train.lineId)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 10) {
-                Text(train.lineId)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(lineColor.opacity(0.15))
-                    .foregroundStyle(lineColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                headerSection
+                routeSection
+                statusSection
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Train \(train.trainNumber)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    if !train.serviceType.isEmpty {
-                        Text(train.serviceType.prefix(1).uppercased() + train.serviceType.dropFirst())
+                if train.progress != nil || train.speed != nil {
+                    telemetrySection
+                }
+
+                if train.scheduledDeparture != nil || train.scheduledArrival != nil {
+                    scheduleSection
+                }
+
+                if train.liveStreamUrl != nil {
+                    liveStreamButton
+                }
+            }
+            .padding(20)
+        }
+        .sheet(isPresented: $showLiveStream) {
+            if let url = train.liveStreamUrl.flatMap({ URL(string: $0) }) {
+                LiveStreamPlayerView(url: url, trainNumber: train.trainNumber)
+            }
+        }
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        HStack(spacing: 10) {
+            Text(train.lineId)
+                .font(.caption)
+                .fontWeight(.bold)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(lineColor.opacity(0.15))
+                .foregroundStyle(lineColor)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Train \(train.trainNumber)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                if !train.serviceType.isEmpty {
+                    Text(train.serviceType.prefix(1).uppercased() + train.serviceType.dropFirst())
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if let loco = train.locomotiveNumber, !loco.isEmpty {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Loco")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Text(loco)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    // MARK: - Route with progress
+
+    private var routeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !train.origin.isEmpty || !train.destination.isEmpty {
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(train.origin.isEmpty ? "?" : train.origin)
                             .font(.subheadline)
+                            .fontWeight(.medium)
+                        if let dep = train.scheduledDeparture {
+                            Text(dep)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Image(systemName: "arrow.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 4)
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(train.destination.isEmpty ? "?" : train.destination)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        if let arr = train.scheduledArrival {
+                            Text(arr)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            }
+
+            if let progress = train.progress, progress > 0 {
+                VStack(spacing: 4) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(lineColor.opacity(0.15))
+                                .frame(height: 6)
+                            Capsule()
+                                .fill(lineColor)
+                                .frame(width: geo.size.width * min(progress, 1.0), height: 6)
+                        }
+                    }
+                    .frame(height: 6)
+
+                    HStack {
+                        Text("\(Int(progress * 100))%")
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
+                        Spacer()
+                        if let dist = train.distanceToDestination {
+                            Text(formatDistance(dist))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
+        }
+        .padding(12)
+        .background(Color.syrmosSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
 
-            if !train.origin.isEmpty || !train.destination.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "train.side.front.car")
-                        .foregroundStyle(lineColor)
-                    Text("\(train.origin.isEmpty ? "?" : train.origin)  \u{2192}  \(train.destination.isEmpty ? "?" : train.destination)")
-                        .fontWeight(.medium)
-                }
-            }
+    // MARK: - Status
 
-            if !train.nextStation.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "mappin.circle")
-                        .foregroundStyle(.secondary)
-                    Text("Next: \(train.nextStation)")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
+    private var statusSection: some View {
+        HStack(spacing: 10) {
             if train.delayMinutes > 0 {
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.caption)
-                    Text("+\(train.delayMinutes) min delay")
+                    Text("+\(train.delayMinutes) min")
                         .fontWeight(.semibold)
                 }
                 .foregroundStyle(SyrmosTokens.disruption)
@@ -1723,18 +1837,203 @@ struct TrainDetailSheet: View {
                 .background(SyrmosTokens.disruption.opacity(0.12))
                 .clipShape(Capsule())
             } else {
-                Text("On time")
-                    .fontWeight(.semibold)
-                    .foregroundStyle(SyrmosTokens.live)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(SyrmosTokens.live.opacity(0.12))
-                    .clipShape(Capsule())
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(SyrmosTokens.live)
+                        .frame(width: 6, height: 6)
+                    Text("On time")
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(SyrmosTokens.live)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(SyrmosTokens.live.opacity(0.12))
+                .clipShape(Capsule())
             }
 
+            if !train.nextStation.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.caption)
+                    Text(train.nextStation)
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Telemetry grid
+
+    private var telemetrySection: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible()),
+            GridItem(.flexible()),
+        ], spacing: 12) {
+            if let speed = train.speed {
+                telemetryCell(
+                    icon: "speedometer",
+                    value: "\(Int(speed))",
+                    unit: "km/h",
+                    accent: speed > 100 ? SyrmosTokens.disruption : lineColor
+                )
+            }
+
+            if let course = train.course {
+                telemetryCell(
+                    icon: "location.north.fill",
+                    value: "\(Int(course))",
+                    unit: headingLabel(course),
+                    accent: lineColor
+                )
+            }
+
+            if let alt = train.altitude {
+                telemetryCell(
+                    icon: "mountain.2.fill",
+                    value: "\(Int(alt))",
+                    unit: "m",
+                    accent: .secondary
+                )
+            }
+
+            if let distNext = train.distanceToNextStation {
+                telemetryCell(
+                    icon: "arrow.forward.to.line",
+                    value: formatDistanceShort(distNext),
+                    unit: "to next",
+                    accent: .secondary
+                )
+            }
+
+            if let signal = train.signalStatus, !signal.isEmpty {
+                telemetryCell(
+                    icon: "antenna.radiowaves.left.and.right",
+                    value: signal.prefix(1).uppercased() + signal.dropFirst(),
+                    unit: "signal",
+                    accent: signal.lowercased() == "good" ? SyrmosTokens.live : SyrmosTokens.warning
+                )
+            }
+
+            if let corridor = train.corridor, !corridor.isEmpty {
+                telemetryCell(
+                    icon: "road.lanes",
+                    value: corridor,
+                    unit: "corridor",
+                    accent: .secondary
+                )
+            }
+        }
+        .padding(12)
+        .background(Color.syrmosSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func telemetryCell(icon: String, value: String, unit: String, accent: Color) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(accent)
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(unit)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: - Schedule
+
+    private var scheduleSection: some View {
+        HStack(spacing: 16) {
+            if let dep = train.scheduledDeparture {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Departure")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                        Text(dep)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                }
+            }
+            if let arr = train.scheduledArrival {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.badge.checkmark")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Arrival")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                        Text(arr)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                }
+            }
             Spacer()
         }
-        .padding(20)
+    }
+
+    // MARK: - Live stream button
+
+    private var liveStreamButton: some View {
+        Button {
+            showLiveStream = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "video.fill")
+                Text("Watch Live")
+                    .fontWeight(.semibold)
+                Spacer()
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 8, height: 8)
+                Text("LIVE")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.red)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.syrmosSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Helpers
+
+    private func formatDistance(_ meters: Int) -> String {
+        if meters >= 1000 {
+            return String(format: "%.1f km left", Double(meters) / 1000.0)
+        }
+        return "\(meters) m left"
+    }
+
+    private func formatDistanceShort(_ meters: Int) -> String {
+        if meters >= 1000 {
+            return String(format: "%.1f km", Double(meters) / 1000.0)
+        }
+        return "\(meters) m"
+    }
+
+    private func headingLabel(_ degrees: Double) -> String {
+        let dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        let idx = Int((degrees + 22.5).truncatingRemainder(dividingBy: 360) / 45)
+        return dirs[min(idx, dirs.count - 1)] + "\u{00B0}"
     }
 }
 

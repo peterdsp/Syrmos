@@ -13,6 +13,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -50,6 +51,27 @@ fun GlanceDepartureRow(row: WidgetRow, onSurface: ColorProvider, secondary: Colo
         Text(
             text = if (row.minutes <= 1) "now" else "${row.minutes}m",
             style = TextStyle(color = secondary, fontWeight = FontWeight.Medium, fontSize = 13.sp),
+        )
+    }
+}
+
+/** Green live badge: pulsing dot + "N live" label. */
+@Composable
+fun GlanceLiveBadge(count: Int) {
+    Row(
+        modifier = GlanceModifier
+            .background(Color(0x1A4CAF50))
+            .cornerRadius(8.dp)
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = GlanceModifier.size(6.dp).background(Color(0xFF4CAF50)).cornerRadius(3.dp),
+        ) {}
+        Spacer(GlanceModifier.width(4.dp))
+        Text(
+            text = "$count live",
+            style = TextStyle(color = ColorProvider(Color(0xFF4CAF50)), fontWeight = FontWeight.Bold, fontSize = 11.sp),
         )
     }
 }

@@ -1686,6 +1686,40 @@
         trainSheet.classList.remove("station-sheet--hidden");
     }
 
+    function selectSimulatedTrain(trainId) {
+        const train = (lastSimulatedTrains || []).find((t) => t.id === trainId);
+        if (!train || !trainSheet) return;
+        clearSelection();
+        trainSheet.classList.add("station-sheet--hidden");
+
+        const line = train.line;
+        const lineColor = line ? line.color : "#0072CE";
+        const lineName = line ? line.name : "";
+
+        trainSheetTitle.textContent = lineName;
+        trainSheetSubtitle.textContent = train.isAirport ? "Airport service" : "";
+
+        trainSheetBadge.innerHTML = `
+            <div class="line-badge" style="background:${lineColor}18;color:${lineColor}">
+                <span class="line-dot" style="background:${lineColor}"></span>
+                <span>${lineName}</span>
+            </div>
+        `;
+
+        trainSheetRoute.innerHTML = `
+            <div style="font-size:15px;font-weight:500">${escapeHtml(train.fromStation)} &gt; ${escapeHtml(train.destination)}</div>
+            <div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${escapeHtml(train.toStation)}</div>
+        `;
+        trainSheetDelay.innerHTML = `
+            <span class="meta-chip" style="background:var(--sy-live,#059669)18;color:var(--sy-live,#059669)">
+                <span class="meta-chip-label">${t("scheduled")}</span>
+            </span>
+        `;
+
+        map.flyTo([train.lat, train.lng], Math.max(map.getZoom(), 14), { duration: 0.45 });
+        trainSheet.classList.remove("station-sheet--hidden");
+    }
+
     function openLiveTrainsDrawer() {
         if (!liveTrainsDrawer) return;
         clearSelection();
@@ -2174,13 +2208,15 @@
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
             });
-            const marker = L.marker([train.lat, train.lng], {
+            const snapped = snapToNearestPolylinePoint(train.lat, train.lng, train.lineId);
+            const pos = snapped || [train.lat, train.lng];
+            const marker = L.marker(pos, {
                 icon,
                 keyboard: false,
                 zIndexOffset: 1000,
             }).addTo(map);
             marker.bindTooltip(
-                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
+                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} > ${train.destination || "?"}`,
                 { direction: "top", offset: [0, -10] }
             );
             const trainId = train.id;
@@ -2421,7 +2457,7 @@
             const badge = el(".hero-card__badge");
             badge.textContent = next.line?.name || next.line?.id || "";
             badge.style.background = color;
-            el(".hero-card__dir").textContent = next.direction ? `→ ${next.direction}` : "";
+            el(".hero-card__dir").textContent = next.direction ? `> ${next.direction}` : "";
             const then = data.deps.slice(1, 3).map((d) => formatMinutesAway(d.minutesAway)).filter(Boolean).join(", ");
             el(".hero-card__then").textContent = then ? `${t("then")} ${then}` : "";
 
@@ -2437,7 +2473,7 @@
             el(".hero-card__chip").textContent = `● ${t("scheduled")}`;
 
             // Answer-first peek line.
-            if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;
+            if (peekText) peekText.textContent = `${next.line?.name || ""} > ${next.direction || ""} · ${countEl.textContent}`;
         }
 
         refreshData();
@@ -2657,6 +2693,26 @@
             coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * f,
         ];
     }
+    function snapToNearestPolylinePoint(lat, lng, lineId) {
+        const poly = linePolyline(lineId);
+        if (!poly || poly.coords.length < 2) return null;
+        let bestDist = Infinity;
+        let bestPt = null;
+        for (let i = 0; i < poly.coords.length - 1; i++) {
+            const ax = poly.coords[i][0], ay = poly.coords[i][1];
+            const bx = poly.coords[i + 1][0], by = poly.coords[i + 1][1];
+            const dx = bx - ax, dy = by - ay;
+            const len2 = dx * dx + dy * dy;
+            let t = len2 > 0 ? ((lat - ax) * dx + (lng - ay) * dy) / len2 : 0;
+            t = Math.max(0, Math.min(1, t));
+            const px = ax + t * dx, py = ay + t * dy;
+            const d = distanceMeters(lat, lng, px, py);
+            if (d < bestDist) { bestDist = d; bestPt = [px, py]; }
+        }
+        if (bestPt && bestDist < 2000) return bestPt;
+        return null;
+    }
+
     function trainPosition(lineId, fromStation, toStation, frac) {
         const chord = [
             fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac,
@@ -2899,21 +2955,25 @@
         });
 
         for (const train of trains) {
+            const simSnapped = snapToNearestPolylinePoint(train.lat, train.lng, train.lineId);
+            const simPos = simSnapped || [train.lat, train.lng];
             if (simulatedTrainMarkers.has(train.id)) {
                 const m = simulatedTrainMarkers.get(train.id);
-                m.setLatLng([train.lat, train.lng]);
+                m.setLatLng(simPos);
                 m.setIcon(trainMarkerIcon(train)); // keep the heading current
             } else {
-                const marker = L.marker([train.lat, train.lng], {
+                const marker = L.marker(simPos, {
                     icon: trainMarkerIcon(train),
                     keyboard: false,
                     zIndexOffset: 1000,
                 }).addTo(map);
 
                 marker.bindTooltip(
-                    `${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`,
+                    `${train.line.name} > ${train.destination}<br>Near ${train.fromStation}`,
                     { direction: "top", offset: [0, -12] }
                 );
+                const tid = train.id;
+                marker.on("click", () => selectSimulatedTrain(tid));
 
                 simulatedTrainMarkers.set(train.id, marker);
             }
@@ -2937,7 +2997,7 @@
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 return `
                     <div class="panel-item" data-train-id="${train.id}" data-train-lat="${train.lat}" data-train-lng="${train.lng}">
-                        <div class="panel-item__title">${icon} ${train.line.name} → ${train.destination}</div>
+                        <div class="panel-item__title">${icon} ${train.line.name} > ${train.destination}</div>
                         <div class="panel-item__meta">Near ${train.fromStation} · Next: ${train.toStation}</div>
                     </div>
                 `;
