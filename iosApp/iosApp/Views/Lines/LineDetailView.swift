@@ -4,9 +4,23 @@ struct LineDetailView: View {
     let line: TransitLine
     let stations: [TransitStation]
     @ObservedObject private var loc = LocalizationManager.shared
+    @StateObject private var stasyService = STASYService()
+
+    private var lineAlerts: [STASYAnnouncement] {
+        stasyService.announcements.filter { ann in
+            ann.category == .serviceAlert
+            && ann.affectedLines.contains(where: { $0.caseInsensitiveCompare(line.id) == .orderedSame })
+        }
+    }
 
     var body: some View {
         List {
+            if !lineAlerts.isEmpty {
+                Section {
+                    ServiceAlertBanner(alert: lineAlerts[0], language: loc.language)
+                }
+            }
+
             Section {
                 HStack(spacing: 12) {
                     Circle()

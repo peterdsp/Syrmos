@@ -1,6 +1,5 @@
 package com.syrmos.feature.stations
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,18 +34,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.designsystem.component.AlertBannerInfo
 import com.syrmos.core.designsystem.component.DepartureCard
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
+import com.syrmos.core.designsystem.component.ServiceAlertBanner
 import com.syrmos.core.model.transit.LineColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StationDetailScreen(
     viewModel: StationDetailViewModel,
+    alertBanner: AlertBannerInfo? = null,
     onBack: () -> Unit = {},
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
 ) {
@@ -124,6 +127,10 @@ fun StationDetailScreen(
                 }
             }
 
+            if (alertBanner != null) {
+                item { ServiceAlertBanner(info = alertBanner) }
+            }
+
             if (uiState.departures.isNotEmpty()) {
                 item { SectionHeader(title = "Next departures") }
                 items(uiState.departures) { departure ->
@@ -137,15 +144,8 @@ fun StationDetailScreen(
                         departureTime = departure.time,
                         modifier = Modifier.padding(horizontal = 16.dp),
                         lineId = departure.lineId,
-                        // Source-confidence chip (live / scheduled / estimated /
-                        // offline). Hidden for UNKNOWN so it never adds noise.
                         sourceConfidence = departure.sourceConfidence
                             .takeIf { it != com.syrmos.core.model.schedule.SourceConfidence.UNKNOWN },
-                        // serviceType=="airport" covers both outbound (terminus
-                        // "Airport") and inbound (terminus "Dimotiko Theatro"
-                        // but originated at the Airport). Fall back to direction
-                        // text for offline/bundled-seed paths that don't carry
-                        // the API field.
                         isAirport = departure.serviceType == "airport" ||
                                 direction.contains("airport", ignoreCase = true) ||
                                 direction.contains("αεροδρ", ignoreCase = true),
@@ -177,14 +177,10 @@ fun StationDetailScreen(
                             .height(220.dp)
                             .padding(vertical = 4.dp),
                     ) {
-                        // Embedded map is provided per-platform: Android wires
-                        // osmdroid via expect/actual; web mounts a Leaflet
-                        // overlay. For now we render the line summary; the
-                        // platform map widget lands in a follow-up commit.
                         Column(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.LocationOn,
