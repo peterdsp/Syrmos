@@ -160,13 +160,21 @@ struct StationDetailView: View {
                                             .clipShape(Capsule())
                                     }
                                 }
-                                Text(loc.language == .greek
-                                    ? "προς \(departure.direction)"
-                                    : loc.language == .albanian
-                                    ? "drejt \(departure.direction)"
-                                    : "towards \(departure.direction)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                HStack(spacing: 4) {
+                                    Text(loc.language == .greek
+                                        ? "προς \(departure.direction)"
+                                        : loc.language == .albanian
+                                        ? "drejt \(departure.direction)"
+                                        : "towards \(departure.direction)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if let trainNo = departure.trainNo {
+                                        Text("#\(trainNo)")
+                                            .font(.caption2)
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                                 SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
                             }
 

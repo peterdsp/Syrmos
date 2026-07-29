@@ -358,9 +358,16 @@ struct TrackPickerSheet: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(dep.time)
-                                        .font(.body).fontWeight(.semibold)
-                                        .foregroundStyle(.primary)
+                                    HStack(spacing: 4) {
+                                        Text(dep.time)
+                                            .font(.body).fontWeight(.semibold)
+                                            .foregroundStyle(.primary)
+                                        if let trainNo = dep.trainNo {
+                                            Text("#\(trainNo)")
+                                                .font(.caption2).fontWeight(.medium)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
                                     Text(dep.minutesAwayDisplay(language: loc.language))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)

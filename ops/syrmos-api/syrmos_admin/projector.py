@@ -62,9 +62,13 @@ class Departure:
     time: str               # "HH:MM"
     minutesAway: int
     serviceType: str        # regular | airport | late_night
+    trainNo: str | None = None
 
     def to_dict(self):
-        return asdict(self)
+        d = asdict(self)
+        if d["trainNo"] is None:
+            del d["trainNo"]
+        return d
 
 
 def project_next_departures(
@@ -663,6 +667,7 @@ def _project_scheduled_trip_departures(
             time=r["departure_time"],
             minutesAway=max(0, delta),
             serviceType="regular",
+            trainNo=r["train_no"],
         ))
     candidates.sort(key=lambda d: d.minutesAway)
     out.extend(candidates[:limit])

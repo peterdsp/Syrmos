@@ -553,7 +553,7 @@ private fun DepartureList(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = dep.time,
+                        text = if (dep.trainNo != null) "${dep.time}  #${dep.trainNo}" else dep.time,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                     )

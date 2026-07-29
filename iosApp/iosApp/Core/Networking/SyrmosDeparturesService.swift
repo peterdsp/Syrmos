@@ -49,7 +49,8 @@ enum SyrmosDeparturesService {
                     lineId: entry.resolvedLineId,
                     direction: entry.direction,
                     minutesAway: entry.minutesAway,
-                    serviceType: entry.serviceType
+                    serviceType: entry.serviceType,
+                    trainNo: entry.trainNo
                 )
             }
             cache[key] = (Date(), mapped)
@@ -73,6 +74,7 @@ enum SyrmosDeparturesService {
         let time: String
         let minutesAway: Int
         let serviceType: String
+        let trainNo: String?
 
         var resolvedLineId: String {
             if !lineId.isEmpty { return lineId }
