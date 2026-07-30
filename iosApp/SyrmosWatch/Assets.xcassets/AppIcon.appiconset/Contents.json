@@ -5,6 +5,11 @@
       "idiom" : "universal",
       "platform" : "watchos",
       "size" : "1024x1024"
+    },
+    {
+      "filename" : "AppIcon-Watch-1024.png",
+      "idiom" : "universal",
+      "size" : "1024x1024"
     }
   ],
   "info" : {
