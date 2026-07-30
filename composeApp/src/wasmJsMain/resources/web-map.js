@@ -1634,6 +1634,15 @@
         }
     }
 
+    function trainRouteLabel(train) {
+        const o = train.origin;
+        const d = train.destination;
+        if (o && d) return `${o} &rarr; ${d}`;
+        if (o) return `From ${o}`;
+        if (d) return `To ${d}`;
+        return `Train ${train.trainNumber}`;
+    }
+
     function selectLiveTrain(trainId) {
         const train = lastLiveTrains.find((t) => t.id === trainId);
         if (!train || !trainSheet) return;
@@ -1657,13 +1666,13 @@
             </div>
         `;
 
-        const origin = train.origin || "?";
-        const dest = train.destination || "?";
+        const routeHtml = trainRouteLabel(train);
         const nextHtml = train.nextStation
             ? `<div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${train.nextStation}</div>`
             : "";
         trainSheetRoute.innerHTML = `
-            <div style="font-size:15px;font-weight:500">${origin}  &rarr;  ${dest}</div>
+            <div style="font-size:15px;font-weight:500">${routeHtml}</div>
+            ${!train.origin && !train.destination ? '<div style="font-size:12px;color:var(--sy-on-surface-muted);margin-top:2px">Route not published by operator</div>' : ""}
             ${nextHtml}
         `;
 
@@ -1789,7 +1798,7 @@
                         <span class="line-dot" style="background:${color}"></span>${train.lineId}
                     </span>
                     <div style="flex:1">
-                        <div style="font-size:14px;font-weight:500">${train.origin || "?"} &rarr; ${train.destination || "?"}</div>
+                        <div style="font-size:14px;font-weight:500">${trainRouteLabel(train)}</div>
                         ${train.nextStation ? `<div style="font-size:12px;color:var(--sy-on-surface-muted)">Next: ${train.nextStation}</div>` : ""}
                     </div>
                     ${delayHtml}
@@ -2216,7 +2225,7 @@
                 zIndexOffset: 1000,
             }).addTo(map);
             marker.bindTooltip(
-                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} > ${train.destination || "?"}`,
+                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin && train.destination ? `${train.origin} > ${train.destination}` : (train.origin || train.destination || "Route not published")}`,
                 { direction: "top", offset: [0, -10] }
             );
             const trainId = train.id;

@@ -37,10 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
@@ -279,9 +279,9 @@ private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LiquidGlassTabItem(HomeTab, Icons.Filled.Home)
-            LiquidGlassTabItem(ExploreTab, Icons.Filled.Search)
+            LiquidGlassTabItem(ExploreTab, Icons.Filled.Explore)
             LiquidGlassTabItem(MapTab, Icons.Filled.Map)
-            LiquidGlassTabItem(DeparturesTab, Icons.Filled.AccessTime)
+            LiquidGlassTabItem(DeparturesTab, Icons.Filled.Flight)
             LiquidGlassTabItem(MoreTab, Icons.Filled.Settings)
         }
     }
