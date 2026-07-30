@@ -1,5 +1,6 @@
 package com.syrmos.core.data.seed
 
+import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.database.SyrmosDatabase
 import kotlinx.serialization.json.Json
 
@@ -12,9 +13,25 @@ class DataSeeder(
     suspend fun seedIfNeeded() {
         val currentVersion = database.syrmosDatabaseQueries.getMetadata("seed_version")
             .executeAsOneOrNull()
-        if (currentVersion != null && currentVersion >= SEED_VERSION) return
+        if (currentVersion != null && currentVersion >= SEED_VERSION) {
+            loadTranslatorIfNeeded()
+            return
+        }
 
         seed()
+    }
+
+    private suspend fun loadTranslatorIfNeeded() {
+        if (StationNameTranslator.greekToEnglish.value.isNotEmpty()) return
+        val lines = runCatching {
+            json.decodeFromString<SeedLinesPayload>(
+                resourceReader.readText("files/seed/schedules-v2/lines.json")
+            ).lines
+        }.getOrNull() ?: return
+        val stationPairs = lines.flatMap { line ->
+            line.stations.map { s -> s.name to s.nameEl }
+        }
+        StationNameTranslator.load(stationPairs)
     }
 
     private suspend fun seed() {
@@ -110,6 +127,11 @@ class DataSeeder(
 
         seedSchedules()
         seedTripSchedules(lines.map { it.id })
+
+        val stationPairs = lines.flatMap { line ->
+            line.stations.map { s -> s.name to s.nameEl }
+        }
+        StationNameTranslator.load(stationPairs)
     }
 
     private suspend fun seedSchedules() {
@@ -208,9 +230,6 @@ class DataSeeder(
     }
 
     companion object {
-        // Bumped to 6: national rail + rail-replacement-bus trips are now
-        // expanded into schedule_entity for offline departures. Without a bump
-        // an existing install keeps its old rows and never sees them.
-        const val SEED_VERSION = "6"
+        const val SEED_VERSION = "7"
     }
 }

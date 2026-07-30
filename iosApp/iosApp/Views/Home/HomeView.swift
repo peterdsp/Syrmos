@@ -601,7 +601,7 @@ struct HomeView: View {
                                     .clipShape(Capsule())
                             }
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("\(SyrmosData.translatedStationName(train.origin, language: loc.language)) \u{2192} \(SyrmosData.translatedStationName(train.destination, language: loc.language))")
+                                Text("\(SyrmosData.resolveStation(train.origin, en: train.originEn, language: loc.language)) \u{2192} \(SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: loc.language))")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                     .lineLimit(1)

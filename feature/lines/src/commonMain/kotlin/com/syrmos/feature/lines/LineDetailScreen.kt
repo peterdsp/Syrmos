@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.common.extensions.currentAthensTime
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.toComposeColor
@@ -95,19 +96,10 @@ class LineDetailViewModel(
         lineDetailJob?.cancel()
         liveTrackerJob?.cancel()
 
-        // The live tracker SSE never emits when suburban service is off
-        // (roughly 00:30 - 05:00 Athens local). Previously the spinner
-        // stayed on forever because collect { } was waiting for a frame
-        // that would only arrive when the API resumed. Skip the collect
-        // entirely during the dead zone, and add a timeout fallback so
-        // any other silent failure (network drop, API error) also
-        // resolves the spinner instead of leaving it spinning.
-        val duringSuburbanService = lineId.startsWith("A") && isSuburbanServiceLikelyRunning()
-
         _uiState.update {
             it.copy(
                 isLoading = true,
-                isLiveTrackerLoading = duringSuburbanService,
+                isLiveTrackerLoading = true,
                 liveTrains = emptyList(),
             )
         }
@@ -124,47 +116,40 @@ class LineDetailViewModel(
             }
         }
 
-        if (duringSuburbanService) {
-            liveTrackerJob = scope.launch {
-                var received = false
-                launch {
-                    // If nothing landed within 8 seconds we give up on the
-                    // spinner. The user then sees the "no live trains"
-                    // empty state, not an eternal loader.
-                    delay(8_000)
-                    if (!received) {
-                        _uiState.update { it.copy(isLiveTrackerLoading = false) }
+        liveTrackerJob = scope.launch {
+            var received = false
+            launch {
+                delay(8_000)
+                if (!received) {
+                    _uiState.update { it.copy(isLiveTrackerLoading = false) }
+                }
+            }
+            liveTrackerService.observeSuburbanTrains()
+                .catch {
+                    _uiState.update { it.copy(isLiveTrackerLoading = false) }
+                }
+                .collect { allTrains ->
+                    received = true
+                    val stationNamesEl = _uiState.value.stations
+                        .map { it.nameEl.lowercase() }
+                        .toSet()
+                    val filtered = allTrains.filter { train ->
+                        val origin = train.origin ?: return@filter false
+                        val dest = train.destination ?: return@filter false
+                        if (origin.isBlank() || dest.isBlank()) return@filter false
+                        if (train.lineId.equals(lineId, ignoreCase = true)) return@filter true
+                        if (lineId.lowercase().startsWith(train.lineId.lowercase()) && train.lineId.length >= 2) return@filter true
+                        val originMatch = stationNamesEl.contains(origin.trim().lowercase())
+                        val destMatch = stationNamesEl.contains(dest.trim().lowercase())
+                        originMatch && destMatch
+                    }
+                    _uiState.update {
+                        it.copy(
+                            liveTrains = filtered,
+                            isLiveTrackerLoading = false,
+                        )
                     }
                 }
-                liveTrackerService.observeSuburbanTrains(lineId)
-                    .catch {
-                        _uiState.update { it.copy(isLiveTrackerLoading = false) }
-                    }
-                    .collect { trains ->
-                        received = true
-                        _uiState.update {
-                            it.copy(
-                                liveTrains = trains,
-                                isLiveTrackerLoading = false,
-                            )
-                        }
-                    }
-            }
-        }
-    }
-
-    private fun isSuburbanServiceLikelyRunning(): Boolean {
-        val time = currentAthensTime()
-        // Suburban lines A1-A4 run roughly 05:00 - 00:30 Athens local.
-        // Slightly generous on either end so a real early or late train
-        // still gets a shot at showing up.
-        val totalMinutes = time.hour * 60 + time.minute
-        val start = 4 * 60 + 30     // 04:30
-        val end = 24 * 60 + 30      // 00:30 the next day
-        return if (end <= 24 * 60) {
-            totalMinutes in start..end
-        } else {
-            totalMinutes >= start || totalMinutes <= (end - 24 * 60)
         }
     }
 }
@@ -251,16 +236,7 @@ fun LineDetailScreen(
                             }
                         }
 
-                        uiState.liveTrains.isEmpty() -> {
-                            item {
-                                Text(
-                                    text = L.NO_LIVE_TRAINS.text(lang),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                )
-                            }
-                        }
+                        uiState.liveTrains.isEmpty() -> {}
 
                         else -> {
                             items(uiState.liveTrains) { liveTrain ->
@@ -407,7 +383,7 @@ private fun LiveTrainCard(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = buildRouteLabel(train),
+                            text = buildRouteLabel(train, lang),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -443,7 +419,7 @@ private fun LiveTrainCard(
             ) {
                 LiveTrainMetric(
                     label = L.NEXT_STOP.text(lang),
-                    value = train.nextStation ?: "GPS only",
+                    value = resolveStation(train.nextStation, train.nextStationEn, lang).ifBlank { "GPS only" },
                     modifier = Modifier.weight(1f),
                 )
                 LiveTrainMetric(
@@ -596,9 +572,16 @@ private fun buildLiveTrackerSubtitle(
     }
 }
 
-private fun buildRouteLabel(train: LiveSuburbanTrain): String {
-    val origin = train.origin.orEmpty()
-    val destination = train.destination.orEmpty()
+private fun resolveStation(greek: String?, english: String?, lang: AppLanguage): String {
+    if (lang == AppLanguage.GREEK) return greek?.trim() ?: ""
+    return english?.takeIf { it.isNotBlank() }
+        ?: greek?.let { StationNameTranslator.translate(it, lang) }
+        ?: ""
+}
+
+private fun buildRouteLabel(train: LiveSuburbanTrain, lang: AppLanguage): String {
+    val origin = resolveStation(train.origin, train.originEn, lang)
+    val destination = resolveStation(train.destination, train.destinationEn, lang)
 
     return when {
         origin.isNotBlank() && destination.isNotBlank() -> "$origin - $destination"

@@ -44,11 +44,44 @@ OUT_PATH = Path(os.environ.get(
 
 CHECK_STREAMS = os.environ.get("STREAM_CHECK", "1") == "1"
 
+STATION_NAMES_PATH = Path(__file__).with_name("station-names.json")
+
+GREEK_TO_ENGLISH: dict[str, str] = {}
+
+
+def _load_station_names() -> None:
+    global GREEK_TO_ENGLISH
+    try:
+        with open(STATION_NAMES_PATH, encoding="utf-8") as f:
+            raw = json.load(f)
+        GREEK_TO_ENGLISH = {k.strip().lower(): v for k, v in raw.items()}
+        print(f"[sse] loaded {len(GREEK_TO_ENGLISH)} station translations",
+              file=sys.stderr, flush=True)
+    except Exception as exc:
+        print(f"[sse] warning: could not load station-names.json: {exc}",
+              file=sys.stderr, flush=True)
+
+
+def translate_station(name: str) -> str:
+    if not name:
+        return name
+    trimmed = name.strip()
+    return GREEK_TO_ENGLISH.get(trimmed.lower(), trimmed)
+
+
 SUBURBAN_PATTERNS = {
-    "A1": re.compile(r"\b(Piraeus|Peiraia|PIRAEUS)\b.*\b(Airport|AIRPORT|Aerodromio)\b", re.I),
-    "A2": re.compile(r"\b(Airport|AIRPORT|Aerodromio)\b.*\b(Piraeus|Peiraia|PIRAEUS)\b", re.I),
-    "A3": re.compile(r"\b(Piraeus|Peiraia|PIRAEUS|Ano Liosia|ANO LIOSIA)\b.*\b(Chalkida|Halkida|CHALKIDA)\b", re.I),
-    "A4": re.compile(r"\b(Piraeus|Peiraia|PIRAEUS)\b.*\b(Kiato|KIATO)\b", re.I),
+    "A1": re.compile(
+        r"(Πειραι|Piraeus|Peiraia).*("
+        r"Αεροδρ[οό]μι|Airport|Aerodromio)", re.I),
+    "A2": re.compile(
+        r"(Αεροδρ[οό]μι|Airport|Aerodromio).*("
+        r"Πειραι|Piraeus|Peiraia)", re.I),
+    "A3": re.compile(
+        r"(Πειραι|Piraeus|Αθήνα|Athens|Άνω Λιόσια|Ano Liosia).*("
+        r"Χαλκίδα|Chalkida|Halkida)", re.I),
+    "A4": re.compile(
+        r"(Πειραι|Piraeus|Αθήνα|Athens).*("
+        r"Κιάτο|Kiato)", re.I),
 }
 
 FREIGHT_KEYWORDS = {"freight", "emprorevmatiko", "ypiresia"}
@@ -70,7 +103,13 @@ def infer_line_id(origin: str, destination: str, service_type: str) -> str:
     for line_id, pattern in SUBURBAN_PATTERNS.items():
         if pattern.search(route):
             return line_id
-    if service_type.lower() in ("intercity", "ic"):
+    route_en = f"{translate_station(origin)} - {translate_station(destination)}"
+    if route_en != route:
+        for line_id, pattern in SUBURBAN_PATTERNS.items():
+            if pattern.search(route_en):
+                return line_id
+    st = service_type.lower()
+    if st in ("intercity", "ic") or "intercity" in st:
         return "IC"
     return "P"
 
@@ -113,16 +152,24 @@ def parse_sse_event(raw_lines: list[str]) -> tuple[str | None, str | None]:
 def build_train(pos: dict) -> dict:
     origin = pos.get("origin") or ""
     destination = pos.get("destination") or ""
+    next_station = pos.get("nextStation") or ""
     service_type = pos.get("serviceType") or ""
     line_id = infer_line_id(origin, destination, service_type)
+
+    origin_en = translate_station(origin)
+    destination_en = translate_station(destination)
+    next_station_en = translate_station(next_station)
 
     train = {
         "id": pos.get("id", ""),
         "lineId": line_id,
         "trainNumber": pos.get("trainNumber") or pos.get("name") or "",
-        "origin": origin,
-        "destination": destination,
-        "nextStation": pos.get("nextStation") or "",
+        "origin": origin.strip(),
+        "originEn": origin_en,
+        "destination": destination.strip(),
+        "destinationEn": destination_en,
+        "nextStation": next_station.strip(),
+        "nextStationEn": next_station_en,
         "delayMinutes": pos.get("delay") or 0,
         "serviceType": service_type,
         "lat": pos.get("lat", 0.0),
@@ -252,6 +299,7 @@ def stream_loop() -> None:
 def main() -> int:
     print(f"[sse] daemon starting, writing to {OUT_PATH}", file=sys.stderr, flush=True)
 
+    _load_station_names()
     write_trains_json([])
 
     stream_loop()

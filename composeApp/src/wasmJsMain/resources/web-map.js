@@ -633,6 +633,26 @@
         }
     }
     function stationDisplayName(st) { return (st.name || st.id).split(" /")[0].trim(); }
+
+    const greekToEnglishStation = new Map();
+    for (const line of lines) {
+        for (const s of (line.stations || [])) {
+            const key = (s.nameEl || "").trim().toLowerCase();
+            if (!key) continue;
+            if (s.name && s.name.trim() !== s.nameEl.trim()) {
+                greekToEnglishStation.set(key, s.name.trim());
+            } else if (!greekToEnglishStation.has(key)) {
+                greekToEnglishStation.set(key, (s.name || "").trim());
+            }
+        }
+    }
+    function translateStationName(greekName, englishFromApi) {
+        if (!greekName) return greekName;
+        const trimmed = greekName.trim();
+        if (currentLang === "el") return trimmed;
+        if (englishFromApi && englishFromApi.trim()) return englishFromApi.trim();
+        return greekToEnglishStation.get(trimmed.toLowerCase()) || trimmed;
+    }
     // Ariadne's grounded fare answer for a from -> to question. Reuses the same
     // computeFare engine the planner uses; intercity defers to booking, never a
     // fabricated price.
@@ -1637,8 +1657,8 @@
     }
 
     function trainRouteLabel(train) {
-        const o = train.origin;
-        const d = train.destination;
+        const o = train.origin ? translateStationName(train.origin, train.originEn) : null;
+        const d = train.destination ? translateStationName(train.destination, train.destinationEn) : null;
         if (o && d) return `${o} &rarr; ${d}`;
         if (o) return `From ${o}`;
         if (d) return `To ${d}`;
@@ -1749,7 +1769,7 @@
 
         const routeHtml = trainRouteLabel(train);
         const nextHtml = train.nextStation
-            ? `<div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${train.nextStation}</div>`
+            ? `<div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${translateStationName(train.nextStation, train.nextStationEn)}</div>`
             : "";
         trainSheetRoute.innerHTML = `
             <div style="font-size:15px;font-weight:500">${routeHtml}</div>
@@ -1886,7 +1906,7 @@
                     </span>
                     <div style="flex:1">
                         <div style="font-size:14px;font-weight:500">${trainRouteLabel(train)}</div>
-                        ${train.nextStation ? `<div style="font-size:12px;color:var(--sy-on-surface-muted)">Next: ${train.nextStation}</div>` : ""}
+                        ${train.nextStation ? `<div style="font-size:12px;color:var(--sy-on-surface-muted)">Next: ${translateStationName(train.nextStation, train.nextStationEn)}</div>` : ""}
                     </div>
                     ${delayHtml}
                 </div>
@@ -2244,8 +2264,11 @@
                 lineId: t.lineId,
                 trainNumber: t.trainNumber || I18N[currentLang].train,
                 origin: t.origin || "",
+                originEn: t.originEn || "",
                 destination: t.destination || "",
+                destinationEn: t.destinationEn || "",
                 nextStation: t.nextStation || "",
+                nextStationEn: t.nextStationEn || "",
                 delayMinutes: t.delayMinutes || 0,
                 serviceType: t.serviceType || "",
                 lat: t.lat,
@@ -2279,7 +2302,7 @@
                 return `
                     <div class="panel-item" data-live-suburban>
                         <div class="panel-item__title">🚆 ${line ? line.name : train.lineId} ${train.trainNumber}</div>
-                        <div class="panel-item__meta">${trainRouteLabel(train)}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}</div>
+                        <div class="panel-item__meta">${trainRouteLabel(train)}${train.nextStation ? `, ${t("next")} ${translateStationName(train.nextStation, train.nextStationEn)}` : ""}</div>
                     </div>
                 `;
             }).join("");
