@@ -68,7 +68,6 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
     var showContact by remember { mutableStateOf(false) }
-    val openStasyMap = rememberStasyMapOpener()
     val scope = rememberCoroutineScope()
 
     // Tickets catalogue takes over the whole tab when shown.
@@ -355,28 +354,6 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                         modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }
-            }
-        }
-
-        item {
-            SettingsSection(title = when (lang) {
-                AppLanguage.GREEK -> "Χάρτης"
-                AppLanguage.ALBANIAN -> "Harta"
-                else -> "Map"
-            }) {
-                SettingsRow(
-                    title = when (lang) {
-                        AppLanguage.GREEK -> "Σιδηροδρομικό δίκτυο Αθήνας"
-                        AppLanguage.ALBANIAN -> "Hekurudhat e zonës metropolitane të Athinës"
-                        else -> "Athens metropolitan area railways"
-                    },
-                    value = when (lang) {
-                        AppLanguage.GREEK -> "Άνοιγμα →"
-                        AppLanguage.ALBANIAN -> "Hap →"
-                        else -> "Open →"
-                    },
-                    onClick = { openStasyMap() },
-                )
             }
         }
 
