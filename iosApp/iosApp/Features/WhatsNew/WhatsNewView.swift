@@ -36,42 +36,42 @@ struct WhatsNewView: View {
     }
 
     private var subtitle: String {
-        t("Nationwide coverage and new Ariadne look.",
-          "Πανελλαδική κάλυψη και νέα εμφάνιση Αριάδνης.",
-          "Mbulim kombëtar dhe pamje e re e Ariadnes.")
+        t("Live cameras, train telemetry and a customizable Home.",
+          "Ζωντανες καμερες, τηλεμετρια τρενων και προσαρμοσιμη Αρχικη.",
+          "Kamera live, telemetri trenash dhe Balline e personalizueshme.")
     }
 
     private var items: [String] {
         var list: [String] = []
         list.append(t(
-            "Search and filter lines: find any line by city or transport type",
-            "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας",
-            "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit"
+            "Watch Live: stream onboard cameras from suburban trains in real time",
+            "Watch Live: δες ζωντανη εικονα απο καμερες προαστιακων τρενων σε πραγματικο χρονο",
+            "Watch Live: shiko kamerat ne bord te trenave periferike ne kohe reale"
         ))
         list.append(t(
-            "Departures for Thessaloniki, Patras and national rail stations via live API",
-            "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API",
-            "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live"
+            "Train telemetry: speed, heading, altitude, signal status and distance to next station",
+            "Τηλεμετρια τρενων: ταχυτητα, πορεια, υψομετρο, κατασταση σηματος και αποσταση εως τον επομενο σταθμο",
+            "Telemetria e trenit: shpejtesia, drejtimi, lartesia, sinjali dhe distanca deri ne stacionin e ardhshem"
         ))
         list.append(t(
-            "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
-            "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train",
-            "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train"
+            "Customize Home: drag to reorder sections and hide what you don't need",
+            "Προσαρμογη Αρχικης: σειρα μετακινησε τις ενοτητες και κρυψε οσες δε χρειαζεσαι",
+            "Personalizo Ballinen: terheq per te ndryshuar rradhen dhe fshih ato qe nuk te duhen"
         ))
         list.append(t(
-            "Journey fare planner: pick two stations and see the price instantly",
-            "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως",
-            "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere"
+            "Live trains in Explore: see active trains on any line, or projected departures when offline",
+            "Ζωντανα τρενα στο Explore: δες τα ενεργα τρενα σε καθε γραμμη, η προβολη δρομολογιων οταν εισαι εκτος συνδεσης",
+            "Trenat live ne Eksploro: shiko trenat aktive ne cdo linje, ose nisjet e parashikuara kur je offline"
         ))
         list.append(t(
-            "Push notifications: service alerts near you, weather warnings and a morning briefing",
-            "Ειδοποιησεις: ειδοποιησεις υπηρεσιων κοντα σου, καιρικες προειδοποιησεις και πρωινη ενημερωση",
-            "Njoftime push: njoftime sherbimi prane teje, paralajmerime moti dhe informim mengjesit"
+            "Tappable live trains on Home: tap any train to see full details, telemetry and Watch Live",
+            "Ζωντανα τρενα στην Αρχικη: πατησε οποιοδηποτε τρενο για πληρεις λεπτομερειες και ζωντανη μεταδοση",
+            "Trenat live ne Balline: shtyp cdo tren per detaje te plota, telemetri dhe Watch Live"
         ))
         list.append(t(
-            "Map tools: ask Ariadne (purple owl), browse live trains (train icon), find yourself (blue arrow)",
-            "Εργαλεια χαρτη: ρωτα την Αριαδνη (μωβ κουκουβαγια), δες ζωντανα τρενα (τρενο), βρες τη θεση σου (μπλε βελος)",
-            "Mjete harte: pyet Ariadnen (bufa vjollce), shiko trenat live (ikona e trenit), gjej veten (shigjeta blu)"
+            "Web livestream: Watch Live now works on syrmos.peterdsp.dev too",
+            "Ζωντανη μεταδοση στο web: το Watch Live λειτουργει πλεον και στο syrmos.peterdsp.dev",
+            "Transmetim live ne web: Watch Live tani funksionon edhe ne syrmos.peterdsp.dev"
         ))
         return list
     }

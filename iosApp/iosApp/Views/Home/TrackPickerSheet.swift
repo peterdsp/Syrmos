@@ -30,7 +30,7 @@ struct TrackPickerSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.fraction(0.42), .large])
         .presentationDragIndicator(.visible)
     }
 
@@ -128,8 +128,6 @@ struct TrackPickerSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.plain)
-
-            Spacer()
         }
     }
 
@@ -181,7 +179,6 @@ struct TrackPickerSheet: View {
             if lineHasAirport(line) {
                 directionRow(line: line, target: airportLabel, direction: .airport)
             }
-            Spacer()
         }
     }
 

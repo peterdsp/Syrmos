@@ -349,6 +349,35 @@ enum SyrmosData {
         }
     }
 
+    private static let greekToEnglish: [String: String] = {
+        struct P: Decodable {
+            struct L: Decodable { let stations: [S]? }
+            struct S: Decodable { let name: String; let nameEl: String }
+            let lines: [L]
+        }
+        var map: [String: String] = [:]
+        guard let url = Bundle.main.url(
+            forResource: "lines", withExtension: "json", subdirectory: "seed-schedules-v2"
+        ) ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(P.self, from: data)
+        else { return [:] }
+        for line in payload.lines {
+            for s in line.stations ?? [] {
+                let key = s.nameEl.lowercased()
+                if s.name != s.nameEl { map[key] = s.name }
+                else if map[key] == nil { map[key] = s.name }
+            }
+        }
+        return map
+    }()
+
+    static func translatedStationName(_ greekName: String, language: AppLanguage) -> String {
+        let trimmed = greekName.trimmingCharacters(in: .whitespaces)
+        if language == .greek { return trimmed }
+        return greekToEnglish[trimmed.lowercased()] ?? trimmed
+    }
+
     /// Lines that actually carry trains. The default for anything the user acts on.
     static var operationalLines: [TransitLine] { lines.filter(\.isOperational) }
 
