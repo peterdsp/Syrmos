@@ -43,6 +43,7 @@ enum class L {
     ONBOARD_LIVE_TITLE, ONBOARD_LIVE_BODY,
     ONBOARD_LOCATION_TITLE, ONBOARD_LOCATION_BODY, ONBOARD_LOCATION_CTA,
     ONBOARD_NOTIF_TITLE, ONBOARD_NOTIF_BODY, ONBOARD_NOTIF_CTA,
+    ONBOARD_MAP_TOOLS_TITLE, ONBOARD_MAP_TOOLS_BODY,
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
     NEXT_TRAIN, TO, LIVE, RUNNING_ONLINE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE, RETRY,
@@ -278,6 +279,16 @@ enum class L {
             AppLanguage.GREEK -> "Επιτρεψε τις ειδοποιησεις"
             AppLanguage.ALBANIAN -> "Lejo njoftimet"
             else -> "Allow notifications"
+        }
+        ONBOARD_MAP_TOOLS_TITLE -> when (lang) {
+            AppLanguage.GREEK -> "Τα εργαλεια του χαρτη"
+            AppLanguage.ALBANIAN -> "Mjetet e hartes"
+            else -> "Your Map Tools"
+        }
+        ONBOARD_MAP_TOOLS_BODY -> when (lang) {
+            AppLanguage.GREEK -> "Πατησε την μωβ κουκουβαγια για την Αριαδνη, το τρενο για ζωντανα δρομολογια, και το μπλε βελος για την τοποθεσια σου."
+            AppLanguage.ALBANIAN -> "Shtyp bufen vjollce per Ariadnen, ikonen e trenit per trenat live, dhe shigjeten blu per vendndodhjen tende."
+            else -> "Tap the purple owl to ask Ariadne, the train icon to browse live trains, and the blue arrow to find yourself on the map."
         }
         ONBOARD_PRIVACY_TITLE -> when (lang) {
             AppLanguage.GREEK -> "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."

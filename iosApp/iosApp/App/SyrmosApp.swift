@@ -169,7 +169,7 @@ struct ContentView: View {
                 LinesView()
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
-                        Label(loc[.explore], systemImage: "compass")
+                        Label(loc[.explore], systemImage: "safari")
                     }
                     .tag(SyrmosTab.explore)
 
