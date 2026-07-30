@@ -87,6 +87,7 @@ jobs:
           xcodebuild -version
 
       - name: Install watchOS simulator runtime
+        continue-on-error: true
         run: xcodebuild -downloadPlatform watchOS
 
       - name: Build iOS app scheme
