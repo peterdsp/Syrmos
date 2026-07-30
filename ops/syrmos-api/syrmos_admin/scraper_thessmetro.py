@@ -11,6 +11,7 @@ Cron: every 2 hours via systemd timer (see systemd/syrmos-scraper-thessmetro.tim
 """
 from __future__ import annotations
 
+import html as html_mod
 import json
 import re
 import sqlite3

@@ -9,6 +9,7 @@ Cron: every 2 hours via systemd timer (see systemd/syrmos-scraper-oseth.timer)
 """
 from __future__ import annotations
 
+import html as html_mod
 import json
 import re
 import sqlite3
@@ -83,7 +84,7 @@ def _translate_sq(text: str) -> str:
 
 
 def _strip_html(text: str) -> str:
-    return _HTML_TAG_RE.sub("", text).strip()
+    return html_mod.unescape(_HTML_TAG_RE.sub("", text)).strip()
 
 
 def _parse_greek_date(text: str) -> str:
