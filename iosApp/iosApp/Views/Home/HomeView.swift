@@ -17,7 +17,9 @@ struct HomeView: View {
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
+    @State private var showCustomize = false
     @State private var tappedTrain: LiveTrain?
+    @ObservedObject private var sectionStore = HomeSectionStore.shared
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
@@ -25,12 +27,9 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    answerSection
-                    alertsSection
-                    railNewsSection
-                    networkOverview
-                    nearMeSection
-                    liveTrainsSection
+                    ForEach(sectionStore.visibleSections, id: \.self) { section in
+                        sectionView(for: section)
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -40,8 +39,23 @@ struct HomeView: View {
             .sheet(isPresented: $showTrackPicker) {
                 TrackPickerSheet(onDismiss: { showTrackPicker = false })
             }
+            .sheet(isPresented: $showCustomize) {
+                HomeCustomizeSheet(store: sectionStore)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
+                    .overlay(alignment: .trailing) {
+                        Button { showCustomize = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .padding(.trailing, 24)
+                    }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
@@ -118,6 +132,18 @@ struct HomeView: View {
                     color: SyrmosTokens.offline
                 )
             }
+        }
+    }
+
+    @ViewBuilder
+    private func sectionView(for section: HomeSection) -> some View {
+        switch section {
+        case .nextTrain: answerSection
+        case .serviceAlerts: alertsSection
+        case .railNews: railNewsSection
+        case .networkOverview: networkOverview
+        case .nearMe: nearMeSection
+        case .liveTrains: liveTrainsSection
         }
     }
 
@@ -575,7 +601,7 @@ struct HomeView: View {
                                     .clipShape(Capsule())
                             }
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("\(train.origin) → \(train.destination)")
+                                Text("\(SyrmosData.translatedStationName(train.origin, language: loc.language)) \u{2192} \(SyrmosData.translatedStationName(train.destination, language: loc.language))")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                     .lineLimit(1)

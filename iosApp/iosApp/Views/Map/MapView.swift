@@ -1760,7 +1760,7 @@ struct TrainDetailSheet: View {
             if !train.origin.isEmpty || !train.destination.isEmpty {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(train.origin.isEmpty ? "?" : train.origin)
+                        Text(train.origin.isEmpty ? "?" : SyrmosData.translatedStationName(train.origin, language: LocalizationManager.shared.language))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         if let dep = train.scheduledDeparture {
@@ -1777,7 +1777,7 @@ struct TrainDetailSheet: View {
                         .padding(.horizontal, 4)
 
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(train.destination.isEmpty ? "?" : train.destination)
+                        Text(train.destination.isEmpty ? "?" : SyrmosData.translatedStationName(train.destination, language: LocalizationManager.shared.language))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         if let arr = train.scheduledArrival {
@@ -2175,13 +2175,16 @@ struct LiveTrainsListSheet: View {
     }
 
     private func trainRouteLabel(_ train: LiveTrain) -> String {
+        let lang = LocalizationManager.shared.language
+        let o = SyrmosData.translatedStationName(train.origin, language: lang)
+        let d = SyrmosData.translatedStationName(train.destination, language: lang)
         let hasOrigin = !train.origin.isEmpty
         let hasDest = !train.destination.isEmpty
         if hasOrigin && hasDest {
-            return "\(train.origin) \u{2192} \(train.destination)"
+            return "\(o) \u{2192} \(d)"
         }
-        if hasOrigin { return "From \(train.origin)" }
-        if hasDest { return "To \(train.destination)" }
+        if hasOrigin { return "From \(o)" }
+        if hasDest { return "To \(d)" }
         return "Train \(train.trainNumber)"
     }
 }
