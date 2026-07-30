@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
@@ -90,6 +91,12 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             body = L.ONBOARD_LOCATION_BODY,
             ctaLabel = L.ONBOARD_LOCATION_CTA,
             isLocationStep = true,
+        ),
+        OnboardingPage(
+            icon = Icons.Filled.Map,
+            tint = SyrmosColorTokens.tram,
+            title = L.ONBOARD_MAP_TOOLS_TITLE,
+            body = L.ONBOARD_MAP_TOOLS_BODY,
         ),
         OnboardingPage(
             icon = Icons.Filled.Notifications,

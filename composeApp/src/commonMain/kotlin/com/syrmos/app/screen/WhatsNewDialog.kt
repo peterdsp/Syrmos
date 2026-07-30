@@ -77,6 +77,13 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Njoftime push: njoftime sherbimi prane teje, paralajmerime moti dhe informim mengjesit",
             )
         )
+        add(
+            t(
+                "Map tools: ask Ariadne (purple owl), browse live trains (train icon), find yourself (blue arrow)",
+                "Εργαλεια χαρτη: ρωτα την Αριαδνη (μωβ κουκουβαγια), δες ζωντανα τρενα (τρενο), βρες τη θεση σου (μπλε βελος)",
+                "Mjete harte: pyet Ariadnen (bufa vjollce), shiko trenat live (ikona e trenit), gjej veten (shigjeta blu)",
+            )
+        )
     }
 
     val scope = rememberCoroutineScope()

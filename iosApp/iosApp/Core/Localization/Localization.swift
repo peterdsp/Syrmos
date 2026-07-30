@@ -96,6 +96,8 @@ enum LocalizedKey {
     case onboardNotifTitle
     case onboardNotifBody
     case onboardNotifCta
+    case onboardMapToolsTitle
+    case onboardMapToolsBody
     case onboardPrivacyTitle
     case onboardPrivacyBody
     case onboardContinue
@@ -230,6 +232,12 @@ enum LocalizedKey {
         case (.onboardNotifCta, .english): return "Allow notifications"
         case (.onboardNotifCta, .greek): return "Επιτρεψε τις ειδοποιησεις"
         case (.onboardNotifCta, .albanian): return "Lejo njoftimet"
+        case (.onboardMapToolsTitle, .english): return "Your Map Tools"
+        case (.onboardMapToolsTitle, .greek): return "Τα εργαλεια του χαρτη"
+        case (.onboardMapToolsTitle, .albanian): return "Mjetet e hartes"
+        case (.onboardMapToolsBody, .english): return "Tap the purple owl to ask Ariadne, the train icon to browse live trains, and the blue arrow to find yourself on the map."
+        case (.onboardMapToolsBody, .greek): return "Πατησε την μωβ κουκουβαγια για την Αριαδνη, το τρενο για ζωντανα δρομολογια, και το μπλε βελος για την τοποθεσια σου."
+        case (.onboardMapToolsBody, .albanian): return "Shtyp bufen vjollce per Ariadnen, ikonen e trenit per trenat live, dhe shigjeten blu per vendndodhjen tende."
         case (.onboardPrivacyTitle, .english): return "No accounts. No tracking."
         case (.onboardPrivacyTitle, .greek): return "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."
         case (.onboardPrivacyTitle, .albanian): return "Pa llogari. Pa gjurmim."
