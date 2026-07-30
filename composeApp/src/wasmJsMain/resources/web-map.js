@@ -497,6 +497,8 @@
     const trainSheetBadge = document.getElementById("trainSheetBadge");
     const trainSheetRoute = document.getElementById("trainSheetRoute");
     const trainSheetDelay = document.getElementById("trainSheetDelay");
+    const trainSheetTelemetry = document.getElementById("trainSheetTelemetry");
+    const trainSheetStream = document.getElementById("trainSheetStream");
     const trainSheetClose = document.getElementById("trainSheetClose");
     const liveTrainsDrawer = document.getElementById("liveTrainsDrawer");
     const liveTrainsCount = document.getElementById("liveTrainsCount");
@@ -1643,6 +1645,85 @@
         return `Train ${train.trainNumber}`;
     }
 
+    function headingLabel(deg) {
+        const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        return dirs[Math.round(deg / 45) % 8] + "°";
+    }
+
+    function renderTrainTelemetry(train) {
+        if (!trainSheetTelemetry) return;
+        const cells = [];
+        if (train.speed != null) {
+            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${Math.round(train.speed)}</span><span class="telemetry-unit">km/h</span></div>`);
+        }
+        if (train.course != null) {
+            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${Math.round(train.course)}</span><span class="telemetry-unit">${headingLabel(train.course)}</span></div>`);
+        }
+        if (train.altitude != null) {
+            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${Math.round(train.altitude)}</span><span class="telemetry-unit">m alt</span></div>`);
+        }
+        if (train.distanceToNextStation != null) {
+            const km = (train.distanceToNextStation / 1000).toFixed(1);
+            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${km}</span><span class="telemetry-unit">km to next</span></div>`);
+        }
+        if (train.signalStatus) {
+            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${train.signalStatus.charAt(0).toUpperCase() + train.signalStatus.slice(1)}</span><span class="telemetry-unit">signal</span></div>`);
+        }
+        if (cells.length > 0) {
+            trainSheetTelemetry.innerHTML = `<div class="telemetry-grid">${cells.join("")}</div>`;
+            trainSheetTelemetry.style.display = "";
+        } else {
+            trainSheetTelemetry.style.display = "none";
+        }
+    }
+
+    function renderTrainStream(train) {
+        if (!trainSheetStream) return;
+        if (train.liveStreamUrl) {
+            trainSheetStream.innerHTML = `
+                <button class="watch-live-btn" onclick="window.__syrmosOpenStream('${train.liveStreamUrl}')">
+                    <span>&#9654; Watch Live</span>
+                    <span class="live-dot-label"><span class="live-dot"></span> LIVE</span>
+                </button>
+            `;
+            trainSheetStream.style.display = "";
+        } else {
+            trainSheetStream.style.display = "none";
+        }
+    }
+
+    window.__syrmosOpenStream = function (url) {
+        const overlay = document.createElement("div");
+        overlay.className = "stream-overlay";
+        overlay.innerHTML = `
+            <div class="stream-overlay-header">
+                <span>Live Stream</span>
+                <button class="ghost-button" id="streamClose">Done</button>
+            </div>
+            <video id="streamVideo" autoplay playsinline controls style="width:100%;height:100%;background:#000"></video>
+        `;
+        document.body.appendChild(overlay);
+
+        const video = document.getElementById("streamVideo");
+        const closeBtn = document.getElementById("streamClose");
+        closeBtn.addEventListener("click", () => {
+            video.pause();
+            video.src = "";
+            overlay.remove();
+        });
+
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = url;
+        } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
+            const hls = new Hls({ liveDurationInfinity: true });
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            closeBtn.addEventListener("click", () => hls.destroy(), { once: true });
+        } else {
+            video.src = url;
+        }
+    };
+
     function selectLiveTrain(trainId) {
         const train = lastLiveTrains.find((t) => t.id === trainId);
         if (!train || !trainSheet) return;
@@ -1691,6 +1772,9 @@
             `;
         }
 
+        renderTrainTelemetry(train);
+        renderTrainStream(train);
+
         map.flyTo([train.lat, train.lng], Math.max(map.getZoom(), 14), { duration: 0.45 });
         trainSheet.classList.remove("station-sheet--hidden");
     }
@@ -1724,6 +1808,9 @@
                 <span class="meta-chip-label">${t("scheduled")}</span>
             </span>
         `;
+
+        if (trainSheetTelemetry) trainSheetTelemetry.style.display = "none";
+        if (trainSheetStream) trainSheetStream.style.display = "none";
 
         map.flyTo([train.lat, train.lng], Math.max(map.getZoom(), 14), { duration: 0.45 });
         trainSheet.classList.remove("station-sheet--hidden");
@@ -2163,6 +2250,15 @@
                 serviceType: t.serviceType || "",
                 lat: t.lat,
                 lng: t.lng,
+                speed: t.speed ?? null,
+                course: t.course ?? null,
+                altitude: t.altitude ?? null,
+                progress: t.progress ?? null,
+                locomotiveNumber: t.locomotiveNumber || "",
+                distanceToNextStation: t.distanceToNextStation ?? null,
+                signalStatus: t.signalStatus || "",
+                corridor: t.corridor || "",
+                liveStreamUrl: t.liveStream?.playlistUrl || "",
             }));
 
         lastLiveTrains = trains;

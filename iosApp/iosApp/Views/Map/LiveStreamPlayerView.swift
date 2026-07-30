@@ -28,6 +28,11 @@ struct LiveStreamPlayerView: View {
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                             .multilineTextAlignment(.center)
+                        Button("Retry") {
+                            playerModel.load(url)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top, 8)
                     }
                 } else {
                     ProgressView()
@@ -55,10 +60,18 @@ private final class LiveStreamPlayerModel: ObservableObject {
     @Published var hasError = false
     private(set) var player: AVPlayer?
     private var statusObserver: NSKeyValueObservation?
+    private var errorObserver: NSKeyValueObservation?
 
     func load(_ url: URL) {
-        let item = AVPlayerItem(url: url)
+        stop()
+        isReady = false
+        hasError = false
+
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
+        item.preferredForwardBufferDuration = 2
         let avPlayer = AVPlayer(playerItem: item)
+        avPlayer.automaticallyWaitsToMinimizeStalling = false
         player = avPlayer
 
         statusObserver = item.observe(\.status) { [weak self] item, _ in
@@ -68,9 +81,20 @@ private final class LiveStreamPlayerModel: ObservableObject {
                 case .readyToPlay:
                     self.isReady = true
                 case .failed:
+                    print("[LiveStream] AVPlayerItem failed: \(item.error?.localizedDescription ?? "unknown")")
                     self.hasError = true
                 default:
                     break
+                }
+            }
+        }
+
+        errorObserver = avPlayer.observe(\.status) { [weak self] player, _ in
+            Task { @MainActor in
+                guard let self else { return }
+                if player.status == .failed {
+                    print("[LiveStream] AVPlayer failed: \(player.error?.localizedDescription ?? "unknown")")
+                    self.hasError = true
                 }
             }
         }
@@ -80,8 +104,11 @@ private final class LiveStreamPlayerModel: ObservableObject {
 
     func stop() {
         player?.pause()
+        player?.replaceCurrentItem(with: nil)
         player = nil
         statusObserver?.invalidate()
         statusObserver = nil
+        errorObserver?.invalidate()
+        errorObserver = nil
     }
 }

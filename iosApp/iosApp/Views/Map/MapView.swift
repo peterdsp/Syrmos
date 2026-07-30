@@ -282,8 +282,9 @@ struct TransitMapView: View {
             }
             .sheet(item: $tappedTrain) { train in
                 TrainDetailSheet(train: train)
-                    .presentationDetents([.medium])
+                    .presentationDetents([.fraction(0.7), .large])
                     .presentationDragIndicator(.visible)
+                    .presentationContentInteraction(.scrolls)
             }
             .sheet(isPresented: $showLiveTrainsSheet) {
                 LiveTrainsListSheet(
