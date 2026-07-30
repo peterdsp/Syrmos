@@ -230,6 +230,6 @@ class DataSeeder(
     }
 
     companion object {
-        const val SEED_VERSION = "7"
+        const val SEED_VERSION = "8"
     }
 }
