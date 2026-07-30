@@ -510,6 +510,7 @@
 
     if (trainSheetClose) {
         trainSheetClose.addEventListener("click", () => {
+            _destroyActiveStream();
             trainSheet.classList.add("station-sheet--hidden");
         });
     }
@@ -1697,52 +1698,62 @@
         }
     }
 
-    function renderTrainStream(train) {
+    let _activeHls = null;
+
+    function _destroyActiveStream() {
         if (!trainSheetStream) return;
-        if (train.liveStreamUrl) {
-            trainSheetStream.innerHTML = `
-                <button class="watch-live-btn" onclick="window.__syrmosOpenStream('${train.liveStreamUrl}')">
-                    <span>&#9654; Watch Live</span>
-                    <span class="live-dot-label"><span class="live-dot"></span> LIVE</span>
-                </button>
-            `;
-            trainSheetStream.style.display = "";
-        } else {
-            trainSheetStream.style.display = "none";
-        }
+        const video = trainSheetStream.querySelector("video");
+        if (video) { video.pause(); video.src = ""; }
+        if (_activeHls) { _activeHls.destroy(); _activeHls = null; }
     }
 
-    window.__syrmosOpenStream = function (url) {
-        const overlay = document.createElement("div");
-        overlay.className = "stream-overlay";
-        overlay.innerHTML = `
-            <div class="stream-overlay-header">
-                <span>Live Stream</span>
-                <button class="ghost-button" id="streamClose">Done</button>
+    function renderTrainStream(train) {
+        if (!trainSheetStream) return;
+        _destroyActiveStream();
+        if (!train.liveStreamUrl) {
+            trainSheetStream.innerHTML = "";
+            trainSheetStream.style.display = "none";
+            return;
+        }
+        trainSheetStream.innerHTML = `
+            <div class="inline-stream">
+                <div class="inline-stream-header">
+                    <span class="live-dot-label"><span class="live-dot"></span> LIVE</span>
+                    <button class="stream-fullscreen-btn" title="Fullscreen" type="button">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+                <video class="inline-stream-video" autoplay playsinline muted></video>
             </div>
-            <video id="streamVideo" autoplay playsinline controls style="width:100%;height:100%;background:#000"></video>
         `;
-        document.body.appendChild(overlay);
+        trainSheetStream.style.display = "";
 
-        const video = document.getElementById("streamVideo");
-        const closeBtn = document.getElementById("streamClose");
-        closeBtn.addEventListener("click", () => {
-            video.pause();
-            video.src = "";
-            overlay.remove();
-        });
+        const video = trainSheetStream.querySelector("video");
+        const fsBtn = trainSheetStream.querySelector(".stream-fullscreen-btn");
 
         if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = url;
+            video.src = train.liveStreamUrl;
         } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
             const hls = new Hls({ liveDurationInfinity: true });
-            hls.loadSource(url);
+            hls.loadSource(train.liveStreamUrl);
             hls.attachMedia(video);
-            closeBtn.addEventListener("click", () => hls.destroy(), { once: true });
+            _activeHls = hls;
         } else {
-            video.src = url;
+            video.src = train.liveStreamUrl;
         }
-    };
+
+        video.addEventListener("click", () => {
+            if (video.muted) { video.muted = false; }
+            else if (video.paused) { video.play(); }
+            else { video.pause(); }
+        });
+
+        fsBtn.addEventListener("click", () => {
+            if (video.requestFullscreen) video.requestFullscreen();
+            else if (video.webkitEnterFullScreen) video.webkitEnterFullScreen();
+            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+        });
+    }
 
     function selectLiveTrain(trainId) {
         const train = lastLiveTrains.find((t) => t.id === trainId);
