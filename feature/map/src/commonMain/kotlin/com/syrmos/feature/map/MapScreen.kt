@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.zIndex
+import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.LineColorIndicator
@@ -79,6 +80,7 @@ import com.syrmos.core.designsystem.component.formatMinutesAway
 import com.syrmos.core.designsystem.component.liquidGlassOverlay
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import kotlin.math.roundToInt
+import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
@@ -557,6 +559,7 @@ private fun TrainDetailCard(
 ) {
     train ?: return
     val uriHandler = LocalUriHandler.current
+    val lang by LocalizationManager.language.collectAsState()
     val lineColor = line?.color?.toComposeColor() ?: MaterialTheme.colorScheme.primary
 
     Card(
@@ -651,7 +654,7 @@ private fun TrainDetailCard(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = train.origin ?: "Train ${train.trainNumber}",
+                                    text = resolveStation(train.origin, train.originEn, lang) ?: "Train ${train.trainNumber}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -686,7 +689,7 @@ private fun TrainDetailCard(
                                 val dest = train.destination
                                 if (dest != null) {
                                     Text(
-                                        text = dest,
+                                        text = resolveStation(dest, train.destinationEn, lang) ?: dest.trim(),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
                                     )
@@ -799,7 +802,7 @@ private fun TrainDetailCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = nextStn,
+                            text = resolveStation(nextStn, train.nextStationEn, lang) ?: nextStn.trim(),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -927,9 +930,16 @@ private fun TelemetryCell(
     }
 }
 
-private fun trainRouteLabel(train: LiveSuburbanTrain): String {
-    val o = train.origin
-    val d = train.destination
+private fun resolveStation(greek: String?, english: String?, lang: AppLanguage): String? {
+    if (greek.isNullOrBlank()) return null
+    if (lang == AppLanguage.GREEK) return greek.trim()
+    return english?.takeIf { it.isNotBlank() }
+        ?: StationNameTranslator.translate(greek, lang)
+}
+
+private fun trainRouteLabel(train: LiveSuburbanTrain, lang: AppLanguage): String {
+    val o = resolveStation(train.origin, train.originEn, lang)
+    val d = resolveStation(train.destination, train.destinationEn, lang)
     if (o != null && d != null) return "$o → $d"
     if (o != null) return "From $o"
     if (d != null) return "To $d"
@@ -1042,6 +1052,7 @@ private fun LiveTrainsSheet(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
+            val lang by LocalizationManager.language.collectAsState()
             LazyColumn(
                 modifier = Modifier.weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1051,6 +1062,7 @@ private fun LiveTrainsSheet(
                     TrainListRow(
                         train = train,
                         line = line,
+                        lang = lang,
                         onClick = { onTrainSelected(train.id) },
                     )
                 }
@@ -1089,6 +1101,7 @@ private fun FilterPill(
 private fun TrainListRow(
     train: com.syrmos.core.model.transit.LiveSuburbanTrain,
     line: Line?,
+    lang: AppLanguage,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -1122,13 +1135,13 @@ private fun TrainListRow(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = trainRouteLabel(train),
+                    text = trainRouteLabel(train, lang),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )
                 if (train.nextStation != null) {
                     Text(
-                        text = "Next: ${train.nextStation}",
+                        text = "Next: ${resolveStation(train.nextStation, train.nextStationEn, lang) ?: train.nextStation!!.trim()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

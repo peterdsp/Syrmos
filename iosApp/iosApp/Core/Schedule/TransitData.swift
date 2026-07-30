@@ -378,6 +378,14 @@ enum SyrmosData {
         return greekToEnglish[trimmed.lowercased()] ?? trimmed
     }
 
+    static func resolveStation(_ greek: String, en: String, language: AppLanguage) -> String {
+        let trimmed = greek.trimmingCharacters(in: .whitespaces)
+        if language == .greek { return trimmed }
+        let enTrimmed = en.trimmingCharacters(in: .whitespaces)
+        if !enTrimmed.isEmpty { return enTrimmed }
+        return greekToEnglish[trimmed.lowercased()] ?? trimmed
+    }
+
     /// Lines that actually carry trains. The default for anything the user acts on.
     static var operationalLines: [TransitLine] { lines.filter(\.isOperational) }
 
@@ -702,8 +710,11 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
         let lineId: String
         let trainNumber: String
         let origin: String
+        let originEn: String?
         let destination: String
+        let destinationEn: String?
         let nextStation: String
+        let nextStationEn: String?
         let delayMinutes: Int
         let serviceType: String
         let lat: Double
@@ -756,8 +767,11 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     lineId: t.lineId,
                     trainNumber: t.trainNumber,
                     origin: t.origin,
+                    originEn: t.originEn ?? "",
                     destination: t.destination,
+                    destinationEn: t.destinationEn ?? "",
                     nextStation: t.nextStation,
+                    nextStationEn: t.nextStationEn ?? "",
                     delayMinutes: t.delayMinutes,
                     serviceType: t.serviceType,
                     coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng),
@@ -797,8 +811,11 @@ struct LiveTrain: Identifiable {
     let lineId: String
     let trainNumber: String
     let origin: String
+    let originEn: String
     let destination: String
+    let destinationEn: String
     let nextStation: String
+    let nextStationEn: String
     let delayMinutes: Int
     let serviceType: String
     let coordinate: CLLocationCoordinate2D

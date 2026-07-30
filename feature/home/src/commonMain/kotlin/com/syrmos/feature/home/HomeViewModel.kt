@@ -189,7 +189,7 @@ class HomeViewModel(
 
     private fun observeLiveTrains() {
         scope.launch {
-            liveTrackerService.observeSuburbanTrains(setOf("A1", "A2", "A3", "A4"))
+            liveTrackerService.observeSuburbanTrains()
                 .catch { /* ignore */ }
                 .collect { trains ->
                     _uiState.update { it.copy(liveTrains = trains) }
