@@ -1760,7 +1760,7 @@ struct TrainDetailSheet: View {
             if !train.origin.isEmpty || !train.destination.isEmpty {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(train.origin.isEmpty ? "?" : SyrmosData.translatedStationName(train.origin, language: LocalizationManager.shared.language))
+                        Text(train.origin.isEmpty ? "?" : SyrmosData.resolveStation(train.origin, en: train.originEn, language: LocalizationManager.shared.language))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         if let dep = train.scheduledDeparture {
@@ -1777,7 +1777,7 @@ struct TrainDetailSheet: View {
                         .padding(.horizontal, 4)
 
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(train.destination.isEmpty ? "?" : SyrmosData.translatedStationName(train.destination, language: LocalizationManager.shared.language))
+                        Text(train.destination.isEmpty ? "?" : SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: LocalizationManager.shared.language))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         if let arr = train.scheduledArrival {
@@ -1865,7 +1865,7 @@ struct TrainDetailSheet: View {
                 HStack(spacing: 4) {
                     Image(systemName: "mappin.circle.fill")
                         .font(.caption)
-                    Text(train.nextStation)
+                    Text(SyrmosData.resolveStation(train.nextStation, en: train.nextStationEn, language: LocalizationManager.shared.language))
                         .font(.subheadline)
                 }
                 .foregroundStyle(.secondary)
@@ -2152,7 +2152,7 @@ struct LiveTrainsListSheet: View {
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
                 if !train.nextStation.isEmpty {
-                    Text("Next: \(train.nextStation)")
+                    Text("Next: \(SyrmosData.resolveStation(train.nextStation, en: train.nextStationEn, language: LocalizationManager.shared.language))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -2176,8 +2176,8 @@ struct LiveTrainsListSheet: View {
 
     private func trainRouteLabel(_ train: LiveTrain) -> String {
         let lang = LocalizationManager.shared.language
-        let o = SyrmosData.translatedStationName(train.origin, language: lang)
-        let d = SyrmosData.translatedStationName(train.destination, language: lang)
+        let o = SyrmosData.resolveStation(train.origin, en: train.originEn, language: lang)
+        let d = SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: lang)
         let hasOrigin = !train.origin.isEmpty
         let hasDest = !train.destination.isEmpty
         if hasOrigin && hasDest {

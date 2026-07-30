@@ -8,7 +8,6 @@ struct SyrmosSettingsView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var refreshAlert: RefreshAlert?
     @State private var showContactSheet = false
-    @State private var showSystemMap = false
     /// Developer toggle: forces the severe-weather card to render on Home
     /// regardless of the actual weather condition, so we can smoke-test the
     /// card without waiting for a storm to roll in. Persists across launches
@@ -166,25 +165,6 @@ struct SyrmosSettingsView: View {
                     }
                 }
 
-                Section(loc.language == .greek ? "Χάρτης" : loc.language == .albanian ? "Harta" : "Map") {
-                    Button {
-                        showSystemMap = true
-                    } label: {
-                        HStack {
-                            Label(
-                                loc.language == .greek ? "Σιδηροδρομικό δίκτυο Αθήνας" : loc.language == .albanian ? "Hekurudhat e zonës metropolitane të Athinës" : "Athens metropolitan area railways",
-                                systemImage: "map"
-                            )
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.footnote)
-                                .foregroundStyle(.tertiary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-
                 Section(loc.language == .greek ? "Επικοινωνία" : loc.language == .albanian ? "Kontakt" : "Contact") {
                     Button {
                         showContactSheet = true
@@ -223,9 +203,6 @@ struct SyrmosSettingsView: View {
                 CompactTabHeader(loc[.moreTab])
             }
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showSystemMap) {
-                StasyMapView()
-            }
             .sheet(isPresented: $showContactSheet) {
                 NavigationStack {
                     ContactDeveloperView()
