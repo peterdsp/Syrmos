@@ -2496,7 +2496,7 @@
             const countEl = el(".hero-card__count");
             if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); }
             else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now"); }
-            else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now"); }
+            else { countEl.textContent = formatMinutesAway(Math.ceil(secAway / 60)); card.classList.remove("hero-card--now"); }
             el(".hero-card__chip").textContent = `● ${t("scheduled")}`;
 
             // Answer-first peek line.

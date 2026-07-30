@@ -86,9 +86,9 @@ enum class L {
             else -> "Service Alerts"
         }
         LATEST_FROM_STASY -> when (lang) {
-            AppLanguage.GREEK -> "Ενημέρωση Μετρό & Τραμ"
-            AppLanguage.ALBANIAN -> "Përditësime Metro & Tramvaj"
-            else -> "Metro & Tram updates"
+            AppLanguage.GREEK -> "Ενημερωσεις σιδηροδρομικου δικτυου"
+            AppLanguage.ALBANIAN -> "Perditesime te rrjetit hekurudhor"
+            else -> "Rail network updates"
         }
         READ_MORE -> when (lang) {
             AppLanguage.GREEK -> "Διαβάστε περισσότερα"
