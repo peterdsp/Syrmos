@@ -56,8 +56,8 @@ class RailwayGovLiveTrackerService(
                 // offline-alive pill flips to "live".
                 LiveDataFreshness.markLive()
                 emit(trains)
-            } catch (_: Exception) {
-                // Keep the last known UI state and retry on next poll.
+            } catch (e: Exception) {
+                println("[LiveTracker] poll failed: ${e.message}")
             }
 
             delay(POLL_INTERVAL_MS)
