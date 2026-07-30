@@ -2196,7 +2196,7 @@
         // The Hide vehicles toggle: keep the live-train list panel populated
         // (users still want to know what's running) but skip rendering any
         // marker on the map itself.
-        if (window.__syrmosVehiclesHidden) {
+        if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
             return;
         }
 

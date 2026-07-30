@@ -1409,7 +1409,6 @@ html, body {
 }
 
 .live-train-marker {
-    position: relative;
     width: 44px;
     height: 56px;
 }
