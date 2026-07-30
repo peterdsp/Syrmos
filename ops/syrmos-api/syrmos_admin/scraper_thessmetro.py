@@ -88,7 +88,7 @@ def _translate_sq(text: str) -> str:
 
 
 def _strip_html(text: str) -> str:
-    return _HTML_TAG_RE.sub("", text).strip()
+    return html_mod.unescape(_HTML_TAG_RE.sub("", text)).strip()
 
 
 def _parse_dot_date(text: str) -> str:
