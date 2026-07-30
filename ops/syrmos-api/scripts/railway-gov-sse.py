@@ -69,20 +69,22 @@ def translate_station(name: str) -> str:
     return GREEK_TO_ENGLISH.get(trimmed.lower(), trimmed)
 
 
-SUBURBAN_PATTERNS = {
-    "A1": re.compile(
-        r"(Πειραι|Piraeus|Peiraia).*("
-        r"Αεροδρ[οό]μι|Airport|Aerodromio)", re.I),
-    "A2": re.compile(
-        r"(Αεροδρ[οό]μι|Airport|Aerodromio).*("
-        r"Πειραι|Piraeus|Peiraia)", re.I),
-    "A3": re.compile(
-        r"(Πειραι|Piraeus|Αθήνα|Athens|Άνω Λιόσια|Ano Liosia).*("
-        r"Χαλκίδα|Chalkida|Halkida)", re.I),
-    "A4": re.compile(
-        r"(Πειραι|Piraeus|Αθήνα|Athens).*("
-        r"Κιάτο|Kiato)", re.I),
-}
+_PIRAEUS = re.compile(r"Πειραι|Piraeus|Peiraia", re.I)
+_AIRPORT = re.compile(r"Αεροδρ[οό]μι|Airport|Aerodromio", re.I)
+_ANO_LIOSIA = re.compile(r"Άνω Λιόσια|Ano Liosia", re.I)
+_CHALKIDA = re.compile(r"Χαλκίδα|Chalkida|Halkida", re.I)
+_KIATO = re.compile(r"Κιάτο|Kiato", re.I)
+_ATHENS = re.compile(r"Αθήνα|Athens", re.I)
+
+SUBURBAN_RULES: list[tuple[str, re.Pattern, re.Pattern]] = [
+    ("A1", _PIRAEUS, _AIRPORT),
+    ("A2", _ANO_LIOSIA, _AIRPORT),
+    ("A3", _ATHENS, _CHALKIDA),
+    ("A3", _PIRAEUS, _CHALKIDA),
+    ("A3", _ANO_LIOSIA, _CHALKIDA),
+    ("A4", _PIRAEUS, _KIATO),
+    ("A4", _ATHENS, _KIATO),
+]
 
 FREIGHT_KEYWORDS = {"freight", "emprorevmatiko", "ypiresia"}
 
@@ -99,14 +101,14 @@ signal.signal(signal.SIGINT, _signal_handler)
 
 
 def infer_line_id(origin: str, destination: str, service_type: str) -> str:
-    route = f"{origin} - {destination}"
-    for line_id, pattern in SUBURBAN_PATTERNS.items():
-        if pattern.search(route):
+    combined = f"{origin} {destination}"
+    for line_id, pat_a, pat_b in SUBURBAN_RULES:
+        if (pat_a.search(combined) and pat_b.search(combined)):
             return line_id
-    route_en = f"{translate_station(origin)} - {translate_station(destination)}"
-    if route_en != route:
-        for line_id, pattern in SUBURBAN_PATTERNS.items():
-            if pattern.search(route_en):
+    combined_en = f"{translate_station(origin)} {translate_station(destination)}"
+    if combined_en != combined:
+        for line_id, pat_a, pat_b in SUBURBAN_RULES:
+            if (pat_a.search(combined_en) and pat_b.search(combined_en)):
                 return line_id
     st = service_type.lower()
     if st in ("intercity", "ic") or "intercity" in st:
