@@ -182,7 +182,7 @@ struct ContentView: View {
                 TimetablesView()
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
                     .tabItem {
-                        Label(loc[.departures], systemImage: "clock")
+                        Label(loc[.departures], systemImage: "airplane")
                     }
                     .tag(SyrmosTab.departures)
 
