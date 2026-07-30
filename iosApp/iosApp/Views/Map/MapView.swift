@@ -1707,6 +1707,8 @@ struct TrainDetailSheet: View {
         .sheet(isPresented: $showLiveStream) {
             if let url = train.liveStreamUrl.flatMap({ URL(string: $0) }) {
                 LiveStreamPlayerView(url: url, trainNumber: train.trainNumber)
+                    .presentationDetents([.fraction(0.45)])
+                    .presentationDragIndicator(.visible)
             }
         }
     }
