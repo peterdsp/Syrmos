@@ -595,9 +595,11 @@ struct HomeView: View {
 
     @ViewBuilder
     private var alertsSection: some View {
-        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
+        let allAlerts = stasyService.announcements.filter { $0.category == .serviceAlert }
+        let htAlerts = allAlerts.filter { $0.url?.contains("hellenictrain.gr/important-information") == true }
+        let transitAlerts = allAlerts.filter { $0.url?.contains("hellenictrain.gr/important-information") != true }
 
-        if !alerts.isEmpty {
+        if !transitAlerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -615,7 +617,7 @@ struct HomeView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(alerts.prefix(10)) { alert in
+                        ForEach(transitAlerts.prefix(10)) { alert in
                             AlertCard(announcement: alert, onReadMore: { url in
                                 webLink = WebLink(url: url, title: alert.displayTitle(language: loc.language))
                             })
@@ -624,7 +626,9 @@ struct HomeView: View {
                     }
                 }
             }
-        } else if let first = stasyService.announcements.first {
+        }
+
+        if !htAlerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: "info.circle.fill")
@@ -633,9 +637,17 @@ struct HomeView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                 }
-                AlertCard(announcement: first, onReadMore: { url in
-                    webLink = WebLink(url: url, title: first.displayTitle(language: loc.language))
-                })
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(htAlerts.prefix(10)) { alert in
+                            AlertCard(announcement: alert, onReadMore: { url in
+                                webLink = WebLink(url: url, title: alert.displayTitle(language: loc.language))
+                            })
+                            .frame(width: 280)
+                        }
+                    }
+                }
             }
         }
 
