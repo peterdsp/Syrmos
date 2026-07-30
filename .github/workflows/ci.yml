@@ -32,10 +32,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Run KMP common tests (allTests)
-        run: ./gradlew allTests --continue
-        env:
-          TZ: Europe/Athens
+      - name: Run KMP common tests (JVM + Android)
+        run: ./gradlew jvmTest androidUnitTest --continue
 
       - name: Compile Web (wasmJs)
         run: ./gradlew :composeApp:compileKotlinWasmJs

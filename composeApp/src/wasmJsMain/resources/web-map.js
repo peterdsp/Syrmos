@@ -28,7 +28,7 @@
     // language with English as the fallback.
     const I18N = {
         en: {
-            brand_subtitle: "Athens rail map",
+            brand_subtitle: "Greece rail map",
             search_placeholder: "Search station, Syntagma, Piraeus, Airport",
             search_aria: "Search station",
             locate_me: "Locate me",
@@ -99,7 +99,7 @@
             whatsnew_stay: "Continue on web",
         },
         el: {
-            brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
+            brand_subtitle: "Χαρτης σιδηροδρομων Ελλαδας",
             search_placeholder: "Αναζήτηση σταθμού (Σύνταγμα, Πειραιάς, Αεροδρόμιο)",
             search_aria: "Αναζήτηση σταθμού",
             locate_me: "Η τοποθεσία μου",
@@ -170,7 +170,7 @@
             whatsnew_stay: "Συνέχεια στο web",
         },
         sq: {
-            brand_subtitle: "Harta e hekurudhave të Athinës",
+            brand_subtitle: "Harta e hekurudhave te Greqise",
             search_placeholder: "Kërko stacion (Syntagma, Piraeus, Aeroporti)",
             search_aria: "Kërko stacion",
             locate_me: "Vendndodhja ime",
