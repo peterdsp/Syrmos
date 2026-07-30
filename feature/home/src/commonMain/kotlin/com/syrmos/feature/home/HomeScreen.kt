@@ -1604,7 +1604,6 @@ private fun NearbyStationsSection(
 }
 
 @Composable
-@Composable
 private fun RailNetworkUpdatesSection(
     alerts: List<STASYAnnouncement>,
     lang: AppLanguage,
