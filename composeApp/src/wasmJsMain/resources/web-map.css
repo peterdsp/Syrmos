@@ -1554,28 +1554,49 @@ html, body {
     color: var(--sy-on-surface-muted, #6b7280);
 }
 
-/* Watch Live button */
-.watch-live-btn {
+/* Inline live stream player */
+.inline-stream {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 16 / 9;
+}
+.inline-stream-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 8px 10px;
+    z-index: 2;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent);
+    pointer-events: none;
+}
+.inline-stream-header > * { pointer-events: auto; }
+.inline-stream-video {
     width: 100%;
-    padding: 12px 16px;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+}
+.stream-fullscreen-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     border: 0;
-    border-radius: 12px;
-    background: var(--sy-surface-muted, #f0f2f5);
-    color: var(--sy-on-surface, #101418);
-    font-size: 15px;
-    font-weight: 600;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
     cursor: pointer;
     transition: background 0.15s;
 }
-@media (prefers-color-scheme: dark) {
-    .watch-live-btn { background: rgba(255,255,255,0.08); }
-}
-:root[data-theme="dark"] .watch-live-btn { background: rgba(255,255,255,0.08); }
-:root[data-theme="light"] .watch-live-btn { background: var(--sy-surface-muted, #f0f2f5); }
-.watch-live-btn:hover { opacity: 0.85; }
+.stream-fullscreen-btn:hover { background: rgba(0,0,0,0.7); }
 
 .live-dot-label {
     display: flex;
@@ -1594,36 +1615,3 @@ html, body {
     animation: live-pulse 1.5s ease-in-out infinite;
 }
 @keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-/* Stream overlay */
-.stream-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-}
-.stream-overlay-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: #111;
-    color: #fff;
-    font-weight: 600;
-    font-size: 15px;
-    flex-shrink: 0;
-}
-.stream-overlay-header .ghost-button {
-    color: #6fa3ff;
-    background: transparent;
-    border: 0;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.stream-overlay video {
-    flex: 1;
-    object-fit: contain;
-}
