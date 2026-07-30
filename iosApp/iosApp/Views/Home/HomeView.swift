@@ -596,8 +596,8 @@ struct HomeView: View {
     @ViewBuilder
     private var alertsSection: some View {
         let allAlerts = stasyService.announcements.filter { $0.category == .serviceAlert }
-        let htAlerts = allAlerts.filter { $0.url?.contains("hellenictrain.gr/important-information") == true }
-        let transitAlerts = allAlerts.filter { $0.url?.contains("hellenictrain.gr/important-information") != true }
+        let htAlerts = allAlerts.filter { $0.url?.absoluteString.contains("hellenictrain.gr/important-information") == true }
+        let transitAlerts = allAlerts.filter { $0.url?.absoluteString.contains("hellenictrain.gr/important-information") != true }
 
         if !transitAlerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
