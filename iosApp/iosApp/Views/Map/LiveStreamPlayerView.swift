@@ -9,45 +9,62 @@ struct LiveStreamPlayerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
+        VStack(spacing: 0) {
+            HStack {
+                Text("Train \(trainNumber)")
+                    .font(.headline)
+                Spacer()
+                Button("Done") { dismiss() }
+                    .fontWeight(.semibold)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
 
-                if playerModel.isReady {
-                    VideoPlayer(player: playerModel.player)
-                        .ignoresSafeArea()
-                } else if playerModel.hasError {
-                    VStack(spacing: 12) {
-                        Image(systemName: "video.slash.fill")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                        Text("Stream unavailable")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                        Text("The live feed for this train may have ended.")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                            .multilineTextAlignment(.center)
-                        Button("Retry") {
-                            playerModel.load(url)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .padding(.top, 8)
+            if playerModel.isReady {
+                VideoPlayer(player: playerModel.player)
+                    .aspectRatio(16/9, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 12)
+
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 8, height: 8)
+                    Text("LIVE")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.red)
+                }
+                .padding(.top, 8)
+            } else if playerModel.hasError {
+                VStack(spacing: 12) {
+                    Image(systemName: "video.slash.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text("Stream unavailable")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Button("Retry") {
+                        playerModel.load(url)
                     }
-                } else {
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .frame(maxWidth: .infinity)
+                .aspectRatio(16/9, contentMode: .fit)
+                .padding(.horizontal, 12)
+            } else {
+                ZStack {
+                    Color.black
                     ProgressView()
                         .tint(.white)
                 }
+                .aspectRatio(16/9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 12)
             }
-            .navigationTitle("Train \(trainNumber)")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.black, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
+
+            Spacer(minLength: 16)
         }
         .onAppear { playerModel.load(url) }
         .onDisappear { playerModel.stop() }

@@ -17,6 +17,7 @@ struct HomeView: View {
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
+    @State private var tappedTrain: LiveTrain?
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
@@ -69,6 +70,12 @@ struct HomeView: View {
                 InAppWebView(url: link.url, title: link.title)
                     .presentationDetents([.large, .medium])
                     .presentationDragIndicator(.visible)
+            }
+            .sheet(item: $tappedTrain) { train in
+                TrainDetailSheet(train: train)
+                    .presentationDetents([.fraction(0.7), .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationContentInteraction(.scrolls)
             }
             .alert(
                 loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
@@ -553,41 +560,46 @@ struct HomeView: View {
                 }
 
                 ForEach(realTrains.prefix(4)) { train in
-                    HStack(spacing: 10) {
-                        VStack(spacing: 2) {
-                            Text(train.lineId)
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(SyrmosData.lineColor(for: train.lineId))
-                                .clipShape(Capsule())
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(train.origin) → \(train.destination)")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .lineLimit(1)
-                            HStack(spacing: 6) {
-                                Text("#\(train.trainNumber)")
+                    Button {
+                        tappedTrain = train
+                    } label: {
+                        HStack(spacing: 10) {
+                            VStack(spacing: 2) {
+                                Text(train.lineId)
                                     .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                if train.delayMinutes > 0 {
-                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(SyrmosData.lineColor(for: train.lineId))
+                                    .clipShape(Capsule())
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(train.origin) → \(train.destination)")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                                HStack(spacing: 6) {
+                                    Text("#\(train.trainNumber)")
                                         .font(.caption2)
-                                        .foregroundStyle(SyrmosTokens.warning)
+                                        .foregroundStyle(.tertiary)
+                                    if train.delayMinutes > 0 {
+                                        Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
+                                            .font(.caption2)
+                                            .foregroundStyle(SyrmosTokens.warning)
+                                    }
                                 }
                             }
+                            Spacer()
+                            Circle()
+                                .fill(SyrmosTokens.live)
+                                .frame(width: 8, height: 8)
                         }
-                        Spacer()
-                        Circle()
-                            .fill(SyrmosTokens.live)
-                            .frame(width: 8, height: 8)
+                        .padding(12)
+                        .background(Color.syrmosSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                    .padding(12)
-                    .background(Color.syrmosSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .buttonStyle(.plain)
                 }
             }
         }
