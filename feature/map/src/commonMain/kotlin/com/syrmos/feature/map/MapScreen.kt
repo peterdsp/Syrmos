@@ -79,6 +79,7 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import kotlin.math.roundToInt
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.LiveSuburbanTrain
 import org.koin.compose.koinInject
 
 @Composable
@@ -646,7 +647,7 @@ private fun TrainDetailCard(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = train.origin ?: "?",
+                                    text = train.origin ?: "Train ${train.trainNumber}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -658,22 +659,34 @@ private fun TrainDetailCard(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     )
                                 }
+                                if (train.origin == null && train.destination == null) {
+                                    Text(
+                                        text = "Route not published by operator",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    )
+                                }
                             }
-                            Icon(
-                                imageVector = Icons.Filled.SwapHoriz,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp).padding(horizontal = 4.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            )
+                            if (train.origin != null || train.destination != null) {
+                                Icon(
+                                    imageVector = Icons.Filled.SwapHoriz,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp).padding(horizontal = 4.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                )
+                            }
                             Column(
                                 modifier = Modifier.weight(1f),
                                 horizontalAlignment = Alignment.End,
                             ) {
-                                Text(
-                                    text = train.destination ?: "?",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                )
+                                val dest = train.destination
+                                if (dest != null) {
+                                    Text(
+                                        text = dest,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
                                 val arr = train.scheduledArrival
                                 if (arr != null) {
                                     Text(
@@ -910,6 +923,15 @@ private fun TelemetryCell(
     }
 }
 
+private fun trainRouteLabel(train: LiveSuburbanTrain): String {
+    val o = train.origin
+    val d = train.destination
+    if (o != null && d != null) return "$o → $d"
+    if (o != null) return "From $o"
+    if (d != null) return "To $d"
+    return "Train ${train.trainNumber}"
+}
+
 private fun headingLabel(degrees: Double): String {
     val dirs = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
     val idx = ((degrees + 22.5) % 360 / 45).toInt().coerceIn(0, dirs.lastIndex)
@@ -1096,11 +1118,7 @@ private fun TrainListRow(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = buildString {
-                        append(train.origin ?: "?")
-                        append(" → ")
-                        append(train.destination ?: "?")
-                    },
+                    text = trainRouteLabel(train),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )

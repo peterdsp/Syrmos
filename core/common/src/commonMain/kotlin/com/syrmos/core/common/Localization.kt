@@ -130,9 +130,9 @@ enum class L {
             else -> "Explore"
         }
         DEPARTURES -> when (lang) {
-            AppLanguage.GREEK -> "Αναχωρήσεις"
-            AppLanguage.ALBANIAN -> "Nisjet"
-            else -> "Departures"
+            AppLanguage.GREEK -> "Αεροδρόμιο"
+            AppLanguage.ALBANIAN -> "Aeroporti"
+            else -> "Airport"
         }
         MORE_TAB -> when (lang) {
             AppLanguage.GREEK -> "Περισσότερα"

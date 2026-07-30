@@ -1785,6 +1785,13 @@ struct TrainDetailSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
+            } else {
+                Text("Train \(train.trainNumber)")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text("Route not published by operator")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
 
             if let progress = train.progress, progress > 0 {
@@ -2137,7 +2144,7 @@ struct LiveTrainsListSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(train.origin.isEmpty ? "?" : train.origin) \u{2192} \(train.destination.isEmpty ? "?" : train.destination)")
+                Text(trainRouteLabel(train))
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
@@ -2162,5 +2169,16 @@ struct LiveTrainsListSheet: View {
                     .foregroundStyle(SyrmosTokens.live)
             }
         }
+    }
+
+    private func trainRouteLabel(_ train: LiveTrain) -> String {
+        let hasOrigin = !train.origin.isEmpty
+        let hasDest = !train.destination.isEmpty
+        if hasOrigin && hasDest {
+            return "\(train.origin) \u{2192} \(train.destination)"
+        }
+        if hasOrigin { return "From \(train.origin)" }
+        if hasDest { return "To \(train.destination)" }
+        return "Train \(train.trainNumber)"
     }
 }
