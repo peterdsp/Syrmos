@@ -737,12 +737,21 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
     }
 
     init() {
-        // Offline-first: no auto-poll. The suburban live-trains feed is
-        // refreshed only when the user taps Check now in Settings.
+        startPolling()
     }
 
     deinit {
         task?.cancel()
+    }
+
+    func startPolling() {
+        guard task == nil else { return }
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                await LiveTrainService.fetchOnce(self)
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+            }
+        }
     }
 
     /// Public single-shot refresh — Settings -> Check now wires this up.
