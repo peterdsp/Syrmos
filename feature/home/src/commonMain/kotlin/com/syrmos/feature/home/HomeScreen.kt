@@ -318,7 +318,7 @@ fun HomeScreen(
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
-        val alerts = uiState.announcements.filter { it.isServiceAlert && it.affectedLines.isNotEmpty() }
+        val alerts = uiState.announcements.filter { it.isServiceAlert }
         if (alerts.isNotEmpty()) {
             item {
                 AlertsSection(
