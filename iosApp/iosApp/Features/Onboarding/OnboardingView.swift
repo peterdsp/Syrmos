@@ -34,6 +34,12 @@ struct OnboardingView: View {
                 primaryAction: { location.requestIfNeeded() }
             ),
             Page(
+                icon: "map.fill",
+                tint: suburbanGold,
+                title: loc[.onboardMapToolsTitle],
+                subtitle: loc[.onboardMapToolsBody]
+            ),
+            Page(
                 icon: "bell.badge.fill",
                 tint: tramRed,
                 title: loc[.onboardNotifTitle],
