@@ -227,7 +227,7 @@ def upsert(conn: sqlite3.Connection, items: list[AlertItem]) -> int:
                         item.summary, item.summary_en, item.summary_sq,
                         item.url, item.published_at, "serviceAlert", idx,
                         affected_json, "warning",
-                        None, None,
+                        item.published_at, None,
                     ),
                 )
             except sqlite3.OperationalError:
@@ -247,7 +247,7 @@ def upsert(conn: sqlite3.Connection, items: list[AlertItem]) -> int:
                         item.summary, item.summary_en,
                         item.url, item.published_at, "serviceAlert", idx,
                         affected_json, "warning",
-                        None, None,
+                        item.published_at, None,
                     ),
                 )
         cur.execute("COMMIT")

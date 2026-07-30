@@ -1716,7 +1716,7 @@
         `;
 
         trainSheetRoute.innerHTML = `
-            <div style="font-size:15px;font-weight:500">${escapeHtml(train.fromStation)} &gt; ${escapeHtml(train.destination)}</div>
+            <div style="font-size:15px;font-weight:500">${trainRouteLabel(train)}</div>
             <div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${escapeHtml(train.toStation)}</div>
         `;
         trainSheetDelay.innerHTML = `
@@ -2183,7 +2183,7 @@
                 return `
                     <div class="panel-item" data-live-suburban>
                         <div class="panel-item__title">🚆 ${line ? line.name : train.lineId} ${train.trainNumber}</div>
-                        <div class="panel-item__meta">${train.origin || t("live")} ${currentLang === "el" ? "προς" : currentLang === "sq" ? "drejt" : "to"} ${train.destination || t("unknown")}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}</div>
+                        <div class="panel-item__meta">${trainRouteLabel(train)}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}</div>
                     </div>
                 `;
             }).join("");
@@ -2200,11 +2200,30 @@
             return;
         }
 
+        const SUBURBAN_LINE_IDS = ["A1", "A2", "A3", "A4"];
+        function snapLiveTrain(train) {
+            let lid = train.lineId;
+            if (lid === "P") {
+                const inferred = inferLineId(train);
+                if (inferred) lid = inferred;
+            }
+            let snapped = snapToNearestPolylinePoint(train.lat, train.lng, lid);
+            if (!snapped && lid === "P") {
+                let bestDist = Infinity;
+                for (const sid of SUBURBAN_LINE_IDS) {
+                    const candidate = snapToNearestPolylinePoint(train.lat, train.lng, sid);
+                    if (candidate) {
+                        const d = distanceMeters(train.lat, train.lng, candidate[0], candidate[1]);
+                        if (d < bestDist) { bestDist = d; snapped = candidate; }
+                    }
+                }
+            }
+            return snapped || [train.lat, train.lng];
+        }
+
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
             const lineColor = line ? line.color : "#7C4DFF";
-            // Custom divIcon so suburban trains are clearly distinguishable
-            // from simulated metro/tram dots: pulsing ring + line-id badge.
             const icon = L.divIcon({
                 className: "live-train-marker",
                 html: `
@@ -2217,15 +2236,14 @@
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
             });
-            const snapped = snapToNearestPolylinePoint(train.lat, train.lng, train.lineId);
-            const pos = snapped || [train.lat, train.lng];
+            const pos = snapLiveTrain(train);
             const marker = L.marker(pos, {
                 icon,
                 keyboard: false,
                 zIndexOffset: 1000,
             }).addTo(map);
             marker.bindTooltip(
-                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin && train.destination ? `${train.origin} > ${train.destination}` : (train.origin || train.destination || "Route not published")}`,
+                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${trainRouteLabel(train)}`,
                 { direction: "top", offset: [0, -10] }
             );
             const trainId = train.id;
@@ -2978,7 +2996,7 @@
                 }).addTo(map);
 
                 marker.bindTooltip(
-                    `${train.line.name} > ${train.destination}<br>Near ${train.fromStation}`,
+                    `${train.line.name} ${train.fromStation && train.destination ? train.fromStation + " &rarr; " + train.destination : train.destination || train.fromStation || ""}<br>Near ${train.fromStation || ""}`,
                     { direction: "top", offset: [0, -12] }
                 );
                 const tid = train.id;

@@ -13,7 +13,7 @@ struct HomeView: View {
     @ObservedObject private var freshnessStore = LiveDataFreshness.shared
     @ObservedObject private var tracking = DepartureTracking.shared
     @ObservedObject private var weather = WeatherStore.shared
-    @State private var webViewURL: URL?
+    @State private var webLink: WebLink?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
@@ -65,8 +65,8 @@ struct HomeView: View {
                     Task { await svc.fetchAnnouncements() }
                 }
             }
-            .sheet(item: $webViewURL) { url in
-                InAppWebView(url: url)
+            .sheet(item: $webLink) { link in
+                InAppWebView(url: link.url, title: link.title)
                     .presentationDetents([.large, .medium])
                     .presentationDragIndicator(.visible)
             }
@@ -595,7 +595,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var alertsSection: some View {
-        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert && !$0.affectedLines.isEmpty }
+        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
 
         if !alerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
@@ -617,7 +617,7 @@ struct HomeView: View {
                     HStack(spacing: 12) {
                         ForEach(alerts.prefix(10)) { alert in
                             AlertCard(announcement: alert, onReadMore: { url in
-                                webViewURL = url
+                                webLink = WebLink(url: url, title: alert.displayTitle(language: loc.language))
                             })
                             .frame(width: 280)
                         }
@@ -634,7 +634,7 @@ struct HomeView: View {
                         .fontWeight(.semibold)
                 }
                 AlertCard(announcement: first, onReadMore: { url in
-                    webViewURL = url
+                    webLink = WebLink(url: url, title: first.displayTitle(language: loc.language))
                 })
             }
         }
@@ -660,7 +660,9 @@ struct HomeView: View {
                         ForEach(railNewsService.news.prefix(10)) { item in
                             NewsCard(item: item, language: loc.language)
                                 .onTapGesture {
-                                    if let url = item.url { webViewURL = url }
+                                    if let url = item.url {
+                                        webLink = WebLink(url: url, title: item.displayTitle(language: loc.language))
+                                    }
                                 }
                         }
                     }
@@ -963,22 +965,19 @@ struct NewsCard: View {
     }
 }
 
+// MARK: - WebLink
+
+struct WebLink: Identifiable {
+    let id = UUID()
+    let url: URL
+    let title: String
+}
+
 // MARK: - In-App WebView
-
-extension URL: @retroactive Identifiable {
-    public var id: String { absoluteString }
-}
-
-private func cityLabel(for url: URL) -> String {
-    let host = url.host?.lowercased() ?? ""
-    if host.contains("oseth") || host.contains("thessmetro") { return "Thessaloniki" }
-    if host.contains("stasy") { return "Athens" }
-    if host.contains("hellenictrain") { return "Greece" }
-    return url.host ?? "Syrmos"
-}
 
 struct InAppWebView: View {
     let url: URL
+    var title: String = ""
     @Environment(\.dismiss) private var dismiss
     @State private var isLoading = true
 
@@ -990,7 +989,7 @@ struct InAppWebView: View {
                     ProgressView()
                 }
             }
-            .navigationTitle(cityLabel(for: url))
+            .navigationTitle(title.isEmpty ? (url.host ?? "Syrmos") : title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
