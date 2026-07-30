@@ -318,19 +318,22 @@ fun HomeScreen(
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
-        val alerts = uiState.announcements.filter { it.isServiceAlert }
-        if (alerts.isNotEmpty()) {
+        val allAlerts = uiState.announcements.filter { it.isServiceAlert }
+        val htAlerts = allAlerts.filter { it.url?.contains("hellenictrain.gr/important-information") == true }
+        val transitAlerts = allAlerts.filter { it.url?.contains("hellenictrain.gr/important-information") != true }
+        if (transitAlerts.isNotEmpty()) {
             item {
                 AlertsSection(
-                    alerts = alerts,
+                    alerts = transitAlerts,
                     lang = lang,
                     onOpenUrl = onOpenUrl,
                 )
             }
-        } else if (uiState.announcements.isNotEmpty()) {
+        }
+        if (htAlerts.isNotEmpty()) {
             item {
-                LatestNewsSection(
-                    announcement = uiState.announcements.first(),
+                RailNetworkUpdatesSection(
+                    alerts = htAlerts,
                     lang = lang,
                     onOpenUrl = onOpenUrl,
                 )
@@ -341,7 +344,7 @@ fun HomeScreen(
         // Hide the pill when an alert is already represented in the
         // serviceAlert cards above — otherwise the same banner text
         // renders twice on the home screen.
-        val pillRedundant = status?.isAlert == true && alerts.isNotEmpty()
+        val pillRedundant = status?.isAlert == true && allAlerts.isNotEmpty()
         if (status != null && !pillRedundant) {
             item {
                 ServiceStatusPill(status = status, lang = lang)
@@ -1601,8 +1604,9 @@ private fun NearbyStationsSection(
 }
 
 @Composable
-private fun LatestNewsSection(
-    announcement: STASYAnnouncement,
+@Composable
+private fun RailNetworkUpdatesSection(
+    alerts: List<STASYAnnouncement>,
     lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
@@ -1614,12 +1618,19 @@ private fun LatestNewsSection(
             Text(text = "i", style = MaterialTheme.typography.titleMedium)
             SectionTitle(text = L.LATEST_FROM_STASY.text(lang))
         }
-        AlertCard(
-            announcement = announcement,
-            isAlert = false,
-            lang = lang,
-            onOpenUrl = onOpenUrl,
-        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(alerts.take(10)) { alert ->
+                AlertCard(
+                    modifier = Modifier.width(280.dp),
+                    announcement = alert,
+                    isAlert = false,
+                    lang = lang,
+                    onOpenUrl = onOpenUrl,
+                )
+            }
+        }
     }
 }
 
