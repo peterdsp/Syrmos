@@ -58,12 +58,15 @@ data class SeedStation(
     val id: String,
     val name: String,
     @SerialName("name_el") val nameEl: String,
+    @SerialName("name_sq") val nameSq: String? = null,
     val latitude: Double,
     val longitude: Double,
     @SerialName("line_ids") val lineIds: List<String>,
     @SerialName("is_interchange") val isInterchange: Boolean = false,
     val accessibility: Boolean = true,
     val zone: Int = 1,
+    val region: String = "athens",
+    @SerialName("source_confidence") val sourceConfidence: String = "scheduled",
 )
 
 @Serializable

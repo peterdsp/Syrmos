@@ -68,9 +68,12 @@ struct TransitStation: Identifiable {
     let id: String
     let name: String
     let nameEl: String
+    var nameSq: String? = nil
     let coordinate: CLLocationCoordinate2D
     let lineIds: [String]
     let isInterchange: Bool
+    var region: TransitRegion = .athens
+    var sourceConfidence: SourceConfidence = .scheduled
 }
 
 /// Where an on-screen departure came from, so Syrmos can say how sure it is.

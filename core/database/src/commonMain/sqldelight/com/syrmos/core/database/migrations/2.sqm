@@ -1,0 +1,12 @@
+-- Schema 2 -> 3: Albanian station name (name_sq) and per-station source confidence.
+--
+-- name_sq is nullable: not every station has an Albanian name yet. Stations that
+-- serve areas with a significant Albanian-speaking community (Athens urban, A-lines)
+-- are populated first; the rest gain SQ names as coverage expands.
+--
+-- source_confidence defaults to 'scheduled' which matches the current bundled-
+-- timetable reality: every Athens station's departure data comes from the schedule,
+-- not a live feed. Stations with live feeds (SSE) get 'live' via the seeder/API.
+
+ALTER TABLE station_entity ADD COLUMN name_sq TEXT DEFAULT NULL;
+ALTER TABLE station_entity ADD COLUMN source_confidence TEXT NOT NULL DEFAULT 'scheduled';

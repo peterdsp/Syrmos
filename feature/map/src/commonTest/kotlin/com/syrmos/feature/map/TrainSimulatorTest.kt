@@ -181,8 +181,8 @@ class TrainSimulatorTest {
             SyrmosLivePositionsService.OffsetStop("A1_X", stopSequence = 1, minutesFromOrigin = 0),
             SyrmosLivePositionsService.OffsetStop("A1_Y", stopSequence = 2, minutesFromOrigin = 30),
         )
-        val xStation = Station("A1_X", "X", "X", 37.9, 23.7, listOf("A1"))
-        val yStation = Station("A1_Y", "Y", "Y", 38.0, 23.8, listOf("A1"))
+        val xStation = Station(id = "A1_X", name = "X", nameEl = "X", latitude = 37.9, longitude = 23.7, lineIds = listOf("A1"))
+        val yStation = Station(id = "A1_Y", name = "Y", nameEl = "Y", latitude = 38.0, longitude = 23.8, lineIds = listOf("A1"))
         val trains = simulateTrains(
             lines = listOf(suburbanLine),
             lineStations = mapOf("A1" to listOf(xStation, yStation)),
