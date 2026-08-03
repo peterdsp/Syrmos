@@ -2,19 +2,59 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.3.0** (TestFlight), **Android 1.3.0** (Play internal, versionCode 119), **Web** (rolling). 1.2.10 (T8 source-confidence, T9 Ariadne recovery, T7 native hero, T6 web unified search, station-ID reconcile) cut 2026-07-26 via `v1.2.10`; 1.2.11 (national/bus timetables online + offline, 2.0 token foundation) cut 2026-07-26 via `v1.2.11`. Burned Android version codes never reusable: 105, 106, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119. Next Android release must use 120+.
+Current shipping: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Burned Android version codes never reusable: 105, 106, 109-138 (all consumed by rapid iteration). Next Android release must use 139+.
 
-How Android 1.2.2 actually shipped, because the version history is not linear: the `v1.2.2` tag's Android job failed on missing Play/signing secrets, so no bundle was uploaded and Android sat on **1.1.1** while iOS was on 1.2.2. 1.2.1 never reached Play at all. On 2026-07-16 the long-pending 1.2.0 (versionCode 102, approved but unpublished since 2026-07-04) was published, then 1.2.2 (versionCode 106) was uploaded by hand after the native-lib fixes below. Burned version codes that can never be reused: **105** (rejected, 4 KB-aligned libs) and **106** (released). The next release must use **107+**.
-
-The release secrets are now set, so a `v*` tag ships Android automatically alongside iOS and web. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md). Do not re-run the `v1.2.2` tag: it points at the pre-fix commit (versionCode 105, 4 KB libs, broken JNI shim).
+Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 1.4.0 — 2026-07-28 through 2026-07-30
+
+The voice-assistant + live-tracking release. Siri, Google Assistant, cloud Ariadne, push notifications, and a redesigned tracking experience.
+
+- **Siri App Intents (iOS) + Google Assistant App Actions (Android).** "Hey Siri, next train from Syntagma" and "Hey Google, departures from Piraeus" now work natively. Intents cover departures, trip planning, and line status.
+- **Cloud Ariadne LLM.** The assistant can now route through a cloud LLM (Groq primary, OpenRouter secondary, Cerebras tertiary) for queries the on-device model and rule parser cannot handle. The cloud path enriches the prompt with live transit context and alert awareness. The on-device rule parser remains the offline floor.
+- **Live train tracking with real GPS.** Suburban train tracking now prefers real GPS coordinates from the live feed, falling back to the projector when offline.
+- **Rail news.** A scraper pulls official Hellenic Train announcements (switched from mixed sources to official HT feeds only). News appears on the Home screen in a dedicated "Rail Network Updates" section, separate from service alerts.
+- **Push notifications.** Service alerts, weather warnings, and nearby-station departures can now push to the device. Permission requested during onboarding and shown in What's New.
+- **Offline scheduled-trip departures for all lines.** Every line (not just metro/tram) now shows offline departures from the bundled trips, with `valid_dates` support for date-specific scheduled services.
+- **Tab bar rename.** Home | Explore | Map | Departures | More (was Airport for Departures).
+- **Light-first restyle pass.** All platforms received a visual pass toward the 2.0 Hellenic Rail Atlas light-first identity.
+- **Service alert banners on line and station detail screens.** Active alerts now surface contextually, not just on Home.
+- **Train numbers.** Suburban and intercity departures now show the train number (e.g. P1-1234).
+- **Polyline-snapped train markers.** Moving vehicles snap to the real track geometry instead of chord-lerping between stations.
+- **Home customization.** Users can reorder and toggle Home sections.
+- **Live trains in Explore.** The Explore tab now shows currently running trains.
+- **Station name translation.** Server-side and client-side English/Greek station name translation for the map and search.
+- **Auto-polling live trains (iOS).** iOS now polls for live suburban positions automatically instead of requiring manual refresh.
+- **Patras PU1 route fix.** Retraced the University campus shuttle route with corrected station coordinates.
+- **CI gate workflow.** KMP, Android, and iOS tests now run as a CI gate on push.
+- **Telemetry + Watch Live on web.** Web gained a live stream player and usage telemetry.
+
+iOS 1.4.0 (build 115) / Android versionCode 138. Built through tags v1.4.0 to v1.4.4 (build iterations).
+
+## 1.3.3 — 2026-07-28
+
+- **Line search and filters.** The Lines/Explore tab gained a search bar and type filters (metro, tram, suburban, bus), so users can find a line without scrolling.
+- **Ariadne download meter.** The model download progress is now visible inline.
+- **Hellenic Train info links.** Each line card links to the operator's official page.
+
+## 1.3.2 — 2026-07-28
+
+- **Nationwide fares via API.** Non-Athens stations now return fares from the live API instead of showing nothing. Web fares fetch bypasses the browser cache to avoid stale prices.
+- **Ariadne owl mark fix.** The assistant launcher icon renders correctly across platforms.
+- **What's New refresh.** Updated the in-app changelog to cover recent releases.
+
+## 1.3.1 — 2026-07-28
+
+- **External timetable links for non-Athens stations.** Stations outside Athens (national, Thessaloniki, Patras) now show a link to the operator's official timetable page when no local schedule data is available.
+- **Design system color unification.** All line colors moved onto `SyrmosColorTokens`, deleting the legacy `Color.kt` extension file.
+
 ## 1.3.0 — 2026-07-27
 
-iOS map parity — the whole country's stations, plus the missing controls.
+iOS map parity: the whole country's stations, plus the missing controls.
 
 - **Every station on the iOS map (all networks).** The iOS map drew station dots from a hardcoded Athens-only list (`StationCoords`: M1-M3, T6/T7, A1-A4), so Thessaloniki metro + suburban, the national/intercity corridors and the Patras suburban had lines but no stations. It now reads the same bundled `seed-schedules-v2/lines.json` as the polylines and web — 389 stations across Athens, Thessaloniki, national and Patras — merging each station's line memberships so interchanges are right. Falls back to the old list only if the bundle is unreadable. Web and Android already drew all networks (Android seeds every station from `lines.json` into its DB); this brings iOS to parity.
 - **Ariadne owl on the map.** The Map tab suppresses the app-level Ask-Ariadne pill (the Locate + Vehicles buttons own the corner), which left iOS with no way to reach Ariadne from the map. Added a circular owl launcher at the top of the map's control column — same round owl mark as web and Android — opening the assistant sheet.
@@ -94,7 +134,7 @@ All platforms bumped to 1.2.9 (Android versionCode 113). Line weights, opacity (
 
 **iOS national + regional + bus moving vehicles.** iOS now shows moving vehicles for national intercity rail (IC/RG/KO/PL/DK/AL), the Thessaloniki and Patras suburban corridors, and the rail-replacement buses (KB/VL/DX/KP/TL/PU/PSB) — the same fleet Android and web already carry from 1.2.7. These lines have no live feed and no station-offsets table on the Pi, so iOS projects them entirely offline from the bundled timetables (`seed-schedules-v2/{lineId}.json` `trips[]`): for every trip whose day-type matches today, the current segment is found by wall clock and the chord between its two stations is interpolated. They render as the same directional triangles as the suburban fleet, and each carries its real line colour instead of a single purple. This closes the iOS-only gap that 1.2.7 deferred (iOS runs a separate Swift simulator from the KMP `MapViewModel`, so the KMP projector only reached Android). No Android or web change — both already ship this — so 1.2.8 is an iOS-only release; Android stays on versionCode 112 / 1.2.7.
 
-## Unreleased (rolling web + data)
+## 1.2.9 and earlier rolling changes (shipped in 1.2.9 through 1.3.0)
 
 **Viewport-culled map markers** (iOS, Android, Web). With the network nationwide (389 stops across Greece), every platform kept all of them live on the map at once, so zooming felt heavy and distant coastal lines (Katakolo, Corinth-Patras) painted over the sea at the edges of the Athens view. Now only stations inside the padded current viewport are drawn, and panning re-culls as you move. Also confirmed, after a deep investigation, that no station is actually mislocated: the dots that looked "in the sea" were real stations elsewhere in Greece (e.g. Alfeios on the Katakolo-Pyrgos-Olympia line) rendered off-screen, not bad coordinates.
 
@@ -279,51 +319,7 @@ Infrastructure:
 
 - TestFlight upload automation. iOS workflow does not exist yet; secrets (`APPLE_ID`, `APP_SPECIFIC_PASSWORD`, `APP_STORE_CONNECT_API_KEY`) must be added before the upload job can run.
 
-## 1.1 (target Q4 2026)
-
-Per [Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap):
-
-- iOS Home Screen widget (WidgetKit, next 3 departures at a favorited station)
-- Lock Screen Live Activity + Dynamic Island (next train, transfer countdown, destination progress), sharing the widget's departure-timeline pipeline
-- Wear OS / watchOS companion (independent app, glanceable next departure + complication)
-- Platform-direction slice ("trains to X depart from the left platform")
-- Accessibility improvements
-
-## 1.2 (target Q1 2027)
-
-- Trip planner: point-to-point routing using the embedded line topology
-- Live journey confidence score ("you'll make it" / "tight transfer" / "take the next one"), the face of the planner
-- Multi-leg "last train home": must-leave-by time across transfers
-
-## 1.3 (target Q2 2027)
-
-- National InterCity rail coverage (E85 corridor: Athens-Thessaloniki, Athens-Patras)
-
-## 1.4 (target Q3 2027)
-
-- Thessaloniki suburban (THESLAR corridor)
-
-## 1.5 (target Q4 2027)
-
-- AI chat helper for natural-language schedule queries
-
-## 2.0 (2028+)
-
-- TBD. Either a redesign or a regional expansion (Patras, Heraklion).
-
----
-
-## In progress: 1.2 "Widgets Everywhere" (branch `feat/1.2-widgets`, iOS build 100 / Android code 100)
-
-Putting the offline-prediction intelligence on every home screen, lock screen, and wrist. Measured against the widget philosophy in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md) (single-glance, no-scroll, line-tinted, dark-first).
-
-- Shared widget design system (`iosApp/iosApp/DesignSystem/WidgetKit/`): `SyrmosLineTokens` (single source of truth for line colors + labels), `LiquidGlassTile`, `LinePill`, `StationStripCompact` / `StationStripFull`, `DepartureRowCompact` — all usable by both the app and the widget extension.
-- iOS widget families (`SyrmosWidgets.swift`): Next Train (small + medium), Live Departures (large), Near Me (large), All Lines Status (extra-large), Weather + Alerts (extra-large), and an iPad medium trio. All share one `WidgetConfigurationIntent` (primary station + primary line, nearest-mode overrides both).
-- Live Activity redesign: full-width Lock Screen card, Dynamic Island tri-lane expanded view (next three trains on the tracked line), line-pill leading / minutes trailing / line-dot minimal, `widgetAccentable` for StandBy tinting.
-- Android Glance widgets: migration of the RemoteViews departures widget to Compose Glance, plus Next Train / Live Departures / Line Status / Near Me families, fed by a WorkManager snapshot.
-- Apple Watch companion: next-three departures view, complications (corner / circular / rectangular), WatchConnectivity handoff from the phone with a bundled-schedule fallback.
-
-## Shipped
+## Older releases
 
 ### 1.1.1 (iOS build 41 / Android code 50)
 
@@ -369,14 +365,11 @@ Full per-date detail is in the Revision Log at the bottom of [docs/CASE_STUDY.md
 
 When you cut a release:
 
-1. Move the relevant items out of **Unreleased** into a new `### <version>` entry under **Shipped**, dated with what actually shipped on each platform.
+1. Add a new `## <version>` entry at the top of the version list.
 2. Bump the `Current shipping` line at the top.
-3. Re-tag the git release so the tag matches reality (`v1.0.3` is currently stale; the real shipping versions are above).
-4. Keep the **Unreleased** list pruned: anything still pending stays, anything dropped gets removed.
-5. If the long-range roadmap in [Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap) changes, edit that table in `CASE_STUDY.md` rather than duplicating it here.
+3. Tag the release (`v<version>`) so CI ships it.
 
 Source of truth for current shipping versions:
 
 - Android: `androidApp/build.gradle.kts` (`versionName`, `versionCode`)
-- iOS: `iosApp/iosApp.xcodeproj/project.pbxproj` (`MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`)
-- Git tags are often stale; do not trust them.
+- iOS: `iosApp/Syrmos.xcodeproj/project.pbxproj` (`MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`)
