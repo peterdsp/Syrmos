@@ -109,6 +109,7 @@ enum LocalizedKey {
     case sourceScheduled
     case sourceEstimated
     case sourceOffline
+    case sourceOperator
     case lastTrain
     case leaveBy
     case serviceOver
@@ -266,6 +267,9 @@ enum LocalizedKey {
         case (.sourceOffline, .english): return "Offline snapshot"
         case (.sourceOffline, .greek): return "Εκτός σύνδεσης"
         case (.sourceOffline, .albanian): return "Pa internet"
+        case (.sourceOperator, .english): return "Check operator"
+        case (.sourceOperator, .greek): return "Δείτε πάροχο"
+        case (.sourceOperator, .albanian): return "Kontrolloni operatorin"
         case (.lastTrain, .english): return "Last train"
         case (.lastTrain, .greek): return "Τελευταίος συρμός"
         case (.lastTrain, .albanian): return "Treni i fundit"

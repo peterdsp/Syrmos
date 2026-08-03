@@ -488,6 +488,9 @@ private struct FeaturedRow: View {
                 Text(directionLabel)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                if departure.sourceConfidence != .unknown {
+                    SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
+                }
             }
 
             Spacer()
@@ -560,9 +563,14 @@ private struct ExpandedRow: View {
                 .frame(width: 14, height: 14)
                 .padding(.leading, 22)
 
-            Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                if departure.sourceConfidence != .unknown {
+                    SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
+                }
+            }
 
             Spacer()
 

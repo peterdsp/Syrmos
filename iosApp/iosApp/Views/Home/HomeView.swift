@@ -216,25 +216,16 @@ struct HomeView: View {
         )
     }
 
+    @ViewBuilder
     private var freshnessPill: some View {
         let isLive = freshnessStore.freshness == .live
-        let tint: Color = isLive ? SyrmosTokens.live : SyrmosTokens.warning
-        let label = isLive
-            ? loc[.live]
-            : "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
-        return HStack(spacing: 6) {
-            Circle()
-                .fill(tint)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
+        if isLive {
+            SourceConfidenceChip(confidence: .live, language: loc.language)
+        } else {
+            OfflinePill(
+                message: "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
+            )
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(tint.opacity(0.12))
-        .clipShape(Capsule())
     }
 
     /// Chip that opens the TrackPickerSheet. Always visible alongside the

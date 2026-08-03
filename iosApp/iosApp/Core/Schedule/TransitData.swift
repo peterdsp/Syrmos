@@ -76,22 +76,24 @@ struct TransitStation: Identifiable {
 /// Where an on-screen departure came from, so Syrmos can say how sure it is.
 /// Swift mirror of the KMP `SourceConfidence` (core:model) - keep in sync.
 enum SourceConfidence: Equatable {
-    case live       // a real-time position / arrival
-    case scheduled  // a timetabled departure from the live schedules API
-    case estimated  // projected from a frequency band, not an exact minute
-    case offline    // the bundled offline snapshot
-    case unknown    // no source known - render nothing
+    case live          // a real-time position / arrival
+    case scheduled     // a timetabled departure from the live schedules API
+    case estimated     // projected from a frequency band, not an exact minute
+    case offline       // the bundled offline snapshot
+    case operatorLink  // the operator must be checked for live status
+    case unknown       // no source known - render nothing
 
     // Self-contained RGB (no Color.* extension dependency) so this compiles in
     // every target that includes TransitData - the app AND the widget extension,
     // which doesn't link the DesignSystem Color palette. Values match the shared
     // source-state tokens: live #059669, scheduled #2563EB, estimated #B45309,
-    // offline #6B7280.
+    // offline #6B7280, brand #2139A1.
     var color: Color {
         switch self {
         case .live: return Color(red: 0.020, green: 0.588, blue: 0.412)
         case .scheduled: return Color(red: 0.145, green: 0.388, blue: 0.922)
         case .estimated: return Color(red: 0.706, green: 0.325, blue: 0.035)
+        case .operatorLink: return Color(red: 0.129, green: 0.224, blue: 0.631)
         case .offline, .unknown: return Color(red: 0.420, green: 0.447, blue: 0.502)
         }
     }
@@ -102,6 +104,7 @@ enum SourceConfidence: Equatable {
         case .scheduled: return LocalizedKey.sourceScheduled.text(for: language)
         case .estimated: return LocalizedKey.sourceEstimated.text(for: language)
         case .offline: return LocalizedKey.sourceOffline.text(for: language)
+        case .operatorLink: return LocalizedKey.sourceOperator.text(for: language)
         case .unknown: return ""
         }
     }
