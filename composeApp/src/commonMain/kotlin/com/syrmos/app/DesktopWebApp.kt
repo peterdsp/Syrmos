@@ -1090,4 +1090,5 @@ private fun LineType.label(): String = when (this) {
     LineType.TRAM -> "Tram"
     LineType.SUBURBAN -> "Suburban"
     LineType.BUS -> "Bus"
+    LineType.SCENIC -> "Scenic"
 }

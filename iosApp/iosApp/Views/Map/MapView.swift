@@ -711,6 +711,7 @@ struct StationDot: View {
         case .tram: return "tram.fill"
         case .suburban: return "train.side.front.car"
         case .bus: return "bus.fill"
+        case .scenic: return "mountain.2.fill"
         }
     }
 

@@ -154,7 +154,7 @@ fun LinesScreen(
                     }
 
                     val grouped = filtered.groupBy { it.type }
-                    val orderedTypes = listOf(LineType.METRO, LineType.TRAM, LineType.SUBURBAN, LineType.BUS)
+                    val orderedTypes = listOf(LineType.METRO, LineType.TRAM, LineType.SUBURBAN, LineType.BUS, LineType.SCENIC)
 
                     if (filtered.isEmpty() && !uiState.isLoading) {
                         item {
@@ -499,6 +499,11 @@ private fun TypeFilterRow(
             AppLanguage.ALBANIAN -> "Autobuse"
             else -> "Bus"
         },
+        LineType.SCENIC to when (lang) {
+            AppLanguage.GREEK -> "Οδοντωτος"
+            AppLanguage.ALBANIAN -> "Malore"
+            else -> "Scenic"
+        },
     )
 
     Row(
@@ -587,6 +592,11 @@ private fun LineType.localizedName(lang: AppLanguage): String {
             AppLanguage.GREEK -> "Λεωφορειο (αντικατασταση)"
             AppLanguage.ALBANIAN -> "Autobus (zevendesim)"
             else -> "Bus (rail replacement)"
+        }
+        LineType.SCENIC -> when (lang) {
+            AppLanguage.GREEK -> "Οδοντωτος Σιδηροδρομος"
+            AppLanguage.ALBANIAN -> "Hekurudha malore"
+            else -> "Scenic Railway"
         }
     }
 }

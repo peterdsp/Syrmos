@@ -434,6 +434,9 @@ extension TransitType {
         case (.bus, .greek): return "Λεωφορειο (αντικατασταση)"
         case (.bus, .english): return "Bus (rail replacement)"
         case (.bus, .albanian): return "Autobus (zevendesim)"
+        case (.scenic, .greek): return "Οδοντωτος Σιδηροδρομος"
+        case (.scenic, .english): return "Scenic Railway"
+        case (.scenic, .albanian): return "Hekurudha malore"
         }
     }
 }
