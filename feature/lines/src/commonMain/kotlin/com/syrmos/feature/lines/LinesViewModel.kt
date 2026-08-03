@@ -13,12 +13,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class ExploreSegment { DESTINATIONS, YOUR_NETWORK }
+
 data class LinesUiState(
     val lines: List<Line> = emptyList(),
     val isLoading: Boolean = true,
     val searchQuery: String = "",
     val selectedRegion: Region? = null,
     val selectedType: LineType? = null,
+    val segment: ExploreSegment = ExploreSegment.DESTINATIONS,
 )
 
 class LinesViewModel(
@@ -38,6 +41,10 @@ class LinesViewModel(
                 _uiState.update { it.copy(lines = lines, isLoading = false) }
             }
         }
+    }
+
+    fun onSegmentChanged(segment: ExploreSegment) {
+        _uiState.update { it.copy(segment = segment) }
     }
 
     fun onSearchQueryChanged(query: String) {

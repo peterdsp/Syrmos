@@ -135,9 +135,14 @@ struct SourceConfidenceChip: View {
 
 private struct LivePulseOptional: ViewModifier {
     let active: Bool
+    @State private var pulsing = false
     func body(content: Content) -> some View {
         if active {
-            content.livePulse()
+            content
+                .scaleEffect(pulsing ? 1.15 : 1.0)
+                .opacity(pulsing ? 0.7 : 1.0)
+                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulsing)
+                .onAppear { pulsing = true }
         } else {
             content
         }
