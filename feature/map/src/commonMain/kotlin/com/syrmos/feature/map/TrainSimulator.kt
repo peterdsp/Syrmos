@@ -78,9 +78,10 @@ fun simulateTrains(
         val fromStation = stationById[fromStop.stationId] ?: continue
         val toStation = stationById[toStop.stationId] ?: continue
         val segDuration = (toStop.minutesFromOrigin - fromStop.minutesFromOrigin).toDouble()
-        val fraction = if (segDuration > 0) {
+        val linearFrac = if (segDuration > 0) {
             ((elapsedMinutes - fromStop.minutesFromOrigin) / segDuration).coerceIn(0.0, 1.0)
         } else 0.0
+        val fraction = stationAwareEase(linearFrac)
 
         val lat = fromStation.latitude + (toStation.latitude - fromStation.latitude) * fraction
         val lon = fromStation.longitude + (toStation.longitude - fromStation.longitude) * fraction
@@ -165,7 +166,8 @@ fun projectScheduledTrains(
             val from = stationById[stops[seg].stationId] ?: continue
             val to = stationById[stops[seg + 1].stationId] ?: continue
             val dur = (t[seg + 1] - t[seg]).toDouble()
-            val frac = if (dur > 0) ((nowMinutes - t[seg]) / dur).coerceIn(0.0, 1.0) else 0.0
+            val linearFrac = if (dur > 0) ((nowMinutes - t[seg]) / dur).coerceIn(0.0, 1.0) else 0.0
+            val frac = stationAwareEase(linearFrac)
             val lat = from.latitude + (to.latitude - from.latitude) * frac
             val lon = from.longitude + (to.longitude - from.longitude) * frac
             val direction = if (trip.direction.lowercase() == "outbound") Direction.OUTBOUND else Direction.INBOUND
@@ -199,6 +201,20 @@ private fun toMinutesOfDay(hhmm: String): Int? {
     val h = parts[0].toIntOrNull() ?: return null
     val m = parts[1].toIntOrNull() ?: return null
     return h * 60 + m
+}
+
+/**
+ * Station-aware easing: trains decelerate near stations (segment endpoints)
+ * and cruise faster mid-segment, mimicking real rail kinematics.
+ * Uses a cubic bezier approximation of the "train glide" signature curve
+ * applied symmetrically (ease-in from origin, ease-out into destination).
+ *
+ * The curve is: t -> 3t^2 - 2t^3 (smoothstep), which gives zero velocity
+ * at t=0 and t=1 (station dwell) and peak velocity at t=0.5 (mid-segment).
+ */
+fun stationAwareEase(t: Double): Double {
+    val c = t.coerceIn(0.0, 1.0)
+    return c * c * (3.0 - 2.0 * c)
 }
 
 /// Compass bearing (0 = north) from one coordinate to another.
