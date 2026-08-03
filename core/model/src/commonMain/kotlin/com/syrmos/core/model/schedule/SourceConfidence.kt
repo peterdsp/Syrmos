@@ -24,5 +24,16 @@ enum class SourceConfidence {
     OPERATOR_LINK,
 
     /** No live disruption/status data is available. */
-    UNKNOWN,
+    UNKNOWN;
+
+    companion object {
+        fun fromRaw(raw: String?): SourceConfidence = when (raw?.lowercase()) {
+            "live" -> LIVE
+            "scheduled" -> SCHEDULED
+            "offline" -> OFFLINE
+            "estimated" -> ESTIMATED
+            "operator_link", "operatorlink" -> OPERATOR_LINK
+            else -> SCHEDULED
+        }
+    }
 }
