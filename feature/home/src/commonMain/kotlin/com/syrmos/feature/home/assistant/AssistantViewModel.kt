@@ -43,6 +43,7 @@ import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.domain.usecase.SearchStationsUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
+import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.Station
 import kotlinx.coroutines.CoroutineScope
@@ -68,6 +69,7 @@ data class AssistantMessage(
     val departures: List<UpcomingDeparture> = emptyList(),
     val action: AssistantAction? = null,
     val actionLabel: String? = null,
+    val sourceConfidence: SourceConfidence? = null,
 )
 
 data class AssistantUiState(
@@ -296,30 +298,48 @@ class AssistantViewModel(
 
     // MARK: - Dispatch
 
-    private suspend fun resolve(intent: AssistantIntent): AssistantMessage = when (intent) {
-        is AssistantIntent.ShowDepartures -> resolveDepartures(intent)
-        is AssistantIntent.LastTrain -> resolveLastTrain(intent)
-        is AssistantIntent.FirstTrain -> resolveFirstTrain(intent)
-        is AssistantIntent.StationAccessibility -> resolveAccessibility(intent)
-        AssistantIntent.ReverseTrip -> resolveReverseTrip()
-        is AssistantIntent.WhichLines -> resolveWhichLines(intent)
-        is AssistantIntent.StopsBetween -> resolveStopsBetween(intent)
-        is AssistantIntent.PlanTrip -> resolvePlanTrip(intent)
-        is AssistantIntent.TravelTime -> resolveTravelTime(intent)
-        is AssistantIntent.FindStation -> resolveFindStation(intent)
-        is AssistantIntent.ExplainLine -> resolveExplainLine(intent)
-        is AssistantIntent.ExplainFare -> resolveFare(intent)
-        is AssistantIntent.ToggleFavorite -> resolveFavorite(intent)
-        is AssistantIntent.ShowAlerts -> resolveAlerts(intent)
-        is AssistantIntent.OpenMap -> resolveOpenMap(intent)
-        AssistantIntent.Help -> botMessage(helpText())
-        is AssistantIntent.NeedsClarification -> botMessage(clarify(intent.missing))
-        AssistantIntent.OutOfScope -> botMessage(outOfScopeText())
-        AssistantIntent.EasterEggLiepur -> botMessage(catJoke())
-        is AssistantIntent.WeatherAt -> resolveWeather(intent)
-        is AssistantIntent.PlanTripByArrival -> resolvePlanByArrival(intent)
-        is AssistantIntent.StationStatus -> resolveStationStatus(intent)
-        is AssistantIntent.SetCurrentLocation -> resolveSetLocation(intent)
+    private suspend fun resolve(intent: AssistantIntent): AssistantMessage {
+        val msg = when (intent) {
+            is AssistantIntent.ShowDepartures -> resolveDepartures(intent)
+            is AssistantIntent.LastTrain -> resolveLastTrain(intent)
+            is AssistantIntent.FirstTrain -> resolveFirstTrain(intent)
+            is AssistantIntent.StationAccessibility -> resolveAccessibility(intent)
+            AssistantIntent.ReverseTrip -> resolveReverseTrip()
+            is AssistantIntent.WhichLines -> resolveWhichLines(intent)
+            is AssistantIntent.StopsBetween -> resolveStopsBetween(intent)
+            is AssistantIntent.PlanTrip -> resolvePlanTrip(intent)
+            is AssistantIntent.TravelTime -> resolveTravelTime(intent)
+            is AssistantIntent.FindStation -> resolveFindStation(intent)
+            is AssistantIntent.ExplainLine -> resolveExplainLine(intent)
+            is AssistantIntent.ExplainFare -> resolveFare(intent)
+            is AssistantIntent.ToggleFavorite -> resolveFavorite(intent)
+            is AssistantIntent.ShowAlerts -> resolveAlerts(intent)
+            is AssistantIntent.OpenMap -> resolveOpenMap(intent)
+            AssistantIntent.Help -> botMessage(helpText(), SourceConfidence.OFFLINE)
+            is AssistantIntent.NeedsClarification -> botMessage(clarify(intent.missing))
+            AssistantIntent.OutOfScope -> botMessage(outOfScopeText())
+            AssistantIntent.EasterEggLiepur -> botMessage(catJoke())
+            is AssistantIntent.WeatherAt -> resolveWeather(intent)
+            is AssistantIntent.PlanTripByArrival -> resolvePlanByArrival(intent)
+            is AssistantIntent.StationStatus -> resolveStationStatus(intent)
+            is AssistantIntent.SetCurrentLocation -> resolveSetLocation(intent)
+            is AssistantIntent.WrongTrain -> resolveWrongTrain(intent)
+            is AssistantIntent.MissedStop -> resolveMissedStop(intent)
+            is AssistantIntent.CanIStillMakeIt -> resolveCanIStillMakeIt(intent)
+        }
+        if (msg.sourceConfidence != null) return msg
+        val conf = when (intent) {
+            is AssistantIntent.ShowDepartures, is AssistantIntent.LastTrain,
+            is AssistantIntent.FirstTrain, is AssistantIntent.PlanTripByArrival,
+            is AssistantIntent.StopsBetween -> SourceConfidence.SCHEDULED
+            is AssistantIntent.PlanTrip, is AssistantIntent.TravelTime -> SourceConfidence.SCHEDULED
+            is AssistantIntent.ShowAlerts, is AssistantIntent.StationStatus -> SourceConfidence.LIVE
+            is AssistantIntent.WeatherAt -> SourceConfidence.LIVE
+            is AssistantIntent.StationAccessibility, is AssistantIntent.WhichLines,
+            is AssistantIntent.ExplainLine, is AssistantIntent.ExplainFare -> SourceConfidence.OFFLINE
+            else -> null
+        }
+        return if (conf != null) msg.copy(sourceConfidence = conf) else msg
     }
 
     /**
@@ -1438,7 +1458,56 @@ class AssistantViewModel(
         MissingSlot.STATION -> t("Which station?", "Ποιος σταθμός;", "Cili stacion?")
     }
 
-    private fun botMessage(text: String) = AssistantMessage(id = nextId++, fromUser = false, text = text)
+    private fun resolveWrongTrain(intent: AssistantIntent.WrongTrain): AssistantMessage {
+        val name = intent.stationId?.let { stationName(it) }
+        val text = if (name != null) t(
+            "Get off at the next stop and take the reverse service back towards $name.",
+            "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο πίσω προς $name.",
+            "Zbrit ne stacionin e ardhshem dhe merr trenin e kundert drejt $name.",
+        ) else t(
+            "Get off at the next stop and take the reverse service.",
+            "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο.",
+            "Zbrit ne stacionin e ardhshem dhe merr trenin e kundert.",
+        )
+        return botMessage(text, SourceConfidence.OFFLINE)
+    }
+
+    private fun resolveMissedStop(intent: AssistantIntent.MissedStop): AssistantMessage {
+        val name = intent.targetStationId?.let { stationName(it) }
+        val text = if (name != null) t(
+            "Get off at the next stop and double back to $name.",
+            "Κατέβα στον επόμενο σταθμό και γύρνα πίσω προς $name.",
+            "Zbrit ne stacionin e ardhshem dhe kthehu drejt $name.",
+        ) else t(
+            "Get off at the next stop and take the reverse service.",
+            "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο.",
+            "Zbrit ne stacionin e ardhshem dhe merr trenin e kundert.",
+        )
+        return botMessage(text, SourceConfidence.OFFLINE)
+    }
+
+    private fun resolveCanIStillMakeIt(intent: AssistantIntent.CanIStillMakeIt): AssistantMessage {
+        val toName = intent.toStationId?.let { stationName(it) }
+        val fromName = intent.fromStationId?.let { stationName(it) }
+        if (toName == null) return botMessage(t(
+            "Tell me which station you're heading to so I can check.",
+            "Πες μου σε ποιον σταθμό πας για να ελέγξω.",
+            "Me thuaj te cili stacion shkon qe te kontrolloj.",
+        ))
+        val text = if (fromName != null) t(
+            "Check departures from $fromName to see the next train towards $toName.",
+            "Δες τις αναχωρήσεις από $fromName για το επόμενο δρομολόγιο προς $toName.",
+            "Shiko nisjet nga $fromName per trenin e ardhshem drejt $toName.",
+        ) else t(
+            "Tell me which station you're at so I can check if you can make it to $toName.",
+            "Πες μου σε ποιον σταθμό είσαι για να ελέγξω αν προλαβαίνεις στο $toName.",
+            "Me thuaj ne cilin stacion je qe te kontrolloj nese e arrin $toName.",
+        )
+        return botMessage(text, SourceConfidence.ESTIMATED)
+    }
+
+    private fun botMessage(text: String, confidence: SourceConfidence? = null) =
+        AssistantMessage(id = nextId++, fromUser = false, text = text, sourceConfidence = confidence)
     private fun userMessage(text: String) = AssistantMessage(id = nextId++, fromUser = true, text = text)
 
     private fun t(en: String, el: String, sq: String): String = when (LocalizationManager.language.value) {
