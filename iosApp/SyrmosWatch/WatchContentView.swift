@@ -55,7 +55,7 @@ private struct DeparturesList: View {
     var body: some View {
         let departures = Array(snapshot.departures.prefix(3))
         let soonest = departures.first
-        let heroActive = (soonest?.liveMinutes(now: now) ?? 99) <= 2
+        let heroActive = (soonest?.liveSeconds(now: now) ?? 9999) <= 60
 
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
@@ -124,7 +124,8 @@ private struct HeroDeparture: View {
     let now: TimeInterval
 
     var body: some View {
-        let minutes = departure.liveMinutes(now: now)
+        let secs = departure.liveSeconds(now: now)
+        let text = watchCountdownText(secondsAway: secs)
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 LineBadge(lineId: departure.lineId)
@@ -132,10 +133,10 @@ private struct HeroDeparture: View {
                     .font(.caption2).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
             }
-            Text(minutes <= 0 ? "now" : "\(minutes)m")
+            Text(text)
                 .font(.system(size: 44, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(.red)
+                .foregroundStyle(Color(hex: 0xDC2626))
             Text(departure.destination)
                 .font(.callout).fontWeight(.semibold)
                 .lineLimit(1)
@@ -154,8 +155,9 @@ private struct DepartureCard: View {
     let now: TimeInterval
 
     var body: some View {
-        let minutes = departure.liveMinutes(now: now)
-        let imminent = minutes <= 2
+        let secs = departure.liveSeconds(now: now)
+        let imminent = secs <= 60
+        let text = watchCountdownText(secondsAway: secs)
         HStack(spacing: 8) {
             LineBadge(lineId: departure.lineId)
             VStack(alignment: .leading, spacing: 1) {
@@ -163,9 +165,9 @@ private struct DepartureCard: View {
                 Text(departure.time).font(.caption2).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            Text(minutes <= 0 ? "now" : "\(minutes)m")
+            Text(text)
                 .font(.callout).fontWeight(.semibold).monospacedDigit()
-                .foregroundStyle(imminent ? .red : .primary)
+                .foregroundStyle(imminent ? Color(hex: 0xDC2626) : .primary)
         }
         .padding(10)
         .background(Color.gray.opacity(0.14),
@@ -184,6 +186,32 @@ struct LineBadge: View {
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(WatchLineTokens.color(for: lineId),
                         in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+    }
+}
+
+// MARK: - Updated label
+
+// MARK: - Countdown formatting (mirrors HeroCountdown.kt)
+
+private func watchCountdownText(secondsAway: Int) -> String {
+    if secondsAway <= 0 { return "now" }
+    if secondsAway < 120 {
+        let m = secondsAway / 60
+        let s = secondsAway % 60
+        return "\(m):\(String(format: "%02d", s))"
+    }
+    let m = (secondsAway + 59) / 60
+    return "\(m)m"
+}
+
+private extension Color {
+    init(hex: UInt) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xFF) / 255.0,
+            green: Double((hex >> 8) & 0xFF) / 255.0,
+            blue: Double(hex & 0xFF) / 255.0
+        )
     }
 }
 

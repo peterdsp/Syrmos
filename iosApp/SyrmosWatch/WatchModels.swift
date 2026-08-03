@@ -51,6 +51,11 @@ struct WatchDeparture: Codable, Identifiable, Hashable {
         if secs <= 0 { return 0 }
         return max(0, Int(ceil(secs / 60)))
     }
+
+    func liveSeconds(now: TimeInterval) -> Int {
+        guard let targetEpoch else { return minutes * 60 }
+        return max(0, Int(targetEpoch - now))
+    }
 }
 
 struct WatchSnapshot: Codable, Equatable {

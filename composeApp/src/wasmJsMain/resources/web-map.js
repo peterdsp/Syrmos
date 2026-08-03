@@ -2261,9 +2261,10 @@
             let secAway = next.timeMinutes * 60 - nowSec;
             if (secAway < -60) secAway = next.minutesAway * 60; // crossed midnight / stale
             const countEl = el(".hero-card__count");
-            if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); }
-            else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now"); }
-            else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now"); }
+            if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); card.classList.remove("hero-card--imminent"); }
+            else if (secAway <= 60) { countEl.textContent = `0:${String(secAway).padStart(2, "0")}`; card.classList.remove("hero-card--now"); card.classList.add("hero-card--imminent"); }
+            else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now", "hero-card--imminent"); }
+            else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now", "hero-card--imminent"); }
             const chipEl = el(".hero-card__chip");
             const srcConf = next.sourceConfidence || "scheduled";
             const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
