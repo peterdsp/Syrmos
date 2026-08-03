@@ -1920,7 +1920,7 @@
             "lng": 23.6957605
           },
           {
-            "id": "M2_AGI",
+            "id": "M2_AG2",
             "name": "Agios Antonios",
             "nameEl": "\u0386\u03b3\u03b9\u03bf\u03c2 \u0391\u03bd\u03c4\u03ce\u03bd\u03b9\u03bf\u03c2",
             "lat": 38.0060932,
@@ -3241,47 +3241,47 @@
           "M1_KAL",
           "M1_TAV",
           "M1_PET",
-          "M1_THE",
+          "M1_THI",
           "M1_MON",
           "M1_OMO",
           "M1_VIC",
           "M1_ATT",
-          "M1_AGN",
+          "M1_AGI",
           "M1_KAT",
-          "M1_AGE",
-          "M1_ANP",
+          "M1_AG2",
+          "M1_ANO",
           "M1_PER",
           "M1_PEF",
-          "M1_NIO",
-          "M1_IRK",
+          "M1_NEA",
+          "M1_IRA",
           "M1_EIR",
           "M1_NER",
           "M1_MAR",
-          "M1_KAM",
-          "M1_KHE"
+          "M1_KA2",
+          "M1_KIF"
         ]
       },
       {
         "line_id": "M2",
         "station_ids": [
           "M2_ANT",
-          "M2_PEE",
-          "M2_AGA",
+          "M2_PER",
+          "M2_AGI",
           "M2_SEP",
           "M2_ATT",
-          "M2_LAR",
+          "M2_STA",
           "M2_MET",
           "M2_OMO",
           "M2_PAN",
           "M2_SYN",
           "M2_AKR",
-          "M2_SYG",
-          "M2_NEK",
-          "M2_AGI",
+          "M2_SY2",
+          "M2_NEO",
+          "M2_AG2",
           "M2_DAF",
-          "M2_ALD",
+          "M2_AG3",
           "M2_ILI",
-          "M2_ALM",
+          "M2_ALI",
           "M2_ARG",
           "M2_ELL"
         ]
@@ -3294,8 +3294,8 @@
           "M3_MAN",
           "M3_NIK",
           "M3_KOR",
-          "M3_ABA",
-          "M3_AMA",
+          "M3_AGI",
+          "M3_AG2",
           "M3_EGA",
           "M3_ELE",
           "M3_KER",
@@ -3303,18 +3303,18 @@
           "M3_SYN",
           "M3_EVA",
           "M3_MEG",
-          "M3_AMP",
-          "M3_PNR",
-          "M3_KTC",
+          "M3_AMB",
+          "M3_PAN",
+          "M3_KAT",
           "M3_ETH",
-          "M3_HOL",
+          "M3_CHO",
           "M3_NOM",
-          "M3_APR",
-          "M3_HAL",
-          "M3_DPL",
+          "M3_AG3",
+          "M3_CHA",
+          "M3_DOY",
           "M3_PAL",
-          "M3_PEK",
-          "M3_KRP",
+          "M3_PEA",
+          "M3_KO2",
           "M3_AER"
         ]
       },
@@ -3326,14 +3326,14 @@
           "T6_VOU",
           "T6_FIX",
           "T6_KAS",
-          "T6_NEK",
+          "T6_NEO",
           "T6_BAK",
-          "T6_AIG",
-          "T6_AFP",
-          "T6_MAL",
-          "T6_APK",
+          "T6_AEG",
+          "T6_AGI",
+          "T6_ALE",
+          "T6_AGH",
           "T6_MED",
-          "T6_EVS",
+          "T6_EVA",
           "T6_ACH",
           "T6_AMF",
           "T6_PAN",
@@ -3352,83 +3352,83 @@
           "T7_MIK",
           "T7_GIP",
           "T7_AKT",
-          "T7_ATR",
-          "T7_IPP",
-          "T7_34S",
+          "T7_AGI",
+          "T7_PL2",
+          "T7_SYN",
           "T7_AND",
-          "T7_SKY",
-          "T7_SEF",
-          "T7_NEF",
+          "T7_OMI",
+          "T7_PEA",
+          "T7_NEO",
           "T7_MOS",
           "T7_KAL",
           "T7_TZI",
           "T7_DEL",
-          "T7_SKE",
+          "T7_AGH",
           "T7_TRO",
-          "T7_PFL",
+          "T7_PAR",
           "T7_FLI",
           "T7_BAT",
           "T7_EDE",
           "T7_PIK",
           "T7_MAR",
-          "T7_KAM",
+          "T7_KA2",
           "T7_ZEF",
           "T7_LOU",
           "T7_ELL",
-          "T7_AK1",
-          "T7_AK2",
-          "T7_AGA",
-          "T7_EOL",
-          "T7_KIS",
-          "T7_VER",
-          "T7_GLY",
-          "T7_PDM",
-          "T7_KAT",
-          "T7_MET",
-          "T7_ESP",
+          "T7_STA",
+          "T7_NDA",
+          "T7_AG2",
+          "T7_EL2",
+          "T7_KEN",
+          "T7_PL3",
+          "T7_PA2",
+          "T7_PAL",
+          "T7_PL4",
+          "T7_AG3",
+          "T7_PL5",
           "T7_KOL",
-          "T7_VOL"
+          "T7_ASK"
         ]
       },
       {
         "line_id": "A1",
         "station_ids": [
           "A1_PIR",
-          "A1_LEF",
+          "A1_LEY",
           "A1_REN",
-          "A1_TAV",
-          "A1_ROU",
+          "A1_TAY",
+          "A1_ROY",
           "A1_ATH",
-          "A1_AAN",
+          "A1_AGI",
           "A1_PYR",
-          "A1_KAC",
+          "A1_KAT",
           "A1_MET",
-          "A1_IRK",
+          "A1_IRA",
           "A1_NER",
           "A1_KIF",
           "A1_PEN",
-          "A1_DPL",
+          "A1_DOY",
           "A1_PAL",
-          "A1_PEK",
-          "A1_KRP",
-          "A1_AER"
+          "A1_PEA",
+          "A1_KOR",
+          "A1_AIR"
         ]
       },
       {
         "line_id": "A2",
         "station_ids": [
-          "A2_ANL",
+          "A2_ANO",
           "A2_ACH",
           "A2_MET",
-          "A2_IRK",
+          "A2_IRA",
           "A2_NER",
           "A2_KIF",
           "A2_PEN",
-          "A2_DPL",
+          "A2_DOY",
           "A2_PAL",
-          "A2_PEK",
-          "A2_KRP",
-          "A2_AER"
+          "A2_PEA",
+          "A2_KOR",
+          "A2_AIR"
         ]
       },
       {
@@ -3485,7 +3485,7 @@
       "day_type": "weekday",
       "note": "Line 1 Kifisia to Piraeus",
       "station_departures": {
-        "M1_KHE": [
+        "M1_KIF": [
           "05:00",
           "05:10",
           "05:20",
@@ -4774,7 +4774,7 @@
           "00:38",
           "00:48"
         ],
-        "M1_KHE": [
+        "M1_KIF": [
           "05:35",
           "05:45",
           "05:55",
@@ -5647,7 +5647,7 @@
           "22:58",
           "23:34"
         ],
-        "M3_KRP": [
+        "M3_KO2": [
           "06:19",
           "06:55",
           "07:31",
@@ -5679,7 +5679,7 @@
           "23:07",
           "23:43"
         ],
-        "M3_PEK": [
+        "M3_PEA": [
           "06:25",
           "07:01",
           "07:37",
@@ -5743,7 +5743,7 @@
           "23:19",
           "23:55"
         ],
-        "M3_DPL": [
+        "M3_DOY": [
           "06:38",
           "07:14",
           "07:50",
@@ -6167,7 +6167,7 @@
           "22:48",
           "23:24"
         ],
-        "M3_DPL": [
+        "M3_DOY": [
           "06:05",
           "06:41",
           "07:17",
@@ -6231,7 +6231,7 @@
           "23:00",
           "23:36"
         ],
-        "M3_PEK": [
+        "M3_PEA": [
           "06:18",
           "06:54",
           "07:30",
@@ -6263,7 +6263,7 @@
           "23:06",
           "23:42"
         ],
-        "M3_KRP": [
+        "M3_KO2": [
           "06:24",
           "07:00",
           "07:36",
@@ -6371,7 +6371,7 @@
           "21:10",
           "21:40"
         ],
-        "M2_LAR": [
+        "M2_STA": [
           "05:22",
           "05:52",
           "06:22",
@@ -6479,7 +6479,7 @@
           "21:34",
           "22:04"
         ],
-        "M3_DPL": [
+        "M3_DOY": [
           "05:48",
           "06:18",
           "06:48",
@@ -6595,7 +6595,7 @@
           "21:52",
           "22:22"
         ],
-        "M3_DPL": [
+        "M3_DOY": [
           "06:14",
           "06:44",
           "07:14",
@@ -6703,7 +6703,7 @@
           "22:33",
           "23:03"
         ],
-        "M2_LAR": [
+        "M2_STA": [
           "06:40",
           "07:10",
           "07:40",
@@ -9343,7 +9343,7 @@
         "M1_VIC": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M1/metro_m1_10_victoria_vi.svg",
         "M2_AG2": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_14_aghios_ioannis_ai.svg",
         "M2_AG3": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_16_aghios_dimitrios_ad.svg",
-        "M2_AGI": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_03_aghios_antonios_aa.svg",
+        "M2_AG2": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_03_aghios_antonios_aa.svg",
         "M2_AKR": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_11_akropoli_ak.svg",
         "M2_ALI": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_18_alimos_al.svg",
         "M2_ANT": "https://api-syrmos.peterdsp.dev/icons/station_smart_codes/athens_station_smart_code_icons/stations_smart_codes/metro/M2/metro_m2_01_anthoupoli_an.svg",
@@ -9796,7 +9796,7 @@
               "lng": 23.6957605
             },
             {
-              "id": "M2_AGI",
+              "id": "M2_AG2",
               "name": "Agios Antonios",
               "nameEl": "\u0386\u03b3\u03b9\u03bf\u03c2 \u0391\u03bd\u03c4\u03ce\u03bd\u03b9\u03bf\u03c2",
               "lat": 38.0060932,
@@ -45984,7 +45984,7 @@
               "minutesFromOrigin": 26
             },
             {
-              "stationId": "M2_AGI",
+              "stationId": "M2_AG2",
               "stationEn": "Agios Antonios",
               "stopSequence": 17,
               "minutesFromOrigin": 29
@@ -46022,7 +46022,7 @@
               "minutesFromOrigin": 1
             },
             {
-              "stationId": "M2_AGI",
+              "stationId": "M2_AG2",
               "stationEn": "Agios Antonios",
               "stopSequence": 2,
               "minutesFromOrigin": 2
@@ -47573,8 +47573,8 @@
         "service_type": "airport",
         "station_ids": [
           "M3_PAL",
-          "M3_PEK",
-          "M3_KRP",
+          "M3_PEA",
+          "M3_KO2",
           "M3_AER"
         ]
       },
@@ -47585,8 +47585,8 @@
         "service_type": "airport",
         "station_ids": [
           "M3_PAL",
-          "M3_PEK",
-          "M3_KRP",
+          "M3_PEA",
+          "M3_KO2",
           "M3_AER"
         ]
       },
@@ -47597,8 +47597,8 @@
         "service_type": "regular",
         "excluded_station_ids": [
           "M3_PAL",
-          "M3_PEK",
-          "M3_KRP",
+          "M3_PEA",
+          "M3_KO2",
           "M3_AER"
         ]
       },
@@ -47609,8 +47609,8 @@
         "service_type": "regular",
         "excluded_station_ids": [
           "M3_PAL",
-          "M3_PEK",
-          "M3_KRP",
+          "M3_PEA",
+          "M3_KO2",
           "M3_AER"
         ]
       },
@@ -47621,8 +47621,8 @@
         "service_type": "airport",
         "excluded_station_ids": [
           "M3_PAL",
-          "M3_PEK",
-          "M3_KRP",
+          "M3_PEA",
+          "M3_KO2",
           "M3_AER"
         ]
       },
@@ -47781,7 +47781,7 @@
         "zone": 1
       },
       {
-        "id": "M1_THE",
+        "id": "M1_THI",
         "name": "Thiseio",
         "name_el": "\u0398\u03b7\u03c3\u03b5\u03af\u03bf",
         "latitude": 37.9766852,
@@ -47849,7 +47849,7 @@
         "zone": 1
       },
       {
-        "id": "M1_AGN",
+        "id": "M1_AGI",
         "name": "Agios Nikolaos",
         "name_el": "\u0386\u03b3\u03b9\u03bf\u03c2 \u039d\u03b9\u03ba\u03cc\u03bb\u03b1\u03bf\u03c2",
         "latitude": 38.0069859,
@@ -47875,7 +47875,7 @@
         "zone": 1
       },
       {
-        "id": "M1_AGE",
+        "id": "M1_AG2",
         "name": "Agios Eleftherios",
         "name_el": "\u0386\u03b3\u03b9\u03bf\u03c2 \u0395\u03bb\u03b5\u03c5\u03b8\u03ad\u03c1\u03b9\u03bf\u03c2",
         "latitude": 38.0203392,
@@ -47888,7 +47888,7 @@
         "zone": 1
       },
       {
-        "id": "M1_ANP",
+        "id": "M1_ANO",
         "name": "Ano Patisia",
         "name_el": "\u0386\u03bd\u03c9 \u03a0\u03b1\u03c4\u03ae\u03c3\u03b9\u03b1",
         "latitude": 38.0241359,
@@ -47927,7 +47927,7 @@
         "zone": 1
       },
       {
-        "id": "M1_NIO",
+        "id": "M1_NEA",
         "name": "Nea Ionia",
         "name_el": "\u039d\u03ad\u03b1 \u0399\u03c9\u03bd\u03af\u03b1",
         "latitude": 38.0416198,
@@ -47940,7 +47940,7 @@
         "zone": 1
       },
       {
-        "id": "M1_IRK",
+        "id": "M1_IRA",
         "name": "Irakleio",
         "name_el": "\u0397\u03c1\u03ac\u03ba\u03bb\u03b5\u03b9\u03bf",
         "latitude": 38.0460142,
@@ -47993,7 +47993,7 @@
         "zone": 2
       },
       {
-        "id": "M1_KAM",
+        "id": "M1_KA2",
         "name": "KAT",
         "name_el": "\u039a\u0391\u03a4",
         "latitude": 38.0663647,
@@ -48006,7 +48006,7 @@
         "zone": 2
       },
       {
-        "id": "M1_KHE",
+        "id": "M1_KIF",
         "name": "Kifissia",
         "name_el": "\u039a\u03b7\u03c6\u03b9\u03c3\u03b9\u03ac",
         "latitude": 38.0733951,
@@ -48032,7 +48032,7 @@
         "zone": 2
       },
       {
-        "id": "M2_PEE",
+        "id": "M2_PER",
         "name": "Peristeri",
         "name_el": "\u03a0\u03b5\u03c1\u03b9\u03c3\u03c4\u03ad\u03c1\u03b9",
         "latitude": 38.0128856,
@@ -48045,7 +48045,7 @@
         "zone": 2
       },
       {
-        "id": "M2_AGA",
+        "id": "M2_AGI",
         "name": "Agios Antonios",
         "name_el": "\u0386\u03b3\u03b9\u03bf\u03c2 \u0391\u03bd\u03c4\u03ce\u03bd\u03b9\u03bf\u03c2",
         "latitude": 38.0060932,
@@ -48085,7 +48085,7 @@
         "zone": 1
       },
       {
-        "id": "M2_LAR",
+        "id": "M2_STA",
         "name": "Athens",
         "name_el": "\u0391\u03b8\u03ae\u03bd\u03b1",
         "latitude": 37.9922861,
@@ -48166,7 +48166,7 @@
         "zone": 1
       },
       {
-        "id": "M2_SYG",
+        "id": "M2_SY2",
         "name": "Syngrou-Fix",
         "name_el": "\u03a3\u03c5\u03b3\u03b3\u03c1\u03bf\u03cd-\u03a6\u03af\u03be",
         "latitude": 37.9646366,
@@ -48179,7 +48179,7 @@
         "zone": 1
       },
       {
-        "id": "M2_NEK",
+        "id": "M2_NEO",
         "name": "Neos Kosmos",
         "name_el": "\u039d\u03ad\u03bf\u03c2 \u039a\u03cc\u03c3\u03bc\u03bf\u03c2",
         "latitude": 37.9576551,
@@ -48192,7 +48192,7 @@
         "zone": 1
       },
       {
-        "id": "M2_AGI",
+        "id": "M2_AG2",
         "name": "Agios Ioannis",
         "name_el": "\u0386\u03b3\u03b9\u03bf\u03c2 \u0399\u03c9\u03ac\u03bd\u03bd\u03b7\u03c2",
         "latitude": 37.9564161,
@@ -48218,7 +48218,7 @@
         "zone": 1
       },
       {
-        "id": "M2_ALD",
+        "id": "M2_AG3",
         "name": "Agios Dimitrios",
         "name_el": "\u0386\u03b3\u03b9\u03bf\u03c2 \u0394\u03b7\u03bc\u03ae\u03c4\u03c1\u03b9\u03bf\u03c2",
         "latitude": 37.9398434,
@@ -48244,7 +48244,7 @@
         "zone": 1
       },
       {
-        "id": "M2_ALM",
+        "id": "M2_ALI",
         "name": "Alimos",
         "name_el": "\u0386\u03bb\u03b9\u03bc\u03bf\u03c2",
         "latitude": 37.9178695,
@@ -48350,7 +48350,7 @@
         "zone": 1
       },
       {
-        "id": "M3_ABA",
+        "id": "M3_AGI",
         "name": "Agia Varvara",
         "name_el": "\u0391\u03b3\u03af\u03b1 \u0392\u03b1\u03c1\u03b2\u03ac\u03c1\u03b1",
         "latitude": 37.9899646,
@@ -48363,7 +48363,7 @@
         "zone": 1
       },
       {
-        "id": "M3_AMA",
+        "id": "M3_AG2",
         "name": "Agia Marina",
         "name_el": "\u0391\u03b3\u03af\u03b1 \u039c\u03b1\u03c1\u03af\u03bd\u03b1",
         "latitude": 37.9968128,
@@ -48469,7 +48469,7 @@
         "zone": 1
       },
       {
-        "id": "M3_AMP",
+        "id": "M3_AMB",
         "name": "Ambelokipoi",
         "name_el": "\u0391\u03bc\u03c0\u03b5\u03bb\u03cc\u03ba\u03b7\u03c0\u03bf\u03b9",
         "latitude": 37.9871894,
@@ -48482,7 +48482,7 @@
         "zone": 1
       },
       {
-        "id": "M3_PNR",
+        "id": "M3_PAN",
         "name": "Panormou",
         "name_el": "\u03a0\u03b1\u03bd\u03cc\u03c1\u03bc\u03bf\u03c5",
         "latitude": 37.9931964,
@@ -48495,7 +48495,7 @@
         "zone": 1
       },
       {
-        "id": "M3_KTC",
+        "id": "M3_KAT",
         "name": "Katechaki",
         "name_el": "\u039a\u03b1\u03c4\u03b5\u03c7\u03ac\u03ba\u03b7",
         "latitude": 37.9937402,
@@ -48521,7 +48521,7 @@
         "zone": 1
       },
       {
-        "id": "M3_HOL",
+        "id": "M3_CHO",
         "name": "Cholargos",
         "name_el": "\u03a7\u03bf\u03bb\u03b1\u03c1\u03b3\u03cc\u03c2",
         "latitude": 38.0048986,
@@ -48547,7 +48547,7 @@
         "zone": 2
       },
       {
-        "id": "M3_APR",
+        "id": "M3_AG3",
         "name": "Agia Paraskevi",
         "name_el": "\u0391\u03b3\u03af\u03b1 \u03a0\u03b1\u03c1\u03b1\u03c3\u03ba\u03b5\u03c5\u03ae",
         "latitude": 38.0171203,
@@ -48560,7 +48560,7 @@
         "zone": 2
       },
       {
-        "id": "M3_HAL",
+        "id": "M3_CHA",
         "name": "Chalandri",
         "name_el": "\u03a7\u03b1\u03bb\u03ac\u03bd\u03b4\u03c1\u03b9",
         "latitude": 38.0216963,
@@ -48573,7 +48573,7 @@
         "zone": 2
       },
       {
-        "id": "M3_DPL",
+        "id": "M3_DOY",
         "name": "Douk. Plakentias",
         "name_el": "\u0394\u03bf\u03c5\u03ba\u03af\u03c3\u03c3\u03b7\u03c2 \u03a0\u03bb\u03b1\u03ba\u03b5\u03bd\u03c4\u03af\u03b1\u03c2",
         "latitude": 38.0239773,
@@ -48600,7 +48600,7 @@
         "zone": 3
       },
       {
-        "id": "M3_PEK",
+        "id": "M3_PEA",
         "name": "Peania-Kantza",
         "name_el": "\u03a0\u03b1\u03b9\u03b1\u03bd\u03af\u03b1-\u039a\u03ac\u03bd\u03c4\u03b6\u03b1",
         "latitude": 37.9849428,
@@ -48613,7 +48613,7 @@
         "zone": 3
       },
       {
-        "id": "M3_KRP",
+        "id": "M3_KO2",
         "name": "Koropi",
         "name_el": "\u039a\u03bf\u03c1\u03c9\u03c0\u03af",
         "latitude": 37.912537,
@@ -48707,7 +48707,7 @@
         "zone": 1
       },
       {
-        "id": "T6_NEK",
+        "id": "T6_NEO",
         "name": "Neos Kosmos",
         "name_el": "\u039d\u03ad\u03bf\u03c2 \u039a\u03cc\u03c3\u03bc\u03bf\u03c2",
         "latitude": 37.9569955,
@@ -48733,7 +48733,7 @@
         "zone": 1
       },
       {
-        "id": "T6_AIG",
+        "id": "T6_AEG",
         "name": "Aegeou",
         "name_el": "\u0391\u03b9\u03b3\u03b1\u03af\u03bf\u03c5",
         "latitude": 37.9501464,
@@ -48746,7 +48746,7 @@
         "zone": 1
       },
       {
-        "id": "T6_AFP",
+        "id": "T6_AGI",
         "name": "Ag. Fotinis",
         "name_el": "\u0391\u03b3\u03af\u03b1\u03c2 \u03a6\u03c9\u03c4\u03b5\u03b9\u03bd\u03ae\u03c2",
         "latitude": 37.9467388,
@@ -48759,7 +48759,7 @@
         "zone": 1
       },
       {
-        "id": "T6_MAL",
+        "id": "T6_ALE",
         "name": "Meg. Alexandrou",
         "name_el": "\u039c\u03b5\u03b3. \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03bf\u03c5",
         "latitude": 37.9427014,
@@ -48772,7 +48772,7 @@
         "zone": 1
       },
       {
-        "id": "T6_APK",
+        "id": "T6_AGH",
         "name": "Ag. Paraskevi",
         "name_el": "\u0391\u03b3\u03af\u03b1 \u03a0\u03b1\u03c1\u03b1\u03c3\u03ba\u03b5\u03c5\u03ae",
         "latitude": 37.9402146,
@@ -48798,7 +48798,7 @@
         "zone": 1
       },
       {
-        "id": "T6_EVS",
+        "id": "T6_EVA",
         "name": "Evangeliki Scholi",
         "name_el": "\u0395\u03c5\u03b1\u03b3\u03b3\u03b5\u03bb\u03b9\u03ba\u03ae \u03a3\u03c7\u03bf\u03bb\u03ae",
         "latitude": 37.9333042,
@@ -48904,7 +48904,7 @@
         "zone": 1
       },
       {
-        "id": "T7_ATR",
+        "id": "T7_AGI",
         "name": "Agia Triada",
         "name_el": "\u0391\u03b3\u03af\u03b1 \u03a4\u03c1\u03b9\u03ac\u03b4\u03b1",
         "latitude": 37.9449403,
@@ -48917,7 +48917,7 @@
         "zone": 1
       },
       {
-        "id": "T7_IPP",
+        "id": "T7_PL2",
         "name": "Pl. Ippodameias",
         "name_el": "\u03a0\u03bb. \u0399\u03c0\u03c0\u03bf\u03b4\u03b1\u03bc\u03b5\u03af\u03b1\u03c2",
         "latitude": 37.9474688,
@@ -48930,7 +48930,7 @@
         "zone": 1
       },
       {
-        "id": "T7_34S",
+        "id": "T7_SYN",
         "name": "34 Synt. Pezikou",
         "name_el": "34\u03bf\u03c5 \u03a3\u03c5\u03bd\u03c4. \u03a0\u03b5\u03b6\u03b9\u03ba\u03bf\u03cd",
         "latitude": 37.9485363,
@@ -48956,7 +48956,7 @@
         "zone": 1
       },
       {
-        "id": "T7_SKY",
+        "id": "T7_OMI",
         "name": "Om. Skylitsi",
         "name_el": "\u039f\u03bc. \u03a3\u03ba\u03c5\u03bb\u03af\u03c4\u03c3\u03b7",
         "latitude": 37.9450359,
@@ -48969,7 +48969,7 @@
         "zone": 1
       },
       {
-        "id": "T7_SEF",
+        "id": "T7_PEA",
         "name": "SEF",
         "name_el": "\u03a3\u0395\u03a6",
         "latitude": 37.9438634,
@@ -48982,7 +48982,7 @@
         "zone": 1
       },
       {
-        "id": "T7_NEF",
+        "id": "T7_NEO",
         "name": "Neo Faliro",
         "name_el": "\u039d\u03ad\u03bf \u03a6\u03ac\u03bb\u03b7\u03c1\u03bf",
         "latitude": 37.9445726,
@@ -49047,7 +49047,7 @@
         "zone": 1
       },
       {
-        "id": "T7_SKE",
+        "id": "T7_AGH",
         "name": "Ag. Skepi",
         "name_el": "\u0391\u03b3\u03af\u03b1 \u03a3\u03ba\u03ad\u03c0\u03b7",
         "latitude": 37.9340166,
@@ -49073,7 +49073,7 @@
         "zone": 1
       },
       {
-        "id": "T7_PFL",
+        "id": "T7_PAR",
         "name": "Parko Flisvou",
         "name_el": "\u03a0\u03ac\u03c1\u03ba\u03bf \u03a6\u03bb\u03bf\u03af\u03c3\u03b2\u03bf\u03c5",
         "latitude": 37.9278472,
@@ -49153,7 +49153,7 @@
         "zone": 1
       },
       {
-        "id": "T7_KAM",
+        "id": "T7_KA2",
         "name": "Kalamaki",
         "name_el": "\u039a\u03b1\u03bb\u03b1\u03bc\u03ac\u03ba\u03b9",
         "latitude": 37.9096776,
@@ -49205,7 +49205,7 @@
         "zone": 1
       },
       {
-        "id": "T7_AK1",
+        "id": "T7_STA",
         "name": "1st Ag. Kosma",
         "name_el": "1\u03b7 \u0391\u03b3. \u039a\u03bf\u03c3\u03bc\u03ac",
         "latitude": 37.8942956,
@@ -49218,7 +49218,7 @@
         "zone": 1
       },
       {
-        "id": "T7_AK2",
+        "id": "T7_NDA",
         "name": "2nd Ag. Kosma",
         "name_el": "2\u03b7 \u0391\u03b3. \u039a\u03bf\u03c3\u03bc\u03ac",
         "latitude": 37.8907821,
@@ -49231,7 +49231,7 @@
         "zone": 1
       },
       {
-        "id": "T7_AGA",
+        "id": "T7_AG2",
         "name": "Ag. Alexandros",
         "name_el": "\u0386\u03b3. \u0391\u03bb\u03ad\u03be\u03b1\u03bd\u03b4\u03c1\u03bf\u03c2",
         "latitude": 37.885049,
@@ -49244,7 +49244,7 @@
         "zone": 1
       },
       {
-        "id": "T7_EOL",
+        "id": "T7_EL2",
         "name": "Ellinon Olympionikon",
         "name_el": "\u0395\u03bb\u03bb. \u039f\u03bb\u03c5\u03bc\u03c0\u03b9\u03bf\u03bd\u03b9\u03ba\u03ce\u03bd",
         "latitude": 37.8811588,
@@ -49257,7 +49257,7 @@
         "zone": 1
       },
       {
-        "id": "T7_KIS",
+        "id": "T7_KEN",
         "name": "Kentro Istioploias",
         "name_el": "\u039a\u03ad\u03bd\u03c4\u03c1\u03bf \u0399\u03c3\u03c4\u03b9\u03bf\u03c0\u03bb\u03bf\u0390\u03b1\u03c2",
         "latitude": 37.8758816,
@@ -49270,7 +49270,7 @@
         "zone": 1
       },
       {
-        "id": "T7_VER",
+        "id": "T7_PL3",
         "name": "Pl. Vergoti",
         "name_el": "\u03a0\u03bb. \u0392\u03b5\u03c1\u03b3\u03c9\u03c4\u03ae",
         "latitude": 37.8714672,
@@ -49283,7 +49283,7 @@
         "zone": 1
       },
       {
-        "id": "T7_GLY",
+        "id": "T7_PA2",
         "name": "Paralia Glyfadas",
         "name_el": "\u03a0\u03b1\u03c1\u03b1\u03bb\u03af\u03b1 \u0393\u03bb\u03c5\u03c6\u03ac\u03b4\u03b1\u03c2",
         "latitude": 37.8677342,
@@ -49296,7 +49296,7 @@
         "zone": 1
       },
       {
-        "id": "T7_PDM",
+        "id": "T7_PAL",
         "name": "Paleo Demarhio",
         "name_el": "\u03a0\u03b1\u03bb\u03b1\u03b9\u03cc \u0394\u03b7\u03bc\u03b1\u03c1\u03c7\u03b5\u03af\u03bf",
         "latitude": 37.8646553,
@@ -49309,7 +49309,7 @@
         "zone": 1
       },
       {
-        "id": "T7_KAT",
+        "id": "T7_PL4",
         "name": "Pl. Vaso Katraki",
         "name_el": "\u03a0\u03bb. \u0392\u03ac\u03c3\u03c9 \u039a\u03b1\u03c4\u03c1\u03ac\u03ba\u03b7",
         "latitude": 37.8634672,
@@ -49322,7 +49322,7 @@
         "zone": 1
       },
       {
-        "id": "T7_MET",
+        "id": "T7_AG3",
         "name": "Ag. Metaxa",
         "name_el": "\u0391\u03b3\u03b3. \u039c\u03b5\u03c4\u03b1\u03be\u03ac",
         "latitude": 37.8627144,
@@ -49335,7 +49335,7 @@
         "zone": 1
       },
       {
-        "id": "T7_ESP",
+        "id": "T7_PL5",
         "name": "Pl. Esperidon",
         "name_el": "\u03a0\u03bb. \u0395\u03c3\u03c0\u03b5\u03c1\u03af\u03b4\u03c9\u03bd",
         "latitude": 37.8601549,
@@ -49361,7 +49361,7 @@
         "zone": 1
       },
       {
-        "id": "T7_VOL",
+        "id": "T7_ASK",
         "name": "Asklipiio Voulas",
         "name_el": "\u0391\u03c3\u03ba\u03bb\u03b7\u03c0\u03b9\u03b5\u03af\u03bf \u0392\u03bf\u03cd\u03bb\u03b1\u03c2",
         "latitude": 37.8496644,
@@ -49389,7 +49389,7 @@
         "zone": 2
       },
       {
-        "id": "A1_LEF",
+        "id": "A1_LEY",
         "name": "Lefka",
         "name_el": "\u039b\u03b5\u03cd\u03ba\u03b1",
         "latitude": 37.9555849,
@@ -49415,7 +49415,7 @@
         "zone": 2
       },
       {
-        "id": "A1_TAV",
+        "id": "A1_TAY",
         "name": "Tavros",
         "name_el": "\u03a4\u03b1\u03cd\u03c1\u03bf\u03c2",
         "latitude": 37.9689397,
@@ -49428,7 +49428,7 @@
         "zone": 2
       },
       {
-        "id": "A1_ROU",
+        "id": "A1_ROY",
         "name": "Rouf",
         "name_el": "\u03a1\u03bf\u03c5\u03c6",
         "latitude": 37.9736019,
@@ -49455,7 +49455,7 @@
         "zone": 2
       },
       {
-        "id": "A1_AAN",
+        "id": "A1_AGI",
         "name": "Ag. Anargyroi",
         "name_el": "\u0386\u03b3\u03b9\u03bf\u03b9 \u0391\u03bd\u03ac\u03c1\u03b3\u03c5\u03c1\u03bf\u03b9",
         "latitude": 38.0224583,
@@ -49481,7 +49481,7 @@
         "zone": 2
       },
       {
-        "id": "A1_KAC",
+        "id": "A1_KAT",
         "name": "Kato Acharnai",
         "name_el": "\u039a\u03ac\u03c4\u03c9 \u0391\u03c7\u03b1\u03c1\u03bd\u03b1\u03af",
         "latitude": 38.0547251,
@@ -49507,7 +49507,7 @@
         "zone": 2
       },
       {
-        "id": "A1_IRK",
+        "id": "A1_IRA",
         "name": "Irakleio",
         "name_el": "\u0397\u03c1\u03ac\u03ba\u03bb\u03b5\u03b9\u03bf",
         "latitude": 38.0567845,
@@ -49560,7 +49560,7 @@
         "zone": 2
       },
       {
-        "id": "A1_DPL",
+        "id": "A1_DOY",
         "name": "Douk. Plakentias",
         "name_el": "\u0394\u03bf\u03c5\u03ba\u03af\u03c3\u03c3\u03b7\u03c2 \u03a0\u03bb\u03b1\u03ba\u03b5\u03bd\u03c4\u03af\u03b1\u03c2",
         "latitude": 38.0247026,
@@ -49587,7 +49587,7 @@
         "zone": 2
       },
       {
-        "id": "A1_PEK",
+        "id": "A1_PEA",
         "name": "Peania-Kantza",
         "name_el": "\u03a0\u03b1\u03b9\u03b1\u03bd\u03af\u03b1-\u039a\u03ac\u03bd\u03c4\u03b6\u03b1",
         "latitude": 37.9839819,
@@ -49600,7 +49600,7 @@
         "zone": 2
       },
       {
-        "id": "A1_KRP",
+        "id": "A1_KOR",
         "name": "Koropi",
         "name_el": "\u039a\u03bf\u03c1\u03c9\u03c0\u03af",
         "latitude": 37.913305,
@@ -49613,7 +49613,7 @@
         "zone": 2
       },
       {
-        "id": "A1_AER",
+        "id": "A1_AIR",
         "name": "Airport",
         "name_el": "\u0391\u03b5\u03c1\u03bf\u03b4\u03c1\u03cc\u03bc\u03b9\u03bf",
         "latitude": 37.9368156,
@@ -49627,7 +49627,7 @@
         "zone": 4
       },
       {
-        "id": "A2_ANL",
+        "id": "A2_ANO",
         "name": "Ano Liosia",
         "name_el": "\u0386\u03bd\u03c9 \u039b\u03b9\u03cc\u03c3\u03b9\u03b1",
         "latitude": 38.0707953,
@@ -49666,7 +49666,7 @@
         "zone": 2
       },
       {
-        "id": "A2_IRK",
+        "id": "A2_IRA",
         "name": "Irakleio",
         "name_el": "\u0397\u03c1\u03ac\u03ba\u03bb\u03b5\u03b9\u03bf",
         "latitude": 38.0567845,
@@ -49719,7 +49719,7 @@
         "zone": 2
       },
       {
-        "id": "A2_DPL",
+        "id": "A2_DOY",
         "name": "Douk. Plakentias",
         "name_el": "\u0394\u03bf\u03c5\u03ba\u03af\u03c3\u03c3\u03b7\u03c2 \u03a0\u03bb\u03b1\u03ba\u03b5\u03bd\u03c4\u03af\u03b1\u03c2",
         "latitude": 38.0247026,
@@ -49746,7 +49746,7 @@
         "zone": 2
       },
       {
-        "id": "A2_PEK",
+        "id": "A2_PEA",
         "name": "Peania-Kantza",
         "name_el": "\u03a0\u03b1\u03b9\u03b1\u03bd\u03af\u03b1-\u039a\u03ac\u03bd\u03c4\u03b6\u03b1",
         "latitude": 37.9839819,
@@ -49759,7 +49759,7 @@
         "zone": 2
       },
       {
-        "id": "A2_KRP",
+        "id": "A2_KOR",
         "name": "Koropi",
         "name_el": "\u039a\u03bf\u03c1\u03c9\u03c0\u03af",
         "latitude": 37.913305,
@@ -49772,7 +49772,7 @@
         "zone": 2
       },
       {
-        "id": "A2_AER",
+        "id": "A2_AIR",
         "name": "Airport",
         "name_el": "\u0391\u03b5\u03c1\u03bf\u03b4\u03c1\u03cc\u03bc\u03b9\u03bf",
         "latitude": 37.9368156,
@@ -50447,13 +50447,13 @@
         "walking_minutes": 3
       },
       {
-        "station_id": "M2_LAR",
+        "station_id": "M2_STA",
         "from_line_id": "M2",
         "to_line_id": "A1",
         "walking_minutes": 3
       },
       {
-        "station_id": "M2_LAR",
+        "station_id": "M2_STA",
         "from_line_id": "A1",
         "to_line_id": "M2",
         "walking_minutes": 3
@@ -50543,13 +50543,13 @@
         "walking_minutes": 3
       },
       {
-        "station_id": "M3_DPL",
+        "station_id": "M3_DOY",
         "from_line_id": "M3",
         "to_line_id": "A1",
         "walking_minutes": 3
       },
       {
-        "station_id": "M3_DPL",
+        "station_id": "M3_DOY",
         "from_line_id": "A1",
         "to_line_id": "M3",
         "walking_minutes": 3
@@ -50687,25 +50687,25 @@
         "walking_minutes": 3
       },
       {
-        "station_id": "A1_DPL",
+        "station_id": "A1_DOY",
         "from_line_id": "A1",
         "to_line_id": "M3",
         "walking_minutes": 3
       },
       {
-        "station_id": "A1_DPL",
+        "station_id": "A1_DOY",
         "from_line_id": "M3",
         "to_line_id": "A1",
         "walking_minutes": 3
       },
       {
-        "station_id": "A1_AER",
+        "station_id": "A1_AIR",
         "from_line_id": "A1",
         "to_line_id": "M3",
         "walking_minutes": 3
       },
       {
-        "station_id": "A1_AER",
+        "station_id": "A1_AIR",
         "from_line_id": "M3",
         "to_line_id": "A1",
         "walking_minutes": 3
@@ -50723,25 +50723,25 @@
         "walking_minutes": 3
       },
       {
-        "station_id": "A2_DPL",
+        "station_id": "A2_DOY",
         "from_line_id": "A2",
         "to_line_id": "M3",
         "walking_minutes": 3
       },
       {
-        "station_id": "A2_DPL",
+        "station_id": "A2_DOY",
         "from_line_id": "M3",
         "to_line_id": "A2",
         "walking_minutes": 3
       },
       {
-        "station_id": "A2_AER",
+        "station_id": "A2_AIR",
         "from_line_id": "A2",
         "to_line_id": "M3",
         "walking_minutes": 3
       },
       {
-        "station_id": "A2_AER",
+        "station_id": "A2_AIR",
         "from_line_id": "M3",
         "to_line_id": "A2",
         "walking_minutes": 3

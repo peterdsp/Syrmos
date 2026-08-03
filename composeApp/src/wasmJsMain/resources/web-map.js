@@ -1234,7 +1234,7 @@
         if (!m) return null;
         return Number(m[1]) * 60 + Number(m[2]);
     }
-    const M3_AIRPORT_ONLY = new Set(["M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"]);
+    const M3_AIRPORT_ONLY = new Set(["M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"]);
     function expandLineIds(stationId, lineIds) {
         const out = [];
         for (const lid of lineIds) {
@@ -2539,7 +2539,7 @@
         const linesById = new Map(lines.map((l) => [l.id, l]));
         // Resolve offset stops to stations by id OR by name. The /api/station-offsets
         // feed uses the server's station-id scheme (e.g. M1_THI, M1_KIF) which differs
-        // from the bundled snapshot's ids (M1_THE, M1_KHE) for the same physical
+        // from the bundled snapshot's ids (M1_THI, M1_KIF) for the same physical
         // stations, so an id-only lookup silently drops ~1/3 of stops and the trains
         // between them. The station NAME (stationEn) is the one key both sides share.
         const stationById = new Map();

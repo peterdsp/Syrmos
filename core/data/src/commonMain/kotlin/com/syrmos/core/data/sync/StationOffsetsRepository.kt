@@ -61,21 +61,10 @@ class StationOffsetsRepository(
         }
     }
 
-    // Station-ID reconciliation. The Pi's /api/station-offsets (and the STASY
-    // scraper that seeds it) use a different 3-letter abbreviation scheme than
-    // the bundled stations for many metro/tram/suburban stops (e.g. server
-    // M1_THI vs bundle M1_THE for Thiseio). The projector looks offsets up by
-    // the BUNDLE stationId, so a mismatch silently dropped that stop to
-    // band-only timing. Each offset carries a `stationEn`, so we canonicalise
-    // every offset's stationId to the bundle id by matching the name.
-    //
-    // The match is LINE-SCOPED: a stop's name is only matched against the
-    // stations on its own line, so a same-name stop on another line (Agia
-    // Paraskevi is on both M3 and T6; Syntagma on M2/M3/T6) can never remap to
-    // the wrong line's id. Names fold with Greek accents stripped, matching the
-    // bundle's English name or Greek name_el. Stops that still don't match keep
-    // their original id, so this can only improve, never regress. Verified
-    // against the live API: 474/474 offset stops resolve.
+    // Station-ID reconciliation. The server and bundle now share canonical IDs
+    // after the M6 reconciliation, but the name-index approach is kept as a
+    // safety net for any future server-side ID changes. Line-scoped matching
+    // prevents cross-line collisions (Agia Paraskevi on M3 vs T6, etc.).
     private var canonicalByLine: Map<String, Map<String, String>> = emptyMap()
 
     @Serializable
@@ -143,19 +132,9 @@ class StationOffsetsRepository(
             'ό' to 'ο', 'ύ' to 'υ', 'ϋ' to 'υ', 'ΰ' to 'υ', 'ώ' to 'ω',
         )
 
-        // The residual stops whose server name is a genuinely different wording
-        // or language than the bundle (Alexander the Great = Megalou Alexandrou;
-        // SEF = Peace and Friendship Stadium; the T7 "Plateia …" tram stops).
-        // Each verified to a real bundle id ON THE CORRECT LINE.
-        private val HARD_ALIASES = mapOf(
-            "M2_STA" to "M2_LAR", "M3_AMB" to "M3_AMP",
-            "T6_AGH" to "T6_APK", "T6_AGI" to "T6_AFP", "T6_ALE" to "T6_MAL",
-            "T7_AG2" to "T7_AGA", "T7_AG3" to "T7_MET", "T7_AGH" to "T7_SKE",
-            "T7_EL2" to "T7_EOL", "T7_NDA" to "T7_AK2", "T7_OMI" to "T7_SKY",
-            "T7_PEA" to "T7_SEF", "T7_PL2" to "T7_IPP", "T7_PL3" to "T7_VER",
-            "T7_PL4" to "T7_KAT", "T7_PL5" to "T7_ESP", "T7_STA" to "T7_AK1",
-            "T7_SYN" to "T7_34S",
-        )
+        // After the M6 station-ID reconciliation the bundle uses the same
+        // canonical IDs as the server, so no hard aliases are needed.
+        private val HARD_ALIASES = emptyMap<String, String>()
     }
 
     /**
