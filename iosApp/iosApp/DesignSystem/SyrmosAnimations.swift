@@ -53,3 +53,22 @@ extension View {
         modifier(LivePulse())
     }
 }
+
+struct HeroImminentPulse: ViewModifier {
+    let active: Bool
+    @State private var pulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(active && pulsing ? 1.06 : 1.0)
+            .opacity(active && pulsing ? 0.8 : 1.0)
+            .animation(
+                active ? .easeInOut(duration: 1.0).repeatForever(autoreverses: true) : .default,
+                value: pulsing
+            )
+            .onChange(of: active) { _, isActive in
+                pulsing = isActive
+            }
+            .onAppear { if active { pulsing = true } }
+    }
+}

@@ -261,80 +261,93 @@ struct HomeView: View {
 
     @ViewBuilder
     private func answerHero(next: Departure?) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(loc[.nextTrain].uppercased())
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            VStack(alignment: .leading, spacing: 10) {
+                Text(loc[.nextTrain].uppercased())
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
 
-            if let next {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) {
-                            Text(next.lineId)
+                if let next {
+                    let secsAway = next.secondsAway(from: timeline.date)
+                    let isImminent = secsAway <= 60
+                    let countdownText = heroCountdownText(secondsAway: secsAway, language: loc.language)
+                    let lineColor = SyrmosData.lineColor(for: next.lineId)
+                    let countdownColor: Color = isImminent ? SyrmosTokens.arrivalImminent : (secsAway <= 300 ? SyrmosTokens.arrivalSoon : lineColor)
+
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 8) {
+                                Text(next.lineId)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(lineColor)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                Text("\(loc[.to]) \(next.direction)")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                                    .foregroundStyle(.primary)
+                            }
+                            Text(next.time)
                                 .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(SyrmosData.lineColor(for: next.lineId))
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                            Text("\(loc[.to]) \(next.direction)")
-                                .font(.headline)
-                                .lineLimit(1)
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(.secondary)
+                            SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
                         }
-                        Text(next.time)
+                        Spacer(minLength: 0)
+                        Text(countdownText)
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundStyle(countdownColor)
+                            .modifier(HeroImminentPulse(active: isImminent))
+                    }
+                    let thenTimes = nearestUpcoming().dropFirst().prefix(2)
+                        .filter { $0.minutesAway > next.minutesAway }
+                        .map { $0.minutesAwayDisplay(language: loc.language) }
+                    if !thenTimes.isEmpty {
+                        let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : "then"
+                        Text("\(thenWord) \(thenTimes.joined(separator: ", "))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
                     }
-                    Spacer(minLength: 0)
-                    Text(next.minutesAwayDisplay(language: loc.language))
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(SyrmosData.lineColor(for: next.lineId))
-                }
-                // "then 13, 23 min": the next couple of departures after the
-                // featured one, matching the web hero.
-                let thenTimes = nearestUpcoming().dropFirst().prefix(2)
-                    .filter { $0.minutesAway > next.minutesAway }
-                    .map { $0.minutesAwayDisplay(language: loc.language) }
-                if !thenTimes.isEmpty {
-                    let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : "then"
-                    Text("\(thenWord) \(thenTimes.joined(separator: ", "))")
+                    let isTracked = tracking.active != nil
+                    Button {
+                        if !isTracked { trackNext(next) }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: isTracked ? "location.fill" : "bell.fill")
+                            Text(isTracked
+                                ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : "Tracking")
+                                : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : "Track"))
+                                .fontWeight(.semibold)
+                        }
                         .font(.caption)
+                        .foregroundStyle(isTracked ? Color.syrmosOnSurfaceMuted : lineColor)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background((isTracked ? SyrmosTokens.offline : lineColor).opacity(0.14))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isTracked)
+                    .onChange(of: isImminent) { _, nowImminent in
+                        if nowImminent {
+                            let generator = UIImpactFeedbackGenerator(style: .heavy)
+                            generator.impactOccurred()
+                        }
+                    }
+                } else {
+                    Text(locationService.hasPermission ? loc[.serviceOver] : loc[.enableLocationForNext])
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                let isTracked = tracking.active != nil
-                Button {
-                    if !isTracked { trackNext(next) }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: isTracked ? "location.fill" : "bell.fill")
-                        Text(isTracked
-                            ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : "Tracking")
-                            : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : "Track"))
-                            .fontWeight(.semibold)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(isTracked ? Color.syrmosOnSurfaceMuted : SyrmosData.lineColor(for: next.lineId))
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background((isTracked ? SyrmosTokens.offline : SyrmosData.lineColor(for: next.lineId)).opacity(0.14))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(isTracked)
-            } else {
-                Text(locationService.hasPermission ? loc[.serviceOver] : loc[.enableLocationForNext])
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.syrmosSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.syrmosSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func lastTrainTeaser(_ last: Departure) -> some View {
@@ -732,6 +745,31 @@ struct HomeView: View {
             : "Trains until \(latest)"
     }
 
+}
+
+// MARK: - Hero countdown formatting (mirrors KMP HeroCountdown.kt)
+
+private func heroCountdownText(secondsAway: Int, language: AppLanguage) -> String {
+    if secondsAway <= 0 {
+        switch language {
+        case .greek: return "Τώρα"
+        case .albanian: return "Tani"
+        default: return "Now"
+        }
+    }
+    if secondsAway < 120 {
+        let m = secondsAway / 60
+        let s = secondsAway % 60
+        return "\(m):\(String(format: "%02d", s))"
+    }
+    if secondsAway < 3600 {
+        let m = (secondsAway + 59) / 60
+        return "\(m) min"
+    }
+    let h = secondsAway / 3600
+    let m = (secondsAway % 3600) / 60
+    if m == 0 { return "\(h)h" }
+    return "\(h)h \(m)min"
 }
 
 // MARK: - Nearby Station Destination

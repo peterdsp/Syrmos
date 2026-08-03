@@ -92,6 +92,7 @@ fun DepartureCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = when {
+                        minutesAway <= 1 -> SyrmosColorTokens.arrivalImminent
                         minutesAway <= 2 -> SyrmosColorTokens.arrivalSoon
                         minutesAway <= 5 -> SyrmosColorTokens.arrivalModerate
                         else -> SyrmosColorTokens.arrivalFar

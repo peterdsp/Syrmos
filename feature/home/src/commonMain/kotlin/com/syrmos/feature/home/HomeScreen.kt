@@ -59,10 +59,16 @@ import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import com.syrmos.core.designsystem.animation.livePulse
 import com.syrmos.core.designsystem.animation.staggeredEntrance
 import com.syrmos.core.designsystem.component.OfflinePill
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
+import com.syrmos.core.designsystem.component.heroCountdown
+import com.syrmos.core.designsystem.component.heroCountdownColor
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.common.extensions.currentAthensTime
+import com.syrmos.core.common.extensions.parseTime
+import com.syrmos.core.common.extensions.secondsUntil
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
@@ -253,6 +259,7 @@ fun HomeScreen(
                     upcoming = uiState.upcomingDepartures,
                     hasLocation = uiState.nearestStations.isNotEmpty(),
                     isTracked = false,
+                    nowEpoch = nowEpoch,
                     lang = lang,
                     onStationClick = {
                         uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
@@ -650,6 +657,7 @@ private fun AnswerHero(
     upcoming: List<UpcomingDeparture> = emptyList(),
     hasLocation: Boolean,
     isTracked: Boolean,
+    nowEpoch: Long,
     lang: AppLanguage,
     onStationClick: () -> Unit,
     onTrack: () -> Unit,
@@ -676,6 +684,12 @@ private fun AnswerHero(
             )
 
             if (next != null) {
+                val athensNow = currentAthensTime()
+                val departure = parseTime(next.time)
+                val secsAway = athensNow.secondsUntil(departure)
+                val countdown = heroCountdown(secsAway, L.NOW.text(lang))
+                val countdownColor = heroCountdownColor(countdown, accent)
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -703,21 +717,19 @@ private fun AnswerHero(
                         }
                     }
                     Text(
-                        text = formatCountdown(next.minutesAway, lang),
+                        text = countdown.text,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = accent,
+                        color = countdownColor,
+                        modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
                     )
                 }
-                // "then 13, 23 min": the next couple of departures after the
-                // featured one, so the hero answers "and after that?" at a glance
-                // (matches the web hero).
                 val thenTimes = upcoming.drop(1).take(2)
                     .filter { it.minutesAway > next.minutesAway }
                     .map { formatCountdown(it.minutesAway, lang) }
                 if (thenTimes.isNotEmpty()) {
                     Text(
-                        text = "${thenWord(lang)} ${thenTimes.joinToString(", ")}",
+                        text = "${L.THEN.text(lang)} ${thenTimes.joinToString(", ")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

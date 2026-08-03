@@ -297,6 +297,10 @@ body {
     line-height: 1;
 }
 .hero-card--now .hero-card__count { color: var(--sy-disruption, #dc2626); }
+.hero-card--imminent .hero-card__count {
+    color: var(--sy-arrival-imminent, #dc2626);
+    animation: sy-live-pulse 2s ease-in-out infinite;
+}
 .hero-card__chip {
     margin-top: 8px;
     font-size: 11px;

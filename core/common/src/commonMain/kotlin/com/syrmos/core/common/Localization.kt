@@ -56,6 +56,7 @@ enum class L {
     NEARBY_POPULAR, POPULAR_INTERCHANGE, POPULAR_STOP, LINES_LOWER,
     ROUTE_COMPARISON, FASTEST, FEWEST_TRANSFERS, BEST_COVERAGE, ONE_TRANSFER,
     SCHEDULE_BOARD, EXPORT, PRINT_SCHEDULE, DOWNLOAD_PDF,
+    NOW, THEN,
     DESTINATIONS, YOUR_NETWORK, BROWSE_ALL_STATIONS,
     DEST_AIRPORT, DEST_AIRPORT_HOOK,
     DEST_PIRAEUS, DEST_PIRAEUS_HOOK,
@@ -551,6 +552,16 @@ enum class L {
             AppLanguage.GREEK -> "Λήψη PDF"
             AppLanguage.ALBANIAN -> "Shkarko PDF"
             else -> "Download PDF"
+        }
+        NOW -> when (lang) {
+            AppLanguage.GREEK -> "Τώρα"
+            AppLanguage.ALBANIAN -> "Tani"
+            else -> "Now"
+        }
+        THEN -> when (lang) {
+            AppLanguage.GREEK -> "μετά"
+            AppLanguage.ALBANIAN -> "pastaj"
+            else -> "then"
         }
         DESTINATIONS -> when (lang) {
             AppLanguage.GREEK -> "Προορισμοί"

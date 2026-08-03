@@ -39,6 +39,13 @@ fun LocalTime.minutesUntil(other: LocalTime): Int {
     return if (diff >= 0) diff else diff + 24 * 60
 }
 
+fun LocalTime.secondsUntil(other: LocalTime): Int {
+    val thisSecs = this.hour * 3600 + this.minute * 60 + this.second
+    val otherSecs = other.hour * 3600 + other.minute * 60 + other.second
+    val diff = otherSecs - thisSecs
+    return if (diff >= 0) diff else diff + 24 * 3600
+}
+
 fun LocalTime.toDisplayString(): String {
     val h = hour.toString().padStart(2, '0')
     val m = minute.toString().padStart(2, '0')
