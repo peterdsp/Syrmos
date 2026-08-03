@@ -214,6 +214,6 @@ class DataSeeder(
         // Bumped to 6: national rail + rail-replacement-bus trips are now
         // expanded into schedule_entity for offline departures. Without a bump
         // an existing install keeps its old rows and never sees them.
-        const val SEED_VERSION = "8"
+        const val SEED_VERSION = "9"
     }
 }

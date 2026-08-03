@@ -900,7 +900,8 @@
         // "a bus stands in here" without ever looking like a rail line.
         const isBus = line.type === "bus";
         const strokeColor = underConstruction ? MAP_TOKENS.greyedColor : (ld?.strokeColor || line.color);
-        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (line.type === "suburban" || isBus ? 4 : 5));
+        const isNarrow = line.type === "suburban" || line.type === "scenic" || isBus;
+        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (isNarrow ? 4 : 5));
         const polylineOpts = {
             color: strokeColor,
             weight: strokeWeight,
@@ -1052,6 +1053,7 @@
             case "tram": return "🚊";
             case "suburban":
             case "train": return "🚆";
+            case "scenic": return "🏔️";
             default: return "•";
         }
     }
@@ -1504,7 +1506,7 @@
                 ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
                 : "";
             return `
-                <div class="departure-card${entranceCls}">
+                <div class="departure-card${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minutesLabel}, at ${departure.time || ''}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
