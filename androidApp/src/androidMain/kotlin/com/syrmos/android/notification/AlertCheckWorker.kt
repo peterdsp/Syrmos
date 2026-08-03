@@ -4,7 +4,9 @@ import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.work.CoroutineWorker
@@ -123,6 +125,7 @@ class AlertCheckWorker(
             .setContentText(body)
             .setAutoCancel(true)
             .setStyle(Notification.BigTextStyle().bigText(body))
+            .setContentIntent(buildLaunchIntent("service_alert", id))
             .build()
         notificationManager.notify(NOTIF_BASE_ALERT + id.hashCode(), notification)
     }
@@ -154,6 +157,7 @@ class AlertCheckWorker(
             .setContentText(body)
             .setAutoCancel(true)
             .setStyle(Notification.BigTextStyle().bigText(body))
+            .setContentIntent(buildLaunchIntent("weather_alert", null))
             .build()
         notificationManager.notify(NOTIF_WEATHER, notification)
     }
@@ -209,6 +213,23 @@ class AlertCheckWorker(
                 )
             )
         }
+    }
+
+    private fun buildLaunchIntent(type: String, alertId: String?): PendingIntent {
+        val intent = appContext.packageManager
+            .getLaunchIntentForPackage(appContext.packageName)
+            ?.apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("notif_type", type)
+                if (alertId != null) putExtra("notif_alert_id", alertId)
+            }
+            ?: Intent()
+        return PendingIntent.getActivity(
+            appContext,
+            type.hashCode() + (alertId?.hashCode() ?: 0),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     companion object {

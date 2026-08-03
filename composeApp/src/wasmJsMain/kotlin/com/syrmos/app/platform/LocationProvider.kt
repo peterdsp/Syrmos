@@ -34,6 +34,8 @@ actual fun markWhatsNewSeen(version: String) {
 
 actual fun consumePendingAssistantQuery(): String? = null
 
+actual fun consumePendingNotificationDeepLink(): Pair<String, String?>? = null
+
 actual suspend fun requestNotificationPermission() {
     // Web does not support push notification permission via this path.
 }

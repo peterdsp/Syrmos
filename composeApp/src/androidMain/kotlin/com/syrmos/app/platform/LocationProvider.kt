@@ -104,6 +104,20 @@ actual fun consumePendingAssistantQuery(): String? {
     return current
 }
 
+data class NotificationDeepLink(val type: String, val alertId: String?)
+
+private val _pendingNotificationDeepLink = kotlinx.coroutines.flow.MutableStateFlow<NotificationDeepLink?>(null)
+
+fun setPendingNotificationDeepLink(type: String, alertId: String?) {
+    _pendingNotificationDeepLink.value = NotificationDeepLink(type, alertId)
+}
+
+actual fun consumePendingNotificationDeepLink(): Pair<String, String?>? {
+    val current = _pendingNotificationDeepLink.value ?: return null
+    _pendingNotificationDeepLink.value = null
+    return current.type to current.alertId
+}
+
 @SuppressLint("MissingPermission")
 actual suspend fun requestUserLocation(): UserLocation? = withContext(Dispatchers.IO) {
     val ctx = appContext ?: return@withContext null
