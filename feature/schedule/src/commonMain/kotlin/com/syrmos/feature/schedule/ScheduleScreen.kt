@@ -60,9 +60,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
+import com.syrmos.core.designsystem.component.SourceConfidenceChip
+import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.network.SyrmosSchedulesService
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -556,6 +559,10 @@ private fun FeaturedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
             )
+            SourceConfidenceChip(
+                confidence = d.sourceConfidence,
+                label = scheduleSourceLabel(d.sourceConfidence, lang),
+            )
         }
         Column(horizontalAlignment = Alignment.End) {
             if (isToday) {
@@ -612,6 +619,10 @@ private fun ExpandedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
+            )
+            SourceConfidenceChip(
+                confidence = d.sourceConfidence,
+                label = scheduleSourceLabel(d.sourceConfidence, lang),
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -814,6 +825,8 @@ internal data class AirportDeparture(
     val lineId: String,
     val isAirportBound: Boolean,
     val destinationLabel: String,
+    val sourceConfidence: com.syrmos.core.model.schedule.SourceConfidence =
+        com.syrmos.core.model.schedule.SourceConfidence.SCHEDULED,
 )
 
 internal object AirportProjection {
@@ -984,4 +997,13 @@ private fun String.toMinutesOfDay(): Int? {
     val h = parts[0].toIntOrNull() ?: return null
     val m = parts[1].toIntOrNull() ?: return null
     return h * 60 + m
+}
+
+private fun scheduleSourceLabel(sc: SourceConfidence, lang: AppLanguage): String = when (sc) {
+    SourceConfidence.LIVE -> L.LIVE.text(lang)
+    SourceConfidence.SCHEDULED -> L.SOURCE_SCHEDULED.text(lang)
+    SourceConfidence.ESTIMATED -> L.SOURCE_ESTIMATED.text(lang)
+    SourceConfidence.OFFLINE -> L.SOURCE_OFFLINE.text(lang)
+    SourceConfidence.OPERATOR_LINK -> L.SOURCE_OPERATOR.text(lang)
+    SourceConfidence.UNKNOWN -> ""
 }

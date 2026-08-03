@@ -59,6 +59,7 @@ import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import com.syrmos.core.designsystem.component.OfflinePill
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.schedule.SourceConfidence
@@ -774,34 +775,14 @@ private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
 
 @Composable
 private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
-    val live = freshness == DataFreshness.LIVE
-    val dot = if (live) SyrmosColorTokens.arrivalSoon else SyrmosColorTokens.estimated
-    val bg = if (live) SyrmosColorTokens.arrivalSoon.copy(alpha = 0.1f) else SyrmosColorTokens.estimated.copy(alpha = 0.1f)
-    val label = if (live) {
-        L.LIVE.text(lang)
-    } else {
-        "${L.RUNNING_OFFLINE.text(lang)} · ${L.PREDICTED_FROM_SCHEDULE.text(lang)}"
-    }
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(bg)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .width(8.dp)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(dot),
+    if (freshness == DataFreshness.LIVE) {
+        SourceConfidenceChip(
+            confidence = com.syrmos.core.model.schedule.SourceConfidence.LIVE,
+            label = L.LIVE.text(lang),
         )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
+    } else {
+        OfflinePill(
+            message = "${L.RUNNING_OFFLINE.text(lang)} · ${L.PREDICTED_FROM_SCHEDULE.text(lang)}",
         )
     }
 }
@@ -1191,7 +1172,8 @@ private fun sourceConfidenceLabel(sc: SourceConfidence, lang: AppLanguage): Stri
     SourceConfidence.SCHEDULED -> L.SOURCE_SCHEDULED.text(lang)
     SourceConfidence.ESTIMATED -> L.SOURCE_ESTIMATED.text(lang)
     SourceConfidence.OFFLINE -> L.SOURCE_OFFLINE.text(lang)
-    else -> null
+    SourceConfidence.OPERATOR_LINK -> L.SOURCE_OPERATOR.text(lang)
+    SourceConfidence.UNKNOWN -> null
 }
 
 /** "then" lead-in for the hero's follow-on departures list. */
