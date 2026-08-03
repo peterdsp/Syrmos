@@ -224,15 +224,14 @@
             .filter(function (w) { return w.length >= 4 && w.indexOf(' ') < 0; }),
     );
 
-    // Albanian / Latin-Greeklish station aliases, keyed by an accent-folded
-    // token in the EN or EL name. Mirrors the KMP AssistantVocabularyBuilder.
+    // Greeklish and extra SQ variants. Mirrors KMP AssistantVocabularyBuilder.
     const SQ_AND_LATIN_ALIASES = {
         'airport': ['Aeroport', 'Aeroporti'],
         'aerodromio': ['Aeroport', 'Aeroporti'],
         'piraeus': ['Pireas', 'Pireu'],
         'syntagma': ['Sintagma'],
         'thessaloniki': ['Selanik', 'Selaniku', 'Thesaloniki'],
-        'athens': ['Athina', 'Athine'],
+        'athens': ['Athina', 'Athine', 'Athinë'],
         'acropolis': ['Akropoli', 'Akropolis'],
         'omonia': ['Omonoia'],
         'monastiraki': ['Monastiraqi'],
@@ -247,6 +246,11 @@
         'patra': ['Patra', 'Patras'],
         'aghios': ['Agios'],
         'agios': ['Aghios'],
+        'corinth': ['Korinthi', 'Korinthos', 'Korinh'],
+        'korinthos': ['Corinth', 'Korinthi'],
+        'megara': ['Megara'],
+        'kiato': ['Kiato', 'Qiato'],
+        'chalkida': ['Halkidhe', 'Halkida', 'Chalkis'],
     };
 
     // MARK: - Vocab builder (mirrors AssistantVocabularyBuilder)
@@ -260,9 +264,7 @@
         const lines = (opts && opts.lines) || [];
 
         stationVocab = stations.map(function (st) {
-            const base = [st.name, st.nameEl || st.name_el].filter(Boolean);
-            // Albanian is first-class: augment key stations with Albanian /
-            // Latin-Greeklish spellings so SQ input resolves like EN/EL.
+            const base = [st.name, st.nameEl || st.name_el, st.nameSq || st.name_sq].filter(Boolean);
             const folded = fold(base.join(' '));
             const extra = [];
             for (const key in SQ_AND_LATIN_ALIASES) {

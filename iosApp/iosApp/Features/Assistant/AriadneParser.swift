@@ -86,10 +86,11 @@ struct AssistantVocabulary {
                 let extra = Self.sqAndLatinAliases
                     .filter { folded.contains($0.key) }
                     .flatMap { $0.value }
+                let base = [st.name, st.nameEl, st.nameSq].compactMap { $0 }
                 stationVocab.append(
                     StationVocab(
                         id: st.id,
-                        names: ([st.name, st.nameEl] + extra).filter { !$0.isEmpty },
+                        names: (base + extra).filter { !$0.isEmpty },
                         lineIds: st.lineIds
                     )
                 )
@@ -114,17 +115,15 @@ struct AssistantVocabulary {
         return AssistantVocabulary(stations: stationVocab, lines: lineVocab)
     }
 
-    /// Albanian / Latin-Greeklish station aliases, keyed by an accent-folded
-    /// token in the EN or EL name. Confident, real variants only. Mirrors the
-    /// KMP `AssistantVocabularyBuilder.SQ_AND_LATIN_ALIASES`. Long-term the
-    /// bundled Station should carry a `nameSq`; this closes the top gaps now.
+    /// Greeklish and extra SQ variants keyed by an accent-folded token from
+    /// the station's EN or EL name. Mirrors KMP's SQ_AND_LATIN_ALIASES.
     private static let sqAndLatinAliases: [String: [String]] = [
         "airport": ["Aeroport", "Aeroporti"],
         "aerodromio": ["Aeroport", "Aeroporti"],
         "piraeus": ["Pireas", "Pireu"],
         "syntagma": ["Sintagma"],
         "thessaloniki": ["Selanik", "Selaniku", "Thesaloniki"],
-        "athens": ["Athina", "Athine"],
+        "athens": ["Athina", "Athine", "Athinë"],
         "acropolis": ["Akropoli", "Akropolis"],
         "omonia": ["Omonoia"],
         "monastiraki": ["Monastiraqi"],
@@ -139,6 +138,11 @@ struct AssistantVocabulary {
         "patra": ["Patra", "Patras"],
         "aghios": ["Agios"],
         "agios": ["Aghios"],
+        "corinth": ["Korinthi", "Korinthos", "Korinh"],
+        "korinthos": ["Corinth", "Korinthi"],
+        "megara": ["Megara"],
+        "kiato": ["Kiato", "Qiato"],
+        "chalkida": ["Halkidhe", "Halkida", "Chalkis"],
     ]
 }
 
