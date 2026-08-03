@@ -121,6 +121,7 @@ struct SourceConfidenceChip: View {
         if confidence != .unknown {
             HStack(spacing: 5) {
                 Circle().fill(confidence.color).frame(width: 6, height: 6)
+                    .modifier(confidence == .live ? LivePulseOptional(active: true) : LivePulseOptional(active: false))
                 Text(confidence.label(language))
                     .font(.caption2).fontWeight(.semibold)
                     .foregroundColor(confidence.color)
@@ -128,6 +129,17 @@ struct SourceConfidenceChip: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(Capsule().fill(confidence.color.opacity(0.12)))
+        }
+    }
+}
+
+private struct LivePulseOptional: ViewModifier {
+    let active: Bool
+    func body(content: Content) -> some View {
+        if active {
+            content.livePulse()
+        } else {
+            content
         }
     }
 }

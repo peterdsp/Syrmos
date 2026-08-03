@@ -24,12 +24,12 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    answerSection
-                    alertsSection
-                    railNewsSection
-                    networkOverview
-                    nearMeSection
-                    liveTrainsSection
+                    answerSection.syrmosEntrance(index: 0)
+                    alertsSection.syrmosEntrance(index: 1)
+                    railNewsSection.syrmosEntrance(index: 2)
+                    networkOverview.syrmosEntrance(index: 3)
+                    nearMeSection.syrmosEntrance(index: 4)
+                    liveTrainsSection.syrmosEntrance(index: 5)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)

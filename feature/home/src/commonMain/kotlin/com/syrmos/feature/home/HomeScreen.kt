@@ -59,6 +59,7 @@ import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import com.syrmos.core.designsystem.animation.staggeredEntrance
 import com.syrmos.core.designsystem.component.OfflinePill
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.component.toComposeColor
@@ -225,7 +226,7 @@ fun HomeScreen(
 
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().staggeredEntrance(0),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 FreshnessPill(freshness = uiState.freshness, lang = lang)
@@ -245,6 +246,7 @@ fun HomeScreen(
         // tracking or use the Lines tab.
         if (activeTrack == null) {
             item {
+                Box(Modifier.staggeredEntrance(1)) {
                 AnswerHero(
                     next = uiState.nextDeparture,
                     line = uiState.nextDepartureLine,
@@ -284,30 +286,29 @@ fun HomeScreen(
                         }
                     },
                 )
+                }
             }
         }
 
         val lastTrain = uiState.lastTrain
         if (lastTrain != null) {
             item {
-                LastTrainTeaser(
-                    lastTrain = lastTrain,
-                    line = uiState.lastTrainLine,
-                    lang = lang,
-                )
+                Box(Modifier.staggeredEntrance(2)) {
+                    LastTrainTeaser(
+                        lastTrain = lastTrain,
+                        line = uiState.lastTrainLine,
+                        lang = lang,
+                    )
+                }
             }
         }
 
         val weather = uiState.weather
         if (weather != null) {
-            // Emergency weather card: only when the current condition is
-            // severe (heavy showers, thunderstorm, snow). Sits ABOVE the
-            // regular weather card so a user opening Home on a stormy day
-            // sees the safety message before the temperature.
             if (weather.current.condition.isSevere) {
-                item { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) }
+                item { Box(Modifier.staggeredEntrance(3)) { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) } }
             }
-            item { WeatherCard(snapshot = weather, lang = lang) }
+            item { Box(Modifier.staggeredEntrance(4)) { WeatherCard(snapshot = weather, lang = lang) } }
         }
 
         // Section order mirrors iOS: alerts/news + service status appear
@@ -354,7 +355,7 @@ fun HomeScreen(
         }
 
         item {
-            NetworkOverview(lines = uiState.lines, lang = lang)
+            Box(Modifier.staggeredEntrance(5)) { NetworkOverview(lines = uiState.lines, lang = lang) }
         }
 
         if (uiState.nearestStations.isNotEmpty()) {

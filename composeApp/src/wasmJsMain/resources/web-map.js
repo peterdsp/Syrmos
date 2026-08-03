@@ -1486,7 +1486,8 @@
         const sourceLabel = t(fromApi ? "scheduled" : "offline_snapshot");
         const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
 
-        stationDepartures.innerHTML = departures.map((departure) => {
+        stationDepartures.innerHTML = departures.map((departure, idx) => {
+            const entranceCls = idx <= 8 ? ` sy-entrance sy-entrance-${idx}` : "";
             const minutesLabel = formatMinutesAway(departure.minutesAway);
             const lineId = departure.line?.id || "";
             const destination = departure.destination || departure.direction || "";
@@ -1503,7 +1504,7 @@
                 ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
                 : "";
             return `
-                <div class="departure-card">
+                <div class="departure-card${entranceCls}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
