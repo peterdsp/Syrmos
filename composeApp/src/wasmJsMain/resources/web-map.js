@@ -3257,10 +3257,19 @@
             }
         }
 
-        function appendMessage(text, from) {
+        function appendMessage(text, from, sourceConf) {
             const el = document.createElement("div");
             el.className = "ariadne-msg " + (from === "user" ? "ariadne-msg--user" : "ariadne-msg--assistant");
             el.textContent = text;
+            if (from === "assistant" && sourceConf) {
+                const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
+                const chip = document.createElement("span");
+                chip.className = `src-chip src-chip--${sourceConf}`;
+                chip.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[sourceConf] || srcLabels.scheduled}`;
+                chip.style.marginTop = "6px";
+                chip.style.display = "inline-flex";
+                el.appendChild(chip);
+            }
             messages.appendChild(el);
             messages.scrollTop = messages.scrollHeight;
             return el;
@@ -3388,7 +3397,7 @@
         function respond(intent) {
             switch (intent.kind) {
                 case "help":
-                    return { text: ragEnrich(window.SyrmosAriadne.help(currentLang), { id: "capabilities_current" }) };
+                    return { text: ragEnrich(window.SyrmosAriadne.help(currentLang), { id: "capabilities_current" }), sourceConf: "offline" };
                 case "outOfScope":
                     return { text: window.SyrmosAriadne.outOfScope(currentLang) };
                 case "needsClarification":
@@ -3488,7 +3497,7 @@
                                 ? `Nis nga ${fromName} deri në ${leaveLabel} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
                                 : `Leave ${fromName} by ${leaveLabel} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`);
                     }
-                    return { text: msg };
+                    return { text: msg, sourceConf: leaveByExact ? "scheduled" : "estimated" };
                 }
                 case "weatherAt": {
                     const anchor = intent.stationId ? stationMap.get(intent.stationId) : null;
@@ -3501,6 +3510,7 @@
                         text: currentLang === "el" ? `Αναζήτηση καιρού για ${name}…`
                             : currentLang === "sq" ? `Po kërkoj motin për ${name}…`
                             : `Fetching weather for ${name}…`,
+                        sourceConf: "live",
                         act: async () => {
                             try {
                                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`;
@@ -3515,7 +3525,7 @@
                                     : currentLang === "sq"
                                     ? `${name} tani: ${temp}°C, ${cond}. Ndihet si ${feels}°C.`
                                     : `${name} right now: ${temp}°C, ${cond}. Feels like ${feels}°C.`;
-                                appendMessage(reply, "assistant");
+                                appendMessage(reply, "assistant", "live");
                             } catch (_) {
                                 appendMessage(
                                     currentLang === "el" ? "Δεν έχω δεδομένα καιρού. Δοκίμασε ξανά."
@@ -3531,6 +3541,7 @@
                     if (intent.stationId) {
                         return {
                             text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
+                            sourceConf: "scheduled",
                             departuresFor: stationMap.get(intent.stationId) || null,
                             act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
                         };
@@ -3540,6 +3551,7 @@
                     if (intent.stationId) {
                         return {
                             text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
+                            sourceConf: "scheduled",
                             act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
                         };
                     }
@@ -3550,6 +3562,7 @@
                         const openId = intent.stationId;
                         return {
                             text: t("ariadne_looking_up", { station: intent.stationId ? stationName(intent.stationId) : intent.lineId }),
+                            sourceConf: "scheduled",
                             act: () => { if (openId) { openStation(openId); if (window.innerWidth < 721) closePanel(); } },
                         };
                     }
@@ -3566,7 +3579,7 @@
                         : (currentLang === "el" ? `Ο ${nm} δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.`
                             : currentLang === "sq" ? `${nm} nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.`
                             : `${nm} is not marked step-free. Check for stairs-only access before you go.`);
-                    return { text: text };
+                    return { text: text, sourceConf: "offline" };
                 }
                 case "reverseTrip": {
                     const r = aSession.lastRoute;
@@ -3590,7 +3603,7 @@
                     }
                     const list = ids.join(", ");
                     return { text: currentLang === "el" ? `Ο ${nm} εξυπηρετείται από: ${list}.`
-                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.` : `${nm} is served by: ${list}.` };
+                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.` : `${nm} is served by: ${list}.`, sourceConf: "offline" };
                 }
                 case "stopsBetween": {
                     // The web has no JS stop-counting planner, so delegate to the
@@ -3609,6 +3622,7 @@
                 case "alerts": {
                     return {
                         text: t("ariadne_open_alerts"),
+                        sourceConf: "live",
                         act: () => window.open("https://www.stasy.gr/en/news/", "_blank", "noopener"),
                     };
                 }
@@ -3622,6 +3636,7 @@
                             from: stationName(from.id),
                             to: stationName(to.id),
                         }),
+                        sourceConf: "offline",
                         act: () => window.open(url, "_blank", "noopener"),
                     };
                 }
@@ -3634,12 +3649,14 @@
                         const url = `https://www.google.com/maps/dir/?api=1&origin=${from.latitude},${from.longitude}&destination=${to.latitude},${to.longitude}&travelmode=transit`;
                         return {
                             text: t("ariadne_open_route", { from: stationName(from.id), to: stationName(to.id) }),
+                            sourceConf: "offline",
                             act: () => window.open(url, "_blank", "noopener"),
                         };
                     }
                     // No named origin: use the browser location, else ask.
                     return {
                         text: t("ariadne_eta_locating", { station: stationName(to.id) }),
+                        sourceConf: "estimated",
                         act: () => {
                             if (!navigator.geolocation) {
                                 appendMessage(t("ariadne_eta_ask_origin"), "assistant");
@@ -3663,18 +3680,94 @@
                         a: line.terminalA || line.terminal_a || "",
                         b: line.terminalB || line.terminal_b || "",
                     });
-                    return { text: ragEnrich(base, { id: "line_" + String(intent.lineId).split("_")[0], query: intent.lineId + " line overview", types: ["line"] }) };
+                    return { text: ragEnrich(base, { id: "line_" + String(intent.lineId).split("_")[0], query: intent.lineId + " line overview", types: ["line"] }), sourceConf: "offline" };
                 }
                 case "explainFare": {
                     // Grounded from -> to fare when both endpoints are known;
                     // otherwise the general ticket-price guidance.
                     const fareFrom = intent.from ? stationMap.get(intent.from) : null;
                     const fareTo = intent.to ? stationMap.get(intent.to) : null;
-                    if (fareFrom && fareTo) return { text: fareAnswerText(fareFrom, fareTo) };
-                    return { text: ragEnrich(t("ariadne_fare"), { query: "ticket validation fare price airport points of supply", types: ["fare_info", "fare"] }) };
+                    if (fareFrom && fareTo) return { text: fareAnswerText(fareFrom, fareTo), sourceConf: "offline" };
+                    return { text: ragEnrich(t("ariadne_fare"), { query: "ticket validation fare price airport points of supply", types: ["fare_info", "fare"] }), sourceConf: "offline" };
                 }
                 case "find":
                     return { text: t("ariadne_no_station") };
+                case "wrongTrain": {
+                    const st = intent.stationId ? stationMap.get(intent.stationId) : null;
+                    const nm = st ? stationName(st.id) : null;
+                    const text = nm
+                        ? (currentLang === "el"
+                            ? `Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο πίσω προς ${nm}.`
+                            : currentLang === "sq"
+                            ? `Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt drejt ${nm}.`
+                            : `Get off at the next stop and take the reverse service back towards ${nm}.`)
+                        : (currentLang === "el"
+                            ? "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο."
+                            : currentLang === "sq"
+                            ? "Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt."
+                            : "Get off at the next stop and take the reverse service.");
+                    return { text, sourceConf: "offline" };
+                }
+                case "missedStop": {
+                    const target = intent.targetStationId ? stationMap.get(intent.targetStationId) : null;
+                    const tName = target ? stationName(target.id) : null;
+                    const text = tName
+                        ? (currentLang === "el"
+                            ? `Κατέβα στον επόμενο σταθμό και γύρνα πίσω προς ${tName}.`
+                            : currentLang === "sq"
+                            ? `Zbrit në stacionin e ardhshëm dhe kthehu drejt ${tName}.`
+                            : `Get off at the next stop and double back to ${tName}.`)
+                        : (currentLang === "el"
+                            ? "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο."
+                            : currentLang === "sq"
+                            ? "Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt."
+                            : "Get off at the next stop and take the reverse service.");
+                    return { text, sourceConf: "offline" };
+                }
+                case "canIStillMakeIt": {
+                    const to = intent.toStationId ? stationMap.get(intent.toStationId) : null;
+                    const from = intent.fromStationId ? stationMap.get(intent.fromStationId) : null;
+                    if (!to) return { text: t("ariadne_no_station") };
+                    const toName = stationName(to.id);
+                    const fromName = from ? stationName(from.id) : null;
+                    const boardNodeId = from ? (rawIdToNodeId.get(from.id) || nodeIdFor(from.id)) : null;
+                    const boardNode = boardNodeId ? stationNodeMap.get(boardNodeId) : null;
+                    let nextDep = null;
+                    if (boardNode && typeof buildStationDepartures === "function") {
+                        try {
+                            const deps = buildStationDepartures(boardNode) || [];
+                            const now = new Date();
+                            const nowMin = now.getHours() * 60 + now.getMinutes();
+                            for (const d of deps) {
+                                const m = /^(\d{1,2}):(\d{2})$/.exec(d.time || "");
+                                if (!m) continue;
+                                const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+                                if (mins > nowMin) { nextDep = { time: d.time, mins }; break; }
+                            }
+                        } catch (_) {}
+                    }
+                    if (nextDep && fromName) {
+                        const wait = nextDep.mins - (new Date().getHours() * 60 + new Date().getMinutes());
+                        const text = currentLang === "el"
+                            ? `Ναι. Επόμενο δρομολόγιο από ${fromName} στις ${nextDep.time} (σε ${wait} λεπτά) προς ${toName}.`
+                            : currentLang === "sq"
+                            ? `Po. Treni i ardhshëm nga ${fromName} në ${nextDep.time} (pas ${wait} minutash) drejt ${toName}.`
+                            : `Yes. Next service from ${fromName} at ${nextDep.time} (${wait} min away) towards ${toName}.`;
+                        return { text, sourceConf: "scheduled" };
+                    }
+                    const text = fromName
+                        ? (currentLang === "el"
+                            ? `Δεν βρήκα επόμενο δρομολόγιο από ${fromName} προς ${toName}. Δοκίμασε "δρομολόγια ${fromName}".`
+                            : currentLang === "sq"
+                            ? `Nuk gjeta nisje të ardhshme nga ${fromName} drejt ${toName}. Provo "nisjet ${fromName}".`
+                            : `I couldn't find an upcoming service from ${fromName} to ${toName}. Try "departures ${fromName}".`)
+                        : (currentLang === "el"
+                            ? `Πες μου από ποιον σταθμό ξεκινάς, για να ελέγξω αν προλαβαίνεις.`
+                            : currentLang === "sq"
+                            ? `Më thuaj nga cili stacion nisesh, që të kontrolloj nëse e arrin.`
+                            : `Tell me which station you're at so I can check if you can make it.`);
+                    return { text, sourceConf: "estimated" };
+                }
                 default:
                     return { text: window.SyrmosAriadne.outOfScope(currentLang) };
             }
@@ -3866,13 +3959,10 @@
                     return;
                 }
                 const reply = respond(finalIntent);
-                appendMessage(reply.text, "assistant");
-                // For a departures answer, follow the "Looking up X..." line with
-                // the actual next trains in a second bubble once the projector
-                // resolves, so the chat itself carries the times.
+                appendMessage(reply.text, "assistant", reply.sourceConf);
                 if (reply.departuresFor) {
                     departuresSummary(reply.departuresFor).then((summary) => {
-                        if (summary) appendMessage(summary, "assistant");
+                        if (summary) appendMessage(summary, "assistant", "scheduled");
                     });
                 }
                 if (reply.act) setTimeout(reply.act, 400);

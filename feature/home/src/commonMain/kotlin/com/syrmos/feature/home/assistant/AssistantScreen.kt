@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.core.animateFloat
@@ -268,6 +269,9 @@ private fun MessageBubble(
                         }
                     },
                 )
+            }
+            if (!msg.fromUser && msg.sourceConfidence != null) {
+                SourceConfidenceChip(confidence = msg.sourceConfidence)
             }
         }
         }  // Row (avatar + bubble)

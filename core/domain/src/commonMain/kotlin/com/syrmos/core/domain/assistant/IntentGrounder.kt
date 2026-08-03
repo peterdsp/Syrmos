@@ -59,6 +59,9 @@ object IntentGrounder {
             "explainfare" -> AssistantIntent.ExplainFare(bool(json, "airport"), station, toStation)
             "showalerts" -> AssistantIntent.ShowAlerts(line)
             "weatherat" -> AssistantIntent.WeatherAt(station)
+            "wrongtrain" -> AssistantIntent.WrongTrain(station, line)
+            "missedstop" -> AssistantIntent.MissedStop(station, toStation)
+            "canistillmakeit" -> AssistantIntent.CanIStillMakeIt(toStation, station)
             "help" -> AssistantIntent.Help
             "outofscope" -> AssistantIntent.OutOfScope
             else -> null
