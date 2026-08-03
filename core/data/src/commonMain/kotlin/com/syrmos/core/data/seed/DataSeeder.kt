@@ -69,11 +69,14 @@ class DataSeeder(
                     id = station.id,
                     name = station.name,
                     name_el = station.nameEl,
+                    name_sq = station.nameSq,
                     latitude = station.latitude,
                     longitude = station.longitude,
                     is_interchange = if (station.isInterchange) 1L else 0L,
                     accessibility = if (station.accessibility) 1L else 0L,
                     zone = station.zone.toLong(),
+                    region = station.region,
+                    source_confidence = station.sourceConfidence,
                 )
             }
 
@@ -211,6 +214,6 @@ class DataSeeder(
         // Bumped to 6: national rail + rail-replacement-bus trips are now
         // expanded into schedule_entity for offline departures. Without a bump
         // an existing install keeps its old rows and never sees them.
-        const val SEED_VERSION = "6"
+        const val SEED_VERSION = "7"
     }
 }

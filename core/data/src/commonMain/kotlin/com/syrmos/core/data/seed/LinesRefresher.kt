@@ -66,11 +66,14 @@ class LinesRefresher(
                             id = station.id,
                             name = station.name,
                             name_el = station.nameEl,
+                            name_sq = null,
                             latitude = station.lat,
                             longitude = station.lng,
                             is_interchange = 0L,
                             accessibility = 0L,
                             zone = 1L,
+                            region = line.region,
+                            source_confidence = "scheduled",
                         )
                     }
                     // Station-line ordering is authored on the server, so always
