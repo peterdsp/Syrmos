@@ -65,6 +65,7 @@
             live: "Live",
             estimated: "Estimated",
             offline_snapshot: "Offline snapshot",
+            check_operator: "Check operator",
             unknown: "unknown",
             next: "next",
             reduced: "Reduced",
@@ -136,6 +137,7 @@
             live: "Ζωντανά",
             estimated: "Εκτίμηση",
             offline_snapshot: "Εκτός σύνδεσης",
+            check_operator: "Δείτε πάροχο",
             unknown: "άγνωστο",
             next: "επόμενος",
             reduced: "Μειωμένο",
@@ -207,6 +209,7 @@
             live: "Drejtpërdrejt",
             estimated: "Vlerësim",
             offline_snapshot: "Pa internet",
+            check_operator: "Kontrolloni operatorin",
             unknown: "i panjohur",
             next: "tjetër",
             reduced: "Me zbritje",
@@ -2260,7 +2263,11 @@
             if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); }
             else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now"); }
             else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now"); }
-            el(".hero-card__chip").textContent = `● ${t("scheduled")}`;
+            const chipEl = el(".hero-card__chip");
+            const srcConf = next.sourceConfidence || "scheduled";
+            const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
+            chipEl.className = `src-chip src-chip--${srcConf}`;
+            chipEl.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[srcConf] || srcLabels.scheduled}`;
 
             // Answer-first peek line.
             if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;

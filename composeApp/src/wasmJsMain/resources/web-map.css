@@ -861,6 +861,20 @@ body {
 .src-chip--scheduled { color: var(--sy-scheduled, #2563EB); background: color-mix(in srgb, var(--sy-scheduled, #2563EB) 12%, transparent); }
 .src-chip--estimated { color: var(--sy-estimated, #B45309); background: color-mix(in srgb, var(--sy-estimated, #B45309) 12%, transparent); }
 .src-chip--offline { color: var(--sy-offline, #6B7280); background: color-mix(in srgb, var(--sy-offline, #6B7280) 12%, transparent); }
+.src-chip--operator { color: var(--sy-brand, #2139A1); background: color-mix(in srgb, var(--sy-brand, #2139A1) 12%, transparent); }
+
+.offline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sy-on-surface-muted, #6B7280);
+    background: color-mix(in srgb, var(--sy-offline, #6B7280) 14%, transparent);
+}
+.offline-pill__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sy-offline, #6B7280); flex: none; }
 
 .departure-card__pill {
     display: inline-flex;
