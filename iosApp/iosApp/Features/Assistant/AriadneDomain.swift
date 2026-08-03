@@ -258,6 +258,7 @@ enum Exposure: Equatable {
             case .tram: return .exposed
             case .suburban: return .mixed
             case .bus: return .exposed
+            case .scenic: return .exposed
             }
         }
         let es = types.map(e)

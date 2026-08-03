@@ -164,6 +164,7 @@ enum JourneyPlanner {
         case .tram: return 3
         case .suburban: return 4
         case .bus: return 4
+        case .scenic: return 5
         }
     }
 
