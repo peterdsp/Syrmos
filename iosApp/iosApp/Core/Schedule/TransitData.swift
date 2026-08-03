@@ -167,6 +167,19 @@ struct Departure: Identifiable {
     /// already at the platform, "5 min" for the close ones, and
     /// "3h 21min" when the next service is hours away (typical for
     /// late-night views or stations far downstream of a terminus).
+    func secondsAway(from now: Date) -> Int {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count >= 2 else { return minutesAway * 60 }
+        let cal = Calendar(identifier: .gregorian)
+        let tz = TimeZone(identifier: "Europe/Athens")!
+        var comps = cal.dateComponents(in: tz, from: now)
+        let nowSecs = (comps.hour ?? 0) * 3600 + (comps.minute ?? 0) * 60 + (comps.second ?? 0)
+        let depSecs = parts[0] * 3600 + parts[1] * 60
+        var diff = depSecs - nowSecs
+        if diff < -60 { diff += 86400 }
+        return max(diff, 0)
+    }
+
     func minutesAwayDisplay(language: AppLanguage) -> String {
         if minutesAway <= 1 {
             switch language {
