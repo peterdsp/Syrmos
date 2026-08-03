@@ -247,6 +247,9 @@ struct AriadneView: View {
                     }
                     .foregroundStyle(message.fromUser ? Color.white : Color.primary)
                 }
+                if !message.fromUser && message.sourceConfidence != .unknown {
+                    SourceConfidenceChip(confidence: message.sourceConfidence, language: loc.language)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)

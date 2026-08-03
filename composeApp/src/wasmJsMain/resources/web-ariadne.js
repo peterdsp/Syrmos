@@ -182,6 +182,28 @@
         'sa gjate', 'sa minuta', 'sa ore', 'sa larg', 'sa kohe',
     ];
     const STATION_NOUN_WORDS = ['station', 'σταθμ', 'stacion'];
+    const WRONG_TRAIN_PHRASES = [
+        'wrong train', 'wrong line', 'wrong metro', 'wrong tram', 'wrong direction',
+        'took the wrong', 'on the wrong', 'going the wrong way', 'wrong way',
+        'λαθοσ τρενο', 'λαθοσ γραμμη', 'λαθοσ μετρο', 'λαθοσ τραμ', 'λαθοσ κατευθυνση',
+        'πηρα λαθοσ', 'παω λαθοσ',
+        'tren i gabuar', 'linja e gabuar', 'drejtim i gabuar', 'gabim treni',
+        'mora gabim', 'shkoj gabim',
+    ];
+    const MISSED_STOP_PHRASES = [
+        'missed my stop', 'missed my station', 'missed the stop', 'went past',
+        'passed my stop', 'overshot', 'went too far', 'past my station',
+        'εχασα τη σταση', 'εχασα τον σταθμο', 'περασα τη σταση', 'πηγα παρακατω',
+        'εχασα τη στασ', 'περασα τον σταθμο',
+        'humba stacionin', 'kalova stacionin', 'shkova me larg', 'humba ndalesën',
+        'e kalova', 'shkova tej',
+    ];
+    const CAN_I_STILL_MAKE_IT_PHRASES = [
+        'can i still make it', 'can i make it', 'will i make it', 'am i going to make it',
+        'do i have time', 'is there still time', 'can i catch',
+        'προλαβαινω', 'θα προλαβω', 'εχω χρονο', 'θα το πιασω',
+        'a do ta arrij', 'a kam kohe', 'a e kap', 'a do ta kap', 'a arrij ne kohe',
+    ];
     const TOMORROW_WORDS = ['tomorrow', 'αυριο', 'neser'];
     const WEEKEND_WORDS = ['weekend', 'σαββατοκυριακο', 'fundjave'];
     const SATURDAY_WORDS = ['saturday', 'σαββατο', 'te shtune', 'shtune'];
@@ -196,6 +218,7 @@
                 FARE_WORDS, FAVORITE_WORDS, AIRPORT_WORDS, ALERT_WORDS, MAP_WORDS,
                 WEATHER_WORDS, ACCESSIBILITY_WORDS, REVERSE_PHRASES, FIRST_TRAIN_PHRASES,
                 WHICH_LINES_WORDS, STOPS_BETWEEN_WORDS,
+                WRONG_TRAIN_PHRASES, MISSED_STOP_PHRASES, CAN_I_STILL_MAKE_IT_PHRASES,
                 TOMORROW_WORDS, WEEKEND_WORDS, SATURDAY_WORDS, SUNDAY_WORDS)
             .map(fold)
             .filter(function (w) { return w.length >= 4 && w.indexOf(' ') < 0; }),
@@ -521,6 +544,18 @@
         // with no newly-named station. The dispatcher flips the last route.
         if (mentionedStations.length === 0 && containsAny(text, REVERSE_PHRASES)) {
             return { kind: 'reverseTrip' };
+        }
+
+        // Recovery intents (before planning so "wrong train to X" is recovery)
+        if (containsAny(text, WRONG_TRAIN_PHRASES)) {
+            return { kind: 'wrongTrain', stationId: mentionedStations[0] || null, lineId: matchLine(text) };
+        }
+        if (containsAny(text, MISSED_STOP_PHRASES)) {
+            return { kind: 'missedStop', stationId: mentionedStations[0] || null, targetStationId: mentionedStations[0] || null };
+        }
+        if (containsAny(text, CAN_I_STILL_MAKE_IT_PHRASES)) {
+            const ep = resolveTripEndpoints(text, mentionedStations);
+            return { kind: 'canIStillMakeIt', toStationId: ep.to || mentionedStations[0] || null, fromStationId: ep.from || null };
         }
 
         const strongTransit = mentionedStations.length > 0 ||

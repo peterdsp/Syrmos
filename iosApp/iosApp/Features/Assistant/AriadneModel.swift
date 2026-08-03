@@ -6,6 +6,7 @@ struct AriadneMessage: Identifiable {
     let fromUser: Bool
     let text: String
     var departures: [Departure] = []
+    var sourceConfidence: SourceConfidence = .unknown
 }
 
 /// Ariadne's iOS resolver. Parses offline with `AthensTransitParser`, then
@@ -220,6 +221,12 @@ final class AriadneModel: ObservableObject {
             return await resolveStationStatus(stationId: stationId)
         case let .setCurrentLocation(stationId):
             return resolveSetLocation(stationId: stationId)
+        case let .wrongTrain(stationId, lineId):
+            return resolveWrongTrain(stationId: stationId, lineId: lineId)
+        case let .missedStop(stationId, targetStationId):
+            return resolveMissedStop(stationId: stationId, targetStationId: targetStationId)
+        case let .canIStillMakeIt(toStationId, fromStationId):
+            return resolveCanIStillMakeIt(to: toStationId, from: fromStationId)
         }
     }
 
@@ -283,6 +290,17 @@ final class AriadneModel: ObservableObject {
                 session.lastDestination = r.fromStationId
             }
             session.lastIntent = intent
+        case let .wrongTrain(stationId, lineId):
+            session.currentStation = stationId ?? session.currentStation
+            session.currentLine = lineId ?? session.currentLine
+            session.lastIntent = intent
+        case let .missedStop(stationId, _):
+            session.currentStation = stationId ?? session.currentStation
+            session.lastIntent = intent
+        case let .canIStillMakeIt(toStationId, fromStationId):
+            session.currentStation = fromStationId ?? session.currentStation
+            session.lastDestination = toStationId ?? session.lastDestination
+            session.lastIntent = intent
         case .needsClarification:
             break
         default:
@@ -304,6 +322,89 @@ final class AriadneModel: ObservableObject {
             "Në rregull. Do ta përdor \(stationName) si stacionin tënd të nisjes."))
     }
 
+    // MARK: - Recovery intents
+
+    /// Recovery: wrong train. Find the next interchange on the current line so
+    /// the user can transfer to the right one. Calming, trilingual.
+    private func resolveWrongTrain(stationId: String?, lineId: String?) -> AriadneMessage {
+        let currentLineId = lineId ?? session.currentLine
+        guard let currentLineId else {
+            return bot(t(
+                "Stay calm. Get off at the next station and look for a platform going the other direction. Which line are you on?",
+                "Ηρέμησε. Κατέβα στον επόμενο σταθμό και βρες την αποβάθρα για την αντίθετη κατεύθυνση. Σε ποια γραμμή είσαι;",
+                "Qetësohu. Zbrit te stacioni i ardhshëm dhe gjej platformën për drejtimin tjetër. Në cilën linjë je?"), confidence: .scheduled)
+        }
+        let lineStations = SyrmosData.stations(for: normalizeLine(currentLineId))
+        // Find an interchange station on this line where the user can switch.
+        let interchange = lineStations.first(where: { $0.isInterchange })
+        if let interchange {
+            let stName = name(interchange)
+            let otherLines = interchange.lineIds.filter { $0 != normalizeLine(currentLineId) }.map { displayLine($0) }.joined(separator: ", ")
+            return bot(t(
+                "Stay calm. Get off at \(stName), the next interchange. You can transfer to \(otherLines) there.",
+                "Ηρέμησε. Κατέβα στον \(stName), τον επόμενο κόμβο. Εκεί μπορείς να αλλάξεις σε \(otherLines).",
+                "Qetësohu. Zbrit te \(stName), ndërrimi i ardhshëm. Aty mund të kalosh te \(otherLines)."), confidence: .scheduled)
+        }
+        return bot(t(
+            "Stay calm. Get off at the next station and take the opposite direction back.",
+            "Ηρέμησε. Κατέβα στον επόμενο σταθμό και πάρε την αντίθετη κατεύθυνση.",
+            "Qetësohu. Zbrit te stacioni i ardhshëm dhe merr drejtimin e kundërt."), confidence: .scheduled)
+    }
+
+    /// Recovery: missed stop. Tell the user to stay on, get off at the next
+    /// station, and take the opposite direction back. Calm, trilingual.
+    private func resolveMissedStop(stationId: String?, targetStationId: String?) -> AriadneMessage {
+        if let targetId = targetStationId, let target = station(targetId) {
+            let targetName = name(target)
+            return bot(t(
+                "No worries. Get off at the next station, cross to the opposite platform, and ride back to \(targetName).",
+                "Μην ανησυχείς. Κατέβα στον επόμενο σταθμό, πέρασε στην απέναντι αποβάθρα και γύρνα πίσω στον \(targetName).",
+                "Mos u shqetëso. Zbrit te stacioni i ardhshëm, kalo te platforma e kundërt dhe kthehu te \(targetName)."), confidence: .scheduled)
+        }
+        return bot(t(
+            "No worries. Get off at the next station and take the train in the opposite direction back.",
+            "Μην ανησυχείς. Κατέβα στον επόμενο σταθμό και πάρε το τρένο στην αντίθετη κατεύθυνση.",
+            "Mos u shqetëso. Zbrit te stacioni i ardhshëm dhe merr trenin në drejtimin e kundërt."), confidence: .scheduled)
+    }
+
+    /// Recovery: can I still make it? Check if there are departures that get the
+    /// user to their destination in time.
+    private func resolveCanIStillMakeIt(to: String?, from: String?) -> AriadneMessage {
+        let toId = to ?? session.lastDestination
+        guard let toId else {
+            return bot(t(
+                "Make it to where? Tell me the station you're trying to reach.",
+                "Να προλάβεις πού; Πες μου ποιον σταθμό θέλεις να φτάσεις.",
+                "Të arrish ku? Më thuaj cilin stacion po përpiqesh të arrish."))
+        }
+        let fromId = from ?? session.currentStation
+        guard let fromId else {
+            return bot(t(
+                "Where are you now? Tell me your current station.",
+                "Πού είσαι τώρα; Πες μου τον σταθμό σου.",
+                "Ku je tani? Më thuaj stacionin tënd aktual."))
+        }
+        guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
+            return bot(t(
+                "I couldn't find a rail route between those stations.",
+                "Δεν βρήκα σιδηροδρομική διαδρομή μεταξύ αυτών των σταθμών.",
+                "Nuk gjeta rrugë hekurudhore mes këtyre stacioneve."), confidence: .scheduled)
+        }
+        let toName = stationName(toId)
+        let deps = ScheduleProjector.nextDepartures(for: fromId, lineIds: plan.legs.map { $0.lineId }, limit: 1)
+        if deps.isEmpty {
+            return bot(t(
+                "Service has ended for tonight. No more trains to \(toName) right now.",
+                "Τα δρομολόγια τελείωσαν για απόψε. Δεν υπάρχουν άλλα τρένα προς \(toName) τώρα.",
+                "Shërbimi ka mbaruar për sonte. Nuk ka më trena për te \(toName) tani."), confidence: .scheduled)
+        }
+        let fromName = stationName(fromId)
+        return bot(t(
+            "Yes, you can still make it. The trip from \(fromName) to \(toName) takes about \(plan.totalMinutes) min. There are still trains running.",
+            "Ναι, μπορείς ακόμα να προλάβεις. Η διαδρομή από \(fromName) προς \(toName) κάνει περίπου \(plan.totalMinutes) λεπτά. Υπάρχουν ακόμα δρομολόγια.",
+            "Po, mund ta arrish akoma. Udhëtimi nga \(fromName) te \(toName) zgjat rreth \(plan.totalMinutes) min. Ka akoma trena."), confidence: .scheduled)
+    }
+
     /// Honest station status: lead with any live advisory, else the timetable.
     private func resolveStationStatus(stationId: String?) async -> AriadneMessage {
         guard let id = stationId, let st = station(id) else { return bot(clarify(.station)) }
@@ -314,7 +415,7 @@ final class AriadneModel: ObservableObject {
             notices: currentNotices(),
             severeWeather: WeatherStore.shared.snapshot?.current.condition.isSevere == true
         )
-        return bot(stationStatusText(name: name(st), advisory: advisory))
+        return bot(stationStatusText(name: name(st), advisory: advisory), confidence: .live)
     }
 
     private func stationStatusText(name: String, advisory: ServiceAdvisory) -> String {
@@ -410,15 +511,15 @@ final class AriadneModel: ObservableObject {
         let arriveLabel = formatClock(effective % (24 * 60))
 
         if slack < 0 {
-            return bot(arrivalMissed(to: toName, arrive: arriveLabel, minutesOver: -slack))
+            return bot(arrivalMissed(to: toName, arrive: arriveLabel, minutesOver: -slack), confidence: .scheduled)
         }
         if slack < 5 {
-            return bot(arrivalTight(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack))
+            return bot(arrivalTight(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack), confidence: .scheduled)
         }
         if slack > duration + 45 {
-            return bot(arrivalEarly(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack))
+            return bot(arrivalEarly(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack), confidence: .scheduled)
         }
-        return bot(arrivalOk(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack))
+        return bot(arrivalOk(from: fromName, leaveBy: leaveLabel, to: toName, arrive: arriveLabel, slack: slack), confidence: .scheduled)
     }
 
     private func name(_ id: String) -> String {
@@ -478,17 +579,17 @@ final class AriadneModel: ObservableObject {
         let anchor = weatherAnchor(stationId: stationId)
         guard let anchor else {
             if let snap = weather.snapshot {
-                return bot(formatWeather(snap: snap, placeName: snap.placeName))
+                return bot(formatWeather(snap: snap, placeName: snap.placeName), confidence: .live)
             }
-            return bot(weatherUnavailable())
+            return bot(weatherUnavailable(), confidence: .estimated)
         }
         // Trigger a fresh fetch; iOS WeatherStore refreshes centrally, so
         // we just ask for a refresh at that coord and read snapshot back.
         await weather.refresh(latitude: anchor.lat, longitude: anchor.lng, placeName: anchor.name)
         if let snap = weather.snapshot {
-            return bot(formatWeather(snap: snap, placeName: anchor.name))
+            return bot(formatWeather(snap: snap, placeName: anchor.name), confidence: .live)
         }
-        return bot(weatherUnavailable())
+        return bot(weatherUnavailable(), confidence: .estimated)
     }
 
     private struct WeatherAnchor { let lat: Double; let lng: Double; let name: String }
@@ -639,7 +740,7 @@ final class AriadneModel: ObservableObject {
                 "Nuk ka më trena nga \(name(station)) tani."))
         }
         let header = t("Next from \(name(station)):", "Επόμενα από \(name(station)):", "Të ardhshmet nga \(name(station)):")
-        return AriadneMessage(fromUser: false, text: header, departures: Array(deps.prefix(4)))
+        return AriadneMessage(fromUser: false, text: header, departures: Array(deps.prefix(4)), sourceConfidence: .scheduled)
     }
 
     /// "this weekend / tomorrow / Saturday": project that whole service day from
@@ -652,12 +753,12 @@ final class AriadneModel: ObservableObject {
         if deps.isEmpty {
             return bot(t("I don't have \(label)'s schedule for \(name(station)) offline.",
                 "Δεν έχω το πρόγραμμα \(label) για \(name(station)) εκτός σύνδεσης.",
-                "Nuk e kam orarin \(label) për \(name(station)) pa internet."))
+                "Nuk e kam orarin \(label) për \(name(station)) pa internet."), confidence: .offline)
         }
         let times = deps.prefix(4).map { "\($0.lineId) \($0.time)" }.joined(separator: ", ")
         return bot(t("First trains \(label) from \(name(station)): \(times).",
             "Πρώτα δρομολόγια \(label) από \(name(station)): \(times).",
-            "Trenat e parë \(label) nga \(name(station)): \(times)."))
+            "Trenat e parë \(label) nga \(name(station)): \(times)."), confidence: .scheduled)
     }
 
     /// Days from today to the requested DayContext (Athens calendar). Mirrors
@@ -802,11 +903,11 @@ final class AriadneModel: ObservableObject {
         guard let last = ScheduleProjector.lastTrainTonight(for: station.id, lineIds: [line]) else {
             return bot(t("Service is over for tonight at \(name(station)).",
                 "Τα δρομολόγια για απόψε τελείωσαν στον \(name(station)).",
-                "Shërbimi për sonte ka mbaruar te \(name(station))."))
+                "Shërbimi për sonte ka mbaruar te \(name(station))."), confidence: .scheduled)
         }
         return bot(t("Last \(displayLine(last.lineId)) from \(name(station)) leaves at \(last.time). Leave by then.",
             "Ο τελευταίος \(displayLine(last.lineId)) από \(name(station)) φεύγει \(last.time). Φύγε ως τότε.",
-            "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë."))
+            "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë."), confidence: .scheduled)
     }
 
     /// First / earliest scheduled train of today at a station (mirror of last train).
@@ -820,11 +921,11 @@ final class AriadneModel: ObservableObject {
         guard let first = deps.min(by: { $0.minutesAway < $1.minutesAway }) else {
             return bot(t("I don't have today's schedule for \(name(station)) offline.",
                 "Δεν έχω το σημερινό πρόγραμμα για \(name(station)) εκτός σύνδεσης.",
-                "Nuk e kam orarin e sotëm për \(name(station)) pa internet."))
+                "Nuk e kam orarin e sotëm për \(name(station)) pa internet."), confidence: .offline)
         }
         return bot(t("First \(displayLine(first.lineId)) from \(name(station)) is at \(first.time).",
             "Το πρώτο \(displayLine(first.lineId)) από \(name(station)) είναι στις \(first.time).",
-            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time)."))
+            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time)."), confidence: .scheduled)
     }
 
     /// Step-free accessibility for one station, from the bundled flag. Never invented.
@@ -834,11 +935,11 @@ final class AriadneModel: ObservableObject {
         if AriadneAccessibility.isAccessible(id) {
             return bot(t("\(n) is step-free accessible (lift / level access).",
                 "Ο \(n) είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).",
-                "\(n) është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë)."))
+                "\(n) është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë)."), confidence: .offline)
         }
         return bot(t("\(n) is not marked step-free. Check for stairs-only access before you go.",
             "Ο \(n) δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.",
-            "\(n) nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë."))
+            "\(n) nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë."), confidence: .offline)
     }
 
     /// "and back?" — reverse the remembered route and re-plan.
@@ -864,7 +965,7 @@ final class AriadneModel: ObservableObject {
         let list = lineIds.joined(separator: ", ")
         return bot(t("\(n) is served by: \(list).",
             "Ο \(n) εξυπηρετείται από: \(list).",
-            "\(n) shërbehet nga: \(list)."))
+            "\(n) shërbehet nga: \(list)."), confidence: .offline)
     }
 
     /// "How many stops / how far from A to B?" — stop count + rough duration.
@@ -884,7 +985,7 @@ final class AriadneModel: ObservableObject {
             : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
         return bot(t("\(fromN) to \(toN) is \(stops) stops, about \(plan.totalMinutes) min (\(changePart)).",
             "\(fromN) προς \(toN) είναι \(stops) στάσεις, περίπου \(plan.totalMinutes) λεπτά (\(changePart)).",
-            "\(fromN) te \(toN) janë \(stops) stacione, rreth \(plan.totalMinutes) min (\(changePart))."))
+            "\(fromN) te \(toN) janë \(stops) stacione, rreth \(plan.totalMinutes) min (\(changePart))."), confidence: .scheduled)
     }
 
     /// Full point-to-point routing via `JourneyPlanner` (Dijkstra), matching
@@ -946,7 +1047,7 @@ final class AriadneModel: ObservableObject {
         let caveat = advisory.top.map { "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ") + $0.text } ?? ""
         return bot(t("\(legs). About \(best.totalMinutes) min, \(transfers).",
             "\(legs). Περίπου \(best.totalMinutes) λεπτά, \(transfers).",
-            "\(legs). Rreth \(best.totalMinutes) min, \(transfers).") + directNote + tradeoff + exposure + caveat)
+            "\(legs). Rreth \(best.totalMinutes) min, \(transfers).") + directNote + tradeoff + exposure + caveat, confidence: .scheduled)
     }
 
     /// A route's shelter, from its legs' line types. Mirror of KMP `routeExposure`.
@@ -993,7 +1094,7 @@ final class AriadneModel: ObservableObject {
             : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
         return bot(t("About \(plan.totalMinutes) min from \(stationName(fromId)) to \(stationName(toId)), \(transfers).",
             "Περίπου \(plan.totalMinutes) λεπτά από \(stationName(fromId)) προς \(stationName(toId)), \(transfers).",
-            "Rreth \(plan.totalMinutes) min nga \(stationName(fromId)) te \(stationName(toId)), \(transfers)."))
+            "Rreth \(plan.totalMinutes) min nga \(stationName(fromId)) te \(stationName(toId)), \(transfers)."), confidence: .scheduled)
     }
 
     private func stationName(_ id: String) -> String {
@@ -1122,7 +1223,7 @@ final class AriadneModel: ObservableObject {
         guard let line = SyrmosData.line(for: normalizeLine(lineId)) else { return bot(outOfScopeText()) }
         return bot(t("\(line.name): \(line.terminalA) to \(line.terminalB), \(line.stationCount) stations.",
             "\(line.name): \(line.terminalA) ως \(line.terminalB), \(line.stationCount) σταθμοί.",
-            "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione."))
+            "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione."), confidence: .offline)
     }
 
     private func resolveAlerts(lineId: String?) async -> AriadneMessage {
@@ -1131,13 +1232,13 @@ final class AriadneModel: ObservableObject {
         if let first = alerts.first {
             let titles = alerts.prefix(2).map { $0.displayTitle(language: loc.language) }.joined(separator: "; ")
             _ = first
-            return bot(t("Active alerts: \(titles)", "Ενεργές ειδοποιήσεις: \(titles)", "Njoftime aktive: \(titles)"))
+            return bot(t("Active alerts: \(titles)", "Ενεργές ειδοποιήσεις: \(titles)", "Njoftime aktive: \(titles)"), confidence: .live)
         }
         if let status = alertsService.serviceStatus, status.status == "alert" {
-            return bot(status.displayMessage(language: loc.language))
+            return bot(status.displayMessage(language: loc.language), confidence: .live)
         }
         return bot(t("No active service alerts right now.",
-            "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.", "Nuk ka njoftime aktive tani."))
+            "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.", "Nuk ka njoftime aktive tani."), confidence: .live)
     }
 
     private func resolveOpenMap(_ stationId: String?) -> AriadneMessage {
@@ -1242,7 +1343,9 @@ final class AriadneModel: ObservableObject {
         }
     }
 
-    private func bot(_ text: String) -> AriadneMessage { AriadneMessage(fromUser: false, text: text) }
+    private func bot(_ text: String, confidence: SourceConfidence = .unknown) -> AriadneMessage {
+        AriadneMessage(fromUser: false, text: text, sourceConfidence: confidence)
+    }
 
     private func t(_ en: String, _ el: String, _ sq: String) -> String {
         switch loc.language {
