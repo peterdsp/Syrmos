@@ -2492,6 +2492,13 @@
             coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * f,
         ];
     }
+    // Station-aware easing: smoothstep makes trains decelerate near stations
+    // and cruise faster mid-segment (mirrors KMP TrainSimulator.stationAwareEase).
+    function stationAwareEase(t) {
+        var c = Math.min(Math.max(t, 0), 1);
+        return c * c * (3 - 2 * c);
+    }
+
     function trainPosition(lineId, fromStation, toStation, frac) {
         const chord = [
             fromStation.latitude + (toStation.latitude - fromStation.latitude) * frac,
@@ -2594,7 +2601,7 @@
             if (!fromStation || !toStation) continue;
             const segDuration = toStop.minutesFromOrigin - fromStop.minutesFromOrigin;
             const frac = segDuration > 0
-                ? Math.min(Math.max((elapsed - fromStop.minutesFromOrigin) / segDuration, 0), 1)
+                ? stationAwareEase(Math.min(Math.max((elapsed - fromStop.minutesFromOrigin) / segDuration, 0), 1))
                 : 0;
 
             const [lat, lng] = trainPosition(displayLineId, fromStation, toStation, frac);
@@ -2663,7 +2670,7 @@
                 const to = stationMap.get(stops[seg + 1].stationId);
                 if (!from || !to) continue;
                 const dur = times[seg + 1] - times[seg];
-                const frac = dur > 0 ? Math.min(Math.max((nowMin - times[seg]) / dur, 0), 1) : 0;
+                const frac = dur > 0 ? stationAwareEase(Math.min(Math.max((nowMin - times[seg]) / dur, 0), 1)) : 0;
                 const [lat, lng] = trainPosition(line.id, from, to, frac);
                 const dest = stationMap.get(stops[stops.length - 1].stationId);
                 out.push({
