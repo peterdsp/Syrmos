@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.syrmos.app.platform.consumePendingAssistantQuery
+import com.syrmos.app.platform.consumePendingNotificationDeepLink
 import com.syrmos.app.platform.markOnboardingCompleted
 import com.syrmos.app.platform.readOnboardingCompleted
 import com.syrmos.app.platform.readLastWhatsNewVersion
@@ -162,6 +163,13 @@ fun SyrmosApp() {
                     TabNavigator(HomeTab) {
                         val pendingQuery = remember { consumePendingAssistantQuery() }
                         var showAriadne by remember { mutableStateOf(pendingQuery != null) }
+                        val pendingNotif = remember { consumePendingNotificationDeepLink() }
+                        val tabNavigator2 = LocalTabNavigator.current
+                        LaunchedEffect(pendingNotif) {
+                            if (pendingNotif != null) {
+                                tabNavigator2.current = HomeTab
+                            }
+                        }
                         val lang by LocalizationManager.language.collectAsState()
                         val tabNavigator = LocalTabNavigator.current
                         val currentTab = tabNavigator.current
