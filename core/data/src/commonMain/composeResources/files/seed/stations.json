@@ -4907,7 +4907,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "name_sq": "Diakopto"
   },
   {
     "id": "FL_AMF",
@@ -5193,7 +5194,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "name_sq": "Shpella e Madhe"
   },
   {
     "id": "DK_KAL",
@@ -5206,7 +5208,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "name_sq": "Kalavrita"
   },
   {
     "id": "PL_ALE",
@@ -5324,5 +5327,69 @@
     "is_interchange": false,
     "accessibility": true,
     "zone": 1
+  },
+  {
+    "id": "DK_NIA",
+    "name": "Niamata",
+    "name_el": "Νιαματά",
+    "name_sq": "Niamata",
+    "latitude": 38.1781,
+    "longitude": 22.1882,
+    "line_ids": [
+      "DK1"
+    ],
+    "is_interchange": false,
+    "accessibility": false,
+    "zone": 1,
+    "region": "national",
+    "source_confidence": "scheduled"
+  },
+  {
+    "id": "DK_TRI",
+    "name": "Triklia",
+    "name_el": "Τρίκλια",
+    "name_sq": "Triklia",
+    "latitude": 38.1585,
+    "longitude": 22.1779,
+    "line_ids": [
+      "DK1"
+    ],
+    "is_interchange": false,
+    "accessibility": false,
+    "zone": 1,
+    "region": "national",
+    "source_confidence": "scheduled"
+  },
+  {
+    "id": "DK_ZAC",
+    "name": "Zachlorou",
+    "name_el": "Ζαχλωρού",
+    "name_sq": "Zahloru",
+    "latitude": 38.1148,
+    "longitude": 22.1697,
+    "line_ids": [
+      "DK1"
+    ],
+    "is_interchange": false,
+    "accessibility": false,
+    "zone": 1,
+    "region": "national",
+    "source_confidence": "scheduled"
+  },
+  {
+    "id": "DK_KER",
+    "name": "Kerpini",
+    "name_el": "Κερπινή",
+    "name_sq": "Kerpini",
+    "latitude": 38.0648,
+    "longitude": 22.1352,
+    "line_ids": [
+      "DK1"
+    ],
+    "is_interchange": false,
+    "accessibility": false,
+    "zone": 1,
+    "region": "national",
+    "source_confidence": "scheduled"
   }
 ]

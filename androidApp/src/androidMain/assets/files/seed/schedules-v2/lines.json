@@ -4578,13 +4578,13 @@
       "id": "DK1",
       "name": "Diakopto - Kalavryta rack railway",
       "nameEl": "Οδοντωτός Διακοπτό - Καλάβρυτα",
-      "type": "suburban",
-      "color": "#DC2626",
+      "type": "scenic",
+      "color": "#B8860B",
       "terminalA": "Diakopto",
       "terminalB": "Kalavryta",
       "region": "national",
       "status": "under_construction",
-      "stationCount": 3,
+      "stationCount": 7,
       "stations": [
         {
           "id": "KI_DIA",
@@ -4593,7 +4593,37 @@
           "lat": 38.19187,
           "lng": 22.19772,
           "region": "national",
-          "accessibility": true,
+          "accessibility": false,
+          "zone": 1
+        },
+        {
+          "id": "DK_NIA",
+          "name": "Niamata",
+          "nameEl": "Νιαματά",
+          "lat": 38.1781,
+          "lng": 22.1882,
+          "region": "national",
+          "accessibility": false,
+          "zone": 1
+        },
+        {
+          "id": "DK_TRI",
+          "name": "Triklia",
+          "nameEl": "Τρίκλια",
+          "lat": 38.1585,
+          "lng": 22.1779,
+          "region": "national",
+          "accessibility": false,
+          "zone": 1
+        },
+        {
+          "id": "DK_ZAC",
+          "name": "Zachlorou",
+          "nameEl": "Ζαχλωρού",
+          "lat": 38.1148,
+          "lng": 22.1697,
+          "region": "national",
+          "accessibility": false,
           "zone": 1
         },
         {
@@ -4603,7 +4633,17 @@
           "lat": 38.09417,
           "lng": 22.1646,
           "region": "national",
-          "accessibility": true,
+          "accessibility": false,
+          "zone": 1
+        },
+        {
+          "id": "DK_KER",
+          "name": "Kerpini",
+          "nameEl": "Κερπινή",
+          "lat": 38.0648,
+          "lng": 22.1352,
+          "region": "national",
+          "accessibility": false,
           "zone": 1
         },
         {
@@ -4613,7 +4653,7 @@
           "lat": 38.03354,
           "lng": 22.10994,
           "region": "national",
-          "accessibility": true,
+          "accessibility": false,
           "zone": 1
         }
       ]

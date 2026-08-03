@@ -33,4 +33,5 @@ fun LineColor.toComposeColor(): Color = when (this) {
     LineColor.BLUE -> SyrmosColorTokens.metroBlue
     LineColor.TRAM_ORANGE -> SyrmosColorTokens.tram
     LineColor.SUBURBAN_PURPLE -> SyrmosColorTokens.suburban
+    LineColor.SCENIC_OCHRE -> SyrmosColorTokens.scenic
 }
