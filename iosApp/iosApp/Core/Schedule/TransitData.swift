@@ -477,7 +477,7 @@ enum SyrmosData {
 
     // Line 3 airport section: stations past Douk. Plakentias
     static let line3AirportOnlyStations: Set<String> = [
-        "M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"
+        "M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"
     ]
 
     static func sampleDepartures(for stationId: String, lineIds: [String]) -> [Departure] {

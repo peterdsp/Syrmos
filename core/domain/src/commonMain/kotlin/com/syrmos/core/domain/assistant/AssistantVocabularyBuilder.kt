@@ -11,17 +11,12 @@ import com.syrmos.core.model.transit.Station
 object AssistantVocabularyBuilder {
     fun build(stations: List<Station>, lines: List<Line>): AssistantVocabulary {
         val stationVocab = stations.map { st ->
-            // Albanian is first-class: the bundled Station only carries EN + EL
-            // names, so an Albanian speaker typing "aeroport" (not "Airport")
-            // would fall through to fuzzy matching. Augment key stations with
-            // Albanian and common Latin/Greeklish spellings so SQ input resolves
-            // as reliably as EN/EL. Matched by token so it works regardless of
-            // the station's exact display name.
             val folded = AthensTransitParser.fold("${st.name} ${st.nameEl}")
             val extra = SQ_AND_LATIN_ALIASES.filterKeys { folded.contains(it) }.values.flatten()
             StationVocab(
                 id = st.id,
-                names = (listOf(st.name, st.nameEl) + extra).filter { it.isNotBlank() }.distinct(),
+                names = (listOfNotNull(st.name, st.nameEl, st.nameSq) + extra)
+                    .filter { it.isNotBlank() }.distinct(),
                 lineIds = st.lineIds,
             )
         }
@@ -48,21 +43,17 @@ object AssistantVocabularyBuilder {
     }
 
     /**
-     * Albanian and common Latin/Greeklish station spellings, keyed by an
-     * accent-folded token that appears in the station's EN or EL name. Kept to
-     * confident, real variants (Albanian speakers are a large Athens community,
-     * so this is core coverage, not a nicety). The proper long-term fix is a
-     * `nameSq` on the bundled Station data; this closes the highest-traffic
-     * gaps now, starting with the airport.
+     * Greeklish and extra SQ variants keyed by an accent-folded token from
+     * the station's EN or EL name. The bundled nameSq covers most Albanian,
+     * but alternate spellings and Greeklish still need these overrides.
      */
     private val SQ_AND_LATIN_ALIASES: Map<String, List<String>> = mapOf(
-        "airport" to listOf("Aeroport", "Aeroporti"),        // SQ airport / definite
+        "airport" to listOf("Aeroport", "Aeroporti"),
         "aerodromio" to listOf("Aeroport", "Aeroporti"),
-        "piraeus" to listOf("Pireas", "Pireu"),      // Greeklish / SQ
-        "syntagma" to listOf("Sintagma"),            // common Latin variant
-        // Albanian exonyms + common Greeklish for the highest-traffic stops.
-        "thessaloniki" to listOf("Selanik", "Selaniku", "Thesaloniki"),  // SQ exonym
-        "athens" to listOf("Athina", "Athine"),      // SQ / Greeklish for Athens
+        "piraeus" to listOf("Pireas", "Pireu"),
+        "syntagma" to listOf("Sintagma"),
+        "thessaloniki" to listOf("Selanik", "Selaniku", "Thesaloniki"),
+        "athens" to listOf("Athina", "Athine", "Athinë"),
         "acropolis" to listOf("Akropoli", "Akropolis"),
         "omonia" to listOf("Omonoia"),
         "monastiraki" to listOf("Monastiraqi"),
@@ -73,9 +64,14 @@ object AssistantVocabularyBuilder {
         "elliniko" to listOf("Helliniko"),
         "peristeri" to listOf("Peristeri"),
         "aigaleo" to listOf("Egaleo", "Aigaleo"),
-        "larisa" to listOf("Larisis"),               // Larissa Station (Stathmos Larisis)
+        "larisa" to listOf("Larisis"),
         "patra" to listOf("Patra", "Patras"),
-        "aghios" to listOf("Agios"),                 // normalise "Aghios"/"Agios"
+        "aghios" to listOf("Agios"),
         "agios" to listOf("Aghios"),
+        "corinth" to listOf("Korinthi", "Korinthos", "Korinh"),
+        "korinthos" to listOf("Corinth", "Korinthi"),
+        "megara" to listOf("Megara"),
+        "kiato" to listOf("Kiato", "Qiato"),
+        "chalkida" to listOf("Halkidhe", "Halkida", "Chalkis"),
     )
 }

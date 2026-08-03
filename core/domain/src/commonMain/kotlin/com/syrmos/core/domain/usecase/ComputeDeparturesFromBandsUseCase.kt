@@ -238,7 +238,7 @@ class ComputeDeparturesFromBandsUseCase(
     }
 
     private companion object {
-        private val line3AirportOnlyStations = setOf("M3_PAL", "M3_PEK", "M3_KRP", "M3_AER")
+        private val line3AirportOnlyStations = setOf("M3_PAL", "M3_PEA", "M3_KO2", "M3_AER")
     }
 
     private fun resolveHolidayDayType(date: LocalDate): String? {

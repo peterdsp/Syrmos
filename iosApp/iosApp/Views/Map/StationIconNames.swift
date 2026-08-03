@@ -141,41 +141,41 @@ enum StationIconNames {
     /// after Kato Acharnai.
     static let a1: [String: String] = [
         "A1_PIR": "train_p1_01_piraeus_pi",
-        "A1_LEF": "train_p1_02_lefka_le",
+        "A1_LEY": "train_p1_02_lefka_le",
         "A1_REN": "train_p1_03_rentis_re",
-        "A1_TAV": "train_p1_04_tavros_ta",
-        "A1_ROU": "train_p1_05_rouf_ro",
+        "A1_TAY": "train_p1_04_tavros_ta",
+        "A1_ROY": "train_p1_05_rouf_ro",
         "A1_ATH": "train_p1_06_athens_at",
-        "A1_AAN": "train_p1_07_ag_anargyroi_aa",
+        "A1_AGI": "train_p1_07_ag_anargyroi_aa",
         "A1_PYR": "train_p1_08_pyrgos_vasilissis_pv",
-        "A1_KAC": "train_p1_09_kato_acharnai_ka",
+        "A1_KAT": "train_p1_09_kato_acharnai_ka",
         "A1_MET": "train_p1_12_metamorfosi_me",
-        "A1_IRK": "train_p1_13_irakleio_ir",
+        "A1_IRA": "train_p1_13_irakleio_ir",
         "A1_NER": "train_p1_14_neratziotissa_ne",
         "A1_KIF": "train_p1_15_kifisias_ki",
         "A1_PEN": "train_p1_16_pentelis_pe",
-        "A1_DPL": "train_p1_17_doukissis_plakentias_dp",
+        "A1_DOY": "train_p1_17_doukissis_plakentias_dp",
         "A1_PAL": "train_p1_18_pallini_pa",
-        "A1_PEK": "train_p1_19_paiania_kantza_pk",
-        "A1_KRP": "train_p1_20_koropi_ko",
-        "A1_AER": "train_p1_21_airport_ai",
+        "A1_PEA": "train_p1_19_paiania_kantza_pk",
+        "A1_KOR": "train_p1_20_koropi_ko",
+        "A1_AIR": "train_p1_21_airport_ai",
     ]
 
     /// Suburban A2 (Ano Liosia to Airport). Assets ship under their
     /// canonical "train_a2_*" prefix and align 1:1 with the timetable.
     static let a2: [String: String] = [
-        "A2_ANL": "train_a2_01_ano_liosia_al",
+        "A2_ANO": "train_a2_01_ano_liosia_al",
         "A2_ACH": "train_a2_02_acharnai_railway_center_ac",
         "A2_MET": "train_a2_04_metamorfosi_me",
-        "A2_IRK": "train_a2_05_irakleio_ir",
+        "A2_IRA": "train_a2_05_irakleio_ir",
         "A2_NER": "train_a2_06_neratziotissa_ne",
         "A2_KIF": "train_a2_07_kifisias_ki",
         "A2_PEN": "train_a2_08_pentelis_pe",
-        "A2_DPL": "train_a2_09_doukissis_plakentias_dp",
+        "A2_DOY": "train_a2_09_doukissis_plakentias_dp",
         "A2_PAL": "train_a2_10_pallini_pa",
-        "A2_PEK": "train_a2_11_peania_kantza_pk",
-        "A2_KRP": "train_a2_12_koropi_ko",
-        "A2_AER": "train_a2_13_airport_ai",
+        "A2_PEA": "train_a2_11_peania_kantza_pk",
+        "A2_KOR": "train_a2_12_koropi_ko",
+        "A2_AIR": "train_a2_13_airport_ai",
     ]
 
     /// Suburban A3 (Athens to Chalcis). Asset prefix "train_p3_*".
