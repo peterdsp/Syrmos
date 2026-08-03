@@ -10,6 +10,7 @@ enum class LineColor(val hex: String) {
     @SerialName("blue") BLUE("#0072CE"),
     @SerialName("tram") TRAM_ORANGE("#F39800"),
     @SerialName("suburban") SUBURBAN_PURPLE("#6F2DA8"),
+    @SerialName("scenic") SCENIC_OCHRE("#B8860B"),
     ;
 
     companion object {
@@ -19,6 +20,7 @@ enum class LineColor(val hex: String) {
                     "metro" -> GREEN
                     "tram" -> TRAM_ORANGE
                     "suburban" -> SUBURBAN_PURPLE
+                    "scenic" -> SCENIC_OCHRE
                     else -> GREEN
                 }
     }

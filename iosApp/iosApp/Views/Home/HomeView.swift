@@ -347,6 +347,12 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.syrmosSurface)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(next.map { d in
+                let mins = d.minutesAway
+                let unit = mins == 1 ? "minute" : "minutes"
+                return "\(d.lineId) to \(d.direction), \(mins) \(unit)"
+            } ?? loc[.serviceOver])
         }
     }
 
@@ -366,6 +372,8 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.syrmosSurface)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(loc[.lastTrain]) \(last.lineId), \(loc[.leaveBy]) \(last.time)")
     }
 
     /// Soonest departure across the nearest station's lines. Each line resolves

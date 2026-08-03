@@ -109,6 +109,7 @@ struct AssistantVocabulary {
                 aliases.append("linja \(suffix)")
                 if line.id.first == "M" { aliases.append("metro \(suffix)") }
                 if line.id.first == "T" { aliases.append("tram \(suffix)") }
+                if line.id.hasPrefix("DK") { aliases.append(contentsOf: ["odontotos", "rack railway", "scenic"]) }
             }
             return LineVocab(id: line.id, aliases: aliases.filter { !$0.isEmpty })
         }

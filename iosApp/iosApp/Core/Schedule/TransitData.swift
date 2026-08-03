@@ -59,6 +59,7 @@ enum TransitType: String, CaseIterable {
     case metro = "Metro"
     case tram = "Tram"
     case suburban = "Suburban Railway"
+    case scenic = "Scenic Railway"
     /// Rail-replacement / connecting bus on a suspended rail corridor. The rail
     /// operator's own bus standing in for the train, never an OASA city bus.
     case bus = "Bus"
@@ -364,6 +365,7 @@ enum SyrmosData {
         case "metro": return .metro
         case "tram": return .tram
         case "bus": return .bus
+        case "scenic": return .scenic
         default: return .suburban
         }
     }
@@ -380,6 +382,7 @@ enum SyrmosData {
         switch type.lowercased() {
         case "metro": return .metroBlue
         case "tram": return .tramOrange
+        case "scenic": return .scenic
         default: return .suburbanPurple
         }
     }

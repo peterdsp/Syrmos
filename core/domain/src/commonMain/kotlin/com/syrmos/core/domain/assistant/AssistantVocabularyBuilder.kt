@@ -35,6 +35,9 @@ object AssistantVocabularyBuilder {
                         'M' -> add("metro $suffix")
                         'T' -> add("tram $suffix")
                     }
+                    if (line.id.startsWith("DK")) {
+                        addAll(listOf("odontotos", "rack railway", "scenic"))
+                    }
                 }
             }.filter { it.isNotBlank() }.distinct()
             LineVocab(id = line.id, aliases = aliases)

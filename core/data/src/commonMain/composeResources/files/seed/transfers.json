@@ -430,5 +430,17 @@
     "from_line_id": "M2",
     "to_line_id": "A4",
     "walking_minutes": 3
+  },
+  {
+    "station_id": "KI_DIA",
+    "from_line_id": "KP1",
+    "to_line_id": "DK1",
+    "walking_minutes": 2
+  },
+  {
+    "station_id": "KI_DIA",
+    "from_line_id": "DK1",
+    "to_line_id": "KP1",
+    "walking_minutes": 2
   }
 ]

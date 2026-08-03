@@ -309,6 +309,7 @@
                 aliases.push('linja ' + suffix);
                 if (line.id[0] === 'M') aliases.push('metro ' + suffix);
                 if (line.id[0] === 'T') aliases.push('tram ' + suffix);
+                if (line.id.startsWith('DK')) { aliases.push('odontotos', 'rack railway', 'scenic'); }
             }
             const folded = Array.from(new Set(aliases.map(fold).filter(function (a) { return a.length >= 2; })));
             return { id: line.id, aliases: folded };

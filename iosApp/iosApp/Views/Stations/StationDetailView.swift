@@ -166,6 +166,8 @@ struct StationDetailView: View {
                             }
                         }
                         .padding(.vertical, 2)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(departure.lineId) towards \(departure.direction), \(departure.minutesAway) minutes, at \(departure.time)")
                     }
                 }
             }
