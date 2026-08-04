@@ -1,12 +1,19 @@
 import Foundation
 import Combine
 
+enum AriadneAction {
+    case openStation(String)
+    case openLine(String)
+}
+
 struct AriadneMessage: Identifiable {
     let id = UUID()
     let fromUser: Bool
     let text: String
     var departures: [Departure] = []
     var sourceConfidence: SourceConfidence = .unknown
+    var action: AriadneAction?
+    var actionLabel: String?
 }
 
 /// Ariadne's iOS resolver. Parses offline with `AthensTransitParser`, then
@@ -739,8 +746,9 @@ final class AriadneModel: ObservableObject {
                 "Δεν υπάρχουν άλλα δρομολόγια από \(name(station)) τώρα.",
                 "Nuk ka më trena nga \(name(station)) tani."))
         }
-        let header = t("Next from \(name(station)):", "Επόμενα από \(name(station)):", "Të ardhshmet nga \(name(station)):")
-        return AriadneMessage(fromUser: false, text: header, departures: Array(deps.prefix(4)), sourceConfidence: .scheduled)
+        let header = t("Next from \(name(station)):", "Επομενα απο \(name(station)):", "Te ardhshmet nga \(name(station)):")
+        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))")
+        return AriadneMessage(fromUser: false, text: header, departures: Array(deps.prefix(4)), sourceConfidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
     /// "this weekend / tomorrow / Saturday": project that whole service day from
@@ -905,9 +913,10 @@ final class AriadneModel: ObservableObject {
                 "Τα δρομολόγια για απόψε τελείωσαν στον \(name(station)).",
                 "Shërbimi për sonte ka mbaruar te \(name(station))."), confidence: .scheduled)
         }
+        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))")
         return bot(t("Last \(displayLine(last.lineId)) from \(name(station)) leaves at \(last.time). Leave by then.",
             "Ο τελευταίος \(displayLine(last.lineId)) από \(name(station)) φεύγει \(last.time). Φύγε ως τότε.",
-            "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë."), confidence: .scheduled)
+            "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë."), confidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
     /// First / earliest scheduled train of today at a station (mirror of last train).
@@ -923,9 +932,10 @@ final class AriadneModel: ObservableObject {
                 "Δεν έχω το σημερινό πρόγραμμα για \(name(station)) εκτός σύνδεσης.",
                 "Nuk e kam orarin e sotëm për \(name(station)) pa internet."), confidence: .offline)
         }
+        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))")
         return bot(t("First \(displayLine(first.lineId)) from \(name(station)) is at \(first.time).",
             "Το πρώτο \(displayLine(first.lineId)) από \(name(station)) είναι στις \(first.time).",
-            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time)."), confidence: .scheduled)
+            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time)."), confidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
     /// Step-free accessibility for one station, from the bundled flag. Never invented.
@@ -963,9 +973,10 @@ final class AriadneModel: ObservableObject {
                 "Nuk kam linja të regjistruara për \(n)."))
         }
         let list = lineIds.joined(separator: ", ")
+        let label = t("Open \(n)", "Ανοιγμα \(n)", "Hap \(n)")
         return bot(t("\(n) is served by: \(list).",
             "Ο \(n) εξυπηρετείται από: \(list).",
-            "\(n) shërbehet nga: \(list)."), confidence: .offline)
+            "\(n) shërbehet nga: \(list)."), confidence: .offline, action: .openStation(id), actionLabel: label)
     }
 
     /// "How many stops / how far from A to B?" — stop count + rough duration.
@@ -1215,15 +1226,17 @@ final class AriadneModel: ObservableObject {
                 "Δεν βρήκα σταθμό που να ταιριάζει.", "Nuk gjeta një stacion që përputhet."))
         }
         let names = matches.prefix(3).map { name($0) }.joined(separator: ", ")
-        _ = top
-        return bot(t("Found: \(names).", "Βρέθηκαν: \(names).", "U gjet: \(names)."))
+        let label = t("Open \(name(top))", "Ανοιγμα \(name(top))", "Hap \(name(top))")
+        return bot(t("Found: \(names).", "Βρέθηκαν: \(names).", "U gjet: \(names)."), action: .openStation(top.id), actionLabel: label)
     }
 
     private func resolveExplainLine(_ lineId: String) -> AriadneMessage {
-        guard let line = SyrmosData.line(for: normalizeLine(lineId)) else { return bot(outOfScopeText()) }
+        let normalized = normalizeLine(lineId)
+        guard let line = SyrmosData.line(for: normalized) else { return bot(outOfScopeText()) }
+        let label = t("Open \(line.name)", "Ανοιγμα \(line.name)", "Hap \(line.name)")
         return bot(t("\(line.name): \(line.terminalA) to \(line.terminalB), \(line.stationCount) stations.",
             "\(line.name): \(line.terminalA) ως \(line.terminalB), \(line.stationCount) σταθμοί.",
-            "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione."), confidence: .offline)
+            "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione."), confidence: .offline, action: .openLine(normalized), actionLabel: label)
     }
 
     private func resolveAlerts(lineId: String?) async -> AriadneMessage {
@@ -1345,6 +1358,10 @@ final class AriadneModel: ObservableObject {
 
     private func bot(_ text: String, confidence: SourceConfidence = .unknown) -> AriadneMessage {
         AriadneMessage(fromUser: false, text: text, sourceConfidence: confidence)
+    }
+
+    private func bot(_ text: String, confidence: SourceConfidence = .unknown, action: AriadneAction, actionLabel: String) -> AriadneMessage {
+        AriadneMessage(fromUser: false, text: text, sourceConfidence: confidence, action: action, actionLabel: actionLabel)
     }
 
     private func t(_ en: String, _ el: String, _ sq: String) -> String {

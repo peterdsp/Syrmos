@@ -13,6 +13,8 @@ struct HomeView: View {
     @ObservedObject private var freshnessStore = LiveDataFreshness.shared
     @ObservedObject private var tracking = DepartureTracking.shared
     @ObservedObject private var weather = WeatherStore.shared
+    @ObservedObject private var deepLinkRouter = DeepLinkRouter.shared
+    @State private var navigationPath = NavigationPath()
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
@@ -21,7 +23,7 @@ struct HomeView: View {
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
                 VStack(spacing: 20) {
                     answerSection.syrmosEntrance(index: 0)
@@ -83,6 +85,29 @@ struct HomeView: View {
             // refreshes happen silently in the background and the new data
             // simply takes effect on the user's next interaction. See the
             // store comment on evaluateFreshData() for the rationale.
+            .navigationDestination(for: DeepLinkStation.self) { dest in
+                if let station = resolveStation(id: dest.id) {
+                    StationDetailView(station: station)
+                }
+            }
+            .navigationDestination(for: DeepLinkLine.self) { dest in
+                if let line = SyrmosData.line(for: dest.id) {
+                    LineDetailView(line: line, stations: SyrmosData.stations(for: dest.id))
+                }
+            }
+            .onChange(of: deepLinkRouter.pending) { _, destination in
+                guard let destination else { return }
+                switch destination {
+                case .station(let id):
+                    deepLinkRouter.pending = nil
+                    navigationPath.append(DeepLinkStation(id: id))
+                case .line(let id):
+                    deepLinkRouter.pending = nil
+                    navigationPath.append(DeepLinkLine(id: id))
+                default:
+                    break
+                }
+            }
         }
     }
 
@@ -730,6 +755,28 @@ struct HomeView: View {
             : "Trains until \(latest)"
     }
 
+    private func resolveStation(id: String) -> TransitStation? {
+        if let match = SyrmosData.bundleStations.first(where: { $0.id == id }) {
+            return match
+        }
+        for line in SyrmosData.lines {
+            if let match = SyrmosData.stations(for: line.id).first(where: { $0.id == id }) {
+                return match
+            }
+        }
+        return nil
+    }
+
+}
+
+// MARK: - Deep Link Navigation Wrappers
+
+struct DeepLinkStation: Hashable {
+    let id: String
+}
+
+struct DeepLinkLine: Hashable {
+    let id: String
 }
 
 // MARK: - Hero countdown formatting (mirrors KMP HeroCountdown.kt)

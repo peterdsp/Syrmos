@@ -237,14 +237,16 @@ fun SyrmosApp() {
                                     com.syrmos.feature.home.assistant.AssistantScreen(
                                         viewModel = assistantViewModel,
                                         onClose = { showAriadne = false },
-                                        // Cross-tab navigation from Ariadne
-                                        // is deferred: for now we close the
-                                        // overlay so the user can navigate
-                                        // themselves. Full deep-link into
-                                        // the correct tab's Navigator is a
-                                        // 1.1.2 follow-up.
-                                        onOpenStation = { showAriadne = false },
-                                        onOpenLine = { showAriadne = false },
+                                        onOpenStation = { stationId ->
+                                            showAriadne = false
+                                            tabNavigator.current = HomeTab
+                                            AriadneNavBus.navigate(AriadneNavEvent.Station(stationId))
+                                        },
+                                        onOpenLine = { lineId ->
+                                            showAriadne = false
+                                            tabNavigator.current = HomeTab
+                                            AriadneNavBus.navigate(AriadneNavEvent.Line(lineId))
+                                        },
                                     )
                                 }
                             }

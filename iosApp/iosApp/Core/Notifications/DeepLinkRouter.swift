@@ -10,6 +10,8 @@ final class DeepLinkRouter: ObservableObject {
         case weatherAlert
         case morningDigest
         case nearbyAlert
+        case station(id: String)
+        case line(id: String)
     }
 
     @Published var pending: Destination?
