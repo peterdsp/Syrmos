@@ -92,10 +92,10 @@
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
             whatsnew_title: "What's new in Syrmos",
-            whatsnew_i1: "Departures for Thessaloniki, Patras and national rail stations via live API",
-            whatsnew_i2: "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
-            whatsnew_i3: "Fresh Ariadne button with the owl mark",
-            whatsnew_i4: "Journey fare planner: pick two stations and see the price instantly",
+            whatsnew_i1: "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers",
+            whatsnew_i2: "Ariadne now links to stations and lines: tap any answer to jump straight there",
+            whatsnew_i3: "Browse All Stations with interactive maps and line pills",
+            whatsnew_i4: "Web geolocation for near-me stations",
             whatsnew_get_app: "Get the app",
             whatsnew_stay: "Continue on web",
         },
@@ -164,10 +164,10 @@
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
             whatsnew_title: "Τι νεο υπαρχει στο Syrmos",
-            whatsnew_i1: "Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API",
-            whatsnew_i2: "Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train",
-            whatsnew_i3: "Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας",
-            whatsnew_i4: "Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως",
+            whatsnew_i1: "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια",
+            whatsnew_i2: "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα και πηγαινε κατευθειαν",
+            whatsnew_i3: "Περιηγηση σε ολους τους σταθμους με χαρτη και ετικετες γραμμων",
+            whatsnew_i4: "Εντοπισμος τοποθεσιας στο web για κοντινους σταθμους",
             whatsnew_get_app: "Κατέβασε την εφαρμογή",
             whatsnew_stay: "Συνέχεια στο web",
         },
@@ -236,10 +236,10 @@
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
             whatsnew_title: "Çfare ka te re ne Syrmos",
-            whatsnew_i1: "Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live",
-            whatsnew_i2: "Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
-            whatsnew_i3: "Butoni i ri i Ariadnes me shenjën e bufit",
-            whatsnew_i4: "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë",
+            whatsnew_i1: "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim",
+            whatsnew_i2: "Ariadne tani lidhet me stacione dhe linja: prek dhe shko direkt",
+            whatsnew_i3: "Shfleto te gjitha stacionet me harta dhe etiketa linjash",
+            whatsnew_i4: "Gjeolokalizim ne web per stacionet me te aferta",
             whatsnew_get_app: "Merr aplikacionin",
             whatsnew_stay: "Vazhdo në web",
         },
@@ -2846,7 +2846,7 @@
     // normalizer.
     (function whatsNewWeb() {
         const key = "syrmos.whatsnew.version";
-        const version = "1.3.3";
+        const version = "2.0.0";
         try {
             if (localStorage.getItem(key) === version) return;
         } catch (_) { return; }
@@ -2856,20 +2856,23 @@
             : "What's new in Syrmos";
         const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : "Got it";
         const bullets = lang === "el" ? [
-            "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας.",
-            "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API.",
-            "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train.",
-            "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως.",
+            "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια.",
+            "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα και πηγαινε κατευθειαν.",
+            "Περιηγηση σε ολους τους σταθμους με χαρτη και ετικετες γραμμων.",
+            "Ανανεωμενη Εξερευνηση με καρτες προορισμων και προσφατους σταθμους.",
+            "Εντοπισμος τοποθεσιας στο web για κοντινους σταθμους.",
         ] : lang === "sq" ? [
-            "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit.",
-            "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live.",
-            "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train.",
-            "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere.",
+            "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim.",
+            "Ariadne tani lidhet me stacione dhe linja: prek dhe shko direkt.",
+            "Shfleto te gjitha stacionet me harta dhe etiketa linjash.",
+            "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit.",
+            "Gjeolokalizim ne web per stacionet me te aferta.",
         ] : [
-            "Search and filter lines: find any line by city or transport type.",
-            "Departures for Thessaloniki, Patras and national rail via live API.",
-            "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train.",
-            "Journey fare planner: pick two stations and see the price instantly.",
+            "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers.",
+            "Ariadne now links to stations and lines: tap any answer to jump straight there.",
+            "Browse All Stations with interactive maps and line pills.",
+            "Redesigned Explore tab with actionable destination cards and recent stations.",
+            "Web geolocation for near-me stations.",
         ];
 
         const scrim = document.createElement("div");

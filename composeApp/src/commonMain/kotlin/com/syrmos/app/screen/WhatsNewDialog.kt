@@ -44,37 +44,37 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
     val items = buildList {
         add(
             t(
-                "Search and filter lines: find any line by city or transport type",
-                "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας",
-                "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit",
+                "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers",
+                "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια",
+                "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim",
             )
         )
         add(
             t(
-                "Departures for Thessaloniki, Patras and national rail stations via live API",
-                "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API",
-                "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live",
+                "Ariadne now links to stations and lines: tap any answer to jump straight there",
+                "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα μια απαντηση και πηγαινε κατευθειαν",
+                "Ariadne tani lidhet me stacione dhe linja: prek nje pergjigje dhe shko direkt",
             )
         )
         add(
             t(
-                "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
-                "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train",
-                "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
+                "Browse All Stations with interactive maps, line pills and interchange badges",
+                "Περιηγηση σε ολους τους σταθμους με χαρτη, ετικετες γραμμων και κομβους ανταποκρισης",
+                "Shfleto te gjitha stacionet me harta, etiketa linjash dhe nyje nderkembimi",
             )
         )
         add(
             t(
-                "Journey fare planner: pick two stations and see the price instantly",
-                "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως",
-                "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere",
+                "Redesigned Explore tab with actionable destination cards and recent stations",
+                "Ανανεωμενη καρτελα Εξερευνηση με καρτες προορισμων και προσφατους σταθμους",
+                "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit",
             )
         )
         add(
             t(
-                "Push notifications: service alerts near you, weather warnings and a morning briefing",
-                "Ειδοποιησεις: ειδοποιησεις υπηρεσιων κοντα σου, καιρικες προειδοποιησεις και πρωινη ενημερωση",
-                "Njoftime push: njoftime sherbimi prane teje, paralajmerime moti dhe informim mengjesit",
+                "Operators directory and map preferences in the new More tab",
+                "Καταλογος φορεων και ρυθμισεις χαρτη στη νεα καρτελα Περισσοτερα",
+                "Drejtori operatoresh dhe preferenca harte ne kartelen e re Me shume",
             )
         )
     }
