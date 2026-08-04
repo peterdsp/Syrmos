@@ -44,37 +44,37 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
     val items = buildList {
         add(
             t(
-                "Search and filter lines: find any line by city or transport type",
-                "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας",
-                "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit",
+                "One-glance hero: your next train counts down live on the home screen",
+                "Αντιστροφη μετρηση: το επομενο τρενο σου μετραει ζωντανα στην αρχικη",
+                "Countdown hero: treni yt i rradhes numeron ne kohe reale ne ekranin kryesor",
             )
         )
         add(
             t(
-                "Departures for Thessaloniki, Patras and national rail stations via live API",
-                "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API",
-                "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live",
+                "Curated destinations: tap Airport, Piraeus, Thessaloniki or Meteora to see departures instantly",
+                "Προορισμοι: πατα Αεροδρομιο, Πειραια, Θεσσαλονικη η Μετεωρα και δες αμεσα αναχωρησεις",
+                "Destinacione: shtyp Aeroport, Pire, Selanik ose Meteora dhe shiko nisjet menjehere",
             )
         )
         add(
             t(
-                "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
-                "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train",
-                "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
+                "Universal departures: every station on every line now has a full timetable",
+                "Καθολικες αναχωρησεις: καθε σταθμος σε καθε γραμμη εχει πληρες ωρολογιο",
+                "Nisje universale: cdo stacion ne cdo linje tani ka orar te plote",
             )
         )
         add(
             t(
-                "Journey fare planner: pick two stations and see the price instantly",
-                "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως",
-                "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere",
+                "Live vehicles on the map: see trains move in real time across the network",
+                "Ζωντανα οχηματα στον χαρτη: δες τα τρενα να κινουνται σε πραγματικο χρονο",
+                "Mjete te gjalla ne harte: shiko trenat qe levizin ne kohe reale",
             )
         )
         add(
             t(
-                "Push notifications: service alerts near you, weather warnings and a morning briefing",
-                "Ειδοποιησεις: ειδοποιησεις υπηρεσιων κοντα σου, καιρικες προειδοποιησεις και πρωινη ενημερωση",
-                "Njoftime push: njoftime sherbimi prane teje, paralajmerime moti dhe informim mengjesit",
+                "Ariadne assistant: ask about routes, fares and schedules in Greek, English or Albanian",
+                "Βοηθος Ariadne: ρωτα για δρομολογια, εισιτηρια και ωραρια στα ελληνικα, αγγλικα η αλβανικα",
+                "Asistenti Ariadne: pyet per rruge, bileta dhe orare ne greqisht, anglisht ose shqip",
             )
         )
     }
