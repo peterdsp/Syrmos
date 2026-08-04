@@ -24,8 +24,12 @@ data class StationDetailUiState(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val connectingLines: List<Line> = emptyList(),
+    val lineIds: List<String> = emptyList(),
+    val isInterchange: Boolean = false,
+    val isSuburban: Boolean = false,
     val departures: List<UpcomingDeparture> = emptyList(),
     val isLoading: Boolean = true,
+    val hasLoadedDepartures: Boolean = false,
 )
 
 class StationDetailViewModel(
@@ -46,6 +50,7 @@ class StationDetailViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val detail = getStationDetail.invoke(stationId).first() ?: return@launch
 
+            val suburbanIds = setOf("A1", "A2", "A3", "A4")
             _uiState.update {
                 it.copy(
                     stationName = detail.station.name,
@@ -53,6 +58,9 @@ class StationDetailViewModel(
                     latitude = detail.station.latitude,
                     longitude = detail.station.longitude,
                     connectingLines = detail.connectingLines,
+                    lineIds = detail.station.lineIds,
+                    isInterchange = detail.station.isInterchange,
+                    isSuburban = detail.station.lineIds.any { id -> id in suburbanIds },
                     isLoading = false,
                 )
             }
@@ -72,7 +80,7 @@ class StationDetailViewModel(
         refreshJob = scope.launch {
             while (isActive) {
                 val departures = getStationDepartures.invoke(stationId, lineIds)
-                _uiState.update { it.copy(departures = departures) }
+                _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
                 delay(REFRESH_INTERVAL_MS)
             }
         }
