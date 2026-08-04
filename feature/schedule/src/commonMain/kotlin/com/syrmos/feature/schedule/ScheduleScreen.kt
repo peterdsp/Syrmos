@@ -6,14 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +25,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Train
@@ -64,11 +63,17 @@ import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.repository.LineRepositoryImpl
+import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.model.schedule.SourceConfidence
+import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.LineColor
+import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.SyrmosSchedulesService
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
@@ -79,19 +84,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 
 /**
- * Airport-focused departures screen, ported to feature parity with iOS:
- *   - 7-day pill row at the top to pick today/+1/.../+6
- *   - Line picker card (Metro M3 / Suburban A1 / Suburban A2)
- *   - Station picker card filtered to the chosen line's stops
- *   - Auto-snaps to the user's nearest airport-serving stop on first appear
- *   - Two glass cards "To Airport" / "From Airport" with one featured row
- *     plus Earlier / All-upcoming expand pills
- *   - Per-station passage times via StationOffsetsRepository
- *   - Last-train destinations honour STASY's `lastTrains` short-turn data
- *
- * Self-contained: keeps projection + view-model state in this file so the
- * KMP shared module doesn't grow a dedicated DI binding for what's
- * fundamentally one screen.
+ * Universal departures screen: pick any line, any station, see the next
+ * trains in both directions with per-station passage times. Replaces the
+ * old airport-only screen while keeping the same glass-card layout, 7-day
+ * pill row, and expand/collapse interaction.
  */
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,36 +95,62 @@ import org.koin.compose.koinInject
 fun ScheduleScreen() {
     val sync = koinInject<ScheduleSyncRepository>()
     val offsetsRepo = koinInject<StationOffsetsRepository>()
+    val lineRepo = koinInject<LineRepositoryImpl>()
+    val stationRepo = koinInject<StationRepositoryImpl>()
     val bundles by sync.lineBundles.collectAsState()
-    offsetsRepo.offsets.collectAsState() // observe so we recompose when offsets land
+    offsetsRepo.offsets.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     val scope = rememberCoroutineScope()
+
+    var allLines by remember { mutableStateOf<List<Line>>(emptyList()) }
+    var stationsOnLine by remember { mutableStateOf<List<Station>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         scope.launch { sync.hydrateFromBundleIfNeeded() }
         scope.launch { offsetsRepo.hydrateFromBundleIfNeeded() }
+        val lines = lineRepo.getAllLines().firstOrNull().orEmpty()
+        allLines = lines.filter { it.isOperational }
     }
 
     var dayOffset by remember { mutableStateOf(0) }
     var selectedLineId by remember { mutableStateOf("M3") }
-    var selectedStationId by remember { mutableStateOf(defaultStationIdFor("M3")) }
+    var selectedStationId by remember { mutableStateOf("") }
 
+    LaunchedEffect(allLines) {
+        if (allLines.isNotEmpty() && allLines.none { it.id == selectedLineId }) {
+            selectedLineId = allLines.first().id
+        }
+    }
+
+    LaunchedEffect(selectedLineId) {
+        if (selectedLineId.isNotEmpty()) {
+            val stations = stationRepo.getStationsOnLine(selectedLineId).firstOrNull().orEmpty()
+            stationsOnLine = stations
+            if (stations.isNotEmpty() && stations.none { it.id == selectedStationId }) {
+                selectedStationId = stations.first().id
+            }
+        }
+    }
+
+    val selectedLine = allLines.firstOrNull { it.id == selectedLineId }
     val zone = remember { TimeZone.of("Europe/Athens") }
     val now: LocalDateTime = remember(dayOffset, bundles) {
         Clock.System.now().toLocalDateTime(zone)
     }
 
-    val departures = remember(bundles, dayOffset, selectedStationId, now) {
-        AirportProjection.compute(
+    val departures = remember(bundles, dayOffset, selectedStationId, selectedLineId, now) {
+        if (selectedStationId.isEmpty() || selectedLineId.isEmpty()) emptyList()
+        else DepartureProjection.compute(
             bundles = bundles,
             offsets = offsetsRepo,
             stationId = selectedStationId,
+            lineId = selectedLineId,
             dayOffset = dayOffset,
             now = now,
         )
     }
-    val toAirport = departures.filter { it.isAirportBound }
-    val fromAirport = departures.filter { !it.isAirportBound }
+    val outbound = departures.filter { it.isOutbound }
+    val inbound = departures.filter { !it.isOutbound }
     val isToday = dayOffset == 0
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
@@ -142,41 +164,43 @@ fun ScheduleScreen() {
         ) {
             DayPickerRow(selected = dayOffset, onSelect = { dayOffset = it }, lang = lang)
             LinePickerCard(
-                selectedLineId = selectedLineId,
+                selectedLine = selectedLine,
+                allLines = allLines,
                 lang = lang,
                 onSelect = { newLine ->
-                    selectedLineId = newLine
-                    selectedStationId = defaultStationIdFor(newLine)
+                    selectedLineId = newLine.id
                 },
             )
-            StationPickerCard(
-                lineId = selectedLineId,
-                selectedStationId = selectedStationId,
-                lang = lang,
-                onSelect = { selectedStationId = it },
-            )
-            AirportSection(
-                kind = AirportSectionKind.TO,
-                departures = toAirport,
+            if (stationsOnLine.isNotEmpty()) {
+                StationPickerCard(
+                    stations = stationsOnLine,
+                    selectedStationId = selectedStationId,
+                    lang = lang,
+                    onSelect = { selectedStationId = it },
+                )
+            }
+            DepartureSection(
+                kind = DirectionKind.OUTBOUND,
+                departures = outbound,
                 isToday = isToday,
                 nowMinutes = now.time.hour * 60 + now.time.minute,
                 lang = lang,
+                destinationLabel = selectedLine?.terminalB ?: "",
+                accent = lineColorFor(selectedLineId, selectedLine),
             )
-            AirportSection(
-                kind = AirportSectionKind.FROM,
-                departures = fromAirport,
+            DepartureSection(
+                kind = DirectionKind.INBOUND,
+                departures = inbound,
                 isToday = isToday,
                 nowMinutes = now.time.hour * 60 + now.time.minute,
                 lang = lang,
+                destinationLabel = selectedLine?.terminalA ?: "",
+                accent = lineColorFor(selectedLineId, selectedLine),
             )
         }
 
         com.syrmos.core.designsystem.component.CompactTabHeader(
-            title = when (lang) {
-                AppLanguage.GREEK -> "Αεροδρόμιο"
-                AppLanguage.ALBANIAN -> "Aeroporti"
-                else -> "Airport"
-            },
+            title = L.DEPARTURES.text(lang),
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .zIndex(1f),
@@ -244,7 +268,7 @@ private fun dayLabel(offset: Int, lang: AppLanguage): String {
             DayOfWeek.SUNDAY -> "ΚΥΡ"; else -> ""
         }
         AppLanguage.ALBANIAN -> when (key) {
-            DayOfWeek.MONDAY -> "HËN"; DayOfWeek.TUESDAY -> "MAR"; DayOfWeek.WEDNESDAY -> "MËR"
+            DayOfWeek.MONDAY -> "HEN"; DayOfWeek.TUESDAY -> "MAR"; DayOfWeek.WEDNESDAY -> "MER"
             DayOfWeek.THURSDAY -> "ENJ"; DayOfWeek.FRIDAY -> "PRE"; DayOfWeek.SATURDAY -> "SHT"
             DayOfWeek.SUNDAY -> "DIE"; else -> ""
         }
@@ -283,22 +307,23 @@ private fun daysInMonth(year: Int, month: Int): Int = when (month) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LinePickerCard(
-    selectedLineId: String,
+    selectedLine: Line?,
+    allLines: List<Line>,
     lang: AppLanguage,
-    onSelect: (String) -> Unit,
+    onSelect: (Line) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val current = lineGroupLabel(selectedLineId, lang)
+    val tint = lineColorFor(selectedLine?.id ?: "", selectedLine)
     GlassCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = CircleShape,
-                color = lineColor(selectedLineId).copy(alpha = 0.15f),
+                color = tint.copy(alpha = 0.15f),
                 modifier = Modifier.size(36.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Filled.Train, contentDescription = null,
-                        tint = lineColor(selectedLineId), modifier = Modifier.size(20.dp))
+                        tint = tint, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(Modifier.width(12.dp))
@@ -314,7 +339,7 @@ private fun LinePickerCard(
                 )
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     OutlinedTextField(
-                        value = current,
+                        value = lineDisplayLabel(selectedLine, lang),
                         onValueChange = {},
                         readOnly = true,
                         textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -322,9 +347,9 @@ private fun LinePickerCard(
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                     )
                     androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        for (line in AIRPORT_LINES) {
+                        for (line in allLines) {
                             DropdownMenuItem(
-                                text = { Text(lineGroupLabel(line, lang)) },
+                                text = { Text(lineDisplayLabel(line, lang)) },
                                 onClick = { onSelect(line); expanded = false },
                             )
                         }
@@ -338,14 +363,14 @@ private fun LinePickerCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StationPickerCard(
-    lineId: String,
+    stations: List<Station>,
     selectedStationId: String,
     lang: AppLanguage,
     onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val stations = stationsForLine(lineId)
-    val current = stations.firstOrNull { it.id == selectedStationId }?.displayName(lang) ?: selectedStationId
+    val current = stations.firstOrNull { it.id == selectedStationId }
+    val displayName = stationDisplayName(current, lang)
     GlassCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
@@ -371,7 +396,7 @@ private fun StationPickerCard(
                 )
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     OutlinedTextField(
-                        value = current,
+                        value = displayName,
                         onValueChange = {},
                         readOnly = true,
                         textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -381,7 +406,7 @@ private fun StationPickerCard(
                     androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         for (s in stations) {
                             DropdownMenuItem(
-                                text = { Text(s.displayName(lang)) },
+                                text = { Text(stationDisplayName(s, lang)) },
                                 onClick = { onSelect(s.id); expanded = false },
                             )
                         }
@@ -407,24 +432,22 @@ private fun GlassCard(content: @Composable () -> Unit) {
 
 // MARK: - Section
 
-private enum class AirportSectionKind { TO, FROM }
+private enum class DirectionKind { OUTBOUND, INBOUND }
 
 @Composable
-private fun AirportSection(
-    kind: AirportSectionKind,
-    departures: List<AirportDeparture>,
+private fun DepartureSection(
+    kind: DirectionKind,
+    departures: List<ProjectedDeparture>,
     isToday: Boolean,
     nowMinutes: Int,
     lang: AppLanguage,
+    destinationLabel: String,
+    accent: Color,
 ) {
     val past = if (isToday) departures.filter { it.timeMinutes < nowMinutes } else emptyList()
     val upcoming = if (isToday) departures.filter { it.timeMinutes >= nowMinutes } else departures
     val featured = upcoming.firstOrNull()
     var mode by remember(kind) { mutableStateOf(ExpandMode.FEATURED) }
-    val accent = when (kind) {
-        AirportSectionKind.TO -> Color(0xFF0083C9)
-        AirportSectionKind.FROM -> Color(0xFFE08A00)
-    }
 
     GlassCard {
         Column {
@@ -435,14 +458,15 @@ private fun AirportSection(
                     modifier = Modifier.size(36.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.Flight, contentDescription = null, tint = accent,
+                        val icon = if (kind == DirectionKind.OUTBOUND) Icons.Filled.ArrowForward else Icons.Filled.ArrowBack
+                        Icon(icon, contentDescription = null, tint = accent,
                             modifier = Modifier.size(20.dp))
                     }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = sectionTitle(kind, lang),
+                        text = directionTitle(kind, destinationLabel, lang),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -463,7 +487,7 @@ private fun AirportSection(
                 Text(
                     text = when (lang) {
                         AppLanguage.GREEK -> "Δεν υπάρχουν διαθέσιμα δρομολόγια."
-                        AppLanguage.ALBANIAN -> "Nuk ka nisje të disponueshme."
+                        AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme."
                         else -> "No departures available."
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -498,7 +522,7 @@ private fun AirportSection(
                     GlassPill(
                         label = when (lang) {
                             AppLanguage.GREEK -> "Προηγούμενα"
-                            AppLanguage.ALBANIAN -> "Më parë"
+                            AppLanguage.ALBANIAN -> "Me pare"
                             else -> "Earlier"
                         },
                         icon = Icons.Filled.History,
@@ -512,8 +536,8 @@ private fun AirportSection(
                 if (upcoming.size > 1) {
                     GlassPill(
                         label = when (lang) {
-                            AppLanguage.GREEK -> "Όλα τα επόμενα"
-                            AppLanguage.ALBANIAN -> "Të gjitha"
+                            AppLanguage.GREEK -> "Ολα τα επόμενα"
+                            AppLanguage.ALBANIAN -> "Te gjitha"
                             else -> "All upcoming"
                         },
                         icon = if (mode == ExpandMode.SHOW_ALL) Icons.Filled.UnfoldLess else Icons.Filled.UnfoldMore,
@@ -532,7 +556,7 @@ private fun AirportSection(
 private enum class ExpandMode { FEATURED, SHOW_PAST, SHOW_ALL }
 
 @Composable
-private fun FeaturedRow(d: AirportDeparture, isToday: Boolean, accent: Color, lang: AppLanguage) {
+private fun FeaturedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, lang: AppLanguage) {
     val nowMin = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens"))
         .let { it.time.hour * 60 + it.time.minute }
     val minsAway = (d.timeMinutes - nowMin).coerceAtLeast(0)
@@ -544,18 +568,18 @@ private fun FeaturedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
     ) {
         Surface(
             shape = CircleShape,
-            color = lineColor(d.lineId).copy(alpha = 0.2f),
+            color = accent.copy(alpha = 0.2f),
             modifier = Modifier.size(36.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Train, contentDescription = null, tint = lineColor(d.lineId),
+                Icon(Icons.Filled.Train, contentDescription = null, tint = accent,
                     modifier = Modifier.size(18.dp))
             }
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = lineDisplayName(d.lineId),
+                text = d.lineId,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -597,7 +621,7 @@ private fun FeaturedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
 }
 
 @Composable
-private fun ExpandedRow(d: AirportDeparture, isToday: Boolean, accent: Color, lang: AppLanguage) {
+private fun ExpandedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, lang: AppLanguage) {
     val nowMin = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens"))
         .let { it.time.hour * 60 + it.time.minute }
     val minsAway = (d.timeMinutes - nowMin).coerceAtLeast(0)
@@ -617,7 +641,7 @@ private fun ExpandedRow(d: AirportDeparture, isToday: Boolean, accent: Color, la
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = lineDisplayName(d.lineId),
+                text = d.lineId,
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
@@ -681,21 +705,58 @@ private fun GlassPill(
     }
 }
 
+// MARK: - Helpers
+
+private fun lineDisplayLabel(line: Line?, lang: AppLanguage): String {
+    if (line == null) return ""
+    return if (lang == AppLanguage.GREEK && line.nameEl.isNotBlank()) line.nameEl else line.name
+}
+
+private fun stationDisplayName(station: Station?, lang: AppLanguage): String {
+    if (station == null) return ""
+    return when (lang) {
+        AppLanguage.GREEK -> station.nameEl.ifBlank { station.name }
+        AppLanguage.ALBANIAN -> station.nameSq?.ifBlank { null } ?: station.name
+        else -> station.name
+    }
+}
+
+private fun lineColorFor(lineId: String, line: Line?): Color {
+    return when (lineId) {
+        "M1" -> Color(0xFF00843D)
+        "M2" -> Color(0xFFE61E2A)
+        "M3", "M3_AIR" -> Color(0xFF0083C9)
+        "T6", "T7" -> Color(0xFFF39800)
+        else -> line?.color?.toComposeColorOrNull() ?: Color(0xFFEE2625)
+    }
+}
+
+private fun LineColor.toComposeColorOrNull(): Color? {
+    val hex = this.hex
+    if (hex.length < 7) return null
+    val rgb = hex.removePrefix("#")
+    val parsed = rgb.toLongOrNull(16) ?: return null
+    return Color(0xFF000000 or parsed)
+}
+
 // MARK: - i18n strings
 
-private fun sectionTitle(kind: AirportSectionKind, lang: AppLanguage): String = when (kind to lang) {
-    AirportSectionKind.TO to AppLanguage.GREEK -> "Προς Αεροδρόμιο"
-    AirportSectionKind.TO to AppLanguage.ALBANIAN -> "Drejt Aeroportit"
-    AirportSectionKind.TO to AppLanguage.ENGLISH -> "To Airport"
-    AirportSectionKind.FROM to AppLanguage.GREEK -> "Από Αεροδρόμιο"
-    AirportSectionKind.FROM to AppLanguage.ALBANIAN -> "Nga Aeroporti"
-    AirportSectionKind.FROM to AppLanguage.ENGLISH -> "From Airport"
-    else -> if (kind == AirportSectionKind.TO) "To Airport" else "From Airport"
+private fun directionTitle(kind: DirectionKind, dest: String, lang: AppLanguage): String {
+    val prefix = when (kind to lang) {
+        DirectionKind.OUTBOUND to AppLanguage.GREEK -> "Προς"
+        DirectionKind.OUTBOUND to AppLanguage.ALBANIAN -> "Drejt"
+        DirectionKind.OUTBOUND to AppLanguage.ENGLISH -> "Towards"
+        DirectionKind.INBOUND to AppLanguage.GREEK -> "Προς"
+        DirectionKind.INBOUND to AppLanguage.ALBANIAN -> "Drejt"
+        DirectionKind.INBOUND to AppLanguage.ENGLISH -> "Towards"
+        else -> "Towards"
+    }
+    return "$prefix $dest"
 }
 
 private fun upcomingSubtitle(n: Int, lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "$n επόμενα δρομολόγια"
-    AppLanguage.ALBANIAN -> "$n nisje të radhës"
+    AppLanguage.ALBANIAN -> "$n nisje te radhes"
     else -> "$n upcoming departures"
 }
 
@@ -706,145 +767,32 @@ private fun directionLine(dest: String, lang: AppLanguage): String = when (lang)
 }
 
 private fun nowLabel(lang: AppLanguage): String = when (lang) {
-    AppLanguage.GREEK -> "Τώρα"
+    AppLanguage.GREEK -> "Τωρα"
     AppLanguage.ALBANIAN -> "Tani"
     else -> "Now"
 }
 
-private fun lineDisplayName(lineId: String): String = when (lineId) {
-    "M3", "M3_AIR" -> "Line 3"
-    "A1" -> "Suburban A1"
-    "A2" -> "Suburban A2"
-    else -> lineId
-}
-
-private fun lineColor(lineId: String): Color = when (lineId) {
-    "M1" -> Color(0xFF00843D)
-    "M2" -> Color(0xFFE61E2A)
-    "M3", "M3_AIR" -> Color(0xFF0083C9)
-    "T6", "T7" -> Color(0xFFF39800)
-    else -> Color(0xFFEE2625) // suburban red
-}
-
-private val AIRPORT_LINES = listOf("M3", "A1", "A2")
-
-private fun lineGroupLabel(lineId: String, lang: AppLanguage): String = when (lineId to lang) {
-    "M3" to AppLanguage.GREEK -> "Μετρό Γραμμή 3"
-    "M3" to AppLanguage.ALBANIAN -> "Metroja Linja 3"
-    "M3" to AppLanguage.ENGLISH -> "Metro Line 3"
-    "A1" to AppLanguage.GREEK -> "Προαστιακός A1 (Πειραιάς - Αεροδρόμιο)"
-    "A1" to AppLanguage.ALBANIAN -> "Treni periferik A1 (Pireu - Aeroporti)"
-    "A1" to AppLanguage.ENGLISH -> "Suburban A1 (Piraeus - Airport)"
-    "A2" to AppLanguage.GREEK -> "Προαστιακός A2 (Άνω Λιόσια - Αεροδρόμιο)"
-    "A2" to AppLanguage.ALBANIAN -> "Treni periferik A2 (Ano Liosia - Aeroporti)"
-    "A2" to AppLanguage.ENGLISH -> "Suburban A2 (Ano Liosia - Airport)"
-    else -> lineId
-}
-
-// MARK: - Station catalogue (per-line, in service order)
-
-private data class AirportStation(
-    val id: String,
-    val name: String,
-    val nameEl: String,
-) {
-    fun displayName(lang: AppLanguage): String = if (lang == AppLanguage.GREEK) nameEl else name
-}
-
-private fun stationsForLine(lineId: String): List<AirportStation> = when (lineId) {
-    "M3" -> M3_STATIONS
-    "A1" -> A1_STATIONS
-    "A2" -> A2_STATIONS
-    else -> emptyList()
-}
-
-private fun defaultStationIdFor(lineId: String): String = stationsForLine(lineId).firstOrNull()?.id ?: ""
-
-private val M3_STATIONS = listOf(
-    AirportStation("M3_DIM", "Dimotiko Theatro", "Δημοτικό Θέατρο"),
-    AirportStation("M3_AVA", "Agia Varvara", "Αγία Βαρβάρα"),
-    AirportStation("M3_KOR", "Korydallos", "Κορυδαλλός"),
-    AirportStation("M3_NIK", "Nikaia", "Νίκαια"),
-    AirportStation("M3_MAN", "Maniatika", "Μανιάτικα"),
-    AirportStation("M3_PIR", "Piraeus", "Πειραιάς"),
-    AirportStation("M3_KER", "Kerameikos", "Κεραμεικός"),
-    AirportStation("M3_MON", "Monastiraki", "Μοναστηράκι"),
-    AirportStation("M3_SYN", "Syntagma", "Σύνταγμα"),
-    AirportStation("M3_EVA", "Evangelismos", "Ευαγγελισμός"),
-    AirportStation("M3_MEG", "Megaro Mousikis", "Μέγαρο Μουσικής"),
-    AirportStation("M3_AMB", "Ambelokipoi", "Αμπελόκηποι"),
-    AirportStation("M3_PAN", "Panormou", "Πανόρμου"),
-    AirportStation("M3_KAT", "Katehaki", "Κατεχάκη"),
-    AirportStation("M3_ETH", "Ethniki Amyna", "Εθνική Άμυνα"),
-    AirportStation("M3_CHO", "Holargos", "Χολαργός"),
-    AirportStation("M3_NOM", "Nomismatokopio", "Νομισματοκοπείο"),
-    AirportStation("M3_APA", "Agia Paraskevi", "Αγία Παρασκευή"),
-    AirportStation("M3_CHA", "Halandri", "Χαλάνδρι"),
-    AirportStation("M3_DOY", "Doukissis Plakentias", "Δουκίσσης Πλακεντίας"),
-    AirportStation("M3_PAL", "Pallini", "Παλλήνη"),
-    AirportStation("M3_PEA", "Peania-Kantza", "Παιανία-Κάντζα"),
-    AirportStation("M3_KO2", "Koropi", "Κορωπί"),
-    AirportStation("M3_AER", "Airport", "Αεροδρόμιο"),
-)
-
-private val A1_STATIONS = listOf(
-    AirportStation("A1_PIR", "Piraeus", "Πειραιάς"),
-    AirportStation("A1_LEY", "Lefka", "Λεύκα"),
-    AirportStation("A1_REN", "Rentis", "Ρέντης"),
-    AirportStation("A1_TAY", "Tavros", "Ταύρος"),
-    AirportStation("A1_ROY", "Rouf", "Ρουφ"),
-    AirportStation("A1_ATH", "Athens", "Αθήνα"),
-    AirportStation("A1_AGI", "Ag. Anargyroi", "Άγιοι Ανάργυροι"),
-    AirportStation("A1_PYR", "Pyrgos Vasilissis", "Πύργος Βασιλίσσης"),
-    AirportStation("A1_KAT", "Kato Acharnai", "Κάτω Αχαρναί"),
-    AirportStation("A1_MET", "Metamorfosi", "Μεταμόρφωση"),
-    AirportStation("A1_IRA", "Irakleio", "Ηράκλειο"),
-    AirportStation("A1_NER", "Neratziotissa", "Νερατζιώτισσα"),
-    AirportStation("A1_KIF", "Kifisias", "Κηφισίας"),
-    AirportStation("A1_PEN", "Pentelis", "Πεντέλης"),
-    AirportStation("A1_DOY", "Douk. Plakentias", "Δουκίσσης Πλακεντίας"),
-    AirportStation("A1_PAL", "Pallini", "Παλλήνη"),
-    AirportStation("A1_PEA", "Peania-Kantza", "Παιανία-Κάντζα"),
-    AirportStation("A1_KOR", "Koropi", "Κορωπί"),
-    AirportStation("A1_AIR", "Airport", "Αεροδρόμιο"),
-)
-
-private val A2_STATIONS = listOf(
-    AirportStation("A2_ANO", "Ano Liosia", "Άνω Λιόσια"),
-    AirportStation("A2_ACH", "Acharnai Center", "Σιδ. Κέντρο Αχαρνών"),
-    AirportStation("A2_MET", "Metamorfosi", "Μεταμόρφωση"),
-    AirportStation("A2_IRA", "Irakleio", "Ηράκλειο"),
-    AirportStation("A2_NER", "Neratziotissa", "Νερατζιώτισσα"),
-    AirportStation("A2_KIF", "Kifisias", "Κηφισίας"),
-    AirportStation("A2_PEN", "Pentelis", "Πεντέλης"),
-    AirportStation("A2_DOY", "Douk. Plakentias", "Δουκίσσης Πλακεντίας"),
-    AirportStation("A2_PAL", "Pallini", "Παλλήνη"),
-    AirportStation("A2_PEA", "Peania-Kantza", "Παιανία-Κάντζα"),
-    AirportStation("A2_KOR", "Koropi", "Κορωπί"),
-    AirportStation("A2_AIR", "Airport", "Αεροδρόμιο"),
-)
-
 // MARK: - Projection
 
-internal data class AirportDeparture(
+internal data class ProjectedDeparture(
     val time: String,
     val timeMinutes: Int,
     val lineId: String,
-    val isAirportBound: Boolean,
+    val isOutbound: Boolean,
     val destinationLabel: String,
-    val sourceConfidence: com.syrmos.core.model.schedule.SourceConfidence =
-        com.syrmos.core.model.schedule.SourceConfidence.SCHEDULED,
+    val sourceConfidence: SourceConfidence = SourceConfidence.SCHEDULED,
 )
 
-internal object AirportProjection {
+internal object DepartureProjection {
     fun compute(
         bundles: Map<String, SyrmosSchedulesService.LineSchedule>,
         offsets: StationOffsetsRepository,
         stationId: String,
+        lineId: String,
         dayOffset: Int,
         now: LocalDateTime,
-    ): List<AirportDeparture> {
-        val results = mutableListOf<AirportDeparture>()
+    ): List<ProjectedDeparture> {
+        val results = mutableListOf<ProjectedDeparture>()
         val targetDate = run {
             var d = now.date
             repeat(dayOffset) { d = d.nextDay() }
@@ -852,72 +800,48 @@ internal object AirportProjection {
         }
         val dt = resolveDayType(targetDate)
         val nowMinutes = if (dayOffset == 0) now.time.hour * 60 + now.time.minute else 0
-        val isM3 = stationId.startsWith("M3")
-        val isA1 = stationId.startsWith("A1")
-        val isA2 = stationId.startsWith("A2")
 
-        if (isM3) {
-            bundles["M3_AIR"]?.let { bundle ->
-                emitAirportSlots(
+        val lineIds = if (lineId == "M3") listOf("M3", "M3_AIR") else listOf(lineId)
+
+        for (lid in lineIds) {
+            val bundle = bundles[lid] ?: continue
+
+            if (bundle.trips.isNotEmpty()) {
+                emitFromTrips(
                     bundle = bundle,
                     dt = dt,
                     nowMinutes = nowMinutes,
                     stationId = stationId,
-                    offsets = offsets,
-                    outboundLabel = "Airport",
-                    inboundLabel = "Dimotiko Theatro",
-                    lineIdOut = "M3",
+                    lineIdOut = lineId,
                     out = results,
                 )
             }
-        }
-        if (isA1) {
-            bundles["A1"]?.let { bundle ->
-                emitAirportSlots(
-                    bundle = bundle,
-                    dt = dt,
-                    nowMinutes = nowMinutes,
-                    stationId = stationId,
-                    offsets = offsets,
-                    outboundLabel = "Airport",
-                    inboundLabel = "Piraeus",
-                    lineIdOut = "A1",
-                    out = results,
-                )
-            }
-        }
-        if (isA2) {
-            bundles["A2"]?.let { bundle ->
-                emitAirportSlots(
-                    bundle = bundle,
-                    dt = dt,
-                    nowMinutes = nowMinutes,
-                    stationId = stationId,
-                    offsets = offsets,
-                    outboundLabel = "Airport",
-                    inboundLabel = "Ano Liosia",
-                    lineIdOut = "A2",
-                    out = results,
-                )
-            }
+
+            emitFromBands(
+                bundle = bundle,
+                dt = dt,
+                nowMinutes = nowMinutes,
+                stationId = stationId,
+                offsets = offsets,
+                lineIdOut = lineId,
+                out = results,
+            )
         }
 
         return results.sortedBy { it.timeMinutes }
     }
 
-    private fun emitAirportSlots(
+    private fun emitFromBands(
         bundle: SyrmosSchedulesService.LineSchedule,
         dt: String,
         nowMinutes: Int,
         stationId: String,
         offsets: StationOffsetsRepository,
-        outboundLabel: String,
-        inboundLabel: String,
         lineIdOut: String,
-        out: MutableList<AirportDeparture>,
+        out: MutableList<ProjectedDeparture>,
     ) {
-        val outOffset = airportStationOffset(offsets, bundle.lineId, "outbound", stationId)
-        val inOffset = airportStationOffset(offsets, bundle.lineId, "inbound", stationId)
+        val outOffset = stationOffset(offsets, bundle.lineId, "outbound", stationId)
+        val inOffset = stationOffset(offsets, bundle.lineId, "inbound", stationId)
 
         for (band in bundle.bands) {
             if (band.dayType != dt) continue
@@ -926,12 +850,16 @@ internal object AirportProjection {
             if (band.headwayMinutes <= 0) continue
             val end = rawEnd + (if (rawEnd < rawStart) 24 * 60 else 0)
             val dir = (band.direction ?: "both").lowercase()
-            val directions: List<Pair<String, Int>> = when (dir) {
-                "outbound" -> listOf(outboundLabel to outOffset)
-                "inbound" -> listOf(inboundLabel to inOffset)
-                else -> listOf(outboundLabel to outOffset, inboundLabel to inOffset)
+            data class DirEntry(val label: String, val offset: Int, val isOutbound: Boolean)
+            val directions: List<DirEntry> = when (dir) {
+                "outbound" -> listOf(DirEntry(band.label.ifBlank { "outbound" }, outOffset, true))
+                "inbound" -> listOf(DirEntry(band.label.ifBlank { "inbound" }, inOffset, false))
+                else -> listOf(
+                    DirEntry("outbound", outOffset, true),
+                    DirEntry("inbound", inOffset, false),
+                )
             }
-            for ((rawLabel, stationOffset) in directions) {
+            for ((label, stationOffset, isOutbound) in directions) {
                 var slot = rawStart.toDouble()
                 while (slot <= end) {
                     val timeMin = slot.toInt() + stationOffset
@@ -939,17 +867,17 @@ internal object AirportProjection {
                         val display = ((timeMin % (24 * 60)) + 24 * 60) % (24 * 60)
                         val time = "${(display / 60).toString().padStart(2, '0')}:${(display % 60).toString().padStart(2, '0')}"
                         val override = bundle.lastTrains.firstOrNull { entry ->
-                            entry.dayType == dt && entry.direction == directionKey(rawLabel, outboundLabel) &&
+                            entry.dayType == dt && entry.direction == (if (isOutbound) "outbound" else "inbound") &&
                                 entry.fromStationId == stationId &&
                                 ((entry.time.toMinutesOfDay() ?: -1) - timeMin).let { delta -> delta in -1..1 }
                         }
-                        val label = override?.let { humanStationName(it.endStationId) ?: it.endStationId } ?: rawLabel
-                        out.add(AirportDeparture(
+                        val destLabel = override?.endStationId ?: label
+                        out.add(ProjectedDeparture(
                             time = time,
                             timeMinutes = timeMin,
                             lineId = lineIdOut,
-                            isAirportBound = rawLabel == outboundLabel,
-                            destinationLabel = label,
+                            isOutbound = isOutbound,
+                            destinationLabel = destLabel,
                         ))
                     }
                     slot += band.headwayMinutes
@@ -958,7 +886,35 @@ internal object AirportProjection {
         }
     }
 
-    private fun airportStationOffset(
+    private fun emitFromTrips(
+        bundle: SyrmosSchedulesService.LineSchedule,
+        dt: String,
+        nowMinutes: Int,
+        stationId: String,
+        lineIdOut: String,
+        out: MutableList<ProjectedDeparture>,
+    ) {
+        for (trip in bundle.trips) {
+            if (trip.dayType != dt) continue
+            val stop = trip.stops.firstOrNull { it.stationId == stationId } ?: continue
+            val depMin = stop.departureTime.toMinutesOfDay() ?: continue
+            if (depMin < nowMinutes) continue
+            val display = ((depMin % (24 * 60)) + 24 * 60) % (24 * 60)
+            val time = "${(display / 60).toString().padStart(2, '0')}:${(display % 60).toString().padStart(2, '0')}"
+            val isOut = trip.direction.lowercase() != "inbound"
+            val dest = trip.stops.lastOrNull()?.stationId ?: trip.serviceLabel
+            out.add(ProjectedDeparture(
+                time = time,
+                timeMinutes = depMin,
+                lineId = lineIdOut,
+                isOutbound = isOut,
+                destinationLabel = dest,
+                sourceConfidence = SourceConfidence.SCHEDULED,
+            ))
+        }
+    }
+
+    private fun stationOffset(
         offsets: StationOffsetsRepository,
         lineId: String,
         direction: String,
@@ -970,14 +926,6 @@ internal object AirportProjection {
             return offsets.offsetFor("M3", direction, stationId)?.minutesFromOrigin ?: 0
         }
         return 0
-    }
-
-    private fun directionKey(label: String, outboundLabel: String): String =
-        if (label == outboundLabel) "outbound" else "inbound"
-
-    private fun humanStationName(stationId: String): String? {
-        val s = (M3_STATIONS + A1_STATIONS + A2_STATIONS).firstOrNull { it.id == stationId } ?: return null
-        return s.name
     }
 }
 
