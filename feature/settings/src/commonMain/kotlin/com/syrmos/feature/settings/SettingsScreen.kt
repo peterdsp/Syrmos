@@ -38,11 +38,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.Switch
+import androidx.compose.ui.platform.LocalUriHandler
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.AppThemeMode
 import com.syrmos.core.common.AriadneEngineStatus
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.MapPreferences
 import com.syrmos.core.common.NotificationSettings
 import com.syrmos.core.common.ThemeManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
@@ -52,7 +54,11 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
+fun SettingsScreen(
+    ariadneEngine: AriadneEngineStatus? = null,
+    onAriadneClick: (() -> Unit)? = null,
+    onStationClick: ((stationId: String) -> Unit)? = null,
+) {
     val lang by LocalizationManager.language.collectAsState()
     val themeMode by ThemeManager.theme.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
@@ -70,8 +76,11 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
     var showContact by remember { mutableStateOf(false) }
     val openStasyMap = rememberStasyMapOpener()
     val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+    val showVehicles by MapPreferences.showLiveVehicles.collectAsState()
+    val defaultRegion by MapPreferences.defaultRegion.collectAsState()
+    var showRegionPicker by remember { mutableStateOf(false) }
 
-    // Tickets catalogue takes over the whole tab when shown.
     if (showFares) {
         FaresScreen(onBack = { showFares = false })
         return
@@ -92,6 +101,49 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
         contentPadding = PaddingValues(start = 16.dp, top = 76.dp, end = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        // Ariadne entry point
+        if (onAriadneClick != null) {
+            item {
+                SettingsSection(title = when (lang) {
+                    AppLanguage.GREEK -> "Βοηθος"
+                    AppLanguage.ALBANIAN -> "Asistent"
+                    else -> "Assistant"
+                }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onAriadneClick() }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(
+                                text = "Ariadne",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = when (lang) {
+                                    AppLanguage.GREEK -> "Ο βοηθος σου στα τρενα"
+                                    AppLanguage.ALBANIAN -> "Asistenti yt i trenave"
+                                    else -> "Your rail assistant"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = "›",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Preferences
         item {
             SettingsSection(title = L.PREFERENCES.text(lang)) {
                 Box {
@@ -142,6 +194,126 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             }
         }
 
+        // Map preferences
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SettingsSection(title = when (lang) {
+                    AppLanguage.GREEK -> "Χαρτης"
+                    AppLanguage.ALBANIAN -> "Harta"
+                    else -> "Map preferences"
+                }) {
+                    NotifToggleRow(
+                        title = when (lang) {
+                            AppLanguage.GREEK -> "Ζωντανα οχηματα"
+                            AppLanguage.ALBANIAN -> "Mjetet e gjalla"
+                            else -> "Live vehicles"
+                        },
+                        checked = showVehicles,
+                        onCheckedChange = { MapPreferences.setShowLiveVehicles(it) },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    Box {
+                        SettingsRow(
+                            title = when (lang) {
+                                AppLanguage.GREEK -> "Προεπιλεγμενη περιοχη"
+                                AppLanguage.ALBANIAN -> "Rajoni i parazgjedhur"
+                                else -> "Default region"
+                            },
+                            value = regionLabel(defaultRegion, lang),
+                            onClick = { showRegionPicker = true },
+                            interactive = true,
+                        )
+                        DropdownMenu(
+                            expanded = showRegionPicker,
+                            onDismissRequest = { showRegionPicker = false },
+                        ) {
+                            listOf("athens", "thessaloniki", "patras", "national").forEach { region ->
+                                DropdownMenuItem(
+                                    text = { Text(regionLabel(region, lang)) },
+                                    onClick = {
+                                        MapPreferences.setDefaultRegion(region)
+                                        showRegionPicker = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+                Text(
+                    text = when (lang) {
+                        AppLanguage.GREEK -> "Τα ζωντανα οχηματα εμφανιζονται σαν κινουμενα τριγωνα στον χαρτη."
+                        AppLanguage.ALBANIAN -> "Mjetet e gjalla shfaqen si trekendsha levizes ne harte."
+                        else -> "Live vehicles appear as moving triangles on the map."
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+        }
+
+        // Operators
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SettingsSection(title = when (lang) {
+                    AppLanguage.GREEK -> "Διαχειριστες"
+                    AppLanguage.ALBANIAN -> "Operatoret"
+                    else -> "Operators"
+                }) {
+                    OperatorRow(
+                        name = "STASY",
+                        detail = when (lang) {
+                            AppLanguage.GREEK -> "Μετρο & Τραμ Αθηνας"
+                            AppLanguage.ALBANIAN -> "Metro & Tramvaj Athine"
+                            else -> "Athens Metro & Tram"
+                        },
+                        onClick = { uriHandler.openUri("https://www.stasy.gr") },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    OperatorRow(
+                        name = "OASA",
+                        detail = when (lang) {
+                            AppLanguage.GREEK -> "Αστικες συγκοινωνιες Αθηνας"
+                            AppLanguage.ALBANIAN -> "Transporti publik Athine"
+                            else -> "Athens public transport"
+                        },
+                        onClick = { uriHandler.openUri("https://www.oasa.gr") },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    OperatorRow(
+                        name = "Hellenic Train",
+                        detail = when (lang) {
+                            AppLanguage.GREEK -> "Προαστιακος & Υπεραστικα"
+                            AppLanguage.ALBANIAN -> "Periferike & Nderqytetese"
+                            else -> "Suburban & Intercity"
+                        },
+                        onClick = { uriHandler.openUri("https://www.hellenictrain.gr") },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    OperatorRow(
+                        name = "OSETH",
+                        detail = when (lang) {
+                            AppLanguage.GREEK -> "Μετρο Θεσσαλονικης"
+                            AppLanguage.ALBANIAN -> "Metro Selanik"
+                            else -> "Thessaloniki Metro"
+                        },
+                        onClick = { uriHandler.openUri("https://www.oseth.gr") },
+                    )
+                }
+                Text(
+                    text = when (lang) {
+                        AppLanguage.GREEK -> "Οι τιμες και τα δρομολογια διαχειριζονται απο τους αντιστοιχους φορεις."
+                        AppLanguage.ALBANIAN -> "Cmimet dhe oraret menaxhohen nga operatoret perkates."
+                        else -> "Fares and schedules are managed by their respective operators."
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+        }
+
+        // Notifications
         item {
             val serviceAlertsOn by NotificationSettings.serviceAlerts.collectAsState()
             val weatherAlertsOn by NotificationSettings.weatherAlerts.collectAsState()
@@ -195,6 +367,7 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             }
         }
 
+        // Data
         item {
             SettingsSection(title = L.DATA.text(lang)) {
                 SettingsRow(
@@ -209,14 +382,14 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 SettingsRow(
                     title = when (lang) {
-                        AppLanguage.GREEK -> "Τελευταία ενημέρωση"
-                        AppLanguage.ALBANIAN -> "Përditësimi i fundit"
+                        AppLanguage.GREEK -> "Τελευταια ενημερωση"
+                        AppLanguage.ALBANIAN -> "Perditesimi i fundit"
                         else -> "Last updated"
                     },
                     value = lastSync?.toString()?.replace("T", " ")?.substringBefore(".")
                         ?: when (lang) {
-                            AppLanguage.GREEK -> "Ποτέ"
-                            AppLanguage.ALBANIAN -> "Asnjëherë"
+                            AppLanguage.GREEK -> "Ποτε"
+                            AppLanguage.ALBANIAN -> "Asnjehere"
                             else -> "Never"
                         },
                 )
@@ -254,7 +427,7 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                     }
                     Text(
                         text = when (lang) {
-                            AppLanguage.GREEK -> "Έλεγχος τώρα"
+                            AppLanguage.GREEK -> "Ελεγχος τωρα"
                             AppLanguage.ALBANIAN -> "Kontrollo tani"
                             else -> "Check now"
                         },
@@ -265,17 +438,18 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             }
         }
 
+        // Tickets
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SettingsSection(title = when (lang) {
-                    AppLanguage.GREEK -> "Εισιτήρια"
+                    AppLanguage.GREEK -> "Εισιτηρια"
                     AppLanguage.ALBANIAN -> "Bileta"
                     else -> "Tickets"
                 }) {
                     SettingsRow(
                         title = when (lang) {
-                            AppLanguage.GREEK -> "Τιμοκατάλογος εισιτηρίων"
-                            AppLanguage.ALBANIAN -> "Çmimet e biletave"
+                            AppLanguage.GREEK -> "Τιμοκαταλογος εισιτηριων"
+                            AppLanguage.ALBANIAN -> "Cmimet e biletave"
                             else -> "Ticket prices"
                         },
                         value = "›",
@@ -290,7 +464,7 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                     ) {
                         Text(
                             text = when (lang) {
-                                AppLanguage.GREEK -> "Ανέπαφη πληρωμή"
+                                AppLanguage.GREEK -> "Ανεπαφη πληρωμη"
                                 AppLanguage.ALBANIAN -> "Pagesa pa kontakt"
                                 else -> "Contactless payment"
                             },
@@ -298,8 +472,8 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                         )
                         Text(
                             text = when (lang) {
-                                AppLanguage.GREEK -> "Πληρώστε στις πύλες μετρό/τραμ ή μέσα σε τραμ και τρένα με Apple Pay, Google Wallet ή ανέπαφη κάρτα."
-                                AppLanguage.ALBANIAN -> "Paguaj në portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose çdo kartë pa kontakt."
+                                AppLanguage.GREEK -> "Πληρωστε στις πυλες μετρο/τραμ η μεσα σε τραμ και τρενα με Apple Pay, Google Wallet η ανεπαφη καρτα."
+                                AppLanguage.ALBANIAN -> "Paguaj ne portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose cdo karte pa kontakt."
                                 else -> "Tap to pay at metro/tram gates and onboard trams and trains with Apple Pay, Google Wallet, or any contactless card."
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -309,8 +483,8 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
                 }
                 Text(
                     text = when (lang) {
-                        AppLanguage.GREEK -> "Οι τιμές διαχειρίζονται από OASA, STASY και Hellenic Train. Το Syrmos εμφανίζει τις επίσημες τιμές."
-                        AppLanguage.ALBANIAN -> "Çmimet menaxhohen nga OASA, STASY dhe Hellenic Train. Syrmos shfaq çmimet zyrtare."
+                        AppLanguage.GREEK -> "Οι τιμες διαχειριζονται απο OASA, STASY και Hellenic Train. Το Syrmos εμφανιζει τις επισημες τιμες."
+                        AppLanguage.ALBANIAN -> "Cmimet menaxhohen nga OASA, STASY dhe Hellenic Train. Syrmos shfaq cmimet zyrtare."
                         else -> "Prices are managed by OASA, STASY and Hellenic Train. Syrmos displays the official prices."
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -320,6 +494,7 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             }
         }
 
+        // About
         item {
             SettingsSection(title = L.ABOUT.text(lang)) {
                 Text(
@@ -331,17 +506,18 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             }
         }
 
+        // Ariadne engine status
         ariadneEngine?.let { engine ->
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SettingsSection(title = when (lang) {
-                        AppLanguage.GREEK -> "Μηχανή Ariadne"
+                        AppLanguage.GREEK -> "Μηχανη Ariadne"
                         AppLanguage.ALBANIAN -> "Motori i Ariadne"
                         else -> "Ariadne engine"
                     }) {
                         SettingsRow(
                             title = when (lang) {
-                                AppLanguage.GREEK -> "Μηχανή"
+                                AppLanguage.GREEK -> "Μηχανη"
                                 AppLanguage.ALBANIAN -> "Motori"
                                 else -> "Engine"
                             },
@@ -358,44 +534,46 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             }
         }
 
+        // Map
         item {
             SettingsSection(title = when (lang) {
-                AppLanguage.GREEK -> "Χάρτης"
-                AppLanguage.ALBANIAN -> "Harta"
-                else -> "Map"
+                AppLanguage.GREEK -> "Χαρτης δικτυου"
+                AppLanguage.ALBANIAN -> "Harta e rrjetit"
+                else -> "Network map"
             }) {
                 SettingsRow(
                     title = when (lang) {
-                        AppLanguage.GREEK -> "Σιδηροδρομικό δίκτυο Αθήνας"
-                        AppLanguage.ALBANIAN -> "Hekurudhat e zonës metropolitane të Athinës"
+                        AppLanguage.GREEK -> "Σιδηροδρομικο δικτυο Αθηνας"
+                        AppLanguage.ALBANIAN -> "Hekurudhat e zones metropolitane te Athines"
                         else -> "Athens metropolitan area railways"
                     },
                     value = when (lang) {
-                        AppLanguage.GREEK -> "Άνοιγμα →"
-                        AppLanguage.ALBANIAN -> "Hap →"
-                        else -> "Open →"
+                        AppLanguage.GREEK -> "Ανοιγμα >"
+                        AppLanguage.ALBANIAN -> "Hap >"
+                        else -> "Open >"
                     },
                     onClick = { openStasyMap() },
                 )
             }
         }
 
+        // Contact
         item {
             SettingsSection(title = when (lang) {
-                AppLanguage.GREEK -> "Επικοινωνία"
+                AppLanguage.GREEK -> "Επικοινωνια"
                 AppLanguage.ALBANIAN -> "Kontakt"
                 else -> "Contact"
             }) {
                 SettingsRow(
                     title = when (lang) {
-                        AppLanguage.GREEK -> "Επικοινωνία με τον μηχανικό"
+                        AppLanguage.GREEK -> "Επικοινωνια με τον μηχανικο"
                         AppLanguage.ALBANIAN -> "Kontakto zhvilluesin"
                         else -> "Contact engineer"
                     },
                     value = when (lang) {
-                        AppLanguage.GREEK -> "Άνοιγμα →"
-                        AppLanguage.ALBANIAN -> "Hap →"
-                        else -> "Open →"
+                        AppLanguage.GREEK -> "Ανοιγμα >"
+                        AppLanguage.ALBANIAN -> "Hap >"
+                        else -> "Open >"
                     },
                     onClick = { showContact = true },
                 )
@@ -410,6 +588,64 @@ fun SettingsScreen(ariadneEngine: AriadneEngineStatus? = null) {
             .zIndex(1f),
     )
     }
+}
+
+@Composable
+private fun OperatorRow(
+    name: String,
+    detail: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = "↗",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun regionLabel(region: String, lang: AppLanguage): String = when (region) {
+    "athens" -> when (lang) {
+        AppLanguage.GREEK -> "Αθηνα"
+        AppLanguage.ALBANIAN -> "Athine"
+        else -> "Athens"
+    }
+    "thessaloniki" -> when (lang) {
+        AppLanguage.GREEK -> "Θεσσαλονικη"
+        AppLanguage.ALBANIAN -> "Selanik"
+        else -> "Thessaloniki"
+    }
+    "patras" -> when (lang) {
+        AppLanguage.GREEK -> "Πατρα"
+        AppLanguage.ALBANIAN -> "Patra"
+        else -> "Patras"
+    }
+    "national" -> when (lang) {
+        AppLanguage.GREEK -> "Ολη η Ελλαδα"
+        AppLanguage.ALBANIAN -> "E gjithe Greqia"
+        else -> "All Greece"
+    }
+    else -> region
 }
 
 @Composable
@@ -488,64 +724,62 @@ private fun NotifToggleRow(
     }
 }
 
-/** "Clever mode" when a model backs Ariadne, else "Rule parser". */
 private fun AriadneEngineStatus.engineLabel(lang: AppLanguage): String = if (isSmart) {
     when (lang) {
-        AppLanguage.GREEK -> "Έξυπνη λειτουργία"
+        AppLanguage.GREEK -> "Εξυπνη λειτουργια"
         AppLanguage.ALBANIAN -> "Modaliteti i zgjuar"
         else -> "Clever mode"
     }
 } else {
     when (lang) {
-        AppLanguage.GREEK -> "Αναλυτής κανόνων"
+        AppLanguage.GREEK -> "Αναλυτης κανονων"
         AppLanguage.ALBANIAN -> "Analizues rregullash"
         else -> "Rule parser"
     }
 }
 
-/** One-line reason so the user understands which engine is answering. */
 private fun AriadneEngineStatus.engineDetail(lang: AppLanguage): String = when (this) {
     AriadneEngineStatus.AVAILABLE -> when (lang) {
-        AppLanguage.GREEK -> "Το Gemini Nano διορθώνει την ερώτησή σας πριν την ανάλυση, εξ ολοκλήρου στη συσκευή."
-        AppLanguage.ALBANIAN -> "Gemini Nano rregullon pyetjen tuaj para analizës, plotësisht në pajisje."
+        AppLanguage.GREEK -> "Το Gemini Nano διορθωνει την ερωτηση σας πριν την αναλυση, εξ ολοκληρου στη συσκευη."
+        AppLanguage.ALBANIAN -> "Gemini Nano rregullon pyetjen tuaj para analizes, plotesisht ne pajisje."
         else -> "Gemini Nano cleans up your question before parsing, fully on device."
     }
     AriadneEngineStatus.MODEL_NOT_DOWNLOADED -> when (lang) {
-        AppLanguage.GREEK -> "Το μοντέλο στη συσκευή δεν έχει κατέβει ακόμη. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
-        AppLanguage.ALBANIAN -> "Modeli në pajisje nuk është shkarkuar ende. Syrmos përdor analizuesin e rregullave."
+        AppLanguage.GREEK -> "Το μοντελο στη συσκευη δεν εχει κατεβει ακομη. Το Syrmos χρησιμοποιει τον αναλυτη κανονων."
+        AppLanguage.ALBANIAN -> "Modeli ne pajisje nuk eshte shkarkuar ende. Syrmos perdor analizuesin e rregullave."
         else -> "The on-device model isn't downloaded yet. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.AICORE_MISSING -> when (lang) {
-        AppLanguage.GREEK -> "Το AICore δεν υπάρχει σε αυτή τη συσκευή. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
-        AppLanguage.ALBANIAN -> "AICore mungon në këtë pajisje. Syrmos përdor analizuesin e rregullave."
+        AppLanguage.GREEK -> "Το AICore δεν υπαρχει σε αυτη τη συσκευη. Το Syrmos χρησιμοποιει τον αναλυτη κανονων."
+        AppLanguage.ALBANIAN -> "AICore mungon ne kete pajisje. Syrmos perdor analizuesin e rregullave."
         else -> "AICore isn't present on this device. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.DEVICE_NOT_ELIGIBLE -> when (lang) {
-        AppLanguage.GREEK -> "Αυτή η συσκευή δεν υποστηρίζει μοντέλο στη συσκευή. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
-        AppLanguage.ALBANIAN -> "Kjo pajisje nuk mbështet model në pajisje. Syrmos përdor analizuesin e rregullave."
+        AppLanguage.GREEK -> "Αυτη η συσκευη δεν υποστηριζει μοντελο στη συσκευη. Το Syrmos χρησιμοποιει τον αναλυτη κανονων."
+        AppLanguage.ALBANIAN -> "Kjo pajisje nuk mbeshtet model ne pajisje. Syrmos perdor analizuesin e rregullave."
         else -> "This device can't run an on-device model. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.RULE_PARSER -> when (lang) {
-        AppLanguage.GREEK -> "Το Syrmos χρησιμοποιεί τον ντετερμινιστικό αναλυτή κανόνων, εξ ολοκλήρου εκτός σύνδεσης."
-        AppLanguage.ALBANIAN -> "Syrmos përdor analizuesin determinist të rregullave, plotësisht jashtë linje."
+        AppLanguage.GREEK -> "Το Syrmos χρησιμοποιει τον ντετερμινιστικο αναλυτη κανονων, εξ ολοκληρου εκτος συνδεσης."
+        AppLanguage.ALBANIAN -> "Syrmos perdor analizuesin determinist te rregullave, plotesisht jashte linje."
         else -> "Syrmos uses the deterministic rule parser, fully offline."
     }
 }
 
 private fun AppThemeMode.localizedName(lang: AppLanguage): String = when (this) {
     AppThemeMode.SYSTEM -> when (lang) {
-        AppLanguage.GREEK -> "Σύστημα"
+        AppLanguage.GREEK -> "Συστημα"
         AppLanguage.ALBANIAN -> "Sistemi"
         else -> "System"
     }
     AppThemeMode.LIGHT -> when (lang) {
-        AppLanguage.GREEK -> "Φωτεινό"
+        AppLanguage.GREEK -> "Φωτεινο"
         AppLanguage.ALBANIAN -> "E ndritshme"
         else -> "Light"
     }
     AppThemeMode.DARK -> when (lang) {
-        AppLanguage.GREEK -> "Σκοτεινό"
-        AppLanguage.ALBANIAN -> "E errët"
+        AppLanguage.GREEK -> "Σκοτεινο"
+        AppLanguage.ALBANIAN -> "E erret"
         else -> "Dark"
     }
 }

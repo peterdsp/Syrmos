@@ -11,3 +11,11 @@ actual fun loadNotifPref(key: String, default: Boolean): Boolean {
     if (defaults.objectForKey("syrmos_$key") == null) return default
     return defaults.boolForKey("syrmos_$key")
 }
+
+actual fun persistStringPref(key: String, value: String) {
+    NSUserDefaults.standardUserDefaults.setObject(value, forKey = "syrmos_$key")
+}
+
+actual fun loadStringPref(key: String, default: String): String {
+    return NSUserDefaults.standardUserDefaults.stringForKey("syrmos_$key") ?: default
+}
