@@ -1,24 +1,32 @@
 import SwiftUI
 
-/// Airport-focused departures. Glass-card layout: pick a day, pick a
-/// station (auto-snaps to nearest airport-serving stop on first appear),
-/// then each direction surfaces the next departure on top with two
-/// expand controls underneath — "Earlier" reveals trains that have
-/// already left today, "All upcoming" reveals every remaining slot in
-/// the day. Future days hide the "Earlier" pill since "before now"
-/// doesn't apply.
+/// Universal departures screen: pick any line, any station, see the
+/// next trains in both directions. Glass-card layout: 7-day pill row,
+/// line picker, station picker, two direction sections with expand
+/// controls. Replaces the old airport-only screen.
 struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
-    @ObservedObject private var schedules = SyrmosSchedulesStore.shared
     @StateObject private var locationService = LocationService()
     @State private var selectedLineId: String = "M3"
-    @State private var selectedStationId: String = AirportData.defaultStationId
+    @State private var selectedStationId: String = ""
     @State private var dayOffset: Int = 0
     @State private var departures: [Departure] = []
     @State private var nowTick = Date()
     @State private var didAutoPickNearest: Bool = false
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
+
+    private var operationalLines: [TransitLine] {
+        SyrmosData.operationalLines
+    }
+
+    private var selectedLine: TransitLine? {
+        SyrmosData.line(for: selectedLineId)
+    }
+
+    private var stationsOnLine: [TransitStation] {
+        SyrmosData.stations(for: selectedLineId)
+    }
 
     var body: some View {
         NavigationStack {
@@ -32,19 +40,17 @@ struct TimetablesView: View {
                             get: { selectedLineId },
                             set: { newLine in
                                 selectedLineId = newLine
-                                // Snap station to first stop on the new
-                                // line; never leave the previous line's
-                                // station id dangling on a foreign line.
-                                if let first = AirportData.stations(for: newLine).first {
+                                if let first = SyrmosData.stations(for: newLine).first {
                                     selectedStationId = first.id
                                 }
                                 didAutoPickNearest = true
                             }
-                        )
+                        ),
+                        lines: operationalLines
                     )
 
                     StationPickerCard(
-                        lineId: selectedLineId,
+                        stations: stationsOnLine,
                         selectedStationId: Binding(
                             get: { selectedStationId },
                             set: { newValue in
@@ -54,16 +60,23 @@ struct TimetablesView: View {
                         )
                     )
 
-                    AirportSection(
-                        kind: .toAirport,
-                        departures: toAirport,
-                        isToday: dayOffset == 0
+                    let outbound = departures.filter { isOutboundDirection($0.direction) }
+                    let inbound = departures.filter { !isOutboundDirection($0.direction) }
+
+                    DirectionSection(
+                        kind: .outbound,
+                        departures: outbound,
+                        isToday: dayOffset == 0,
+                        destinationLabel: selectedLine?.terminalB ?? "",
+                        tint: SyrmosData.lineColor(for: selectedLineId)
                     )
 
-                    AirportSection(
-                        kind: .fromAirport,
-                        departures: fromAirport,
-                        isToday: dayOffset == 0
+                    DirectionSection(
+                        kind: .inbound,
+                        departures: inbound,
+                        isToday: dayOffset == 0,
+                        destinationLabel: selectedLine?.terminalA ?? "",
+                        tint: SyrmosData.lineColor(for: selectedLineId)
                     )
 
                     Text(footerText)
@@ -79,13 +92,16 @@ struct TimetablesView: View {
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader(
-                    loc.language == .greek ? "Αεροδρόμιο" :
-                    loc.language == .albanian ? "Aeroporti" : "Airport"
+                    loc.language == .greek ? "Αναχωρήσεις" :
+                    loc.language == .albanian ? "Nisjet" : "Departures"
                 )
             }
             .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 locationService.requestIfNeeded()
+                if selectedStationId.isEmpty, let first = stationsOnLine.first {
+                    selectedStationId = first.id
+                }
                 reload()
             }
             .onReceive(refreshTimer) { _ in
@@ -102,49 +118,42 @@ struct TimetablesView: View {
 
     private func autoSelectNearest() {
         guard !didAutoPickNearest else { return }
-        let nearest = locationService.nearbyStations.first { ns in
-            ns.station.lineIds.contains { AirportData.airportLines.contains($0) }
+        guard let nearest = locationService.nearbyStations.first else { return }
+        let candidateId = nearest.station.id
+        if let line = nearest.station.lineIds.first,
+           SyrmosData.stations(for: line).contains(where: { $0.id == candidateId }) {
+            selectedLineId = line
+            selectedStationId = candidateId
+            didAutoPickNearest = true
         }
-        if let target = nearest {
-            let candidate = target.station.stationIds.first { AirportData.knows(id: $0) }
-                ?? target.station.id
-            if let station = AirportData.optional(id: candidate) {
-                // Set the line first so the station picker is already
-                // filtered to the right line when the station snaps in.
-                if let line = station.lineIds.first(where: { AirportData.airportLines.contains($0) }) {
-                    selectedLineId = line
-                }
-                selectedStationId = candidate
-                didAutoPickNearest = true
-            }
-        }
+    }
+
+    private func isOutboundDirection(_ dir: String) -> Bool {
+        guard let line = selectedLine else { return true }
+        let termA = line.terminalA.lowercased()
+        let dirLow = dir.lowercased()
+        return !dirLow.contains(termA) && !dirLow.hasPrefix(termA)
     }
 
     private var footerText: String {
         switch loc.language {
-        case .greek: return "Επόμενα δρομολόγια αεροδρομίου από τον επιλεγμένο σταθμό."
-        case .albanian: return "Nisjet e ardhshme për aeroportin nga stacioni i zgjedhur."
-        case .english: return "Next airport-train departures from the selected station."
-        }
-    }
-
-    private var toAirport: [Departure] {
-        departures.filter {
-            $0.serviceType == "airport" && AirportData.isAirportBoundDirection($0.direction)
-        }
-    }
-
-    private var fromAirport: [Departure] {
-        departures.filter {
-            $0.serviceType == "airport" && !AirportData.isAirportBoundDirection($0.direction)
+        case .greek: return "Επομενα δρομολογια απο τον επιλεγμενο σταθμο."
+        case .albanian: return "Nisjet e ardhshme nga stacioni i zgjedhur."
+        case .english: return "Next departures from the selected station."
         }
     }
 
     private func reload() {
         let offset = dayOffset
+        let lineId = selectedLineId
+        let stationId = selectedStationId
+        guard !stationId.isEmpty else { return }
         Task { @MainActor in
-            departures = ScheduleProjector.airportDeparturesForDay(
-                stationId: selectedStationId,
+            let lineIds = lineId == "M3" ? ["M3", "M3_AIR"] : [lineId]
+            departures = ScheduleProjector.nextDepartures(
+                for: stationId,
+                lineIds: lineIds,
+                limit: 200,
                 dayOffset: offset
             )
         }
@@ -155,17 +164,18 @@ struct TimetablesView: View {
 
 private struct LinePickerCard: View {
     @Binding var selectedLineId: String
+    let lines: [TransitLine]
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         Menu {
-            ForEach(AirportData.stationsByGroup, id: \.line) { group in
+            ForEach(lines, id: \.id) { line in
                 Button {
-                    selectedLineId = group.line
+                    selectedLineId = line.id
                 } label: {
                     HStack {
-                        Text(group.label(loc.language))
-                        if group.line == selectedLineId {
+                        Text(lineLabel(line))
+                        if line.id == selectedLineId {
                             Spacer()
                             Image(systemName: "checkmark")
                         }
@@ -181,11 +191,11 @@ private struct LinePickerCard: View {
                     .background(tint.opacity(0.15), in: Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(label(.line).uppercased())
+                    Text(lineHeaderLabel.uppercased())
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
-                    Text(currentGroupLabel)
+                    Text(currentLineLabel)
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
@@ -206,13 +216,22 @@ private struct LinePickerCard: View {
         .buttonStyle(.plain)
     }
 
-    private var currentGroupLabel: String {
-        AirportData.group(for: selectedLineId)?.label(loc.language) ?? selectedLineId
+    private var currentLineLabel: String {
+        guard let line = lines.first(where: { $0.id == selectedLineId }) else { return selectedLineId }
+        return lineLabel(line)
+    }
+
+    private func lineLabel(_ line: TransitLine) -> String {
+        loc.language == .greek && !line.nameEl.isEmpty ? line.nameEl : line.name
     }
 
     private var iconName: String {
-        switch selectedLineId {
-        case "M3", "M3_AIR": return "tram.tunnel.fill"
+        let line = lines.first { $0.id == selectedLineId }
+        switch line?.type {
+        case .metro: return "tram.tunnel.fill"
+        case .tram: return "tram.fill"
+        case .bus: return "bus.fill"
+        case .scenic: return "mountain.2.fill"
         default: return "train.side.front.car"
         }
     }
@@ -221,27 +240,23 @@ private struct LinePickerCard: View {
         SyrmosData.lineColor(for: selectedLineId)
     }
 
-    private enum CardLabel { case line, station }
-    private func label(_ which: CardLabel) -> String {
-        switch (which, loc.language) {
-        case (.line, .greek): return "Γραμμή"
-        case (.line, .albanian): return "Linja"
-        case (.line, .english): return "Line"
-        case (.station, .greek): return "Σταθμός"
-        case (.station, .albanian): return "Stacioni"
-        case (.station, .english): return "Station"
+    private var lineHeaderLabel: String {
+        switch loc.language {
+        case .greek: return "Γραμμη"
+        case .albanian: return "Linja"
+        case .english: return "Line"
         }
     }
 }
 
 private struct StationPickerCard: View {
-    let lineId: String
+    let stations: [TransitStation]
     @Binding var selectedStationId: String
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         Menu {
-            ForEach(AirportData.stations(for: lineId), id: \.id) { st in
+            ForEach(stations, id: \.id) { st in
                 Button {
                     selectedStationId = st.id
                 } label: {
@@ -255,7 +270,7 @@ private struct StationPickerCard: View {
                 }
             }
         } label: {
-            let current = AirportData.station(for: selectedStationId)
+            let current = stations.first { $0.id == selectedStationId }
             HStack(alignment: .center) {
                 Image(systemName: "mappin.circle.fill")
                     .font(.title3)
@@ -268,7 +283,7 @@ private struct StationPickerCard: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
-                    Text(loc.language == .greek ? current.nameEl : current.name)
+                    Text(loc.language == .greek ? (current?.nameEl ?? "") : (current?.name ?? ""))
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(.primary)
                 }
@@ -289,19 +304,21 @@ private struct StationPickerCard: View {
 
     private var stationLabel: String {
         switch loc.language {
-        case .greek: return "Σταθμός"
+        case .greek: return "Σταθμος"
         case .albanian: return "Stacioni"
         case .english: return "Station"
         }
     }
 }
 
-private struct AirportSection: View {
-    enum Kind { case toAirport, fromAirport }
+private struct DirectionSection: View {
+    enum Kind { case outbound, inbound }
 
     let kind: Kind
     let departures: [Departure]
     let isToday: Bool
+    let destinationLabel: String
+    let tint: Color
 
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var mode: Mode = .featured
@@ -387,51 +404,43 @@ private struct AirportSection: View {
 
     private var icon: String {
         switch kind {
-        case .toAirport: return "airplane.departure"
-        case .fromAirport: return "airplane.arrival"
-        }
-    }
-
-    private var tint: Color {
-        switch kind {
-        case .toAirport: return .metroBlue
-        case .fromAirport: return .arrivalModerate
+        case .outbound: return "arrow.right"
+        case .inbound: return "arrow.left"
         }
     }
 
     private var title: String {
-        switch (kind, loc.language) {
-        case (.toAirport, .greek): return "Προς Αεροδρόμιο"
-        case (.toAirport, .albanian): return "Drejt Aeroportit"
-        case (.toAirport, .english): return "To Airport"
-        case (.fromAirport, .greek): return "Από Αεροδρόμιο"
-        case (.fromAirport, .albanian): return "Nga Aeroporti"
-        case (.fromAirport, .english): return "From Airport"
+        let prefix: String
+        switch loc.language {
+        case .greek: prefix = "Προς"
+        case .albanian: prefix = "Drejt"
+        case .english: prefix = "Towards"
         }
+        return "\(prefix) \(destinationLabel)"
     }
 
     private var subtitle: String? {
         let count = upcomingDepartures.count
         guard count > 0 else { return nil }
         switch loc.language {
-        case .greek: return "\(count) επόμενα δρομολόγια"
-        case .albanian: return "\(count) nisje të radhës"
+        case .greek: return "\(count) επομενα δρομολογια"
+        case .albanian: return "\(count) nisje te radhes"
         case .english: return "\(count) upcoming departures"
         }
     }
 
     private var earlierLabel: String {
         switch loc.language {
-        case .greek: return "Προηγούμενα"
-        case .albanian: return "Më parë"
+        case .greek: return "Προηγουμενα"
+        case .albanian: return "Me pare"
         case .english: return "Earlier"
         }
     }
 
     private var allUpcomingLabel: String {
         switch loc.language {
-        case .greek: return "Όλα τα επόμενα"
-        case .albanian: return "Të gjitha"
+        case .greek: return "Ολα τα επομενα"
+        case .albanian: return "Te gjitha"
         case .english: return "All upcoming"
         }
     }
@@ -455,12 +464,8 @@ private struct AirportSection: View {
     private var expandedDepartures: [Departure] {
         switch mode {
         case .featured: return []
-        case .showPast:
-            // Past entries reversed so the most recent past sits first.
-            return Array(pastDepartures.reversed())
-        case .showAll:
-            // Everything after the featured one.
-            return Array(upcomingDepartures.dropFirst())
+        case .showPast: return Array(pastDepartures.reversed())
+        case .showAll: return Array(upcomingDepartures.dropFirst())
         }
     }
 
@@ -479,8 +484,14 @@ private struct FeaturedRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            iconView
-                .frame(width: 56, height: 40)
+            Circle()
+                .fill(SyrmosData.lineColor(for: departure.lineId))
+                .frame(width: 36, height: 36)
+                .overlay(
+                    Image(systemName: "train.side.front.car")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                )
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
@@ -515,24 +526,10 @@ private struct FeaturedRow: View {
         .padding(.vertical, 6)
     }
 
-    @ViewBuilder
-    private var iconView: some View {
-        if let n = TimetablesIcons.vehicleImageName(
-            lineId: departure.lineId,
-            direction: departure.direction,
-            isAirport: true
-        ), UIImage(named: n) != nil {
-            Image(n).resizable().scaledToFit()
-        } else {
-            Circle().fill(SyrmosData.lineColor(for: departure.lineId))
-                .frame(width: 14, height: 14)
-        }
-    }
-
     private var minutesLabel: String {
         if departure.minutesAway <= 1 {
             switch loc.language {
-            case .greek: return "Τώρα"
+            case .greek: return "Τωρα"
             case .albanian: return "Tani"
             case .english: return "Now"
             }
@@ -594,8 +591,8 @@ private struct ExpandedRow: View {
 private struct EmptyRow: View {
     @ObservedObject private var loc = LocalizationManager.shared
     var body: some View {
-        Text(loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια." :
-             loc.language == .albanian ? "Nuk ka nisje të disponueshme." :
+        Text(loc.language == .greek ? "Δεν υπαρχουν διαθεσιμα δρομολογια." :
+             loc.language == .albanian ? "Nuk ka nisje te disponueshme." :
              "No departures available.")
             .font(.subheadline)
             .foregroundStyle(.secondary)
@@ -636,9 +633,6 @@ private struct GlassPill: View {
 // MARK: - Glass card background helper
 
 private extension View {
-    /// iOS 26 has a real Glass shape style. On older OSes fall back to
-    /// the existing .ultraThinMaterial which gives a similar translucent
-    /// frosted look without breaking the build.
     @ViewBuilder
     func glassCardBackground(cornerRadius: CGFloat = 20) -> some View {
         self.background(
@@ -724,5 +718,3 @@ private struct DayPickerRow: View {
         }
     }
 }
-
-// MARK: - Static airport data
