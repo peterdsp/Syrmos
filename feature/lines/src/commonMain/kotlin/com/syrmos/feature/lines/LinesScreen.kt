@@ -61,23 +61,27 @@ private data class Destination(
     val hookKey: L,
     val emoji: String,
     val connectionLabel: String,
+    val stationId: String,
+    val lineId: String,
 )
 
 private val CURATED_DESTINATIONS = listOf(
-    Destination(L.DEST_AIRPORT, L.DEST_AIRPORT_HOOK, "✈️", "A3"),
-    Destination(L.DEST_PIRAEUS, L.DEST_PIRAEUS_HOOK, "⛴️", "M1 / A1"),
-    Destination(L.DEST_MONASTIRAKI, L.DEST_MONASTIRAKI_HOOK, "🏛️", "M1 + M3"),
-    Destination(L.DEST_KIFISIA, L.DEST_KIFISIA_HOOK, "🌳", "M1"),
-    Destination(L.DEST_THESSALONIKI, L.DEST_THESSALONIKI_HOOK, "🌆", "IC"),
-    Destination(L.DEST_METEORA, L.DEST_METEORA_HOOK, "⛰️", "IC"),
-    Destination(L.DEST_PATRAS, L.DEST_PATRAS_HOOK, "🌉", "Suburban"),
-    Destination(L.DEST_DIAKOPTO, L.DEST_DIAKOPTO_HOOK, "🚂", "Rack"),
+    Destination(L.DEST_AIRPORT, L.DEST_AIRPORT_HOOK, "✈️", "A1 / A2", stationId = "A1_AIR", lineId = "A1"),
+    Destination(L.DEST_PIRAEUS, L.DEST_PIRAEUS_HOOK, "⛴️", "M1 / A1", stationId = "M1_PIR", lineId = "M1"),
+    Destination(L.DEST_MONASTIRAKI, L.DEST_MONASTIRAKI_HOOK, "🏛️", "M1 + M3", stationId = "M1_MON", lineId = "M1"),
+    Destination(L.DEST_KIFISIA, L.DEST_KIFISIA_HOOK, "🌳", "M1", stationId = "M1_KIF", lineId = "M1"),
+    Destination(L.DEST_THESSALONIKI, L.DEST_THESSALONIKI_HOOK, "🌆", "IC", stationId = "GR_THE", lineId = "IC1"),
+    Destination(L.DEST_METEORA, L.DEST_METEORA_HOOK, "⛰️", "IC", stationId = "KB_KAL", lineId = "KB1"),
+    Destination(L.DEST_PATRAS, L.DEST_PATRAS_HOOK, "🌉", "Suburban", stationId = "PA_AND", lineId = "PS1"),
+    Destination(L.DEST_DIAKOPTO, L.DEST_DIAKOPTO_HOOK, "🚂", "Rack", stationId = "KI_DIA", lineId = "DK1"),
 )
 
 @Composable
 fun LinesScreen(
     viewModel: LinesViewModel,
     onLineClick: (String) -> Unit = {},
+    onDestinationClick: (stationId: String, lineId: String) -> Unit = { _, _ -> },
+    onBrowseAllClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
@@ -107,6 +111,7 @@ fun LinesScreen(
                         DestinationCard(
                             destination = dest,
                             lang = lang,
+                            onClick = { onDestinationClick(dest.stationId, dest.lineId) },
                             modifier = Modifier.staggeredEntrance(index),
                         )
                     }
@@ -114,6 +119,7 @@ fun LinesScreen(
                     item {
                         BrowseAllStationsRow(
                             lang = lang,
+                            onClick = onBrowseAllClick,
                             modifier = Modifier.staggeredEntrance(CURATED_DESTINATIONS.size),
                         )
                     }
@@ -271,10 +277,11 @@ private fun SegmentedControl(
 private fun DestinationCard(
     destination: Destination,
     lang: AppLanguage,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
@@ -323,10 +330,11 @@ private fun DestinationCard(
 @Composable
 private fun BrowseAllStationsRow(
     lang: AppLanguage,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
@@ -347,6 +355,7 @@ private fun BrowseAllStationsRow(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = SyrmosColorTokens.brand,
+                modifier = Modifier.weight(1f),
             )
         }
     }

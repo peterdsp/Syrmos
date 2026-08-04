@@ -27,9 +27,8 @@ struct HomeView: View {
                     answerSection.syrmosEntrance(index: 0)
                     alertsSection.syrmosEntrance(index: 1)
                     railNewsSection.syrmosEntrance(index: 2)
-                    networkOverview.syrmosEntrance(index: 3)
-                    nearMeSection.syrmosEntrance(index: 4)
-                    liveTrainsSection.syrmosEntrance(index: 5)
+                    nearMeSection.syrmosEntrance(index: 3)
+                    liveTrainsSection.syrmosEntrance(index: 4)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -84,28 +83,6 @@ struct HomeView: View {
             // refreshes happen silently in the background and the new data
             // simply takes effect on the user's next interaction. See the
             // store comment on evaluateFreshData() for the rationale.
-        }
-    }
-
-    private var networkOverview: some View {
-        let lines = SyrmosData.operationalLines
-        let metroCount = lines.filter { $0.type == .metro }.count
-        let tramCount = lines.filter { $0.type == .tram }.count
-        let suburbanCount = lines.filter { $0.type == .suburban }.count
-        let busCount = lines.filter { $0.type == .bus }.count
-        return VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                StatCard(value: "\(metroCount)", label: loc[.metro], color: .metroBlue)
-                StatCard(value: "\(tramCount)", label: loc[.tram], color: .tramOrange)
-            }
-            HStack(spacing: 12) {
-                StatCard(value: "\(suburbanCount)", label: loc[.suburban], color: .suburbanPurple)
-                StatCard(
-                    value: "\(busCount)",
-                    label: loc.language == .greek ? "Λεωφορεια" : loc.language == .albanian ? "Autobuse" : "Bus",
-                    color: SyrmosTokens.offline
-                )
-            }
         }
     }
 
@@ -867,30 +844,6 @@ struct NearbyStationDestination: View {
             }
         }
         return nil
-    }
-}
-
-// MARK: - Stat Card
-
-struct StatCard: View {
-    let value: String
-    let label: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(color)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(Color.syrmosSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
