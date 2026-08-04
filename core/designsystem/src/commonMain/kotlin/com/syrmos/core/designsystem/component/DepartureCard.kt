@@ -1,6 +1,7 @@
 package com.syrmos.core.designsystem.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,6 +41,7 @@ fun DepartureCard(
     sourceConfidence: SourceConfidence? = null,
     /** Localised (EL/SQ) chip label; falls back to the chip's English default. */
     sourceLabel: String? = null,
+    airportLabel: String? = null,
 ) {
     val vehicleResource = lineId?.let { VehicleIcons.resourceFor(it, direction, isAirport) }
     Card(
@@ -69,10 +73,27 @@ fun DepartureCard(
                     LineColorIndicator(lineColor = lineColor, size = 16.dp)
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = lineName,
-                        style = MaterialTheme.typography.titleSmall,
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = lineName,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        if (isAirport && airportLabel != null) {
+                            Text(
+                                text = airportLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SyrmosColorTokens.metroBlue,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(SyrmosColorTokens.metroBlue.copy(alpha = 0.15f))
+                                    .padding(horizontal = 6.dp, vertical = 1.dp),
+                            )
+                        }
+                    }
                     Text(
                         text = if (trainNo != null) "$direction  #$trainNo" else direction,
                         style = MaterialTheme.typography.bodySmall,
@@ -93,6 +114,7 @@ fun DepartureCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = when {
+                        minutesAway <= 1 -> SyrmosColorTokens.arrivalImminent
                         minutesAway <= 2 -> SyrmosColorTokens.arrivalSoon
                         minutesAway <= 5 -> SyrmosColorTokens.arrivalModerate
                         else -> SyrmosColorTokens.arrivalFar

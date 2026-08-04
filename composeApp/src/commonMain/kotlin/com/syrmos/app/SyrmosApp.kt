@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.syrmos.app.platform.consumePendingAssistantQuery
+import com.syrmos.app.platform.consumePendingNotificationDeepLink
 import com.syrmos.app.platform.markOnboardingCompleted
 import com.syrmos.app.platform.readOnboardingCompleted
 import com.syrmos.app.platform.readLastWhatsNewVersion
@@ -147,7 +148,7 @@ fun SyrmosApp() {
         } else {
             // One-time highlights after an install/update. The web build shows
             // its own card (web-map.js), so this is effectively the native path.
-            val whatsNewVersion = "1.4.0"
+            val whatsNewVersion = "2.0.0"
             var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
             if (showWhatsNew) {
                 WhatsNewDialog(onDismiss = {
@@ -162,6 +163,16 @@ fun SyrmosApp() {
                     TabNavigator(HomeTab) {
                         val pendingQuery = remember { consumePendingAssistantQuery() }
                         var showAriadne by remember { mutableStateOf(pendingQuery != null) }
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            LocalAriadneOpener provides { showAriadne = true }
+                        ) {
+                        val pendingNotif = remember { consumePendingNotificationDeepLink() }
+                        val tabNavigator2 = LocalTabNavigator.current
+                        LaunchedEffect(pendingNotif) {
+                            if (pendingNotif != null) {
+                                tabNavigator2.current = HomeTab
+                            }
+                        }
                         val lang by LocalizationManager.language.collectAsState()
                         val tabNavigator = LocalTabNavigator.current
                         val currentTab = tabNavigator.current
@@ -226,18 +237,21 @@ fun SyrmosApp() {
                                     com.syrmos.feature.home.assistant.AssistantScreen(
                                         viewModel = assistantViewModel,
                                         onClose = { showAriadne = false },
-                                        // Cross-tab navigation from Ariadne
-                                        // is deferred: for now we close the
-                                        // overlay so the user can navigate
-                                        // themselves. Full deep-link into
-                                        // the correct tab's Navigator is a
-                                        // 1.1.2 follow-up.
-                                        onOpenStation = { showAriadne = false },
-                                        onOpenLine = { showAriadne = false },
+                                        onOpenStation = { stationId ->
+                                            showAriadne = false
+                                            tabNavigator.current = HomeTab
+                                            AriadneNavBus.navigate(AriadneNavEvent.Station(stationId))
+                                        },
+                                        onOpenLine = { lineId ->
+                                            showAriadne = false
+                                            tabNavigator.current = HomeTab
+                                            AriadneNavBus.navigate(AriadneNavEvent.Line(lineId))
+                                        },
                                     )
                                 }
                             }
                         }
+                    }
                     }
                 }
             }

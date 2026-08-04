@@ -96,13 +96,13 @@
     "walking_minutes": 3
   },
   {
-    "station_id": "M2_LAR",
+    "station_id": "M2_STA",
     "from_line_id": "M2",
     "to_line_id": "A1",
     "walking_minutes": 3
   },
   {
-    "station_id": "M2_LAR",
+    "station_id": "M2_STA",
     "from_line_id": "A1",
     "to_line_id": "M2",
     "walking_minutes": 3
@@ -192,13 +192,13 @@
     "walking_minutes": 3
   },
   {
-    "station_id": "M3_DPL",
+    "station_id": "M3_DOY",
     "from_line_id": "M3",
     "to_line_id": "A1",
     "walking_minutes": 3
   },
   {
-    "station_id": "M3_DPL",
+    "station_id": "M3_DOY",
     "from_line_id": "A1",
     "to_line_id": "M3",
     "walking_minutes": 3
@@ -336,25 +336,25 @@
     "walking_minutes": 3
   },
   {
-    "station_id": "A1_DPL",
+    "station_id": "A1_DOY",
     "from_line_id": "A1",
     "to_line_id": "M3",
     "walking_minutes": 3
   },
   {
-    "station_id": "A1_DPL",
+    "station_id": "A1_DOY",
     "from_line_id": "M3",
     "to_line_id": "A1",
     "walking_minutes": 3
   },
   {
-    "station_id": "A1_AER",
+    "station_id": "A1_AIR",
     "from_line_id": "A1",
     "to_line_id": "M3",
     "walking_minutes": 3
   },
   {
-    "station_id": "A1_AER",
+    "station_id": "A1_AIR",
     "from_line_id": "M3",
     "to_line_id": "A1",
     "walking_minutes": 3
@@ -372,25 +372,25 @@
     "walking_minutes": 3
   },
   {
-    "station_id": "A2_DPL",
+    "station_id": "A2_DOY",
     "from_line_id": "A2",
     "to_line_id": "M3",
     "walking_minutes": 3
   },
   {
-    "station_id": "A2_DPL",
+    "station_id": "A2_DOY",
     "from_line_id": "M3",
     "to_line_id": "A2",
     "walking_minutes": 3
   },
   {
-    "station_id": "A2_AER",
+    "station_id": "A2_AIR",
     "from_line_id": "A2",
     "to_line_id": "M3",
     "walking_minutes": 3
   },
   {
-    "station_id": "A2_AER",
+    "station_id": "A2_AIR",
     "from_line_id": "M3",
     "to_line_id": "A2",
     "walking_minutes": 3
@@ -430,5 +430,17 @@
     "from_line_id": "M2",
     "to_line_id": "A4",
     "walking_minutes": 3
+  },
+  {
+    "station_id": "KI_DIA",
+    "from_line_id": "KP1",
+    "to_line_id": "DK1",
+    "walking_minutes": 2
+  },
+  {
+    "station_id": "KI_DIA",
+    "from_line_id": "DK1",
+    "to_line_id": "KP1",
+    "walking_minutes": 2
   }
 ]

@@ -322,7 +322,7 @@ internal actual fun PlatformMapView(
             val width = when {
                 underConstruction -> 3f
                 else -> override?.strokeWeight?.toFloat()
-                    ?: (if (line.type == LineType.SUBURBAN || isBus) 4f else 5f)
+                    ?: (if (line.type == LineType.SUBURBAN || line.type == LineType.SCENIC || isBus) 4f else 5f)
             }
             val polyline = Polyline().apply {
                 outlinePaint.color = color

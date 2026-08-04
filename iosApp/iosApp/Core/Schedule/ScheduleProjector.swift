@@ -475,7 +475,7 @@ enum ScheduleProjector {
     // MARK: - M3 airport branch handling
 
     private static let line3AirportOnlyStations: Set<String> = [
-        "M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"
+        "M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"
     ]
 
     private static func expandLineIds(stationId: String, lineIds: [String]) -> [String] {

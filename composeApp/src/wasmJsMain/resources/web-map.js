@@ -28,7 +28,7 @@
     // language with English as the fallback.
     const I18N = {
         en: {
-            brand_subtitle: "Greece rail map",
+            brand_subtitle: "Athens rail map",
             search_placeholder: "Search station, Syntagma, Piraeus, Airport",
             search_aria: "Search station",
             locate_me: "Locate me",
@@ -65,6 +65,7 @@
             live: "Live",
             estimated: "Estimated",
             offline_snapshot: "Offline snapshot",
+            check_operator: "Check operator",
             unknown: "unknown",
             next: "next",
             reduced: "Reduced",
@@ -91,15 +92,15 @@
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
             whatsnew_title: "What's new in Syrmos",
-            whatsnew_i1: "Departures for Thessaloniki, Patras and national rail stations via live API",
-            whatsnew_i2: "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train",
-            whatsnew_i3: "Fresh Ariadne button with the owl mark",
-            whatsnew_i4: "Journey fare planner: pick two stations and see the price instantly",
+            whatsnew_i1: "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers",
+            whatsnew_i2: "Ariadne now links to stations and lines: tap any answer to jump straight there",
+            whatsnew_i3: "Browse All Stations with interactive maps and line pills",
+            whatsnew_i4: "Web geolocation for near-me stations",
             whatsnew_get_app: "Get the app",
             whatsnew_stay: "Continue on web",
         },
         el: {
-            brand_subtitle: "Χαρτης σιδηροδρομων Ελλαδας",
+            brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
             search_placeholder: "Αναζήτηση σταθμού (Σύνταγμα, Πειραιάς, Αεροδρόμιο)",
             search_aria: "Αναζήτηση σταθμού",
             locate_me: "Η τοποθεσία μου",
@@ -136,6 +137,7 @@
             live: "Ζωντανά",
             estimated: "Εκτίμηση",
             offline_snapshot: "Εκτός σύνδεσης",
+            check_operator: "Δείτε πάροχο",
             unknown: "άγνωστο",
             next: "επόμενος",
             reduced: "Μειωμένο",
@@ -162,15 +164,15 @@
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
             whatsnew_title: "Τι νεο υπαρχει στο Syrmos",
-            whatsnew_i1: "Δρομολόγια για Θεσσαλονίκη, Πάτρα και εθνικό δίκτυο μέσω live API",
-            whatsnew_i2: "Τιμές εισιτηρίων για όλα τα δίκτυα: OASA, STASY, OSETH, Hellenic Train",
-            whatsnew_i3: "Νέο κουμπί Αριάδνης με το σήμα κουκουβάγιας",
-            whatsnew_i4: "Υπολογιστής κομίστρου: επίλεξε δύο σταθμούς και δες την τιμή αμέσως",
+            whatsnew_i1: "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια",
+            whatsnew_i2: "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα και πηγαινε κατευθειαν",
+            whatsnew_i3: "Περιηγηση σε ολους τους σταθμους με χαρτη και ετικετες γραμμων",
+            whatsnew_i4: "Εντοπισμος τοποθεσιας στο web για κοντινους σταθμους",
             whatsnew_get_app: "Κατέβασε την εφαρμογή",
             whatsnew_stay: "Συνέχεια στο web",
         },
         sq: {
-            brand_subtitle: "Harta e hekurudhave te Greqise",
+            brand_subtitle: "Harta e hekurudhave të Athinës",
             search_placeholder: "Kërko stacion (Syntagma, Piraeus, Aeroporti)",
             search_aria: "Kërko stacion",
             locate_me: "Vendndodhja ime",
@@ -207,6 +209,7 @@
             live: "Drejtpërdrejt",
             estimated: "Vlerësim",
             offline_snapshot: "Pa internet",
+            check_operator: "Kontrolloni operatorin",
             unknown: "i panjohur",
             next: "tjetër",
             reduced: "Me zbritje",
@@ -233,10 +236,10 @@
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
             ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
             whatsnew_title: "Çfare ka te re ne Syrmos",
-            whatsnew_i1: "Nisje për Selanik, Patra dhe rrjetin kombëtar nëpërmjet API live",
-            whatsnew_i2: "Çmimet e biletave për të gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train",
-            whatsnew_i3: "Butoni i ri i Ariadnes me shenjën e bufit",
-            whatsnew_i4: "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko çmimin menjëherë",
+            whatsnew_i1: "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim",
+            whatsnew_i2: "Ariadne tani lidhet me stacione dhe linja: prek dhe shko direkt",
+            whatsnew_i3: "Shfleto te gjitha stacionet me harta dhe etiketa linjash",
+            whatsnew_i4: "Gjeolokalizim ne web per stacionet me te aferta",
             whatsnew_get_app: "Merr aplikacionin",
             whatsnew_stay: "Vazhdo në web",
         },
@@ -491,35 +494,6 @@
     }
 
     const liveTrainList = document.getElementById("liveTrainList");
-    const trainSheet = document.getElementById("trainSheet");
-    const trainSheetTitle = document.getElementById("trainSheetTitle");
-    const trainSheetSubtitle = document.getElementById("trainSheetSubtitle");
-    const trainSheetBadge = document.getElementById("trainSheetBadge");
-    const trainSheetRoute = document.getElementById("trainSheetRoute");
-    const trainSheetDelay = document.getElementById("trainSheetDelay");
-    const trainSheetTelemetry = document.getElementById("trainSheetTelemetry");
-    const trainSheetStream = document.getElementById("trainSheetStream");
-    const trainSheetClose = document.getElementById("trainSheetClose");
-    const liveTrainsDrawer = document.getElementById("liveTrainsDrawer");
-    const liveTrainsCount = document.getElementById("liveTrainsCount");
-    const liveTrainsFilters = document.getElementById("liveTrainsFilters");
-    const liveTrainsDrawerList = document.getElementById("liveTrainsDrawerList");
-    const liveTrainsDrawerClose = document.getElementById("liveTrainsDrawerClose");
-    let lastLiveTrains = [];
-    let liveTrainsActiveFilter = null;
-
-    if (trainSheetClose) {
-        trainSheetClose.addEventListener("click", () => {
-            _destroyActiveStream();
-            trainSheet.classList.add("station-sheet--hidden");
-        });
-    }
-    if (liveTrainsDrawerClose) {
-        liveTrainsDrawerClose.addEventListener("click", () => {
-            liveTrainsDrawer.classList.add("station-sheet--hidden");
-        });
-    }
-
     const nearbyStationList = document.getElementById("nearbyStationList");
     const popularStationList = document.getElementById("popularStationList");
     const faresList = document.getElementById("faresList");
@@ -634,26 +608,6 @@
         }
     }
     function stationDisplayName(st) { return (st.name || st.id).split(" /")[0].trim(); }
-
-    const greekToEnglishStation = new Map();
-    for (const line of lines) {
-        for (const s of (line.stations || [])) {
-            const key = (s.nameEl || "").trim().toLowerCase();
-            if (!key) continue;
-            if (s.name && s.name.trim() !== s.nameEl.trim()) {
-                greekToEnglishStation.set(key, s.name.trim());
-            } else if (!greekToEnglishStation.has(key)) {
-                greekToEnglishStation.set(key, (s.name || "").trim());
-            }
-        }
-    }
-    function translateStationName(greekName, englishFromApi) {
-        if (!greekName) return greekName;
-        const trimmed = greekName.trim();
-        if (currentLang === "el") return trimmed;
-        if (englishFromApi && englishFromApi.trim()) return englishFromApi.trim();
-        return greekToEnglishStation.get(trimmed.toLowerCase()) || trimmed;
-    }
     // Ariadne's grounded fare answer for a from -> to question. Reuses the same
     // computeFare engine the planner uses; intercity defers to booking, never a
     // fabricated price.
@@ -946,7 +900,8 @@
         // "a bus stands in here" without ever looking like a rail line.
         const isBus = line.type === "bus";
         const strokeColor = underConstruction ? MAP_TOKENS.greyedColor : (ld?.strokeColor || line.color);
-        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (line.type === "suburban" || isBus ? 4 : 5));
+        const isNarrow = line.type === "suburban" || line.type === "scenic" || isBus;
+        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (isNarrow ? 4 : 5));
         const polylineOpts = {
             color: strokeColor,
             weight: strokeWeight,
@@ -1098,6 +1053,7 @@
             case "tram": return "🚊";
             case "suburban":
             case "train": return "🚆";
+            case "scenic": return "🏔️";
             default: return "•";
         }
     }
@@ -1280,7 +1236,7 @@
         if (!m) return null;
         return Number(m[1]) * 60 + Number(m[2]);
     }
-    const M3_AIRPORT_ONLY = new Set(["M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"]);
+    const M3_AIRPORT_ONLY = new Set(["M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"]);
     function expandLineIds(stationId, lineIds) {
         const out = [];
         for (const lid of lineIds) {
@@ -1532,7 +1488,8 @@
         const sourceLabel = t(fromApi ? "scheduled" : "offline_snapshot");
         const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
 
-        stationDepartures.innerHTML = departures.map((departure) => {
+        stationDepartures.innerHTML = departures.map((departure, idx) => {
+            const entranceCls = idx <= 8 ? ` sy-entrance sy-entrance-${idx}` : "";
             const minutesLabel = formatMinutesAway(departure.minutesAway);
             const lineId = departure.line?.id || "";
             const destination = departure.destination || departure.direction || "";
@@ -1549,7 +1506,7 @@
                 ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
                 : "";
             return `
-                <div class="departure-card">
+                <div class="departure-card${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minutesLabel}, at ${departure.time || ''}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
@@ -1656,281 +1613,6 @@
             departureRefreshTimer = null;
         }
     }
-
-    function trainRouteLabel(train) {
-        const o = train.origin ? translateStationName(train.origin, train.originEn) : null;
-        const d = train.destination ? translateStationName(train.destination, train.destinationEn) : null;
-        if (o && d) return `${o} &rarr; ${d}`;
-        if (o) return `From ${o}`;
-        if (d) return `To ${d}`;
-        return `Train ${train.trainNumber}`;
-    }
-
-    function headingLabel(deg) {
-        const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-        return dirs[Math.round(deg / 45) % 8] + "°";
-    }
-
-    function renderTrainTelemetry(train) {
-        if (!trainSheetTelemetry) return;
-        const cells = [];
-        if (train.speed != null) {
-            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${Math.round(train.speed)}</span><span class="telemetry-unit">km/h</span></div>`);
-        }
-        if (train.course != null) {
-            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${Math.round(train.course)}</span><span class="telemetry-unit">${headingLabel(train.course)}</span></div>`);
-        }
-        if (train.altitude != null) {
-            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${Math.round(train.altitude)}</span><span class="telemetry-unit">m alt</span></div>`);
-        }
-        if (train.distanceToNextStation != null) {
-            const km = (train.distanceToNextStation / 1000).toFixed(1);
-            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${km}</span><span class="telemetry-unit">km to next</span></div>`);
-        }
-        if (train.signalStatus) {
-            cells.push(`<div class="telemetry-cell"><span class="telemetry-value">${train.signalStatus.charAt(0).toUpperCase() + train.signalStatus.slice(1)}</span><span class="telemetry-unit">signal</span></div>`);
-        }
-        if (cells.length > 0) {
-            trainSheetTelemetry.innerHTML = `<div class="telemetry-grid">${cells.join("")}</div>`;
-            trainSheetTelemetry.style.display = "";
-        } else {
-            trainSheetTelemetry.style.display = "none";
-        }
-    }
-
-    let _activeHls = null;
-
-    function _destroyActiveStream() {
-        if (!trainSheetStream) return;
-        const video = trainSheetStream.querySelector("video");
-        if (video) { video.pause(); video.src = ""; }
-        if (_activeHls) { _activeHls.destroy(); _activeHls = null; }
-    }
-
-    function renderTrainStream(train) {
-        if (!trainSheetStream) return;
-        _destroyActiveStream();
-        if (!train.liveStreamUrl) {
-            trainSheetStream.innerHTML = "";
-            trainSheetStream.style.display = "none";
-            return;
-        }
-        trainSheetStream.innerHTML = `
-            <div class="inline-stream">
-                <div class="inline-stream-header">
-                    <span class="live-dot-label"><span class="live-dot"></span> LIVE</span>
-                    <button class="stream-fullscreen-btn" title="Fullscreen" type="button">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                </div>
-                <video class="inline-stream-video" autoplay playsinline muted></video>
-            </div>
-        `;
-        trainSheetStream.style.display = "";
-
-        const video = trainSheetStream.querySelector("video");
-        const fsBtn = trainSheetStream.querySelector(".stream-fullscreen-btn");
-
-        if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = train.liveStreamUrl;
-        } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
-            const hls = new Hls({ liveDurationInfinity: true });
-            hls.loadSource(train.liveStreamUrl);
-            hls.attachMedia(video);
-            _activeHls = hls;
-        } else {
-            video.src = train.liveStreamUrl;
-        }
-
-        video.addEventListener("click", () => {
-            if (video.muted) { video.muted = false; }
-            else if (video.paused) { video.play(); }
-            else { video.pause(); }
-        });
-
-        fsBtn.addEventListener("click", () => {
-            if (video.requestFullscreen) video.requestFullscreen();
-            else if (video.webkitEnterFullScreen) video.webkitEnterFullScreen();
-            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-        });
-    }
-
-    function selectLiveTrain(trainId) {
-        const train = lastLiveTrains.find((t) => t.id === trainId);
-        if (!train || !trainSheet) return;
-
-        clearSelection();
-        trainSheet.classList.add("station-sheet--hidden");
-
-        const line = lineMap.get(train.lineId);
-        const lineColor = line ? line.color : "#6F2DA8";
-        const lineName = line ? line.name : train.lineId;
-
-        trainSheetTitle.textContent = `Train ${train.trainNumber}`;
-        trainSheetSubtitle.textContent = train.serviceType
-            ? train.serviceType.charAt(0).toUpperCase() + train.serviceType.slice(1)
-            : "";
-
-        trainSheetBadge.innerHTML = `
-            <div class="line-badge" style="background:${lineColor}18;color:${lineColor}">
-                <span class="line-dot" style="background:${lineColor}"></span>
-                <span>${lineName}</span>
-            </div>
-        `;
-
-        const routeHtml = trainRouteLabel(train);
-        const nextHtml = train.nextStation
-            ? `<div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${translateStationName(train.nextStation, train.nextStationEn)}</div>`
-            : "";
-        trainSheetRoute.innerHTML = `
-            <div style="font-size:15px;font-weight:500">${routeHtml}</div>
-            ${!train.origin && !train.destination ? '<div style="font-size:12px;color:var(--sy-on-surface-muted);margin-top:2px">Route not published by operator</div>' : ""}
-            ${nextHtml}
-        `;
-
-        if (train.delayMinutes > 0) {
-            trainSheetDelay.innerHTML = `
-                <span class="meta-chip" style="background:var(--sy-disruption,#DC2626)18;color:var(--sy-disruption,#DC2626)">
-                    <span class="meta-chip-icon">&#9888;</span>
-                    <span class="meta-chip-label">+${train.delayMinutes} min delay</span>
-                </span>
-            `;
-        } else {
-            trainSheetDelay.innerHTML = `
-                <span class="meta-chip" style="background:var(--sy-live,#059669)18;color:var(--sy-live,#059669)">
-                    <span class="meta-chip-label">On time</span>
-                </span>
-            `;
-        }
-
-        renderTrainTelemetry(train);
-        renderTrainStream(train);
-
-        map.flyTo([train.lat, train.lng], Math.max(map.getZoom(), 14), { duration: 0.45 });
-        trainSheet.classList.remove("station-sheet--hidden");
-    }
-
-    function selectSimulatedTrain(trainId) {
-        const train = (lastSimulatedTrains || []).find((t) => t.id === trainId);
-        if (!train || !trainSheet) return;
-        clearSelection();
-        trainSheet.classList.add("station-sheet--hidden");
-
-        const line = train.line;
-        const lineColor = line ? line.color : "#0072CE";
-        const lineName = line ? line.name : "";
-
-        trainSheetTitle.textContent = lineName;
-        trainSheetSubtitle.textContent = train.isAirport ? "Airport service" : "";
-
-        trainSheetBadge.innerHTML = `
-            <div class="line-badge" style="background:${lineColor}18;color:${lineColor}">
-                <span class="line-dot" style="background:${lineColor}"></span>
-                <span>${lineName}</span>
-            </div>
-        `;
-
-        trainSheetRoute.innerHTML = `
-            <div style="font-size:15px;font-weight:500">${trainRouteLabel(train)}</div>
-            <div style="font-size:13px;color:var(--sy-on-surface-muted);margin-top:4px">Next: ${escapeHtml(train.toStation)}</div>
-        `;
-        trainSheetDelay.innerHTML = `
-            <span class="meta-chip" style="background:var(--sy-live,#059669)18;color:var(--sy-live,#059669)">
-                <span class="meta-chip-label">${t("scheduled")}</span>
-            </span>
-        `;
-
-        if (trainSheetTelemetry) trainSheetTelemetry.style.display = "none";
-        if (trainSheetStream) trainSheetStream.style.display = "none";
-
-        map.flyTo([train.lat, train.lng], Math.max(map.getZoom(), 14), { duration: 0.45 });
-        trainSheet.classList.remove("station-sheet--hidden");
-    }
-
-    function openLiveTrainsDrawer() {
-        if (!liveTrainsDrawer) return;
-        clearSelection();
-        if (trainSheet) trainSheet.classList.add("station-sheet--hidden");
-        renderLiveTrainsDrawer();
-        liveTrainsDrawer.classList.remove("station-sheet--hidden");
-    }
-
-    function renderLiveTrainsDrawer() {
-        const trains = liveTrainsActiveFilter
-            ? lastLiveTrains.filter((t) => t.lineId === liveTrainsActiveFilter)
-            : lastLiveTrains;
-
-        liveTrainsCount.textContent = `${trains.length} train${trains.length !== 1 ? "s" : ""} running`;
-
-        const lineIds = [...new Set(lastLiveTrains.map((t) => t.lineId))].sort();
-        liveTrainsFilters.innerHTML = "";
-        const allPill = document.createElement("button");
-        allPill.className = "line-badge";
-        allPill.textContent = "All";
-        allPill.style.cursor = "pointer";
-        if (!liveTrainsActiveFilter) {
-            allPill.style.background = "var(--sy-brand)";
-            allPill.style.color = "#fff";
-        }
-        allPill.addEventListener("click", () => {
-            liveTrainsActiveFilter = null;
-            renderLiveTrainsDrawer();
-        });
-        liveTrainsFilters.appendChild(allPill);
-
-        for (const lid of lineIds) {
-            const line = lineMap.get(lid);
-            const color = line ? line.color : "#6F2DA8";
-            const pill = document.createElement("button");
-            pill.className = "line-badge";
-            pill.style.cursor = "pointer";
-            if (liveTrainsActiveFilter === lid) {
-                pill.style.background = color;
-                pill.style.color = "#fff";
-            } else {
-                pill.style.background = `${color}18`;
-                pill.style.color = color;
-            }
-            pill.innerHTML = `<span class="line-dot" style="background:${color}"></span><span>${lid}</span>`;
-            pill.addEventListener("click", () => {
-                liveTrainsActiveFilter = lid;
-                renderLiveTrainsDrawer();
-            });
-            liveTrainsFilters.appendChild(pill);
-        }
-
-        liveTrainsDrawerList.innerHTML = "";
-        for (const train of trains) {
-            const line = lineMap.get(train.lineId);
-            const color = line ? line.color : "#6F2DA8";
-            const row = document.createElement("div");
-            row.className = "departure-row";
-            row.style.cursor = "pointer";
-            row.style.padding = "10px 0";
-            const delayHtml = train.delayMinutes > 0
-                ? `<span style="color:var(--sy-disruption,#DC2626);font-weight:600;font-size:13px">+${train.delayMinutes}</span>`
-                : `<span style="color:var(--sy-live,#059669);font-weight:600;font-size:13px">OK</span>`;
-            row.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px">
-                    <span class="line-badge" style="background:${color}18;color:${color};font-size:11px;padding:2px 6px">
-                        <span class="line-dot" style="background:${color}"></span>${train.lineId}
-                    </span>
-                    <div style="flex:1">
-                        <div style="font-size:14px;font-weight:500">${trainRouteLabel(train)}</div>
-                        ${train.nextStation ? `<div style="font-size:12px;color:var(--sy-on-surface-muted)">Next: ${translateStationName(train.nextStation, train.nextStationEn)}</div>` : ""}
-                    </div>
-                    ${delayHtml}
-                </div>
-            `;
-            row.addEventListener("click", () => {
-                liveTrainsDrawer.classList.add("station-sheet--hidden");
-                selectLiveTrain(train.id);
-            });
-            liveTrainsDrawerList.appendChild(row);
-        }
-    }
-
-    window.__openLiveTrainsDrawer = openLiveTrainsDrawer;
 
     function renderSearchResults(results, rawQuery) {
         searchResults.innerHTML = "";
@@ -2077,11 +1759,6 @@
                 renderSimulatedTrainsOnMap(lastSimulatedTrains);
             }
         });
-    }
-
-    const liveTrainsBtn = document.getElementById("liveTrainsButton");
-    if (liveTrainsBtn) {
-        liveTrainsBtn.addEventListener("click", () => openLiveTrainsDrawer());
     }
 
     map.on("click", (e) => {
@@ -2275,27 +1952,15 @@
                 lineId: t.lineId,
                 trainNumber: t.trainNumber || I18N[currentLang].train,
                 origin: t.origin || "",
-                originEn: t.originEn || "",
                 destination: t.destination || "",
-                destinationEn: t.destinationEn || "",
                 nextStation: t.nextStation || "",
-                nextStationEn: t.nextStationEn || "",
-                delayMinutes: t.delayMinutes || 0,
-                serviceType: t.serviceType || "",
+                delay: t.delayMinutes || 0,
+                speed: null,
                 lat: t.lat,
                 lng: t.lng,
-                speed: t.speed ?? null,
-                course: t.course ?? null,
-                altitude: t.altitude ?? null,
-                progress: t.progress ?? null,
-                locomotiveNumber: t.locomotiveNumber || "",
-                distanceToNextStation: t.distanceToNextStation ?? null,
-                signalStatus: t.signalStatus || "",
-                corridor: t.corridor || "",
-                liveStreamUrl: t.liveStream?.playlistUrl || "",
+                timestamp: "",
             }));
 
-        lastLiveTrains = trains;
         renderLiveTrains(trains);
     }
 
@@ -2303,17 +1968,13 @@
         liveTrainMarkers.forEach((marker) => marker.remove());
         liveTrainMarkers.clear();
 
-        if (liveTrainsBtn) {
-            liveTrainsBtn.style.display = trains.length > 0 ? "" : "none";
-        }
-
         if (trains.length) {
             const suburbanHtml = trains.slice(0, 5).map((train) => {
                 const line = lineMap.get(train.lineId);
                 return `
                     <div class="panel-item" data-live-suburban>
                         <div class="panel-item__title">🚆 ${line ? line.name : train.lineId} ${train.trainNumber}</div>
-                        <div class="panel-item__meta">${trainRouteLabel(train)}${train.nextStation ? `, ${t("next")} ${translateStationName(train.nextStation, train.nextStationEn)}` : ""}</div>
+                        <div class="panel-item__meta">${train.origin || t("live")} ${currentLang === "el" ? "προς" : currentLang === "sq" ? "drejt" : "to"} ${train.destination || t("unknown")}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}</div>
                     </div>
                 `;
             }).join("");
@@ -2326,34 +1987,15 @@
         // The Hide vehicles toggle: keep the live-train list panel populated
         // (users still want to know what's running) but skip rendering any
         // marker on the map itself.
-        if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
+        if (window.__syrmosVehiclesHidden) {
             return;
-        }
-
-        const SUBURBAN_LINE_IDS = ["A1", "A2", "A3", "A4"];
-        function snapLiveTrain(train) {
-            let lid = train.lineId;
-            if (lid === "P") {
-                const inferred = inferLineId(train);
-                if (inferred) lid = inferred;
-            }
-            let snapped = snapToNearestPolylinePoint(train.lat, train.lng, lid);
-            if (!snapped && lid === "P") {
-                let bestDist = Infinity;
-                for (const sid of SUBURBAN_LINE_IDS) {
-                    const candidate = snapToNearestPolylinePoint(train.lat, train.lng, sid);
-                    if (candidate) {
-                        const d = distanceMeters(train.lat, train.lng, candidate[0], candidate[1]);
-                        if (d < bestDist) { bestDist = d; snapped = candidate; }
-                    }
-                }
-            }
-            return snapped || [train.lat, train.lng];
         }
 
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
             const lineColor = line ? line.color : "#7C4DFF";
+            // Custom divIcon so suburban trains are clearly distinguishable
+            // from simulated metro/tram dots: pulsing ring + line-id badge.
             const icon = L.divIcon({
                 className: "live-train-marker",
                 html: `
@@ -2366,18 +2008,15 @@
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
             });
-            const pos = snapLiveTrain(train);
-            const marker = L.marker(pos, {
+            const marker = L.marker([train.lat, train.lng], {
                 icon,
                 keyboard: false,
                 zIndexOffset: 1000,
             }).addTo(map);
             marker.bindTooltip(
-                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${trainRouteLabel(train)}`,
+                `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
                 { direction: "top", offset: [0, -10] }
             );
-            const trainId = train.id;
-            marker.on("click", () => selectLiveTrain(trainId));
             liveTrainMarkers.set(train.id, marker);
         }
     }
@@ -2614,7 +2253,7 @@
             const badge = el(".hero-card__badge");
             badge.textContent = next.line?.name || next.line?.id || "";
             badge.style.background = color;
-            el(".hero-card__dir").textContent = next.direction ? `> ${next.direction}` : "";
+            el(".hero-card__dir").textContent = next.direction ? `→ ${next.direction}` : "";
             const then = data.deps.slice(1, 3).map((d) => formatMinutesAway(d.minutesAway)).filter(Boolean).join(", ");
             el(".hero-card__then").textContent = then ? `${t("then")} ${then}` : "";
 
@@ -2624,13 +2263,18 @@
             let secAway = next.timeMinutes * 60 - nowSec;
             if (secAway < -60) secAway = next.minutesAway * 60; // crossed midnight / stale
             const countEl = el(".hero-card__count");
-            if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); }
-            else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now"); }
-            else { countEl.textContent = formatMinutesAway(Math.ceil(secAway / 60)); card.classList.remove("hero-card--now"); }
-            el(".hero-card__chip").textContent = `● ${t("scheduled")}`;
+            if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); card.classList.remove("hero-card--imminent"); }
+            else if (secAway <= 60) { countEl.textContent = `0:${String(secAway).padStart(2, "0")}`; card.classList.remove("hero-card--now"); card.classList.add("hero-card--imminent"); }
+            else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now", "hero-card--imminent"); }
+            else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now", "hero-card--imminent"); }
+            const chipEl = el(".hero-card__chip");
+            const srcConf = next.sourceConfidence || "scheduled";
+            const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
+            chipEl.className = `src-chip src-chip--${srcConf}`;
+            chipEl.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[srcConf] || srcLabels.scheduled}`;
 
             // Answer-first peek line.
-            if (peekText) peekText.textContent = `${next.line?.name || ""} > ${next.direction || ""} · ${countEl.textContent}`;
+            if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;
         }
 
         refreshData();
@@ -2850,24 +2494,11 @@
             coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * f,
         ];
     }
-    function snapToNearestPolylinePoint(lat, lng, lineId) {
-        const poly = linePolyline(lineId);
-        if (!poly || poly.coords.length < 2) return null;
-        let bestDist = Infinity;
-        let bestPt = null;
-        for (let i = 0; i < poly.coords.length - 1; i++) {
-            const ax = poly.coords[i][0], ay = poly.coords[i][1];
-            const bx = poly.coords[i + 1][0], by = poly.coords[i + 1][1];
-            const dx = bx - ax, dy = by - ay;
-            const len2 = dx * dx + dy * dy;
-            let t = len2 > 0 ? ((lat - ax) * dx + (lng - ay) * dy) / len2 : 0;
-            t = Math.max(0, Math.min(1, t));
-            const px = ax + t * dx, py = ay + t * dy;
-            const d = distanceMeters(lat, lng, px, py);
-            if (d < bestDist) { bestDist = d; bestPt = [px, py]; }
-        }
-        if (bestPt && bestDist < 2000) return bestPt;
-        return null;
+    // Station-aware easing: smoothstep makes trains decelerate near stations
+    // and cruise faster mid-segment (mirrors KMP TrainSimulator.stationAwareEase).
+    function stationAwareEase(t) {
+        var c = Math.min(Math.max(t, 0), 1);
+        return c * c * (3 - 2 * c);
     }
 
     function trainPosition(lineId, fromStation, toStation, frac) {
@@ -2910,7 +2541,7 @@
         const linesById = new Map(lines.map((l) => [l.id, l]));
         // Resolve offset stops to stations by id OR by name. The /api/station-offsets
         // feed uses the server's station-id scheme (e.g. M1_THI, M1_KIF) which differs
-        // from the bundled snapshot's ids (M1_THE, M1_KHE) for the same physical
+        // from the bundled snapshot's ids (M1_THI, M1_KIF) for the same physical
         // stations, so an id-only lookup silently drops ~1/3 of stops and the trains
         // between them. The station NAME (stationEn) is the one key both sides share.
         const stationById = new Map();
@@ -2972,7 +2603,7 @@
             if (!fromStation || !toStation) continue;
             const segDuration = toStop.minutesFromOrigin - fromStop.minutesFromOrigin;
             const frac = segDuration > 0
-                ? Math.min(Math.max((elapsed - fromStop.minutesFromOrigin) / segDuration, 0), 1)
+                ? stationAwareEase(Math.min(Math.max((elapsed - fromStop.minutesFromOrigin) / segDuration, 0), 1))
                 : 0;
 
             const [lat, lng] = trainPosition(displayLineId, fromStation, toStation, frac);
@@ -3041,7 +2672,7 @@
                 const to = stationMap.get(stops[seg + 1].stationId);
                 if (!from || !to) continue;
                 const dur = times[seg + 1] - times[seg];
-                const frac = dur > 0 ? Math.min(Math.max((nowMin - times[seg]) / dur, 0), 1) : 0;
+                const frac = dur > 0 ? stationAwareEase(Math.min(Math.max((nowMin - times[seg]) / dur, 0), 1)) : 0;
                 const [lat, lng] = trainPosition(line.id, from, to, frac);
                 const dest = stationMap.get(stops[stops.length - 1].stationId);
                 out.push({
@@ -3112,25 +2743,21 @@
         });
 
         for (const train of trains) {
-            const simSnapped = snapToNearestPolylinePoint(train.lat, train.lng, train.lineId);
-            const simPos = simSnapped || [train.lat, train.lng];
             if (simulatedTrainMarkers.has(train.id)) {
                 const m = simulatedTrainMarkers.get(train.id);
-                m.setLatLng(simPos);
+                m.setLatLng([train.lat, train.lng]);
                 m.setIcon(trainMarkerIcon(train)); // keep the heading current
             } else {
-                const marker = L.marker(simPos, {
+                const marker = L.marker([train.lat, train.lng], {
                     icon: trainMarkerIcon(train),
                     keyboard: false,
                     zIndexOffset: 1000,
                 }).addTo(map);
 
                 marker.bindTooltip(
-                    `${train.line.name} ${train.fromStation && train.destination ? train.fromStation + " &rarr; " + train.destination : train.destination || train.fromStation || ""}<br>Near ${train.fromStation || ""}`,
+                    `${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`,
                     { direction: "top", offset: [0, -12] }
                 );
-                const tid = train.id;
-                marker.on("click", () => selectSimulatedTrain(tid));
 
                 simulatedTrainMarkers.set(train.id, marker);
             }
@@ -3154,7 +2781,7 @@
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 return `
                     <div class="panel-item" data-train-id="${train.id}" data-train-lat="${train.lat}" data-train-lng="${train.lng}">
-                        <div class="panel-item__title">${icon} ${train.line.name} > ${train.destination}</div>
+                        <div class="panel-item__title">${icon} ${train.line.name} → ${train.destination}</div>
                         <div class="panel-item__meta">Near ${train.fromStation} · Next: ${train.toStation}</div>
                     </div>
                 `;
@@ -3198,12 +2825,10 @@
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         if (saved === "dark" || (!saved && prefersDark)) {
             document.body.classList.add("dark-mode");
-            document.documentElement.classList.add("dark-mode");
             setThemeIcon(true);
         }
         themeToggle.addEventListener("click", () => {
             const isDark = document.body.classList.toggle("dark-mode");
-            document.documentElement.classList.toggle("dark-mode", isDark);
             setThemeIcon(isDark);
             localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
             // Swap the base map to the matching light / dark minimal tiles.
@@ -3221,7 +2846,7 @@
     // normalizer.
     (function whatsNewWeb() {
         const key = "syrmos.whatsnew.version";
-        const version = "1.3.3";
+        const version = "2.0.0";
         try {
             if (localStorage.getItem(key) === version) return;
         } catch (_) { return; }
@@ -3231,20 +2856,23 @@
             : "What's new in Syrmos";
         const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : "Got it";
         const bullets = lang === "el" ? [
-            "Αναζητηση και φιλτρα στις γραμμες: βρες γραμμη κατα πολη η τυπο μεταφορας.",
-            "Δρομολογια για Θεσσαλονικη, Πατρα και εθνικο δικτυο μεσω live API.",
-            "Τιμες εισιτηριων για ολα τα δικτυα: OASA, STASY, OSETH, Hellenic Train.",
-            "Υπολογιστης κομιστρου: επιλεξε δυο σταθμους και δες την τιμη αμεσως.",
+            "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια.",
+            "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα και πηγαινε κατευθειαν.",
+            "Περιηγηση σε ολους τους σταθμους με χαρτη και ετικετες γραμμων.",
+            "Ανανεωμενη Εξερευνηση με καρτες προορισμων και προσφατους σταθμους.",
+            "Εντοπισμος τοποθεσιας στο web για κοντινους σταθμους.",
         ] : lang === "sq" ? [
-            "Kerkim dhe filtra ne linja: gjej linjen sipas qytetit ose llojit te transportit.",
-            "Nisje per Selanik, Patra dhe rrjetin kombetar nepermjet API live.",
-            "Cmimet e biletave per te gjitha rrjetet: OASA, STASY, OSETH, Hellenic Train.",
-            "Planifikuesi i tarifave: zgjidh dy stacione dhe shiko cmimin menjehere.",
+            "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim.",
+            "Ariadne tani lidhet me stacione dhe linja: prek dhe shko direkt.",
+            "Shfleto te gjitha stacionet me harta dhe etiketa linjash.",
+            "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit.",
+            "Gjeolokalizim ne web per stacionet me te aferta.",
         ] : [
-            "Search and filter lines: find any line by city or transport type.",
-            "Departures for Thessaloniki, Patras and national rail via live API.",
-            "Ticket prices for all networks: OASA, STASY, OSETH, Hellenic Train.",
-            "Journey fare planner: pick two stations and see the price instantly.",
+            "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers.",
+            "Ariadne now links to stations and lines: tap any answer to jump straight there.",
+            "Browse All Stations with interactive maps and line pills.",
+            "Redesigned Explore tab with actionable destination cards and recent stations.",
+            "Web geolocation for near-me stations.",
         ];
 
         const scrim = document.createElement("div");
@@ -3641,10 +3269,19 @@
             }
         }
 
-        function appendMessage(text, from) {
+        function appendMessage(text, from, sourceConf) {
             const el = document.createElement("div");
             el.className = "ariadne-msg " + (from === "user" ? "ariadne-msg--user" : "ariadne-msg--assistant");
             el.textContent = text;
+            if (from === "assistant" && sourceConf) {
+                const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
+                const chip = document.createElement("span");
+                chip.className = `src-chip src-chip--${sourceConf}`;
+                chip.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[sourceConf] || srcLabels.scheduled}`;
+                chip.style.marginTop = "6px";
+                chip.style.display = "inline-flex";
+                el.appendChild(chip);
+            }
             messages.appendChild(el);
             messages.scrollTop = messages.scrollHeight;
             return el;
@@ -3772,7 +3409,7 @@
         function respond(intent) {
             switch (intent.kind) {
                 case "help":
-                    return { text: ragEnrich(window.SyrmosAriadne.help(currentLang), { id: "capabilities_current" }) };
+                    return { text: ragEnrich(window.SyrmosAriadne.help(currentLang), { id: "capabilities_current" }), sourceConf: "offline" };
                 case "outOfScope":
                     return { text: window.SyrmosAriadne.outOfScope(currentLang) };
                 case "needsClarification":
@@ -3872,7 +3509,7 @@
                                 ? `Nis nga ${fromName} deri në ${leaveLabel} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
                                 : `Leave ${fromName} by ${leaveLabel} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`);
                     }
-                    return { text: msg };
+                    return { text: msg, sourceConf: leaveByExact ? "scheduled" : "estimated" };
                 }
                 case "weatherAt": {
                     const anchor = intent.stationId ? stationMap.get(intent.stationId) : null;
@@ -3885,6 +3522,7 @@
                         text: currentLang === "el" ? `Αναζήτηση καιρού για ${name}…`
                             : currentLang === "sq" ? `Po kërkoj motin për ${name}…`
                             : `Fetching weather for ${name}…`,
+                        sourceConf: "live",
                         act: async () => {
                             try {
                                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`;
@@ -3899,7 +3537,7 @@
                                     : currentLang === "sq"
                                     ? `${name} tani: ${temp}°C, ${cond}. Ndihet si ${feels}°C.`
                                     : `${name} right now: ${temp}°C, ${cond}. Feels like ${feels}°C.`;
-                                appendMessage(reply, "assistant");
+                                appendMessage(reply, "assistant", "live");
                             } catch (_) {
                                 appendMessage(
                                     currentLang === "el" ? "Δεν έχω δεδομένα καιρού. Δοκίμασε ξανά."
@@ -3915,6 +3553,7 @@
                     if (intent.stationId) {
                         return {
                             text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
+                            sourceConf: "scheduled",
                             departuresFor: stationMap.get(intent.stationId) || null,
                             act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
                         };
@@ -3924,6 +3563,7 @@
                     if (intent.stationId) {
                         return {
                             text: t("ariadne_looking_up", { station: stationName(intent.stationId) }),
+                            sourceConf: "scheduled",
                             act: () => { openStation(intent.stationId); if (window.innerWidth < 721) closePanel(); },
                         };
                     }
@@ -3934,6 +3574,7 @@
                         const openId = intent.stationId;
                         return {
                             text: t("ariadne_looking_up", { station: intent.stationId ? stationName(intent.stationId) : intent.lineId }),
+                            sourceConf: "scheduled",
                             act: () => { if (openId) { openStation(openId); if (window.innerWidth < 721) closePanel(); } },
                         };
                     }
@@ -3950,7 +3591,7 @@
                         : (currentLang === "el" ? `Ο ${nm} δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.`
                             : currentLang === "sq" ? `${nm} nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.`
                             : `${nm} is not marked step-free. Check for stairs-only access before you go.`);
-                    return { text: text };
+                    return { text: text, sourceConf: "offline" };
                 }
                 case "reverseTrip": {
                     const r = aSession.lastRoute;
@@ -3974,7 +3615,7 @@
                     }
                     const list = ids.join(", ");
                     return { text: currentLang === "el" ? `Ο ${nm} εξυπηρετείται από: ${list}.`
-                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.` : `${nm} is served by: ${list}.` };
+                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.` : `${nm} is served by: ${list}.`, sourceConf: "offline" };
                 }
                 case "stopsBetween": {
                     // The web has no JS stop-counting planner, so delegate to the
@@ -3993,6 +3634,7 @@
                 case "alerts": {
                     return {
                         text: t("ariadne_open_alerts"),
+                        sourceConf: "live",
                         act: () => window.open("https://www.stasy.gr/en/news/", "_blank", "noopener"),
                     };
                 }
@@ -4006,6 +3648,7 @@
                             from: stationName(from.id),
                             to: stationName(to.id),
                         }),
+                        sourceConf: "offline",
                         act: () => window.open(url, "_blank", "noopener"),
                     };
                 }
@@ -4018,12 +3661,14 @@
                         const url = `https://www.google.com/maps/dir/?api=1&origin=${from.latitude},${from.longitude}&destination=${to.latitude},${to.longitude}&travelmode=transit`;
                         return {
                             text: t("ariadne_open_route", { from: stationName(from.id), to: stationName(to.id) }),
+                            sourceConf: "offline",
                             act: () => window.open(url, "_blank", "noopener"),
                         };
                     }
                     // No named origin: use the browser location, else ask.
                     return {
                         text: t("ariadne_eta_locating", { station: stationName(to.id) }),
+                        sourceConf: "estimated",
                         act: () => {
                             if (!navigator.geolocation) {
                                 appendMessage(t("ariadne_eta_ask_origin"), "assistant");
@@ -4047,18 +3692,94 @@
                         a: line.terminalA || line.terminal_a || "",
                         b: line.terminalB || line.terminal_b || "",
                     });
-                    return { text: ragEnrich(base, { id: "line_" + String(intent.lineId).split("_")[0], query: intent.lineId + " line overview", types: ["line"] }) };
+                    return { text: ragEnrich(base, { id: "line_" + String(intent.lineId).split("_")[0], query: intent.lineId + " line overview", types: ["line"] }), sourceConf: "offline" };
                 }
                 case "explainFare": {
                     // Grounded from -> to fare when both endpoints are known;
                     // otherwise the general ticket-price guidance.
                     const fareFrom = intent.from ? stationMap.get(intent.from) : null;
                     const fareTo = intent.to ? stationMap.get(intent.to) : null;
-                    if (fareFrom && fareTo) return { text: fareAnswerText(fareFrom, fareTo) };
-                    return { text: ragEnrich(t("ariadne_fare"), { query: "ticket validation fare price airport points of supply", types: ["fare_info", "fare"] }) };
+                    if (fareFrom && fareTo) return { text: fareAnswerText(fareFrom, fareTo), sourceConf: "offline" };
+                    return { text: ragEnrich(t("ariadne_fare"), { query: "ticket validation fare price airport points of supply", types: ["fare_info", "fare"] }), sourceConf: "offline" };
                 }
                 case "find":
                     return { text: t("ariadne_no_station") };
+                case "wrongTrain": {
+                    const st = intent.stationId ? stationMap.get(intent.stationId) : null;
+                    const nm = st ? stationName(st.id) : null;
+                    const text = nm
+                        ? (currentLang === "el"
+                            ? `Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο πίσω προς ${nm}.`
+                            : currentLang === "sq"
+                            ? `Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt drejt ${nm}.`
+                            : `Get off at the next stop and take the reverse service back towards ${nm}.`)
+                        : (currentLang === "el"
+                            ? "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο."
+                            : currentLang === "sq"
+                            ? "Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt."
+                            : "Get off at the next stop and take the reverse service.");
+                    return { text, sourceConf: "offline" };
+                }
+                case "missedStop": {
+                    const target = intent.targetStationId ? stationMap.get(intent.targetStationId) : null;
+                    const tName = target ? stationName(target.id) : null;
+                    const text = tName
+                        ? (currentLang === "el"
+                            ? `Κατέβα στον επόμενο σταθμό και γύρνα πίσω προς ${tName}.`
+                            : currentLang === "sq"
+                            ? `Zbrit në stacionin e ardhshëm dhe kthehu drejt ${tName}.`
+                            : `Get off at the next stop and double back to ${tName}.`)
+                        : (currentLang === "el"
+                            ? "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο."
+                            : currentLang === "sq"
+                            ? "Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt."
+                            : "Get off at the next stop and take the reverse service.");
+                    return { text, sourceConf: "offline" };
+                }
+                case "canIStillMakeIt": {
+                    const to = intent.toStationId ? stationMap.get(intent.toStationId) : null;
+                    const from = intent.fromStationId ? stationMap.get(intent.fromStationId) : null;
+                    if (!to) return { text: t("ariadne_no_station") };
+                    const toName = stationName(to.id);
+                    const fromName = from ? stationName(from.id) : null;
+                    const boardNodeId = from ? (rawIdToNodeId.get(from.id) || nodeIdFor(from.id)) : null;
+                    const boardNode = boardNodeId ? stationNodeMap.get(boardNodeId) : null;
+                    let nextDep = null;
+                    if (boardNode && typeof buildStationDepartures === "function") {
+                        try {
+                            const deps = buildStationDepartures(boardNode) || [];
+                            const now = new Date();
+                            const nowMin = now.getHours() * 60 + now.getMinutes();
+                            for (const d of deps) {
+                                const m = /^(\d{1,2}):(\d{2})$/.exec(d.time || "");
+                                if (!m) continue;
+                                const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+                                if (mins > nowMin) { nextDep = { time: d.time, mins }; break; }
+                            }
+                        } catch (_) {}
+                    }
+                    if (nextDep && fromName) {
+                        const wait = nextDep.mins - (new Date().getHours() * 60 + new Date().getMinutes());
+                        const text = currentLang === "el"
+                            ? `Ναι. Επόμενο δρομολόγιο από ${fromName} στις ${nextDep.time} (σε ${wait} λεπτά) προς ${toName}.`
+                            : currentLang === "sq"
+                            ? `Po. Treni i ardhshëm nga ${fromName} në ${nextDep.time} (pas ${wait} minutash) drejt ${toName}.`
+                            : `Yes. Next service from ${fromName} at ${nextDep.time} (${wait} min away) towards ${toName}.`;
+                        return { text, sourceConf: "scheduled" };
+                    }
+                    const text = fromName
+                        ? (currentLang === "el"
+                            ? `Δεν βρήκα επόμενο δρομολόγιο από ${fromName} προς ${toName}. Δοκίμασε "δρομολόγια ${fromName}".`
+                            : currentLang === "sq"
+                            ? `Nuk gjeta nisje të ardhshme nga ${fromName} drejt ${toName}. Provo "nisjet ${fromName}".`
+                            : `I couldn't find an upcoming service from ${fromName} to ${toName}. Try "departures ${fromName}".`)
+                        : (currentLang === "el"
+                            ? `Πες μου από ποιον σταθμό ξεκινάς, για να ελέγξω αν προλαβαίνεις.`
+                            : currentLang === "sq"
+                            ? `Më thuaj nga cili stacion nisesh, që të kontrolloj nëse e arrin.`
+                            : `Tell me which station you're at so I can check if you can make it.`);
+                    return { text, sourceConf: "estimated" };
+                }
                 default:
                     return { text: window.SyrmosAriadne.outOfScope(currentLang) };
             }
@@ -4250,13 +3971,10 @@
                     return;
                 }
                 const reply = respond(finalIntent);
-                appendMessage(reply.text, "assistant");
-                // For a departures answer, follow the "Looking up X..." line with
-                // the actual next trains in a second bubble once the projector
-                // resolves, so the chat itself carries the times.
+                appendMessage(reply.text, "assistant", reply.sourceConf);
                 if (reply.departuresFor) {
                     departuresSummary(reply.departuresFor).then((summary) => {
-                        if (summary) appendMessage(summary, "assistant");
+                        if (summary) appendMessage(summary, "assistant", "scheduled");
                     });
                 }
                 if (reply.act) setTimeout(reply.act, 400);

@@ -219,6 +219,28 @@ final class STASYService: ObservableObject {
         isLoading = false
     }
 
+    static func cachedAlert(byId id: String) -> STASYAnnouncement? {
+        guard let dicts = UserDefaults.standard.array(forKey: "stasy_announcements_cache") as? [[String: String]] else { return nil }
+        guard let dict = dicts.first(where: { $0["id"] == id }) else { return nil }
+        guard let title = dict["title"] else { return nil }
+        return STASYAnnouncement(
+            id: id,
+            title: title,
+            titleEn: dict["titleEn"] ?? "",
+            titleSq: dict["titleSq"] ?? "",
+            date: dict["date"] ?? "",
+            summary: dict["summary"] ?? "",
+            summaryEn: dict["summaryEn"] ?? "",
+            summarySq: dict["summarySq"] ?? "",
+            url: URL(string: dict["url"] ?? ""),
+            category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other,
+            affectedLines: (dict["affectedLines"] ?? "").split(separator: ",").map(String.init),
+            severity: dict["severity"] ?? "info",
+            validFrom: (dict["validFrom"]?.isEmpty == false) ? dict["validFrom"] : nil,
+            validUntil: (dict["validUntil"]?.isEmpty == false) ? dict["validUntil"] : nil
+        )
+    }
+
     // MARK: - Cache
 
     private func cacheAnnouncements(_ announcements: [STASYAnnouncement]) {

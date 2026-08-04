@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 
 // iOS 26 / iOS 18 SwiftUI WindowGroup has a long-standing bug where the
 // underlying UIWindow's CAMetalLayer ends up in an unrenderable state after
@@ -23,23 +24,56 @@ import UIKit
 // which the OS happily re-binds to a healthy CAMetalLayer.
 
 @main
-final class AppDelegate: UIResponder, UIApplicationDelegate {
+final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        // Background refresh keeps the Weather + Alerts widget current without
-        // the user opening the app. Register before launch finishes.
         BackgroundRefresh.register()
         BackgroundRefresh.schedule()
 
-        // Request notification permissions and schedule the daily morning digest.
+        UNUserNotificationCenter.current().delegate = self
+
         Task { @MainActor in
             await NotificationService.shared.requestAuthorization()
             NotificationService.shared.scheduleMorningDigest()
         }
 
         return true
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        let category = response.notification.request.content.categoryIdentifier
+
+        Task { @MainActor in
+            switch category {
+            case "SERVICE_ALERT":
+                let alertId = userInfo["alertId"] as? String ?? ""
+                DeepLinkRouter.shared.pending = .serviceAlert(id: alertId)
+            case "WEATHER_ALERT":
+                DeepLinkRouter.shared.pending = .weatherAlert
+            case "MORNING_DIGEST":
+                DeepLinkRouter.shared.pending = .morningDigest
+            case "NEARBY_ALERT":
+                DeepLinkRouter.shared.pending = .nearbyAlert
+            default:
+                DeepLinkRouter.shared.pending = .morningDigest
+            }
+        }
+        completionHandler()
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 
     func application(
@@ -148,8 +182,10 @@ private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 struct ContentView: View {
     @State private var selectedTab: SyrmosTab = .home
     @State private var showAriadne = false
+    @State private var deepLinkedAlert: STASYAnnouncement?
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var themeManager = ThemeManager.shared
+    @ObservedObject private var deepLinkRouter = DeepLinkRouter.shared
 
     var body: some View {
         ZStack {
@@ -239,8 +275,26 @@ struct ContentView: View {
             DiagnosticsCenter.shared.leaveBreadcrumb("tab", "Switched to \(newTab)")
         }
         .onChange(of: loc.language) { _, newLang in
-            // Keep the widgets' language in step when the user switches it.
             WidgetBridge.publishLanguage(newLang.rawValue)
+        }
+        .onChange(of: deepLinkRouter.pending) { _, destination in
+            guard let destination else { return }
+            switch destination {
+            case .station, .line:
+                selectedTab = .home
+            case .serviceAlert(let id):
+                deepLinkRouter.pending = nil
+                selectedTab = .home
+                if let alert = STASYService.cachedAlert(byId: id) {
+                    deepLinkedAlert = alert
+                }
+            case .weatherAlert, .morningDigest, .nearbyAlert:
+                deepLinkRouter.pending = nil
+                selectedTab = .home
+            }
+        }
+        .sheet(item: $deepLinkedAlert) { alert in
+            AlertDetailSheet(alert: alert, language: loc.language)
         }
     }
 

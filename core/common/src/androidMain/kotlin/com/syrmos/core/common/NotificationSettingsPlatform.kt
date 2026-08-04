@@ -17,3 +17,13 @@ actual fun loadNotifPref(key: String, default: Boolean): Boolean {
     val prefs = notifContext?.getSharedPreferences("syrmos_prefs", Context.MODE_PRIVATE) ?: return default
     return prefs.getBoolean(key, default)
 }
+
+actual fun persistStringPref(key: String, value: String) {
+    val prefs = notifContext?.getSharedPreferences("syrmos_prefs", Context.MODE_PRIVATE) ?: return
+    prefs.edit().putString(key, value).apply()
+}
+
+actual fun loadStringPref(key: String, default: String): String {
+    val prefs = notifContext?.getSharedPreferences("syrmos_prefs", Context.MODE_PRIVATE) ?: return default
+    return prefs.getString(key, default) ?: default
+}
