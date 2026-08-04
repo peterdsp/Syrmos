@@ -7,6 +7,7 @@ import com.syrmos.core.model.weather.WeatherSource
 import com.syrmos.core.model.weather.WeatherState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RouteRankerTest {
 
@@ -75,7 +76,7 @@ class RouteRankerTest {
             listOf(candidate(20, 0, Exposure.SHELTERED)), RoutePreference.FASTEST, hotDay,
         ).first()
         assertEquals(0.0, sheltered.weatherPenalty)
-        assert(exposed.weatherPenalty > 0.0)
+        assertTrue(exposed.weatherPenalty > 0.0)
     }
 
     @Test
