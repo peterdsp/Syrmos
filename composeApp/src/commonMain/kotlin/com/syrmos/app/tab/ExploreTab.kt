@@ -9,6 +9,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.syrmos.app.screen.LineDetailScreenRoute
+import com.syrmos.app.screen.BrowseAllStationsScreenRoute
+import com.syrmos.app.screen.StationDetailScreenRoute
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.feature.lines.LinesScreen
@@ -42,6 +44,12 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
             viewModel = viewModel,
             onLineClick = { lineId ->
                 navigator.push(LineDetailScreenRoute(lineId))
+            },
+            onDestinationClick = { stationId, _ ->
+                navigator.push(StationDetailScreenRoute(stationId))
+            },
+            onBrowseAllClick = {
+                navigator.push(BrowseAllStationsScreenRoute())
             },
         )
     }

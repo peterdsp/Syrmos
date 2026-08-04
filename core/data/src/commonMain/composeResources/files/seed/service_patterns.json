@@ -30,8 +30,8 @@
     "service_type": "airport",
     "station_ids": [
       "M3_PAL",
-      "M3_PEK",
-      "M3_KRP",
+      "M3_PEA",
+      "M3_KO2",
       "M3_AER"
     ]
   },
@@ -42,8 +42,8 @@
     "service_type": "airport",
     "station_ids": [
       "M3_PAL",
-      "M3_PEK",
-      "M3_KRP",
+      "M3_PEA",
+      "M3_KO2",
       "M3_AER"
     ]
   },
@@ -54,8 +54,8 @@
     "service_type": "regular",
     "excluded_station_ids": [
       "M3_PAL",
-      "M3_PEK",
-      "M3_KRP",
+      "M3_PEA",
+      "M3_KO2",
       "M3_AER"
     ]
   },
@@ -66,8 +66,8 @@
     "service_type": "regular",
     "excluded_station_ids": [
       "M3_PAL",
-      "M3_PEK",
-      "M3_KRP",
+      "M3_PEA",
+      "M3_KO2",
       "M3_AER"
     ]
   },
@@ -78,8 +78,8 @@
     "service_type": "airport",
     "excluded_station_ids": [
       "M3_PAL",
-      "M3_PEK",
-      "M3_KRP",
+      "M3_PEA",
+      "M3_KO2",
       "M3_AER"
     ]
   },

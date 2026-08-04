@@ -6,6 +6,7 @@ extension Color {
     static let metroBlue = SyrmosTokens.metroBlue
     static let tramOrange = SyrmosTokens.tram
     static let suburbanPurple = SyrmosTokens.suburban
+    static let scenic = SyrmosTokens.scenic
 
     // The 2.0 light-first identity (task T5), drawn from the generated
     // SyrmosTokens. Adaptive so dark mode still resolves to the graphite variant.
@@ -96,6 +97,7 @@ enum SyrmosTokens {
     static let warning = Color(hex: 0xD97706)
     static let disruption = Color(hex: 0xDC2626)
     static let warningContainer = Color(hex: 0xFFF3E0)
+    static let arrivalImminent = Color(hex: 0xDC2626)
     static let arrivalSoon = Color(hex: 0x2E7D32)
     static let arrivalModerate = Color(hex: 0xE65100)
     static let arrivalFar = Color(hex: 0x757575)

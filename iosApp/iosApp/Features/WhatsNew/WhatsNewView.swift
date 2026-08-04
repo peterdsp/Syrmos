@@ -12,7 +12,7 @@ import SwiftUI
 // the earlier 1.1.1 sheet.
 
 private let kWhatsNewVersionKey = "syrmos.whatsnew.version"
-private let kWhatsNewCurrentVersion = "1.4.0"
+private let kWhatsNewCurrentVersion = "2.0.0"
 
 struct WhatsNewView: View {
     let onDismiss: () -> Void
@@ -36,44 +36,29 @@ struct WhatsNewView: View {
     }
 
     private var subtitle: String {
-        t("Live cameras, train telemetry and a customizable Home.",
-          "Ζωντανες καμερες, τηλεμετρια τρενων και προσαρμοσιμη Αρχικη.",
-          "Kamera live, telemetri trenash dhe Balline e personalizueshme.")
+        t("Hellenic Rail Atlas: a whole new look.",
+          "Hellenic Rail Atlas: ολοκαινουριος σχεδιασμος.",
+          "Hellenic Rail Atlas: dizajn krejtesisht i ri.")
     }
 
     private var items: [String] {
-        var list: [String] = []
-        list.append(t(
-            "Watch Live: stream onboard cameras from suburban trains in real time",
-            "Watch Live: δες ζωντανη εικονα απο καμερες προαστιακων τρενων σε πραγματικο χρονο",
-            "Watch Live: shiko kamerat ne bord te trenave periferike ne kohe reale"
-        ))
-        list.append(t(
-            "Train telemetry: speed, heading, altitude, signal status and distance to next station",
-            "Τηλεμετρια τρενων: ταχυτητα, πορεια, υψομετρο, κατασταση σηματος και αποσταση εως τον επομενο σταθμο",
-            "Telemetria e trenit: shpejtesia, drejtimi, lartesia, sinjali dhe distanca deri ne stacionin e ardhshem"
-        ))
-        list.append(t(
-            "Customize Home: drag to reorder sections and hide what you don't need",
-            "Προσαρμογη Αρχικης: σειρα μετακινησε τις ενοτητες και κρυψε οσες δε χρειαζεσαι",
-            "Personalizo Ballinen: terheq per te ndryshuar rradhen dhe fshih ato qe nuk te duhen"
-        ))
-        list.append(t(
-            "Live trains in Explore: see active trains on any line, or projected departures when offline",
-            "Ζωντανα τρενα στο Explore: δες τα ενεργα τρενα σε καθε γραμμη, η προβολη δρομολογιων οταν εισαι εκτος συνδεσης",
-            "Trenat live ne Eksploro: shiko trenat aktive ne cdo linje, ose nisjet e parashikuara kur je offline"
-        ))
-        list.append(t(
-            "Tappable live trains on Home: tap any train to see full details, telemetry and Watch Live",
-            "Ζωντανα τρενα στην Αρχικη: πατησε οποιοδηποτε τρενο για πληρεις λεπτομερειες και ζωντανη μεταδοση",
-            "Trenat live ne Balline: shtyp cdo tren per detaje te plota, telemetri dhe Watch Live"
-        ))
-        list.append(t(
-            "Web livestream: Watch Live now works on syrmos.peterdsp.dev too",
-            "Ζωντανη μεταδοση στο web: το Watch Live λειτουργει πλεον και στο syrmos.peterdsp.dev",
-            "Transmetim live ne web: Watch Live tani funksionon edhe ne syrmos.peterdsp.dev"
-        ))
-        return list
+        [
+            t("A fresh light-first design built around one-glance answers",
+              "Νεος σχεδιασμος με απαντησεις στη μια ματια",
+              "Dizajn i ri me pergjigje ne nje shikim"),
+            t("Ariadne now links to stations and lines: tap any answer to jump straight there",
+              "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα μια απαντηση και πηγαινε κατευθειαν",
+              "Ariadne tani lidhet me stacione dhe linja: prek nje pergjigje dhe shko direkt"),
+            t("Browse All Stations with interactive maps, line pills and interchange badges",
+              "Περιηγηση σε ολους τους σταθμους με χαρτη, ετικετες γραμμων και κομβους ανταποκρισης",
+              "Shfleto te gjitha stacionet me harta, etiketa linjash dhe nyje nderkembimi"),
+            t("Redesigned Explore tab with actionable destination cards and recent stations",
+              "Ανανεωμενη καρτελα Εξερευνηση με καρτες προορισμων και προσφατους σταθμους",
+              "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit"),
+            t("Operators directory and map preferences in the new More tab",
+              "Καταλογος φορεων και ρυθμισεις χαρτη στη νεα καρτελα Περισσοτερα",
+              "Drejtori operatoresh dhe preferenca harte ne kartelen e re Me shume"),
+        ]
     }
 
     private var backdrop: some View {

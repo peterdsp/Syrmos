@@ -78,6 +78,7 @@
 		B3CF93A36099BA1907847163 /* iosApp/App/SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* iosApp/App/SyrmosApp.swift */; };
 		BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */; };
 		CCDD11223344556677880011 /* iosApp/Core/Notifications/NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDD11223344556677880012 /* iosApp/Core/Notifications/NotificationService.swift */; };
+		CCDD11223344556677880021 /* iosApp/Core/Notifications/DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDD11223344556677880022 /* iosApp/Core/Notifications/DeepLinkRouter.swift */; };
 		BB96CED5F61B446CBA6D87C5 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
 		BCB2D8DDE0D14B2D8664EC16 /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* iosApp/Core/Persistence/SyrmosSchedulesStore.swift */; };
 		C173574BC2DC4C0F9D5C159E /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* iosApp/DesignSystem/WidgetKit/DepartureRowCompact.swift */; };
@@ -259,6 +260,7 @@
 		B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NearbyStationDestinationTests.swift; sourceTree = "<group>"; };
 		BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Location/LocationService.swift; sourceTree = SOURCE_ROOT; };
 		CCDD11223344556677880012 /* iosApp/Core/Notifications/NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Notifications/NotificationService.swift; sourceTree = SOURCE_ROOT; };
+		CCDD11223344556677880022 /* iosApp/Core/Notifications/DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Notifications/DeepLinkRouter.swift; sourceTree = SOURCE_ROOT; };
 		BD63C5586DB5B3F0921AC1D6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuburbanProjectionTests.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* iosApp/Core/Localization/Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Localization/Localization.swift; sourceTree = SOURCE_ROOT; };
@@ -516,6 +518,7 @@
 			children = (
 				BB22CC33DD44EE55FF660012 /* iosApp/Core/Location/LocationService.swift */,
 				CCDD11223344556677880012 /* iosApp/Core/Notifications/NotificationService.swift */,
+				CCDD11223344556677880022 /* iosApp/Core/Notifications/DeepLinkRouter.swift */,
 			);
 			name = Location;
 			sourceTree = "<group>";
@@ -947,6 +950,7 @@
 				A1C2D3E4F50607182930A1B3 /* iosApp/Core/Networking/AriadneAPIService.swift in Sources */,
 				BB22CC33DD44EE55FF660011 /* iosApp/Core/Location/LocationService.swift in Sources */,
 				CCDD11223344556677880011 /* iosApp/Core/Notifications/NotificationService.swift in Sources */,
+				CCDD11223344556677880021 /* iosApp/Core/Notifications/DeepLinkRouter.swift in Sources */,
 				C5D6E7F8A9B0C1D2E3F40506 /* iosApp/Core/Networking/SyrmosLinesService.swift in Sources */,
 				D7E8F9A0B1C2D3E4F5060708 /* iosApp/Core/Diagnostics/Diagnostics.swift in Sources */,
 				980A534651EFC2013B8ED38F /* iosApp/Core/Schedule/TransitData.swift in Sources */,
@@ -1058,7 +1062,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SyrmosWatch/Complications-Info.plist";
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp.complications;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1193,7 +1197,7 @@
 					"@executable_path/Frameworks",
 					"$(inherited) @executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
@@ -1222,7 +1226,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SyrmosWatch/Info.plist;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1243,7 +1247,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SyrmosWatch/Complications-Info.plist";
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp.complications;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1278,7 +1282,7 @@
 					"@executable_path/Frameworks",
 					"$(inherited) @executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
@@ -1371,7 +1375,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1400,7 +1404,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.SyrmosWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1424,7 +1428,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SyrmosWatch/Info.plist;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.syrmosApp.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

@@ -13,23 +13,24 @@ struct HomeView: View {
     @ObservedObject private var freshnessStore = LiveDataFreshness.shared
     @ObservedObject private var tracking = DepartureTracking.shared
     @ObservedObject private var weather = WeatherStore.shared
-    @State private var webLink: WebLink?
+    @ObservedObject private var deepLinkRouter = DeepLinkRouter.shared
+    @State private var navigationPath = NavigationPath()
+    @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
-    @State private var showCustomize = false
-    @State private var tappedTrain: LiveTrain?
-    @ObservedObject private var sectionStore = HomeSectionStore.shared
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
                 VStack(spacing: 20) {
-                    ForEach(sectionStore.visibleSections, id: \.self) { section in
-                        sectionView(for: section)
-                    }
+                    answerSection.syrmosEntrance(index: 0)
+                    alertsSection.syrmosEntrance(index: 1)
+                    railNewsSection.syrmosEntrance(index: 2)
+                    nearMeSection.syrmosEntrance(index: 3)
+                    liveTrainsSection.syrmosEntrance(index: 4)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -39,23 +40,8 @@ struct HomeView: View {
             .sheet(isPresented: $showTrackPicker) {
                 TrackPickerSheet(onDismiss: { showTrackPicker = false })
             }
-            .sheet(isPresented: $showCustomize) {
-                HomeCustomizeSheet(store: sectionStore)
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-            }
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
-                    .overlay(alignment: .trailing) {
-                        Button { showCustomize = true } label: {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.body.weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .padding(.trailing, 24)
-                    }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
@@ -74,22 +60,11 @@ struct HomeView: View {
                     nearbyStations: locationService.nearbyStations,
                     alerts: stasyService.announcements
                 )
-
-                freshnessStore.onRetryRequested = { [weak stasyService] in
-                    guard let svc = stasyService else { return }
-                    Task { await svc.fetchAnnouncements() }
-                }
             }
-            .sheet(item: $webLink) { link in
-                InAppWebView(url: link.url, title: link.title)
+            .sheet(item: $webViewURL) { url in
+                InAppWebView(url: url)
                     .presentationDetents([.large, .medium])
                     .presentationDragIndicator(.visible)
-            }
-            .sheet(item: $tappedTrain) { train in
-                TrainDetailSheet(train: train)
-                    .presentationDetents([.fraction(0.7), .large])
-                    .presentationDragIndicator(.visible)
-                    .presentationContentInteraction(.scrolls)
             }
             .alert(
                 loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
@@ -110,40 +85,29 @@ struct HomeView: View {
             // refreshes happen silently in the background and the new data
             // simply takes effect on the user's next interaction. See the
             // store comment on evaluateFreshData() for the rationale.
-        }
-    }
-
-    private var networkOverview: some View {
-        let lines = SyrmosData.operationalLines
-        let metroCount = lines.filter { $0.type == .metro }.count
-        let tramCount = lines.filter { $0.type == .tram }.count
-        let suburbanCount = lines.filter { $0.type == .suburban }.count
-        let busCount = lines.filter { $0.type == .bus }.count
-        return VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                StatCard(value: "\(metroCount)", label: loc[.metro], color: .metroBlue)
-                StatCard(value: "\(tramCount)", label: loc[.tram], color: .tramOrange)
+            .navigationDestination(for: DeepLinkStation.self) { dest in
+                if let station = resolveStation(id: dest.id) {
+                    StationDetailView(station: station)
+                }
             }
-            HStack(spacing: 12) {
-                StatCard(value: "\(suburbanCount)", label: loc[.suburban], color: .suburbanPurple)
-                StatCard(
-                    value: "\(busCount)",
-                    label: loc.language == .greek ? "Λεωφορεια" : loc.language == .albanian ? "Autobuse" : "Bus",
-                    color: SyrmosTokens.offline
-                )
+            .navigationDestination(for: DeepLinkLine.self) { dest in
+                if let line = SyrmosData.line(for: dest.id) {
+                    LineDetailView(line: line, stations: SyrmosData.stations(for: dest.id))
+                }
             }
-        }
-    }
-
-    @ViewBuilder
-    private func sectionView(for section: HomeSection) -> some View {
-        switch section {
-        case .nextTrain: answerSection
-        case .serviceAlerts: alertsSection
-        case .railNews: railNewsSection
-        case .networkOverview: networkOverview
-        case .nearMe: nearMeSection
-        case .liveTrains: liveTrainsSection
+            .onChange(of: deepLinkRouter.pending) { _, destination in
+                guard let destination else { return }
+                switch destination {
+                case .station(let id):
+                    deepLinkRouter.pending = nil
+                    navigationPath.append(DeepLinkStation(id: id))
+                case .line(let id):
+                    deepLinkRouter.pending = nil
+                    navigationPath.append(DeepLinkLine(id: id))
+                default:
+                    break
+                }
+            }
         }
     }
 
@@ -254,37 +218,16 @@ struct HomeView: View {
         )
     }
 
+    @ViewBuilder
     private var freshnessPill: some View {
         let isLive = freshnessStore.freshness == .live
-        let tint: Color = isLive ? SyrmosTokens.live : SyrmosTokens.warning
-        let label = isLive ? loc[.runningOnline] : loc[.runningOffline]
-        return HStack(spacing: 6) {
-            Circle()
-                .fill(tint)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-            if !isLive {
-                Button {
-                    Task { await stasyService.fetchAnnouncements() }
-                } label: {
-                    Text(loc[.retry])
-                        .font(.caption)
-                        .foregroundStyle(Color.suburbanPurple)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.suburbanPurple.opacity(0.1))
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-            }
+        if isLive {
+            SourceConfidenceChip(confidence: .live, language: loc.language)
+        } else {
+            OfflinePill(
+                message: "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
+            )
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(tint.opacity(0.12))
-        .clipShape(Capsule())
     }
 
     /// Chip that opens the TrackPickerSheet. Always visible alongside the
@@ -320,80 +263,99 @@ struct HomeView: View {
 
     @ViewBuilder
     private func answerHero(next: Departure?) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(loc[.nextTrain].uppercased())
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            VStack(alignment: .leading, spacing: 10) {
+                Text(loc[.nextTrain].uppercased())
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
 
-            if let next {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) {
-                            Text(next.lineId)
+                if let next {
+                    let secsAway = next.secondsAway(from: timeline.date)
+                    let isImminent = secsAway <= 60
+                    let countdownText = heroCountdownText(secondsAway: secsAway, language: loc.language)
+                    let lineColor = SyrmosData.lineColor(for: next.lineId)
+                    let countdownColor: Color = isImminent ? SyrmosTokens.arrivalImminent : (secsAway <= 300 ? SyrmosTokens.arrivalSoon : lineColor)
+
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 8) {
+                                Text(next.lineId)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(lineColor)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                Text("\(loc[.to]) \(next.direction)")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                                    .foregroundStyle(.primary)
+                            }
+                            Text(next.time)
                                 .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(SyrmosData.lineColor(for: next.lineId))
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                            Text("\(loc[.to]) \(next.direction)")
-                                .font(.headline)
-                                .lineLimit(1)
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(.secondary)
+                            SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
                         }
-                        Text(next.time)
+                        Spacer(minLength: 0)
+                        Text(countdownText)
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundStyle(countdownColor)
+                            .modifier(HeroImminentPulse(active: isImminent))
+                    }
+                    let thenTimes = nearestUpcoming().dropFirst().prefix(2)
+                        .filter { $0.minutesAway > next.minutesAway }
+                        .map { $0.minutesAwayDisplay(language: loc.language) }
+                    if !thenTimes.isEmpty {
+                        let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : "then"
+                        Text("\(thenWord) \(thenTimes.joined(separator: ", "))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
                     }
-                    Spacer(minLength: 0)
-                    Text(next.minutesAwayDisplay(language: loc.language))
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(SyrmosData.lineColor(for: next.lineId))
-                }
-                // "then 13, 23 min": the next couple of departures after the
-                // featured one, matching the web hero.
-                let thenTimes = nearestUpcoming().dropFirst().prefix(2)
-                    .filter { $0.minutesAway > next.minutesAway }
-                    .map { $0.minutesAwayDisplay(language: loc.language) }
-                if !thenTimes.isEmpty {
-                    let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : "then"
-                    Text("\(thenWord) \(thenTimes.joined(separator: ", "))")
+                    let isTracked = tracking.active != nil
+                    Button {
+                        if !isTracked { trackNext(next) }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: isTracked ? "location.fill" : "bell.fill")
+                            Text(isTracked
+                                ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : "Tracking")
+                                : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : "Track"))
+                                .fontWeight(.semibold)
+                        }
                         .font(.caption)
+                        .foregroundStyle(isTracked ? Color.syrmosOnSurfaceMuted : lineColor)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background((isTracked ? SyrmosTokens.offline : lineColor).opacity(0.14))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isTracked)
+                    .onChange(of: isImminent) { _, nowImminent in
+                        if nowImminent {
+                            let generator = UIImpactFeedbackGenerator(style: .heavy)
+                            generator.impactOccurred()
+                        }
+                    }
+                } else {
+                    Text(locationService.hasPermission ? loc[.serviceOver] : loc[.enableLocationForNext])
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                let isTracked = tracking.active != nil
-                Button {
-                    if !isTracked { trackNext(next) }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: isTracked ? "location.fill" : "bell.fill")
-                        Text(isTracked
-                            ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : "Tracking")
-                            : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : "Track"))
-                            .fontWeight(.semibold)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(isTracked ? Color.syrmosOnSurfaceMuted : SyrmosData.lineColor(for: next.lineId))
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background((isTracked ? SyrmosTokens.offline : SyrmosData.lineColor(for: next.lineId)).opacity(0.14))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(isTracked)
-            } else {
-                Text(locationService.hasPermission ? loc[.serviceOver] : loc[.enableLocationForNext])
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.syrmosSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(next.map { d in
+                let mins = d.minutesAway
+                let unit = mins == 1 ? "minute" : "minutes"
+                return "\(d.lineId) to \(d.direction), \(mins) \(unit)"
+            } ?? loc[.serviceOver])
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.syrmosSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func lastTrainTeaser(_ last: Departure) -> some View {
@@ -412,6 +374,8 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.syrmosSurface)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(loc[.lastTrain]) \(last.lineId), \(loc[.leaveBy]) \(last.time)")
     }
 
     /// Soonest departure across the nearest station's lines. Each line resolves
@@ -586,46 +550,41 @@ struct HomeView: View {
                 }
 
                 ForEach(realTrains.prefix(4)) { train in
-                    Button {
-                        tappedTrain = train
-                    } label: {
-                        HStack(spacing: 10) {
-                            VStack(spacing: 2) {
-                                Text(train.lineId)
+                    HStack(spacing: 10) {
+                        VStack(spacing: 2) {
+                            Text(train.lineId)
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(SyrmosData.lineColor(for: train.lineId))
+                                .clipShape(Capsule())
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(train.origin) → \(train.destination)")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .lineLimit(1)
+                            HStack(spacing: 6) {
+                                Text("#\(train.trainNumber)")
                                     .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(SyrmosData.lineColor(for: train.lineId))
-                                    .clipShape(Capsule())
-                            }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(SyrmosData.resolveStation(train.origin, en: train.originEn, language: loc.language)) \u{2192} \(SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: loc.language))")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .lineLimit(1)
-                                HStack(spacing: 6) {
-                                    Text("#\(train.trainNumber)")
+                                    .foregroundStyle(.tertiary)
+                                if train.delayMinutes > 0 {
+                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
                                         .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                    if train.delayMinutes > 0 {
-                                        Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
-                                            .font(.caption2)
-                                            .foregroundStyle(SyrmosTokens.warning)
-                                    }
+                                        .foregroundStyle(SyrmosTokens.warning)
                                 }
                             }
-                            Spacer()
-                            Circle()
-                                .fill(SyrmosTokens.live)
-                                .frame(width: 8, height: 8)
                         }
-                        .padding(12)
-                        .background(Color.syrmosSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        Spacer()
+                        Circle()
+                            .fill(SyrmosTokens.live)
+                            .frame(width: 8, height: 8)
                     }
-                    .buttonStyle(.plain)
+                    .padding(12)
+                    .background(Color.syrmosSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
             }
         }
@@ -633,11 +592,9 @@ struct HomeView: View {
 
     @ViewBuilder
     private var alertsSection: some View {
-        let allAlerts = stasyService.announcements.filter { $0.category == .serviceAlert }
-        let htAlerts = allAlerts.filter { $0.url?.absoluteString.contains("hellenictrain.gr/important-information") == true }
-        let transitAlerts = allAlerts.filter { $0.url?.absoluteString.contains("hellenictrain.gr/important-information") != true }
+        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
 
-        if !transitAlerts.isEmpty {
+        if !alerts.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -655,18 +612,16 @@ struct HomeView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(transitAlerts.prefix(10)) { alert in
+                        ForEach(alerts.prefix(10)) { alert in
                             AlertCard(announcement: alert, onReadMore: { url in
-                                webLink = WebLink(url: url, title: alert.displayTitle(language: loc.language))
+                                webViewURL = url
                             })
                             .frame(width: 280)
                         }
                     }
                 }
             }
-        }
-
-        if !htAlerts.isEmpty {
+        } else if let first = stasyService.announcements.first {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: "info.circle.fill")
@@ -675,17 +630,9 @@ struct HomeView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                 }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(htAlerts.prefix(10)) { alert in
-                            AlertCard(announcement: alert, onReadMore: { url in
-                                webLink = WebLink(url: url, title: alert.displayTitle(language: loc.language))
-                            })
-                            .frame(width: 280)
-                        }
-                    }
-                }
+                AlertCard(announcement: first, onReadMore: { url in
+                    webViewURL = url
+                })
             }
         }
 
@@ -709,11 +656,6 @@ struct HomeView: View {
                     HStack(spacing: 12) {
                         ForEach(railNewsService.news.prefix(10)) { item in
                             NewsCard(item: item, language: loc.language)
-                                .onTapGesture {
-                                    if let url = item.url {
-                                        webLink = WebLink(url: url, title: item.displayTitle(language: loc.language))
-                                    }
-                                }
                         }
                     }
                 }
@@ -813,6 +755,53 @@ struct HomeView: View {
             : "Trains until \(latest)"
     }
 
+    private func resolveStation(id: String) -> TransitStation? {
+        if let match = SyrmosData.bundleStations.first(where: { $0.id == id }) {
+            return match
+        }
+        for line in SyrmosData.lines {
+            if let match = SyrmosData.stations(for: line.id).first(where: { $0.id == id }) {
+                return match
+            }
+        }
+        return nil
+    }
+
+}
+
+// MARK: - Deep Link Navigation Wrappers
+
+struct DeepLinkStation: Hashable {
+    let id: String
+}
+
+struct DeepLinkLine: Hashable {
+    let id: String
+}
+
+// MARK: - Hero countdown formatting (mirrors KMP HeroCountdown.kt)
+
+private func heroCountdownText(secondsAway: Int, language: AppLanguage) -> String {
+    if secondsAway <= 0 {
+        switch language {
+        case .greek: return "Τώρα"
+        case .albanian: return "Tani"
+        default: return "Now"
+        }
+    }
+    if secondsAway < 120 {
+        let m = secondsAway / 60
+        let s = secondsAway % 60
+        return "\(m):\(String(format: "%02d", s))"
+    }
+    if secondsAway < 3600 {
+        let m = (secondsAway + 59) / 60
+        return "\(m) min"
+    }
+    let h = secondsAway / 3600
+    let m = (secondsAway % 3600) / 60
+    if m == 0 { return "\(h)h" }
+    return "\(h)h \(m)min"
 }
 
 // MARK: - Nearby Station Destination
@@ -905,30 +894,6 @@ struct NearbyStationDestination: View {
     }
 }
 
-// MARK: - Stat Card
-
-struct StatCard: View {
-    let value: String
-    let label: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(color)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(Color.syrmosSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
 // MARK: - Alert Card (expandable)
 
 struct AlertCard: View {
@@ -1015,19 +980,14 @@ struct NewsCard: View {
     }
 }
 
-// MARK: - WebLink
-
-struct WebLink: Identifiable {
-    let id = UUID()
-    let url: URL
-    let title: String
-}
-
 // MARK: - In-App WebView
+
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
 
 struct InAppWebView: View {
     let url: URL
-    var title: String = ""
     @Environment(\.dismiss) private var dismiss
     @State private var isLoading = true
 
@@ -1039,7 +999,7 @@ struct InAppWebView: View {
                     ProgressView()
                 }
             }
-            .navigationTitle(title.isEmpty ? (url.host ?? "Syrmos") : title)
+            .navigationTitle("stasy.gr")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

@@ -19,4 +19,6 @@ expect fun markWhatsNewSeen(version: String)
 
 expect fun consumePendingAssistantQuery(): String?
 
+expect fun consumePendingNotificationDeepLink(): Pair<String, String?>?
+
 expect suspend fun requestNotificationPermission()

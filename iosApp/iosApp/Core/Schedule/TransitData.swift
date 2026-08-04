@@ -59,6 +59,7 @@ enum TransitType: String, CaseIterable {
     case metro = "Metro"
     case tram = "Tram"
     case suburban = "Suburban Railway"
+    case scenic = "Scenic Railway"
     /// Rail-replacement / connecting bus on a suspended rail corridor. The rail
     /// operator's own bus standing in for the train, never an OASA city bus.
     case bus = "Bus"
@@ -68,30 +69,35 @@ struct TransitStation: Identifiable {
     let id: String
     let name: String
     let nameEl: String
+    var nameSq: String? = nil
     let coordinate: CLLocationCoordinate2D
     let lineIds: [String]
     let isInterchange: Bool
+    var region: TransitRegion = .athens
+    var sourceConfidence: SourceConfidence = .scheduled
 }
 
 /// Where an on-screen departure came from, so Syrmos can say how sure it is.
 /// Swift mirror of the KMP `SourceConfidence` (core:model) - keep in sync.
 enum SourceConfidence: Equatable {
-    case live       // a real-time position / arrival
-    case scheduled  // a timetabled departure from the live schedules API
-    case estimated  // projected from a frequency band, not an exact minute
-    case offline    // the bundled offline snapshot
-    case unknown    // no source known - render nothing
+    case live          // a real-time position / arrival
+    case scheduled     // a timetabled departure from the live schedules API
+    case estimated     // projected from a frequency band, not an exact minute
+    case offline       // the bundled offline snapshot
+    case operatorLink  // the operator must be checked for live status
+    case unknown       // no source known - render nothing
 
     // Self-contained RGB (no Color.* extension dependency) so this compiles in
     // every target that includes TransitData - the app AND the widget extension,
     // which doesn't link the DesignSystem Color palette. Values match the shared
     // source-state tokens: live #059669, scheduled #2563EB, estimated #B45309,
-    // offline #6B7280.
+    // offline #6B7280, brand #2139A1.
     var color: Color {
         switch self {
         case .live: return Color(red: 0.020, green: 0.588, blue: 0.412)
         case .scheduled: return Color(red: 0.145, green: 0.388, blue: 0.922)
         case .estimated: return Color(red: 0.706, green: 0.325, blue: 0.035)
+        case .operatorLink: return Color(red: 0.129, green: 0.224, blue: 0.631)
         case .offline, .unknown: return Color(red: 0.420, green: 0.447, blue: 0.502)
         }
     }
@@ -102,6 +108,7 @@ enum SourceConfidence: Equatable {
         case .scheduled: return LocalizedKey.sourceScheduled.text(for: language)
         case .estimated: return LocalizedKey.sourceEstimated.text(for: language)
         case .offline: return LocalizedKey.sourceOffline.text(for: language)
+        case .operatorLink: return LocalizedKey.sourceOperator.text(for: language)
         case .unknown: return ""
         }
     }
@@ -118,6 +125,7 @@ struct SourceConfidenceChip: View {
         if confidence != .unknown {
             HStack(spacing: 5) {
                 Circle().fill(confidence.color).frame(width: 6, height: 6)
+                    .modifier(confidence == .live ? LivePulseOptional(active: true) : LivePulseOptional(active: false))
                 Text(confidence.label(language))
                     .font(.caption2).fontWeight(.semibold)
                     .foregroundColor(confidence.color)
@@ -125,6 +133,22 @@ struct SourceConfidenceChip: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(Capsule().fill(confidence.color.opacity(0.12)))
+        }
+    }
+}
+
+private struct LivePulseOptional: ViewModifier {
+    let active: Bool
+    @State private var pulsing = false
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .scaleEffect(pulsing ? 1.15 : 1.0)
+                .opacity(pulsing ? 0.7 : 1.0)
+                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulsing)
+                .onAppear { pulsing = true }
+        } else {
+            content
         }
     }
 }
@@ -148,6 +172,19 @@ struct Departure: Identifiable {
     /// already at the platform, "5 min" for the close ones, and
     /// "3h 21min" when the next service is hours away (typical for
     /// late-night views or stations far downstream of a terminus).
+    func secondsAway(from now: Date) -> Int {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count >= 2 else { return minutesAway * 60 }
+        let cal = Calendar(identifier: .gregorian)
+        let tz = TimeZone(identifier: "Europe/Athens")!
+        var comps = cal.dateComponents(in: tz, from: now)
+        let nowSecs = (comps.hour ?? 0) * 3600 + (comps.minute ?? 0) * 60 + (comps.second ?? 0)
+        let depSecs = parts[0] * 3600 + parts[1] * 60
+        var diff = depSecs - nowSecs
+        if diff < -60 { diff += 86400 }
+        return max(diff, 0)
+    }
+
     func minutesAwayDisplay(language: AppLanguage) -> String {
         if minutesAway <= 1 {
             switch language {
@@ -329,6 +366,7 @@ enum SyrmosData {
         case "metro": return .metro
         case "tram": return .tram
         case "bus": return .bus
+        case "scenic": return .scenic
         default: return .suburban
         }
     }
@@ -345,6 +383,7 @@ enum SyrmosData {
         switch type.lowercased() {
         case "metro": return .metroBlue
         case "tram": return .tramOrange
+        case "scenic": return .scenic
         default: return .suburbanPurple
         }
     }
@@ -479,7 +518,7 @@ enum SyrmosData {
 
     // Line 3 airport section: stations past Douk. Plakentias
     static let line3AirportOnlyStations: Set<String> = [
-        "M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"
+        "M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"
     ]
 
     static func sampleDepartures(for stationId: String, lineIds: [String]) -> [Departure] {

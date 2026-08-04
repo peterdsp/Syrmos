@@ -68,6 +68,7 @@ object SyrmosColorTokens {
         const val warningContainerDark = 0xFF291705
 
         // Arrival urgency (existing functional colours, kept).
+        const val arrivalImminent = 0xFFDC2626  // red: train at platform / <=60s
         const val arrivalSoon = 0xFF2E7D32
         const val arrivalModerate = 0xFFE65100
         const val arrivalFar = 0xFF757575
@@ -117,6 +118,7 @@ object SyrmosColorTokens {
     val warningContainerDark = Color(Raw.warningContainerDark)
 
     // --- Arrival urgency ---------------------------------------------------
+    val arrivalImminent = Color(Raw.arrivalImminent)
     val arrivalSoon = Color(Raw.arrivalSoon)
     val arrivalModerate = Color(Raw.arrivalModerate)
     val arrivalFar = Color(Raw.arrivalFar)

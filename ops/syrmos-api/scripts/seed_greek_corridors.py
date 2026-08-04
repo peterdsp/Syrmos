@@ -21,7 +21,7 @@ Corridors, all on the scheduled-trips path like Athens A1-A4:
   TL1  national  Tithorea <-> Lianokladi <-> Lamia <-> Stylida bus (Cxxx), daily
   KO1  national  Katakolo <-> Pyrgos <-> Olympia tourist rail (138x), Mon-Sat
   PL1  national  Ano Lechonia <-> Milies Pelion tourist rail (380x), weekends
-  DK1  national  Diakopto <-> Kalavryta rack railway, SUSPENDED (greyed, no trips)
+  DK1  scenic   Diakopto <-> Kalavryta rack railway, SUSPENDED (greyed, no trips)
   PS1/PS2/PSB    Patras suburban + Kato Achaia connecting bus
 
 At each intermediate stop the timetable shows arrival/departure; we store the
@@ -213,7 +213,11 @@ S = {
     "KO_PLA": ("Platanos Olympias", "Πλάτανος Ολυμπίας", 37.667630, 21.605840),
     "KO_OLY": ("Olympia", "Ολυμπία", 37.645640, 21.626620),
     # Diakopto - Kalavryta rack railway (DK1, SUSPENDED); Diakopto = KI_DIA shared
+    "DK_NIA": ("Niamata", "Νιαματά", 38.178100, 22.188200),
+    "DK_TRI": ("Triklia", "Τρίκλια", 38.158500, 22.177900),
+    "DK_ZAC": ("Zachlorou", "Ζαχλωρού", 38.114800, 22.169700),
     "DK_MSP": ("Mega Spilaio", "Μέγα Σπήλαιο", 38.094170, 22.164600),
+    "DK_KER": ("Kerpini", "Κερπινή", 38.064800, 22.135200),
     "DK_KAL": ("Kalavryta", "Καλάβρυτα", 38.033540, 22.109940),
     # Ano Lechonia - Ano Gatzea - Milies Pelion tourist rail (PL1)
     "PL_ALE": ("Ano Lechonia", "Άνω Λεχώνια", 39.325470, 23.053840),
@@ -232,7 +236,7 @@ S = {
 
 # Mode per line; defaults to suburban. Rail-replacement/connecting buses are 'bus'.
 MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus", "TL1": "bus",
-        "PU1": "bus", "PU2": "bus"}
+        "PU1": "bus", "PU2": "bus", "DK1": "scenic"}
 
 # Line status; defaults to operational. Suspended/not-yet-open lines render greyed
 # with no departures (same treatment as Thessaloniki TM2).
@@ -274,7 +278,7 @@ LINES = {
             "Katakolo", "Olympia", 45, "national"),
     "PL1": ("Pelion Railway", "Τρένο Πηλίου", "#0D9488",
             "Ano Lechonia", "Milies", 46, "national"),
-    "DK1": ("Diakopto - Kalavryta rack railway", "Οδοντωτός Διακοπτό - Καλάβρυτα", "#DC2626",
+    "DK1": ("Diakopto - Kalavryta rack railway", "Οδοντωτός Διακοπτό - Καλάβρυτα", "#B8860B",
             "Diakopto", "Kalavryta", 47, "national"),
     "PU1": ("Patras University loop bus", "Πανεπιστήμιο Πατρών (κυκλική)", "#F59E0B",
             "Kastelokampos", "Kastelokampos", 48, "patras"),
@@ -317,7 +321,7 @@ ORDER = {
             "FL_REV", "FL_PAG", "FL_LAM", "FL_ROD", "FL_MEG", "FL_AGM", "FL_VAS", "FL_STY"],
     "KO1": ["KO_KAT", "KO_PYR", "KO_ALF", "KO_SAL", "KO_STR", "KO_PEL", "KO_PLA", "KO_OLY"],
     "PL1": ["PL_ALE", "PL_GAT", "PL_MIL"],
-    "DK1": ["KI_DIA", "DK_MSP", "DK_KAL"],
+    "DK1": ["KI_DIA", "DK_NIA", "DK_TRI", "DK_ZAC", "DK_MSP", "DK_KER", "DK_KAL"],
     "PU1": ["PA_KST", "PU_UNC", "PU_HOS", "PU_UNP", "PU_UNR", "PU_OAE"],
     "PU2": ["PA_KST", "PU_AGV"],
 }

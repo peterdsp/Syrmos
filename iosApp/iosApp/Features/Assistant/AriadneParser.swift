@@ -39,6 +39,9 @@ indirect enum AssistantIntent: Equatable, Sendable {
     /// faster") need no "from where?". stationId is nil for a bare "I'm here",
     /// which the resolver anchors to GPS / last known station.
     case setCurrentLocation(stationId: String?)
+    case wrongTrain(stationId: String?, lineId: String?)
+    case missedStop(stationId: String?, targetStationId: String?)
+    case canIStillMakeIt(toStationId: String?, fromStationId: String?)
     case openMap(stationId: String?)
     case help
     case needsClarification(base: AssistantIntent, missing: MissingSlot)
@@ -83,10 +86,11 @@ struct AssistantVocabulary {
                 let extra = Self.sqAndLatinAliases
                     .filter { folded.contains($0.key) }
                     .flatMap { $0.value }
+                let base = [st.name, st.nameEl, st.nameSq].compactMap { $0 }
                 stationVocab.append(
                     StationVocab(
                         id: st.id,
-                        names: ([st.name, st.nameEl] + extra).filter { !$0.isEmpty },
+                        names: (base + extra).filter { !$0.isEmpty },
                         lineIds: st.lineIds
                     )
                 )
@@ -105,23 +109,22 @@ struct AssistantVocabulary {
                 aliases.append("linja \(suffix)")
                 if line.id.first == "M" { aliases.append("metro \(suffix)") }
                 if line.id.first == "T" { aliases.append("tram \(suffix)") }
+                if line.id.hasPrefix("DK") { aliases.append(contentsOf: ["odontotos", "rack railway", "scenic"]) }
             }
             return LineVocab(id: line.id, aliases: aliases.filter { !$0.isEmpty })
         }
         return AssistantVocabulary(stations: stationVocab, lines: lineVocab)
     }
 
-    /// Albanian / Latin-Greeklish station aliases, keyed by an accent-folded
-    /// token in the EN or EL name. Confident, real variants only. Mirrors the
-    /// KMP `AssistantVocabularyBuilder.SQ_AND_LATIN_ALIASES`. Long-term the
-    /// bundled Station should carry a `nameSq`; this closes the top gaps now.
+    /// Greeklish and extra SQ variants keyed by an accent-folded token from
+    /// the station's EN or EL name. Mirrors KMP's SQ_AND_LATIN_ALIASES.
     private static let sqAndLatinAliases: [String: [String]] = [
         "airport": ["Aeroport", "Aeroporti"],
         "aerodromio": ["Aeroport", "Aeroporti"],
         "piraeus": ["Pireas", "Pireu"],
         "syntagma": ["Sintagma"],
         "thessaloniki": ["Selanik", "Selaniku", "Thesaloniki"],
-        "athens": ["Athina", "Athine"],
+        "athens": ["Athina", "Athine", "Athinë"],
         "acropolis": ["Akropoli", "Akropolis"],
         "omonia": ["Omonoia"],
         "monastiraki": ["Monastiraqi"],
@@ -136,6 +139,11 @@ struct AssistantVocabulary {
         "patra": ["Patra", "Patras"],
         "aghios": ["Agios"],
         "agios": ["Aghios"],
+        "corinth": ["Korinthi", "Korinthos", "Korinh"],
+        "korinthos": ["Corinth", "Korinthi"],
+        "megara": ["Megara"],
+        "kiato": ["Kiato", "Qiato"],
+        "chalkida": ["Halkidhe", "Halkida", "Chalkis"],
     ]
 }
 
@@ -206,6 +214,24 @@ struct AthensTransitParser {
             !containsAny(text, Self.fareWords) &&
             !containsAny(text, Self.lastTrainPhrases) {
             return .setCurrentLocation(stationId: stations.first)
+        }
+
+        // Recovery: wrong train
+        if containsAny(text, Self.wrongTrainPhrases) {
+            return .wrongTrain(stationId: stations.first, lineId: line)
+        }
+
+        // Recovery: missed stop
+        if containsAny(text, Self.missedStopPhrases) {
+            let missed = stations.count >= 2 ? stations[1] : stations.first
+            let current = stations.count >= 2 ? stations[0] : nil
+            return .missedStop(stationId: current, targetStationId: missed)
+        }
+
+        // Recovery: can I still make it
+        if containsAny(text, Self.canIStillMakeItPhrases) {
+            let (from, to) = resolveTripEndpoints(text, stations)
+            return .canIStillMakeIt(toStationId: to ?? from, fromStationId: stations.count >= 2 ? from : nil)
         }
 
         // 0. Travel time / ETA ("how long to X"). Before fares ("how much time"
@@ -698,6 +724,36 @@ struct AthensTransitParser {
     private static let saturdayWords = ["saturday", "σαββατο", "te shtune", "shtune"]
     private static let sundayWords = ["sunday", "κυριακη", "te diel", "diel"]
 
+    // Recovery: wrong train / wrong line / wrong direction.
+    private static let wrongTrainPhrases = [
+        "wrong train", "wrong line", "wrong metro", "wrong tram", "wrong direction",
+        "took the wrong", "got on the wrong", "i'm on the wrong", "im on the wrong",
+        "this isn't my train", "this isnt my train", "not my train", "not my line",
+        "λαθος τρεν", "λαθος γραμμ", "λαθος κατευθυνση", "λαθος συρμ",
+        "πηρα λαθος", "μπηκα σε λαθος", "δεν ειναι δικο μου",
+        "tren i gabuar", "linja e gabuar", "gabim", "hyra ne trenin e gabuar",
+        "nuk eshte treni im", "drejtim i gabuar",
+    ]
+    // Recovery: missed stop / went past.
+    private static let missedStopPhrases = [
+        "missed my stop", "missed my station", "missed the stop", "went past",
+        "passed my stop", "passed my station", "overshot", "went too far",
+        "i didn't get off", "i didnt get off", "forgot to get off",
+        "εχασα τη σταση", "εχασα τον σταθμο", "περασα τη σταση", "περασα τον σταθμο",
+        "ξεχασα να κατεβω", "δεν κατεβηκα", "προσπερασα",
+        "humba stacionin", "humba ndalesan", "kalova stacionin", "shkova larg",
+        "nuk zbrita", "harrova te zbris",
+    ]
+    // Recovery: can I still make it / will I get there in time.
+    private static let canIStillMakeItPhrases = [
+        "can i still make it", "can i still get there", "will i make it",
+        "am i going to make it", "is there still time", "can i reach",
+        "do i have time", "will i get there", "am i too late",
+        "προλαβαινω", "θα προλαβω", "εχω χρονο", "θα φτασω", "ειναι αργα",
+        "a do ia dal", "a do arrij", "a kam kohe", "a eshte vone",
+        "a mund te arrij", "a do ta kap",
+    ]
+
     // Easter egg triggers. Substring match on folded text so "Liepuras",
     // "λιεπουρας", "λιεπ", "liepurashi" all resolve.
     private static let liepurTriggers = ["liepur", "λιεπ"]
@@ -709,6 +765,7 @@ struct AthensTransitParser {
          airportWords + alertWords + mapWords + weatherWords +
          accessibilityWords + reversePhrases + firstTrainPhrases +
          whichLinesWords + stopsBetweenWords +
+         wrongTrainPhrases + missedStopPhrases + canIStillMakeItPhrases +
          tomorrowWords + weekendWords + saturdayWords + sundayWords)
             .map { fold($0) }
             .filter { $0.count >= 4 && !$0.contains(" ") }

@@ -8,11 +8,11 @@ struct SyrmosSettingsView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var refreshAlert: RefreshAlert?
     @State private var showContactSheet = false
-    /// Developer toggle: forces the severe-weather card to render on Home
-    /// regardless of the actual weather condition, so we can smoke-test the
-    /// card without waiting for a storm to roll in. Persists across launches
-    /// (helpful when handing the phone to a designer to review the layout).
+    @State private var showSystemMap = false
+    @State private var showAriadne = false
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
+    @AppStorage("syrmos.map.showLiveVehicles") private var showLiveVehicles: Bool = true
+    @AppStorage("syrmos.map.defaultRegion") private var defaultRegionRaw: String = "athens"
 
     private struct RefreshAlert: Identifiable {
         let id = UUID()
@@ -24,165 +24,22 @@ struct SyrmosSettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                    Section(loc[.preferences]) {
-                    Picker(loc[.language], selection: $loc.language) {
-                        ForEach(AppLanguage.allCases, id: \.self) { lang in
-                            Text(lang.displayName).tag(lang)
-                        }
-                    }
-                    Picker(loc[.theme], selection: $themeManager.theme) {
-                        ForEach(AppTheme.allCases) { theme in
-                            Text(theme.localizedName(loc.language)).tag(theme)
-                        }
-                    }
-                }
-
-                Section(loc.language == .greek ? "Ειδοποιησεις" : loc.language == .albanian ? "Njoftimet" : "Notifications") {
-                    Toggle(isOn: Binding(
-                        get: { NotificationPreferences.serviceAlertsEnabled },
-                        set: { NotificationPreferences.serviceAlertsEnabled = $0 }
-                    )) {
-                        Label(
-                            loc.language == .greek ? "Ειδοποιησεις υπηρεσιας" : loc.language == .albanian ? "Njoftimet e sherbimit" : "Service alerts",
-                            systemImage: "exclamationmark.triangle"
-                        )
-                    }
-                    Toggle(isOn: Binding(
-                        get: { NotificationPreferences.weatherAlertsEnabled },
-                        set: { NotificationPreferences.weatherAlertsEnabled = $0 }
-                    )) {
-                        Label(
-                            loc.language == .greek ? "Καιρικες ειδοποιησεις" : loc.language == .albanian ? "Njoftimet e motit" : "Weather alerts",
-                            systemImage: "cloud.bolt.rain"
-                        )
-                    }
-                    Toggle(isOn: Binding(
-                        get: { NotificationPreferences.nearbyAlertsEnabled },
-                        set: { NotificationPreferences.nearbyAlertsEnabled = $0 }
-                    )) {
-                        Label(
-                            loc.language == .greek ? "Ειδοποιησεις κοντινου σταθμου" : loc.language == .albanian ? "Njoftimet e stacionit te afert" : "Nearby station alerts",
-                            systemImage: "location.circle"
-                        )
-                    }
-                    Toggle(isOn: Binding(
-                        get: { NotificationPreferences.morningDigestEnabled },
-                        set: {
-                            NotificationPreferences.morningDigestEnabled = $0
-                            NotificationService.shared.scheduleMorningDigest()
-                        }
-                    )) {
-                        Label(
-                            loc.language == .greek ? "Πρωινη ενημερωση (07:00)" : loc.language == .albanian ? "Perditesimi i mengjesit (07:00)" : "Morning digest (07:00)",
-                            systemImage: "sunrise"
-                        )
-                    }
-                }
-
-                Section(loc[.data]) {
-                    LabeledContent(loc[.stations], value: "380+")
-                    LabeledContent(loc[.lines], value: "31")
-                    LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
-                    Button {
-                        Task { await runRefresh() }
-                    } label: {
-                        HStack {
-                            Label(checkNowLabel, systemImage: "arrow.clockwise")
-                            if schedules.isRefreshing {
-                                Spacer()
-                                ProgressView()
-                            }
-                        }
-                    }
-                    // Always tappable. The previous gate disabled the
-                    // button whenever the offline-only toggle was on,
-                    // but that misread the product intent: Syrmos is an
-                    // offline app by default, and Check now is the only
-                    // way the user gets fresh server data. Forcing the
-                    // user to toggle "offline mode" off first to then
-                    // tap Check now was friction with no purpose.
-                    .disabled(schedules.isRefreshing)
-                }
-
-                Section {
-                    NavigationLink {
-                        FaresView()
-                    } label: {
-                        Label(
-                            loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων" : loc.language == .albanian ? "Çmimet e biletave" : "Ticket prices",
-                            systemImage: "eurosign.circle"
-                        )
-                    }
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(loc.language == .greek ? "Ανέπαφη πληρωμή" : loc.language == .albanian ? "Pagesa pa kontakt" : "Contactless payment")
-                                .font(.body)
-                            Text(loc.language == .greek
-                                 ? "Πληρώστε στις πύλες μετρό/τραμ ή μέσα σε τραμ και τρένα με Apple Pay, Google Wallet ή ανέπαφη κάρτα."
-                                 : loc.language == .albanian
-                                 ? "Paguaj në portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose çdo kartë pa kontakt."
-                                 : "Tap to pay at metro/tram gates and onboard trams and trains with Apple Pay, Google Wallet, or any contactless card.")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: "wave.3.right.circle")
-                    }
-                } header: {
-                    Text(loc.language == .greek ? "Εισιτήρια" : loc.language == .albanian ? "Bileta" : "Tickets")
-                } footer: {
-                    Text(loc.language == .greek
-                         ? "Οι τιμές διαχειρίζονται από OASA, STASY και Hellenic Train. Το Syrmos εμφανίζει τις επίσημες τιμές."
-                         : loc.language == .albanian
-                         ? "Çmimet menaxhohen nga OASA, STASY dhe Hellenic Train. Syrmos shfaq çmimet zyrtare."
-                         : "Prices are managed by OASA, STASY and Hellenic Train. Syrmos displays the official prices.")
-                        .font(.caption2)
-                }
-
-                Section(loc[.about]) {
-                    Text(loc[.aboutText])
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                ariadneSection
+                preferencesSection
+                mapPreferencesSection
+                operatorsSection
+                savedStationsSection
+                notificationsSection
+                dataSection
+                ticketsSection
+                aboutSection
 
                 if BuildEnv.isInternalBuild {
-                    Section(loc.language == .greek ? "Ανάπτυξη" : loc.language == .albanian ? "Zhvillim" : "Developer") {
-                        Toggle(isOn: $forceEmergencyPreview) {
-                            Label(
-                                loc.language == .greek ? "Προεπισκόπηση κακοκαιρίας"
-                                    : loc.language == .albanian ? "Paraafisho paralajmërim moti"
-                                    : "Preview severe-weather card",
-                                systemImage: "cloud.bolt.rain.fill"
-                            )
-                        }
-                        Text(
-                            loc.language == .greek ? "Δείχνει την κόκκινη κάρτα στην Αρχική χωρίς να χρειάζεται πραγματική καταιγίδα."
-                                : loc.language == .albanian ? "Shfaq kartën e paralajmërimit në Home pa nevojën për stuhi të vërtetë."
-                                : "Forces the amber warning card on Home so you can smoke-test it without waiting for a storm."
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
+                    developerSection
                 }
 
-                Section(loc.language == .greek ? "Επικοινωνία" : loc.language == .albanian ? "Kontakt" : "Contact") {
-                    Button {
-                        showContactSheet = true
-                    } label: {
-                        HStack {
-                            Label(
-                                loc.language == .greek ? "Επικοινωνία με τον μηχανικό" : loc.language == .albanian ? "Kontakto zhvilluesin" : "Contact engineer",
-                                systemImage: "envelope"
-                            )
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.footnote)
-                                .foregroundStyle(.tertiary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
+                mapSection
+                contactSection
 
                 #if DEBUG
                 Section {
@@ -190,7 +47,7 @@ struct SyrmosSettingsView: View {
                         DiagnosticsView()
                     } label: {
                         Label(
-                            loc.language == .greek ? "Διαγνωστικά" : loc.language == .albanian ? "Diagnostika" : "Diagnostics",
+                            loc.language == .greek ? "Διαγνωστικα" : loc.language == .albanian ? "Diagnostika" : "Diagnostics",
                             systemImage: "stethoscope"
                         )
                     }
@@ -203,12 +60,18 @@ struct SyrmosSettingsView: View {
                 CompactTabHeader(loc[.moreTab])
             }
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showSystemMap) {
+                StasyMapView()
+            }
+            .sheet(isPresented: $showAriadne) {
+                AriadneView()
+            }
             .sheet(isPresented: $showContactSheet) {
                 NavigationStack {
                     ContactDeveloperView()
                         .toolbar {
                             ToolbarItem(placement: .topBarTrailing) {
-                                Button(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : "Close") {
+                                Button(loc.language == .greek ? "Κλεισιμο" : loc.language == .albanian ? "Mbylle" : "Close") {
                                     showContactSheet = false
                                 }
                             }
@@ -227,17 +90,366 @@ struct SyrmosSettingsView: View {
         }
     }
 
+    // MARK: - Ariadne
+
+    private var ariadneSection: some View {
+        Section {
+            Button {
+                showAriadne = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "sparkles")
+                        .font(.title3)
+                        .foregroundStyle(.purple)
+                        .frame(width: 32, height: 32)
+                        .background(.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ariadne")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text(loc.language == .greek ? "Ο βοηθος σου στα τρενα" :
+                             loc.language == .albanian ? "Asistenti yt i trenave" :
+                             "Your rail assistant")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+        } header: {
+            Text(loc.language == .greek ? "Βοηθος" : loc.language == .albanian ? "Asistent" : "Assistant")
+        }
+    }
+
+    // MARK: - Preferences
+
+    private var preferencesSection: some View {
+        Section(loc[.preferences]) {
+            Picker(loc[.language], selection: $loc.language) {
+                ForEach(AppLanguage.allCases, id: \.self) { lang in
+                    Text(lang.displayName).tag(lang)
+                }
+            }
+            Picker(loc[.theme], selection: $themeManager.theme) {
+                ForEach(AppTheme.allCases) { theme in
+                    Text(theme.localizedName(loc.language)).tag(theme)
+                }
+            }
+        }
+    }
+
+    // MARK: - Map Preferences
+
+    private var mapPreferencesSection: some View {
+        Section {
+            Toggle(isOn: $showLiveVehicles) {
+                Label(
+                    loc.language == .greek ? "Ζωντανα οχηματα" :
+                    loc.language == .albanian ? "Mjetet e gjalla" :
+                    "Live vehicles",
+                    systemImage: "train.side.front.car"
+                )
+            }
+
+            Picker(
+                loc.language == .greek ? "Προεπιλεγμενη περιοχη" :
+                loc.language == .albanian ? "Rajoni i parazgjedhur" :
+                "Default region",
+                selection: $defaultRegionRaw
+            ) {
+                Text(loc.language == .greek ? "Αθηνα" : loc.language == .albanian ? "Athine" : "Athens").tag("athens")
+                Text(loc.language == .greek ? "Θεσσαλονικη" : loc.language == .albanian ? "Selanik" : "Thessaloniki").tag("thessaloniki")
+                Text(loc.language == .greek ? "Πατρα" : loc.language == .albanian ? "Patra" : "Patras").tag("patras")
+                Text(loc.language == .greek ? "Ολη η Ελλαδα" : loc.language == .albanian ? "E gjithe Greqia" : "All Greece").tag("national")
+            }
+        } header: {
+            Text(loc.language == .greek ? "Χαρτης" : loc.language == .albanian ? "Harta" : "Map preferences")
+        } footer: {
+            Text(loc.language == .greek ? "Τα ζωντανα οχηματα εμφανιζονται σαν κινουμενα τριγωνα στον χαρτη." :
+                 loc.language == .albanian ? "Mjetet e gjalla shfaqen si trekendsha levizes ne harte." :
+                 "Live vehicles appear as moving triangles on the map.")
+                .font(.caption2)
+        }
+    }
+
+    // MARK: - Operators
+
+    private var operatorsSection: some View {
+        Section {
+            OperatorRow(
+                name: "STASY",
+                detail: loc.language == .greek ? "Μετρο & Τραμ Αθηνας" :
+                        loc.language == .albanian ? "Metro & Tramvaj Athine" :
+                        "Athens Metro & Tram",
+                icon: "tram.tunnel.fill",
+                tint: .metroBlue,
+                url: "https://www.stasy.gr"
+            )
+            OperatorRow(
+                name: "OASA",
+                detail: loc.language == .greek ? "Αστικες συγκοινωνιες Αθηνας" :
+                        loc.language == .albanian ? "Transporti publik Athine" :
+                        "Athens public transport",
+                icon: "bus.fill",
+                tint: .orange,
+                url: "https://www.oasa.gr"
+            )
+            OperatorRow(
+                name: "Hellenic Train",
+                detail: loc.language == .greek ? "Προαστιακος & Υπεραστικα" :
+                        loc.language == .albanian ? "Periferike & Nderqytetese" :
+                        "Suburban & Intercity",
+                icon: "train.side.front.car",
+                tint: .suburbanPurple,
+                url: "https://www.hellenictrain.gr"
+            )
+            OperatorRow(
+                name: "OSETH",
+                detail: loc.language == .greek ? "Μετρο Θεσσαλονικης" :
+                        loc.language == .albanian ? "Metro Selanik" :
+                        "Thessaloniki Metro",
+                icon: "tram.fill",
+                tint: .red,
+                url: "https://www.oseth.gr"
+            )
+        } header: {
+            Text(loc.language == .greek ? "Διαχειριστες" : loc.language == .albanian ? "Operatoret" : "Operators")
+        } footer: {
+            Text(loc.language == .greek ? "Οι τιμες και τα δρομολογια διαχειριζονται απο τους αντιστοιχους φορεις." :
+                 loc.language == .albanian ? "Cmimet dhe oraret menaxhohen nga operatoret perkates." :
+                 "Fares and schedules are managed by their respective operators.")
+                .font(.caption2)
+        }
+    }
+
+    // MARK: - Saved Stations
+
+    private var savedStationsSection: some View {
+        let recents = RecentStationStore.load()
+        return Group {
+            if !recents.isEmpty {
+                Section {
+                    ForEach(recents.prefix(5)) { recent in
+                        if let line = SyrmosData.line(for: recent.lineId) {
+                            let station = SyrmosData.stations(for: recent.lineId).first { $0.id == recent.stationId }
+                            NavigationLink {
+                                DestinationDetailView(
+                                    stationId: recent.stationId,
+                                    lineId: recent.lineId,
+                                    onStationViewed: { _, _ in }
+                                )
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Circle()
+                                        .fill(line.color)
+                                        .frame(width: 10, height: 10)
+                                    Text(loc.language == .greek ? (station?.nameEl ?? recent.stationId) : (station?.name ?? recent.stationId))
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Text(line.localizedName(loc.language))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text(loc.language == .greek ? "Προσφατοι σταθμοι" : loc.language == .albanian ? "Stacionet e fundit" : "Recent stations")
+                }
+            }
+        }
+    }
+
+    // MARK: - Notifications
+
+    private var notificationsSection: some View {
+        Section(loc.language == .greek ? "Ειδοποιησεις" : loc.language == .albanian ? "Njoftimet" : "Notifications") {
+            Toggle(isOn: Binding(
+                get: { NotificationPreferences.serviceAlertsEnabled },
+                set: { NotificationPreferences.serviceAlertsEnabled = $0 }
+            )) {
+                Label(
+                    loc.language == .greek ? "Ειδοποιησεις υπηρεσιας" : loc.language == .albanian ? "Njoftimet e sherbimit" : "Service alerts",
+                    systemImage: "exclamationmark.triangle"
+                )
+            }
+            Toggle(isOn: Binding(
+                get: { NotificationPreferences.weatherAlertsEnabled },
+                set: { NotificationPreferences.weatherAlertsEnabled = $0 }
+            )) {
+                Label(
+                    loc.language == .greek ? "Καιρικες ειδοποιησεις" : loc.language == .albanian ? "Njoftimet e motit" : "Weather alerts",
+                    systemImage: "cloud.bolt.rain"
+                )
+            }
+            Toggle(isOn: Binding(
+                get: { NotificationPreferences.nearbyAlertsEnabled },
+                set: { NotificationPreferences.nearbyAlertsEnabled = $0 }
+            )) {
+                Label(
+                    loc.language == .greek ? "Ειδοποιησεις κοντινου σταθμου" : loc.language == .albanian ? "Njoftimet e stacionit te afert" : "Nearby station alerts",
+                    systemImage: "location.circle"
+                )
+            }
+            Toggle(isOn: Binding(
+                get: { NotificationPreferences.morningDigestEnabled },
+                set: {
+                    NotificationPreferences.morningDigestEnabled = $0
+                    NotificationService.shared.scheduleMorningDigest()
+                }
+            )) {
+                Label(
+                    loc.language == .greek ? "Πρωινη ενημερωση (07:00)" : loc.language == .albanian ? "Perditesimi i mengjesit (07:00)" : "Morning digest (07:00)",
+                    systemImage: "sunrise"
+                )
+            }
+        }
+    }
+
+    // MARK: - Data
+
+    private var dataSection: some View {
+        Section(loc[.data]) {
+            LabeledContent(loc[.stations], value: "380+")
+            LabeledContent(loc[.lines], value: "31")
+            LabeledContent(lastUpdatedLabel, value: lastSyncLabel)
+            Button {
+                Task { await runRefresh() }
+            } label: {
+                HStack {
+                    Label(checkNowLabel, systemImage: "arrow.clockwise")
+                    if schedules.isRefreshing {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(schedules.isRefreshing)
+        }
+    }
+
+    // MARK: - Tickets
+
+    private var ticketsSection: some View {
+        Section {
+            NavigationLink {
+                FaresView()
+            } label: {
+                Label(
+                    loc.language == .greek ? "Τιμοκαταλογος εισιτηριων" : loc.language == .albanian ? "Cmimet e biletave" : "Ticket prices",
+                    systemImage: "eurosign.circle"
+                )
+            }
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(loc.language == .greek ? "Ανεπαφη πληρωμη" : loc.language == .albanian ? "Pagesa pa kontakt" : "Contactless payment")
+                        .font(.body)
+                    Text(loc.language == .greek
+                         ? "Πληρωστε στις πυλες μετρο/τραμ η μεσα σε τραμ και τρενα με Apple Pay, Google Wallet η ανεπαφη καρτα."
+                         : loc.language == .albanian
+                         ? "Paguaj ne portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose cdo karte pa kontakt."
+                         : "Tap to pay at metro/tram gates and onboard trams and trains with Apple Pay, Google Wallet, or any contactless card.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            } icon: {
+                Image(systemName: "wave.3.right.circle")
+            }
+        } header: {
+            Text(loc.language == .greek ? "Εισιτηρια" : loc.language == .albanian ? "Bileta" : "Tickets")
+        }
+    }
+
+    // MARK: - About
+
+    private var aboutSection: some View {
+        Section(loc[.about]) {
+            Text(loc[.aboutText])
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Developer
+
+    private var developerSection: some View {
+        Section(loc.language == .greek ? "Αναπτυξη" : loc.language == .albanian ? "Zhvillim" : "Developer") {
+            Toggle(isOn: $forceEmergencyPreview) {
+                Label(
+                    loc.language == .greek ? "Προεπισκοπηση κακοκαιριας"
+                        : loc.language == .albanian ? "Paraafisho paralajmerim moti"
+                        : "Preview severe-weather card",
+                    systemImage: "cloud.bolt.rain.fill"
+                )
+            }
+            Text(
+                loc.language == .greek ? "Δειχνει την κοκκινη καρτα στην Αρχικη χωρις να χρειαζεται πραγματικη καταιγιδα."
+                    : loc.language == .albanian ? "Shfaq karten e paralajmerimit ne Home pa nevoje per stuhi te vertete."
+                    : "Forces the amber warning card on Home so you can smoke-test it without waiting for a storm."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Map (static)
+
+    private var mapSection: some View {
+        Section(loc.language == .greek ? "Χαρτης δικτυου" : loc.language == .albanian ? "Harta e rrjetit" : "Network map") {
+            Button {
+                showSystemMap = true
+            } label: {
+                HStack {
+                    Label(
+                        loc.language == .greek ? "Σιδηροδρομικο δικτυο Αθηνας" : loc.language == .albanian ? "Hekurudhat e zones metropolitane te Athines" : "Athens metropolitan area railways",
+                        systemImage: "map"
+                    )
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.footnote)
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Contact
+
+    private var contactSection: some View {
+        Section(loc.language == .greek ? "Επικοινωνια" : loc.language == .albanian ? "Kontakt" : "Contact") {
+            Button {
+                showContactSheet = true
+            } label: {
+                HStack {
+                    Label(
+                        loc.language == .greek ? "Επικοινωνια με τον μηχανικο" : loc.language == .albanian ? "Kontakto zhvilluesin" : "Contact engineer",
+                        systemImage: "envelope"
+                    )
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.footnote)
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Helpers
+
     @MainActor
     private func runRefresh() async {
         let before = schedules.lastSyncAt
-        // Refresh EVERY store we ship, not just the schedule rules.
-        // Previously Check now only hit /api/schedules/manifest; the
-        // fares, train timestamps, station offsets, visual overrides
-        // and live train feeds were on independent auto-poll loops
-        // that have now been disabled in favour of this single
-        // explicit pull. Sequential rather than parallel so the user
-        // sees one progress indicator and we don't flood the Pi with
-        // 6 simultaneous requests on a flaky mobile link.
         await schedules.refresh()
         let lines = SyrmosLinesService()
         await lines.refresh()
@@ -252,35 +464,30 @@ struct SyrmosSettingsView: View {
 
         if after != nil, after != before {
             refreshAlert = RefreshAlert(
-                title: lang == .greek ? "Ενημερώθηκε" : lang == .albanian ? "I përditësuar" : "Up to date",
+                title: lang == .greek ? "Ενημερωθηκε" : lang == .albanian ? "I perditesuar" : "Up to date",
                 message: lang == .greek
-                    ? "Τα δρομολόγια συγχρονίστηκαν με την τελευταία έκδοση."
+                    ? "Τα δρομολογια συγχρονιστηκαν με την τελευταια εκδοση."
                     : lang == .albanian
-                    ? "Oraret u sinkronizuan me versionin më të fundit."
+                    ? "Oraret u sinkronizuan me versionin me te fundit."
                     : "Schedules synced with the latest version.",
                 isSuccess: true
             )
         } else {
             refreshAlert = RefreshAlert(
-                title: lang == .greek ? "Δεν ήταν δυνατή η ενημέρωση" : lang == .albanian ? "Përditësimi dështoi" : "Update failed",
+                title: lang == .greek ? "Δεν ηταν δυνατη η ενημερωση" : lang == .albanian ? "Perditesimi deshtoi" : "Update failed",
                 message: lang == .greek
-                    ? "Δεν φτάσαμε στον διακομιστή. Δοκιμάστε ξανά με σύνδεση στο διαδίκτυο."
+                    ? "Δεν φτασαμε στον διακομιστη. Δοκιμαστε ξανα με συνδεση στο διαδικτυο."
                     : lang == .albanian
-                    ? "Nuk arritëm te serveri. Provo përsëri me një lidhje të qëndrueshme."
+                    ? "Nuk arritem te serveri. Provo perseri me nje lidhje te qendrueshme."
                     : "Could not reach the server. Try again on a stable connection.",
                 isSuccess: false
             )
         }
     }
 
-    private var scheduleVersionLabel: String {
-        if let v = schedules.manifestVersion { return "v\(v)" }
-        return "3.0"
-    }
-
     private var lastSyncLabel: String {
         guard let date = schedules.lastSyncAt else {
-            return loc.language == .greek ? "Ποτέ" : loc.language == .albanian ? "Asnjëherë" : "Never"
+            return loc.language == .greek ? "Ποτε" : loc.language == .albanian ? "Asnjehere" : "Never"
         }
         let f = DateFormatter()
         f.dateStyle = .short
@@ -289,18 +496,54 @@ struct SyrmosSettingsView: View {
     }
 
     private var lastUpdatedLabel: String {
-        loc.language == .greek ? "Τελευταία ενημέρωση" : loc.language == .albanian ? "Përditësimi i fundit" : "Last updated"
+        loc.language == .greek ? "Τελευταια ενημερωση" : loc.language == .albanian ? "Perditesimi i fundit" : "Last updated"
     }
 
     private var checkNowLabel: String {
-        loc.language == .greek ? "Έλεγχος τώρα" : loc.language == .albanian ? "Kontrollo tani" : "Check now"
+        loc.language == .greek ? "Ελεγχος τωρα" : loc.language == .albanian ? "Kontrollo tani" : "Check now"
     }
-
 }
 
-/// User-facing diagnostics screen. Shows recent breadcrumbs, detected
-/// main-thread hangs, and a Share button that exports a JSON bundle the
-/// user can send to support if they hit a freeze.
+// MARK: - Operator Row
+
+private struct OperatorRow: View {
+    let name: String
+    let detail: String
+    let icon: String
+    let tint: Color
+    let url: String
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button {
+            if let u = URL(string: url) { openURL(u) }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.subheadline)
+                    .foregroundStyle(tint)
+                    .frame(width: 28, height: 28)
+                    .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(name)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(detail)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Diagnostics
+
 struct DiagnosticsView: View {
     @ObservedObject private var center = DiagnosticsCenter.shared
     @ObservedObject private var loc = LocalizationManager.shared
@@ -315,20 +558,20 @@ struct DiagnosticsView: View {
                     }
                 } label: {
                     Label(
-                        loc.language == .greek ? "Εξαγωγή διαγνωστικών" : loc.language == .albanian ? "Eksporto diagnostikën" : "Export diagnostics",
+                        loc.language == .greek ? "Εξαγωγη διαγνωστικων" : loc.language == .albanian ? "Eksporto diagnostiken" : "Export diagnostics",
                         systemImage: "square.and.arrow.up"
                     )
                 }
             } footer: {
                 Text(loc.language == .greek
-                     ? "Δημιουργεί ένα αρχείο JSON με τα τελευταία συμβάντα της εφαρμογής. Μπορείτε να το στείλετε στον προγραμματιστή για διάγνωση παγωμάτων."
+                     ? "Δημιουργει ενα αρχειο JSON με τα τελευταια συμβαντα της εφαρμογης."
                      : loc.language == .albanian
-                     ? "Krijon një skedar JSON me ngjarjet e fundit të aplikacionit. Mund t'ia dërgosh zhvilluesit për të diagnostikuar ngrirjet."
-                     : "Creates a JSON file with the app's recent events. You can send it to the developer to diagnose freezes.")
+                     ? "Krijon nje skedar JSON me ngjarjet e fundit te aplikacionit."
+                     : "Creates a JSON file with the app's recent events.")
             }
 
             if !center.hangs.isEmpty {
-                Section(loc.language == .greek ? "Παγώματα" : loc.language == .albanian ? "Ngrirje" : "Hangs") {
+                Section(loc.language == .greek ? "Παγωματα" : loc.language == .albanian ? "Ngrirje" : "Hangs") {
                     ForEach(center.hangs.reversed()) { hang in
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(hang.durationMs) ms")
@@ -342,7 +585,7 @@ struct DiagnosticsView: View {
                 }
             }
 
-            Section(loc.language == .greek ? "Πρόσφατα συμβάντα" : loc.language == .albanian ? "Ngjarjet e fundit" : "Recent events") {
+            Section(loc.language == .greek ? "Προσφατα συμβαντα" : loc.language == .albanian ? "Ngjarjet e fundit" : "Recent events") {
                 ForEach(center.breadcrumbs.suffix(40).reversed()) { crumb in
                     VStack(alignment: .leading, spacing: 2) {
                         HStack {
@@ -368,7 +611,7 @@ struct DiagnosticsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color.syrmosBackground)
-        .navigationTitle(loc.language == .greek ? "Διαγνωστικά" : loc.language == .albanian ? "Diagnostika" : "Diagnostics")
+        .navigationTitle(loc.language == .greek ? "Διαγνωστικα" : loc.language == .albanian ? "Diagnostika" : "Diagnostics")
         .sheet(item: Binding(
             get: { shareURL.map { IdentifiableURL(url: $0) } },
             set: { shareURL = $0?.url }
@@ -391,11 +634,6 @@ private struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
-/// Distinguishes an internal build (Debug or TestFlight) from the public App
-/// Store build, so internal-only UI can be hidden from App Store users. The
-/// same binary ships to TestFlight and the App Store, so this is a RUNTIME
-/// check on the install source: TestFlight installs carry a "sandboxReceipt",
-/// App Store installs carry a "receipt".
 enum BuildEnv {
     static var isInternalBuild: Bool {
         #if DEBUG

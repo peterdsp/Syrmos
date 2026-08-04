@@ -247,6 +247,26 @@ struct AriadneView: View {
                     }
                     .foregroundStyle(message.fromUser ? Color.white : Color.primary)
                 }
+                if !message.fromUser && message.sourceConfidence != .unknown {
+                    SourceConfidenceChip(confidence: message.sourceConfidence, language: loc.language)
+                }
+                if let action = message.action, let label = message.actionLabel {
+                    Button {
+                        switch action {
+                        case .openStation(let id):
+                            DeepLinkRouter.shared.pending = .station(id: id)
+                            dismiss()
+                        case .openLine(let id):
+                            DeepLinkRouter.shared.pending = .line(id: id)
+                            dismiss()
+                        }
+                    } label: {
+                        Text("\(label) \u{203A}")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.syrmosPrimary)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)

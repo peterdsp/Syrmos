@@ -1,11 +1,18 @@
 import SwiftUI
 
+enum ExploreSegment: String, CaseIterable {
+    case destinations
+    case yourNetwork
+}
+
 struct LinesView: View {
     let lines = SyrmosData.lines
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var searchText = ""
     @State private var selectedRegion: TransitRegion? = nil
     @State private var selectedType: TransitType? = nil
+    @State private var segment: ExploreSegment = .destinations
+    @State private var recentStations: [RecentStation] = RecentStationStore.load()
 
     private var filteredLines: [TransitLine] {
         lines.filter { line in
@@ -23,43 +30,19 @@ struct LinesView: View {
         }
     }
 
-    private var hasActiveFilters: Bool {
-        !searchText.isEmpty || selectedRegion != nil || selectedType != nil
-    }
-
     var body: some View {
         NavigationStack {
             List {
-                linesToolbar
+                segmentedControl
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
 
-                if filteredLines.isEmpty {
-                    Text(emptyMessage)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 32)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                } else {
-                    ForEach(TransitType.allCases, id: \.self) { type in
-                        let typed = filteredLines.filter { $0.type == type }
-                        if !typed.isEmpty {
-                            Section(type.localizedName(loc.language)) {
-                                ForEach(typed) { line in
-                                    NavigationLink {
-                                        LineDetailView(
-                                            line: line,
-                                            stations: SyrmosData.stations(for: line.id)
-                                        )
-                                    } label: {
-                                        LineRow(line: line)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                switch segment {
+                case .destinations:
+                    destinationsContent
+                case .yourNetwork:
+                    networkContent
                 }
             }
             .scrollContentBackground(.hidden)
@@ -71,11 +54,161 @@ struct LinesView: View {
         }
     }
 
-    // MARK: - Toolbar (search + filters in one block)
+    // MARK: - Segmented Control
+
+    private var segmentedControl: some View {
+        HStack(spacing: 4) {
+            ForEach(ExploreSegment.allCases, id: \.self) { seg in
+                let isSelected = seg == segment
+                let label: String = {
+                    switch seg {
+                    case .destinations:
+                        return destinationsLabel
+                    case .yourNetwork:
+                        return yourNetworkLabel
+                    }
+                }()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        segment = seg
+                    }
+                } label: {
+                    Text(label)
+                        .font(.subheadline)
+                        .fontWeight(isSelected ? .semibold : .medium)
+                        .foregroundStyle(isSelected ? .primary : .secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(isSelected ? Color.syrmosSurface : .clear)
+                                .shadow(color: isSelected ? .black.opacity(0.06) : .clear, radius: 2, y: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(Color.syrmosSurfaceMuted, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: - Destinations
+
+    @ViewBuilder
+    private var destinationsContent: some View {
+        ForEach(Array(CuratedDestination.all.enumerated()), id: \.element.id) { index, dest in
+            NavigationLink {
+                DestinationDetailView(
+                    destination: dest,
+                    onStationViewed: { stationId, lineId in
+                        RecentStationStore.record(stationId: stationId, lineId: lineId)
+                        recentStations = RecentStationStore.load()
+                    }
+                )
+            } label: {
+                DestinationCard(destination: dest, language: loc.language)
+            }
+            .syrmosEntrance(index: index)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }
+
+        NavigationLink {
+            BrowseAllStationsView()
+        } label: {
+            browseAllRow
+        }
+        .syrmosEntrance(index: CuratedDestination.all.count)
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    private var browseAllRow: some View {
+        HStack(spacing: 12) {
+            Text("📍")
+                .font(.title3)
+            Text(browseAllLabel)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.syrmosPrimary)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - Your Network (lines catalog)
+
+    @ViewBuilder
+    private var networkContent: some View {
+        if !recentStations.isEmpty {
+            Section(recentLabel) {
+                ForEach(recentStations) { recent in
+                    if let line = SyrmosData.line(for: recent.lineId) {
+                        NavigationLink {
+                            DestinationDetailView(
+                                stationId: recent.stationId,
+                                lineId: recent.lineId,
+                                onStationViewed: { sid, lid in
+                                    RecentStationStore.record(stationId: sid, lineId: lid)
+                                    recentStations = RecentStationStore.load()
+                                }
+                            )
+                        } label: {
+                            RecentStationRow(recent: recent, line: line)
+                        }
+                    }
+                }
+            }
+            .listRowBackground(Color.clear)
+        }
+
+        linesToolbar
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+
+        if filteredLines.isEmpty {
+            Text(emptyMessage)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 32)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        } else {
+            ForEach(TransitType.allCases, id: \.self) { type in
+                let typed = filteredLines.filter { $0.type == type }
+                if !typed.isEmpty {
+                    Section(type.localizedName(loc.language)) {
+                        ForEach(typed) { line in
+                            NavigationLink {
+                                LineDetailView(
+                                    line: line,
+                                    stations: SyrmosData.stations(for: line.id)
+                                )
+                            } label: {
+                                LineRow(line: line)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Lines Toolbar (search + filters)
 
     private var linesToolbar: some View {
         VStack(spacing: 10) {
-            // Search
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.tertiary)
@@ -98,7 +231,6 @@ struct LinesView: View {
             .padding(.vertical, 8)
             .background(Color.syrmosSurfaceMuted, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            // Region chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(Array(regionOptions.enumerated()), id: \.offset) { _, opt in
@@ -111,7 +243,6 @@ struct LinesView: View {
                 }
             }
 
-            // Type chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(Array(typeOptions.enumerated()), id: \.offset) { _, opt in
@@ -128,7 +259,31 @@ struct LinesView: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: - Filter data
+    // MARK: - Localized labels
+
+    private var destinationsLabel: String {
+        switch loc.language {
+        case .greek: return "Προορισμοί"
+        case .albanian: return "Destinacione"
+        case .english: return "Destinations"
+        }
+    }
+
+    private var yourNetworkLabel: String {
+        switch loc.language {
+        case .greek: return "Το δίκτυό σου"
+        case .albanian: return "Rrjeti yt"
+        case .english: return "Your Network"
+        }
+    }
+
+    private var browseAllLabel: String {
+        switch loc.language {
+        case .greek: return "Περιήγηση σε όλους τους 389 σταθμούς"
+        case .albanian: return "Shfleto te gjitha 389 stacionet"
+        case .english: return "Browse all 389 stations"
+        }
+    }
 
     private var regionOptions: [(TransitRegion?, String)] {
         let l = loc.language
@@ -149,7 +304,16 @@ struct LinesView: View {
             (.tram, l == .greek ? "Τραμ" : l == .albanian ? "Tramvaj" : "Tram"),
             (.suburban, l == .greek ? "Προαστιακος" : l == .albanian ? "Periferike" : "Suburban"),
             (.bus, l == .greek ? "Λεωφορεια" : l == .albanian ? "Autobuse" : "Bus"),
+            (.scenic, l == .greek ? "Οδοντωτος" : l == .albanian ? "Malore" : "Scenic"),
         ]
+    }
+
+    private var recentLabel: String {
+        switch loc.language {
+        case .greek: return "Προσφατα"
+        case .albanian: return "Se fundmi"
+        case .english: return "Recent"
+        }
     }
 
     private var searchPlaceholder: String {
@@ -166,6 +330,105 @@ struct LinesView: View {
         case .albanian: return "Nuk u gjeten linja"
         case .english: return "No lines found"
         }
+    }
+}
+
+// MARK: - Curated Destination
+
+struct CuratedDestination: Identifiable, Sendable {
+    let id: String
+    let emoji: String
+    let stationId: String
+    let lineId: String
+    let name: @Sendable (AppLanguage) -> String
+    let hook: @Sendable (AppLanguage) -> String
+    let connection: String
+
+    nonisolated static let all: [CuratedDestination] = [
+        CuratedDestination(
+            id: "airport", emoji: "✈️", stationId: "A1_AIR", lineId: "A1",
+            name: { l in l == .greek ? "Αεροδρομιο Αθηνων" : l == .albanian ? "Aeroporti i Athines" : "Athens Airport" },
+            hook: { l in l == .greek ? "Η πιο γρηγορη διαδρομη στο τερματικο" : l == .albanian ? "Rruga jote me e shpejte drejt terminalit" : "Your fastest route to the terminal" },
+            connection: "A1 / A2"
+        ),
+        CuratedDestination(
+            id: "piraeus", emoji: "⛴️", stationId: "M1_PIR", lineId: "M1",
+            name: { l in l == .greek ? "Πειραιας" : l == .albanian ? "Pireu" : "Piraeus Port" },
+            hook: { l in l == .greek ? "Πλοια, κρουαζιερες, παραλιακες συνδεσεις" : l == .albanian ? "Tragete, kroaziera, lidhje bregdetare" : "Ferries, cruises, coastal connections" },
+            connection: "M1 / A1"
+        ),
+        CuratedDestination(
+            id: "monastiraki", emoji: "🏛️", stationId: "M1_MON", lineId: "M1",
+            name: { l in l == .greek ? "Μοναστηρακι" : l == .albanian ? "Monastiraki" : "Monastiraki" },
+            hook: { l in l == .greek ? "Ιστορικη καρδια, δυο γραμμες μετρο" : l == .albanian ? "Zemra historike, dy linja metroje" : "Historic heart, two metro lines" },
+            connection: "M1 + M3"
+        ),
+        CuratedDestination(
+            id: "kifisia", emoji: "🌳", stationId: "M1_KIF", lineId: "M1",
+            name: { l in l == .greek ? "Κηφισια" : l == .albanian ? "Kifisia" : "Kifisia" },
+            hook: { l in l == .greek ? "Βορεια προαστια, τερμα πρασινης γραμμης" : l == .albanian ? "Periferia veriore, terminali i linjes se gjelber" : "Northern suburbs, green line terminus" },
+            connection: "M1"
+        ),
+        CuratedDestination(
+            id: "thessaloniki", emoji: "🌆", stationId: "GR_THE", lineId: "IC1",
+            name: { l in l == .greek ? "Θεσσαλονικη" : l == .albanian ? "Selanik" : "Thessaloniki Central" },
+            hook: { l in l == .greek ? "Η δευτερη πολη της Ελλαδας με τρενο" : l == .albanian ? "Qyteti i dyte i Greqise me tren" : "Greece's second city by rail" },
+            connection: "IC"
+        ),
+        CuratedDestination(
+            id: "meteora", emoji: "⛰️", stationId: "KB_KAL", lineId: "KB1",
+            name: { l in l == .greek ? "Μετεωρα / Καλαμπακα" : l == .albanian ? "Meteora / Kalambaka" : "Meteora / Kalampaka" },
+            hook: { l in l == .greek ? "Μοναστηρια στον ουρανο" : l == .albanian ? "Manastire ne qiell" : "Monasteries in the sky" },
+            connection: "IC"
+        ),
+        CuratedDestination(
+            id: "patras", emoji: "🌉", stationId: "PA_AND", lineId: "PS1",
+            name: { l in l == .greek ? "Πατρα" : l == .albanian ? "Patra" : "Patras" },
+            hook: { l in l == .greek ? "Η πυλη της Πελοποννησου" : l == .albanian ? "Porta e Peloponezit" : "Gateway to the Peloponnese" },
+            connection: "Suburban"
+        ),
+        CuratedDestination(
+            id: "diakopto", emoji: "🚂", stationId: "KI_DIA", lineId: "DK1",
+            name: { l in l == .greek ? "Οδοντωτος Διακοπτου" : l == .albanian ? "Hekurudha e dhembezuar Diakopto" : "Diakopto Rack Railway" },
+            hook: { l in l == .greek ? "Μια απο τις πιο γραφικες διαδρομες της Ευρωπης" : l == .albanian ? "Nje nga udhetimet me piktoreske te Europes" : "One of Europe's most scenic rides" },
+            connection: "Rack"
+        ),
+    ]
+}
+
+// MARK: - Destination Card
+
+private struct DestinationCard: View {
+    let destination: CuratedDestination
+    let language: AppLanguage
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text(destination.emoji)
+                .font(.title)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(destination.name(language))
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+
+                Text(destination.hook(language))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text(destination.connection)
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.syrmosPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.syrmosPrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .padding(.top, 6)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -215,6 +478,9 @@ extension TransitType {
         case (.bus, .greek): return "Λεωφορειο (αντικατασταση)"
         case (.bus, .english): return "Bus (rail replacement)"
         case (.bus, .albanian): return "Autobus (zevendesim)"
+        case (.scenic, .greek): return "Οδοντωτος Σιδηροδρομος"
+        case (.scenic, .english): return "Scenic Railway"
+        case (.scenic, .albanian): return "Hekurudha malore"
         }
     }
 }
@@ -248,5 +514,380 @@ struct LineRow: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Recent Station Store
+
+struct RecentStation: Identifiable, Codable {
+    var id: String { "\(stationId)_\(lineId)" }
+    let stationId: String
+    let lineId: String
+    let timestamp: TimeInterval
+}
+
+enum RecentStationStore {
+    private static let key = "syrmos.explore.recentStations"
+    private static let maxRecents = 8
+
+    static func load() -> [RecentStation] {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let items = try? JSONDecoder().decode([RecentStation].self, from: data) else {
+            return []
+        }
+        return items
+    }
+
+    static func record(stationId: String, lineId: String) {
+        var items = load()
+        items.removeAll { $0.stationId == stationId && $0.lineId == lineId }
+        items.insert(RecentStation(stationId: stationId, lineId: lineId, timestamp: Date().timeIntervalSince1970), at: 0)
+        if items.count > maxRecents { items = Array(items.prefix(maxRecents)) }
+        if let data = try? JSONEncoder().encode(items) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+}
+
+// MARK: - Recent Station Row
+
+private struct RecentStationRow: View {
+    let recent: RecentStation
+    let line: TransitLine
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        let station = SyrmosData.stations(for: recent.lineId).first { $0.id == recent.stationId }
+        HStack(spacing: 12) {
+            Circle()
+                .fill(line.color)
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(loc.language == .greek ? (station?.nameEl ?? recent.stationId) : (station?.name ?? recent.stationId))
+                    .font(.subheadline.weight(.medium))
+                Text(line.localizedName(loc.language))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Destination Detail View
+
+struct DestinationDetailView: View {
+    let stationId: String
+    let lineId: String
+    let onStationViewed: (String, String) -> Void
+    @ObservedObject private var loc = LocalizationManager.shared
+    @State private var departures: [Departure] = []
+    @State private var dayOffset: Int = 0
+
+    init(destination: CuratedDestination, onStationViewed: @escaping (String, String) -> Void) {
+        self.stationId = destination.stationId
+        self.lineId = destination.lineId
+        self.onStationViewed = onStationViewed
+    }
+
+    init(stationId: String, lineId: String, onStationViewed: @escaping (String, String) -> Void) {
+        self.stationId = stationId
+        self.lineId = lineId
+        self.onStationViewed = onStationViewed
+    }
+
+    private var station: TransitStation? {
+        SyrmosData.stations(for: lineId).first { $0.id == stationId }
+            ?? SyrmosData.bundleStations.first { $0.id == stationId }
+    }
+
+    private var line: TransitLine? {
+        SyrmosData.line(for: lineId)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                stationHeader
+
+                DayPickerRow(selectedOffset: $dayOffset)
+
+                if departures.isEmpty {
+                    Text(noDeparturesLabel)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 32)
+                } else {
+                    let outbound = departures.filter { isOutbound($0.direction) }
+                    let inbound = departures.filter { !isOutbound($0.direction) }
+
+                    if !outbound.isEmpty {
+                        DepartureGroup(
+                            title: "\(towardsLabel) \(line?.terminalB ?? "")",
+                            departures: outbound,
+                            tint: line?.color ?? .primary,
+                            isToday: dayOffset == 0
+                        )
+                    }
+
+                    if !inbound.isEmpty {
+                        DepartureGroup(
+                            title: "\(towardsLabel) \(line?.terminalA ?? "")",
+                            departures: inbound,
+                            tint: line?.color ?? .primary,
+                            isToday: dayOffset == 0
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 32)
+        }
+        .background(Color.syrmosBackground)
+        .navigationTitle(loc.language == .greek ? (station?.nameEl ?? stationId) : (station?.name ?? stationId))
+        .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            onStationViewed(stationId, lineId)
+            reload()
+        }
+        .onChange(of: dayOffset) { _, _ in reload() }
+    }
+
+    private var stationHeader: some View {
+        HStack(spacing: 14) {
+            if let line {
+                Circle()
+                    .fill(line.color)
+                    .frame(width: 14, height: 14)
+                Text(line.localizedName(loc.language))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let st = station, st.isInterchange {
+                Label(
+                    loc.language == .greek ? "Μετεπιβιβαση" :
+                    loc.language == .albanian ? "Transferim" : "Interchange",
+                    systemImage: "arrow.triangle.branch"
+                )
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.orange)
+            }
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 8)
+    }
+
+    private func isOutbound(_ dir: String) -> Bool {
+        guard let line else { return true }
+        let termA = line.terminalA.lowercased()
+        return !dir.lowercased().contains(termA)
+    }
+
+    private func reload() {
+        Task { @MainActor in
+            let lineIds = lineId == "M3" ? ["M3", "M3_AIR"] : [lineId]
+            departures = ScheduleProjector.nextDepartures(
+                for: stationId,
+                lineIds: lineIds,
+                limit: 50,
+                dayOffset: dayOffset
+            )
+        }
+    }
+
+    private var towardsLabel: String {
+        switch loc.language {
+        case .greek: return "Προς"
+        case .albanian: return "Drejt"
+        case .english: return "Towards"
+        }
+    }
+
+    private var noDeparturesLabel: String {
+        switch loc.language {
+        case .greek: return "Δεν υπαρχουν δρομολογια"
+        case .albanian: return "Nuk ka nisje"
+        case .english: return "No departures"
+        }
+    }
+}
+
+private struct DepartureGroup: View {
+    let title: String
+    let departures: [Departure]
+    let tint: Color
+    let isToday: Bool
+    @State private var showAll = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 8, height: 8)
+                Text(title)
+                    .font(.headline)
+            }
+
+            let visible = showAll ? departures : Array(departures.prefix(5))
+            ForEach(Array(visible.enumerated()), id: \.offset) { _, dep in
+                HStack {
+                    Text(dep.time)
+                        .font(.subheadline.weight(.semibold).monospacedDigit())
+                    if isToday, dep.minutesAway > 0 {
+                        Text("\(dep.minutesAway) min")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(tint)
+                    }
+                    Spacer()
+                    Text(dep.direction)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+                Divider().opacity(0.2)
+            }
+
+            if departures.count > 5, !showAll {
+                Button {
+                    withAnimation { showAll = true }
+                } label: {
+                    Text("+\(departures.count - 5) more")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(tint)
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
+        )
+    }
+}
+
+// MARK: - Day Picker (shared with TimetablesView)
+
+private struct DayPickerRow: View {
+    @Binding var selectedOffset: Int
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(0..<7, id: \.self) { offset in
+                    let isSelected = selectedOffset == offset
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            selectedOffset = offset
+                        }
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(dayName(offset))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(isSelected ? .white : .secondary)
+                            Text(dayNumber(offset))
+                                .font(.headline)
+                                .foregroundStyle(isSelected ? .white : .primary)
+                        }
+                        .frame(width: 50, height: 50)
+                        .background(
+                            Circle()
+                                .fill(isSelected ? AnyShapeStyle(Color.metroBlue) : AnyShapeStyle(.thinMaterial))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func dayName(_ offset: Int) -> String {
+        if offset == 0 {
+            switch loc.language {
+            case .greek: return "ΣΗΜ"
+            case .albanian: return "SOT"
+            case .english: return "TODAY"
+            }
+        }
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: loc.language == .greek ? "el_GR" : loc.language == .albanian ? "sq_AL" : "en_US")
+        fmt.dateFormat = "EEE"
+        return fmt.string(from: date).uppercased()
+    }
+
+    private func dayNumber(_ offset: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "d"
+        return fmt.string(from: date)
+    }
+}
+
+// MARK: - Browse All Stations
+
+struct BrowseAllStationsView: View {
+    @ObservedObject private var loc = LocalizationManager.shared
+    @State private var searchText = ""
+
+    private var allStations: [TransitStation] {
+        SyrmosData.bundleStations
+    }
+
+    private var filtered: [TransitStation] {
+        guard !searchText.isEmpty else { return allStations }
+        let q = searchText.lowercased()
+        return allStations.filter {
+            $0.name.lowercased().contains(q)
+            || $0.nameEl.lowercased().contains(q)
+            || ($0.nameSq?.lowercased().contains(q) ?? false)
+            || $0.id.lowercased().contains(q)
+        }
+    }
+
+    var body: some View {
+        List {
+            ForEach(filtered) { station in
+                NavigationLink {
+                    if let lineId = station.lineIds.first {
+                        DestinationDetailView(
+                            stationId: station.id,
+                            lineId: lineId,
+                            onStationViewed: { sid, lid in
+                                RecentStationStore.record(stationId: sid, lineId: lid)
+                            }
+                        )
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(loc.language == .greek ? station.nameEl : station.name)
+                            .font(.subheadline.weight(.medium))
+                        if !station.lineIds.isEmpty {
+                            Text(station.lineIds.joined(separator: ", "))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+        .searchable(
+            text: $searchText,
+            prompt: loc.language == .greek ? "Αναζητηση σταθμου..." :
+                    loc.language == .albanian ? "Kerko stacion..." : "Search station..."
+        )
+        .navigationTitle(
+            loc.language == .greek ? "Ολοι οι σταθμοι" :
+            loc.language == .albanian ? "Te gjitha stacionet" : "All Stations"
+        )
     }
 }

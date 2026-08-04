@@ -43,11 +43,10 @@ enum class L {
     ONBOARD_LIVE_TITLE, ONBOARD_LIVE_BODY,
     ONBOARD_LOCATION_TITLE, ONBOARD_LOCATION_BODY, ONBOARD_LOCATION_CTA,
     ONBOARD_NOTIF_TITLE, ONBOARD_NOTIF_BODY, ONBOARD_NOTIF_CTA,
-    ONBOARD_MAP_TOOLS_TITLE, ONBOARD_MAP_TOOLS_BODY,
     ONBOARD_PRIVACY_TITLE, ONBOARD_PRIVACY_BODY,
     ONBOARD_CONTINUE, ONBOARD_GET_STARTED, ONBOARD_SKIP,
-    NEXT_TRAIN, TO, LIVE, RUNNING_ONLINE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE, RETRY,
-    SOURCE_SCHEDULED, SOURCE_ESTIMATED, SOURCE_OFFLINE,
+    NEXT_TRAIN, TO, LIVE, RUNNING_OFFLINE, PREDICTED_FROM_SCHEDULE,
+    SOURCE_SCHEDULED, SOURCE_ESTIMATED, SOURCE_OFFLINE, SOURCE_OPERATOR,
     LAST_TRAIN, LEAVE_BY, SERVICE_OVER, ENABLE_LOCATION_FOR_NEXT,
     DESKTOP_PLANNER, DESKTOP_SCHEDULES, DESKTOP_PASSES, DESKTOP_ACCOUNT,
     DESKTOP_SUBTITLE, NETWORK_STATUS, NETWORK_STATUS_BODY, DESKTOP_HEADER,
@@ -57,13 +56,22 @@ enum class L {
     NEARBY_POPULAR, POPULAR_INTERCHANGE, POPULAR_STOP, LINES_LOWER,
     ROUTE_COMPARISON, FASTEST, FEWEST_TRANSFERS, BEST_COVERAGE, ONE_TRANSFER,
     SCHEDULE_BOARD, EXPORT, PRINT_SCHEDULE, DOWNLOAD_PDF,
-    SERVICE_ALERT_AFFECTS_LINE;
+    NOW, THEN,
+    DESTINATIONS, YOUR_NETWORK, BROWSE_ALL_STATIONS,
+    DEST_AIRPORT, DEST_AIRPORT_HOOK,
+    DEST_PIRAEUS, DEST_PIRAEUS_HOOK,
+    DEST_MONASTIRAKI, DEST_MONASTIRAKI_HOOK,
+    DEST_KIFISIA, DEST_KIFISIA_HOOK,
+    DEST_THESSALONIKI, DEST_THESSALONIKI_HOOK,
+    DEST_METEORA, DEST_METEORA_HOOK,
+    DEST_PATRAS, DEST_PATRAS_HOOK,
+    DEST_DIAKOPTO, DEST_DIAKOPTO_HOOK;
 
     fun text(lang: AppLanguage): String = when (this) {
         APP_SUBTITLE -> when (lang) {
-            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Ελλάδας"
-            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta te hekurudhave te Greqise"
-            else -> "Live Greece rail times"
+            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας"
+            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta të hekurudhave të Athinës"
+            else -> "Live Athens rail times"
         }
         METRO -> when (lang) {
             AppLanguage.GREEK -> "Μετρό"
@@ -86,9 +94,9 @@ enum class L {
             else -> "Service Alerts"
         }
         LATEST_FROM_STASY -> when (lang) {
-            AppLanguage.GREEK -> "Ενημερωσεις σιδηροδρομικου δικτυου"
-            AppLanguage.ALBANIAN -> "Perditesime te rrjetit hekurudhor"
-            else -> "Rail network updates"
+            AppLanguage.GREEK -> "Ενημέρωση Μετρό & Τραμ"
+            AppLanguage.ALBANIAN -> "Përditësime Metro & Tramvaj"
+            else -> "Metro & Tram updates"
         }
         READ_MORE -> when (lang) {
             AppLanguage.GREEK -> "Διαβάστε περισσότερα"
@@ -131,9 +139,9 @@ enum class L {
             else -> "Explore"
         }
         DEPARTURES -> when (lang) {
-            AppLanguage.GREEK -> "Αεροδρόμιο"
-            AppLanguage.ALBANIAN -> "Aeroporti"
-            else -> "Airport"
+            AppLanguage.GREEK -> "Αναχωρήσεις"
+            AppLanguage.ALBANIAN -> "Nisjet"
+            else -> "Departures"
         }
         MORE_TAB -> when (lang) {
             AppLanguage.GREEK -> "Περισσότερα"
@@ -280,16 +288,6 @@ enum class L {
             AppLanguage.ALBANIAN -> "Lejo njoftimet"
             else -> "Allow notifications"
         }
-        ONBOARD_MAP_TOOLS_TITLE -> when (lang) {
-            AppLanguage.GREEK -> "Τα εργαλεια του χαρτη"
-            AppLanguage.ALBANIAN -> "Mjetet e hartes"
-            else -> "Your Map Tools"
-        }
-        ONBOARD_MAP_TOOLS_BODY -> when (lang) {
-            AppLanguage.GREEK -> "Πατησε την μωβ κουκουβαγια για την Αριαδνη, το τρενο για ζωντανα δρομολογια, και το μπλε βελος για την τοποθεσια σου."
-            AppLanguage.ALBANIAN -> "Shtyp bufen vjollce per Ariadnen, ikonen e trenit per trenat live, dhe shigjeten blu per vendndodhjen tende."
-            else -> "Tap the purple owl to ask Ariadne, the train icon to browse live trains, and the blue arrow to find yourself on the map."
-        }
         ONBOARD_PRIVACY_TITLE -> when (lang) {
             AppLanguage.GREEK -> "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."
             AppLanguage.ALBANIAN -> "Pa llogari. Pa gjurmim."
@@ -330,20 +328,10 @@ enum class L {
             AppLanguage.ALBANIAN -> "Drejtpërdrejt"
             else -> "Live"
         }
-        RUNNING_ONLINE -> when (lang) {
-            AppLanguage.GREEK -> "Σε σύνδεση"
-            AppLanguage.ALBANIAN -> "Me internet"
-            else -> "Running online"
-        }
         RUNNING_OFFLINE -> when (lang) {
             AppLanguage.GREEK -> "Εκτός σύνδεσης"
             AppLanguage.ALBANIAN -> "Pa internet"
             else -> "Running offline"
-        }
-        RETRY -> when (lang) {
-            AppLanguage.GREEK -> "Δοκιμή"
-            AppLanguage.ALBANIAN -> "Riprovo"
-            else -> "Retry"
         }
         PREDICTED_FROM_SCHEDULE -> when (lang) {
             AppLanguage.GREEK -> "Πρόβλεψη από το πρόγραμμα"
@@ -364,6 +352,11 @@ enum class L {
             AppLanguage.GREEK -> "Εκτός σύνδεσης"
             AppLanguage.ALBANIAN -> "Pa internet"
             else -> "Offline snapshot"
+        }
+        SOURCE_OPERATOR -> when (lang) {
+            AppLanguage.GREEK -> "Δείτε πάροχο"
+            AppLanguage.ALBANIAN -> "Kontrolloni operatorin"
+            else -> "Check operator"
         }
         LAST_TRAIN -> when (lang) {
             AppLanguage.GREEK -> "Τελευταίος συρμός"
@@ -406,9 +399,9 @@ enum class L {
             else -> "Account"
         }
         DESKTOP_SUBTITLE -> when (lang) {
-            AppLanguage.GREEK -> "Κέντρο ελέγχου σιδηροδρόμων Ελλάδας"
-            AppLanguage.ALBANIAN -> "Qendra e kontrollit te hekurudhave te Greqise"
-            else -> "Greece rail command center"
+            AppLanguage.GREEK -> "Κέντρο ελέγχου σιδηροδρόμων Αθήνας"
+            AppLanguage.ALBANIAN -> "Qendra e kontrollit të hekurudhave të Athinës"
+            else -> "Athens rail command center"
         }
         NETWORK_STATUS -> when (lang) {
             AppLanguage.GREEK -> "Κατάσταση δικτύου"
@@ -560,10 +553,110 @@ enum class L {
             AppLanguage.ALBANIAN -> "Shkarko PDF"
             else -> "Download PDF"
         }
-        SERVICE_ALERT_AFFECTS_LINE -> when (lang) {
-            AppLanguage.GREEK -> "Ενεργές ειδοποιήσεις μπορεί να επηρεάζουν τα δρομολόγια"
-            AppLanguage.ALBANIAN -> "Njoftimet aktive mund te ndikojne nisjet"
-            else -> "Active alerts may affect departures"
+        NOW -> when (lang) {
+            AppLanguage.GREEK -> "Τώρα"
+            AppLanguage.ALBANIAN -> "Tani"
+            else -> "Now"
+        }
+        THEN -> when (lang) {
+            AppLanguage.GREEK -> "μετά"
+            AppLanguage.ALBANIAN -> "pastaj"
+            else -> "then"
+        }
+        DESTINATIONS -> when (lang) {
+            AppLanguage.GREEK -> "Προορισμοί"
+            AppLanguage.ALBANIAN -> "Destinacione"
+            else -> "Destinations"
+        }
+        YOUR_NETWORK -> when (lang) {
+            AppLanguage.GREEK -> "Το δίκτυό σου"
+            AppLanguage.ALBANIAN -> "Rrjeti yt"
+            else -> "Your Network"
+        }
+        BROWSE_ALL_STATIONS -> when (lang) {
+            AppLanguage.GREEK -> "Περιήγηση σε όλους τους 389 σταθμούς"
+            AppLanguage.ALBANIAN -> "Shfleto te gjitha 389 stacionet"
+            else -> "Browse all 389 stations"
+        }
+        DEST_AIRPORT -> when (lang) {
+            AppLanguage.GREEK -> "Αεροδρόμιο Αθηνών"
+            AppLanguage.ALBANIAN -> "Aeroporti i Athinës"
+            else -> "Athens Airport"
+        }
+        DEST_AIRPORT_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Η πιο γρήγορη διαδρομή στο τερματικό"
+            AppLanguage.ALBANIAN -> "Rruga jote më e shpejtë drejt terminalit"
+            else -> "Your fastest route to the terminal"
+        }
+        DEST_PIRAEUS -> when (lang) {
+            AppLanguage.GREEK -> "Πειραιάς"
+            AppLanguage.ALBANIAN -> "Pireu"
+            else -> "Piraeus Port"
+        }
+        DEST_PIRAEUS_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Πλοία, κρουαζιέρες, παραλιακές συνδέσεις"
+            AppLanguage.ALBANIAN -> "Tragete, kroaziera, lidhje bregdetare"
+            else -> "Ferries, cruises, coastal connections"
+        }
+        DEST_MONASTIRAKI -> when (lang) {
+            AppLanguage.GREEK -> "Μοναστηράκι"
+            AppLanguage.ALBANIAN -> "Monastiraki"
+            else -> "Monastiraki"
+        }
+        DEST_MONASTIRAKI_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Ιστορική καρδιά, δύο γραμμές μετρό"
+            AppLanguage.ALBANIAN -> "Zemra historike, dy linja metroje"
+            else -> "Historic heart, two metro lines"
+        }
+        DEST_KIFISIA -> when (lang) {
+            AppLanguage.GREEK -> "Κηφισιά"
+            AppLanguage.ALBANIAN -> "Kifisia"
+            else -> "Kifisia"
+        }
+        DEST_KIFISIA_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Βόρεια προάστια, τέρμα πράσινης γραμμής"
+            AppLanguage.ALBANIAN -> "Periferia veriore, terminali i linjës së gjelbër"
+            else -> "Northern suburbs, green line terminus"
+        }
+        DEST_THESSALONIKI -> when (lang) {
+            AppLanguage.GREEK -> "Θεσσαλονίκη"
+            AppLanguage.ALBANIAN -> "Selanik"
+            else -> "Thessaloniki Central"
+        }
+        DEST_THESSALONIKI_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Η δεύτερη πόλη της Ελλάδας με τρένο"
+            AppLanguage.ALBANIAN -> "Qyteti i dytë i Greqisë me tren"
+            else -> "Greece's second city by rail"
+        }
+        DEST_METEORA -> when (lang) {
+            AppLanguage.GREEK -> "Μετέωρα / Καλαμπάκα"
+            AppLanguage.ALBANIAN -> "Meteora / Kalambaka"
+            else -> "Meteora / Kalampaka"
+        }
+        DEST_METEORA_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Μοναστήρια στον ουρανό"
+            AppLanguage.ALBANIAN -> "Manastire në qiell"
+            else -> "Monasteries in the sky"
+        }
+        DEST_PATRAS -> when (lang) {
+            AppLanguage.GREEK -> "Πάτρα"
+            AppLanguage.ALBANIAN -> "Patra"
+            else -> "Patras"
+        }
+        DEST_PATRAS_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Η πύλη της Πελοποννήσου"
+            AppLanguage.ALBANIAN -> "Porta e Peloponezit"
+            else -> "Gateway to the Peloponnese"
+        }
+        DEST_DIAKOPTO -> when (lang) {
+            AppLanguage.GREEK -> "Οδοντωτός Διακοπτού"
+            AppLanguage.ALBANIAN -> "Hekurudha e dhëmbëzuar Diakopto"
+            else -> "Diakopto Rack Railway"
+        }
+        DEST_DIAKOPTO_HOOK -> when (lang) {
+            AppLanguage.GREEK -> "Μία από τις πιο γραφικές διαδρομές της Ευρώπης"
+            AppLanguage.ALBANIAN -> "Një nga udhetimet me piktoreske te Europes"
+            else -> "One of Europe's most scenic rides"
         }
     }
 }

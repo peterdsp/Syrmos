@@ -92,6 +92,7 @@ class MainActivity : ComponentActivity() {
         }
 
         handleAssistantIntent(intent)
+        handleNotificationIntent(intent)
 
         setContent {
             SyrmosApp()
@@ -101,6 +102,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleAssistantIntent(intent)
+        handleNotificationIntent(intent)
     }
 
     private fun handleAssistantIntent(intent: Intent?) {
@@ -113,6 +115,12 @@ class MainActivity : ComponentActivity() {
         if (query != null) {
             setPendingAssistantQuery(query)
         }
+    }
+
+    private fun handleNotificationIntent(intent: Intent?) {
+        val notifType = intent?.getStringExtra("notif_type") ?: return
+        val alertId = intent.getStringExtra("notif_alert_id")
+        com.syrmos.app.platform.setPendingNotificationDeepLink(notifType, alertId)
     }
 
     override fun onResume() {

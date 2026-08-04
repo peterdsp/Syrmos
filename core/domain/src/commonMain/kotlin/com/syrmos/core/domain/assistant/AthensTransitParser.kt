@@ -105,6 +105,33 @@ class AthensTransitParser(
             return AssistantIntent.SetCurrentLocation(stationId = mentionedStations.firstOrNull())
         }
 
+        // Recovery: wrong train (before planning, so "wrong train to X" is recovery, not a trip)
+        if (containsAny(text, WRONG_TRAIN_PHRASES)) {
+            return AssistantIntent.WrongTrain(
+                stationId = mentionedStations.firstOrNull(),
+                lineId = mentionedLine,
+            )
+        }
+
+        // Recovery: missed stop
+        if (containsAny(text, MISSED_STOP_PHRASES)) {
+            val missed = if (mentionedStations.size >= 2) mentionedStations[1] else mentionedStations.firstOrNull()
+            val current = if (mentionedStations.size >= 2) mentionedStations[0] else null
+            return AssistantIntent.MissedStop(
+                stationId = current,
+                targetStationId = missed,
+            )
+        }
+
+        // Recovery: can I still make it
+        if (containsAny(text, CAN_I_STILL_MAKE_IT_PHRASES)) {
+            val (from, to) = resolveTripEndpoints(text, mentionedStations)
+            return AssistantIntent.CanIStillMakeIt(
+                toStationId = to ?: from,
+                fromStationId = if (mentionedStations.size >= 2) from else null,
+            )
+        }
+
         // 0. Travel time / ETA ("how long to X", "how many minutes to X").
         //    Placed before fares because "how much time" shares the fare
         //    "how much" cue, and before planning because "how long to get to X"
@@ -798,10 +825,42 @@ class AthensTransitParser(
         private val SATURDAY_WORDS = listOf("saturday", "σαββατο", "te shtune", "shtune")
         private val SUNDAY_WORDS = listOf("sunday", "κυριακη", "te diel", "diel")
 
-        // Easter egg triggers. Substring match on folded text — "Liepuras",
+        // Easter egg triggers. Substring match on folded text -- "Liepuras",
         // "λιεπουρας", "Λιεπ", "liepurashi" all resolve. Kept as substrings
         // (not word-boundary) so silly variants still fire.
         private val LIEPUR_TRIGGERS = listOf("liepur", "λιεπ")
+
+        // Recovery: "wrong train / wrong line / wrong direction"
+        private val WRONG_TRAIN_PHRASES = listOf(
+            "wrong train", "wrong line", "wrong metro", "wrong tram", "wrong direction",
+            "took the wrong", "got on the wrong", "i'm on the wrong", "im on the wrong",
+            "this isn't my train", "this isnt my train", "not my train", "not my line",
+            "λαθος τρεν", "λαθος γραμμ", "λαθος κατευθυνση", "λαθος συρμ",
+            "πηρα λαθος", "μπηκα σε λαθος", "δεν ειναι δικο μου",
+            "tren i gabuar", "linja e gabuar", "gabim", "hyra ne trenin e gabuar",
+            "nuk eshte treni im", "drejtim i gabuar",
+        )
+
+        // Recovery: "missed my stop / went past / overshot"
+        private val MISSED_STOP_PHRASES = listOf(
+            "missed my stop", "missed my station", "missed the stop", "went past",
+            "passed my stop", "passed my station", "overshot", "went too far",
+            "i didn't get off", "i didnt get off", "forgot to get off",
+            "εχασα τη σταση", "εχασα τον σταθμο", "περασα τη σταση", "περασα τον σταθμο",
+            "ξεχασα να κατεβω", "δεν κατεβηκα", "προσπερασα",
+            "humba stacionin", "humba ndalesan", "kalova stacionin", "shkova larg",
+            "nuk zbrita", "harrova te zbris",
+        )
+
+        // Recovery: "can I still make it / will I get there"
+        private val CAN_I_STILL_MAKE_IT_PHRASES = listOf(
+            "can i still make it", "can i still get there", "will i make it",
+            "am i going to make it", "is there still time", "can i reach",
+            "do i have time", "will i get there", "am i too late",
+            "προλαβαινω", "θα προλαβω", "εχω χρονο", "θα φτασω", "ειναι αργα",
+            "a do ia dal", "a do arrij", "a kam kohe", "a eshte vone",
+            "a mund te arrij", "a do ta kap",
+        )
 
         // Single-word vocabulary tokens the fuzzy matcher must never "correct"
         // into a station (so "trains" stays a departures cue, not a stop).
@@ -810,6 +869,7 @@ class AthensTransitParser(
                 FAVORITE_WORDS + AIRPORT_WORDS + ALERT_WORDS + MAP_WORDS + WEATHER_WORDS +
                 ACCESSIBILITY_WORDS + REVERSE_PHRASES + FIRST_TRAIN_PHRASES +
                 WHICH_LINES_WORDS + STOPS_BETWEEN_WORDS +
+                WRONG_TRAIN_PHRASES + MISSED_STOP_PHRASES + CAN_I_STILL_MAKE_IT_PHRASES +
                 TOMORROW_WORDS + WEEKEND_WORDS + SATURDAY_WORDS + SUNDAY_WORDS
             ).map { fold(it) }.filter { it.length >= 4 && !it.contains(' ') }.toSet()
     }

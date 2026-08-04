@@ -748,6 +748,7 @@ struct StationDot: View {
         case .tram: return "tram.fill"
         case .suburban: return "train.side.front.car"
         case .bus: return "bus.fill"
+        case .scenic: return "mountain.2.fill"
         }
     }
 
@@ -1331,7 +1332,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
             let from = d.stops[segIdx]
             let to = d.stops[segIdx + 1]
             let segDur = to.minutesFromOrigin - from.minutesFromOrigin
-            let frac = segDur > 0 ? min(max((elapsedMin - from.minutesFromOrigin) / segDur, 0), 1) : 0
+            let linearFrac = segDur > 0 ? min(max((elapsedMin - from.minutesFromOrigin) / segDur, 0), 1) : 0.0
+            let frac = stationAwareEase(linearFrac)
 
             let coords = StationCoordinateLookup.shared
             guard let fc = coords.coordinate(for: from.stationId),
@@ -1362,6 +1364,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 latitude: fromCoord.latitude + (toCoord.latitude - fromCoord.latitude) * frac,
                 longitude: fromCoord.longitude + (toCoord.longitude - fromCoord.longitude) * frac
             )
+        }
+
+        // MARK: - Station-aware easing (mirrors KMP TrainSimulator.stationAwareEase)
+
+        private func stationAwareEase(_ t: Double) -> Double {
+            let c = min(max(t, 0), 1)
+            return c * c * (3.0 - 2.0 * c)
         }
 
         // MARK: - Polyline distance helpers

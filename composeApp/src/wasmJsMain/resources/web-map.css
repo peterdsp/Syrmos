@@ -193,7 +193,7 @@ html, body {
 }
 
 .leaflet-marker-icon.sim-train-marker {
-    transition: transform 0.25s linear !important;
+    transition: transform 0.25s var(--sy-ease-glide, cubic-bezier(0.16, 1, 0.3, 1)) !important;
 }
 
 /* A smart-code station marker: the dot core sits underneath as the guaranteed
@@ -282,6 +282,10 @@ html, body {
     line-height: 1;
 }
 .hero-card--now .hero-card__count { color: var(--sy-disruption, #dc2626); }
+.hero-card--imminent .hero-card__count {
+    color: var(--sy-arrival-imminent, #dc2626);
+    animation: sy-live-pulse 2s ease-in-out infinite;
+}
 .hero-card__chip {
     margin-top: 8px;
     font-size: 11px;
@@ -846,6 +850,20 @@ html, body {
 .src-chip--scheduled { color: var(--sy-scheduled, #2563EB); background: color-mix(in srgb, var(--sy-scheduled, #2563EB) 12%, transparent); }
 .src-chip--estimated { color: var(--sy-estimated, #B45309); background: color-mix(in srgb, var(--sy-estimated, #B45309) 12%, transparent); }
 .src-chip--offline { color: var(--sy-offline, #6B7280); background: color-mix(in srgb, var(--sy-offline, #6B7280) 12%, transparent); }
+.src-chip--operator { color: var(--sy-brand, #2139A1); background: color-mix(in srgb, var(--sy-brand, #2139A1) 12%, transparent); }
+
+.offline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sy-on-surface-muted, #6B7280);
+    background: color-mix(in srgb, var(--sy-offline, #6B7280) 14%, transparent);
+}
+.offline-pill__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sy-offline, #6B7280); flex: none; }
 
 .departure-card__pill {
     display: inline-flex;

@@ -16,9 +16,8 @@ object StationComfort {
         LineType.METRO -> Exposure.SHELTERED
         LineType.TRAM -> Exposure.EXPOSED
         LineType.SUBURBAN -> Exposure.MIXED
-        // A rail-replacement bus is surface transport, so its comfort is a
-        // tram's, not a train's.
         LineType.BUS -> Exposure.EXPOSED
+        LineType.SCENIC -> Exposure.EXPOSED
     }
 
     /** Worst exposure across a route's legs, so the advice is honest. */

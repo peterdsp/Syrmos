@@ -171,9 +171,42 @@ sealed interface AssistantIntent {
     ) : AssistantIntent
 
     /**
+     * "I'm on the wrong train" / "wrong line". The user boarded the wrong
+     * service and needs Ariadne to figure out the nearest recovery point
+     * (next interchange or terminus to turn around). stationId is the
+     * user's current station if known from session context.
+     */
+    data class WrongTrain(
+        val stationId: String? = null,
+        val lineId: String? = null,
+    ) : AssistantIntent
+
+    /**
+     * "I missed my stop" / "I went past my station". The user overshot
+     * their destination. Ariadne tells them the next station where they
+     * can alight and how to get back. targetStationId is the missed stop
+     * if parseable; stationId is the current position.
+     */
+    data class MissedStop(
+        val stationId: String? = null,
+        val targetStationId: String? = null,
+    ) : AssistantIntent
+
+    /**
+     * "Can I still make it?" / "will I get there on time?". A stress
+     * check against the session's last planned route or a newly named
+     * destination. Ariadne compares current time against the next viable
+     * departure and says yes/no with the margin.
+     */
+    data class CanIStillMakeIt(
+        val toStationId: String? = null,
+        val fromStationId: String? = null,
+    ) : AssistantIntent
+
+    /**
      * Easter egg: someone said "liepur" / "λιεπ" / "liepuras" or a close
      * variant. Ariadne answers with a random cat joke. Deliberately opaque
-     * from the outside — the trigger words aren't documented anywhere the
+     * from the outside -- the trigger words aren't documented anywhere the
      * user could stumble onto them.
      */
     data object EasterEggLiepur : AssistantIntent
