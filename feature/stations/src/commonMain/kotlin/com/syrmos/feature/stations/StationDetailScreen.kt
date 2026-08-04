@@ -1,8 +1,6 @@
 package com.syrmos.feature.stations
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.DepartureCard
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
@@ -51,6 +50,7 @@ fun StationDetailScreen(
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lang by LocalizationManager.language.collectAsState()
     var showMapSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -77,7 +77,11 @@ fun StationDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = when (lang) {
+                                AppLanguage.GREEK -> "Πισω"
+                                AppLanguage.ALBANIAN -> "Prapa"
+                                else -> "Back"
+                            },
                         )
                     }
                 },
@@ -90,7 +94,13 @@ fun StationDetailScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (uiState.connectingLines.isNotEmpty()) {
-                item { SectionHeader(title = "Lines at this station") }
+                item {
+                    SectionHeader(title = when (lang) {
+                        AppLanguage.GREEK -> "Γραμμες σε αυτον τον σταθμο"
+                        AppLanguage.ALBANIAN -> "Linjat ne kete stacion"
+                        else -> "Lines at this station"
+                    })
+                }
                 item {
                     Card(
                         onClick = { showMapSheet = true },
@@ -116,7 +126,11 @@ fun StationDetailScreen(
                             }
                             Icon(
                                 imageVector = Icons.Filled.Map,
-                                contentDescription = "Show on map",
+                                contentDescription = when (lang) {
+                                    AppLanguage.GREEK -> "Εμφανιση στον χαρτη"
+                                    AppLanguage.ALBANIAN -> "Shfaq ne harte"
+                                    else -> "Show on map"
+                                },
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -125,7 +139,13 @@ fun StationDetailScreen(
             }
 
             if (uiState.departures.isNotEmpty()) {
-                item { SectionHeader(title = "Next departures") }
+                item {
+                    SectionHeader(title = when (lang) {
+                        AppLanguage.GREEK -> "Επομενες αναχωρησεις"
+                        AppLanguage.ALBANIAN -> "Nisjet e ardhshme"
+                        else -> "Next departures"
+                    })
+                }
                 items(uiState.departures) { departure ->
                     val direction = departure.notes ?: departure.direction.name.lowercase()
                         .replaceFirstChar { it.uppercase() }
@@ -171,33 +191,18 @@ fun StationDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Box(
+                    StationMiniMap(
+                        latitude = uiState.latitude,
+                        longitude = uiState.longitude,
+                        stationName = uiState.stationName,
+                        connectingLines = uiState.connectingLines.map {
+                            MiniMapLine(name = it.name, color = it.color)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(220.dp)
                             .padding(vertical = 4.dp),
-                    ) {
-                        // Embedded map is provided per-platform: Android wires
-                        // osmdroid via expect/actual; web mounts a Leaflet
-                        // overlay. For now we render the line summary; the
-                        // platform map widget lands in a follow-up commit.
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = uiState.connectingLines.joinToString(" • ") { it.name },
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
@@ -209,7 +214,11 @@ fun StationDetailScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Get directions")
+                        Text(when (lang) {
+                            AppLanguage.GREEK -> "Οδηγιες"
+                            AppLanguage.ALBANIAN -> "Merr udhezime"
+                            else -> "Get directions"
+                        })
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
