@@ -16,4 +16,6 @@ enum class LineType {
      * labelled as a bus so it never implies a train.
      */
     @SerialName("bus") BUS,
+
+    @SerialName("scenic") SCENIC,
 }

@@ -1,16 +1,52 @@
 package com.syrmos.app.platform
 
 import com.syrmos.core.model.location.UserLocation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.js.Promise
 import kotlinx.browser.localStorage
 
+@JsFun("""() => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject('no geolocation'); return; }
+    navigator.geolocation.getCurrentPosition(
+        pos => resolve(pos.coords.latitude + ',' + pos.coords.longitude),
+        err => reject(err.message || 'denied'),
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+})""")
+private external fun jsGetLocation(): Promise<JsString>
+
 actual suspend fun requestUserLocation(): UserLocation? {
-    // Web uses JS geolocation API in web-map.js, not this KMP path
-    return null
+    return try {
+        val result = jsGetLocation().awaitLocation()
+        val parts = result.split(",")
+        if (parts.size == 2) {
+            val lat = parts[0].toDoubleOrNull()
+            val lon = parts[1].toDoubleOrNull()
+            if (lat != null && lon != null) UserLocation(lat, lon) else null
+        } else null
+    } catch (_: Throwable) {
+        null
+    }
+}
+
+private suspend fun Promise<JsString>.awaitLocation(): String = suspendCoroutine { cont ->
+    then(
+        onFulfilled = { value: JsString ->
+            cont.resume(value.toString())
+            value
+        },
+        onRejected = { error: JsAny ->
+            cont.resumeWithException(Exception(error.toString()))
+            error
+        },
+    )
 }
 
 actual suspend fun requestLocationPermission() {
-    // Web onboarding handles this through navigator.geolocation in the
-    // hosting HTML/JS; the Compose layer doesn't prompt directly.
+    // Calling requestUserLocation() triggers the browser permission prompt.
+    requestUserLocation()
 }
 
 private const val ONBOARDING_KEY = "syrmos.onboarding.completed.v1"
@@ -33,6 +69,8 @@ actual fun markWhatsNewSeen(version: String) {
 }
 
 actual fun consumePendingAssistantQuery(): String? = null
+
+actual fun consumePendingNotificationDeepLink(): Pair<String, String?>? = null
 
 actual suspend fun requestNotificationPermission() {
     // Web does not support push notification permission via this path.

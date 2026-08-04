@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.designsystem.animation.livePulse
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosShapeTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosTypographyTokens
@@ -63,7 +64,8 @@ fun SourceConfidenceChip(
             modifier = Modifier
                 .size(7.dp)
                 .clip(CircleShape)
-                .background(tint),
+                .background(tint)
+                .then(if (confidence == SourceConfidence.LIVE) Modifier.livePulse() else Modifier),
         )
         Text(
             text = label,

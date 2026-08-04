@@ -12,6 +12,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.syrmos.core.common.AriadneEngineStatus
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.app.LocalAriadneOpener
 import com.syrmos.app.platform.provideAriadneEngineStatus
 import com.syrmos.feature.settings.SettingsScreen
 
@@ -31,6 +32,10 @@ object MoreTab : Tab {
     override fun Content() {
         var engine by remember { mutableStateOf<AriadneEngineStatus?>(null) }
         LaunchedEffect(Unit) { engine = provideAriadneEngineStatus() }
-        SettingsScreen(ariadneEngine = engine)
+        val openAriadne = LocalAriadneOpener.current
+        SettingsScreen(
+            ariadneEngine = engine,
+            onAriadneClick = openAriadne,
+        )
     }
 }

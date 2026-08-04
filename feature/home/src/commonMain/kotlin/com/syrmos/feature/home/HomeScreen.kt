@@ -31,10 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.DataFreshness
-import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
@@ -63,9 +59,16 @@ import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
-import com.syrmos.core.designsystem.component.PlatformWebView
+import com.syrmos.core.designsystem.animation.livePulse
+import com.syrmos.core.designsystem.animation.staggeredEntrance
+import com.syrmos.core.designsystem.component.OfflinePill
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
+import com.syrmos.core.designsystem.component.heroCountdown
+import com.syrmos.core.designsystem.component.heroCountdownColor
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.common.extensions.currentAthensTime
+import com.syrmos.core.common.extensions.parseTime
+import com.syrmos.core.common.extensions.secondsUntil
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
@@ -93,7 +96,6 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     var showTrackPicker by remember { mutableStateOf(false) }
-    var selectedNewsUrl by remember { mutableStateOf<String?>(null) }
     val tracked by DepartureTracking.active.collectAsState()
     var nowEpoch by remember { mutableStateOf(Clock.System.now().epochSeconds) }
     LaunchedEffect(Unit) {
@@ -230,7 +232,7 @@ fun HomeScreen(
 
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().staggeredEntrance(0),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 FreshnessPill(freshness = uiState.freshness, lang = lang)
@@ -250,12 +252,14 @@ fun HomeScreen(
         // tracking or use the Lines tab.
         if (activeTrack == null) {
             item {
+                Box(Modifier.staggeredEntrance(1)) {
                 AnswerHero(
                     next = uiState.nextDeparture,
                     line = uiState.nextDepartureLine,
                     upcoming = uiState.upcomingDepartures,
                     hasLocation = uiState.nearestStations.isNotEmpty(),
                     isTracked = false,
+                    nowEpoch = nowEpoch,
                     lang = lang,
                     onStationClick = {
                         uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
@@ -289,51 +293,47 @@ fun HomeScreen(
                         }
                     },
                 )
+                }
             }
         }
 
         val lastTrain = uiState.lastTrain
         if (lastTrain != null) {
             item {
-                LastTrainTeaser(
-                    lastTrain = lastTrain,
-                    line = uiState.lastTrainLine,
-                    lang = lang,
-                )
+                Box(Modifier.staggeredEntrance(2)) {
+                    LastTrainTeaser(
+                        lastTrain = lastTrain,
+                        line = uiState.lastTrainLine,
+                        lang = lang,
+                    )
+                }
             }
         }
 
         val weather = uiState.weather
         if (weather != null) {
-            // Emergency weather card: only when the current condition is
-            // severe (heavy showers, thunderstorm, snow). Sits ABOVE the
-            // regular weather card so a user opening Home on a stormy day
-            // sees the safety message before the temperature.
             if (weather.current.condition.isSevere) {
-                item { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) }
+                item { Box(Modifier.staggeredEntrance(3)) { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) } }
             }
-            item { WeatherCard(snapshot = weather, lang = lang) }
+            item { Box(Modifier.staggeredEntrance(4)) { WeatherCard(snapshot = weather, lang = lang) } }
         }
 
         // Section order mirrors iOS: alerts/news + service status appear
         // immediately under the welcome subtitle so users see operational
         // state before any of the navigation tiles.
-        val allAlerts = uiState.announcements.filter { it.isServiceAlert }
-        val htAlerts = allAlerts.filter { it.url?.contains("hellenictrain.gr/important-information") == true }
-        val transitAlerts = allAlerts.filter { it.url?.contains("hellenictrain.gr/important-information") != true }
-        if (transitAlerts.isNotEmpty()) {
+        val alerts = uiState.announcements.filter { it.isServiceAlert }
+        if (alerts.isNotEmpty()) {
             item {
                 AlertsSection(
-                    alerts = transitAlerts,
+                    alerts = alerts,
                     lang = lang,
                     onOpenUrl = onOpenUrl,
                 )
             }
-        }
-        if (htAlerts.isNotEmpty()) {
+        } else if (uiState.announcements.isNotEmpty()) {
             item {
-                RailNetworkUpdatesSection(
-                    alerts = htAlerts,
+                LatestNewsSection(
+                    announcement = uiState.announcements.first(),
                     lang = lang,
                     onOpenUrl = onOpenUrl,
                 )
@@ -344,7 +344,7 @@ fun HomeScreen(
         // Hide the pill when an alert is already represented in the
         // serviceAlert cards above — otherwise the same banner text
         // renders twice on the home screen.
-        val pillRedundant = status?.isAlert == true && allAlerts.isNotEmpty()
+        val pillRedundant = status?.isAlert == true && alerts.isNotEmpty()
         if (status != null && !pillRedundant) {
             item {
                 ServiceStatusPill(status = status, lang = lang)
@@ -356,13 +356,13 @@ fun HomeScreen(
                 RailNewsSection(
                     news = uiState.railNews,
                     lang = lang,
-                    onOpenUrl = { url -> selectedNewsUrl = url },
+                    onOpenUrl = onOpenUrl,
                 )
             }
         }
 
         item {
-            NetworkOverview(lines = uiState.lines, lang = lang)
+            Box(Modifier.staggeredEntrance(5)) { NetworkOverview(lines = uiState.lines, lang = lang) }
         }
 
         if (uiState.nearestStations.isNotEmpty()) {
@@ -418,14 +418,6 @@ fun HomeScreen(
             lines = uiState.lines,
             lang = lang,
             onDismiss = { showTrackPicker = false },
-        )
-    }
-
-    val newsUrl = selectedNewsUrl
-    if (newsUrl != null) {
-        NewsWebSheet(
-            url = newsUrl,
-            onDismiss = { selectedNewsUrl = null },
         )
     }
     }
@@ -665,6 +657,7 @@ private fun AnswerHero(
     upcoming: List<UpcomingDeparture> = emptyList(),
     hasLocation: Boolean,
     isTracked: Boolean,
+    nowEpoch: Long,
     lang: AppLanguage,
     onStationClick: () -> Unit,
     onTrack: () -> Unit,
@@ -691,6 +684,12 @@ private fun AnswerHero(
             )
 
             if (next != null) {
+                val athensNow = currentAthensTime()
+                val departure = parseTime(next.time)
+                val secsAway = athensNow.secondsUntil(departure)
+                val countdown = heroCountdown(secsAway, L.NOW.text(lang))
+                val countdownColor = heroCountdownColor(countdown, accent)
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -718,21 +717,19 @@ private fun AnswerHero(
                         }
                     }
                     Text(
-                        text = formatCountdown(next.minutesAway, lang),
+                        text = countdown.text,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = accent,
+                        color = countdownColor,
+                        modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
                     )
                 }
-                // "then 13, 23 min": the next couple of departures after the
-                // featured one, so the hero answers "and after that?" at a glance
-                // (matches the web hero).
                 val thenTimes = upcoming.drop(1).take(2)
                     .filter { it.minutesAway > next.minutesAway }
                     .map { formatCountdown(it.minutesAway, lang) }
                 if (thenTimes.isNotEmpty()) {
                     Text(
-                        text = "${thenWord(lang)} ${thenTimes.joinToString(", ")}",
+                        text = "${L.THEN.text(lang)} ${thenTimes.joinToString(", ")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -791,59 +788,14 @@ private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
 
 @Composable
 private fun FreshnessPill(freshness: DataFreshness, lang: AppLanguage) {
-    val live = freshness == DataFreshness.LIVE
-    val dot = if (live) SyrmosColorTokens.arrivalSoon else SyrmosColorTokens.estimated
-    val bg = if (live) SyrmosColorTokens.arrivalSoon.copy(alpha = 0.1f) else SyrmosColorTokens.estimated.copy(alpha = 0.1f)
-    val label = if (live) L.RUNNING_ONLINE.text(lang) else L.RUNNING_OFFLINE.text(lang)
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(bg)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .width(8.dp)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(dot),
+    if (freshness == DataFreshness.LIVE) {
+        SourceConfidenceChip(
+            confidence = com.syrmos.core.model.schedule.SourceConfidence.LIVE,
+            label = L.LIVE.text(lang),
         )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-        )
-        if (!live) {
-            Text(
-                text = L.RETRY.text(lang),
-                style = MaterialTheme.typography.labelSmall,
-                color = SyrmosColorTokens.suburban,
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { LiveDataFreshness.requestRetry() }
-                    .background(SyrmosColorTokens.suburban.copy(alpha = 0.1f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NewsWebSheet(url: String, onDismiss: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        PlatformWebView(
-            url = url,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(500.dp),
+    } else {
+        OfflinePill(
+            message = "${L.RUNNING_OFFLINE.text(lang)} · ${L.PREDICTED_FROM_SCHEDULE.text(lang)}",
         )
     }
 }
@@ -951,7 +903,7 @@ private fun TrackingCard(
             }
 
             Text(
-                text = if (due) dueLabel(lang) else formatCountdown(remaining, lang),
+                text = if (due) dueLabel(lang) else "$remaining min",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = lineAccent,
@@ -1233,7 +1185,8 @@ private fun sourceConfidenceLabel(sc: SourceConfidence, lang: AppLanguage): Stri
     SourceConfidence.SCHEDULED -> L.SOURCE_SCHEDULED.text(lang)
     SourceConfidence.ESTIMATED -> L.SOURCE_ESTIMATED.text(lang)
     SourceConfidence.OFFLINE -> L.SOURCE_OFFLINE.text(lang)
-    else -> null
+    SourceConfidence.OPERATOR_LINK -> L.SOURCE_OPERATOR.text(lang)
+    SourceConfidence.UNKNOWN -> null
 }
 
 /** "then" lead-in for the hero's follow-on departures list. */
@@ -1264,7 +1217,7 @@ private fun dueLabel(lang: AppLanguage) = when (lang) {
 }
 
 /** Mirrors iOS Departure.minutesAwayDisplay: "Now", "5 min", "3h 21min". */
-internal fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
+private fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
     if (minutesAway <= 1) {
         return when (lang) {
             AppLanguage.GREEK -> "Τώρα"
@@ -1604,8 +1557,8 @@ private fun NearbyStationsSection(
 }
 
 @Composable
-private fun RailNetworkUpdatesSection(
-    alerts: List<STASYAnnouncement>,
+private fun LatestNewsSection(
+    announcement: STASYAnnouncement,
     lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
@@ -1617,19 +1570,12 @@ private fun RailNetworkUpdatesSection(
             Text(text = "i", style = MaterialTheme.typography.titleMedium)
             SectionTitle(text = L.LATEST_FROM_STASY.text(lang))
         }
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(alerts.take(10)) { alert ->
-                AlertCard(
-                    modifier = Modifier.width(280.dp),
-                    announcement = alert,
-                    isAlert = false,
-                    lang = lang,
-                    onOpenUrl = onOpenUrl,
-                )
-            }
-        }
+        AlertCard(
+            announcement = announcement,
+            isAlert = false,
+            lang = lang,
+            onOpenUrl = onOpenUrl,
+        )
     }
 }
 
