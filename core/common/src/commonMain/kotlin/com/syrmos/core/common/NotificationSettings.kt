@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 expect fun persistNotifPref(key: String, value: Boolean)
 expect fun loadNotifPref(key: String, default: Boolean): Boolean
+expect fun persistStringPref(key: String, value: String)
+expect fun loadStringPref(key: String, default: String): String
 
 object NotificationSettings {
     private val _serviceAlerts = MutableStateFlow(loadNotifPref("notif_service_alerts", true))

@@ -163,6 +163,9 @@ fun SyrmosApp() {
                     TabNavigator(HomeTab) {
                         val pendingQuery = remember { consumePendingAssistantQuery() }
                         var showAriadne by remember { mutableStateOf(pendingQuery != null) }
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            LocalAriadneOpener provides { showAriadne = true }
+                        ) {
                         val pendingNotif = remember { consumePendingNotificationDeepLink() }
                         val tabNavigator2 = LocalTabNavigator.current
                         LaunchedEffect(pendingNotif) {
@@ -246,6 +249,7 @@ fun SyrmosApp() {
                                 }
                             }
                         }
+                    }
                     }
                 }
             }
