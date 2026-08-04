@@ -282,14 +282,17 @@ struct ContentView: View {
         }
         .onChange(of: deepLinkRouter.pending) { _, destination in
             guard let destination else { return }
-            deepLinkRouter.pending = nil
             switch destination {
+            case .station, .line:
+                selectedTab = .home
             case .serviceAlert(let id):
+                deepLinkRouter.pending = nil
                 selectedTab = .home
                 if let alert = STASYService.cachedAlert(byId: id) {
                     deepLinkedAlert = alert
                 }
             case .weatherAlert, .morningDigest, .nearbyAlert:
+                deepLinkRouter.pending = nil
                 selectedTab = .home
             }
         }
