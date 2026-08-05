@@ -2,13 +2,27 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.5**, iOS build 119 and Android versionCode 204. Burned Android version codes never reusable: 105, 106, 109-138, and 200-204. Next Android release must use 205+.
+Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.6**, iOS build 120 and Android versionCode 205. Burned Android version codes never reusable: 105, 106, 109-138, and 200-205. Next Android release must use 206+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 2.0.0-beta.6 - 2026-08-06
+
+The proactive Home beta.
+
+- **Adaptive Rail Pulse on Android and iOS.** Home now opens with one answer-first surface that combines the next train, later departures, tracking, last-train context, live freshness, weather, disruptions, and offline state.
+- **Living map strip.** A compact line diagram previews current network activity and opens the full map without adding another decision-heavy card.
+- **Ranked insights.** Service alerts, operator announcements, and rail news are merged into one priority-ranked stream with concise previews and an expandable history.
+- **Radial nearby discovery.** Nearby stations are presented spatially with inline departures, a selected-station detail card, and a List accessibility fallback.
+- **Adaptive visual language.** Pulse gradients respond to normal, late-night, disrupted, tracking, and offline states. Shared typography and motion tokens keep Android and iOS behavior aligned.
+- **Localized on all supported languages.** New Home copy is available in English, Greek, Albanian, and Italian.
+- **iOS build repair.** The map annotation image helper now has the narrow visibility required by the current Swift compiler, restoring a clean full-scheme build.
+
+iOS 2.0.0 build 120 / Android 2.0.0 versionCode 205. Tagged as `v2.0.0-beta.6`.
 
 ## 2.0.0-beta.5 - 2026-08-05
 
