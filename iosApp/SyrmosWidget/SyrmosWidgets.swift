@@ -29,11 +29,11 @@ enum WLoc {
     static var lang: String {
         UserDefaults(suiteName: "group.com.syrmosApp.ios")?.string(forKey: "app_language") ?? "en"
     }
-    /// EN, EL, SQ in that order.
-    static func t(_ en: String, _ el: String, _ sq: String) -> String {
+    static func t(_ en: String, _ el: String, _ sq: String, _ it: String? = nil) -> String {
         switch lang {
         case "el": return el
         case "sq": return sq
+        case "it": return it ?? en
         default: return en
         }
     }
@@ -554,12 +554,12 @@ struct LiveDeparturesView: View {
                 }
             }
             if entry.rows.isEmpty {
-                Spacer(); Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme")).font(.caption).foregroundStyle(.secondary); Spacer()
+                Spacer(); Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme", "Nessuna partenza in arrivo")).font(.caption).foregroundStyle(.secondary); Spacer()
             } else {
                 ForEach(entry.rows.prefix(5)) { row in
                     DepartureRowCompact(lineId: row.lineId, destination: row.destination,
                                         minutesAway: row.minutesAway, isAirport: row.isAirport,
-                                        target: row.target)
+                                        target: row.target, languageCode: WLoc.lang)
                 }
                 Spacer(minLength: 0)
                 HStack(spacing: 0) {
@@ -728,7 +728,7 @@ struct WeatherAlertsView: View {
                 ForEach(entry.rows.prefix(3)) { row in
                     DepartureRowCompact(lineId: row.lineId, destination: row.destination,
                                         minutesAway: row.minutesAway, isAirport: row.isAirport,
-                                        target: row.target)
+                                        target: row.target, languageCode: WLoc.lang)
                 }
                 Spacer(minLength: 0)
             }
