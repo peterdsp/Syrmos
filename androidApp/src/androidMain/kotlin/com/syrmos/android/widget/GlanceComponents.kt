@@ -19,6 +19,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import java.util.Locale
 
 /** The line pill, mirroring the iOS `LinePill`: white label on the line color. */
 @Composable
@@ -49,7 +50,7 @@ fun GlanceDepartureRow(row: WidgetRow, onSurface: ColorProvider, secondary: Colo
         Text(row.destination, style = TextStyle(color = onSurface, fontSize = 13.sp), maxLines = 1)
         Spacer(GlanceModifier.defaultWeight())
         Text(
-            text = if (row.minutes <= 1) "now" else "${row.minutes}m",
+            text = if (row.minutes <= 1) widgetText("now", "τώρα", "tani", "ora") else "${row.minutes}m",
             style = TextStyle(color = secondary, fontWeight = FontWeight.Medium, fontSize = 13.sp),
         )
     }
@@ -70,8 +71,15 @@ fun GlanceLiveBadge(count: Int) {
         ) {}
         Spacer(GlanceModifier.width(4.dp))
         Text(
-            text = "$count live",
+            text = "$count ${widgetText("live", "ζωντανά", "drejtpërdrejt", "live")}",
             style = TextStyle(color = ColorProvider(Color(0xFF4CAF50)), fontWeight = FontWeight.Bold, fontSize = 11.sp),
         )
     }
+}
+
+internal fun widgetText(en: String, el: String, sq: String, it: String): String = when (Locale.getDefault().language) {
+    "el" -> el
+    "sq" -> sq
+    "it" -> it
+    else -> en
 }

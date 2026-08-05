@@ -150,7 +150,7 @@ fun MapScreen(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Filled.DirectionsRailway,
-                            contentDescription = "Live trains",
+                            contentDescription = vehicleText(lang, "Live trains", "Ζωντανά τρένα", "Trenat aktivë", "Treni in tempo reale"),
                             tint = Color.White,
                         )
                     }
@@ -171,7 +171,7 @@ fun MapScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.Train,
-                        contentDescription = "Toggle trains",
+                        contentDescription = vehicleText(lang, "Show or hide trains", "Εμφάνιση ή απόκρυψη τρένων", "Shfaq ose fshih trenat", "Mostra o nascondi i treni"),
                         tint = if (uiState.showTrains)
                             MaterialTheme.colorScheme.onPrimary
                         else
@@ -191,7 +191,7 @@ fun MapScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.MyLocation,
-                        contentDescription = "Locate me",
+                        contentDescription = vehicleText(lang, "Locate me", "Εντοπισμός θέσης", "Gjej vendndodhjen time", "Trova la mia posizione"),
                         tint = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
@@ -375,7 +375,7 @@ private fun StationSheetCard(
                 }
 
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close station details")
+                    Icon(Icons.Filled.Close, contentDescription = vehicleText(lang, "Close station details", "Κλείσιμο λεπτομερειών σταθμού", "Mbyll detajet e stacionit", "Chiudi i dettagli della stazione"))
                 }
             }
 
@@ -395,13 +395,13 @@ private fun StationSheetCard(
             // "Lines: N" which is redundant with the badges above).
             val chips = buildList {
                 if (station.isInterchange) {
-                    add("interchange" to "Interchange")
+                    add("interchange" to vehicleText(lang, "Interchange", "Ανταπόκριση", "Korrespondencë", "Interscambio"))
                 }
                 if (station.accessibility) {
-                    add("accessibility" to "Accessible")
+                    add("accessibility" to vehicleText(lang, "Accessible", "Προσβάσιμο", "I aksesueshëm", "Accessibile"))
                 }
                 if (station.zone > 1) {
-                    add("zone" to "Zone ${station.zone}")
+                    add("zone" to "${vehicleText(lang, "Zone", "Ζώνη", "Zona", "Zona")} ${station.zone}")
                 }
             }
             if (chips.isNotEmpty()) {
@@ -419,7 +419,7 @@ private fun StationSheetCard(
                 val departures = uiState.selectedStationDepartures.take(4)
                 Column {
                     Text(
-                        text = "NEXT DEPARTURES",
+                        text = vehicleText(lang, "NEXT DEPARTURES", "ΕΠΟΜΕΝΕΣ ΑΝΑΧΩΡΗΣΕΙΣ", "NISJET E ARDHSHME", "PROSSIME PARTENZE"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
@@ -445,7 +445,7 @@ private fun StationSheetCard(
                                         fontWeight = FontWeight.SemiBold,
                                     )
                                     Text(
-                                        text = "to ${departure.destinationLabel}",
+                                        text = "${vehicleText(lang, "to", "προς", "për", "per")} ${departure.destinationLabel}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -453,7 +453,7 @@ private fun StationSheetCard(
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = formatMinutesAway(departure.minutesAway),
+                                    text = localizedMinutesAway(departure.minutesAway, lang),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = when {
@@ -496,7 +496,7 @@ private fun StationSheetCard(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text("Get directions")
+                Text(vehicleText(lang, "Get directions", "Οδηγίες πλοήγησης", "Udhëzime navigimi", "Indicazioni stradali"))
             }
         }
     }
@@ -827,7 +827,7 @@ private fun TrainDetailCard(
                             LineBadge(line = line, lang = lang)
                         }
                         Text(
-                            text = "Train ${train.trainNumber}",
+                            text = "${vehicleText(lang, "Train", "Τρένο", "Treni", "Treno")} ${train.trainNumber}",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                         )
@@ -845,7 +845,7 @@ private fun TrainDetailCard(
                         }
                         if (!train.locomotiveNumber.isNullOrBlank()) {
                             Text(
-                                text = "Loco ${train.locomotiveNumber}",
+                                text = "${vehicleText(lang, "Loco", "Μηχανή", "Lokomotiva", "Locomotiva")} ${train.locomotiveNumber}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             )
@@ -853,7 +853,7 @@ private fun TrainDetailCard(
                     }
                 }
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close train details")
+                    Icon(Icons.Filled.Close, contentDescription = vehicleText(lang, "Close train details", "Κλείσιμο λεπτομερειών τρένου", "Mbyll detajet e trenit", "Chiudi i dettagli del treno"))
                 }
             }
 
@@ -873,7 +873,7 @@ private fun TrainDetailCard(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = resolveStation(train.origin, train.originEn, lang) ?: "Train ${train.trainNumber}",
+                                    text = resolveStation(train.origin, train.originEn, lang) ?: "${vehicleText(lang, "Train", "Τρένο", "Treni", "Treno")} ${train.trainNumber}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -887,7 +887,7 @@ private fun TrainDetailCard(
                                 }
                                 if (train.origin == null && train.destination == null) {
                                     Text(
-                                        text = "Route not published by operator",
+                                        text = vehicleText(lang, "Route not published by operator", "Η διαδρομή δεν δημοσιεύτηκε από τον φορέα", "Rruga nuk është publikuar nga operatori", "Percorso non pubblicato dall'operatore"),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     )
@@ -951,7 +951,7 @@ private fun TrainDetailCard(
                                 val distDest = train.distanceToDestination
                                 if (distDest != null) {
                                     Text(
-                                        text = formatDistance(distDest),
+                                        text = formatDistance(distDest, lang),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -987,7 +987,7 @@ private fun TrainDetailCard(
                                 tint = SyrmosColorTokens.disruption,
                             )
                             Text(
-                                text = "+${train.delayMinutes} min",
+                                text = "+${train.delayMinutes} ${vehicleText(lang, "min", "λεπ", "min", "min")}",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = SyrmosColorTokens.disruption,
@@ -999,7 +999,7 @@ private fun TrainDetailCard(
                                     .background(SyrmosColorTokens.live, CircleShape),
                             )
                             Text(
-                                text = "On time",
+                                text = vehicleText(lang, "On time", "Στην ώρα του", "Në orar", "In orario"),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = SyrmosColorTokens.live,
@@ -1060,7 +1060,7 @@ private fun TrainDetailCard(
                         if (alt != null) {
                             TelemetryCell(
                                 value = "${alt.toInt()}",
-                                unit = "m alt",
+                                unit = vehicleText(lang, "m altitude", "μ υψόμετρο", "m lartësi", "m altitudine"),
                                 accent = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -1068,7 +1068,7 @@ private fun TrainDetailCard(
                         if (distNext != null) {
                             TelemetryCell(
                                 value = formatDistanceShort(distNext),
-                                unit = "to next",
+                                unit = vehicleText(lang, "to next", "ως τον επόμενο", "deri te tjetri", "alla prossima"),
                                 accent = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -1076,7 +1076,7 @@ private fun TrainDetailCard(
                         if (!sig.isNullOrBlank()) {
                             TelemetryCell(
                                 value = sig.replaceFirstChar { c -> c.uppercase() },
-                                unit = "signal",
+                                unit = vehicleText(lang, "signal", "σήμα", "sinjali", "segnale"),
                                 accent = if (sig.lowercase() == "good") SyrmosColorTokens.live else SyrmosColorTokens.warning,
                             )
                         }
@@ -1103,7 +1103,7 @@ private fun TrainDetailCard(
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
-                        text = "Watch Live",
+                        text = vehicleText(lang, "Watch Live", "Ζωντανή προβολή", "Shiko drejtpërdrejt", "Guarda in diretta"),
                         fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(modifier = Modifier.weight(1f))
@@ -1114,7 +1114,7 @@ private fun TrainDetailCard(
                     )
                     Spacer(modifier = Modifier.size(4.dp))
                     Text(
-                        text = "LIVE",
+                        text = vehicleText(lang, "LIVE", "ΖΩΝΤΑΝΑ", "DREJTPËRDREJT", "DIRETTA"),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.Red,
@@ -1171,9 +1171,9 @@ private fun trainRouteLabel(train: LiveSuburbanTrain, lang: AppLanguage): String
     val o = resolveStation(train.origin, train.originEn, lang)
     val d = resolveStation(train.destination, train.destinationEn, lang)
     if (o != null && d != null) return "$o → $d"
-    if (o != null) return "From $o"
-    if (d != null) return "To $d"
-    return "Train ${train.trainNumber}"
+    if (o != null) return "${vehicleText(lang, "From", "Από", "Nga", "Da")} $o"
+    if (d != null) return "${vehicleText(lang, "To", "Προς", "Për", "A")} $d"
+    return "${vehicleText(lang, "Train", "Τρένο", "Treni", "Treno")} ${train.trainNumber}"
 }
 
 private fun headingLabel(degrees: Double): String {
@@ -1182,14 +1182,21 @@ private fun headingLabel(degrees: Double): String {
     return "${dirs[idx]}°"
 }
 
-private fun formatDistance(meters: Int): String {
+private fun formatDistance(meters: Int, lang: AppLanguage): String {
+    val left = vehicleText(lang, "left", "απομένουν", "kanë mbetur", "rimanenti")
     return if (meters >= 1000) {
         val km = meters / 1000.0
         val rounded = (km * 10).toInt() / 10.0
-        "$rounded km left"
+        "$rounded km $left"
     } else {
-        "$meters m left"
+        "$meters m $left"
     }
+}
+
+private fun localizedMinutesAway(minutes: Int, lang: AppLanguage): String = when {
+    minutes <= 0 -> vehicleText(lang, "Now", "Τώρα", "Tani", "Ora")
+    minutes == 1 -> vehicleText(lang, "1 min", "1 λεπ", "1 min", "1 min")
+    else -> "$minutes ${vehicleText(lang, "min", "λεπ", "min", "min")}"
 }
 
 private fun formatDistanceShort(meters: Int): String {
@@ -1212,6 +1219,7 @@ private fun LiveTrainsSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     var selectedFilter by remember { mutableStateOf<String?>(null) }
+    val lang by LocalizationManager.language.collectAsState()
 
     val lineCategories = remember(trains) {
         trains.map { it.lineId }.distinct().sorted()
@@ -1240,12 +1248,12 @@ private fun LiveTrainsSheet(
             ) {
                 Column {
                     Text(
-                        text = "Live trains",
+                        text = vehicleText(lang, "Live trains", "Ζωντανά τρένα", "Trenat aktivë", "Treni in tempo reale"),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "${filteredTrains.size} trains running",
+                        text = "${filteredTrains.size} ${vehicleText(lang, "trains running", "τρένα σε κυκλοφορία", "trena në qarkullim", "treni in circolazione")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1263,7 +1271,7 @@ private fun LiveTrainsSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilterPill(
-                    label = "All",
+                    label = vehicleText(lang, "All", "Όλα", "Të gjitha", "Tutti"),
                     selected = selectedFilter == null,
                     color = MaterialTheme.colorScheme.primary,
                     onClick = { selectedFilter = null },
@@ -1282,7 +1290,6 @@ private fun LiveTrainsSheet(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
-            val lang by LocalizationManager.language.collectAsState()
             LazyColumn(
                 modifier = Modifier.weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1371,7 +1378,7 @@ private fun TrainListRow(
                 )
                 if (train.nextStation != null) {
                     Text(
-                        text = "Next: ${resolveStation(train.nextStation, train.nextStationEn, lang) ?: train.nextStation!!.trim()}",
+                        text = "${vehicleText(lang, "Next", "Επόμενος", "Tjetri", "Prossima")}: ${resolveStation(train.nextStation, train.nextStationEn, lang) ?: train.nextStation!!.trim()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1387,7 +1394,7 @@ private fun TrainListRow(
                 )
             } else {
                 Text(
-                    text = "OK",
+                    text = vehicleText(lang, "OK", "ΕΝΤΑΞΕΙ", "NË RREGULL", "OK"),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = SyrmosColorTokens.live,

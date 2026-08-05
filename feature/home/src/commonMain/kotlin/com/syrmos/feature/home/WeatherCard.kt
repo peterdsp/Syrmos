@@ -152,23 +152,23 @@ private fun glyph(condition: WeatherCondition, isDay: Boolean): String = when (c
 }
 
 internal fun conditionLabel(condition: WeatherCondition, lang: AppLanguage): String = when (condition) {
-    WeatherCondition.CLEAR -> tri(lang, "Clear", "Αίθριος", "Kthjellët")
-    WeatherCondition.PARTLY_CLOUDY -> tri(lang, "Partly cloudy", "Λίγα σύννεφα", "Pjesërisht me re")
-    WeatherCondition.CLOUDY -> tri(lang, "Cloudy", "Συννεφιά", "Me re")
-    WeatherCondition.FOG -> tri(lang, "Fog", "Ομίχλη", "Mjegull")
-    WeatherCondition.DRIZZLE -> tri(lang, "Drizzle", "Ψιχάλα", "Shi i imët")
-    WeatherCondition.RAIN -> tri(lang, "Rain", "Βροχή", "Shi")
-    WeatherCondition.SHOWERS -> tri(lang, "Showers", "Μπόρες", "Rrebeshe")
-    WeatherCondition.SNOW -> tri(lang, "Snow", "Χιόνι", "Borë")
-    WeatherCondition.THUNDERSTORM -> tri(lang, "Thunderstorm", "Καταιγίδα", "Stuhi")
-    WeatherCondition.UNKNOWN -> tri(lang, "Weather", "Καιρός", "Moti")
+    WeatherCondition.CLEAR -> tri(lang, "Clear", "Αίθριος", "Kthjellët", "Sereno")
+    WeatherCondition.PARTLY_CLOUDY -> tri(lang, "Partly cloudy", "Λίγα σύννεφα", "Pjesërisht me re", "Parzialmente nuvoloso")
+    WeatherCondition.CLOUDY -> tri(lang, "Cloudy", "Συννεφιά", "Me re", "Nuvoloso")
+    WeatherCondition.FOG -> tri(lang, "Fog", "Ομίχλη", "Mjegull", "Nebbia")
+    WeatherCondition.DRIZZLE -> tri(lang, "Drizzle", "Ψιχάλα", "Shi i imët", "Pioviggine")
+    WeatherCondition.RAIN -> tri(lang, "Rain", "Βροχή", "Shi", "Pioggia")
+    WeatherCondition.SHOWERS -> tri(lang, "Showers", "Μπόρες", "Rrebeshe", "Rovesci")
+    WeatherCondition.SNOW -> tri(lang, "Snow", "Χιόνι", "Borë", "Neve")
+    WeatherCondition.THUNDERSTORM -> tri(lang, "Thunderstorm", "Καταιγίδα", "Stuhi", "Temporale")
+    WeatherCondition.UNKNOWN -> tri(lang, "Weather", "Καιρός", "Moti", "Meteo")
 }
 
-private fun feelsLikeLabel(lang: AppLanguage) = tri(lang, "Feels like", "Αίσθηση", "Ndihet si")
-private fun humidityLabel(lang: AppLanguage) = tri(lang, "Humidity", "Υγρασία", "Lagështia")
-private fun windLabel(lang: AppLanguage) = tri(lang, "Wind", "Άνεμος", "Era")
+private fun feelsLikeLabel(lang: AppLanguage) = tri(lang, "Feels like", "Αίσθηση", "Ndihet si", "Percepita")
+private fun humidityLabel(lang: AppLanguage) = tri(lang, "Humidity", "Υγρασία", "Lagështia", "Umidità")
+private fun windLabel(lang: AppLanguage) = tri(lang, "Wind", "Άνεμος", "Era", "Vento")
 
-private fun tri(lang: AppLanguage, en: String, el: String, sq: String, it: String = en) = when (lang) {
+private fun tri(lang: AppLanguage, en: String, el: String, sq: String, it: String) = when (lang) {
     AppLanguage.GREEK -> el
     AppLanguage.ALBANIAN -> sq
     AppLanguage.ITALIAN -> it

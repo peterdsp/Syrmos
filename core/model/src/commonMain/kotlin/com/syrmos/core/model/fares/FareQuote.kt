@@ -20,5 +20,9 @@ data class FareQuote(
     val sourceUrl: String,
     /** Booking-time pricing (intercity): no fixed number, defer to [sourceUrl]. */
     val dynamic: Boolean = false,
+    /** A recently observed standard one-way price from the official booking search. */
+    val referencePriceEur: Double? = null,
+    /** ISO date on which [referencePriceEur] was checked. */
+    val referenceObservedOn: String? = null,
     val note: String? = null,
 )

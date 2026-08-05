@@ -116,7 +116,7 @@ fun AssistantScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(uiState.messages, key = { it.id }) { msg ->
-                    MessageBubble(msg, onOpenStation, onOpenLine)
+                    MessageBubble(msg, lang, onOpenStation, onOpenLine)
                 }
                 if (uiState.thinking) {
                     item(key = "typing") { TypingIndicator() }
@@ -191,6 +191,7 @@ fun AssistantScreen(
 @Composable
 private fun MessageBubble(
     msg: AssistantMessage,
+    lang: AppLanguage,
     onOpenStation: (String) -> Unit,
     onOpenLine: (String) -> Unit,
 ) {
@@ -248,7 +249,7 @@ private fun MessageBubble(
                 ) {
                     Text("${dep.lineId} · ${dep.time}", style = MaterialTheme.typography.labelLarge, color = fg)
                     Text(
-                        if (dep.minutesAway <= 1) "now" else "${dep.minutesAway} min",
+                        assistantDepartureTime(dep.minutesAway, lang),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = fg,
@@ -322,6 +323,12 @@ private fun suggestions(
         hour >= 20 -> listOf("Treni i fundit M2", "Moti tani", "Si shkoj në shtëpi?")
         hour < 9 -> listOf("M3 tjetër për Aeroport", "Moti tani", "Si shkoj në qendër?")
         else -> listOf("Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2")
+    }
+    AppLanguage.ITALIAN -> when {
+        severeWeather -> listOf("Come torno a casa al coperto?", "Maltempo ora", "Avvisi sulle linee")
+        hour >= 20 -> listOf("Ultimo M2", "Meteo ora", "Come torno a casa?")
+        hour < 9 -> listOf("Prossimo M3 per l'aeroporto", "Meteo ora", "Come arrivo in centro?")
+        else -> listOf("Meteo ora", "Come arrivo all'aeroporto?", "Ultimo M2")
     }
     else -> when {
         severeWeather -> listOf("How do I get home covered?", "Severe weather now", "Line alerts")
@@ -422,6 +429,7 @@ private fun AriadneModelCard(
                 text = when (lang) {
                     AppLanguage.GREEK -> "Πιο έξυπνη Αριάδνη"
                     AppLanguage.ALBANIAN -> "Ariadne më e zgjuar"
+                    AppLanguage.ITALIAN -> "Un'Ariadne più intelligente"
                     else -> "Smarter Ariadne"
                 },
                 style = MaterialTheme.typography.titleSmall,
@@ -433,16 +441,19 @@ private fun AriadneModelCard(
                     AriadneModelState.DOWNLOADING -> when (lang) {
                         AppLanguage.GREEK -> "Λήψη του μοντέλου AI… ${(progress * 100).toInt()}%"
                         AppLanguage.ALBANIAN -> "Po shkarkohet modeli AI… ${(progress * 100).toInt()}%"
+                        AppLanguage.ITALIAN -> "Download del modello AI… ${(progress * 100).toInt()}%"
                         else -> "Downloading the on-device AI… ${(progress * 100).toInt()}%"
                     }
                     AriadneModelState.ERROR -> when (lang) {
                         AppLanguage.GREEK -> "Η λήψη απέτυχε. Δοκίμασε ξανά. Ο κανόνας-parser συνεχίζει να απαντά."
                         AppLanguage.ALBANIAN -> "Shkarkimi dështoi. Provo sërish. Rregull-parser vazhdon të përgjigjet."
+                        AppLanguage.ITALIAN -> "Download non riuscito. Riprova. Il sistema di regole continua a rispondere."
                         else -> "Download failed. Try again. The rule parser still answers."
                     }
                     else -> when (lang) {
                         AppLanguage.GREEK -> "Κατέβασε ένα AI στη συσκευή (~1.1 GB, μία φορά) για να κατανοεί πιο ελεύθερη διατύπωση. Λειτουργεί offline μετά."
                         AppLanguage.ALBANIAN -> "Shkarko një AI në pajisje (~1.1 GB, një herë) që kupton fjalët më të lira. Punon offline më pas."
+                        AppLanguage.ITALIAN -> "Scarica una volta un modello AI sul dispositivo (~1,1 GB), così Ariadne capirà domande più libere e funzionerà offline."
                         else -> "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
                     }
                 },
@@ -462,11 +473,13 @@ private fun AriadneModelCard(
                             AriadneModelState.ERROR -> when (lang) {
                                 AppLanguage.GREEK -> "Δοκίμασε ξανά"
                                 AppLanguage.ALBANIAN -> "Provo sërish"
+                                AppLanguage.ITALIAN -> "Riprova"
                                 else -> "Try again"
                             }
                             else -> when (lang) {
                                 AppLanguage.GREEK -> "Λήψη (~1.1 GB)"
                                 AppLanguage.ALBANIAN -> "Shkarko (~1.1 GB)"
+                                AppLanguage.ITALIAN -> "Scarica (~1,1 GB)"
                                 else -> "Download (~1.1 GB)"
                             }
                         }
@@ -475,4 +488,12 @@ private fun AriadneModelCard(
             }
         }
     }
+}
+
+private fun assistantDepartureTime(minutes: Int, lang: AppLanguage): String = when {
+    minutes > 1 -> "$minutes min"
+    lang == AppLanguage.GREEK -> "τώρα"
+    lang == AppLanguage.ALBANIAN -> "tani"
+    lang == AppLanguage.ITALIAN -> "ora"
+    else -> "now"
 }

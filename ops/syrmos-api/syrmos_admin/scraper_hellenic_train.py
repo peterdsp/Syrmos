@@ -53,11 +53,12 @@ def _has_greek(text: str) -> bool:
 
 def _translate(text: str, target: str) -> str:
     text = text.strip()
-    if not text or not _has_greek(text):
+    if not text or (target != "it" and not _has_greek(text)):
         return text
     try:
         from deep_translator import GoogleTranslator
-        result = GoogleTranslator(source="el", target=target).translate(text)
+        source = "auto" if target == "it" else "el"
+        result = GoogleTranslator(source=source, target=target).translate(text)
         return (result or "").strip() or text
     except Exception:
         return text
@@ -71,6 +72,10 @@ def _translate_sq(text: str) -> str:
     return _translate(text, "sq")
 
 
+def _translate_it(text: str) -> str:
+    return _translate(text, "it")
+
+
 def _strip_html(text: str) -> str:
     return _HTML_TAG_RE.sub("", text).strip()
 
@@ -81,9 +86,11 @@ class NewsItem:
     title: str
     title_en: str
     title_sq: str
+    title_it: str
     summary: str
     summary_en: str
     summary_sq: str
+    summary_it: str
     url: str
     published_at: str
     thumbnail_url: str
@@ -142,17 +149,21 @@ def parse_announcements(html: str) -> list[NewsItem]:
 
         title_en = _translate_en(title_raw)
         title_sq = _translate_sq(title_raw)
+        title_it = _translate_it(title_raw)
         summary_en = _translate_en(summary_raw) if summary_raw else ""
         summary_sq = _translate_sq(summary_raw) if summary_raw else ""
+        summary_it = _translate_it(summary_raw) if summary_raw else ""
 
         items.append(NewsItem(
             entry_id=entry_id,
             title=title_raw,
             title_en=title_en,
             title_sq=title_sq,
+            title_it=title_it,
             summary=summary_raw,
             summary_en=summary_en,
             summary_sq=summary_sq,
+            summary_it=summary_it,
             url=full_url,
             published_at=published_at,
             thumbnail_url="",
@@ -173,17 +184,17 @@ def upsert(conn: sqlite3.Connection, items: list[NewsItem]) -> int:
             cats_json = json.dumps(item.categories, ensure_ascii=False)
             cur.execute(
                 "INSERT INTO rail_news"
-                "(id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+                "(id, title, title_en, title_sq, title_it, summary, summary_en, summary_sq, summary_it,"
                 " url, published_at, thumbnail_url, categories)"
-                " VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+                " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
                 " ON CONFLICT(id) DO UPDATE SET"
-                " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
-                " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq,"
+                " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq, title_it=excluded.title_it,"
+                " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq, summary_it=excluded.summary_it,"
                 " url=excluded.url, published_at=excluded.published_at,"
                 " thumbnail_url=excluded.thumbnail_url, categories=excluded.categories",
                 (
-                    item.entry_id, item.title, item.title_en, item.title_sq,
-                    item.summary, item.summary_en, item.summary_sq,
+                    item.entry_id, item.title, item.title_en, item.title_sq, item.title_it,
+                    item.summary, item.summary_en, item.summary_sq, item.summary_it,
                     item.url, item.published_at,
                     item.thumbnail_url, cats_json,
                 ),

@@ -614,31 +614,37 @@ private fun emergencyTitle(condition: com.syrmos.core.model.weather.WeatherCondi
 private fun emergencySubtitle(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Πρόσεχε στη μετακίνηση."
     AppLanguage.ALBANIAN -> "Ki kujdes gjatë udhëtimit."
+    AppLanguage.ITALIAN -> "Fai attenzione durante il viaggio."
     else -> "Take care on your journey."
 }
 private fun emergencyBody(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Οι υπόγειες γραμμές μετρό είναι η πιο ασφαλής επιλογή. Το τραμ και ο προαστιακός μπορεί να έχουν καθυστερήσεις. Αν χρειαστείς άμεση βοήθεια, κάλεσε:"
     AppLanguage.ALBANIAN -> "Metroja nëntokësore është zgjidhja më e sigurt. Tramvaji dhe treni periferik mund të kenë vonesa. Nëse ke nevojë për ndihmë të menjëhershme, telefono:"
+    AppLanguage.ITALIAN -> "Le linee metropolitane sotterranee sono la scelta più sicura. Tram e treni suburbani possono subire ritardi. Se hai bisogno di aiuto immediato, chiama:"
     else -> "Underground metro lines are the safest option. Tram and Suburban services may run late. If you need immediate help, call:"
 }
 private fun emergencyNumbersHeader(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "ΤΗΛΕΦΩΝΑ ΕΚΤΑΚΤΗΣ ΑΝΑΓΚΗΣ"
     AppLanguage.ALBANIAN -> "NUMRAT E EMERGJENCËS"
+    AppLanguage.ITALIAN -> "NUMERI DI EMERGENZA"
     else -> "EMERGENCY NUMBERS"
 }
 private fun emergencyLabel112(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Ευρωπαϊκή γραμμή έκτακτης ανάγκης"
     AppLanguage.ALBANIAN -> "Numri europian i emergjencës"
+    AppLanguage.ITALIAN -> "Numero unico europeo di emergenza"
     else -> "European emergency line"
 }
 private fun emergencyLabelFire(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Πυροσβεστική"
     AppLanguage.ALBANIAN -> "Zjarrfikësit"
+    AppLanguage.ITALIAN -> "Vigili del fuoco"
     else -> "Fire service"
 }
 private fun emergencyLabelOASA(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Πληροφορίες OASA"
     AppLanguage.ALBANIAN -> "Informacione OASA"
+    AppLanguage.ITALIAN -> "Informazioni OASA"
     else -> "OASA transit info"
 }
 
@@ -1338,6 +1344,7 @@ private fun ServiceStatusPill(
     val message = when (lang) {
         AppLanguage.GREEK -> status.rawMessage
         AppLanguage.ALBANIAN -> status.rawMessageSq.ifEmpty { status.rawMessageEn.ifEmpty { status.rawMessage } }
+        AppLanguage.ITALIAN -> status.rawMessageIt.ifEmpty { status.rawMessageEn.ifEmpty { status.rawMessage } }
         else -> status.rawMessageEn.ifEmpty { status.rawMessage }
     }
     if (message.isBlank()) return
@@ -1412,6 +1419,7 @@ private fun RailNewsSection(
             SectionTitle(text = when (lang) {
                 AppLanguage.GREEK -> "Σιδηροδρομικά Νέα"
                 AppLanguage.ALBANIAN -> "Lajme Hekurudhore"
+                AppLanguage.ITALIAN -> "Notizie ferroviarie"
                 else -> "Rail News"
             })
         }
@@ -1438,6 +1446,7 @@ private fun NewsCard(
     val title = when (lang) {
         AppLanguage.GREEK -> item.title
         AppLanguage.ALBANIAN -> item.titleSq.ifEmpty { item.titleEn.ifEmpty { item.title } }
+        AppLanguage.ITALIAN -> item.titleIt.ifEmpty { item.titleEn.ifEmpty { item.title } }
         else -> item.titleEn.ifEmpty { item.title }
     }
     val date = item.publishedAt.take(10)
@@ -1622,6 +1631,7 @@ private fun AlertCard(
                     text = when (lang) {
                         AppLanguage.GREEK -> announcement.title
                         AppLanguage.ALBANIAN -> announcement.titleSq.ifEmpty { announcement.titleEn.ifEmpty { announcement.title } }
+                        AppLanguage.ITALIAN -> announcement.titleIt.ifEmpty { announcement.titleEn.ifEmpty { announcement.title } }
                         else -> announcement.titleEn.ifEmpty { announcement.title }
                     },
                     style = MaterialTheme.typography.bodyMedium,

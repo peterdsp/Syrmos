@@ -24,13 +24,13 @@ DB_PATH = os.environ.get(
 )
 
 
-def _translate_factory():
-    """Return a function el->en that degrades to identity if the network
+def _translate_factory(target: str):
+    """Return a translation function that degrades to identity if the network
     or the package is unavailable. Translation is best-effort; an outage
     must never break the ingest."""
     try:
         from deep_translator import GoogleTranslator
-        translator = GoogleTranslator(source="el", target="en")
+        translator = GoogleTranslator(source="el", target=target)
 
         def tr(text: str) -> str:
             text = (text or "").strip()
@@ -57,7 +57,10 @@ def _ensure_translation_columns(conn: sqlite3.Connection) -> None:
     for table, col in (
         ("announcements", "title_en"),
         ("announcements", "summary_en"),
+        ("announcements", "title_it"),
+        ("announcements", "summary_it"),
         ("stasy_status", "raw_message_en"),
+        ("stasy_status", "raw_message_it"),
     ):
         if not has_col(table, col):
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
@@ -78,19 +81,22 @@ def main() -> None:
         conn.executescript(base.read_text())
     _ensure_translation_columns(conn)
 
-    tr = _translate_factory()
+    tr_en = _translate_factory("en")
+    tr_it = _translate_factory("it")
 
     status = payload.get("status") or {}
     raw_message = status.get("raw_message") or ""
-    raw_message_en = tr(raw_message) if status.get("status") != "normal" else "Normal Operation" if raw_message else ""
+    raw_message_en = tr_en(raw_message) if status.get("status") != "normal" else "Normal Operation" if raw_message else ""
+    raw_message_it = tr_it(raw_message) if status.get("status") != "normal" else "Servizio regolare" if raw_message else ""
     conn.execute("DELETE FROM stasy_status")
     conn.execute(
-        "INSERT INTO stasy_status (id, status, raw_message, raw_message_en, service_until)"
-        " VALUES (1, ?, ?, ?, ?)",
+        "INSERT INTO stasy_status (id, status, raw_message, raw_message_en, raw_message_it, service_until)"
+        " VALUES (1, ?, ?, ?, ?, ?)",
         (
             status.get("status") or "unknown",
             raw_message,
             raw_message_en,
+            raw_message_it,
             status.get("service_until"),
         ),
     )
@@ -102,14 +108,16 @@ def main() -> None:
         summary = item.get("summary") or ""
         conn.execute(
             "INSERT OR REPLACE INTO announcements"
-            " (id, title, title_en, summary, summary_en, url, date, category, sort_order)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " (id, title, title_en, title_it, summary, summary_en, summary_it, url, date, category, sort_order)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 item.get("id") or str(sort_order),
                 title,
-                tr(title),
+                tr_en(title),
+                tr_it(title),
                 summary,
-                tr(summary),
+                tr_en(summary),
+                tr_it(summary),
                 item.get("url") or "",
                 item.get("date") or "",
                 item.get("category") or "general",

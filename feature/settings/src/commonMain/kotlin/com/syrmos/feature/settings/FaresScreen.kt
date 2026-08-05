@@ -70,13 +70,14 @@ private data class FareNetwork(
     val labelEn: String,
     val labelEl: String,
     val labelSq: String,
+    val labelIt: String,
 )
 
 private val Networks = listOf(
-    FareNetwork(listOf("single", "offers", "airport", "passes"), "Athens — OASA", "Αθήνα — OASA", "Athinë — OASA"),
-    FareNetwork(listOf("thessaloniki"), "Thessaloniki — OSETH", "Θεσσαλονίκη — OSETH", "Selanik — OSETH"),
-    FareNetwork(listOf("patras"), "Patras suburban", "Προαστιακός Πάτρας", "Suburban Patra"),
-    FareNetwork(listOf("intercity"), "Intercity / regional", "Υπεραστικά / περιφερειακά", "Ndërqytetëse"),
+    FareNetwork(listOf("single", "offers", "airport", "passes"), "Athens - OASA", "Αθήνα - OASA", "Athinë - OASA", "Atene - OASA"),
+    FareNetwork(listOf("thessaloniki"), "Thessaloniki - OSETH", "Θεσσαλονίκη - OSETH", "Selanik - OSETH", "Salonicco - OSETH"),
+    FareNetwork(listOf("patras"), "Patras suburban", "Προαστιακός Πάτρας", "Suburban Patra", "Suburbano di Patrasso"),
+    FareNetwork(listOf("intercity"), "Intercity / regional", "Υπεραστικά / περιφερειακά", "Ndërqytetëse", "Intercity / regionale"),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,7 +113,15 @@ fun FaresScreen(onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = when (lang) {
+                                AppLanguage.GREEK -> "Πίσω"
+                                AppLanguage.ALBANIAN -> "Prapa"
+                                AppLanguage.ITALIAN -> "Indietro"
+                                else -> "Back"
+                            },
+                        )
                     }
                 },
             )
@@ -139,7 +148,7 @@ fun FaresScreen(onBack: () -> Unit) {
                         text = when (lang) {
                             AppLanguage.GREEK -> network.labelEl
                             AppLanguage.ALBANIAN -> network.labelSq
-                            AppLanguage.ITALIAN -> network.labelEn
+                            AppLanguage.ITALIAN -> network.labelIt
                             else -> network.labelEn
                         },
                         style = MaterialTheme.typography.titleSmall,
@@ -251,7 +260,7 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                     text = when (lang) {
                         AppLanguage.GREEK -> if (product.titleEl.isNotEmpty()) product.titleEl else product.titleEn
                         AppLanguage.ALBANIAN -> if (product.titleSq.isNotEmpty()) product.titleSq else product.titleEn
-                        AppLanguage.ITALIAN -> product.titleEn
+                        AppLanguage.ITALIAN -> product.titleIt.ifEmpty { product.titleEn }
                         else -> product.titleEn
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -261,7 +270,14 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                 Text(
                     // Intercity has no fixed price (booking-time); show that
                     // honestly instead of a fabricated number or a blank.
-                    text = product.fullPriceEur?.let { formatEur(it) } ?: when (lang) {
+                    text = product.fullPriceEur?.let { price ->
+                        formatEur(price) + if ("reference" in product.tags) when (lang) {
+                            AppLanguage.GREEK -> " περίπου"
+                            AppLanguage.ALBANIAN -> " afërsisht"
+                            AppLanguage.ITALIAN -> " circa"
+                            else -> " approx."
+                        } else ""
+                    } ?: when (lang) {
                         AppLanguage.GREEK -> "στην κράτηση"
                         AppLanguage.ALBANIAN -> "në rezervim"
                         AppLanguage.ITALIAN -> "alla prenotazione"
@@ -286,7 +302,7 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
             }
             val displayValidity = when (lang) {
                 AppLanguage.ALBANIAN -> product.validitySq.ifEmpty { product.validity }
-                AppLanguage.ITALIAN -> product.validity
+                AppLanguage.ITALIAN -> product.validityIt.ifEmpty { product.validity }
                 else -> product.validity
             }
             if (displayValidity.isNotEmpty()) {
@@ -302,9 +318,15 @@ private fun FareCard(product: FareProduct, lang: AppLanguage) {
                     )
                 }
             }
-            if (product.notes.isNotEmpty()) {
+            val displayNotes = when (lang) {
+                AppLanguage.GREEK -> product.notesEl.ifEmpty { product.notes }
+                AppLanguage.ALBANIAN -> product.notesSq.ifEmpty { product.notes }
+                AppLanguage.ITALIAN -> product.notesIt.ifEmpty { product.notes }
+                else -> product.notes
+            }
+            if (displayNotes.isNotEmpty()) {
                 Text(
-                    text = product.notes,
+                    text = displayNotes,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 4,
@@ -320,19 +342,19 @@ private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
     val target = when (lang) {
         AppLanguage.GREEK -> link.urlEl.ifEmpty { link.urlEn }
         AppLanguage.ALBANIAN -> link.urlSq.ifEmpty { link.urlEn }
-        AppLanguage.ITALIAN -> link.urlEn
+        AppLanguage.ITALIAN -> link.urlIt.ifEmpty { link.urlEn }
         else -> link.urlEn
     }
     val title = when (lang) {
         AppLanguage.GREEK -> link.titleEl
         AppLanguage.ALBANIAN -> link.titleSq.ifEmpty { link.titleEn }
-        AppLanguage.ITALIAN -> link.titleEn
+        AppLanguage.ITALIAN -> link.titleIt.ifEmpty { link.titleEn }
         else -> link.titleEn
     }
     val summary = when (lang) {
         AppLanguage.GREEK -> link.summaryEl
         AppLanguage.ALBANIAN -> link.summarySq.ifEmpty { link.summaryEn }
-        AppLanguage.ITALIAN -> link.summaryEn
+        AppLanguage.ITALIAN -> link.summaryIt.ifEmpty { link.summaryEn }
         else -> link.summaryEn
     }
     Card(
@@ -369,7 +391,7 @@ private fun InfoLinkCard(link: InfoLink, lang: AppLanguage) {
                         val text = when (lang) {
                             AppLanguage.GREEK -> bullet.el
                             AppLanguage.ALBANIAN -> bullet.sq.ifEmpty { bullet.en }
-                            AppLanguage.ITALIAN -> bullet.en
+                            AppLanguage.ITALIAN -> bullet.it.ifEmpty { bullet.en }
                             else -> bullet.en
                         }
                         Row(
@@ -422,10 +444,10 @@ private fun Footer(lang: AppLanguage) {
     ) {
         Text(
             text = when (lang) {
-                AppLanguage.GREEK -> "Οι τιμές παρέχονται από την OASA. Για την οριστική τιμή ελέγξτε την επίσημη σελίδα."
-                AppLanguage.ALBANIAN -> "Çmimet ofrohen nga OASA. Për çmimin përfundimtar, kontrollo faqen zyrtare."
-                AppLanguage.ITALIAN -> "I prezzi sono forniti da OASA. Per il prezzo ufficiale, consulta la pagina ufficiale."
-                else -> "Prices are provided by OASA. For the authoritative figure, check the official page."
+                AppLanguage.GREEK -> "Οι τιμές προέρχονται από OASA, OSETH και Hellenic Train. Τα υπεραστικά ποσά είναι τιμές αναφοράς και πρέπει να επιβεβαιώνονται στην κράτηση."
+                AppLanguage.ALBANIAN -> "Çmimet vijnë nga OASA, OSETH dhe Hellenic Train. Çmimet ndërqytetëse janë orientuese dhe duhen verifikuar gjatë rezervimit."
+                AppLanguage.ITALIAN -> "I prezzi provengono da OASA, OSETH e Hellenic Train. Le tariffe intercity sono indicative e vanno verificate alla prenotazione."
+                else -> "Prices come from OASA, OSETH, and Hellenic Train. Intercity amounts are reference fares and must be verified at booking."
             },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -439,6 +461,17 @@ private fun Footer(lang: AppLanguage) {
                 AppLanguage.ALBANIAN -> "Hap në OASA"
                 AppLanguage.ITALIAN -> "Vedi su OASA"
                 else -> "View on OASA"
+            })
+        }
+        Button(
+            onClick = { uriHandler.openUri("https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/") },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(when (lang) {
+                AppLanguage.GREEK -> "Έλεγχος στη Hellenic Train"
+                AppLanguage.ALBANIAN -> "Verifiko në Hellenic Train"
+                AppLanguage.ITALIAN -> "Verifica su Hellenic Train"
+                else -> "Verify on Hellenic Train"
             })
         }
     }
@@ -464,7 +497,7 @@ private fun FarePlanner(stations: List<Station>, lines: List<Line>, lang: AppLan
                     AppLanguage.GREEK -> "Υπολόγισε κόμιστρο"
                     AppLanguage.ALBANIAN -> "Llogarit çmimin"
                     AppLanguage.ITALIAN -> "Calcola la tariffa"
-                    else -> "Plan a trip — fare"
+                    else -> "Plan a trip - fare"
                 },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
@@ -539,7 +572,14 @@ private fun FareResult(quote: FareQuote, lang: AppLanguage) {
     ) {
         Text(
             text = if (quote.dynamic) {
-                when (lang) { AppLanguage.GREEK -> "στην κράτηση"; AppLanguage.ALBANIAN -> "në rezervim"; AppLanguage.ITALIAN -> "alla prenotazione"; else -> "at booking" }
+                quote.referencePriceEur?.let { reference ->
+                    formatEur(reference) + when (lang) {
+                        AppLanguage.GREEK -> " περίπου"
+                        AppLanguage.ALBANIAN -> " afërsisht"
+                        AppLanguage.ITALIAN -> " circa"
+                        else -> " approx."
+                    }
+                } ?: when (lang) { AppLanguage.GREEK -> "στην κράτηση"; AppLanguage.ALBANIAN -> "në rezervim"; AppLanguage.ITALIAN -> "alla prenotazione"; else -> "at booking" }
             } else {
                 val reducedWord = when (lang) { AppLanguage.GREEK -> "μειωμένο "; AppLanguage.ALBANIAN -> "e reduktuar "; AppLanguage.ITALIAN -> "ridotto "; else -> "reduced " }
                 formatEur(quote.fullPriceEur ?: 0.0) +
@@ -575,7 +615,7 @@ private fun fareStationOf(st: Station, lines: List<Line>): FareStation {
     val name = (st.name + " " + st.nameEl).lowercase()
     return FareStation(
         id = st.id,
-        regions = regions.ifEmpty { setOf(Region.ATHENS) },
+        regions = regions.ifEmpty { setOf(Region.NATIONAL) },
         isAirport = "airport" in name || "αεροδρ" in name,
         isSuburban = suburban,
     )
@@ -616,4 +656,3 @@ private fun sectionTitle(key: String, lang: AppLanguage): String = when (key) {
     }
     else -> key.replaceFirstChar { it.uppercase() }
 }
-
