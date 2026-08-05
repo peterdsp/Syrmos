@@ -17,6 +17,9 @@ struct HomeView: View {
     @State private var navigationPath = NavigationPath()
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
+    @State private var nearbyListMode = false
+    @State private var selectedNearbyId: String?
+    @State private var showAllInsights = false
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
     @AppStorage("syrmos.selectedTab") private var selectedTab: SyrmosTab = .home
@@ -29,10 +32,11 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     answerSection.syrmosEntrance(index: 0).id(HomeAnchor.weather)
-                    alertsSection.syrmosEntrance(index: 1)
-                    railNewsSection.syrmosEntrance(index: 2)
-                    nearMeSection.syrmosEntrance(index: 3).id(HomeAnchor.nearby)
-                    liveTrainsSection.syrmosEntrance(index: 4)
+                    livingMapStrip.syrmosEntrance(index: 1)
+                    weatherContextSection.syrmosEntrance(index: 2)
+                    insightsStream.syrmosEntrance(index: 3)
+                    radialNearbySection.syrmosEntrance(index: 4).id(HomeAnchor.nearby)
+                    liveTrainsSection.syrmosEntrance(index: 5)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -158,41 +162,447 @@ struct HomeView: View {
     private var answerSection: some View {
         let next = nearestNextDeparture()
         let last = nearestLastTrain(anchoredTo: next)
-        let isTracking = tracking.active != nil
         VStack(spacing: 12) {
             if let tracked = tracking.active {
-                trackingCard(tracked)
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        pulseContextTag(
+                            homeText("In transit", "Σε διαδρομή", "Në udhëtim", "In viaggio"),
+                            color: SyrmosData.lineColor(for: tracked.lineId)
+                        )
+                        Spacer(minLength: 0)
+                        freshnessPill
+                        trackAnyTrainChip
+                    }
+                    trackingCard(tracked)
+                }
+            } else {
+                proactivePulse(next: next, last: last)
             }
-            HStack(spacing: 8) {
-                freshnessPill
-                Spacer(minLength: 0)
-                trackAnyTrainChip
-            }
-            // When a train is being tracked, the countdown lives in the
-            // TrackingCard above and the "next train" hero duplicates it.
-            // Hide the hero so there is exactly one countdown on screen.
-            if !isTracking {
-                answerHero(next: next)
-            }
-            if let last {
-                lastTrainTeaser(last)
-            }
-            if let snap = weather.snapshot {
-                // Real severe weather OR the developer preview toggle
-                // (Settings -> Developer -> Preview severe-weather card).
-                if snap.current.condition.isSevere || forceEmergencyPreview {
-                    EmergencyWeatherCard(
-                        condition: forceEmergencyPreview ? .thunderstorm : snap.current.condition,
-                        language: loc.language
+        }
+    }
+
+    @ViewBuilder
+    private func proactivePulse(next: Departure?, last: Departure?) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            let hour = Calendar(identifier: .gregorian).component(.hour, from: timeline.date)
+            let severity = next.flatMap { stasyService.lineDisruptions[$0.lineId] }
+            let disrupted = severity == "warning" || severity == "closure"
+            let lateNight = last != nil && (hour >= 22 || hour < 5)
+            let stateColor: Color = disrupted
+                ? SyrmosTokens.disruption
+                : lateNight
+                ? SyrmosTokens.warning
+                : freshnessStore.freshness == .live
+                ? Color.syrmosPrimary
+                : SyrmosTokens.offline
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    pulseContextTag(
+                        pulseContext(disrupted: disrupted, lateNight: lateNight, hour: hour),
+                        color: stateColor
+                    )
+                    Spacer(minLength: 0)
+                    freshnessPill
+                }
+
+                if let next {
+                    let seconds = next.secondsAway(from: timeline.date)
+                    let countdown = heroCountdownText(secondsAway: seconds, language: loc.language)
+                    let accent = SyrmosData.lineColor(for: next.lineId)
+
+                    Text(lateNight
+                         ? homeText("Last trains tonight", "Τελευταίοι συρμοί απόψε", "Trenat e fundit sonte", "Ultimi treni stasera")
+                         : loc[.nextTrain])
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(stateColor)
+
+                    HStack(spacing: 8) {
+                        LinePill(
+                            lineId: next.lineId,
+                            size: .small,
+                            disruptionSeverity: severity
+                        )
+                        Text("\(loc[.to]) \(next.direction)")
+                            .font(.title3.weight(.semibold))
+                            .lineLimit(1)
+                    }
+
+                    Text(countdown)
+                        .font(.system(size: SyrmosTokens.Font.displayPulseSize, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(seconds <= 60 ? SyrmosTokens.arrivalImminent : accent)
+                        .contentTransition(.numericText())
+                        .modifier(HeroImminentPulse(active: seconds <= 60))
+
+                    let later = nearestUpcoming().dropFirst().prefix(2)
+                        .filter { $0.minutesAway > next.minutesAway }
+                        .map { $0.minutesAwayDisplay(language: loc.language) }
+                    if !later.isEmpty {
+                        Text("\(homeText("then", "μετά", "pastaj", "poi")) \(later.joined(separator: ", "))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
+
+                    if disrupted {
+                        Text(homeText(
+                            "A service update affects this line. The latest verified detail is below.",
+                            "Μια ενημέρωση υπηρεσίας επηρεάζει αυτή τη γραμμή. Η τελευταία επιβεβαιωμένη πληροφορία είναι παρακάτω.",
+                            "Një përditësim shërbimi prek këtë linjë. Detajet e fundit të verifikuara janë më poshtë.",
+                            "Un aggiornamento di servizio interessa questa linea. I dettagli verificati sono qui sotto."
+                        ))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(SyrmosTokens.disruption)
+                    }
+
+                    if let last {
+                        lastTrainTeaser(last)
+                    }
+
+                    if let snapshot = weather.snapshot {
+                        Text(weatherPulseText(snapshot))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(spacing: 8) {
+                        pulseAction(
+                            icon: "bell.fill",
+                            label: homeText("Track", "Παρακολούθηση", "Ndiq", "Segui"),
+                            color: accent,
+                            action: { trackNext(next) }
+                        )
+                        pulseAction(
+                            icon: "scope",
+                            label: trackAnyTrainLabel,
+                            color: .syrmosPrimary,
+                            action: { showTrackPicker = true }
+                        )
+                    }
+                } else {
+                    Text(locationService.hasPermission ? loc[.serviceOver] : loc[.enableLocationForNext])
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    pulseAction(
+                        icon: "scope",
+                        label: trackAnyTrainLabel,
+                        color: .syrmosPrimary,
+                        action: { showTrackPicker = true }
                     )
                 }
-                WeatherCard(snapshot: snap)
-            } else if forceEmergencyPreview {
-                // No weather snapshot yet but the preview toggle is on
-                // (e.g. cold-start during smoke test): still render the
-                // card with a canned thunderstorm condition.
-                EmergencyWeatherCard(condition: .thunderstorm, language: loc.language)
             }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [stateColor.opacity(0.14), Color.syrmosSurface],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(stateColor.opacity(0.22), lineWidth: 1)
+            }
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: disrupted)
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: lateNight)
+        }
+    }
+
+    private func pulseContext(disrupted: Bool, lateNight: Bool, hour: Int) -> String {
+        if disrupted {
+            return homeText("Service disruption", "Διακοπή υπηρεσίας", "Ndërprerje shërbimi", "Disservizio")
+        }
+        if lateNight {
+            return homeText("Last trains tonight", "Τελευταίοι συρμοί", "Trenat e fundit sonte", "Ultimi treni stasera")
+        }
+        if (5...10).contains(hour) {
+            return homeText("Morning commute", "Πρωινή μετακίνηση", "Udhëtimi i mëngjesit", "Viaggio mattutino")
+        }
+        if (17...20).contains(hour) {
+            return homeText("Evening return", "Βραδινή επιστροφή", "Kthimi i mbrëmjes", "Rientro serale")
+        }
+        return homeText("Your rail pulse", "Ο παλμός της διαδρομής", "Pulsi i udhëtimit", "Il tuo impulso ferroviario")
+    }
+
+    private func pulseContextTag(_ text: String, color: Color) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: SyrmosTokens.Font.contextTagSize, weight: .bold))
+            .tracking(0.8)
+            .foregroundStyle(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
+    }
+
+    private func pulseAction(
+        icon: String,
+        label: String,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                Text(label).fontWeight(.semibold)
+            }
+            .font(.caption)
+            .foregroundStyle(color)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(color.opacity(0.14))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var livingMapStrip: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            selectedTab = .map
+        } label: {
+            VStack(spacing: 6) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(homeText("Living map", "Ζωντανός χάρτης", "Harta e gjallë", "Mappa viva"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.syrmosPrimary)
+                        if let nearby = locationService.nearbyStations.first {
+                            Text(localizedStationName(nearby))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Text(homeText("\(liveTrainService.trains.count) live", "\(liveTrainService.trains.count) ζωντανά", "\(liveTrainService.trains.count) live", "\(liveTrainService.trains.count) live"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.syrmosPrimary)
+                }
+
+                HStack(spacing: 0) {
+                    ForEach(0..<6, id: \.self) { index in
+                        Circle()
+                            .fill(index == 3 ? Color.syrmosPrimary : Color.syrmosSurface)
+                            .frame(width: index == 3 ? 16 : 10, height: index == 3 ? 16 : 10)
+                            .overlay(Circle().stroke(Color.syrmosPrimary, lineWidth: 2))
+                        if index < 5 {
+                            Rectangle()
+                                .fill(Color.syrmosPrimary.opacity(0.7))
+                                .frame(height: 4)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(Color.syrmosSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(homeText("Open living map", "Άνοιγμα ζωντανού χάρτη", "Hap hartën e gjallë", "Apri la mappa viva"))
+    }
+
+    @ViewBuilder
+    private var weatherContextSection: some View {
+        if let snapshot = weather.snapshot {
+            if snapshot.current.condition.isSevere || forceEmergencyPreview {
+                EmergencyWeatherCard(
+                    condition: forceEmergencyPreview ? .thunderstorm : snapshot.current.condition,
+                    language: loc.language
+                )
+            } else if snapshot.current.condition.isWet {
+                WeatherCard(snapshot: snapshot)
+            }
+        } else if forceEmergencyPreview {
+            EmergencyWeatherCard(condition: .thunderstorm, language: loc.language)
+        }
+    }
+
+    @ViewBuilder
+    private var insightsStream: some View {
+        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
+        let otherAnnouncements = stasyService.announcements.filter { $0.category != .serviceAlert }
+        let visibleAlertCount = showAllInsights ? alerts.count : min(alerts.count, 2)
+        let remainingSlots = showAllInsights ? Int.max : max(2 - visibleAlertCount, 0)
+
+        if !alerts.isEmpty || !otherAnnouncements.isEmpty || !railNewsService.news.isEmpty || stasyService.serviceStatus != nil {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(homeText("What matters now", "Τι έχει σημασία τώρα", "Çfarë ka rëndësi tani", "Cosa conta adesso"))
+                        .font(.title3.weight(.bold))
+                    Spacer()
+                    let total = alerts.count + otherAnnouncements.count + railNewsService.news.count
+                    if total > 2 {
+                        Button(showAllInsights
+                               ? homeText("Show less", "Λιγότερα", "Trego më pak", "Mostra meno")
+                               : homeText("Show all", "Όλα", "Trego të gjitha", "Mostra tutto")) {
+                            withAnimation(.easeOut(duration: 0.25)) { showAllInsights.toggle() }
+                        }
+                        .font(.caption.weight(.semibold))
+                    }
+                }
+
+                ForEach(alerts.prefix(visibleAlertCount)) { alert in
+                    AlertCard(announcement: alert, onReadMore: { webViewURL = $0 })
+                }
+
+                if alerts.isEmpty {
+                    serviceStatusPill
+                }
+
+                ForEach(otherAnnouncements.prefix(showAllInsights ? otherAnnouncements.count : remainingSlots)) { item in
+                    AlertCard(announcement: item, onReadMore: { webViewURL = $0 })
+                }
+
+                let used = visibleAlertCount + min(otherAnnouncements.count, remainingSlots)
+                let newsLimit = showAllInsights ? railNewsService.news.count : max(2 - used, 0)
+                ForEach(railNewsService.news.prefix(newsLimit)) { item in
+                    NewsCard(item: item, language: loc.language)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var radialNearbySection: some View {
+        if !locationService.hasPermission || locationService.nearbyStations.isEmpty {
+            nearMeSection
+        } else {
+            let nearby = locationService.nearbyStations
+            let selected = nearby.first(where: { $0.id == selectedNearbyId }) ?? nearby.first!
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(homeText("Around you", "Γύρω σου", "Rreth teje", "Intorno a te"))
+                        .font(.title3.weight(.bold))
+                    Spacer()
+                    Button(nearbyListMode
+                           ? homeText("Radial", "Ακτινικά", "Radiale", "Radiale")
+                           : homeText("List", "Λίστα", "Listë", "Elenco")) {
+                        withAnimation(.easeOut(duration: 0.25)) { nearbyListMode.toggle() }
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+
+                if nearbyListMode {
+                    nearMeSection
+                } else {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                            .frame(width: 86, height: 86)
+                        Circle()
+                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                            .frame(width: 164, height: 164)
+                        Circle()
+                            .fill(Color.syrmosPrimary)
+                            .frame(width: 14, height: 14)
+                            .overlay(Circle().stroke(Color.syrmosPrimary.opacity(0.2), lineWidth: 10))
+
+                        ForEach(Array(nearby.prefix(3).enumerated()), id: \.element.id) { index, item in
+                            Button {
+                                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                                selectedNearbyId = item.id
+                            } label: {
+                                VStack(spacing: 3) {
+                                    Circle()
+                                        .fill(SyrmosData.lineColor(for: item.station.lineIds.first ?? "M3"))
+                                        .frame(width: selected.id == item.id ? 18 : 14, height: selected.id == item.id ? 18 : 14)
+                                    Text(localizedStationName(item))
+                                        .font(.caption2.weight(.semibold))
+                                        .lineLimit(1)
+                                    Text(formatDistance(item.distanceMeters))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(6)
+                                .background(Color.syrmosSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .offset(radialOffset(index))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 210)
+                    .background(Color.syrmosSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+
+                    NavigationLink {
+                        NearbyStationDestination(node: selected.station)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(localizedStationName(selected))
+                                    .font(.headline)
+                                Spacer()
+                                Text(formatDistance(selected.distanceMeters))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                            }
+                            ForEach(departures(for: selected).prefix(2)) { departure in
+                                Text("\(departure.lineId) · \(departure.minutesAwayDisplay(language: loc.language))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(14)
+                        .background(Color.syrmosSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func departures(for nearby: LocationService.NearbyStation) -> [Departure] {
+        let node = nearby.station
+        return node.lineIds.flatMap { lineId in
+            let stationId = node.stationIdByLineId[lineId] ?? node.stationIds.first ?? node.id
+            return ScheduleProjector.nextDepartures(for: stationId, lineIds: [lineId], limit: 2)
+        }
+        .sorted { $0.minutesAway < $1.minutesAway }
+    }
+
+    private func radialOffset(_ index: Int) -> CGSize {
+        switch index {
+        case 0: return CGSize(width: 100, height: -55)
+        case 1: return CGSize(width: -92, height: 55)
+        default: return CGSize(width: 80, height: 70)
+        }
+    }
+
+    private func localizedStationName(_ nearby: LocationService.NearbyStation) -> String {
+        loc.language == .greek
+            ? nearby.station.nameEl
+            : SyrmosData.localizedStationName(nearby.station.displayName, language: loc.language)
+    }
+
+    private func weatherPulseText(_ snapshot: WeatherSnapshot) -> String {
+        let temperature = Int(snapshot.current.temperatureC.rounded())
+        let impact = snapshot.current.condition.isWet
+            ? homeText("Rain may affect outdoor platforms", "Η βροχή μπορεί να επηρεάσει τις υπαίθριες αποβάθρες", "Shiu mund të ndikojë platformat e jashtme", "La pioggia può influire sui binari all'aperto")
+            : homeText("No weather impact on service", "Χωρίς επίδραση του καιρού", "Pa ndikim të motit në shërbim", "Nessun impatto meteo sul servizio")
+        return "\(temperature)° · \(impact)"
+    }
+
+    private func homeText(_ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+        switch loc.language {
+        case .greek: return el
+        case .albanian: return sq
+        case .italian: return it
+        case .english: return en
         }
     }
 

@@ -1608,7 +1608,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
         }
 
-        private func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
+        func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
             let isClosed = station.stationIds.contains { sid in
                 parent.stationDisruptions[sid] == "closure"
             }
