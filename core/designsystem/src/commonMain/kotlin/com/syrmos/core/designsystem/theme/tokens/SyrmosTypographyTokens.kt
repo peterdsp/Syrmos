@@ -27,6 +27,10 @@ object SyrmosTypographyTokens {
         // size / lineHeight in sp
         const val displayNowSize = 44
         const val displayNowLine = 48
+        const val displayPulseSize = 56
+        const val displayPulseLine = 60
+        const val contextTagSize = 10
+        const val contextTagLine = 12
         const val headlineSize = 22
         const val headlineLine = 28
         const val titleSize = 17
@@ -47,6 +51,22 @@ object SyrmosTypographyTokens {
         lineHeight = Raw.displayNowLine.sp,
         fontWeight = FontWeight(Raw.bold),
         fontFeatureSettings = "tnum",
+    )
+
+    /** The proactive Home pulse countdown, intentionally dominant at a glance. */
+    val displayPulse = TextStyle(
+        fontSize = Raw.displayPulseSize.sp,
+        lineHeight = Raw.displayPulseLine.sp,
+        fontWeight = FontWeight.ExtraBold,
+        fontFeatureSettings = "tnum",
+    )
+
+    /** Compact uppercase context label used by the adaptive Home pulse. */
+    val contextTag = TextStyle(
+        fontSize = Raw.contextTagSize.sp,
+        lineHeight = Raw.contextTagLine.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.8.sp,
     )
 
     val headline = TextStyle(
