@@ -21,6 +21,8 @@ object SyrmosMotionTokens {
         const val durationFastMs = 150
         const val durationMediumMs = 300
         const val durationSlowMs = 450
+        const val contextSlideMs = 250
+        const val liveVehicleMs = 1000
 
         // "Train glide": a strong deceleration curve (ease-out). CSS:
         // cubic-bezier(0.16, 1, 0.30, 1).
@@ -33,6 +35,8 @@ object SyrmosMotionTokens {
     const val durationFastMs = Raw.durationFastMs
     const val durationMediumMs = Raw.durationMediumMs
     const val durationSlowMs = Raw.durationSlowMs
+    const val contextSlideMs = Raw.contextSlideMs
+    const val liveVehicleMs = Raw.liveVehicleMs
 
     /** The signature "train glide" deceleration easing. */
     val trainGlide: Easing = CubicBezierEasing(Raw.glideX1, Raw.glideY1, Raw.glideX2, Raw.glideY2)

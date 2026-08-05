@@ -135,6 +135,8 @@ enum SyrmosTokens {
         static let durationFastMs = 150
         static let durationMediumMs = 300
         static let durationSlowMs = 450
+        static let contextSlideMs = 250
+        static let liveVehicleMs = 1000
         static let glideX1: Double = 0.16
         static let glideY1: Double = 1.0
         static let glideX2: Double = 0.3
@@ -143,6 +145,10 @@ enum SyrmosTokens {
     enum Font {
         static let displayNowSize: CGFloat = 44
         static let displayNowLine: CGFloat = 48
+        static let displayPulseSize: CGFloat = 56
+        static let displayPulseLine: CGFloat = 60
+        static let contextTagSize: CGFloat = 10
+        static let contextTagLine: CGFloat = 12
         static let headlineSize: CGFloat = 22
         static let headlineLine: CGFloat = 28
         static let titleSize: CGFloat = 17

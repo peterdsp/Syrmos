@@ -12,6 +12,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import com.syrmos.app.AriadneNavBus
 import com.syrmos.app.AriadneNavEvent
 import com.syrmos.app.NotificationNavBus
@@ -48,6 +49,7 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val tabNavigator = LocalTabNavigator.current
         val viewModel = koinInject<HomeViewModel>()
         var scrollToWeatherRequest by remember { mutableIntStateOf(0) }
 
@@ -86,6 +88,7 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
             onLineClick = { lineId ->
                 navigator.push(LineDetailScreenRoute(lineId))
             },
+            onMapClick = { tabNavigator.current = MapTab },
             scrollToWeatherRequest = scrollToWeatherRequest,
         )
     }
