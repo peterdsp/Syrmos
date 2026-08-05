@@ -11,12 +11,28 @@ final class WatchConnectivityProvider: NSObject, ObservableObject, WCSessionDele
     static let shared = WatchConnectivityProvider()
 
     @Published private(set) var snapshot: WatchSnapshot = .placeholder
+    @Published private(set) var lastRailPulseSignal: String?
 
     func activate() {
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         session.delegate = self
         session.activate()
+    }
+
+    func submitRailPulse(_ signal: String) {
+        lastRailPulseSignal = signal
+        let session = WCSession.default
+        guard session.activationState == .activated else { return }
+        let payload: [String: Any] = [
+            "railpulse_signal": signal,
+            "railpulse_epoch": Date().timeIntervalSince1970,
+        ]
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil, errorHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
     }
 
     private func apply(_ payload: [String: Any]) {

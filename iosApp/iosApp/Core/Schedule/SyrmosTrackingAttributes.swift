@@ -46,6 +46,11 @@ struct SyrmosTrackingAttributes: ActivityAttributes {
         // Screen footer. Optional so older shapes decode.
         var lastTrain: String? = nil
         var currentStation: String? = nil
+        var communityStatus: String? = nil
+        var communityDetail: String? = nil
+        var communityConfirmations: Int? = nil
+        var communityUpdatedSeconds: Int? = nil
+        var unexpectedStop: Bool? = false
     }
 
     var lineId: String

@@ -177,6 +177,52 @@ private struct LockScreenView: View {
                 }
             }
 
+            if let status = context.state.communityStatus {
+                HStack(spacing: 9) {
+                    Circle()
+                        .fill(Color(hex: 0xFFC24A))
+                        .frame(width: 12, height: 12)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Community: \(status.lowercased())")
+                            .font(.caption).fontWeight(.semibold)
+                        HStack(spacing: 4) {
+                            if let detail = context.state.communityDetail {
+                                Text(detail)
+                            }
+                            if let count = context.state.communityConfirmations {
+                                Text("· \(count) confirmations")
+                            }
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 4)
+                    if #available(iOSApplicationExtension 17.0, *) {
+                        Button(intent: ConfirmRailPulseIntent(signal: status.lowercased())) {
+                            Text("Confirm")
+                                .font(.caption2).fontWeight(.bold)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color(hex: 0x17492D))
+                    }
+                }
+                .padding(10)
+                .background(Color.black.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
+            if context.state.unexpectedStop == true {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Unexpected stop ahead")
+                        .font(.caption).fontWeight(.bold)
+                    Text("Community supported · not an official operator alert")
+                        .font(.caption2)
+                }
+                .foregroundStyle(Color(hex: 0x9B1C2D))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10)
+                .background(Color(hex: 0xFDE7E9), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
             // Line pill + destination, with the "last train" footer trailing.
             HStack(spacing: 8) {
                 LinePill(lineId: context.attributes.lineId, size: .regular)

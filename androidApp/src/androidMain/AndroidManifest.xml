@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.Syrmos">
+        <receiver
+            android:name=".RailPulseNotificationReceiver"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -18,6 +18,8 @@
 		03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */; };
 		0658B8596FD64D0EB5BE30A0 /* iosApp/Features/Fares/FaresView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */; };
 		090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */; };
+		AA24BB35CC46DD57EE68FF80 /* ExploreRailPulseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA24BB35CC46DD57EE68FF79 /* ExploreRailPulseView.swift */; };
+		AA25BB36CC47DD58EE69FF81 /* RailPulseDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA25BB36CC47DD58EE69FF82 /* RailPulseDetailViews.swift */; };
 		0FC202D00E8A46C389296714 /* Resources/seed-schedules-v2 in Resources */ = {isa = PBXBuildFile; fileRef = AABB01CD02EF030405060709 /* Resources/seed-schedules-v2 */; };
 		12D1B2FE4D803668E2481F2D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */; };
 		15204646A0A673BDF0D30FCF /* llama.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D8B4CA7955E1724CF96A1AD /* llama.xcframework */; };
@@ -113,6 +115,8 @@
 		DA7A0211F00D0211F00D0211 /* iosApp/Features/Assistant/AriadneDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */; };
 		DA7A0A16F00D0A16F00D0A16 /* iosApp/Features/Assistant/AriadneGuided.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */; };
 		B1A2C3D4E5F60718293A1B01 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A1B00 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift */; };
+		AA26BB37CC48DD59EE70FF83 /* RailPulseLiveActivityIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB37CC48DD59EE70FF85 /* RailPulseLiveActivityIntent.swift */; };
+		AA26BB37CC48DD59EE70FF84 /* RailPulseLiveActivityIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB37CC48DD59EE70FF85 /* RailPulseLiveActivityIntent.swift */; };
 		DB4E28495C2C4563A4A26795 /* iosApp/DesignSystem/WidgetKit/LinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEEF0962C64453194C74A7D /* iosApp/DesignSystem/WidgetKit/LinePill.swift */; };
 		DF3C6FE39FA544239D09EE50 /* iosApp/Core/Persistence/SyrmosFaresStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E4CA5A03BC488B882F9BB0 /* iosApp/Core/Persistence/SyrmosFaresStore.swift */; };
 		E1A2B3C4D5E60718293A4B5C /* iosApp/Core/Networking/SyrmosDeparturesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B3C4D5E60718293A4B5D /* iosApp/Core/Networking/SyrmosDeparturesService.swift */; };
@@ -220,6 +224,8 @@
 		0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosSchedulesService.swift; sourceTree = SOURCE_ROOT; };
 		18D0CA28E96EEF13502C887F /* LinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinesView.swift; sourceTree = "<group>"; };
+		AA24BB35CC46DD57EE68FF79 /* ExploreRailPulseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreRailPulseView.swift; sourceTree = "<group>"; };
+		AA25BB36CC47DD58EE69FF82 /* RailPulseDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RailPulseDetailViews.swift; sourceTree = "<group>"; };
 		1DF85A2E3F716D7313EC9642 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1EF7713235D346D68B6F96E8 /* iosApp/Core/Networking/BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/BackgroundRefresh.swift; sourceTree = SOURCE_ROOT; };
 		1FE6A64F2930A00B9F04C461 /* SyrmosWatch/WatchNearbyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosWatch/WatchNearbyView.swift; sourceTree = SOURCE_ROOT; };
@@ -301,6 +307,7 @@
 		DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneDomain.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneGuided.swift; sourceTree = SOURCE_ROOT; };
 		B1A2C3D4E5F60718293A1B00 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/SiriIntents/SyrmosAppIntents.swift; sourceTree = SOURCE_ROOT; };
+		AA26BB37CC48DD59EE70FF85 /* RailPulseLiveActivityIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/SiriIntents/RailPulseLiveActivityIntent.swift; sourceTree = SOURCE_ROOT; };
 		DBADA13AF3954288A721329B /* iosApp/Features/Timetables/TimetablesIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesIcons.swift; sourceTree = SOURCE_ROOT; };
 		DD50BCD053B64059B6D3A243 /* iosApp/Core/Networking/WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WidgetBridge.swift; sourceTree = SOURCE_ROOT; };
 		DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Fares/FaresView.swift; sourceTree = SOURCE_ROOT; };
@@ -638,6 +645,7 @@
 				DA7A0212F00D0212F00D0212 /* iosApp/Features/Assistant/AriadneDomain.swift */,
 				DA7A0A17F00D0A17F00D0A17 /* iosApp/Features/Assistant/AriadneGuided.swift */,
 				B1A2C3D4E5F60718293A1B00 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift */,
+				AA26BB37CC48DD59EE70FF85 /* RailPulseLiveActivityIntent.swift */,
 				DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */,
 				DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */,
 				DA7A0131F00D0131F00D0131 /* iosApp/Features/Assistant/JourneyPlanner.swift */,
@@ -685,6 +693,8 @@
 			children = (
 				830DD3BBB8DD51E24EE2ABE7 /* LineDetailView.swift */,
 				18D0CA28E96EEF13502C887F /* LinesView.swift */,
+				AA24BB35CC46DD57EE68FF79 /* ExploreRailPulseView.swift */,
+				AA25BB36CC47DD58EE69FF82 /* RailPulseDetailViews.swift */,
 			);
 			path = Lines;
 			sourceTree = "<group>";
@@ -919,6 +929,7 @@
 				DA7A0211F00D0211F00D0211 /* iosApp/Features/Assistant/AriadneDomain.swift in Sources */,
 				DA7A0A16F00D0A16F00D0A16 /* iosApp/Features/Assistant/AriadneGuided.swift in Sources */,
 				B1A2C3D4E5F60718293A1B01 /* iosApp/Features/SiriIntents/SyrmosAppIntents.swift in Sources */,
+				AA26BB37CC48DD59EE70FF83 /* RailPulseLiveActivityIntent.swift in Sources */,
 				DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */,
 				DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */,
 				DA7A0130F00D0130F00D0130 /* iosApp/Features/Assistant/JourneyPlanner.swift in Sources */,
@@ -946,6 +957,8 @@
 				0A17A714F00D0714F00D0714 /* AlertDetailSheet.swift in Sources */,
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
+				AA24BB35CC46DD57EE68FF80 /* ExploreRailPulseView.swift in Sources */,
+				AA25BB36CC47DD58EE69FF81 /* RailPulseDetailViews.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,
 				B1C2D3E4F5A607182939AAAA /* LiveStreamPlayerView.swift in Sources */,
 				AA11BB22CC33DD44EE55FF66 /* StationIconNames.swift in Sources */,
@@ -1031,6 +1044,7 @@
 				AC74A75A5E7742A6A2AC71B3 /* SyrmosWidget/SyrmosWidgets.swift in Sources */,
 				DA7A0121F00D0121F00D0121 /* iosApp/Core/Schedule/SyrmosTrackingAttributes.swift in Sources */,
 				DA7A0122F00D0122F00D0122 /* SyrmosWidget/SyrmosLiveActivity.swift in Sources */,
+				AA26BB37CC48DD59EE70FF84 /* RailPulseLiveActivityIntent.swift in Sources */,
 				DA7A0123F00D0123F00D0123 /* SyrmosWidget/SyrmosWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1069,7 +1083,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1192,7 +1206,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = iosApp/Syrmos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/Frameworks",
@@ -1233,7 +1247,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1254,7 +1268,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1277,7 +1291,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = iosApp/Syrmos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/Frameworks",
@@ -1375,7 +1389,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = SyrmosWidget/SyrmosWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
@@ -1404,7 +1418,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = SyrmosWidget/SyrmosWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SyrmosWidget/Info.plist;
@@ -1435,7 +1449,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SyrmosWatch/SyrmosWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 118;
+				CURRENT_PROJECT_VERSION = 119;
 				DEVELOPMENT_TEAM = YTS4KJBX3P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
