@@ -190,6 +190,7 @@ struct Departure: Identifiable {
             switch language {
             case .greek: return "Τώρα"
             case .albanian: return "Tani"
+            case .italian: return "Adesso"
             default: return "Now"
             }
         }

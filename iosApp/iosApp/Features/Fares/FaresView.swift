@@ -17,11 +17,11 @@ struct FaresView: View {
 
     /// Every fare_products.section grouped under a network so the whole country
     /// shows, not just OASA. Mirrors the Android FaresScreen.
-    private static let networks: [(sections: [String], en: String, el: String, sq: String)] = [
-        (["single", "offers", "airport", "passes"], "Athens — OASA", "Αθήνα — OASA", "Athinë — OASA"),
-        (["thessaloniki"], "Thessaloniki — OSETH", "Θεσσαλονίκη — OSETH", "Selanik — OSETH"),
-        (["patras"], "Patras suburban", "Προαστιακός Πάτρας", "Suburban Patra"),
-        (["intercity"], "Intercity / regional", "Υπεραστικά / περιφερειακά", "Ndërqytetëse"),
+    private static let networks: [(sections: [String], en: String, el: String, sq: String, it: String)] = [
+        (["single", "offers", "airport", "passes"], "Athens - OASA", "Αθήνα - OASA", "Athinë - OASA", "Atene - OASA"),
+        (["thessaloniki"], "Thessaloniki - OSETH", "Θεσσαλονίκη - OSETH", "Selanik - OSETH", "Salonicco - OSETH"),
+        (["patras"], "Patras suburban", "Προαστιακός Πάτρας", "Suburban Patra", "Suburbano Patrasso"),
+        (["intercity"], "Intercity / regional", "Υπεραστικά / περιφερειακά", "Ndërqytetëse", "Interurbano / regionale"),
     ]
 
     var body: some View {
@@ -47,7 +47,7 @@ struct FaresView: View {
         }
         .background(Color.syrmosBackground)
         .scrollContentBackground(.hidden)
-        .navigationTitle(loc.language == .greek ? "Εισιτήρια" : loc.language == .albanian ? "Bileta" : "Tickets")
+        .navigationTitle(loc.language == .greek ? "Εισιτήρια" : loc.language == .albanian ? "Bileta" : loc.language == .italian ? "Biglietti" : "Tickets")
         .navigationBarTitleDisplayMode(.large)
         .inAppSafari(url: $safariURL)
         .task {
@@ -57,18 +57,20 @@ struct FaresView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(loc.language == .greek ? "Τιμές εισιτηρίων" : loc.language == .albanian ? "Çmimet e biletave" : "Fares")
+            Text(loc.language == .greek ? "Τιμές εισιτηρίων" : loc.language == .albanian ? "Çmimet e biletave" : loc.language == .italian ? "Tariffe" : "Fares")
                 .font(.title3)
                 .fontWeight(.semibold)
             Text(loc.language == .greek
                  ? "Τιμές από τους επίσημους φορείς (OASA, OSETH, Hellenic Train). Τα υπεραστικά τιμολογούνται στην κράτηση."
                  : loc.language == .albanian
                  ? "Çmime nga operatorët zyrtarë (OASA, OSETH, Hellenic Train). Ndërqytetëset çmohen në rezervim."
+                 : loc.language == .italian
+                 ? "Prezzi dagli operatori ufficiali (OASA, OSETH, Hellenic Train). Gli interurbani hanno il prezzo alla prenotazione."
                  : "Prices from the official operators (OASA, OSETH, Hellenic Train). Intercity is priced at booking.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if !store.updatedAt.isEmpty {
-                Text((loc.language == .greek ? "Ενημέρωση: " : loc.language == .albanian ? "Përditësuar: " : "Updated: ") + formattedUpdatedAt)
+                Text((loc.language == .greek ? "Ενημέρωση: " : loc.language == .albanian ? "Përditësuar: " : loc.language == .italian ? "Aggiornato: " : "Updated: ") + formattedUpdatedAt)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -83,6 +85,8 @@ struct FaresView: View {
                  ? "Οι τιμές παρέχονται από την OASA. Για την οριστική τιμή ελέγξτε την επίσημη σελίδα."
                  : loc.language == .albanian
                  ? "Çmimet ofrohen nga OASA. Për çmimin përfundimtar, kontrollo faqen zyrtare."
+                 : loc.language == .italian
+                 ? "I prezzi sono forniti da OASA. Per il prezzo definitivo, controlla la pagina ufficiale."
                  : "Prices are provided by OASA. For the authoritative figure, check the official page.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -94,7 +98,7 @@ struct FaresView: View {
             } label: {
                 HStack {
                     Image(systemName: "safari")
-                    Text(loc.language == .greek ? "Άνοιγμα στην OASA" : loc.language == .albanian ? "Hap në OASA" : "View on OASA")
+                    Text(loc.language == .greek ? "Άνοιγμα στην OASA" : loc.language == .albanian ? "Hap në OASA" : loc.language == .italian ? "Vedi su OASA" : "View on OASA")
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -109,7 +113,7 @@ struct FaresView: View {
 
     private var infoLinksSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(loc.language == .greek ? "Χρήσιμες πληροφορίες" : loc.language == .albanian ? "Informacione të dobishme" : "Useful information")
+            Text(loc.language == .greek ? "Χρήσιμες πληροφορίες" : loc.language == .albanian ? "Informacione të dobishme" : loc.language == .italian ? "Informazioni utili" : "Useful information")
                 .font(.headline)
                 .padding(.horizontal, 16)
             VStack(spacing: 12) {
@@ -129,10 +133,10 @@ struct FaresView: View {
 
     private var plannerCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(loc.language == .greek ? "Υπολόγισε κόμιστρο" : loc.language == .albanian ? "Llogarit çmimin" : "Plan a trip — fare")
+            Text(loc.language == .greek ? "Υπολόγισε κόμιστρο" : loc.language == .albanian ? "Llogarit çmimin" : loc.language == .italian ? "Pianifica un viaggio" : "Plan a trip - fare")
                 .font(.subheadline).fontWeight(.semibold)
-            stationButton(label: loc.language == .greek ? "Από" : loc.language == .albanian ? "Nga" : "From", station: fareFrom) { picking = .from }
-            stationButton(label: loc.language == .greek ? "Προς" : loc.language == .albanian ? "Te" : "To", station: fareTo) { picking = .to }
+            stationButton(label: loc.language == .greek ? "Από" : loc.language == .albanian ? "Nga" : loc.language == .italian ? "Da" : "From", station: fareFrom) { picking = .from }
+            stationButton(label: loc.language == .greek ? "Προς" : loc.language == .albanian ? "Te" : loc.language == .italian ? "A" : "To", station: fareTo) { picking = .to }
             if let f = fareFrom, let t = fareTo {
                 fareResult(FareEngine.computeFare(from: f, to: t))
             }
@@ -161,9 +165,9 @@ struct FaresView: View {
 
     private func fareResult(_ offer: FareOffer) -> some View {
         let priceText: String = offer.dynamic
-            ? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : "at booking")
+            ? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : loc.language == .italian ? "alla prenotazione" : "at booking")
             : String(format: "€%.2f", offer.fullEur ?? 0)
-                + (offer.reducedEur.map { " · " + (loc.language == .greek ? "μειωμένο " : loc.language == .albanian ? "e reduktuar " : "reduced ") + String(format: "€%.2f", $0) } ?? "")
+                + (offer.reducedEur.map { " · " + (loc.language == .greek ? "μειωμένο " : loc.language == .albanian ? "e reduktuar " : loc.language == .italian ? "ridotto " : "reduced ") + String(format: "€%.2f", $0) } ?? "")
         return VStack(alignment: .leading, spacing: 2) {
             Text(priceText).font(.headline).foregroundStyle(Color.syrmosPrimary)
             Text("\(offer.product) · \(offer.op)").font(.caption).foregroundStyle(.secondary)
@@ -191,7 +195,7 @@ struct FaresView: View {
 
     // MARK: Fares menu, grouped by network
 
-    private func networkView(_ network: (sections: [String], en: String, el: String, sq: String)) -> some View {
+    private func networkView(_ network: (sections: [String], en: String, el: String, sq: String, it: String)) -> some View {
         let grouped = Dictionary(grouping: store.products) { $0.section }
         // Compute visible (section, products) pairs up front so no `let` lands
         // inside the ViewBuilder closures.
@@ -202,7 +206,7 @@ struct FaresView: View {
         let multi = network.sections.count > 1
         return VStack(alignment: .leading, spacing: 10) {
             if !visible.isEmpty {
-                Text(loc.language == .greek ? network.el : loc.language == .albanian ? network.sq : network.en)
+                Text(loc.language == .greek ? network.el : loc.language == .albanian ? network.sq : loc.language == .italian ? network.it : network.en)
                     .font(.subheadline).fontWeight(.bold)
                     .foregroundStyle(Color.syrmosPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -229,15 +233,19 @@ struct FaresView: View {
         case ("single",  .english):  return "Single tickets"
         case ("single",  .greek):    return "Μονά εισιτήρια"
         case ("single",  .albanian): return "Bileta të vetme"
+        case ("single",  .italian):  return "Biglietti singoli"
         case ("offers",  .english):  return "Packs and offers"
         case ("offers",  .greek):    return "Πακέτα και προσφορές"
         case ("offers",  .albanian): return "Paketa dhe oferta"
+        case ("offers",  .italian):  return "Pacchetti e offerte"
         case ("airport", .english):  return "Airport tickets"
         case ("airport", .greek):    return "Εισιτήρια αεροδρομίου"
         case ("airport", .albanian): return "Bileta për aeroportin"
+        case ("airport", .italian):  return "Biglietti aeroporto"
         case ("passes",  .english):  return "Day passes"
         case ("passes",  .greek):    return "Ημερήσια εισιτήρια"
         case ("passes",  .albanian): return "Abone ditore"
+        case ("passes",  .italian):  return "Abbonamenti giornalieri"
         default:                     return key.capitalized
         }
     }
@@ -307,6 +315,8 @@ private struct InfoLinkCard: View {
                          ? "Επιβεβαίωση στο \(link.operator_.uppercased())"
                          : loc.language == .albanian
                          ? "Verifiko në \(link.operator_.uppercased())"
+                         : loc.language == .italian
+                         ? "Verifica su \(link.operator_.uppercased())"
                          : "Verify on \(link.operator_.uppercased())")
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -344,7 +354,7 @@ private struct FareCard: View {
                 Spacer()
                 // Intercity has no fixed price (booking-time); show that, not a blank.
                 Text(product.fullPriceEur.map { String(format: "€%.2f", $0) }
-                     ?? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : "at booking"))
+                     ?? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : loc.language == .italian ? "alla prenotazione" : "at booking"))
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(Color.syrmosPrimary)
             }
@@ -353,7 +363,7 @@ private struct FareCard: View {
                     Image(systemName: "tag.fill")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Text((loc.language == .greek ? "Μειωμένο: " : loc.language == .albanian ? "Me zbritje: " : "Discounted: ")
+                    Text((loc.language == .greek ? "Μειωμένο: " : loc.language == .albanian ? "Me zbritje: " : loc.language == .italian ? "Scontato: " : "Discounted: ")
                          + String(format: "€%.2f", disc))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -478,11 +488,11 @@ private struct StationPickerSheet: View {
                 }
             }
             .searchable(text: $query)
-            .navigationTitle(language == .greek ? "Σταθμός" : language == .albanian ? "Stacioni" : "Station")
+            .navigationTitle(language == .greek ? "Σταθμός" : language == .albanian ? "Stacioni" : language == .italian ? "Stazione" : "Station")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(language == .greek ? "Άκυρο" : language == .albanian ? "Anulo" : "Cancel") { dismiss() }
+                    Button(language == .greek ? "Άκυρο" : language == .albanian ? "Anulo" : language == .italian ? "Annulla" : "Cancel") { dismiss() }
                 }
             }
         }

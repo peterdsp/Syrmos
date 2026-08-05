@@ -168,6 +168,7 @@ fun LinesScreen(
                                 text = when (lang) {
                                     AppLanguage.GREEK -> "Δεν βρεθηκαν γραμμες"
                                     AppLanguage.ALBANIAN -> "Nuk u gjeten linja"
+                                    AppLanguage.ITALIAN -> "Nessuna linea trovata"
                                     else -> "No lines found"
                                 },
                                 style = MaterialTheme.typography.bodyLarge,
@@ -392,6 +393,7 @@ private fun SearchBar(
                         text = when (lang) {
                             AppLanguage.GREEK -> "Αναζητηση γραμμης η σταθμου..."
                             AppLanguage.ALBANIAN -> "Kerko linje ose stacion..."
+                            AppLanguage.ITALIAN -> "Cerca linea o stazione..."
                             else -> "Search line or station..."
                         },
                         style = MaterialTheme.typography.bodyMedium,
@@ -436,26 +438,31 @@ private fun RegionFilterRow(
         null to when (lang) {
             AppLanguage.GREEK -> "Ολα"
             AppLanguage.ALBANIAN -> "Te gjitha"
+            AppLanguage.ITALIAN -> "Tutte"
             else -> "All"
         },
         Region.ATHENS to when (lang) {
             AppLanguage.GREEK -> "Αθηνα"
             AppLanguage.ALBANIAN -> "Athine"
+            AppLanguage.ITALIAN -> "Atene"
             else -> "Athens"
         },
         Region.THESSALONIKI to when (lang) {
             AppLanguage.GREEK -> "Θεσσαλονικη"
             AppLanguage.ALBANIAN -> "Selanik"
+            AppLanguage.ITALIAN -> "Salonicco"
             else -> "Thessaloniki"
         },
         Region.PATRAS to when (lang) {
             AppLanguage.GREEK -> "Πατρα"
             AppLanguage.ALBANIAN -> "Patra"
+            AppLanguage.ITALIAN -> "Patrasso"
             else -> "Patras"
         },
         Region.NATIONAL to when (lang) {
             AppLanguage.GREEK -> "Υπεραστικα"
             AppLanguage.ALBANIAN -> "Nderqytetese"
+            AppLanguage.ITALIAN -> "Intercity"
             else -> "Intercity"
         },
     )
@@ -490,27 +497,32 @@ private fun TypeFilterRow(
         null to when (lang) {
             AppLanguage.GREEK -> "Ολα"
             AppLanguage.ALBANIAN -> "Te gjitha"
+            AppLanguage.ITALIAN -> "Tutti"
             else -> "All"
         },
         LineType.METRO to "Metro",
         LineType.TRAM to when (lang) {
             AppLanguage.GREEK -> "Τραμ"
             AppLanguage.ALBANIAN -> "Tramvaj"
+            AppLanguage.ITALIAN -> "Tram"
             else -> "Tram"
         },
         LineType.SUBURBAN to when (lang) {
             AppLanguage.GREEK -> "Προαστιακος"
             AppLanguage.ALBANIAN -> "Periferike"
+            AppLanguage.ITALIAN -> "Suburbano"
             else -> "Suburban"
         },
         LineType.BUS to when (lang) {
             AppLanguage.GREEK -> "Λεωφορεια"
             AppLanguage.ALBANIAN -> "Autobuse"
+            AppLanguage.ITALIAN -> "Autobus"
             else -> "Bus"
         },
         LineType.SCENIC to when (lang) {
             AppLanguage.GREEK -> "Οδοντωτος"
             AppLanguage.ALBANIAN -> "Malore"
+            AppLanguage.ITALIAN -> "Panoramico"
             else -> "Scenic"
         },
     )
@@ -568,6 +580,7 @@ private fun LineRow(
             text = when (lang) {
                 AppLanguage.GREEK -> "${line.stationCount} σταθμοι"
                 AppLanguage.ALBANIAN -> "${line.stationCount} stacione"
+                AppLanguage.ITALIAN -> "${line.stationCount} stazioni"
                 else -> "${line.stationCount} stations"
             },
             style = MaterialTheme.typography.labelMedium,
@@ -585,26 +598,31 @@ private fun LineType.localizedName(lang: AppLanguage): String {
         LineType.METRO -> when (lang) {
             AppLanguage.GREEK -> "Μετρο"
             AppLanguage.ALBANIAN -> "Metro"
+            AppLanguage.ITALIAN -> "Metro"
             else -> "Metro"
         }
         LineType.TRAM -> when (lang) {
             AppLanguage.GREEK -> "Τραμ"
             AppLanguage.ALBANIAN -> "Tramvaj"
+            AppLanguage.ITALIAN -> "Tram"
             else -> "Tram"
         }
         LineType.SUBURBAN -> when (lang) {
             AppLanguage.GREEK -> "Προαστιακος Σιδηροδρομος"
             AppLanguage.ALBANIAN -> "Hekurudha periferike"
+            AppLanguage.ITALIAN -> "Ferrovia suburbana"
             else -> "Suburban Railway"
         }
         LineType.BUS -> when (lang) {
             AppLanguage.GREEK -> "Λεωφορειο (αντικατασταση)"
             AppLanguage.ALBANIAN -> "Autobus (zevendesim)"
+            AppLanguage.ITALIAN -> "Autobus (sostituzione ferroviaria)"
             else -> "Bus (rail replacement)"
         }
         LineType.SCENIC -> when (lang) {
             AppLanguage.GREEK -> "Οδοντωτος Σιδηροδρομος"
             AppLanguage.ALBANIAN -> "Hekurudha malore"
+            AppLanguage.ITALIAN -> "Ferrovia panoramica"
             else -> "Scenic Railway"
         }
     }

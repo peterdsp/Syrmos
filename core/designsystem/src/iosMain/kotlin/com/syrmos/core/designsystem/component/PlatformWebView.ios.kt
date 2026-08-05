@@ -21,7 +21,7 @@ actual fun PlatformWebView(
             webView.loadRequest(NSURLRequest.requestWithURL(nsUrl))
             webView
         },
-        update = { webView ->
+        update = update@{ webView ->
             val nsUrl = NSURL.URLWithString(url) ?: return@update
             webView.loadRequest(NSURLRequest.requestWithURL(nsUrl))
         },

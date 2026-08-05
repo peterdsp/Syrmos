@@ -85,6 +85,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
             text = when (lang) {
                 AppLanguage.GREEK -> "Επικοινωνία με τον μηχανικό"
                 AppLanguage.ALBANIAN -> "Kontakto zhvilluesin"
+                AppLanguage.ITALIAN -> "Contatta lo sviluppatore"
                 else -> "Contact engineer"
             },
             style = MaterialTheme.typography.titleLarge,
@@ -95,6 +96,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
             text = when (lang) {
                 AppLanguage.GREEK -> "Στείλε σχόλιο, αναφορά σφάλματος ή ιδέα. Όλα φτάνουν στον προγραμματιστή."
                 AppLanguage.ALBANIAN -> "Dërgo koment, raportim defekti ose ide. Çdo mesazh shkon te zhvilluesi."
+                AppLanguage.ITALIAN -> "Invia un feedback, una segnalazione di bug o un'idea. Ogni messaggio arriva allo sviluppatore."
                 else -> "Send feedback, a bug report or an idea. Every message lands in the developer's inbox."
             },
             style = MaterialTheme.typography.bodyMedium,
@@ -115,6 +117,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                     Text(when (lang) {
                         AppLanguage.GREEK -> "Κατηγορία"
                         AppLanguage.ALBANIAN -> "Kategoria"
+                        AppLanguage.ITALIAN -> "Categoria"
                         else -> "Category"
                     })
                     TextButton(onClick = { menuOpen = true }) {
@@ -139,6 +142,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                     label = { Text(when (lang) {
                         AppLanguage.GREEK -> "Θέμα"
                         AppLanguage.ALBANIAN -> "Tema"
+                        AppLanguage.ITALIAN -> "Oggetto"
                         else -> "Subject"
                     }) },
                     singleLine = true,
@@ -151,6 +155,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                         Text(when (lang) {
                             AppLanguage.GREEK -> "Email απάντησης (προαιρετικό)"
                             AppLanguage.ALBANIAN -> "Email për përgjigje (opsionale)"
+                            AppLanguage.ITALIAN -> "Email di risposta (opzionale)"
                             else -> "Reply email (optional)"
                         })
                     },
@@ -163,6 +168,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                     label = { Text(when (lang) {
                         AppLanguage.GREEK -> "Μήνυμα"
                         AppLanguage.ALBANIAN -> "Mesazhi"
+                        AppLanguage.ITALIAN -> "Messaggio"
                         else -> "Message"
                     }) },
                 )
@@ -195,6 +201,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                 Text(when (lang) {
                     AppLanguage.GREEK -> "Κλείσιμο"
                     AppLanguage.ALBANIAN -> "Mbylle"
+                    AppLanguage.ITALIAN -> "Chiudi"
                     else -> "Close"
                 })
             }
@@ -214,6 +221,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                             locale = when (lang) {
                                 AppLanguage.GREEK -> "el"
                                 AppLanguage.ALBANIAN -> "sq"
+                                AppLanguage.ITALIAN -> "it"
                                 else -> "en"
                             },
                             userAgent = currentPlatformUserAgent(),
@@ -224,6 +232,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                             statusBanner = when (lang) {
                                 AppLanguage.GREEK -> "Στάλθηκε. Αναφορά #${result.id}."
                                 AppLanguage.ALBANIAN -> "U dërgua. Referenca #${result.id}."
+                                AppLanguage.ITALIAN -> "Inviato. Riferimento #${result.id}."
                                 else -> "Sent. Reference #${result.id}."
                             }
                             subject = ""
@@ -235,6 +244,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                             statusBanner = when (lang) {
                                 AppLanguage.GREEK -> "Δεν ήταν δυνατή η αποστολή. Έλεγξε τη σύνδεση και ξαναπροσπάθησε."
                                 AppLanguage.ALBANIAN -> "Nuk u dërgua. Kontrollo lidhjen dhe provo përsëri."
+                                AppLanguage.ITALIAN -> "Invio non riuscito. Controlla la connessione e riprova."
                                 else -> "Couldn't send. Check your connection and try again."
                             }
                         }
@@ -250,6 +260,7 @@ private fun ContactDeveloperSheetContent(onDismiss: () -> Unit) {
                 Text(when (lang) {
                     AppLanguage.GREEK -> "Αποστολή"
                     AppLanguage.ALBANIAN -> "Dërgo"
+                    AppLanguage.ITALIAN -> "Invia"
                     else -> "Send"
                 })
             }
@@ -266,6 +277,10 @@ private fun categoryLabel(c: String, lang: AppLanguage): String = when (c to lan
     "feature" to AppLanguage.ALBANIAN -> "Sugjerim"
     "question" to AppLanguage.ALBANIAN -> "Pyetje"
     "other" to AppLanguage.ALBANIAN -> "Tjetër"
+    "bug" to AppLanguage.ITALIAN -> "Bug"
+    "feature" to AppLanguage.ITALIAN -> "Suggerimento"
+    "question" to AppLanguage.ITALIAN -> "Domanda"
+    "other" to AppLanguage.ITALIAN -> "Altro"
     "bug" to AppLanguage.ENGLISH -> "Bug"
     "feature" to AppLanguage.ENGLISH -> "Feature"
     "question" to AppLanguage.ENGLISH -> "Question"

@@ -949,6 +949,11 @@ html, body {
     line-height: 1;
 }
 
+.vehicle-estimate {
+    flex: 1 1 100%;
+    border: 1px solid color-mix(in srgb, var(--sy-primary) 24%, transparent);
+}
+
 .meta-chip-label {
     line-height: 1.1;
 }

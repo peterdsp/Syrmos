@@ -257,6 +257,7 @@ private fun dayLabel(offset: Int, lang: AppLanguage): String {
     if (offset == 0) return when (lang) {
         AppLanguage.GREEK -> "ΣΗΜ"
         AppLanguage.ALBANIAN -> "SOT"
+        AppLanguage.ITALIAN -> "OGGI"
         else -> "TODAY"
     }
     val date = todayPlus(offset)
@@ -271,6 +272,11 @@ private fun dayLabel(offset: Int, lang: AppLanguage): String {
             DayOfWeek.MONDAY -> "HEN"; DayOfWeek.TUESDAY -> "MAR"; DayOfWeek.WEDNESDAY -> "MER"
             DayOfWeek.THURSDAY -> "ENJ"; DayOfWeek.FRIDAY -> "PRE"; DayOfWeek.SATURDAY -> "SHT"
             DayOfWeek.SUNDAY -> "DIE"; else -> ""
+        }
+        AppLanguage.ITALIAN -> when (key) {
+            DayOfWeek.MONDAY -> "LUN"; DayOfWeek.TUESDAY -> "MAR"; DayOfWeek.WEDNESDAY -> "MER"
+            DayOfWeek.THURSDAY -> "GIO"; DayOfWeek.FRIDAY -> "VEN"; DayOfWeek.SATURDAY -> "SAB"
+            DayOfWeek.SUNDAY -> "DOM"; else -> ""
         }
         else -> when (key) {
             DayOfWeek.MONDAY -> "MON"; DayOfWeek.TUESDAY -> "TUE"; DayOfWeek.WEDNESDAY -> "WED"
@@ -332,6 +338,7 @@ private fun LinePickerCard(
                     text = when (lang) {
                         AppLanguage.GREEK -> "ΓΡΑΜΜΗ"
                         AppLanguage.ALBANIAN -> "LINJA"
+                        AppLanguage.ITALIAN -> "LINEA"
                         else -> "LINE"
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -389,6 +396,7 @@ private fun StationPickerCard(
                     text = when (lang) {
                         AppLanguage.GREEK -> "ΣΤΑΘΜΟΣ"
                         AppLanguage.ALBANIAN -> "STACIONI"
+                        AppLanguage.ITALIAN -> "STAZIONE"
                         else -> "STATION"
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -488,6 +496,7 @@ private fun DepartureSection(
                     text = when (lang) {
                         AppLanguage.GREEK -> "Δεν υπάρχουν διαθέσιμα δρομολόγια."
                         AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme."
+                        AppLanguage.ITALIAN -> "Nessuna partenza disponibile."
                         else -> "No departures available."
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -523,6 +532,7 @@ private fun DepartureSection(
                         label = when (lang) {
                             AppLanguage.GREEK -> "Προηγούμενα"
                             AppLanguage.ALBANIAN -> "Me pare"
+                            AppLanguage.ITALIAN -> "Precedenti"
                             else -> "Earlier"
                         },
                         icon = Icons.Filled.History,
@@ -538,6 +548,7 @@ private fun DepartureSection(
                         label = when (lang) {
                             AppLanguage.GREEK -> "Ολα τα επόμενα"
                             AppLanguage.ALBANIAN -> "Te gjitha"
+                            AppLanguage.ITALIAN -> "Tutte le prossime"
                             else -> "All upcoming"
                         },
                         icon = if (mode == ExpandMode.SHOW_ALL) Icons.Filled.UnfoldLess else Icons.Filled.UnfoldMore,
@@ -717,6 +728,7 @@ private fun stationDisplayName(station: Station?, lang: AppLanguage): String {
     return when (lang) {
         AppLanguage.GREEK -> station.nameEl.ifBlank { station.name }
         AppLanguage.ALBANIAN -> station.nameSq?.ifBlank { null } ?: station.name
+        AppLanguage.ITALIAN -> station.name
         else -> station.name
     }
 }
@@ -746,9 +758,11 @@ private fun directionTitle(kind: DirectionKind, dest: String, lang: AppLanguage)
         DirectionKind.OUTBOUND to AppLanguage.GREEK -> "Προς"
         DirectionKind.OUTBOUND to AppLanguage.ALBANIAN -> "Drejt"
         DirectionKind.OUTBOUND to AppLanguage.ENGLISH -> "Towards"
+        DirectionKind.OUTBOUND to AppLanguage.ITALIAN -> "Verso"
         DirectionKind.INBOUND to AppLanguage.GREEK -> "Προς"
         DirectionKind.INBOUND to AppLanguage.ALBANIAN -> "Drejt"
         DirectionKind.INBOUND to AppLanguage.ENGLISH -> "Towards"
+        DirectionKind.INBOUND to AppLanguage.ITALIAN -> "Verso"
         else -> "Towards"
     }
     return "$prefix $dest"
@@ -757,18 +771,21 @@ private fun directionTitle(kind: DirectionKind, dest: String, lang: AppLanguage)
 private fun upcomingSubtitle(n: Int, lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "$n επόμενα δρομολόγια"
     AppLanguage.ALBANIAN -> "$n nisje te radhes"
+    AppLanguage.ITALIAN -> "$n partenze in arrivo"
     else -> "$n upcoming departures"
 }
 
 private fun directionLine(dest: String, lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "προς $dest"
     AppLanguage.ALBANIAN -> "drejt $dest"
+    AppLanguage.ITALIAN -> "verso $dest"
     else -> "towards $dest"
 }
 
 private fun nowLabel(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Τωρα"
     AppLanguage.ALBANIAN -> "Tani"
+    AppLanguage.ITALIAN -> "Adesso"
     else -> "Now"
 }
 

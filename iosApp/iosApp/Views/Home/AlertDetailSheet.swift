@@ -98,6 +98,7 @@ struct AlertDetailSheet: View {
             let label: String = switch language {
             case .greek: "Κλειστο"
             case .albanian: "Mbyllur"
+            case .italian: "Chiusura"
             default: "Closure"
             }
             return (label, SyrmosTokens.disruption)
@@ -105,6 +106,7 @@ struct AlertDetailSheet: View {
             let label: String = switch language {
             case .greek: "Προσοχη"
             case .albanian: "Kujdes"
+            case .italian: "Avviso"
             default: "Warning"
             }
             return (label, SyrmosTokens.warning)
@@ -112,6 +114,7 @@ struct AlertDetailSheet: View {
             let label: String = switch language {
             case .greek: "Πληροφοριες"
             case .albanian: "Informacion"
+            case .italian: "Info"
             default: "Info"
             }
             return (label, SyrmosTokens.scheduled)
@@ -133,6 +136,7 @@ struct AlertDetailSheet: View {
         switch language {
         case .greek: "Ειδοποιηση"
         case .albanian: "Njoftim"
+        case .italian: "Avviso"
         default: "Alert"
         }
     }
@@ -141,6 +145,7 @@ struct AlertDetailSheet: View {
         switch language {
         case .greek: "Κλεισιμο"
         case .albanian: "Mbylle"
+        case .italian: "Chiudi"
         default: "Close"
         }
     }
@@ -149,6 +154,7 @@ struct AlertDetailSheet: View {
         switch language {
         case .greek: "Δειτε στο stasy.gr"
         case .albanian: "Shiko ne stasy.gr"
+        case .italian: "Vedi su stasy.gr"
         default: "View on stasy.gr"
         }
     }
@@ -157,6 +163,7 @@ struct AlertDetailSheet: View {
         switch language {
         case .greek: "Δεν υπαρχουν περισσοτερες πληροφοριες."
         case .albanian: "Nuk ka informacion te metejshem."
+        case .italian: "Nessun dettaglio ulteriore disponibile."
         default: "No further details available."
         }
     }

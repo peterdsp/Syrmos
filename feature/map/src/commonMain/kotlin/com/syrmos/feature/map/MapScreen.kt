@@ -48,6 +48,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -84,6 +85,7 @@ import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import com.syrmos.core.model.transit.SimulatedTrain
 import org.koin.compose.koinInject
 
 @Composable
@@ -243,7 +245,8 @@ fun MapScreen(
         }
 
         AnimatedVisibility(
-            visible = uiState.selectedTrain != null && uiState.selectedStation == null,
+            visible = (uiState.selectedTrain != null || uiState.selectedSimulatedTrain != null) &&
+                uiState.selectedStation == null,
             enter = slideInVertically(
                 animationSpec = tween(350),
                 initialOffsetY = { it },
@@ -261,11 +264,7 @@ fun MapScreen(
             var offsetY by remember { mutableStateOf(0f) }
             val dismissThreshold = with(density) { 100.dp.toPx() }
 
-            TrainDetailCard(
-                train = uiState.selectedTrain,
-                line = uiState.lines.find { it.id == uiState.selectedTrain?.lineId },
-                onClose = viewModel::clearTrainSelection,
-                modifier = Modifier
+            val vehicleCardModifier = Modifier
                     .fillMaxWidth()
                     .offset { IntOffset(0, offsetY.coerceAtLeast(0f).roundToInt()) }
                     .pointerInput(Unit) {
@@ -285,8 +284,24 @@ fun MapScreen(
                             },
                         )
                     }
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-            )
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+
+            val simulatedTrain = uiState.selectedSimulatedTrain
+            if (simulatedTrain != null) {
+                SimulatedTrainDetailCard(
+                    train = simulatedTrain,
+                    line = uiState.lines.find { it.id == simulatedTrain.lineId },
+                    onClose = viewModel::clearTrainSelection,
+                    modifier = vehicleCardModifier,
+                )
+            } else {
+                TrainDetailCard(
+                    train = uiState.selectedTrain,
+                    line = uiState.lines.find { it.id == uiState.selectedTrain?.lineId },
+                    onClose = viewModel::clearTrainSelection,
+                    modifier = vehicleCardModifier,
+                )
+            }
         }
 
         if (uiState.showLiveTrainsSheet) {
@@ -548,6 +563,209 @@ private fun FactChip(
             )
         }
     }
+}
+
+@Composable
+private fun SimulatedTrainDetailCard(
+    train: SimulatedTrain,
+    line: Line?,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val lang by LocalizationManager.language.collectAsState()
+    val lineColor = line?.color?.toComposeColor() ?: train.lineColor.toComposeColor()
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .background(
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        RoundedCornerShape(2.dp),
+                    ),
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 32.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (line != null) LineBadge(line)
+                        Text(
+                            text = train.lineName,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Text(
+                        text = "${vehicleText(lang, "Towards", "Προς", "Drejt", "Verso")} ${train.destinationName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = vehicleText(
+                            lang,
+                            "Close vehicle details",
+                            "Κλείσιμο λεπτομερειών οχήματος",
+                            "Mbyll detajet e mjetit",
+                            "Chiudi i dettagli del mezzo",
+                        ),
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    VehiclePositionRow(
+                        icon = Icons.Filled.Place,
+                        label = vehicleText(lang, "Estimated position", "Εκτιμώμενη θέση", "Pozicioni i vlerësuar", "Posizione stimata"),
+                        value = train.currentStationName,
+                        accent = lineColor,
+                    )
+                    VehiclePositionRow(
+                        icon = Icons.Filled.NearMe,
+                        label = vehicleText(lang, "Next station", "Επόμενος σταθμός", "Stacioni i ardhshëm", "Prossima stazione"),
+                        value = train.nextStationName,
+                        accent = lineColor,
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = vehicleText(lang, "Trip progress", "Πρόοδος διαδρομής", "Përparimi i udhëtimit", "Avanzamento del viaggio"),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = "${(train.progress.coerceIn(0.0, 1.0) * 100).roundToInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { train.progress.toFloat().coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = lineColor,
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            text = vehicleText(
+                                lang,
+                                "Approximate estimate",
+                                "Κατά προσέγγιση εκτίμηση",
+                                "Vlerësim i përafërt",
+                                "Stima approssimativa",
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                        Text(
+                            text = vehicleText(
+                                lang,
+                                "This is not a live position. Times, position, and progress are calculated from the published timetable and may differ from actual service.",
+                                "Δεν είναι ζωντανή θέση. Οι χρόνοι, η θέση και η πρόοδος υπολογίζονται από το δημοσιευμένο πρόγραμμα και μπορεί να διαφέρουν από την πραγματική κυκλοφορία.",
+                                "Ky nuk është pozicion në kohë reale. Oraret, pozicioni dhe përparimi llogariten nga orari i publikuar dhe mund të ndryshojnë nga shërbimi real.",
+                                "Questa non è una posizione in tempo reale. Orari, posizione e avanzamento sono calcolati dall'orario pubblicato e possono differire dal servizio effettivo.",
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VehiclePositionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    accent: Color,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = accent)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+private fun vehicleText(
+    lang: AppLanguage,
+    english: String,
+    greek: String,
+    albanian: String,
+    italian: String,
+): String = when (lang) {
+    AppLanguage.ENGLISH -> english
+    AppLanguage.GREEK -> greek
+    AppLanguage.ALBANIAN -> albanian
+    AppLanguage.ITALIAN -> italian
 }
 
 @Composable

@@ -52,9 +52,9 @@ struct StationDetailView: View {
             }
 
             if station.isInterchange {
-                Section(loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : "Interchange") {
+                Section(loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : loc.language == .italian ? "Interscambio" : "Interchange") {
                     Label(
-                        loc.language == .greek ? "Σταθμός ανταπόκρισης" : loc.language == .albanian ? "Stacion korrespondence" : "Transfer station",
+                        loc.language == .greek ? "Σταθμός ανταπόκρισης" : loc.language == .albanian ? "Stacion korrespondence" : loc.language == .italian ? "Stazione di interscambio" : "Transfer station",
                         systemImage: "arrow.triangle.2.circlepath"
                     )
                     .font(.subheadline)
@@ -68,7 +68,7 @@ struct StationDetailView: View {
                         safariURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")
                     } label: {
                         Label(
-                            loc.language == .greek ? "Αγορά εισιτηρίου στην Hellenic Train" : loc.language == .albanian ? "Bli biletë në Hellenic Train" : "Buy ticket on Hellenic Train",
+                            loc.language == .greek ? "Αγορά εισιτηρίου στην Hellenic Train" : loc.language == .albanian ? "Bli biletë në Hellenic Train" : loc.language == .italian ? "Acquista biglietto su Hellenic Train" : "Buy ticket on Hellenic Train",
                             systemImage: "ticket"
                         )
                     }
@@ -77,6 +77,8 @@ struct StationDetailView: View {
                          ? "Η πληρωμή και η έκδοση εισιτηρίου γίνονται 100% στον ιστότοπο της Hellenic Train. Το Syrmos απλώς παρέχει τον σύνδεσμο, δεν συλλέγει στοιχεία πληρωμής και δεν έχει καμία ευθύνη για την κράτηση."
                          : loc.language == .albanian
                          ? "Pagesa dhe lëshimi i biletës bëhen 100% në faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh të dhëna pagesash dhe nuk ka asnjë përgjegjësi për rezervimin."
+                         : loc.language == .italian
+                         ? "Il pagamento e l'emissione del biglietto avvengono interamente sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha alcuna responsabilita per la prenotazione."
                          : "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking.")
                         .font(.caption2)
                 }
@@ -89,6 +91,8 @@ struct StationDetailView: View {
                         ? "Δεν ήταν δυνατή η φόρτωση δρομολογίων. Ελέγξτε τη σύνδεσή σας."
                         : loc.language == .albanian
                         ? "Nuk u arrit te ngarkoheshin oraret. Kontrollo lidhjen."
+                        : loc.language == .italian
+                        ? "Impossibile caricare le partenze. Controlla la connessione."
                         : "Could not load departures. Check your connection.",
                         systemImage: "wifi.exclamationmark"
                     )
@@ -104,6 +108,8 @@ struct StationDetailView: View {
                                 ? "Δείτε δρομολόγια στο \(externalOperatorName)"
                                 : loc.language == .albanian
                                 ? "Shiko oraret ne \(externalOperatorName)"
+                                : loc.language == .italian
+                                ? "Consulta gli orari su \(externalOperatorName)"
                                 : "Check timetables on \(externalOperatorName)",
                                 systemImage: "safari"
                             )
@@ -112,14 +118,16 @@ struct StationDetailView: View {
                 }
             }
 
-            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next Departures") {
+            Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : loc.language == .italian ? "Prossime partenze" : "Next Departures") {
                 if departures.isEmpty && !(isNonAthensRegion && apiFailed) {
                     Text(hasLoadedOnce
                          ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
                             loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
+                            loc.language == .italian ? "Nessuna partenza al momento. La linea e chiusa o il servizio di oggi e terminato." :
                             "No departures right now. The line is closed or today's service has ended.")
                          : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
                             loc.language == .albanian ? "Duke ngarkuar oraret..." :
+                            loc.language == .italian ? "Caricamento partenze..." :
                             "Loading departures..."))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -151,7 +159,7 @@ struct StationDetailView: View {
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     if departure.serviceType == "airport" {
-                                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : "Airport")
+                                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : loc.language == .italian ? "Aeroporto" : "Airport")
                                             .font(.caption2)
                                             .fontWeight(.semibold)
                                             .padding(.horizontal, 5)
@@ -165,6 +173,8 @@ struct StationDetailView: View {
                                         ? "προς \(departure.direction)"
                                         : loc.language == .albanian
                                         ? "drejt \(departure.direction)"
+                                        : loc.language == .italian
+                                        ? "per \(departure.direction)"
                                         : "towards \(departure.direction)")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)

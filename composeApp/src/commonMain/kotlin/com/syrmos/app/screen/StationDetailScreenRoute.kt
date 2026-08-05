@@ -35,6 +35,8 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
                 com.syrmos.core.common.AppLanguage.GREEK -> ann.title
                 com.syrmos.core.common.AppLanguage.ALBANIAN ->
                     ann.titleSq.ifBlank { ann.titleEn.ifBlank { ann.title } }
+                com.syrmos.core.common.AppLanguage.ITALIAN ->
+                    ann.titleEn.ifBlank { ann.title }
                 else -> ann.titleEn.ifBlank { ann.title }
             }
             AlertBannerInfo(

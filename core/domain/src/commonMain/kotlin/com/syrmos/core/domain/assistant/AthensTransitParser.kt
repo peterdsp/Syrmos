@@ -3,7 +3,7 @@ package com.syrmos.core.domain.assistant
 import kotlin.math.abs
 
 /**
- * Pure, offline, trilingual (EN / EL / SQ) rule parser that turns a user
+ * Pure, offline, quadrilingual (EN / EL / SQ / IT) rule parser that turns a user
  * utterance into an [AssistantIntent]. No model, no network, no per-call state.
  *
  * Design rules:
@@ -660,6 +660,7 @@ class AthensTransitParser(
             "train", "trains", "metro", "tram", "station", "departure", "departures",
             "τρεν", "μετρο", "τραμ", "σταθμ", "δρομολογ", "αναχωρη", "συρμ", "προαστιακ",
             "tren", "stacion", "nisje",
+            "treno", "treni", "stazione", "partenza", "partenze", "suburbano",
         )
         private val DEPARTURE_WORDS = listOf(
             "next", "departure", "departures", "when", "trains", "leave", "leaving", "schedule",
@@ -667,11 +668,13 @@ class AthensTransitParser(
             "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ερχεται", "ερχονται",
             "ωραριο", "επομενο",
             "ardhsh", "kur", "nisje", "tren", "trena", "vjen", "orari", "ardhja",
+            "prossim", "partenz", "quando", "orario", "arriv", "prossimo",
         )
         private val LAST_TRAIN_PHRASES = listOf(
             "last train", "last metro", "last one", "leave by", "final train", "last departure",
             "τελευται", "τελευταιο τρεν", "τελευταιος", "τελευταιο δρομολογιο",
             "treni i fundit", "fundit", "i fundit", "tren i fundit", "nisja e fundit",
+            "ultimo treno", "ultima corsa", "ultimo metro", "ultima partenza",
         )
         // First / earliest service of the day. Mirror of LAST_TRAIN_PHRASES.
         private val FIRST_TRAIN_PHRASES = listOf(
@@ -682,11 +685,13 @@ class AthensTransitParser(
             "εναρξη δρομολογιων", "πρωτο μετρο", "πρωτη αναχωρηση",
             "treni i pare", "nisja e pare", "tren i pare", "kur fillon", "kur fillojne",
             "sherbimi i pare", "metroja e pare",
+            "primo treno", "prima corsa", "primo metro", "prima partenza",
+            "quando inizia", "inizio servizio",
         )
         // Bare "first / earliest" position tokens (folded substrings). Only
         // count as a first-train cue alongside a named station or line, so
         // "first M2 train" resolves without "first" alone hijacking a query.
-        private val FIRST_TOKENS = listOf("first", "earliest", "πρωτ", "i pare", "e pare", "me heret")
+        private val FIRST_TOKENS = listOf("first", "earliest", "πρωτ", "i pare", "e pare", "me heret", "primo", "prima")
         // Step-free / wheelchair / lift accessibility cues.
         private val ACCESSIBILITY_WORDS = listOf(
             "accessible", "accessibility", "wheelchair", "step free", "step-free", "stepfree",
@@ -695,6 +700,7 @@ class AthensTransitParser(
             "αναβατοριο", "αναπηρια",
             "i aksesueshem", "aksesueshem", "aksesi", "karrige me rrota", "ashensor",
             "per personat me aftesi", "personat me aftesi te kufizuara",
+            "accessibil", "sedia a rotelle", "ascensore", "disabilita",
         )
         // "which line(s) serve X" — list the lines at a station.
         private val WHICH_LINES_WORDS = listOf(
@@ -702,6 +708,7 @@ class AthensTransitParser(
             "lines serve", "lines serving", "lines at", "lines through", "lines that stop", "served by",
             "ποια γραμμη", "ποιες γραμμες", "τι γραμμη", "τι γραμμες", "ποιες γραμμ", "γραμμες περνανε",
             "cila linje", "cilat linja", "cilat linje", "linjat qe", "cila metro",
+            "quale linea", "quali linee", "che linea", "linee che passano",
         )
         // "how many stops / how far from A to B" — stop count, not routing.
         private val STOPS_BETWEEN_WORDS = listOf(
@@ -709,6 +716,7 @@ class AthensTransitParser(
             "how many stops away", "stops away", "stops between", "stations between", "how far apart",
             "ποσες στασεις", "ποσοι σταθμοι", "ποσους σταθμους", "ποσες σταθμοι", "ποσα στοπ",
             "sa stacione", "sa ndalesa", "sa stacione ka", "sa ndalesa ka",
+            "quante fermate", "quante stazioni", "fermate tra", "stazioni tra",
         )
         // "and back" / "return" / "the other way" — reverse the last route.
         private val REVERSE_PHRASES = listOf(
@@ -719,6 +727,7 @@ class AthensTransitParser(
             "αναποδη διαδρομη", "για επιστροφη",
             "kthimi", "kthimin", "e kunderta", "rruga e kthimit", "anasjelltas",
             "kthimi mbrapa", "kthej mbrapsht", "dhe kthimi",
+            "andata e ritorno", "ritorno", "al contrario", "direzione opposta", "e ritorno",
         )
         // Strong trip cues only. Bare "from" / "από" / "nga" are deliberately
         // excluded: "trains from Syntagma" is a departures query, not a trip.
@@ -732,44 +741,52 @@ class AthensTransitParser(
             "πως θα παω", "καλυτερος τροπος", "πιο γρηγορα", "θελω να παω", "πως μπορω να παω",
             "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij",
             "si te vij", "rruga me e mire", "rruga me e shpejte", "dua te shkoj", "si mund te shkoj",
+            "come arrivo", "come andare", "percorso", "indicazioni", "modo migliore",
+            "modo piu veloce", "voglio andare", "come posso arrivare", "portami a",
         )
         private val TO_MARKERS = listOf(
-            " to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ",
+            " to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ", " verso ",
         )
         private val FIND_WORDS = listOf(
             "where is", "find", "locate", "nearest", "near me", "closest",
             "which station", "what station", "where's",
             "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ποιος σταθμος",
             "ku eshte", "gjej", "me afert", "afer meje", "cili stacion",
+            "dov'e", "dove si trova", "trova", "piu vicin", "vicino a me", "quale stazione",
         )
         private val LINE_WORDS = listOf(
             "line", "about", "tell me about",
             "γραμμη", "σχετικα",
             "linja", "rreth",
+            "linea", "riguardo",
         )
         private val FARE_WORDS = listOf(
             "fare", "fares", "ticket", "tickets", "how much", "price", "cost", "cheap",
             "ticket price", "how much does it cost", "how much is",
             "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος", "τιμη εισιτηριου",
             "bilete", "sa kushton", "kushton", "cmim", "cmimi", "cmimi i biletes",
+            "bigliett", "quanto costa", "prezzo", "costo", "tariffa",
         )
         private val FAVORITE_WORDS = listOf(
             "favorite", "favourite", "save this", "bookmark", "add to favorites", "pin",
             "αγαπημεν", "αποθηκευσ", "προσθεσε στα αγαπημενα", "σημειωσε",
             "i preferuar", "te preferuarat", "ruaj", "shto te te preferuarat",
+            "preferit", "salva", "segnalibro", "aggiungi ai preferiti",
         )
         private val AIRPORT_WORDS = listOf(
-            "airport", "αεροδρομιο", "aeroport",
+            "airport", "αεροδρομιο", "aeroport", "aeroporto",
         )
         private val ALERT_WORDS = listOf(
             "alert", "alerts", "status", "disruption", "delay", "delays", "problem", "closed", "closure",
             "ειδοποι", "κατασταση", "καθυστερη", "προβλημα", "κλειστ", "διακοπη",
             "njoftim", "vonese", "problem", "mbyll",
+            "avviso", "avvisi", "ritardo", "ritardi", "interruzione", "chiuso", "chiusura",
         )
         private val MAP_WORDS = listOf(
             "map", "show on map", "on the map",
             "χαρτη", "στον χαρτη",
             "harta", "ne harte",
+            "mappa", "sulla mappa",
         )
         private val HELP_PHRASES = listOf(
             "what can you do", "help", "how do you work", "what do you do",
@@ -782,11 +799,14 @@ class AthensTransitParser(
             "ποια εισαι", "γεια", "γεια σου", "γεια σας", "καλημερα",
             "si funksionon", "ndihme", "cfare mund", "kush je", "cfare eshte ariadne", "cfare je",
             "kush eshte ariadne", "pershendetje", "tung", "ckemi",
+            "cosa puoi fare", "aiuto", "come funzioni", "chi sei", "cos'e ariadne",
+            "ciao", "buongiorno", "buonasera", "salve",
         )
         private val WEATHER_WORDS = listOf(
             "rain", "raining", "rainy", "weather", "storm", "wet",
             "βροχη", "βρεχει", "καιρο", "κακοκαιρ",
             "shi", "moti", "stuhi",
+            "pioggia", "piove", "meteo", "tempesta", "temporale",
         )
         // Duration / ETA cues. Folded (accent-stripped, lowercase) at match
         // time, so Greek tonos and Latin accents converge.
@@ -795,6 +815,7 @@ class AthensTransitParser(
             "how long to get", "how much time", "minutes away", "how far",
             "ποση ωρα", "ποσα λεπτα", "ποσες ωρες", "ποσο θελει", "ποση ωρα κανει",
             "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe",
+            "quanto tempo", "quanti minuti", "quante ore", "quanto ci vuole", "quanto dista",
         )
         // Station operational-status cues. "closed"/"κλειστ"/"mbyll" overlap
         // ALERT_WORDS on purpose: with a named station they mean "is this stop
@@ -803,11 +824,12 @@ class AthensTransitParser(
             "open", "working", "operating", "operational", "running", "closed", "shut",
             "ανοιχτ", "λειτουργει", "δουλευει", "κλειστ", "ανοιξ",
             "hapur", "punon", "funksionon", "mbyllur", "mbyll",
+            "aperto", "funzionante", "operativo", "chiuso",
         )
         // Words meaning "station", so "is the station open?" resolves even
         // before the specific stop is named.
         private val STATION_NOUN_WORDS = listOf(
-            "station", "σταθμ", "stacion",
+            "station", "σταθμ", "stacion", "stazione",
         )
         // "I'm at / here / got off" context-set cues. Kept to multi-word or
         // distinctive tokens so a lone "in"/"on" can't trigger a location set.
@@ -819,11 +841,12 @@ class AthensTransitParser(
             "ειμαι στο", "ειμαι στη", "ειμαι στον", "ειμαι εδω", "ειμαι μεσα",
             "εφτασα", "μολις εφτασα", "κατεβηκα", "μολις κατεβηκα",
             "jam te", "jam ne", "jam ketu", "jam brenda", "arrita", "zbrita", "sapo zbrita",
+            "sono a", "sono alla", "sono qui", "sono dentro", "sono arrivato", "sono sceso",
         )
-        private val TOMORROW_WORDS = listOf("tomorrow", "αυριο", "neser")
-        private val WEEKEND_WORDS = listOf("weekend", "σαββατοκυριακο", "fundjave")
-        private val SATURDAY_WORDS = listOf("saturday", "σαββατο", "te shtune", "shtune")
-        private val SUNDAY_WORDS = listOf("sunday", "κυριακη", "te diel", "diel")
+        private val TOMORROW_WORDS = listOf("tomorrow", "αυριο", "neser", "domani")
+        private val WEEKEND_WORDS = listOf("weekend", "σαββατοκυριακο", "fundjave", "fine settimana")
+        private val SATURDAY_WORDS = listOf("saturday", "σαββατο", "te shtune", "shtune", "sabato")
+        private val SUNDAY_WORDS = listOf("sunday", "κυριακη", "te diel", "diel", "domenica")
 
         // Easter egg triggers. Substring match on folded text -- "Liepuras",
         // "λιεπουρας", "Λιεπ", "liepurashi" all resolve. Kept as substrings
@@ -839,6 +862,8 @@ class AthensTransitParser(
             "πηρα λαθος", "μπηκα σε λαθος", "δεν ειναι δικο μου",
             "tren i gabuar", "linja e gabuar", "gabim", "hyra ne trenin e gabuar",
             "nuk eshte treni im", "drejtim i gabuar",
+            "treno sbagliato", "linea sbagliata", "direzione sbagliata",
+            "ho preso il treno sbagliato", "non e il mio treno",
         )
 
         // Recovery: "missed my stop / went past / overshot"
@@ -850,6 +875,8 @@ class AthensTransitParser(
             "ξεχασα να κατεβω", "δεν κατεβηκα", "προσπερασα",
             "humba stacionin", "humba ndalesan", "kalova stacionin", "shkova larg",
             "nuk zbrita", "harrova te zbris",
+            "ho perso la fermata", "ho superato la fermata", "non sono sceso",
+            "ho dimenticato di scendere",
         )
 
         // Recovery: "can I still make it / will I get there"
@@ -860,6 +887,7 @@ class AthensTransitParser(
             "προλαβαινω", "θα προλαβω", "εχω χρονο", "θα φτασω", "ειναι αργα",
             "a do ia dal", "a do arrij", "a kam kohe", "a eshte vone",
             "a mund te arrij", "a do ta kap",
+            "faccio ancora in tempo", "arrivo in tempo", "ho ancora tempo", "e troppo tardi",
         )
 
         // Single-word vocabulary tokens the fuzzy matcher must never "correct"
