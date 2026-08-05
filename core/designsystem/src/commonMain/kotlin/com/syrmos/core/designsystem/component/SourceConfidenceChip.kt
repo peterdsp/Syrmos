@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,6 +21,8 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosShapeTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosTypographyTokens
 import com.syrmos.core.model.schedule.SourceConfidence
+import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LocalizationManager
 
 /**
  * Syrmos knows what it knows and says so (design doc section 7, a headline 2.0.0
@@ -36,21 +40,29 @@ private fun SourceConfidence.color(): Color = when (this) {
 }
 
 /** English default label; callers pass a localised [label] for EL / SQ. */
-private fun SourceConfidence.defaultLabel(): String = when (this) {
-    SourceConfidence.LIVE -> "Live"
-    SourceConfidence.SCHEDULED -> "Scheduled"
-    SourceConfidence.OFFLINE -> "Offline snapshot"
-    SourceConfidence.ESTIMATED -> "Estimated"
-    SourceConfidence.OPERATOR_LINK -> "Check operator"
-    SourceConfidence.UNKNOWN -> "No live data"
+private fun SourceConfidence.defaultLabel(language: AppLanguage): String = when (this) {
+    SourceConfidence.LIVE -> localized(language, "Live", "Ζωντανά", "Drejtpërdrejt", "In tempo reale")
+    SourceConfidence.SCHEDULED -> localized(language, "Scheduled", "Προγραμματισμένο", "I planifikuar", "Programmato")
+    SourceConfidence.OFFLINE -> localized(language, "Offline snapshot", "Στιγμιότυπο εκτός σύνδεσης", "Pamje pa internet", "Istantanea offline")
+    SourceConfidence.ESTIMATED -> localized(language, "Estimated", "Εκτίμηση", "E vlerësuar", "Stimato")
+    SourceConfidence.OPERATOR_LINK -> localized(language, "Check operator", "Έλεγχος στον φορέα", "Kontrollo operatorin", "Verifica operatore")
+    SourceConfidence.UNKNOWN -> localized(language, "No live data", "Χωρίς ζωντανά δεδομένα", "Pa të dhëna direkte", "Nessun dato in tempo reale")
+}
+
+private fun localized(language: AppLanguage, en: String, el: String, sq: String, it: String): String = when (language) {
+    AppLanguage.GREEK -> el
+    AppLanguage.ALBANIAN -> sq
+    AppLanguage.ITALIAN -> it
+    else -> en
 }
 
 @Composable
 fun SourceConfidenceChip(
     confidence: SourceConfidence,
     modifier: Modifier = Modifier,
-    label: String = confidence.defaultLabel(),
+    label: String? = null,
 ) {
+    val language by LocalizationManager.language.collectAsState()
     val tint = confidence.color()
     Row(
         modifier = modifier
@@ -68,7 +80,7 @@ fun SourceConfidenceChip(
                 .then(if (confidence == SourceConfidence.LIVE) Modifier.livePulse() else Modifier),
         )
         Text(
-            text = label,
+            text = label ?: confidence.defaultLabel(language),
             style = SyrmosTypographyTokens.label,
             color = tint,
         )

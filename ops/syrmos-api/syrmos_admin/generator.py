@@ -192,6 +192,8 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     # backwards to the bare schema so an older Pi still serves a payload.
     status_row = None
     for sql in (
+        "SELECT status, raw_message, raw_message_en, raw_message_sq, raw_message_it,"
+        " service_until, scraped_at FROM stasy_status WHERE id = 1",
         "SELECT status, raw_message, raw_message_en, raw_message_sq,"
         " service_until, scraped_at FROM stasy_status WHERE id = 1",
         "SELECT status, raw_message, raw_message_en, service_until,"
@@ -209,28 +211,35 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     rows = []
     has_en = False
     has_sq = False
-    for sql, en_flag, sq_flag in (
+    has_it = False
+    for sql, en_flag, sq_flag, it_flag in (
+        (
+            "SELECT id, title, title_en, title_sq, title_it, summary, summary_en, summary_sq, summary_it,"
+            " url, date, category, affected_lines, severity, valid_from, valid_until"
+            " FROM announcements ORDER BY sort_order",
+            True, True, True,
+        ),
         (
             "SELECT id, title, title_en, title_sq, summary, summary_en, summary_sq,"
             " url, date, category, affected_lines, severity, valid_from, valid_until"
             " FROM announcements ORDER BY sort_order",
-            True, True,
+            True, True, False,
         ),
         (
             "SELECT id, title, title_en, summary, summary_en, url, date, category,"
             " affected_lines, severity, valid_from, valid_until"
             " FROM announcements ORDER BY sort_order",
-            True, False,
+            True, False, False,
         ),
         (
             "SELECT id, title, summary, url, date, category"
             " FROM announcements ORDER BY sort_order",
-            False, False,
+            False, False, False,
         ),
     ):
         try:
             rows = conn.execute(sql).fetchall()
-            has_en, has_sq = en_flag, sq_flag
+            has_en, has_sq, has_it = en_flag, sq_flag, it_flag
             break
         except sqlite3.OperationalError:
             continue
@@ -242,11 +251,12 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "rawMessage": status_row["raw_message"],
             "rawMessageEn": status_row["raw_message_en"] if "raw_message_en" in cols else status_row["raw_message"],
             "rawMessageSq": status_row["raw_message_sq"] if "raw_message_sq" in cols else "",
+            "rawMessageIt": status_row["raw_message_it"] if "raw_message_it" in cols else "",
             "serviceUntil": status_row["service_until"],
             "scrapedAt": status_row["scraped_at"],
         }
     else:
-        status_payload = {"status": "unknown", "rawMessage": "", "rawMessageEn": "", "rawMessageSq": "", "serviceUntil": None, "scrapedAt": ""}
+        status_payload = {"status": "unknown", "rawMessage": "", "rawMessageEn": "", "rawMessageSq": "", "rawMessageIt": "", "serviceUntil": None, "scrapedAt": ""}
 
     def _decode_lines(raw: str) -> list[str]:
         if not raw:
@@ -301,9 +311,11 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "title": r["title"],
             "titleEn": r["title_en"] if has_en else r["title"],
             "titleSq": (r["title_sq"] if has_sq else "") or "",
+            "titleIt": (r["title_it"] if has_it else "") or "",
             "summary": r["summary"],
             "summaryEn": r["summary_en"] if has_en else r["summary"],
             "summarySq": (r["summary_sq"] if has_sq else "") or "",
+            "summaryIt": (r["summary_it"] if has_it else "") or "",
             "url": r["url"],
             "date": r["date"],
             "category": r["category"],
@@ -324,14 +336,23 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
 def _build_news(conn: sqlite3.Connection) -> dict:
     """Rail news from sidirodromikanea.blogspot.com, scraped daily.
     Returns items from the last 30 days for the Home news carousel."""
+    has_it = True
     try:
         rows = conn.execute(
-            "SELECT id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+            "SELECT id, title, title_en, title_sq, title_it, summary, summary_en, summary_sq, summary_it,"
             " url, published_at, thumbnail_url, categories"
             " FROM rail_news ORDER BY published_at DESC LIMIT 20"
         ).fetchall()
     except sqlite3.OperationalError:
-        return {"updatedAt": _now_iso(), "count": 0, "news": []}
+        has_it = False
+        try:
+            rows = conn.execute(
+            "SELECT id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+            " url, published_at, thumbnail_url, categories"
+            " FROM rail_news ORDER BY published_at DESC LIMIT 20"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return {"updatedAt": _now_iso(), "count": 0, "news": []}
 
     cutoff = (_date.today() - _timedelta(days=30)).isoformat()
     news = []
@@ -349,9 +370,11 @@ def _build_news(conn: sqlite3.Connection) -> dict:
             "title": r["title"],
             "titleEn": r["title_en"] or r["title"],
             "titleSq": r["title_sq"] or "",
+            "titleIt": (r["title_it"] if has_it else "") or "",
             "summary": r["summary"],
             "summaryEn": r["summary_en"] or r["summary"],
             "summarySq": r["summary_sq"] or "",
+            "summaryIt": (r["summary_it"] if has_it else "") or "",
             "url": r["url"],
             "publishedAt": pub,
             "thumbnailUrl": r["thumbnail_url"] or "",
@@ -532,6 +555,10 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
     # migrations (0016 -> 0015 -> pre-0015) still serves something.
     product_rows = []
     for sql in (
+        "SELECT section, title_en, title_el, title_sq, title_it, full_price_eur,"
+        " discounted_price_eur, validity, validity_sq, validity_it, notes, notes_el, notes_sq, notes_it,"
+        " tags, source_url, sort_order, fetched_at"
+        " FROM fare_products ORDER BY section, sort_order",
         "SELECT section, title_en, title_el, title_sq, full_price_eur,"
         " discounted_price_eur, validity, validity_sq, notes, notes_sq,"
         " tags, source_url, sort_order, fetched_at"
@@ -563,12 +590,16 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
             "titleEn":            r["title_en"],
             "titleEl":            r["title_el"] or "",
             "titleSq":            _opt(r, "title_sq") or "",
+            "titleIt":            _opt(r, "title_it") or "",
             "fullPriceEur":       r["full_price_eur"],
             "discountedPriceEur": r["discounted_price_eur"],
             "validity":           r["validity"] or "",
             "validitySq":         _opt(r, "validity_sq") or "",
+            "validityIt":         _opt(r, "validity_it") or "",
             "notes":              r["notes"] or "",
+            "notesEl":            _opt(r, "notes_el") or "",
             "notesSq":            _opt(r, "notes_sq") or "",
+            "notesIt":            _opt(r, "notes_it") or "",
             "tags":               [t for t in (r["tags"] or "").split(",") if t],
             "sourceUrl":          r["source_url"],
             "fetchedAt":          r["fetched_at"],
@@ -730,15 +761,80 @@ def _build_fares(conn: sqlite3.Connection) -> dict:
                 {"en": "Free travel: children under 4 (without seat reservation), train crew, police on duty.",
                  "el": "Δωρεαν: παιδια κατω των 4 (χωρις θεση), προσωπικο τρενου, αστυνομικοι εν ωρα υπηρεσιας.",
                  "sq": "Falas: femije nen 4 vjec (pa rezervim ulëseje), ekuipazhi i trenit, policia ne sherbim."},
-                {"en": "Delays over 60 minutes entitle you to 50% refund; over 120 minutes to 100% refund of the ticket price.",
-                 "el": "Καθυστερηση ανω των 60 λεπτων: δικαιωμα επιστροφης 50%. Ανω των 120 λεπτων: 100% επιστροφη.",
-                 "sq": "Vonesa mbi 60 minuta: e drejte per rimbursim 50%. Mbi 120 minuta: rimbursim 100% i cmimit te biletes."},
+                {"en": "Delay compensation is 25% of the fare for 60 to 119 minutes and 50% for 120 minutes or more, subject to the official conditions.",
+                 "el": "Η αποζημιωση καθυστερησης ειναι 25% του κομιστρου για 60 ως 119 λεπτα και 50% για 120 λεπτα η περισσοτερο, με βαση τους επισημους ορους.",
+                 "sq": "Kompensimi per vonesen eshte 25% e biletes per 60 deri ne 119 minuta dhe 50% per 120 minuta ose me shume, sipas kushteve zyrtare."},
             ],
             "urlEn": "https://www.hellenictrain.gr/en",
             "urlEl": "https://www.hellenictrain.gr",
             "urlSq": "https://www.hellenictrain.gr/en",
         },
     ]
+    italian_info = {
+        "oasa-points-of-supply": {
+            "title": "Punti vendita di biglietti e carte",
+            "summary": "Dove acquistare o ricaricare ATH.ENA Card e dove trovare i biglietti cartacei.",
+            "bullets": [
+                "Distributori automatici in ogni stazione metro e tram, con contanti e carta.",
+                "Biglietterie OASA con personale a Syntagma, Monastiraki, Omonia, Pireo e Aeroporto.",
+                "Chioschi e minimarket autorizzati con il logo OASA.",
+                "Ricarica online su athenacard.gr dopo la registrazione iniziale della carta.",
+                "App OASA Telematics per i biglietti singoli acquistati dal telefono.",
+            ],
+        },
+        "oasa-validation-info": {
+            "title": "Regole di convalida del biglietto",
+            "summary": "Come e quando convalidare il titolo di viaggio.",
+            "bullets": [
+                "Convalida all'ingresso: i 90 minuti iniziano dalla prima convalida.",
+                "Usa una carta contactless o un portafoglio digitale ai varchi metro e tram.",
+                "Su tram e treni suburbani usa i validatori a bordo se non hai convalidato al varco.",
+                "I cambi tra metro, tram e autobus sono inclusi entro 90 minuti, escluso l'aeroporto.",
+                "Chi usa una tariffa ridotta deve portare il documento che ne dimostra il diritto.",
+                "La sanzione per mancata convalida è pari a 60 volte la tariffa base.",
+            ],
+        },
+        "stasy-general-instructions": {
+            "title": "Istruzioni generali STASY sui biglietti",
+            "summary": "Regole valide sulle linee STASY M1, M2, M3, T6 e T7.",
+            "bullets": [
+                "Acquista o attiva il biglietto prima di salire a bordo.",
+                "Tariffa ridotta per le categorie aventi diritto con documento valido.",
+                "Viaggio gratuito per i bambini sotto i 6 anni e per le categorie previste.",
+                "Conserva il biglietto o la prova contactless fino all'uscita dalla stazione.",
+                "Rimborsi e sostituzioni delle carte smarrite sono gestiti dagli uffici centrali OASA.",
+            ],
+        },
+        "hellenic-train-suburban": {
+            "title": "Servizi suburbani Hellenic Train",
+            "summary": "Linee suburbane Hellenic Train ad Atene, Salonicco e Patrasso.",
+            "bullets": [
+                "Atene: Pireo - Aeroporto, Pireo - Kiato, Atene - Chalkida e Atene - Ano Liosia.",
+                "Salonicco: Nuova stazione - Larissa, Florina ed Edessa.",
+                "Patrasso: rete suburbana con collegamenti autobus inclusi nelle tratte indicate.",
+                "Acquista i biglietti in stazione, ai distributori o online su hellenictrain.gr.",
+                "Sono disponibili tariffe ridotte per le categorie aventi diritto con documento.",
+            ],
+        },
+        "hellenic-train-intercity": {
+            "title": "Hellenic Train intercity e regionale",
+            "summary": "Treni a lunga percorrenza e regionali tra le principali città greche.",
+            "bullets": [
+                "Le principali tratte includono Atene - Salonicco, Atene - Larissa e Salonicco - Larissa.",
+                "Il prezzo dipende da tratta, data e classe, con sconti secondo l'idoneità.",
+                "Prenota online, in biglietteria o tramite l'app Hellenic Train.",
+                "I bambini sotto i 4 anni viaggiano gratis senza posto riservato.",
+                "Verifica le condizioni ufficiali per rimborsi dovuti a ritardi o cancellazioni.",
+            ],
+        },
+    }
+    for link in info_links:
+        localized = italian_info[link["id"]]
+        link["titleIt"] = localized["title"]
+        link["summaryIt"] = localized["summary"]
+        link["urlIt"] = link["urlEn"]
+        for bullet, italian in zip(link["bullets"], localized["bullets"]):
+            bullet["it"] = italian
     return {
         "updatedAt": _now_iso(),
         "fares": [

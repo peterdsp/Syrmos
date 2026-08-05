@@ -671,5 +671,6 @@ private fun Line.localizedName(lang: AppLanguage): String {
 private fun metroFrequentNote(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
     AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevoje per ndjekje"
+    AppLanguage.ITALIAN -> "La metro passa spesso, non serve monitorarla"
     else -> "Metro runs frequently, no need to track"
 }

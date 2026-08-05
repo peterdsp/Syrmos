@@ -515,7 +515,8 @@ class AssistantViewModel(
                     validFrom = a.validFrom,
                     validUntil = a.validUntil,
                     searchText = listOf(
-                        a.title, a.titleEn, a.titleSq, a.summary, a.summaryEn, a.summarySq,
+                        a.title, a.titleEn, a.titleSq, a.titleIt,
+                        a.summary, a.summaryEn, a.summarySq, a.summaryIt,
                     ).filter { it.isNotBlank() }.joinToString(" "),
                 )
             }
@@ -525,7 +526,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> a.title.ifBlank { a.titleEn }
             AppLanguage.ALBANIAN -> a.titleSq.ifBlank { a.titleEn.ifBlank { a.title } }
-            AppLanguage.ITALIAN -> a.titleEn.ifBlank { a.title }
+            AppLanguage.ITALIAN -> a.titleIt.ifBlank { a.titleEn.ifBlank { a.title } }
             else -> a.titleEn.ifBlank { a.title }
         }
 
@@ -1335,7 +1336,7 @@ class AssistantViewModel(
         }
         return com.syrmos.core.domain.fares.FareStation(
             id = id,
-            regions = regions.ifEmpty { setOf(com.syrmos.core.model.transit.Region.ATHENS) },
+            regions = regions.ifEmpty { setOf(com.syrmos.core.model.transit.Region.NATIONAL) },
             isAirport = isAirportStation(id),
             isSuburban = suburban,
         )
@@ -1348,6 +1349,14 @@ class AssistantViewModel(
     ): String {
         val a = stationName(from.id); val b = stationName(to.id)
         if (q.dynamic) {
+            q.referencePriceEur?.let { reference ->
+                return t(
+                    "$a to $b: ${money(reference)} approximately for a standard one-way ticket, checked on 5 August 2026. The exact price can change by train, date, class, availability, discount, or replacement-bus connection. Verify it in Hellenic Train booking.",
+                    "$a προς $b: περίπου ${money(reference)} για απλό εισιτήριο μίας διαδρομής, με έλεγχο στις 5 Αυγούστου 2026. Η τελική τιμή αλλάζει ανά τρένο, ημερομηνία, θέση, διαθεσιμότητα, έκπτωση ή σύνδεση με λεωφορείο αντικατάστασης. Επιβεβαίωσέ την στην κράτηση της Hellenic Train.",
+                    "$a në $b: afërsisht ${money(reference)} për një biletë standarde vetëm vajtje, kontrolluar më 5 gusht 2026. Çmimi i saktë mund të ndryshojë sipas trenit, datës, klasës, disponueshmërisë, zbritjes ose lidhjes me autobus zëvendësues. Verifikoje në rezervimin e Hellenic Train.",
+                    it = "$a a $b: circa ${money(reference)} per un biglietto standard di sola andata, verificato il 5 agosto 2026. Il prezzo esatto può cambiare in base a treno, data, classe, disponibilità, sconto o collegamento con autobus sostitutivo. Verificalo nella prenotazione Hellenic Train.",
+                )
+            }
             return t(
                 "$a → $b is an intercity trip: the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
                 "$a → $b είναι υπεραστικό δρομολόγιο: η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",
@@ -1421,7 +1430,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> product.titleEl.ifBlank { product.titleEn }
             AppLanguage.ALBANIAN -> product.titleSq.ifBlank { product.titleEn }
-            AppLanguage.ITALIAN -> product.titleEn
+            AppLanguage.ITALIAN -> product.titleIt.ifBlank { product.titleEn }
             else -> product.titleEn
         }
 
@@ -1438,9 +1447,16 @@ class AssistantViewModel(
         return when {
             alerts.isNotEmpty() -> botMessage(t("Active alerts: ", "Ενεργές ειδοποιήσεις: ", "Njoftime aktive: ",
                 it = "Avvisi attivi: ") +
-                alerts.take(2).joinToString("; ") { it.title })
+                alerts.take(2).joinToString("; ") { localizedAnnouncementTitle(it) })
             feed.status != null && feed.status?.isAlert == true ->
-                botMessage(feed.status?.rawMessage.orEmpty())
+                botMessage(when (LocalizationManager.language.value) {
+                    AppLanguage.GREEK -> feed.status?.rawMessage.orEmpty()
+                    AppLanguage.ALBANIAN -> feed.status?.rawMessageSq.orEmpty()
+                        .ifBlank { feed.status?.rawMessageEn.orEmpty() }
+                    AppLanguage.ITALIAN -> feed.status?.rawMessageIt.orEmpty()
+                        .ifBlank { feed.status?.rawMessageEn.orEmpty() }
+                    else -> feed.status?.rawMessageEn.orEmpty()
+                }.ifBlank { feed.status?.rawMessage.orEmpty() })
             else -> botMessage(t("No active service alerts right now.",
                 "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.",
                 "Nuk ka njoftime aktive tani.",

@@ -316,6 +316,7 @@ fun StationDetailScreen(
                                 else -> "Airport"
                             }
                         } else null,
+                        language = lang,
                     )
                 }
             }
@@ -380,7 +381,10 @@ internal fun departureDirectionLabel(
     connectingLines: List<Line>,
     language: AppLanguage,
 ): String {
-    departure.notes?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+    departure.notes
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() && '_' !in it }
+        ?.let { return it }
 
     if (
         departure.direction == Direction.OUTBOUND &&

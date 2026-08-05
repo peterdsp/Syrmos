@@ -388,7 +388,7 @@ struct TransitMapView: View {
                                 .clipShape(Circle())
                                 .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                         }
-                        .accessibilityLabel("Live trains")
+                        .accessibilityLabel(mapLocalized(loc.language, "Live trains", "Ζωντανά τρένα", "Trenat aktivë", "Treni in tempo reale"))
                     }
 
                     Button {
@@ -1836,6 +1836,7 @@ struct SimulatedVehicleDetailSheet: View {
 struct TrainDetailSheet: View {
     let train: LiveTrain
     @State private var showLiveStream = false
+    @ObservedObject private var loc = LocalizationManager.shared
 
     private var lineColor: Color {
         SyrmosData.lineColor(for: train.lineId)
@@ -1885,7 +1886,7 @@ struct TrainDetailSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Train \(train.trainNumber)")
+                Text("\(mapLocalized(loc.language, "Train", "Τρένο", "Treni", "Treno")) \(train.trainNumber)")
                     .font(.title2)
                     .fontWeight(.bold)
                 if !train.serviceType.isEmpty {
@@ -1899,7 +1900,7 @@ struct TrainDetailSheet: View {
 
             if let loco = train.locomotiveNumber, !loco.isEmpty {
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("Loco")
+                    Text(mapLocalized(loc.language, "Loco", "Μηχανή", "Lokomotiva", "Locomotiva"))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                     Text(loco)
@@ -1947,10 +1948,10 @@ struct TrainDetailSheet: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             } else {
-                Text("Train \(train.trainNumber)")
+                Text("\(mapLocalized(loc.language, "Train", "Τρένο", "Treni", "Treno")) \(train.trainNumber)")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                Text("Route not published by operator")
+                Text(mapLocalized(loc.language, "Route not published by operator", "Η διαδρομή δεν δημοσιεύτηκε από τον φορέα", "Rruga nuk është publikuar nga operatori", "Percorso non pubblicato dall'operatore"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -1996,7 +1997,7 @@ struct TrainDetailSheet: View {
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.caption)
-                    Text("+\(train.delayMinutes) min")
+                    Text("+\(train.delayMinutes) \(mapLocalized(loc.language, "min", "λεπ", "min", "min"))")
                         .fontWeight(.semibold)
                 }
                 .foregroundStyle(SyrmosTokens.disruption)
@@ -2009,7 +2010,7 @@ struct TrainDetailSheet: View {
                     Circle()
                         .fill(SyrmosTokens.live)
                         .frame(width: 6, height: 6)
-                    Text("On time")
+                    Text(mapLocalized(loc.language, "On time", "Στην ώρα του", "Në orar", "In orario"))
                         .fontWeight(.semibold)
                 }
                 .foregroundStyle(SyrmosTokens.live)
@@ -2061,7 +2062,7 @@ struct TrainDetailSheet: View {
                 telemetryCell(
                     icon: "mountain.2.fill",
                     value: "\(Int(alt))",
-                    unit: "m",
+                    unit: mapLocalized(loc.language, "m altitude", "μ υψόμετρο", "m lartësi", "m altitudine"),
                     accent: .secondary
                 )
             }
@@ -2070,7 +2071,7 @@ struct TrainDetailSheet: View {
                 telemetryCell(
                     icon: "arrow.forward.to.line",
                     value: formatDistanceShort(distNext),
-                    unit: "to next",
+                    unit: mapLocalized(loc.language, "to next", "ως τον επόμενο", "deri te tjetri", "alla prossima"),
                     accent: .secondary
                 )
             }
@@ -2079,7 +2080,7 @@ struct TrainDetailSheet: View {
                 telemetryCell(
                     icon: "antenna.radiowaves.left.and.right",
                     value: signal.prefix(1).uppercased() + signal.dropFirst(),
-                    unit: "signal",
+                    unit: mapLocalized(loc.language, "signal", "σήμα", "sinjali", "segnale"),
                     accent: signal.lowercased() == "good" ? SyrmosTokens.live : SyrmosTokens.warning
                 )
             }
@@ -2088,7 +2089,7 @@ struct TrainDetailSheet: View {
                 telemetryCell(
                     icon: "road.lanes",
                     value: corridor,
-                    unit: "corridor",
+                    unit: mapLocalized(loc.language, "corridor", "διάδρομος", "korridori", "corridoio"),
                     accent: .secondary
                 )
             }
@@ -2127,7 +2128,7 @@ struct TrainDetailSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Departure")
+                        Text(mapLocalized(loc.language, "Departure", "Αναχώρηση", "Nisja", "Partenza"))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                         Text(dep)
@@ -2142,7 +2143,7 @@ struct TrainDetailSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Arrival")
+                        Text(mapLocalized(loc.language, "Arrival", "Άφιξη", "Mbërritja", "Arrivo"))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                         Text(arr)
@@ -2163,13 +2164,13 @@ struct TrainDetailSheet: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "video.fill")
-                Text("Watch Live")
+                Text(mapLocalized(loc.language, "Watch Live", "Ζωντανή προβολή", "Shiko drejtpërdrejt", "Guarda in diretta"))
                     .fontWeight(.semibold)
                 Spacer()
                 Circle()
                     .fill(Color.red)
                     .frame(width: 8, height: 8)
-                Text("LIVE")
+                Text(mapLocalized(loc.language, "LIVE", "ΖΩΝΤΑΝΑ", "DREJTPËRDREJT", "DIRETTA"))
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundStyle(.red)
@@ -2185,10 +2186,11 @@ struct TrainDetailSheet: View {
     // MARK: - Helpers
 
     private func formatDistance(_ meters: Int) -> String {
+        let left = mapLocalized(loc.language, "left", "απομένουν", "kanë mbetur", "rimanenti")
         if meters >= 1000 {
-            return String(format: "%.1f km left", Double(meters) / 1000.0)
+            return String(format: "%.1f km %@", Double(meters) / 1000.0, left)
         }
-        return "\(meters) m left"
+        return "\(meters) m \(left)"
     }
 
     private func formatDistanceShort(_ meters: Int) -> String {
@@ -2211,6 +2213,7 @@ struct LiveTrainsListSheet: View {
     let trains: [LiveTrain]
     let onSelect: (LiveTrain) -> Void
     @State private var selectedFilter: String?
+    @ObservedObject private var loc = LocalizationManager.shared
 
     private var lineIds: [String] {
         Array(Set(trains.map(\.lineId))).sorted()
@@ -2225,10 +2228,10 @@ struct LiveTrainsListSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Live trains")
+                    Text(mapLocalized(loc.language, "Live trains", "Ζωντανά τρένα", "Trenat aktivë", "Treni in tempo reale"))
                         .font(.title2)
                         .fontWeight(.bold)
-                    Text("\(filteredTrains.count) train\(filteredTrains.count == 1 ? "" : "s") running")
+                    Text("\(filteredTrains.count) \(mapLocalized(loc.language, "trains running", "τρένα σε κυκλοφορία", "trena në qarkullim", "treni in circolazione"))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -2241,7 +2244,7 @@ struct LiveTrainsListSheet: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    filterPill(label: "All", id: nil)
+                    filterPill(label: mapLocalized(loc.language, "All", "Όλα", "Të gjitha", "Tutti"), id: nil)
                     ForEach(lineIds, id: \.self) { lineId in
                         filterPill(label: lineId, id: lineId)
                     }
@@ -2310,7 +2313,7 @@ struct LiveTrainsListSheet: View {
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
                 if !train.nextStation.isEmpty {
-                    Text("Next: \(SyrmosData.resolveStation(train.nextStation, en: train.nextStationEn, language: LocalizationManager.shared.language))")
+                    Text("\(mapLocalized(loc.language, "Next", "Επόμενος", "Tjetri", "Prossima")): \(SyrmosData.resolveStation(train.nextStation, en: train.nextStationEn, language: LocalizationManager.shared.language))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -2324,7 +2327,7 @@ struct LiveTrainsListSheet: View {
                     .fontWeight(.bold)
                     .foregroundStyle(SyrmosTokens.disruption)
             } else {
-                Text("OK")
+                Text(mapLocalized(loc.language, "OK", "ΕΝΤΑΞΕΙ", "NË RREGULL", "OK"))
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundStyle(SyrmosTokens.live)
@@ -2341,8 +2344,17 @@ struct LiveTrainsListSheet: View {
         if hasOrigin && hasDest {
             return "\(o) \u{2192} \(d)"
         }
-        if hasOrigin { return "From \(o)" }
-        if hasDest { return "To \(d)" }
-        return "Train \(train.trainNumber)"
+        if hasOrigin { return "\(mapLocalized(lang, "From", "Από", "Nga", "Da")) \(o)" }
+        if hasDest { return "\(mapLocalized(lang, "To", "Προς", "Për", "A")) \(d)" }
+        return "\(mapLocalized(lang, "Train", "Τρένο", "Treni", "Treno")) \(train.trainNumber)"
+    }
+}
+
+private func mapLocalized(_ language: AppLanguage, _ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+    switch language {
+    case .english: return en
+    case .greek: return el
+    case .albanian: return sq
+    case .italian: return it
     }
 }

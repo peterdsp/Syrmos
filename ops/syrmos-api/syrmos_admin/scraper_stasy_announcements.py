@@ -182,6 +182,18 @@ def _translate_gr_sq(text: str) -> str:
     return _translate_gr_to(text, "sq")
 
 
+def _translate_it(text: str) -> str:
+    text = text.strip()
+    if not text:
+        return ""
+    try:
+        from deep_translator import GoogleTranslator
+        translated = GoogleTranslator(source="auto", target="it").translate(text)
+        return (translated or "").strip() or text
+    except Exception:
+        return text
+
+
 def _translate_gr_to(text: str, target_lang: str) -> str:
     text = text.strip()
     if not text or not _has_greek(text):
@@ -274,6 +286,8 @@ class AnnouncementItem:
     summary_en: str = ""
     title_sq: str = ""
     summary_sq: str = ""
+    title_it: str = ""
+    summary_it: str = ""
     publish_date: str = ""
     affected_lines: list[str] = field(default_factory=list)
     severity: str = "info"
@@ -432,6 +446,7 @@ def parse_homepage_status(html: str) -> dict:
             "raw_message": alert_text,
             "raw_message_en": _translate_gr_en(alert_text),
             "raw_message_sq": _translate_gr_sq(alert_text),
+            "raw_message_it": _translate_it(alert_text),
             "service_until": service_until,
         }
     if _NORMAL_BADGE_RE.search(text):
@@ -440,9 +455,10 @@ def parse_homepage_status(html: str) -> dict:
             "raw_message": "Κανονική Λειτουργία",
             "raw_message_en": "Normal operation",
             "raw_message_sq": "Funksionim normal",
+            "raw_message_it": "Servizio regolare",
             "service_until": None,
         }
-    return {"status": "unknown", "raw_message": "", "raw_message_en": "", "raw_message_sq": "", "service_until": None}
+    return {"status": "unknown", "raw_message": "", "raw_message_en": "", "raw_message_sq": "", "raw_message_it": "", "service_until": None}
 
 
 def _extract_alert_banner(text: str) -> str:
@@ -492,8 +508,17 @@ def upsert_homepage_status(conn: sqlite3.Connection, status: dict) -> None:
     raw_message_sq, migration 0016) backwards through 0010 (raw_message_en)
     to the bare schema, so a Pi behind on migrations still gets a row."""
     sq = status.get("raw_message_sq", "")
+    it = status.get("raw_message_it", "")
     en = status.get("raw_message_en", "")
     for sql, params in (
+        (
+            "INSERT OR REPLACE INTO stasy_status"
+            "(id, status, raw_message, raw_message_en, raw_message_sq, raw_message_it,"
+            " service_until, scraped_at)"
+            " VALUES(1, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+            (status["status"], status["raw_message"], en, sq, it,
+             status["service_until"]),
+        ),
         (
             "INSERT OR REPLACE INTO stasy_status"
             "(id, status, raw_message, raw_message_en, raw_message_sq,"
@@ -743,6 +768,8 @@ def build_announcement(
         summary_translated = _translate_gr_en(raw_summary)
         title_sq = _translate_gr_sq(raw_title)
         summary_sq = _translate_gr_sq(raw_summary)
+        title_it = _translate_it(raw_title)
+        summary_it = _translate_it(raw_summary)
         title_native = raw_title
         summary_native = raw_summary
     else:
@@ -754,6 +781,8 @@ def build_announcement(
         # (Google's reverse translation often inverts meaning).
         title_sq = ""
         summary_sq = ""
+        title_it = _translate_it(raw_title)
+        summary_it = _translate_it(raw_summary)
         title_native = raw_title
         summary_native = raw_summary
 
@@ -766,6 +795,8 @@ def build_announcement(
         summary_en=summary_translated,
         title_sq=title_sq,
         summary_sq=summary_sq,
+        title_it=title_it,
+        summary_it=summary_it,
         affected_lines=affected,
         severity=severity,
         valid_from=valid_from,
@@ -794,19 +825,19 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
             try:
                 cur.execute(
                     "INSERT INTO announcements"
-                    "(id, title, title_en, title_sq, summary, summary_en, summary_sq,"
+                    "(id, title, title_en, title_sq, title_it, summary, summary_en, summary_sq, summary_it,"
                     " url, date, category, sort_order,"
                     " affected_lines, severity, valid_from, valid_until)"
-                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     " ON CONFLICT(id) DO UPDATE SET"
-                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
-                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq,"
+                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq, title_it=excluded.title_it,"
+                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq, summary_it=excluded.summary_it,"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
                     " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
                     (
-                        item.slug, item.title, item.title_en, item.title_sq,
-                        item.summary, item.summary_en, item.summary_sq,
+                        item.slug, item.title, item.title_en, item.title_sq, item.title_it,
+                        item.summary, item.summary_en, item.summary_sq, item.summary_it,
                         item.url, item.publish_date, category, idx,
                         affected_json, item.severity,
                         item.valid_from, item.valid_until,
@@ -894,6 +925,7 @@ def run_once(now: date | None = None) -> int:
         banner_gr = homepage_status["raw_message"]
         banner_en = homepage_status["raw_message_en"] or banner_gr
         banner_sq = homepage_status.get("raw_message_sq") or ""
+        banner_it = homepage_status.get("raw_message_it") or ""
         affected = detect_affected_lines(banner_gr + " " + banner_en)
         vf_detected, vu_detected, _ = detect_dates(banner_gr + " " + banner_en, today=now)
         # The generator's _is_fresh() gate drops anything without a parseable
@@ -909,6 +941,8 @@ def run_once(now: date | None = None) -> int:
             summary_en=banner_en,
             title_sq=banner_sq,
             summary_sq=banner_sq,
+            title_it=banner_it,
+            summary_it=banner_it,
             affected_lines=affected,
             severity="warning",
             valid_from=vf_detected or now.isoformat(),

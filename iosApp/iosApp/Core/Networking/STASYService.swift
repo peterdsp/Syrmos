@@ -5,10 +5,12 @@ struct STASYAnnouncement: Identifiable {
     let title: String
     let titleEn: String
     let titleSq: String
+    let titleIt: String
     let date: String
     let summary: String
     let summaryEn: String
     let summarySq: String
+    let summaryIt: String
     let url: URL?
     let category: AnnouncementCategory
     /// Lines this notice affects (e.g. ["M3"]), from the feed's `affectedLines`.
@@ -25,10 +27,12 @@ struct STASYAnnouncement: Identifiable {
         title: String,
         titleEn: String,
         titleSq: String,
+        titleIt: String = "",
         date: String,
         summary: String,
         summaryEn: String,
         summarySq: String,
+        summaryIt: String = "",
         url: URL?,
         category: AnnouncementCategory,
         affectedLines: [String] = [],
@@ -40,10 +44,12 @@ struct STASYAnnouncement: Identifiable {
         self.title = title
         self.titleEn = titleEn
         self.titleSq = titleSq
+        self.titleIt = titleIt
         self.date = date
         self.summary = summary
         self.summaryEn = summaryEn
         self.summarySq = summarySq
+        self.summaryIt = summaryIt
         self.url = url
         self.category = category
         self.affectedLines = affectedLines
@@ -59,7 +65,7 @@ struct STASYAnnouncement: Identifiable {
         switch language {
         case .greek: return title
         case .albanian: return titleSq.isEmpty ? (titleEn.isEmpty ? title : titleEn) : titleSq
-        case .italian: return titleEn.isEmpty ? title : titleEn
+        case .italian: return titleIt.isEmpty ? (titleEn.isEmpty ? title : titleEn) : titleIt
         case .english: return titleEn.isEmpty ? title : titleEn
         }
     }
@@ -68,7 +74,7 @@ struct STASYAnnouncement: Identifiable {
         switch language {
         case .greek: return summary
         case .albanian: return summarySq.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summarySq
-        case .italian: return summaryEn.isEmpty ? summary : summaryEn
+        case .italian: return summaryIt.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summaryIt
         case .english: return summaryEn.isEmpty ? summary : summaryEn
         }
     }
@@ -126,6 +132,7 @@ final class STASYService: ObservableObject {
         let rawMessage: String
         let rawMessageEn: String?
         let rawMessageSq: String?
+        let rawMessageIt: String?
         let serviceUntil: String?
         let scrapedAt: String?
 
@@ -137,6 +144,7 @@ final class STASYService: ObservableObject {
                 if let sq = rawMessageSq, !sq.isEmpty { return sq }
                 return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
             case .italian:
+                if let it = rawMessageIt, !it.isEmpty { return it }
                 return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
             case .english:
                 return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
@@ -149,10 +157,12 @@ final class STASYService: ObservableObject {
         let title: String
         let titleEn: String?
         let titleSq: String?
+        let titleIt: String?
         let date: String
         let summary: String
         let summaryEn: String?
         let summarySq: String?
+        let summaryIt: String?
         let url: String
         let category: String
         let affectedLines: [String]?
@@ -190,10 +200,12 @@ final class STASYService: ObservableObject {
                     title: item.title,
                     titleEn: item.titleEn ?? "",
                     titleSq: item.titleSq ?? "",
+                    titleIt: item.titleIt ?? "",
                     date: item.date,
                     summary: item.summary,
                     summaryEn: item.summaryEn ?? "",
                     summarySq: item.summarySq ?? "",
+                    summaryIt: item.summaryIt ?? "",
                     url: URL(string: item.url),
                     category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
                     affectedLines: item.affectedLines ?? [],
@@ -232,10 +244,12 @@ final class STASYService: ObservableObject {
             title: title,
             titleEn: dict["titleEn"] ?? "",
             titleSq: dict["titleSq"] ?? "",
+            titleIt: dict["titleIt"] ?? "",
             date: dict["date"] ?? "",
             summary: dict["summary"] ?? "",
             summaryEn: dict["summaryEn"] ?? "",
             summarySq: dict["summarySq"] ?? "",
+            summaryIt: dict["summaryIt"] ?? "",
             url: URL(string: dict["url"] ?? ""),
             category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other,
             affectedLines: (dict["affectedLines"] ?? "").split(separator: ",").map(String.init),
@@ -254,10 +268,12 @@ final class STASYService: ObservableObject {
                 "title": ann.title,
                 "titleEn": ann.titleEn,
                 "titleSq": ann.titleSq,
+                "titleIt": ann.titleIt,
                 "date": ann.date,
                 "summary": ann.summary,
                 "summaryEn": ann.summaryEn,
                 "summarySq": ann.summarySq,
+                "summaryIt": ann.summaryIt,
                 "url": ann.url?.absoluteString ?? "",
                 "category": ann.category.rawValue,
                 // Line ids are simple tokens (M1..A4), so a comma join is safe.
@@ -280,10 +296,12 @@ final class STASYService: ObservableObject {
                 title: title,
                 titleEn: dict["titleEn"] ?? "",
                 titleSq: dict["titleSq"] ?? "",
+                titleIt: dict["titleIt"] ?? "",
                 date: dict["date"] ?? "",
                 summary: dict["summary"] ?? "",
                 summaryEn: dict["summaryEn"] ?? "",
                 summarySq: dict["summarySq"] ?? "",
+                summaryIt: dict["summaryIt"] ?? "",
                 url: URL(string: dict["url"] ?? ""),
                 category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other,
                 affectedLines: (dict["affectedLines"] ?? "").split(separator: ",").map(String.init),
@@ -307,6 +325,7 @@ final class STASYService: ObservableObject {
             "rawMessage": status.rawMessage,
             "rawMessageEn": status.rawMessageEn ?? "",
             "rawMessageSq": status.rawMessageSq ?? "",
+            "rawMessageIt": status.rawMessageIt ?? "",
             "serviceUntil": status.serviceUntil ?? "",
             "scrapedAt": status.scrapedAt ?? "",
         ]
@@ -322,6 +341,7 @@ final class STASYService: ObservableObject {
             rawMessage: rawMessage,
             rawMessageEn: dict["rawMessageEn"],
             rawMessageSq: dict["rawMessageSq"],
+            rawMessageIt: dict["rawMessageIt"],
             serviceUntil: (dict["serviceUntil"]?.isEmpty == false) ? dict["serviceUntil"] : nil,
             scrapedAt: dict["scrapedAt"]
         )
@@ -346,10 +366,12 @@ final class STASYService: ObservableObject {
                 title: item.title,
                 titleEn: item.titleEn ?? "",
                 titleSq: item.titleSq ?? "",
+                titleIt: item.titleIt ?? "",
                 date: item.date,
                 summary: item.summary,
                 summaryEn: item.summaryEn ?? "",
                 summarySq: item.summarySq ?? "",
+                summaryIt: item.summaryIt ?? "",
                 url: URL(string: item.url),
                 category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
                 affectedLines: item.affectedLines ?? [],
