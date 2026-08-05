@@ -65,6 +65,7 @@ val featureModule = module {
             livePositionsService = get(),
             stationOffsetsRepo = get(),
             scheduleSyncRepository = get(),
+            announcementsRepository = get(),
         )
     }
     factory { com.syrmos.core.domain.usecase.GetStationDeparturesUseCase(getNextDepartures = get(), transitPatternRepository = get()) }

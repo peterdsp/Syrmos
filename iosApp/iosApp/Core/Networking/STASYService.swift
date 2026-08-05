@@ -17,10 +17,13 @@ struct STASYAnnouncement: Identifiable {
     /// Lets Ariadne surface a line-wide advisory to any station on that line,
     /// matching the KMP `STASYAnnouncement`.
     let affectedLines: [String]
+    let affectedStationIds: [String]
     /// Raw feed severity: "info" | "warning" | "closure".
     let severity: String
     let validFrom: String?
     let validUntil: String?
+    /// "HH:MM" cutoff after which this alert activates
+    let serviceUntilTime: String?
 
     init(
         id: String,
@@ -36,9 +39,11 @@ struct STASYAnnouncement: Identifiable {
         url: URL?,
         category: AnnouncementCategory,
         affectedLines: [String] = [],
+        affectedStationIds: [String] = [],
         severity: String = "info",
         validFrom: String? = nil,
-        validUntil: String? = nil
+        validUntil: String? = nil,
+        serviceUntilTime: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -53,9 +58,11 @@ struct STASYAnnouncement: Identifiable {
         self.url = url
         self.category = category
         self.affectedLines = affectedLines
+        self.affectedStationIds = affectedStationIds
         self.severity = severity
         self.validFrom = validFrom
         self.validUntil = validUntil
+        self.serviceUntilTime = serviceUntilTime
     }
 
     /// Pick the right language-variant title for the active app language.
@@ -97,9 +104,13 @@ enum AnnouncementCategory: String {
 @MainActor
 final class STASYService: ObservableObject {
     @Published var announcements: [STASYAnnouncement] = [] {
-        didSet { lineDisruptions = Self.deriveLineDisruptions(from: announcements) }
+        didSet {
+            lineDisruptions = Self.deriveLineDisruptions(from: announcements)
+            stationDisruptions = Self.deriveStationDisruptions(from: announcements, status: serviceStatus)
+        }
     }
     @Published private(set) var lineDisruptions: [String: String] = [:]
+    @Published private(set) var stationDisruptions: [String: String] = [:]
     @Published var isLoading = false
     @Published var lastUpdated: Date?
     @Published var error: String?
@@ -135,6 +146,30 @@ final class STASYService: ObservableObject {
                 }
                 if lineId == "M3", rank[severity, default: 0] > rank[result["M3_AIR"] ?? "info", default: 0] {
                     result["M3_AIR"] = severity
+                }
+            }
+        }
+        return result
+    }
+
+    private static func deriveStationDisruptions(from announcements: [STASYAnnouncement], status: APIStatus?) -> [String: String] {
+        let rank = ["info": 0, "warning": 1, "closure": 2]
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        formatter.timeZone = TimeZone(identifier: "Europe/Athens")
+        let nowHHMM = formatter.string(from: Date())
+
+        var result: [String: String] = [:]
+        for announcement in announcements where announcement.category == .serviceAlert {
+            let severity = announcement.severity.lowercased()
+            let cutoff = announcement.serviceUntilTime ?? status?.serviceUntil
+            if let cutoff, nowHHMM < cutoff { continue }
+
+            for stationId in announcement.affectedStationIds {
+                let sid = stationId.trimmingCharacters(in: .whitespaces)
+                guard !sid.isEmpty else { continue }
+                if rank[severity, default: 0] > rank[result[sid] ?? "info", default: 0] {
+                    result[sid] = severity
                 }
             }
         }
@@ -190,9 +225,11 @@ final class STASYService: ObservableObject {
         let url: String
         let category: String
         let affectedLines: [String]?
+        let affectedStationIds: [String]?
         let severity: String?
         let validFrom: String?
         let validUntil: String?
+        let serviceUntilTime: String?
     }
 
     /// Latest STASY service-status badge, populated by `fetchAnnouncements`.
@@ -233,9 +270,11 @@ final class STASYService: ObservableObject {
                     url: URL(string: item.url),
                     category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
                     affectedLines: item.affectedLines ?? [],
+                    affectedStationIds: item.affectedStationIds ?? [],
                     severity: item.severity ?? "info",
                     validFrom: item.validFrom,
-                    validUntil: item.validUntil
+                    validUntil: item.validUntil,
+                    serviceUntilTime: item.serviceUntilTime
                 )
             }
             announcements = parsed
@@ -277,9 +316,11 @@ final class STASYService: ObservableObject {
             url: URL(string: dict["url"] ?? ""),
             category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other,
             affectedLines: (dict["affectedLines"] ?? "").split(separator: ",").map(String.init),
+            affectedStationIds: (dict["affectedStationIds"] ?? "").split(separator: ",").map(String.init),
             severity: dict["severity"] ?? "info",
             validFrom: (dict["validFrom"]?.isEmpty == false) ? dict["validFrom"] : nil,
-            validUntil: (dict["validUntil"]?.isEmpty == false) ? dict["validUntil"] : nil
+            validUntil: (dict["validUntil"]?.isEmpty == false) ? dict["validUntil"] : nil,
+            serviceUntilTime: (dict["serviceUntilTime"]?.isEmpty == false) ? dict["serviceUntilTime"] : nil
         )
     }
 
@@ -300,11 +341,12 @@ final class STASYService: ObservableObject {
                 "summaryIt": ann.summaryIt,
                 "url": ann.url?.absoluteString ?? "",
                 "category": ann.category.rawValue,
-                // Line ids are simple tokens (M1..A4), so a comma join is safe.
                 "affectedLines": ann.affectedLines.joined(separator: ","),
+                "affectedStationIds": ann.affectedStationIds.joined(separator: ","),
                 "severity": ann.severity,
                 "validFrom": ann.validFrom ?? "",
                 "validUntil": ann.validUntil ?? "",
+                "serviceUntilTime": ann.serviceUntilTime ?? "",
             ]
         }
         UserDefaults.standard.set(dicts, forKey: cacheKey)
@@ -329,9 +371,11 @@ final class STASYService: ObservableObject {
                 url: URL(string: dict["url"] ?? ""),
                 category: AnnouncementCategory(rawValue: dict["category"] ?? "") ?? .other,
                 affectedLines: (dict["affectedLines"] ?? "").split(separator: ",").map(String.init),
+                affectedStationIds: (dict["affectedStationIds"] ?? "").split(separator: ",").map(String.init),
                 severity: dict["severity"] ?? "info",
                 validFrom: (dict["validFrom"]?.isEmpty == false) ? dict["validFrom"] : nil,
-                validUntil: (dict["validUntil"]?.isEmpty == false) ? dict["validUntil"] : nil
+                validUntil: (dict["validUntil"]?.isEmpty == false) ? dict["validUntil"] : nil,
+                serviceUntilTime: (dict["serviceUntilTime"]?.isEmpty == false) ? dict["serviceUntilTime"] : nil
             )
         }
         if let cached = UserDefaults.standard.object(forKey: cacheTimeKey) as? TimeInterval {
@@ -399,9 +443,11 @@ final class STASYService: ObservableObject {
                 url: URL(string: item.url),
                 category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
                 affectedLines: item.affectedLines ?? [],
+                affectedStationIds: item.affectedStationIds ?? [],
                 severity: item.severity ?? "info",
                 validFrom: item.validFrom,
-                validUntil: item.validUntil
+                validUntil: item.validUntil,
+                serviceUntilTime: item.serviceUntilTime
             )
         }
     }

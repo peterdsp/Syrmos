@@ -23,9 +23,11 @@ data class STASYAnnouncement(
     val url: String,
     val isServiceAlert: Boolean,
     val affectedLines: List<String> = emptyList(),
+    val affectedStationIds: List<String> = emptyList(),
     val severity: String = "info",          // "info" | "warning" | "closure"
     val validFrom: String? = null,           // YYYY-MM-DD or null
     val validUntil: String? = null,
+    val serviceUntilTime: String? = null,    // "HH:MM" cutoff after which this alert activates
 )
 
 /** Network-wide STASY service-status badge. `status` is `normal`, `alert`,
@@ -97,9 +99,11 @@ class STASYAnnouncementService(
                     url = item.url,
                     isServiceAlert = item.category == CATEGORY_SERVICE_ALERT,
                     affectedLines = item.affectedLines,
+                    affectedStationIds = item.affectedStationIds,
                     severity = item.severity.ifBlank { "info" },
                     validFrom = item.validFrom,
                     validUntil = item.validUntil,
+                    serviceUntilTime = item.serviceUntilTime,
                 )
             }
             STASYFeed(status, items)
@@ -141,9 +145,11 @@ class STASYAnnouncementService(
         val url: String = "",
         val category: String = "",
         @SerialName("affectedLines") val affectedLines: List<String> = emptyList(),
+        @SerialName("affectedStationIds") val affectedStationIds: List<String> = emptyList(),
         val severity: String = "info",
         @SerialName("validFrom") val validFrom: String? = null,
         @SerialName("validUntil") val validUntil: String? = null,
+        @SerialName("serviceUntilTime") val serviceUntilTime: String? = null,
     )
 
     private companion object {

@@ -30,6 +30,7 @@ fun simulateTrains(
     lines: List<Line>,
     lineStations: Map<String, List<Station>>,
     snapshot: LivePositionsSnapshot?,
+    closedStationIds: Set<String> = emptySet(),
 ): List<SimulatedTrain> {
     if (snapshot == null || snapshot.trains.isEmpty()) return emptyList()
     // Only operational lines get trains. A line that is built but not open (e.g.
@@ -75,6 +76,7 @@ fun simulateTrains(
         }
         val fromStop = stops[segIdx]
         val toStop = stops[segIdx + 1]
+        if (fromStop.stationId in closedStationIds || toStop.stationId in closedStationIds) continue
         val fromStation = stationById[fromStop.stationId] ?: continue
         val toStation = stationById[toStop.stationId] ?: continue
         val segDuration = (toStop.minutesFromOrigin - fromStop.minutesFromOrigin).toDouble()

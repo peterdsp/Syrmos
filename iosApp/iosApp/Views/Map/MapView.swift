@@ -252,6 +252,7 @@ struct TransitMapView: View {
     // freezing the UI on iOS.
     @ObservedObject private var liveTrainService = LiveTrainService.shared
     @ObservedObject private var trainSimulator = TrainSimulatorService.shared
+    @StateObject private var stasyService = STASYService()
     @StateObject private var locationManager = MapLocationManager()
     @State private var tappedStation: MapStationNode?
     @State private var tappedVehicle: MapVehicleSelection?
@@ -272,6 +273,12 @@ struct TransitMapView: View {
             mapContent
                 .safeAreaInset(edge: .top, spacing: 8) {
                     CompactTabHeader(loc[.map])
+                }
+                .task { await stasyService.fetchAnnouncements() }
+                .onChange(of: stasyService.stationDisruptions) {
+                    trainSimulator.closedStationIds = Set(
+                        stasyService.stationDisruptions.filter { $0.value == "closure" }.keys
+                    )
                 }
                 .task(id: locationManager.authorizationStatus) {
                     // Auto-center on the user when the Map tab appears AND
@@ -349,18 +356,12 @@ struct TransitMapView: View {
                 SyrmosMKMapView(
                     stations: stations,
                     routeLines: routeLines,
-                    // Per-line suburban dedupe: railway.gov.gr SSE carries
-                    // raw GPS, our projector carries schedule-based positions
-                    // for the SAME physical train. Whenever the live feed has
-                    // ANY train for a line, hide the projected dots for that
-                    // line so we don't draw two markers. If the live feed is
-                    // empty (offline mode or feed dropped) the projected
-                    // dots keep moving — which is the entire point.
                     simulatedTrains: vehiclesHidden ? [] : {
                         let coveredLines = Set(liveTrainService.trains.map(\.lineId))
                         return trainSimulator.trains.filter { !coveredLines.contains($0.lineId) }
                     }(),
                     liveTrains: vehiclesHidden ? [] : liveTrainService.trains,
+                    stationDisruptions: stasyService.stationDisruptions,
                     recenterToUserPing: recenterToUserPing,
                     onStationTap: { stationId in
                         tappedStation = stations.first(where: { $0.id == stationId })
@@ -1017,6 +1018,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
     let routeLines: [RouteLine]
     let simulatedTrains: [SimulatedTrain]
     let liveTrains: [LiveTrain]
+    let stationDisruptions: [String: String]
     /// Bumped from the parent's "Locate me" button to re-center on the
     /// user. Reading it in updateUIView() lets us tell a fresh request
     /// apart from the no-op redraws triggered by annotation churn.
@@ -1126,6 +1128,20 @@ struct SyrmosMKMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ mv: MKMapView, context: Context) {
+        context.coordinator.parent = self
+
+        if context.coordinator.lastStationDisruptions != stationDisruptions {
+            context.coordinator.lastStationDisruptions = stationDisruptions
+            for annotation in mv.annotations {
+                guard let station = annotation as? SyrmosStationAnnotation,
+                      let view = mv.view(for: annotation) else { continue }
+                let primary = station.station.lineIds.first ?? "M3"
+                let image = context.coordinator.stationImage(for: station.station, primaryLineId: primary)
+                view.image = image
+                view.frame.size = image.size
+            }
+        }
+
         // Swap the flat base tiles when the app theme flips (light <-> dark).
         let dark = mv.traitCollection.userInterfaceStyle == .dark
         if context.coordinator.baseTileDark != dark {
@@ -1211,8 +1227,9 @@ struct SyrmosMKMapView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
-        let parent: SyrmosMKMapView
+        var parent: SyrmosMKMapView
         var lastRecenterPing: Int = -1
+        var lastStationDisruptions: [String: String] = [:]
         /// The active flat base-map tile overlay + its theme, so a light/dark
         /// flip can swap it without rebuilding the map.
         var baseTileOverlay: MKTileOverlay?
@@ -1592,16 +1609,13 @@ struct SyrmosMKMapView: UIViewRepresentable {
         }
 
         private func stationImage(for station: MapStationNode, primaryLineId: String) -> UIImage {
-            // A clean line-coloured disc with a crisp white ring - a pixel
-            // mirror of the web Leaflet `circleMarker` (stationStyle). We used
-            // to draw bundled per-station artwork here (the ISAP/Syntagma icons
-            // with baked-in "M3 AM" text), which is why iOS looked nothing like
-            // web; web draws none of that, only these dots, with the per-station
-            // glyph appearing on selection. Colour is the primary line's raw hex
-            // from lines.json (same source web reads), so dots match the
-            // polylines exactly - not the hardcoded metro* theme constants.
-            let color = UIColor(SyrmosData.line(for: primaryLineId)?.color
-                ?? SyrmosData.lineColor(for: primaryLineId))
+            let isClosed = station.stationIds.contains { sid in
+                parent.stationDisruptions[sid] == "closure"
+            }
+            let color: UIColor = isClosed
+                ? UIColor.systemGray
+                : UIColor(SyrmosData.line(for: primaryLineId)?.color
+                    ?? SyrmosData.lineColor(for: primaryLineId))
             // Web radii: 4.5 default / 5.5 interchange (px, non-retina). Draw at
             // 2x and let the annotation view show it crisp. Interchange reads as
             // a white-cored "target" ring; a plain stop is a filled dot.
