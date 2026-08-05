@@ -68,20 +68,23 @@ final class SyrmosFaresStore: ObservableObject {
         let titleEn: String
         let titleEl: String
         let titleSq: String?
+        let titleIt: String?
         let summaryEn: String?
         let summaryEl: String?
         let summarySq: String?
+        let summaryIt: String?
         let bullets: [Bullet]?
         let urlEn: String
         let urlEl: String
         let urlSq: String?
+        let urlIt: String?
 
         enum CodingKeys: String, CodingKey {
             case id, icon
-            case titleEn, titleEl, titleSq
-            case summaryEn, summaryEl, summarySq
+            case titleEn, titleEl, titleSq, titleIt
+            case summaryEn, summaryEl, summarySq, summaryIt
             case bullets
-            case urlEn, urlEl, urlSq
+            case urlEn, urlEl, urlSq, urlIt
             case operator_ = "operator"
         }
 
@@ -89,7 +92,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return titleEl.isEmpty ? titleEn : titleEl
             case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
-            case .italian: return titleEn
+            case .italian: return (titleIt?.isEmpty == false) ? titleIt! : titleEn
             case .english: return titleEn
             }
         }
@@ -98,7 +101,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return summaryEl ?? summaryEn ?? ""
             case .albanian: return summarySq ?? summaryEn ?? ""
-            case .italian: return summaryEn ?? ""
+            case .italian: return (summaryIt?.isEmpty == false) ? summaryIt! : summaryEn ?? ""
             case .english: return summaryEn ?? ""
             }
         }
@@ -107,7 +110,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return urlEl.isEmpty ? urlEn : urlEl
             case .albanian: return (urlSq?.isEmpty == false) ? urlSq! : urlEn
-            case .italian: return urlEn
+            case .italian: return (urlIt?.isEmpty == false) ? urlIt! : urlEn
             case .english: return urlEn
             }
         }
@@ -117,13 +120,14 @@ final class SyrmosFaresStore: ObservableObject {
         let en: String
         let el: String
         let sq: String?
+        let it: String?
         var id: String { en }
 
         func localized(_ lang: AppLanguage) -> String {
             switch lang {
             case .greek: return el.isEmpty ? en : el
             case .albanian: return (sq?.isEmpty == false) ? sq! : en
-            case .italian: return en
+            case .italian: return (it?.isEmpty == false) ? it! : en
             case .english: return en
             }
         }
@@ -134,12 +138,16 @@ final class SyrmosFaresStore: ObservableObject {
         let titleEn: String
         let titleEl: String
         let titleSq: String?
+        let titleIt: String?
         let fullPriceEur: Double?
         let discountedPriceEur: Double?
         let validity: String
         let validitySq: String?
+        let validityIt: String?
         let notes: String
+        let notesEl: String?
         let notesSq: String?
+        let notesIt: String?
         let tags: [String]
         let sourceUrl: String
 
@@ -149,7 +157,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return titleEl.isEmpty ? titleEn : titleEl
             case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
-            case .italian: return titleEn
+            case .italian: return (titleIt?.isEmpty == false) ? titleIt! : titleEn
             case .english: return titleEn
             }
         }
@@ -157,13 +165,16 @@ final class SyrmosFaresStore: ObservableObject {
         func localizedValidity(_ lang: AppLanguage) -> String {
             switch lang {
             case .albanian: return (validitySq?.isEmpty == false) ? validitySq! : validity
+            case .italian: return (validityIt?.isEmpty == false) ? validityIt! : validity
             default: return validity
             }
         }
 
         func localizedNotes(_ lang: AppLanguage) -> String {
             switch lang {
+            case .greek: return (notesEl?.isEmpty == false) ? notesEl! : notes
             case .albanian: return (notesSq?.isEmpty == false) ? notesSq! : notes
+            case .italian: return (notesIt?.isEmpty == false) ? notesIt! : notes
             default: return notes
             }
         }

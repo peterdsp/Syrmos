@@ -1,4 +1,4 @@
-# Syrmos fares data collection — 2026-07-27
+# Syrmos fares data collection - verified 2026-08-05
 
 Grounded fare tables for the v2.0.0 fares menu + journey fare planner (from→to→price)
 and Ariadne fare answers. **Every price here is transcribed from an official operator
@@ -79,11 +79,27 @@ myartemida 2025 guide. Verify exact station-pair prices on hellenictrain.gr befo
 - Athens ↔ Chalkida: **€6.00** one-way — confirm on HT.
 - Ano Liosia (A2) — within/around the urban zone; confirm.
 
-## 5. Intercity (IC) + regional — Hellenic Train  ⚠ DYNAMIC PRICING
-Source: https://www.hellenictrain.gr/en/tickets-ticket-discounts-offers — fetched 2026-07-27.
-**No fixed fare table.** Price depends on route, class, date, and availability, sold via the
-booking system (newtickets.hellenictrain.gr). The planner must NOT fabricate an IC price:
-show the discount structure below and defer to the official booking link for the exact fare.
+## 5. Intercity (IC) + regional - Hellenic Train, booking-priced
+Policy source: https://www.hellenictrain.gr/en/tickets-ticket-discounts-offers, checked 2026-08-05.
+Hellenic Train does not publish a stable all-routes fare table. Its FAQ directs passengers to
+the booking search for the full price because the result depends on route, train, date, class,
+availability, and discount. Syrmos therefore stores dated one-way reference observations for
+use offline, labels them as approximate, and links to the official booking flow for confirmation.
+
+Standard one-way prices observed in the official booking search on 2026-08-05:
+
+| Route | Reference fare | Booking result notes |
+|---|---:|---|
+| Athens - Thessaloniki | €43.00 | Direct result |
+| Athens - Larisa | €32.50 | Direct result |
+| Athens - Trikala | €29.50 | Offered connection |
+| Athens - Kalambaka | €30.90 | One change |
+| Thessaloniki - Larisa | €14.00 | Direct result |
+| Trikala - Kalambaka | €1.80 | Direct result, current vehicle may be a replacement bus |
+
+These are not guaranteed prices. A different travel date, departure, class, passenger profile,
+or availability can produce a different amount. Routes without a checked reference continue to
+show "price at booking" instead of an invented number.
 
 Discount categories (percent off the base fare):
 - Early booking: up to **15%** (prior to departure).
@@ -94,7 +110,7 @@ Discount categories (percent off the base fare):
 - Persons with reduced mobility: **50%**.
 - Large families (4+ children): **50%**.
 - Multi-journey cards: up to **50%**.
-- **Cap:** total reduction cannot exceed **40%** of the base fare.
+- **Cap:** the official tickets page states that combined reductions cannot exceed **40%** of the base fare.
 
 ## 6. Rail-replacement buses (TL1, KB1, VL1, DX1, KP1, and any others)
 These coaches substitute suspended rail segments and are covered by the **same Hellenic Train

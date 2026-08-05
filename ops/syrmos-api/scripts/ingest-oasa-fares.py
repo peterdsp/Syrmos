@@ -1,7 +1,7 @@
-"""Load assets/oasa-fares/parsed/fares.jsonl into the syrmos-api DB.
+"""Load OASA fare rows without deleting other operators or translations.
 
-Idempotent: wipes fare_products and re-inserts. Designed to be re-run by
-the daily OASA watcher whenever the page hash changes.
+The guarded debug importer only replaces the OASA-owned catalogue sections.
+The curated seeder remains the production source of truth.
 """
 from __future__ import annotations
 
@@ -42,28 +42,30 @@ def main() -> None:
         print("ingest disabled (set SYRMOS_OASA_INGEST_ENABLED=1 to enable)")
         return
 
-    # Snapshot Albanian translations BEFORE wiping the table. Reapplied
-    # after the fresh insert so a watcher tick doesn't nuke the Sq
-    # columns. Keys on (section, title_en) which is the natural identity
-    # of an OASA product. New products that the scraper finds will get
-    # empty Sq columns until the Albanian seed runs again.
-    sq_cache: dict[tuple[str, str], dict] = {}
+    # Snapshot all curated translations before replacing the OASA rows.
+    translation_cache: dict[tuple[str, str], dict] = {}
     try:
         # title_sq / notes_sq exist after migration 0015. Older deploys
         # without it skip silently.
         for row in conn.execute(
-            "SELECT section, title_en, title_sq, notes_sq FROM fare_products"
+            "SELECT section, title_en, title_sq, title_it, validity_sq, validity_it,"
+            " notes_el, notes_sq, notes_it FROM fare_products"
         ).fetchall():
-            sec, title_en, title_sq, notes_sq = row
-            if title_sq or notes_sq:
-                sq_cache[(sec, title_en)] = {
+            sec, title_en, title_sq, title_it, validity_sq, validity_it, notes_el, notes_sq, notes_it = row
+            if any((title_sq, title_it, validity_sq, validity_it, notes_el, notes_sq, notes_it)):
+                translation_cache[(sec, title_en)] = {
                     "title_sq": title_sq or "",
+                    "title_it": title_it or "",
+                    "validity_sq": validity_sq or "",
+                    "validity_it": validity_it or "",
+                    "notes_el": notes_el or "",
                     "notes_sq": notes_sq or "",
+                    "notes_it": notes_it or "",
                 }
     except sqlite3.OperationalError:
         pass
 
-    conn.execute("DELETE FROM fare_products")
+    conn.execute("DELETE FROM fare_products WHERE section IN ('single', 'offers', 'airport', 'passes')")
 
     n = 0
     with JSONL.open() as f:
@@ -88,23 +90,24 @@ def main() -> None:
             )
             n += 1
 
-    # Re-apply the cached Albanian translations on rows whose key
-    # survived. Rows the scraper renamed (e.g. an OASA wording tweak)
-    # naturally lose their translation here; admin can either rename
-    # the seed key or hand-edit the row.
-    if sq_cache:
+    # Reapply translations to rows whose natural key survived.
+    if translation_cache:
         restored = 0
         try:
-            for (sec, title_en), tr in sq_cache.items():
+            for (sec, title_en), tr in translation_cache.items():
                 cur = conn.execute(
-                    "UPDATE fare_products SET title_sq = ?, notes_sq = ?"
+                    "UPDATE fare_products SET title_sq = ?, title_it = ?, validity_sq = ?, validity_it = ?,"
+                    " notes_el = ?, notes_sq = ?, notes_it = ?"
                     " WHERE section = ? AND title_en = ?",
-                    (tr["title_sq"], tr["notes_sq"], sec, title_en),
+                    (
+                        tr["title_sq"], tr["title_it"], tr["validity_sq"], tr["validity_it"],
+                        tr["notes_el"], tr["notes_sq"], tr["notes_it"], sec, title_en,
+                    ),
                 )
                 restored += cur.rowcount
         except sqlite3.OperationalError:
             restored = 0
-        print(f"restored {restored} Albanian translations")
+        print(f"restored {restored} translated fare rows")
 
     conn.commit()
     print(f"loaded {n} fare_products rows into {DB_PATH}")

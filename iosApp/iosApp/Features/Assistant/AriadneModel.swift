@@ -854,6 +854,17 @@ final class AriadneModel: ObservableObject {
     private struct FareResult {
         let full: Double?; let reduced: Double?; let product: String; let op: String; let dynamic: Bool
     }
+    private static let intercityReferenceFares: [String: Double] = [
+        routeFareKey("GR_ATH", "GR_THE"): 43.00,
+        routeFareKey("GR_ATH", "GR_LAR"): 32.50,
+        routeFareKey("GR_ATH", "KB_TRI"): 29.50,
+        routeFareKey("GR_ATH", "KB_KAL"): 30.90,
+        routeFareKey("GR_THE", "GR_LAR"): 14.00,
+        routeFareKey("KB_TRI", "KB_KAL"): 1.80,
+    ]
+    private static func routeFareKey(_ fromId: String, _ toId: String) -> String {
+        [fromId, toId].sorted().joined(separator: "|")
+    }
     private func stationRegions(_ st: TransitStation) -> Set<TransitRegion> {
         Set(st.lineIds.compactMap { SyrmosData.line(for: $0)?.region })
     }
@@ -879,7 +890,13 @@ final class AriadneModel: ObservableObject {
         case .patras:
             return FareResult(full: 1.40, reduced: 1.00, product: "Suburban zone ticket", op: "Hellenic Train", dynamic: false)
         default:
-            return FareResult(full: nil, reduced: nil, product: "Intercity / regional", op: "Hellenic Train", dynamic: true)
+            return FareResult(
+                full: Self.intercityReferenceFares[Self.routeFareKey(from.id, to.id)],
+                reduced: nil,
+                product: "Intercity / regional",
+                op: "Hellenic Train",
+                dynamic: true
+            )
         }
     }
 
@@ -890,6 +907,13 @@ final class AriadneModel: ObservableObject {
             let q = computeFare(fs, ts)
             let a = name(fs); let b = name(ts)
             if q.dynamic {
+                if let reference = q.full {
+                    return bot(t(
+                        "\(a) to \(b): approximately \(money(reference)) for a standard one-way ticket, checked on 5 August 2026. The exact price can change by train, date, class, availability, discount, or replacement-bus connection. Verify it in Hellenic Train booking.",
+                        "\(a) προς \(b): περίπου \(money(reference)) για απλό εισιτήριο μίας διαδρομής, με έλεγχο στις 5 Αυγούστου 2026. Η τελική τιμή αλλάζει ανά τρένο, ημερομηνία, θέση, διαθεσιμότητα, έκπτωση ή σύνδεση με λεωφορείο αντικατάστασης. Επιβεβαίωσέ την στην κράτηση της Hellenic Train.",
+                        "\(a) në \(b): afërsisht \(money(reference)) për një biletë standarde vetëm vajtje, kontrolluar më 5 gusht 2026. Çmimi i saktë mund të ndryshojë sipas trenit, datës, klasës, disponueshmërisë, zbritjes ose lidhjes me autobus zëvendësues. Verifikoje në rezervimin e Hellenic Train.",
+                        "\(a) a \(b): circa \(money(reference)) per un biglietto standard di sola andata, verificato il 5 agosto 2026. Il prezzo esatto può cambiare in base a treno, data, classe, disponibilità, sconto o collegamento con autobus sostitutivo. Verificalo nella prenotazione Hellenic Train."))
+                }
                 return bot(t(
                     "\(a) → \(b) is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
                     "\(a) → \(b) είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",

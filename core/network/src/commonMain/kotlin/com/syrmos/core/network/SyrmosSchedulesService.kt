@@ -230,12 +230,16 @@ class SyrmosSchedulesService(
         @SerialName("titleEn") val titleEn: String,
         @SerialName("titleEl") val titleEl: String = "",
         @SerialName("titleSq") val titleSq: String = "",
+        @SerialName("titleIt") val titleIt: String = "",
         @SerialName("fullPriceEur") val fullPriceEur: Double? = null,
         @SerialName("discountedPriceEur") val discountedPriceEur: Double? = null,
         val validity: String = "",
         @SerialName("validitySq") val validitySq: String = "",
+        @SerialName("validityIt") val validityIt: String = "",
         val notes: String = "",
+        @SerialName("notesEl") val notesEl: String = "",
         @SerialName("notesSq") val notesSq: String = "",
+        @SerialName("notesIt") val notesIt: String = "",
         val tags: List<String> = emptyList(),
         @SerialName("sourceUrl") val sourceUrl: String = "",
     )
@@ -248,13 +252,16 @@ class SyrmosSchedulesService(
         @SerialName("titleEn") val titleEn: String,
         @SerialName("titleEl") val titleEl: String,
         @SerialName("titleSq") val titleSq: String = "",
+        @SerialName("titleIt") val titleIt: String = "",
         @SerialName("summaryEn") val summaryEn: String = "",
         @SerialName("summaryEl") val summaryEl: String = "",
         @SerialName("summarySq") val summarySq: String = "",
+        @SerialName("summaryIt") val summaryIt: String = "",
         val bullets: List<InfoBullet> = emptyList(),
         @SerialName("urlEn") val urlEn: String,
         @SerialName("urlEl") val urlEl: String,
         @SerialName("urlSq") val urlSq: String = "",
+        @SerialName("urlIt") val urlIt: String = "",
     )
 
     @Serializable
@@ -262,6 +269,7 @@ class SyrmosSchedulesService(
         val en: String,
         val el: String,
         val sq: String = "",
+        val it: String = "",
     )
 
     @Serializable

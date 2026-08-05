@@ -26,7 +26,7 @@ struct WatchContentView: View {
                     } label: {
                         Image(systemName: "speaker.wave.2.fill")
                     }
-                    .accessibilityLabel("Read next departure aloud")
+                    .accessibilityLabel(watchText(snap.language, "Read next departure aloud", "Ανάγνωση επόμενης αναχώρησης", "Lexo me zë nisjen e ardhshme", "Leggi ad alta voce la prossima partenza"))
                 }
             }
         }
@@ -62,29 +62,29 @@ private struct DeparturesList: View {
                 WatchHeader(stationName: snapshot.stationName)
 
                 if heroActive, let hero = soonest {
-                    HeroDeparture(departure: hero, now: now)
+                    HeroDeparture(departure: hero, now: now, language: snapshot.language)
                     ForEach(departures.dropFirst()) { dep in
-                        DepartureCard(departure: dep, now: now)
+                        DepartureCard(departure: dep, now: now, language: snapshot.language)
                     }
                 } else {
                     ForEach(departures) { dep in
-                        DepartureCard(departure: dep, now: now)
+                        DepartureCard(departure: dep, now: now, language: snapshot.language)
                     }
                 }
 
                 if departures.isEmpty {
-                    Text("No upcoming departures")
+                    Text(watchText(snapshot.language, "No upcoming departures", "Δεν υπάρχουν επόμενες αναχωρήσεις", "Nuk ka nisje të ardhshme", "Nessuna partenza in arrivo"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 8)
                 }
 
-                UpdatedLabel(updatedEpoch: snapshot.updatedEpoch, now: now)
+                UpdatedLabel(updatedEpoch: snapshot.updatedEpoch, now: now, language: snapshot.language)
 
                 NavigationLink {
                     WatchNearbyView(snapshot: snapshot)
                 } label: {
-                    Text("Next trains nearby")
+                    Text(watchText(snapshot.language, "Next trains nearby", "Επόμενα τρένα κοντά", "Trenat e ardhshëm pranë", "Prossimi treni nelle vicinanze"))
                         .font(.footnote).fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -122,10 +122,11 @@ private struct WatchHeader: View {
 private struct HeroDeparture: View {
     let departure: WatchDeparture
     let now: TimeInterval
+    let language: String?
 
     var body: some View {
         let secs = departure.liveSeconds(now: now)
-        let text = watchCountdownText(secondsAway: secs)
+        let text = watchCountdownText(secondsAway: secs, language: language)
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 LineBadge(lineId: departure.lineId)
@@ -153,11 +154,12 @@ private struct HeroDeparture: View {
 private struct DepartureCard: View {
     let departure: WatchDeparture
     let now: TimeInterval
+    let language: String?
 
     var body: some View {
         let secs = departure.liveSeconds(now: now)
         let imminent = secs <= 60
-        let text = watchCountdownText(secondsAway: secs)
+        let text = watchCountdownText(secondsAway: secs, language: language)
         HStack(spacing: 8) {
             LineBadge(lineId: departure.lineId)
             VStack(alignment: .leading, spacing: 1) {
@@ -193,8 +195,8 @@ struct LineBadge: View {
 
 // MARK: - Countdown formatting (mirrors HeroCountdown.kt)
 
-private func watchCountdownText(secondsAway: Int) -> String {
-    if secondsAway <= 0 { return "now" }
+private func watchCountdownText(secondsAway: Int, language: String?) -> String {
+    if secondsAway <= 0 { return watchText(language, "now", "τώρα", "tani", "ora") }
     if secondsAway < 120 {
         let m = secondsAway / 60
         let s = secondsAway % 60
@@ -220,19 +222,29 @@ private extension Color {
 private struct UpdatedLabel: View {
     let updatedEpoch: Double
     let now: TimeInterval
+    let language: String?
     var body: some View {
-        Text("Updated \(relative)")
+        Text(watchText(language, "Updated \(relative)", "Ενημέρωση \(relative)", "Përditësuar \(relative)", "Aggiornato \(relative)"))
             .font(.caption2)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
     private var relative: String {
-        guard updatedEpoch > 0 else { return "just now" }
+        guard updatedEpoch > 0 else { return watchText(language, "just now", "μόλις τώρα", "tani", "proprio ora") }
         let secs = max(0, now - updatedEpoch)
-        if secs < 45 { return "just now" }
+        if secs < 45 { return watchText(language, "just now", "μόλις τώρα", "tani", "proprio ora") }
         let mins = Int((secs / 60).rounded())
-        if mins < 60 { return "\(mins)m ago" }
+        if mins < 60 { return watchText(language, "\(mins)m ago", "πριν από \(mins)λ", "\(mins)m më parë", "\(mins)m fa") }
         let hrs = mins / 60
-        return "\(hrs)h ago"
+        return watchText(language, "\(hrs)h ago", "πριν από \(hrs)ω", "\(hrs)h më parë", "\(hrs)h fa")
+    }
+}
+
+func watchText(_ language: String?, _ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+    switch language?.lowercased() {
+    case "el": return el
+    case "sq": return sq
+    case "it": return it
+    default: return en
     }
 }

@@ -55,6 +55,19 @@ class DepartureDirectionLabelTest {
     }
 
     @Test
+    fun offlineServiceBandNameDoesNotReplaceDirection() {
+        val departure = departure(
+            direction = Direction.OUTBOUND,
+            notes = "evening_offpeak",
+        )
+
+        assertEquals(
+            "Kifissia",
+            departureDirectionLabel(departure, listOf(line1), AppLanguage.ENGLISH),
+        )
+    }
+
+    @Test
     fun airportBranchUsesLocalizedAirportDestination() {
         val departure = departure(
             direction = Direction.OUTBOUND,

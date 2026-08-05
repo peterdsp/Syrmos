@@ -60,7 +60,7 @@ class LineStatusGlanceWidget : GlanceAppWidget() {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Network status",
+                            text = widgetText("Network status", "Κατάσταση δικτύου", "Gjendja e rrjetit", "Stato della rete"),
                             style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp),
                         )
                         Spacer(GlanceModifier.defaultWeight())
@@ -75,7 +75,10 @@ class LineStatusGlanceWidget : GlanceAppWidget() {
                         ) {
                             GlanceLinePill(line, fontSize = 12.sp)
                             Spacer(GlanceModifier.width(10.dp))
-                            Text("Good Service", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp))
+                            Text(
+                                widgetText("Good service", "Κανονική λειτουργία", "Shërbim normal", "Servizio regolare"),
+                                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                            )
                         }
                     }
                 }

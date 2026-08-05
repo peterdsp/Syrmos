@@ -45,16 +45,22 @@ class ComputeFareUseCaseTest {
     }
 
     @Test
-    fun intercity_and_cross_region_are_dynamic_no_fabricated_price() {
-        // National leg.
+    fun intercity_reference_fares_are_marked_dynamic_and_dated() {
         val ic = useCase.invoke(national("GR_ATH"), national("GR_THE"))
         assertTrue(ic.dynamic)
         assertNull(ic.fullPriceEur)
+        assertEquals(43.00, ic.referencePriceEur)
+        assertEquals("2026-08-05", ic.referenceObservedOn)
         assertTrue(ic.sourceUrl.contains("hellenictrain"))
-        // Cross-region (Athens -> Thessaloniki) is also intercity.
+
+        val routeWithoutReference = useCase.invoke(national("GR_OIN"), national("GR_THI"))
+        assertTrue(routeWithoutReference.dynamic)
+        assertNull(routeWithoutReference.referencePriceEur)
+
+        // A cross-region trip with non-national station IDs remains booking-priced.
         val cross = useCase.invoke(ath("M2_SYN"), thess("TM1_A"))
         assertTrue(cross.dynamic)
-        assertNull(cross.fullPriceEur)
+        assertNull(cross.referencePriceEur)
     }
 
     @Test

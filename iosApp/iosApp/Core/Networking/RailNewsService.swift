@@ -5,9 +5,11 @@ struct RailNewsItem: Identifiable {
     let title: String
     let titleEn: String
     let titleSq: String
+    let titleIt: String
     let summary: String
     let summaryEn: String
     let summarySq: String
+    let summaryIt: String
     let url: URL?
     let publishedAt: String
     let thumbnailUrl: String
@@ -16,7 +18,7 @@ struct RailNewsItem: Identifiable {
         switch language {
         case .greek: return title
         case .albanian: return titleSq.isEmpty ? (titleEn.isEmpty ? title : titleEn) : titleSq
-        case .italian: return titleEn.isEmpty ? title : titleEn
+        case .italian: return titleIt.isEmpty ? (titleEn.isEmpty ? title : titleEn) : titleIt
         case .english: return titleEn.isEmpty ? title : titleEn
         }
     }
@@ -25,7 +27,7 @@ struct RailNewsItem: Identifiable {
         switch language {
         case .greek: return summary
         case .albanian: return summarySq.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summarySq
-        case .italian: return summaryEn.isEmpty ? summary : summaryEn
+        case .italian: return summaryIt.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summaryIt
         case .english: return summaryEn.isEmpty ? summary : summaryEn
         }
     }
@@ -75,9 +77,11 @@ final class RailNewsService: ObservableObject {
         let title: String
         let titleEn: String?
         let titleSq: String?
+        let titleIt: String?
         let summary: String
         let summaryEn: String?
         let summarySq: String?
+        let summaryIt: String?
         let url: String
         let publishedAt: String?
         let thumbnailUrl: String?
@@ -102,9 +106,11 @@ final class RailNewsService: ObservableObject {
                     title: item.title,
                     titleEn: item.titleEn ?? "",
                     titleSq: item.titleSq ?? "",
+                    titleIt: item.titleIt ?? "",
                     summary: item.summary,
                     summaryEn: item.summaryEn ?? "",
                     summarySq: item.summarySq ?? "",
+                    summaryIt: item.summaryIt ?? "",
                     url: URL(string: item.url),
                     publishedAt: item.publishedAt ?? "",
                     thumbnailUrl: item.thumbnailUrl ?? ""
@@ -125,9 +131,11 @@ final class RailNewsService: ObservableObject {
                 "title": item.title,
                 "titleEn": item.titleEn,
                 "titleSq": item.titleSq,
+                "titleIt": item.titleIt,
                 "summary": item.summary,
                 "summaryEn": item.summaryEn,
                 "summarySq": item.summarySq,
+                "summaryIt": item.summaryIt,
                 "url": item.url?.absoluteString ?? "",
                 "publishedAt": item.publishedAt,
                 "thumbnailUrl": item.thumbnailUrl,
@@ -145,9 +153,11 @@ final class RailNewsService: ObservableObject {
                 title: title,
                 titleEn: d["titleEn"] ?? "",
                 titleSq: d["titleSq"] ?? "",
+                titleIt: d["titleIt"] ?? "",
                 summary: d["summary"] ?? "",
                 summaryEn: d["summaryEn"] ?? "",
                 summarySq: d["summarySq"] ?? "",
+                summaryIt: d["summaryIt"] ?? "",
                 url: URL(string: d["url"] ?? ""),
                 publishedAt: d["publishedAt"] ?? "",
                 thumbnailUrl: d["thumbnailUrl"] ?? ""

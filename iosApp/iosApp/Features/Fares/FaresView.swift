@@ -13,7 +13,8 @@ struct FaresView: View {
     @State private var fareTo: TransitStation?
     @State private var picking: PickTarget?
 
-    private let sourceURL = URL(string: "https://www.oasa.gr/en/tickets/prices-of-products/")!
+    private let oasaURL = URL(string: "https://www.oasa.gr/en/tickets/prices-of-products/")!
+    private let hellenicTrainURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")!
 
     /// Every fare_products.section grouped under a network so the whole country
     /// shows, not just OASA. Mirrors the Android FaresScreen.
@@ -82,23 +83,39 @@ struct FaresView: View {
     private var footer: some View {
         VStack(spacing: 10) {
             Text(loc.language == .greek
-                 ? "Οι τιμές παρέχονται από την OASA. Για την οριστική τιμή ελέγξτε την επίσημη σελίδα."
+                 ? "Οι τιμές προέρχονται από OASA, OSETH και Hellenic Train. Τα υπεραστικά ποσά είναι τιμές αναφοράς και επιβεβαιώνονται στην κράτηση."
                  : loc.language == .albanian
-                 ? "Çmimet ofrohen nga OASA. Për çmimin përfundimtar, kontrollo faqen zyrtare."
+                 ? "Çmimet vijnë nga OASA, OSETH dhe Hellenic Train. Çmimet ndërqytetëse janë orientuese dhe verifikohen gjatë rezervimit."
                  : loc.language == .italian
-                 ? "I prezzi sono forniti da OASA. Per il prezzo definitivo, controlla la pagina ufficiale."
-                 : "Prices are provided by OASA. For the authoritative figure, check the official page.")
+                 ? "I prezzi provengono da OASA, OSETH e Hellenic Train. Le tariffe intercity sono indicative e vanno verificate alla prenotazione."
+                 : "Prices come from OASA, OSETH, and Hellenic Train. Intercity amounts are reference fares and must be verified at booking.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
             Button {
-                safariURL = sourceURL
+                safariURL = oasaURL
             } label: {
                 HStack {
                     Image(systemName: "safari")
                     Text(loc.language == .greek ? "Άνοιγμα στην OASA" : loc.language == .albanian ? "Hap në OASA" : loc.language == .italian ? "Vedi su OASA" : "View on OASA")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.syrmosPrimary.opacity(0.12))
+                .foregroundStyle(Color.syrmosPrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.horizontal, 16)
+
+            Button {
+                safariURL = hellenicTrainURL
+            } label: {
+                HStack {
+                    Image(systemName: "safari")
+                    Text(loc.language == .greek ? "Έλεγχος στη Hellenic Train" : loc.language == .albanian ? "Verifiko në Hellenic Train" : loc.language == .italian ? "Verifica su Hellenic Train" : "Verify on Hellenic Train")
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -165,7 +182,9 @@ struct FaresView: View {
 
     private func fareResult(_ offer: FareOffer) -> some View {
         let priceText: String = offer.dynamic
-            ? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : loc.language == .italian ? "alla prenotazione" : "at booking")
+            ? offer.fullEur.map {
+                String(format: "€%.2f", $0) + (loc.language == .greek ? " περίπου" : loc.language == .albanian ? " afërsisht" : loc.language == .italian ? " circa" : " approx.")
+            } ?? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : loc.language == .italian ? "alla prenotazione" : "at booking")
             : String(format: "€%.2f", offer.fullEur ?? 0)
                 + (offer.reducedEur.map { " · " + (loc.language == .greek ? "μειωμένο " : loc.language == .albanian ? "e reduktuar " : loc.language == .italian ? "ridotto " : "reduced ") + String(format: "€%.2f", $0) } ?? "")
         return VStack(alignment: .leading, spacing: 2) {
@@ -353,7 +372,9 @@ private struct FareCard: View {
                     .lineLimit(2)
                 Spacer()
                 // Intercity has no fixed price (booking-time); show that, not a blank.
-                Text(product.fullPriceEur.map { String(format: "€%.2f", $0) }
+                Text(product.fullPriceEur.map { price in
+                    String(format: "€%.2f", price) + (product.tags.contains("reference") ? approximateSuffix : "")
+                }
                      ?? (loc.language == .greek ? "στην κράτηση" : loc.language == .albanian ? "në rezervim" : loc.language == .italian ? "alla prenotazione" : "at booking"))
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(Color.syrmosPrimary)
@@ -404,6 +425,15 @@ private struct FareCard: View {
         return .secondary
     }
 
+    private var approximateSuffix: String {
+        switch loc.language {
+        case .greek: return " περίπου"
+        case .albanian: return " afërsisht"
+        case .italian: return " circa"
+        case .english: return " approx."
+        }
+    }
+
     private var displayTitle: String {
         return product.localizedTitle(loc.language)
     }
@@ -425,6 +455,15 @@ struct FareOffer {
 /// on the LOCAL network the two stations share; if they share none (different
 /// cities, or only a national line links them) it is intercity, booking-priced.
 enum FareEngine {
+    private static let referenceFares: [String: Double] = [
+        routeKey("GR_ATH", "GR_THE"): 43.00,
+        routeKey("GR_ATH", "GR_LAR"): 32.50,
+        routeKey("GR_ATH", "KB_TRI"): 29.50,
+        routeKey("GR_ATH", "KB_KAL"): 30.90,
+        routeKey("GR_THE", "GR_LAR"): 14.00,
+        routeKey("KB_TRI", "KB_KAL"): 1.80,
+    ]
+
     static func computeFare(from: TransitStation, to: TransitStation) -> FareOffer {
         let fr = regions(from), tr = regions(to)
         let local = fr.first { $0 != .national && tr.contains($0) }
@@ -440,8 +479,17 @@ enum FareEngine {
         case .patras:
             return FareOffer(fullEur: 1.40, reducedEur: 1.00, product: "Suburban zone ticket", op: "Hellenic Train", dynamic: false)
         default:
-            return FareOffer(fullEur: nil, reducedEur: nil, product: "Intercity / regional", op: "Hellenic Train", dynamic: true)
+            return FareOffer(
+                fullEur: referenceFares[routeKey(from.id, to.id)],
+                reducedEur: nil,
+                product: "Intercity / regional, verify at booking",
+                op: "Hellenic Train",
+                dynamic: true
+            )
         }
+    }
+    private static func routeKey(_ fromId: String, _ toId: String) -> String {
+        [fromId, toId].sorted().joined(separator: "|")
     }
     static func regions(_ st: TransitStation) -> Set<TransitRegion> {
         Set(st.lineIds.compactMap { SyrmosData.line(for: $0)?.region })

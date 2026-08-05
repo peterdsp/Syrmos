@@ -80,6 +80,7 @@ class AnnouncementsRepository(
         val rawMessage: String = "",
         @SerialName("rawMessageEn") val rawMessageEn: String = "",
         @SerialName("rawMessageSq") val rawMessageSq: String = "",
+        @SerialName("rawMessageIt") val rawMessageIt: String = "",
         val serviceUntil: String? = null,
     ) {
         fun toModel(): STASYServiceStatus = STASYServiceStatus(
@@ -87,6 +88,7 @@ class AnnouncementsRepository(
             rawMessage = rawMessage,
             rawMessageEn = rawMessageEn.ifBlank { rawMessage },
             rawMessageSq = rawMessageSq,
+            rawMessageIt = rawMessageIt,
             serviceUntil = serviceUntil,
         )
     }
@@ -97,10 +99,12 @@ class AnnouncementsRepository(
         val title: String,
         @SerialName("titleEn") val titleEn: String = "",
         @SerialName("titleSq") val titleSq: String = "",
+        @SerialName("titleIt") val titleIt: String = "",
         val date: String = "",
         val summary: String = "",
         @SerialName("summaryEn") val summaryEn: String = "",
         @SerialName("summarySq") val summarySq: String = "",
+        @SerialName("summaryIt") val summaryIt: String = "",
         val url: String = "",
         val category: String = "",
         @SerialName("affectedLines") val affectedLines: List<String> = emptyList(),
@@ -113,10 +117,12 @@ class AnnouncementsRepository(
             title = title,
             titleEn = titleEn.ifBlank { title },
             titleSq = titleSq,
+            titleIt = titleIt,
             date = date,
             summary = summary,
             summaryEn = summaryEn,
             summarySq = summarySq,
+            summaryIt = summaryIt,
             url = url,
             isServiceAlert = category == "serviceAlert",
             affectedLines = affectedLines,

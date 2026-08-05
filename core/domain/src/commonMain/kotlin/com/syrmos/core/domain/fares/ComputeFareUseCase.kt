@@ -63,6 +63,29 @@ internal object FareTables {
             "15%, return 20%, students 25-50%, youth under 24 25%, children 4-12 50%, reduced " +
             "mobility 50% (total reduction capped at 40%). Book for the exact fare.",
     )
+
+    private val intercityReferenceFares = mapOf(
+        routeKey("GR_ATH", "GR_THE") to 43.00,
+        routeKey("GR_ATH", "GR_LAR") to 32.50,
+        routeKey("GR_ATH", "KB_TRI") to 29.50,
+        routeKey("GR_ATH", "KB_KAL") to 30.90,
+        routeKey("GR_THE", "GR_LAR") to 14.00,
+        routeKey("KB_TRI", "KB_KAL") to 1.80,
+    )
+
+    fun intercity(fromId: String, toId: String): FareQuote {
+        val reference = intercityReferenceFares[routeKey(fromId, toId)] ?: return intercity
+        return intercity.copy(
+            referencePriceEur = reference,
+            referenceObservedOn = "2026-08-05",
+            note = "Reference standard one-way fare observed in the official Hellenic Train search on " +
+                "5 August 2026. The exact fare can change with the train, date, class, availability, " +
+                "discount, or replacement-bus connection. Verify before purchase.",
+        )
+    }
+
+    private fun routeKey(fromId: String, toId: String): String =
+        listOf(fromId, toId).sorted().joinToString("|")
 }
 
 /**
@@ -87,7 +110,7 @@ class ComputeFareUseCase {
                 if (from.isSuburban || to.isSuburban) FareTables.thessSuburban
                 else FareTables.thessUrban
             Region.PATRAS -> FareTables.patrasBase
-            else -> FareTables.intercity
+            else -> FareTables.intercity(from.id, to.id)
         }
     }
 }

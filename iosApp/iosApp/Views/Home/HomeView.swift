@@ -1000,6 +1000,7 @@ struct InAppWebView: View {
     let url: URL
     @Environment(\.dismiss) private var dismiss
     @State private var isLoading = true
+    @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         NavigationStack {
@@ -1013,7 +1014,7 @@ struct InAppWebView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button(loc.language == .greek ? "Τέλος" : loc.language == .albanian ? "U krye" : loc.language == .italian ? "Fine" : "Done") { dismiss() }
                 }
             }
         }

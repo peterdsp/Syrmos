@@ -22,18 +22,18 @@ struct WatchNearbyView: View {
                         Text(snapshot.stationName)
                             .font(.headline).fontWeight(.bold)
                             .lineLimit(1).minimumScaleFactor(0.7)
-                        Text("Nearby departures")
+                        Text(watchText(snapshot.language, "Nearby departures", "Κοντινές αναχωρήσεις", "Nisjet pranë", "Partenze nelle vicinanze"))
                             .font(.caption2).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     if snapshot.departures.isEmpty {
-                        Text("See on iPhone")
+                        Text(watchText(snapshot.language, "See on iPhone", "Δείτε στο iPhone", "Shiko në iPhone", "Vedi su iPhone"))
                             .font(.caption).foregroundStyle(.secondary)
                             .padding(.vertical, 8)
                     } else {
                         ForEach(snapshot.departures) { dep in
-                            NearbyRow(departure: dep, now: now)
+                            NearbyRow(departure: dep, now: now, language: snapshot.language)
                         }
                     }
 
@@ -42,7 +42,7 @@ struct WatchNearbyView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "iphone")
-                            Text("Open on iPhone for map and tickets")
+                            Text(watchText(snapshot.language, "Open on iPhone for map and tickets", "Άνοιγμα στο iPhone για χάρτη και εισιτήρια", "Hap në iPhone për hartën dhe biletat", "Apri su iPhone per mappa e biglietti"))
                                 .font(.caption2).fontWeight(.semibold)
                                 .multilineTextAlignment(.leading)
                         }
@@ -57,7 +57,7 @@ struct WatchNearbyView: View {
                 .padding(.horizontal, 2)
             }
         }
-        .navigationTitle("Nearby")
+        .navigationTitle(watchText(snapshot.language, "Nearby", "Κοντά", "Pranë", "Nelle vicinanze"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -76,6 +76,7 @@ struct WatchNearbyView: View {
 private struct NearbyRow: View {
     let departure: WatchDeparture
     let now: TimeInterval
+    let language: String?
     var body: some View {
         let minutes = departure.liveMinutes(now: now)
         HStack(spacing: 8) {
@@ -85,7 +86,7 @@ private struct NearbyRow: View {
                 Text(departure.time).font(.caption2).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            Text(minutes <= 0 ? "now" : "\(minutes)m")
+            Text(minutes <= 0 ? watchText(language, "now", "τώρα", "tani", "ora") : "\(minutes)m")
                 .font(.callout).fontWeight(.semibold).monospacedDigit()
                 .foregroundStyle(minutes <= 2 ? .red : .primary)
         }

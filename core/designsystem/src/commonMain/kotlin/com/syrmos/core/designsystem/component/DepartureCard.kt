@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.LineColor
@@ -42,6 +43,7 @@ fun DepartureCard(
     /** Localised (EL/SQ) chip label; falls back to the chip's English default. */
     sourceLabel: String? = null,
     airportLabel: String? = null,
+    language: AppLanguage = AppLanguage.ENGLISH,
 ) {
     val vehicleResource = lineId?.let { VehicleIcons.resourceFor(it, direction, isAirport) }
     Card(
@@ -110,7 +112,7 @@ fun DepartureCard(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = formatMinutesAway(minutesAway),
+                    text = formatMinutesAway(minutesAway, language),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = when {
@@ -134,8 +136,13 @@ fun DepartureCard(
  * "Now" once the train is at the platform, "Xh Ymin" past one hour so
  * late-night views like Nikaia M3 at 02:09 show "3h 21min" instead of
  * the unreadable "201 min" the bare number used to render. */
-fun formatMinutesAway(minutesAway: Int): String = when {
-    minutesAway <= 0 -> "Now"
+fun formatMinutesAway(minutesAway: Int, language: AppLanguage = AppLanguage.ENGLISH): String = when {
+    minutesAway <= 0 -> when (language) {
+        AppLanguage.GREEK -> "Τώρα"
+        AppLanguage.ALBANIAN -> "Tani"
+        AppLanguage.ITALIAN -> "Ora"
+        else -> "Now"
+    }
     minutesAway == 1 -> "1 min"
     minutesAway < 60 -> "$minutesAway min"
     minutesAway % 60 == 0 -> "${minutesAway / 60}h"
