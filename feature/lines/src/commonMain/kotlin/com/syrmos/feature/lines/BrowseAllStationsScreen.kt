@@ -95,6 +95,7 @@ fun BrowseAllStationsScreen(
                 text = when (lang) {
                     AppLanguage.GREEK -> "Ολοι οι σταθμοι"
                     AppLanguage.ALBANIAN -> "Te gjitha stacionet"
+                    AppLanguage.ITALIAN -> "Tutte le stazioni"
                     else -> "All Stations"
                 },
                 style = MaterialTheme.typography.titleMedium,
@@ -125,6 +126,7 @@ fun BrowseAllStationsScreen(
                             text = when (lang) {
                                 AppLanguage.GREEK -> "Αναζητηση σταθμου..."
                                 AppLanguage.ALBANIAN -> "Kerko stacion..."
+                                AppLanguage.ITALIAN -> "Cerca stazione..."
                                 else -> "Search station..."
                             },
                             style = MaterialTheme.typography.bodyMedium,
@@ -165,6 +167,7 @@ fun BrowseAllStationsScreen(
             text = "${filtered.size} " + when (lang) {
                 AppLanguage.GREEK -> "σταθμοι"
                 AppLanguage.ALBANIAN -> "stacione"
+                AppLanguage.ITALIAN -> "stazioni"
                 else -> "stations"
             },
             style = MaterialTheme.typography.labelSmall,
@@ -202,6 +205,7 @@ fun BrowseAllStationsScreen(
                                 text = when (lang) {
                                     AppLanguage.GREEK -> station.nameEl
                                     AppLanguage.ALBANIAN -> station.nameSq ?: station.name
+                                    AppLanguage.ITALIAN -> station.name
                                     else -> station.name
                                 },
                                 style = MaterialTheme.typography.bodyMedium,

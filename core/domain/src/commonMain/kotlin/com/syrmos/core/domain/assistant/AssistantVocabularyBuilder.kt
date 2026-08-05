@@ -31,6 +31,7 @@ object AssistantVocabularyBuilder {
                     add("line $suffix")
                     add("γραμμη $suffix")
                     add("linja $suffix")
+                    add("linea $suffix")
                     when (line.id.first()) {
                         'M' -> add("metro $suffix")
                         'T' -> add("tram $suffix")
@@ -51,9 +52,9 @@ object AssistantVocabularyBuilder {
      * but alternate spellings and Greeklish still need these overrides.
      */
     private val SQ_AND_LATIN_ALIASES: Map<String, List<String>> = mapOf(
-        "airport" to listOf("Aeroport", "Aeroporti"),
-        "aerodromio" to listOf("Aeroport", "Aeroporti"),
-        "piraeus" to listOf("Pireas", "Pireu"),
+        "airport" to listOf("Aeroport", "Aeroporti", "Aeroporto"),
+        "aerodromio" to listOf("Aeroport", "Aeroporti", "Aeroporto"),
+        "piraeus" to listOf("Pireas", "Pireu", "Pireo"),
         "syntagma" to listOf("Sintagma"),
         "thessaloniki" to listOf("Selanik", "Selaniku", "Thesaloniki"),
         "athens" to listOf("Athina", "Athine", "Athinë"),

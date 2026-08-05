@@ -42,18 +42,17 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         return true
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let userInfo = response.notification.request.content.userInfo
         let category = response.notification.request.content.categoryIdentifier
+        let alertId = response.notification.request.content.userInfo["alertId"] as? String ?? ""
 
         Task { @MainActor in
             switch category {
             case "SERVICE_ALERT":
-                let alertId = userInfo["alertId"] as? String ?? ""
                 DeepLinkRouter.shared.pending = .serviceAlert(id: alertId)
             case "WEATHER_ALERT":
                 DeepLinkRouter.shared.pending = .weatherAlert
@@ -68,7 +67,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         completionHandler()
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
@@ -302,6 +301,7 @@ struct ContentView: View {
         switch loc.language {
         case .greek: return "Ρώτα την Αριάδνη"
         case .albanian: return "Pyet Ariadne"
+        case .italian: return "Chiedi ad Ariadne"
         default: return "Ask Ariadne"
         }
     }

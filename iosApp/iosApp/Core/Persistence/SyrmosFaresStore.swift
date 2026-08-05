@@ -89,6 +89,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return titleEl.isEmpty ? titleEn : titleEl
             case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
+            case .italian: return titleEn
             case .english: return titleEn
             }
         }
@@ -97,6 +98,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return summaryEl ?? summaryEn ?? ""
             case .albanian: return summarySq ?? summaryEn ?? ""
+            case .italian: return summaryEn ?? ""
             case .english: return summaryEn ?? ""
             }
         }
@@ -105,6 +107,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return urlEl.isEmpty ? urlEn : urlEl
             case .albanian: return (urlSq?.isEmpty == false) ? urlSq! : urlEn
+            case .italian: return urlEn
             case .english: return urlEn
             }
         }
@@ -120,6 +123,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return el.isEmpty ? en : el
             case .albanian: return (sq?.isEmpty == false) ? sq! : en
+            case .italian: return en
             case .english: return en
             }
         }
@@ -145,6 +149,7 @@ final class SyrmosFaresStore: ObservableObject {
             switch lang {
             case .greek: return titleEl.isEmpty ? titleEn : titleEl
             case .albanian: return (titleSq?.isEmpty == false) ? titleSq! : titleEn
+            case .italian: return titleEn
             case .english: return titleEn
             }
         }

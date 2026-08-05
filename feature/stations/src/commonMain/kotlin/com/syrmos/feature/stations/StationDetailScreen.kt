@@ -48,16 +48,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.designsystem.component.DepartureCard
+import com.syrmos.core.designsystem.component.AlertBannerInfo
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
+import com.syrmos.core.designsystem.component.ServiceAlertBanner
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.model.transit.Direction
+import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineColor
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun StationDetailScreen(
     viewModel: StationDetailViewModel,
+    alertBanner: AlertBannerInfo? = null,
     onBack: () -> Unit = {},
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
 ) {
@@ -93,6 +99,7 @@ fun StationDetailScreen(
                             contentDescription = when (lang) {
                                 AppLanguage.GREEK -> "Πισω"
                                 AppLanguage.ALBANIAN -> "Prapa"
+                                AppLanguage.ITALIAN -> "Indietro"
                                 else -> "Back"
                             },
                         )
@@ -106,11 +113,17 @@ fun StationDetailScreen(
             contentPadding = PaddingValues(top = 8.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (alertBanner != null) {
+                item {
+                    ServiceAlertBanner(info = alertBanner)
+                }
+            }
             if (uiState.connectingLines.isNotEmpty()) {
                 item {
                     SectionHeader(title = when (lang) {
                         AppLanguage.GREEK -> "Γραμμες σε αυτον τον σταθμο"
                         AppLanguage.ALBANIAN -> "Linjat ne kete stacion"
+                        AppLanguage.ITALIAN -> "Linee in questa stazione"
                         else -> "Lines at this station"
                     })
                 }
@@ -146,6 +159,7 @@ fun StationDetailScreen(
                                     contentDescription = when (lang) {
                                         AppLanguage.GREEK -> "Εμφανιση στον χαρτη"
                                         AppLanguage.ALBANIAN -> "Shfaq ne harte"
+                                        AppLanguage.ITALIAN -> "Mostra sulla mappa"
                                         else -> "Show on map"
                                     },
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -192,6 +206,7 @@ fun StationDetailScreen(
                                 text = when (lang) {
                                     AppLanguage.GREEK -> "Σταθμος ανταποκρισης"
                                     AppLanguage.ALBANIAN -> "Stacion korrespondence"
+                                    AppLanguage.ITALIAN -> "Stazione di interscambio"
                                     else -> "Transfer station"
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
@@ -220,6 +235,7 @@ fun StationDetailScreen(
                                 Text(when (lang) {
                                     AppLanguage.GREEK -> "Αγορα εισιτηριου στην Hellenic Train"
                                     AppLanguage.ALBANIAN -> "Bli bilete ne Hellenic Train"
+                                    AppLanguage.ITALIAN -> "Acquista biglietto su Hellenic Train"
                                     else -> "Buy ticket on Hellenic Train"
                                 })
                             }
@@ -228,6 +244,7 @@ fun StationDetailScreen(
                                 text = when (lang) {
                                     AppLanguage.GREEK -> "Η πληρωμη και η εκδοση εισιτηριου γινονται 100% στον ιστοτοπο της Hellenic Train. Το Syrmos απλως παρεχει τον συνδεσμο, δεν συλλεγει στοιχεια πληρωμης και δεν εχει καμια ευθυνη για την κρατηση."
                                     AppLanguage.ALBANIAN -> "Pagesa dhe leshimi i biletes behen 100% ne faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh te dhena pagesash dhe nuk ka asnje pergjegesi per rezervimin."
+                                    AppLanguage.ITALIAN -> "Il pagamento e l'emissione del biglietto avvengono al 100% sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha responsabilita per la prenotazione."
                                     else -> "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking."
                                 },
                                 style = MaterialTheme.typography.labelSmall,
@@ -242,6 +259,7 @@ fun StationDetailScreen(
                 SectionHeader(title = when (lang) {
                     AppLanguage.GREEK -> "Επομενες αναχωρησεις"
                     AppLanguage.ALBANIAN -> "Nisjet e ardhshme"
+                    AppLanguage.ITALIAN -> "Prossime partenze"
                     else -> "Next departures"
                 })
             }
@@ -253,12 +271,14 @@ fun StationDetailScreen(
                             when (lang) {
                                 AppLanguage.GREEK -> "Δεν υπαρχουν διαθεσιμα δρομολογια αυτη τη στιγμη. Η γραμμη ειναι κλειστη η εχει τελειωσει η σημερινη υπηρεσια."
                                 AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme tani. Linja eshte mbyllur ose ka perfunduar sherbimi i sotem."
+                                AppLanguage.ITALIAN -> "Nessuna partenza disponibile al momento. La linea e chiusa o il servizio odierno e terminato."
                                 else -> "No departures right now. The line is closed or today's service has ended."
                             }
                         } else {
                             when (lang) {
                                 AppLanguage.GREEK -> "Φορτωση δρομολογιων..."
                                 AppLanguage.ALBANIAN -> "Duke ngarkuar oraret..."
+                                AppLanguage.ITALIAN -> "Caricamento partenze..."
                                 else -> "Loading departures..."
                             }
                         },
@@ -269,8 +289,11 @@ fun StationDetailScreen(
                 }
             } else {
                 items(uiState.departures) { departure ->
-                    val direction = departure.notes ?: departure.direction.name.lowercase()
-                        .replaceFirstChar { it.uppercase() }
+                    val direction = departureDirectionLabel(
+                        departure = departure,
+                        connectingLines = uiState.connectingLines,
+                        language = lang,
+                    )
                     val isAirport = departure.serviceType == "airport" ||
                             direction.contains("airport", ignoreCase = true) ||
                             direction.contains("αεροδρ", ignoreCase = true)
@@ -289,6 +312,7 @@ fun StationDetailScreen(
                             when (lang) {
                                 AppLanguage.GREEK -> "Αεροδρομιο"
                                 AppLanguage.ALBANIAN -> "Aeroporti"
+                                AppLanguage.ITALIAN -> "Aeroporto"
                                 else -> "Airport"
                             }
                         } else null,
@@ -340,12 +364,56 @@ fun StationDetailScreen(
                         Text(when (lang) {
                             AppLanguage.GREEK -> "Οδηγιες"
                             AppLanguage.ALBANIAN -> "Merr udhezime"
+                            AppLanguage.ITALIAN -> "Indicazioni"
                             else -> "Get directions"
                         })
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+        }
+    }
+}
+
+internal fun departureDirectionLabel(
+    departure: UpcomingDeparture,
+    connectingLines: List<Line>,
+    language: AppLanguage,
+): String {
+    departure.notes?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+
+    if (
+        departure.direction == Direction.OUTBOUND &&
+        (departure.lineId == "M3_AIR" || departure.serviceType == "airport")
+    ) {
+        return when (language) {
+            AppLanguage.GREEK -> "Αεροδρόμιο"
+            AppLanguage.ALBANIAN -> "Aeroporti"
+            AppLanguage.ITALIAN -> "Aeroporto"
+            AppLanguage.ENGLISH -> "Airport"
+        }
+    }
+
+    val lineId = if (departure.lineId == "M3_AIR") "M3" else departure.lineId
+    val line = connectingLines.firstOrNull { it.id == lineId }
+    val terminal = when (departure.direction) {
+        Direction.OUTBOUND -> line?.terminalB
+        Direction.INBOUND -> line?.terminalA
+    }
+    if (!terminal.isNullOrBlank()) return terminal
+
+    return when (departure.direction) {
+        Direction.OUTBOUND -> when (language) {
+            AppLanguage.GREEK -> "Προς τέρμα"
+            AppLanguage.ALBANIAN -> "Drejt terminalit"
+            AppLanguage.ITALIAN -> "Verso il capolinea"
+            AppLanguage.ENGLISH -> "Outbound"
+        }
+        Direction.INBOUND -> when (language) {
+            AppLanguage.GREEK -> "Προς αφετηρία"
+            AppLanguage.ALBANIAN -> "Drejt nisjes"
+            AppLanguage.ITALIAN -> "Verso il capolinea iniziale"
+            AppLanguage.ENGLISH -> "Inbound"
         }
     }
 }

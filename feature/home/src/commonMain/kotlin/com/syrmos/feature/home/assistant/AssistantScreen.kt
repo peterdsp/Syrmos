@@ -281,18 +281,21 @@ private fun MessageBubble(
 private fun subtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Ο έξυπνος οδηγός συγκοινωνιών σου"
     AppLanguage.ALBANIAN -> "Udhezuesi yt i mencur i transportit"
+    AppLanguage.ITALIAN -> "La tua guida intelligente ai trasporti"
     else -> "Your smart transit guide"
 }
 
 private fun placeholder(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Ρώτησε για τρένα, σταθμούς, διαδρομές…"
     AppLanguage.ALBANIAN -> "Pyet për trena, stacione, udhëtime…"
+    AppLanguage.ITALIAN -> "Chiedi di treni, stazioni, percorsi…"
     else -> "Ask about trains, stations, routes…"
 }
 
 private fun tryLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "ΔΟΚΙΜΑΣΕ"
     AppLanguage.ALBANIAN -> "PROVO"
+    AppLanguage.ITALIAN -> "PROVA"
     else -> "TRY"
 }
 

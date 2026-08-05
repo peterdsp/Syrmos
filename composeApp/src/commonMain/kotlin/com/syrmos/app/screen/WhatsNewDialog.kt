@@ -35,9 +35,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun WhatsNewDialog(onDismiss: () -> Unit) {
     val lang by LocalizationManager.language.collectAsState()
-    fun t(en: String, el: String, sq: String) = when (lang) {
+    fun t(en: String, el: String, sq: String, it: String = en) = when (lang) {
         AppLanguage.GREEK -> el
         AppLanguage.ALBANIAN -> sq
+        AppLanguage.ITALIAN -> it
         else -> en
     }
 
@@ -47,6 +48,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers",
                 "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια",
                 "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim",
+                "Hellenic Rail Atlas: un nuovo design chiaro pensato per risposte a colpo d'occhio",
             )
         )
         add(
@@ -54,6 +56,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Ariadne now links to stations and lines: tap any answer to jump straight there",
                 "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα μια απαντηση και πηγαινε κατευθειαν",
                 "Ariadne tani lidhet me stacione dhe linja: prek nje pergjigje dhe shko direkt",
+                "Ariadne ora collega stazioni e linee: tocca una risposta per andare direttamente",
             )
         )
         add(
@@ -61,6 +64,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Browse All Stations with interactive maps, line pills and interchange badges",
                 "Περιηγηση σε ολους τους σταθμους με χαρτη, ετικετες γραμμων και κομβους ανταποκρισης",
                 "Shfleto te gjitha stacionet me harta, etiketa linjash dhe nyje nderkembimi",
+                "Esplora tutte le stazioni con mappe interattive, etichette linea e badge di interscambio",
             )
         )
         add(
@@ -68,6 +72,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Redesigned Explore tab with actionable destination cards and recent stations",
                 "Ανανεωμενη καρτελα Εξερευνηση με καρτες προορισμων και προσφατους σταθμους",
                 "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit",
+                "Scheda Esplora ridisegnata con schede destinazione e stazioni recenti",
             )
         )
         add(
@@ -75,6 +80,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Operators directory and map preferences in the new More tab",
                 "Καταλογος φορεων και ρυθμισεις χαρτη στη νεα καρτελα Περισσοτερα",
                 "Drejtori operatoresh dhe preferenca harte ne kartelen e re Me shume",
+                "Elenco operatori e preferenze mappa nella nuova scheda Altro",
             )
         )
         add(
@@ -82,6 +88,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 "Map tools: ask Ariadne (purple owl), browse live trains (train icon), find yourself (blue arrow)",
                 "Εργαλεια χαρτη: ρωτα την Αριαδνη (μωβ κουκουβαγια), δες ζωντανα τρενα (τρενο), βρες τη θεση σου (μπλε βελος)",
                 "Mjete harte: pyet Ariadnen (bufa vjollce), shiko trenat live (ikona e trenit), gjej veten (shigjeta blu)",
+                "Strumenti mappa: chiedi ad Ariadne (gufo viola), sfoglia i treni in tempo reale (icona treno), trova la tua posizione (freccia blu)",
             )
         )
     }
@@ -99,6 +106,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                         "What's new in Syrmos",
                         "Τι νεο υπαρχει στο Syrmos",
                         "Çfare ka te re ne Syrmos",
+                        "Novita in Syrmos",
                     ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
@@ -107,7 +115,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                     Text("•  $line", style = MaterialTheme.typography.bodyMedium)
                 }
                 Button(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                    Text(t("Got it", "Εντάξει", "Në rregull"))
+                    Text(t("Got it", "Εντάξει", "Në rregull", "Capito"))
                 }
             }
         }

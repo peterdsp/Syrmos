@@ -19,5 +19,8 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.osmdroid.android)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
     }
 }

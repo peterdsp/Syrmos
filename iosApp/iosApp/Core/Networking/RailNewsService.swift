@@ -16,6 +16,7 @@ struct RailNewsItem: Identifiable {
         switch language {
         case .greek: return title
         case .albanian: return titleSq.isEmpty ? (titleEn.isEmpty ? title : titleEn) : titleSq
+        case .italian: return titleEn.isEmpty ? title : titleEn
         case .english: return titleEn.isEmpty ? title : titleEn
         }
     }
@@ -24,6 +25,7 @@ struct RailNewsItem: Identifiable {
         switch language {
         case .greek: return summary
         case .albanian: return summarySq.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summarySq
+        case .italian: return summaryEn.isEmpty ? summary : summaryEn
         case .english: return summaryEn.isEmpty ? summary : summaryEn
         }
     }

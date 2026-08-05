@@ -59,6 +59,7 @@ struct STASYAnnouncement: Identifiable {
         switch language {
         case .greek: return title
         case .albanian: return titleSq.isEmpty ? (titleEn.isEmpty ? title : titleEn) : titleSq
+        case .italian: return titleEn.isEmpty ? title : titleEn
         case .english: return titleEn.isEmpty ? title : titleEn
         }
     }
@@ -67,6 +68,7 @@ struct STASYAnnouncement: Identifiable {
         switch language {
         case .greek: return summary
         case .albanian: return summarySq.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summarySq
+        case .italian: return summaryEn.isEmpty ? summary : summaryEn
         case .english: return summaryEn.isEmpty ? summary : summaryEn
         }
     }
@@ -133,6 +135,8 @@ final class STASYService: ObservableObject {
                 return rawMessage
             case .albanian:
                 if let sq = rawMessageSq, !sq.isEmpty { return sq }
+                return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
+            case .italian:
                 return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
             case .english:
                 return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)

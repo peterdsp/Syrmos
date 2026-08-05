@@ -6,7 +6,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
- * Pins Ariadne's offline parser across all three supported languages. The
+ * Pins Ariadne's offline parser across all four supported languages. The
  * parser must only ever emit an approved [AssistantIntent], decline anything
  * outside Athens transit, and ask for a missing slot instead of guessing.
  */
@@ -15,13 +15,13 @@ class AthensTransitParserTest {
     private val vocab = AssistantVocabulary(
         stations = listOf(
             StationVocab("M2_SYN", listOf("Syntagma", "Σύνταγμα", "Sintagma"), listOf("M2", "M3")),
-            StationVocab("M1_PIR", listOf("Piraeus", "Πειραιάς", "Pireas"), listOf("M1", "A1")),
-            StationVocab("M3_AER", listOf("Airport", "Αεροδρόμιο", "Aeroporti"), listOf("M3", "A1")),
+            StationVocab("M1_PIR", listOf("Piraeus", "Πειραιάς", "Pireas", "Pireo"), listOf("M1", "A1")),
+            StationVocab("M3_AER", listOf("Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto"), listOf("M3", "A1")),
             StationVocab("M1_MON", listOf("Monastiraki", "Μοναστηράκι"), listOf("M1", "M3")),
         ),
         lines = listOf(
-            LineVocab("M1", listOf("M1", "line 1", "γραμμή 1", "linja 1")),
-            LineVocab("M2", listOf("M2", "line 2", "γραμμή 2", "metro 2", "linja 2")),
+            LineVocab("M1", listOf("M1", "line 1", "γραμμή 1", "linja 1", "linea 1")),
+            LineVocab("M2", listOf("M2", "line 2", "γραμμή 2", "metro 2", "linja 2", "linea 2")),
             LineVocab("M3", listOf("M3", "line 3", "γραμμή 3")),
             LineVocab("A1", listOf("A1", "airport line")),
         ),
@@ -240,6 +240,35 @@ class AthensTransitParserTest {
         val plan = assertIs<AssistantIntent.PlanTrip>(intent)
         assertEquals("M1_PIR", plan.fromStationId)
         assertEquals("M2_SYN", plan.toStationId)
+    }
+
+    // Italian
+
+    @Test
+    fun italian_departures() {
+        val intent = parser.parse("prossimi treni da Syntagma")
+        val departures = assertIs<AssistantIntent.ShowDepartures>(intent)
+        assertEquals("M2_SYN", departures.stationId)
+    }
+
+    @Test
+    fun italian_plan_trip() {
+        val intent = parser.parse("come arrivo da Pireo verso Aeroporto")
+        val plan = assertIs<AssistantIntent.PlanTrip>(intent)
+        assertEquals("M1_PIR", plan.fromStationId)
+        assertEquals("M3_AER", plan.toStationId)
+    }
+
+    @Test
+    fun italian_last_train_and_fare() {
+        assertIs<AssistantIntent.LastTrain>(parser.parse("ultimo treno da Pireo"))
+        assertIs<AssistantIntent.ExplainFare>(parser.parse("quanto costa il biglietto per Aeroporto"))
+    }
+
+    @Test
+    fun italian_station_status() {
+        val status = assertIs<AssistantIntent.StationStatus>(parser.parse("Syntagma è aperto?"))
+        assertEquals("M2_SYN", status.stationId)
     }
 
     // --- Expanded trilingual cue coverage (cleverer rule parser) ---

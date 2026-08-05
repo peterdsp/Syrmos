@@ -59,6 +59,7 @@ struct HomeCustomizeSheet: View {
         switch loc.language {
         case .greek: return "Προσαρμογη Αρχικης"
         case .albanian: return "Personalizo Ballinen"
+        case .italian: return "Personalizza Home"
         case .english: return "Customize Home"
         }
     }
@@ -67,6 +68,7 @@ struct HomeCustomizeSheet: View {
         switch loc.language {
         case .greek: return "Τελος"
         case .albanian: return "Mbylle"
+        case .italian: return "Fatto"
         case .english: return "Done"
         }
     }
@@ -75,6 +77,7 @@ struct HomeCustomizeSheet: View {
         switch loc.language {
         case .greek: return "Επαναφορα"
         case .albanian: return "Rivendos"
+        case .italian: return "Ripristina"
         case .english: return "Reset"
         }
     }
@@ -83,6 +86,7 @@ struct HomeCustomizeSheet: View {
         switch loc.language {
         case .greek: return "Ενοτητες"
         case .albanian: return "Seksionet"
+        case .italian: return "Sezioni"
         case .english: return "Sections"
         }
     }
@@ -91,6 +95,7 @@ struct HomeCustomizeSheet: View {
         switch loc.language {
         case .greek: return "Συρετε για αλλαγη σειρας. Πατηστε το εικονιδιο ματιου για εμφανιση η αποκρυψη."
         case .albanian: return "Terheq per te ndryshuar rradhen. Shtyp ikonon e syrit per te shfaqur ose fshehur."
+        case .italian: return "Trascina per riordinare. Tocca l'icona dell'occhio per mostrare o nascondere."
         case .english: return "Drag to reorder. Tap the eye icon to show or hide."
         }
     }

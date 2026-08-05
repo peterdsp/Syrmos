@@ -127,6 +127,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Πατήστε έναν αριθμό για κλήση."
         case .albanian: return "Prek një numër për të thirrur."
+        case .italian: return "Tocca un numero per chiamare."
         case .english: return "Tap a number to call."
         }
     }
@@ -136,6 +137,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return storm ? "Καταιγίδα σε εξέλιξη" : "Έντονη κακοκαιρία"
         case .albanian: return storm ? "Stuhi në zhvillim" : "Mot i keq"
+        case .italian: return storm ? "Temporale in corso" : "Maltempo grave"
         case .english: return storm ? "Storm in progress" : "Severe weather"
         }
     }
@@ -143,6 +145,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Πρόσεχε στη μετακίνηση."
         case .albanian: return "Ki kujdes gjatë udhëtimit."
+        case .italian: return "Fai attenzione durante il viaggio."
         case .english: return "Take care on your journey."
         }
     }
@@ -150,6 +153,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Οι υπόγειες γραμμές μετρό είναι η πιο ασφαλής επιλογή. Το τραμ και ο προαστιακός μπορεί να έχουν καθυστερήσεις. Αν χρειαστείς άμεση βοήθεια, κάλεσε:"
         case .albanian: return "Metroja nëntokësore është zgjidhja më e sigurt. Tramvaji dhe treni periferik mund të kenë vonesa. Nëse ke nevojë për ndihmë të menjëhershme, telefono:"
+        case .italian: return "Le linee della metro sotterranea sono l'opzione piu sicura. Tram e servizio suburbano possono avere ritardi. Se hai bisogno di aiuto immediato, chiama:"
         case .english: return "Underground metro lines are the safest option. Tram and Suburban services may run late. If you need immediate help, call:"
         }
     }
@@ -157,6 +161,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "ΤΗΛΕΦΩΝΑ ΕΚΤΑΚΤΗΣ ΑΝΑΓΚΗΣ"
         case .albanian: return "NUMRAT E EMERGJENCËS"
+        case .italian: return "NUMERI DI EMERGENZA"
         case .english: return "EMERGENCY NUMBERS"
         }
     }
@@ -164,6 +169,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Ευρωπαϊκή γραμμή έκτακτης ανάγκης"
         case .albanian: return "Numri europian i emergjencës"
+        case .italian: return "Linea di emergenza europea"
         case .english: return "European emergency line"
         }
     }
@@ -171,6 +177,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Πυροσβεστική"
         case .albanian: return "Zjarrfikësit"
+        case .italian: return "Vigili del fuoco"
         case .english: return "Fire service"
         }
     }
@@ -178,6 +185,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Πληροφορίες OASA"
         case .albanian: return "Informacione OASA"
+        case .italian: return "Info trasporti OASA"
         case .english: return "OASA transit info"
         }
     }

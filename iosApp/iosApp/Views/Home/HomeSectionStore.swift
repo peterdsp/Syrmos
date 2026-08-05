@@ -16,36 +16,42 @@ enum HomeSection: String, CaseIterable, Codable, Identifiable {
             switch language {
             case .greek: return "Επομενο τρενο"
             case .albanian: return "Treni i radhes"
+            case .italian: return "Prossimo treno"
             case .english: return "Next train"
             }
         case .serviceAlerts:
             switch language {
             case .greek: return "Ειδοποιησεις υπηρεσιας"
             case .albanian: return "Njoftimet e sherbimit"
+            case .italian: return "Avvisi di servizio"
             case .english: return "Service alerts"
             }
         case .railNews:
             switch language {
             case .greek: return "Σιδηροδρομικα Νεα"
             case .albanian: return "Lajme Hekurudhore"
+            case .italian: return "Notizie ferroviarie"
             case .english: return "Rail News"
             }
         case .networkOverview:
             switch language {
             case .greek: return "Δικτυο"
             case .albanian: return "Rrjeti"
+            case .italian: return "Panoramica rete"
             case .english: return "Network overview"
             }
         case .nearMe:
             switch language {
             case .greek: return "Κοντα μου"
             case .albanian: return "Prane meje"
+            case .italian: return "Vicino a me"
             case .english: return "Near me"
             }
         case .liveTrains:
             switch language {
             case .greek: return "Ζωντανα τρενα"
             case .albanian: return "Trenat aktiv"
+            case .italian: return "Treni in tempo reale"
             case .english: return "Live trains"
             }
         }

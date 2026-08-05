@@ -113,6 +113,7 @@ class AlertCheckWorker(
         val notifTitle = when (lang) {
             AppLanguage.GREEK -> "Ειδοποιηση Υπηρεσιας"
             AppLanguage.ALBANIAN -> "Njoftim Sherbimi"
+            AppLanguage.ITALIAN -> "Avviso di servizio"
             else -> "Service Alert"
         }
         val body = when (lang) {
@@ -138,16 +139,19 @@ class AlertCheckWorker(
             code in setOf(95, 96, 99) -> when (lang) {
                 AppLanguage.GREEK -> "Καιρικη Ειδοποιηση" to "Καταιγιδα στην περιοχη. $tempStr. Προσεξτε στις μετακινησεις."
                 AppLanguage.ALBANIAN -> "Njoftim Moti" to "Stuhi ne zone. $tempStr. Kujdes ne udhetim."
+                AppLanguage.ITALIAN -> "Avviso meteo" to "Temporale nella zona. $tempStr. Fate attenzione negli spostamenti."
                 else -> "Weather Alert" to "Thunderstorm in the area. $tempStr. Take care while traveling."
             }
             code in setOf(71, 73, 75, 77) -> when (lang) {
                 AppLanguage.GREEK -> "Καιρικη Ειδοποιηση" to "Χιονοπτωση στην περιοχη. $tempStr. Πιθανες καθυστερησεις."
                 AppLanguage.ALBANIAN -> "Njoftim Moti" to "Debore ne zone. $tempStr. Vonesa te mundshme."
+                AppLanguage.ITALIAN -> "Avviso meteo" to "Nevicata nella zona. $tempStr. Possibili ritardi."
                 else -> "Weather Alert" to "Snowfall in the area. $tempStr. Possible delays."
             }
             else -> when (lang) {
                 AppLanguage.GREEK -> "Καιρικη Ειδοποιηση" to "Εντονες βροχοπτωσεις. $tempStr. Πιθανες καθυστερησεις."
                 AppLanguage.ALBANIAN -> "Njoftim Moti" to "Reshje te forta shiu. $tempStr. Vonesa te mundshme."
+                AppLanguage.ITALIAN -> "Avviso meteo" to "Forti piogge nella zona. $tempStr. Possibili ritardi."
                 else -> "Weather Alert" to "Heavy rain in the area. $tempStr. Possible delays."
             }
         }
@@ -179,6 +183,7 @@ class AlertCheckWorker(
                     when (lang) {
                         AppLanguage.GREEK -> "Ειδοποιησεις υπηρεσιας"
                         AppLanguage.ALBANIAN -> "Njoftimet e sherbimit"
+                        AppLanguage.ITALIAN -> "Avvisi di servizio"
                         else -> "Service Alerts"
                     },
                     NotificationManager.IMPORTANCE_DEFAULT,
@@ -193,6 +198,7 @@ class AlertCheckWorker(
                     when (lang) {
                         AppLanguage.GREEK -> "Καιρικες ειδοποιησεις"
                         AppLanguage.ALBANIAN -> "Njoftimet e motit"
+                        AppLanguage.ITALIAN -> "Avvisi meteo"
                         else -> "Weather Alerts"
                     },
                     NotificationManager.IMPORTANCE_DEFAULT,
@@ -207,6 +213,7 @@ class AlertCheckWorker(
                     when (lang) {
                         AppLanguage.GREEK -> "Ειδοποιησεις κοντινου σταθμου"
                         AppLanguage.ALBANIAN -> "Njoftimet e stacionit te afert"
+                        AppLanguage.ITALIAN -> "Avvisi stazione vicina"
                         else -> "Nearby Station Alerts"
                     },
                     NotificationManager.IMPORTANCE_DEFAULT,

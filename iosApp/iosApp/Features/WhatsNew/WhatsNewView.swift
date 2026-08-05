@@ -21,10 +21,11 @@ struct WhatsNewView: View {
 
     private var isClever: Bool { AriadneBrain.isAvailable }
 
-    private func t(_ en: String, _ el: String, _ sq: String) -> String {
+    private func t(_ en: String, _ el: String, _ sq: String, _ it: String? = nil) -> String {
         switch loc.language {
         case .greek: return el
         case .albanian: return sq
+        case .italian: return it ?? en
         case .english: return en
         }
     }
