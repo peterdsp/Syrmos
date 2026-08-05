@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -54,7 +56,6 @@ import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.designsystem.animation.staggeredEntrance
-import com.syrmos.core.designsystem.component.CompactTabHeader
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Line
@@ -130,7 +131,7 @@ fun LinesScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, top = 76.dp, end = 16.dp, bottom = 140.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 86.dp, end = 16.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
@@ -190,13 +191,25 @@ fun LinesScreen(
                         }
                     }
 
-                    itemsIndexed(filteredDestinations) { index, dest ->
-                        DestinationCard(
-                            destination = dest,
-                            lang = lang,
-                            onClick = { onDestinationClick(dest.stationId, dest.lineId) },
-                            modifier = Modifier.staggeredEntrance(index),
-                        )
+                    if (filteredDestinations.isNotEmpty()) {
+                        item {
+                            LazyRow(
+                                contentPadding = PaddingValues(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                itemsIndexed(
+                                    items = filteredDestinations,
+                                    key = { _, destination -> "${destination.stationId}_${destination.lineId}" },
+                                ) { index, dest ->
+                                    DestinationCard(
+                                        destination = dest,
+                                        lang = lang,
+                                        onClick = { onDestinationClick(dest.stationId, dest.lineId) },
+                                        modifier = Modifier.staggeredEntrance(index),
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     item {
@@ -298,23 +311,13 @@ fun LinesScreen(
             }
         }
 
-        CompactTabHeader(
-            title = L.EXPLORE.text(lang),
+        ExploreHeader(
+            lang = lang,
+            onContributionClick = { railPulseDestination = RailPulseDestination.CONTRIBUTION },
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .zIndex(1f),
         )
-
-        Surface(
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 28.dp).zIndex(2f),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-            shadowElevation = 3.dp,
-        ) {
-            IconButton(onClick = { railPulseDestination = RailPulseDestination.CONTRIBUTION }) {
-                Icon(Icons.Filled.Person, contentDescription = pulseText(lang, "Local contribution", "Τοπικη συνεισφορα", "Kontributi lokal", "Contributo locale"))
-            }
-        }
     }
     }
 
@@ -324,6 +327,66 @@ fun LinesScreen(
             lang = lang,
             onDismiss = { reportContext = null },
         )
+    }
+}
+
+@Composable
+private fun ExploreHeader(
+    lang: AppLanguage,
+    onContributionClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.background,
+        shadowElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = L.EXPLORE.text(lang),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = pulseText(
+                        lang,
+                        "Greece, live and community powered",
+                        "Ελλαδα, ζωντανα και με τη δυναμη της κοινοτητας",
+                        "Greqia, live dhe me fuqine e komunitetit",
+                        "Grecia, live e alimentata dalla comunita",
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = SyrmosColorTokens.brand.copy(alpha = 0.10f),
+            ) {
+                IconButton(onClick = onContributionClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = pulseText(
+                            lang,
+                            "Local contribution",
+                            "Τοπικη συνεισφορα",
+                            "Kontributi lokal",
+                            "Contributo locale",
+                        ),
+                        tint = SyrmosColorTokens.brand,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -397,79 +460,100 @@ private fun DestinationCard(
     val primaryColor = lineColorForId(destination.connections.first())
 
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        modifier = modifier
+            .width(242.dp)
+            .height(184.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
-        shadowElevation = 2.dp,
+        shadowElevation = 4.dp,
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = 0.16f),
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                ),
+        ) {
+            Column(
                 modifier = Modifier
-                    .width(4.dp)
-                    .height(80.dp)
-                    .padding(vertical = 8.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(primaryColor),
-            )
-
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp, end = 14.dp, top = 14.dp, bottom = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    .fillMaxSize()
+                    .padding(15.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(primaryColor.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center,
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    Text(
-                        text = destination.emoji,
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                }
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(primaryColor.copy(alpha = 0.14f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = destination.emoji,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                    }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = destination.nameKey.text(lang),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = destination.hookKey.text(lang),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        destination.connections.forEach { lineId ->
-                            Surface(
-                                shape = RoundedCornerShape(5.dp),
-                                color = lineColorForId(lineId),
-                            ) {
-                                Text(
-                                    text = linePillLabel(lineId),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = androidx.compose.ui.graphics.Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                )
-                            }
-                        }
+                    Spacer(Modifier.weight(1f))
+
+                    Surface(
+                        shape = CircleShape,
+                        color = primaryColor.copy(alpha = 0.10f),
+                    ) {
+                        Text(
+                            text = "↗",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = primaryColor,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        )
                     }
                 }
 
+                Spacer(Modifier.height(9.dp))
+
                 Text(
-                    text = "›",
+                    text = destination.nameKey.text(lang),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
                 )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = destination.hookKey.text(lang),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                )
+
+                Spacer(Modifier.weight(1f))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    destination.connections.forEach { lineId ->
+                        Surface(
+                            shape = CircleShape,
+                            color = lineColorForId(lineId),
+                        ) {
+                            Text(
+                                text = linePillLabel(lineId),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = androidx.compose.ui.graphics.Color.White,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -490,21 +574,53 @@ private fun BrowseAllStationsRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(start = 14.dp, top = 14.dp, end = 52.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "📍",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = L.BROWSE_ALL_STATIONS.text(lang),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
-                color = SyrmosColorTokens.brand,
-                modifier = Modifier.weight(1f),
-            )
+            Surface(
+                shape = CircleShape,
+                color = SyrmosColorTokens.brand.copy(alpha = 0.10f),
+            ) {
+                Text(
+                    text = "⌖",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SyrmosColorTokens.brand,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                )
+            }
+            Spacer(Modifier.width(13.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = L.BROWSE_ALL_STATIONS.text(lang),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = pulseText(
+                        lang,
+                        "Metro, tram, suburban and intercity",
+                        "Μετρο, τραμ, προαστιακος και υπεραστικα",
+                        "Metro, tramvaj, periferike dhe nderqytetese",
+                        "Metro, tram, suburbano e intercity",
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+            Surface(
+                shape = CircleShape,
+                color = SyrmosColorTokens.brand.copy(alpha = 0.08f),
+            ) {
+                Text(
+                    text = "›",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SyrmosColorTokens.brand,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
+                )
+            }
         }
     }
 }
