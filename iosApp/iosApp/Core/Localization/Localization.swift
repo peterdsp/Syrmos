@@ -59,7 +59,18 @@ final class LocalizationManager: ObservableObject {
 
 extension TransitLine {
     func localizedName(_ lang: AppLanguage) -> String {
-        lang == .greek ? nameEl : name
+        if lang == .greek { return nameEl }
+        if lang == .italian {
+            return name
+                .replacingOccurrences(of: "Line ", with: "Linea ")
+                .replacingOccurrences(of: "Suburban ", with: "Suburbano ")
+        }
+        if lang == .albanian {
+            return name
+                .replacingOccurrences(of: "Line ", with: "Linja ")
+                .replacingOccurrences(of: "Suburban ", with: "Periferik ")
+        }
+        return name
     }
 }
 

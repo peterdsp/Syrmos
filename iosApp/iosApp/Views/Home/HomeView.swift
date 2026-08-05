@@ -500,7 +500,7 @@ struct HomeView: View {
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.primary)
-                                Text(nearby.station.lineIds.compactMap { SyrmosData.line(for: $0)?.name }.joined(separator: ", "))
+                                Text(nearby.station.lineIds.compactMap { SyrmosData.line(for: $0)?.localizedName(loc.language) }.joined(separator: ", "))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

@@ -416,7 +416,7 @@ private fun LineList(
                 LineBadgeSmall(id = line.id, accent = accent)
                 Column(modifier = Modifier.padding(end = 8.dp)) {
                     Text(
-                        text = if (lang == AppLanguage.GREEK && line.nameEl.isNotBlank()) line.nameEl else line.name,
+                        text = line.localizedName(lang),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -657,6 +657,17 @@ private fun stationAllSubtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.ITALIAN -> "Monitora le partenze in continuo"
     else -> "Continuously track departures"
 }
+private fun Line.localizedName(lang: AppLanguage): String {
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
+}
+
 private fun metroFrequentNote(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
     AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevoje per ndjekje"

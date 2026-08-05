@@ -148,7 +148,7 @@ fun StationDetailScreen(
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             LineColorIndicator(lineColor = line.color, size = 14.dp)
                                             Text(
-                                                text = "${line.name} (${line.terminalA} - ${line.terminalB})",
+                                                text = "${line.localizedName(lang)} (${line.terminalA} - ${line.terminalB})",
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
                                         }
@@ -447,6 +447,17 @@ private fun LinePill(lineId: String) {
             maxLines = 1,
         )
     }
+}
+
+private fun Line.localizedName(lang: AppLanguage): String {
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
 }
 
 private fun lineIdToColor(lineId: String): LineColor = when {

@@ -91,7 +91,7 @@ struct StationMapSheet: View {
                                     .fill(SyrmosData.lineColor(for: dep.lineId))
                                     .frame(width: 8, height: 8)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(SyrmosData.line(for: dep.lineId)?.name ?? dep.lineId)
+                                    Text(SyrmosData.line(for: dep.lineId)?.localizedName(loc.language) ?? dep.lineId)
                                         .font(.caption.weight(.medium))
                                     Text(dep.direction)
                                         .font(.caption2)
@@ -200,7 +200,7 @@ struct StationMapSheet: View {
         case "A2": return "A2"
         case "A3": return "A3"
         case "A4": return "A4"
-        default: return SyrmosData.line(for: lineId)?.name ?? lineId
+        default: return SyrmosData.line(for: lineId)?.localizedName(loc.language) ?? lineId
         }
     }
 

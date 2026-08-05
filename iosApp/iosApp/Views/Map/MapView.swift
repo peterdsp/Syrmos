@@ -548,7 +548,7 @@ struct StationSheetView: View {
                     Circle()
                         .fill(SyrmosData.lineColor(for: lineId))
                         .frame(width: 8, height: 8)
-                    Text(SyrmosData.line(for: lineId)?.name ?? lineId)
+                    Text(SyrmosData.line(for: lineId)?.localizedName(loc.language) ?? lineId)
                         .font(.caption)
                         .fontWeight(.semibold)
                 }
@@ -934,7 +934,7 @@ struct DepartureRowView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                    Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     if departure.serviceType == "airport" {
