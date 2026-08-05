@@ -349,7 +349,12 @@ final class DepartureTracking: ObservableObject {
                 targetEpoch: d.targetEpoch,
                 upcoming: upcomingTrains(for: d),
                 lastTrain: lastTrainTonight(for: d),
-                currentStation: d.currentStationName
+                currentStation: d.currentStationName,
+                communityStatus: "Crowded",
+                communityDetail: "Standing room only",
+                communityConfirmations: 31,
+                communityUpdatedSeconds: 90,
+                unexpectedStop: false
             )
             do {
                 let activity = try Activity.request(
@@ -378,7 +383,12 @@ final class DepartureTracking: ObservableObject {
                 targetEpoch: d.targetEpoch,
                 upcoming: upcomingTrains(for: d),
                 lastTrain: lastTrainTonight(for: d),
-                currentStation: d.currentStationName
+                currentStation: d.currentStationName,
+                communityStatus: "Crowded",
+                communityDetail: "Standing room only",
+                communityConfirmations: 31,
+                communityUpdatedSeconds: 90,
+                unexpectedStop: false
             )
             Task {
                 for activity in Activity<SyrmosTrackingAttributes>.activities where activity.id == id {

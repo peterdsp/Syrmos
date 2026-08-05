@@ -2,13 +2,27 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current shipping: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Burned Android version codes never reusable: 105, 106, 109-138 (all consumed by rapid iteration). Next Android release must use 139+.
+Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.5**, iOS build 119 and Android versionCode 204. Burned Android version codes never reusable: 105, 106, 109-138, and 200-204. Next Android release must use 205+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 2.0.0-beta.5 - 2026-08-05
+
+The Explore V2 and RailPulse beta.
+
+- **Explore V2 on Android and iOS.** Discover now combines universal transport search, the existing Network browser, a route pulse, Greece-wide community summaries, time-budget exploration, and Ariadne context in one tab.
+- **RailPulse station and train details.** New detail screens show structured occupancy, delays, temperature, cleanliness, accessibility, facilities, confirmation counts, recency, expiry, and clear community-confidence labels.
+- **Two-second Quick Report.** Riders can submit a structured condition with one tap, refine crowd level, and undo for 10 seconds. There is no free-text report field.
+- **Local contribution profile.** Contribution counters, quality, weekly progress, levels, and badges remain on-device. No name, report history, location, photo, advertising identifier, or stable contributor identifier is transmitted.
+- **Journey surfaces.** iOS Live Activities expose RailPulse context and an inline confirmation App Intent. Apple Watch adds current conditions and quick actions. Android tracked-departure notifications show community context and a local confirmation action.
+- **Cross-platform design package.** Twelve SVG screen drafts, the combined Explore implementation prompt, image requirements, the staged implementation plan, and the implemented-versus-backend status are included under `docs/design/explore-v2/`.
+- **Honest beta boundary.** Community conditions use fixtures and contributions update local counters only. Anonymous aggregate reads and writes, expiry enforcement, moderation, and unlinkable one-time proofs remain disabled until the audited backend exists.
+
+iOS 2.0.0 build 119 / Android 2.0.0 versionCode 204. Tagged as `v2.0.0-beta.5`.
 
 ## 1.4.0 — 2026-07-28 through 2026-07-30
 
