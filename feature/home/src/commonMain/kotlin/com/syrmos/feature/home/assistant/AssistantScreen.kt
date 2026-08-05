@@ -491,7 +491,7 @@ private fun AriadneModelCard(
 }
 
 private fun assistantDepartureTime(minutes: Int, lang: AppLanguage): String = when {
-    minutes > 1 -> "$minutes min"
+    minutes > 1 -> "$minutes ${when (lang) { AppLanguage.GREEK -> "λεπ"; else -> "min" }}"
     lang == AppLanguage.GREEK -> "τώρα"
     lang == AppLanguage.ALBANIAN -> "tani"
     lang == AppLanguage.ITALIAN -> "ora"

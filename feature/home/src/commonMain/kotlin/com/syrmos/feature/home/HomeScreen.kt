@@ -945,7 +945,7 @@ private fun TrackingCard(
             }
 
             Text(
-                text = if (due) dueLabel(lang) else "$remaining min",
+                text = if (due) dueLabel(lang) else "$remaining ${minAbbr(lang)}",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = lineAccent,
@@ -1271,10 +1271,23 @@ internal fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
             else -> "Now"
         }
     }
-    if (minutesAway < 60) return "$minutesAway min"
+    val m = minAbbr(lang)
+    val hA = hAbbr(lang)
+    if (minutesAway < 60) return "$minutesAway $m"
     val h = minutesAway / 60
-    val m = minutesAway % 60
-    return if (m == 0) "${h}h" else "${h}h ${m}min"
+    val rem = minutesAway % 60
+    return if (rem == 0) "$h$hA" else "$h$hA $rem$m"
+}
+
+private fun minAbbr(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "λεπ"
+    else -> "min"
+}
+
+private fun hAbbr(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "ω"
+    AppLanguage.ALBANIAN -> "o"
+    else -> "h"
 }
 
 @Composable

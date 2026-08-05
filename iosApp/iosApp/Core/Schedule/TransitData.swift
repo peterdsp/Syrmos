@@ -190,17 +190,25 @@ struct Departure: Identifiable {
             switch language {
             case .greek: return "Τώρα"
             case .albanian: return "Tani"
-            case .italian: return "Adesso"
+            case .italian: return "Ora"
             default: return "Now"
             }
         }
+        let minAbbr: String
+        let hAbbr: String
+        switch language {
+        case .greek: minAbbr = "λεπ"; hAbbr = "ω"
+        case .albanian: minAbbr = "min"; hAbbr = "o"
+        case .italian: minAbbr = "min"; hAbbr = "h"
+        default: minAbbr = "min"; hAbbr = "h"
+        }
         if minutesAway < 60 {
-            return "\(minutesAway) min"
+            return "\(minutesAway) \(minAbbr)"
         }
         let h = minutesAway / 60
         let m = minutesAway % 60
-        if m == 0 { return "\(h)h" }
-        return "\(h)h \(m)min"
+        if m == 0 { return "\(h)\(hAbbr)" }
+        return "\(h)\(hAbbr) \(m)\(minAbbr)"
     }
 }
 

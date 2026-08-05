@@ -384,8 +384,23 @@ struct HomeView: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel(next.map { d in
                 let mins = d.minutesAway
-                let unit = mins == 1 ? "minute" : "minutes"
-                return "\(d.lineId) to \(d.direction), \(mins) \(unit)"
+                let toWord: String
+                let unit: String
+                switch loc.language {
+                case .greek:
+                    toWord = "προς"
+                    unit = mins == 1 ? "λεπτό" : "λεπτά"
+                case .albanian:
+                    toWord = "drejt"
+                    unit = mins == 1 ? "minutë" : "minuta"
+                case .italian:
+                    toWord = "verso"
+                    unit = mins == 1 ? "minuto" : "minuti"
+                default:
+                    toWord = "to"
+                    unit = mins == 1 ? "minute" : "minutes"
+                }
+                return "\(d.lineId) \(toWord) \(d.direction), \(mins) \(unit)"
             } ?? loc[.serviceOver])
         }
     }
@@ -844,14 +859,22 @@ private func heroCountdownText(secondsAway: Int, language: AppLanguage) -> Strin
         let s = secondsAway % 60
         return "\(m):\(String(format: "%02d", s))"
     }
+    let minA: String
+    let hA: String
+    switch language {
+    case .greek: minA = "λεπ"; hA = "ω"
+    case .albanian: minA = "min"; hA = "o"
+    case .italian: minA = "min"; hA = "h"
+    default: minA = "min"; hA = "h"
+    }
     if secondsAway < 3600 {
         let m = (secondsAway + 59) / 60
-        return "\(m) min"
+        return "\(m) \(minA)"
     }
     let h = secondsAway / 3600
     let m = (secondsAway % 3600) / 60
-    if m == 0 { return "\(h)h" }
-    return "\(h)h \(m)min"
+    if m == 0 { return "\(h)\(hA)" }
+    return "\(h)\(hA) \(m)\(minA)"
 }
 
 // MARK: - Nearby Station Destination

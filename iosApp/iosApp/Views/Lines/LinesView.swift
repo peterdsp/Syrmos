@@ -678,7 +678,8 @@ struct DestinationDetailView: View {
                             title: "\(towardsLabel) \(line?.terminalB ?? "")",
                             departures: outbound,
                             tint: line?.color ?? .primary,
-                            isToday: dayOffset == 0
+                            isToday: dayOffset == 0,
+                            language: loc.language
                         )
                     }
 
@@ -687,7 +688,8 @@ struct DestinationDetailView: View {
                             title: "\(towardsLabel) \(line?.terminalA ?? "")",
                             departures: inbound,
                             tint: line?.color ?? .primary,
-                            isToday: dayOffset == 0
+                            isToday: dayOffset == 0,
+                            language: loc.language
                         )
                     }
                 }
@@ -773,7 +775,17 @@ private struct DepartureGroup: View {
     let departures: [Departure]
     let tint: Color
     let isToday: Bool
+    let language: AppLanguage
     @State private var showAll = false
+
+    private var moreLabel: String {
+        switch language {
+        case .greek: return "ακόμη"
+        case .albanian: return "më shumë"
+        case .italian: return "altri"
+        default: return "more"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -791,7 +803,7 @@ private struct DepartureGroup: View {
                     Text(dep.time)
                         .font(.subheadline.weight(.semibold).monospacedDigit())
                     if isToday, dep.minutesAway > 0 {
-                        Text("\(dep.minutesAway) min")
+                        Text(dep.minutesAwayDisplay(language: language))
                             .font(.caption.weight(.medium))
                             .foregroundStyle(tint)
                     }
@@ -808,7 +820,7 @@ private struct DepartureGroup: View {
                 Button {
                     withAnimation { showAll = true }
                 } label: {
-                    Text("+\(departures.count - 5) more")
+                    Text("+\(departures.count - 5) \(moreLabel)")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(tint)
                 }
