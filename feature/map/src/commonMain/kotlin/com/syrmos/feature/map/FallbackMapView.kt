@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
@@ -175,11 +176,18 @@ private fun DrawScope.drawFallbackMap(
             continue
         }
 
+        val isClosed = station.stationIds.any { sid ->
+            uiState.stationDisruptions[sid] == AlertSeverity.CLOSURE
+        }
         val isSelected = selectedStation?.id == station.id
         if (station.isInterchange) {
             val r = if (isSelected) interchangeRadius * 1.4f else interchangeRadius
-            val ringColors = station.lineIds.take(3).mapNotNull { lineId ->
-                uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
+            val ringColors = if (isClosed) {
+                listOf(Color(0xFF9E9E9E))
+            } else {
+                station.lineIds.take(3).mapNotNull { lineId ->
+                    uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
+                }
             }
             if (isSelected) {
                 drawCircle(color = Color(0xFF0072CE).copy(alpha = 0.25f), radius = r * 2f, center = pos)
@@ -207,9 +215,13 @@ private fun DrawScope.drawFallbackMap(
                 }
             }
         } else {
-            val stationColor = station.lineIds.firstOrNull()
-                ?.let { lineId -> uiState.lines.find { it.id == lineId }?.color?.toComposeColor() }
-                ?: Color.Gray
+            val stationColor = if (isClosed) {
+                Color(0xFF9E9E9E)
+            } else {
+                station.lineIds.firstOrNull()
+                    ?.let { lineId -> uiState.lines.find { it.id == lineId }?.color?.toComposeColor() }
+                    ?: Color.Gray
+            }
             val r = if (isSelected) dotRadius * 1.4f else dotRadius
             if (isSelected) {
                 drawCircle(color = stationColor.copy(alpha = 0.25f), radius = r * 2f, center = pos)

@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -38,6 +41,9 @@ class AnnouncementsRepository(
 
     private val _lineDisruptions = MutableStateFlow<Map<String, AlertSeverity>>(emptyMap())
     val lineDisruptions: StateFlow<Map<String, AlertSeverity>> = _lineDisruptions.asStateFlow()
+
+    private val _stationDisruptions = MutableStateFlow<Map<String, AlertSeverity>>(emptyMap())
+    val stationDisruptions: StateFlow<Map<String, AlertSeverity>> = _stationDisruptions.asStateFlow()
 
     /** Cold-start hydration from the bundled snapshot. Safe to call multiple
      *  times; a live refresh won't be clobbered because we only hydrate when
@@ -73,6 +79,7 @@ class AnnouncementsRepository(
     private fun updateFeed(value: STASYFeed) {
         _feed.value = value
         _lineDisruptions.value = deriveLineDisruptions(value.announcements)
+        _stationDisruptions.value = deriveStationDisruptions(value.announcements, value.status)
     }
 
     @Serializable
@@ -117,9 +124,11 @@ class AnnouncementsRepository(
         val url: String = "",
         val category: String = "",
         @SerialName("affectedLines") val affectedLines: List<String> = emptyList(),
+        @SerialName("affectedStationIds") val affectedStationIds: List<String> = emptyList(),
         val severity: String = "info",
         @SerialName("validFrom") val validFrom: String? = null,
         @SerialName("validUntil") val validUntil: String? = null,
+        @SerialName("serviceUntilTime") val serviceUntilTime: String? = null,
     ) {
         fun toModel(): STASYAnnouncement = STASYAnnouncement(
             id = id,
@@ -135,9 +144,11 @@ class AnnouncementsRepository(
             url = url,
             isServiceAlert = category == "serviceAlert",
             affectedLines = affectedLines,
+            affectedStationIds = affectedStationIds,
             severity = severity.ifBlank { "info" },
             validFrom = validFrom,
             validUntil = validUntil,
+            serviceUntilTime = serviceUntilTime,
         )
     }
 }
@@ -161,6 +172,33 @@ internal fun deriveLineDisruptions(
                     val current = get(alias)
                     if (current == null || severity.rank > current.rank) put(alias, severity)
                 }
+            }
+        }
+}
+
+internal fun deriveStationDisruptions(
+    announcements: List<STASYAnnouncement>,
+    status: STASYServiceStatus?,
+): Map<String, AlertSeverity> = buildMap {
+    val nowHHMM = run {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens"))
+        "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
+    }
+
+    announcements.asSequence()
+        .filter { it.isServiceAlert }
+        .forEach { announcement ->
+            val severity = AlertSeverity.fromRaw(announcement.severity)
+            val cutoff = announcement.serviceUntilTime ?: status?.serviceUntil
+            val isActive = cutoff == null || nowHHMM >= cutoff
+
+            if (!isActive) return@forEach
+
+            announcement.affectedStationIds.forEach { stationId ->
+                val sid = stationId.trim()
+                if (sid.isBlank()) return@forEach
+                val current = get(sid)
+                if (current == null || severity.rank > current.rank) put(sid, severity)
             }
         }
 }

@@ -1056,6 +1056,7 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
     static let shared = TrainSimulatorService()
 
     @MainActor @Published var trains: [SimulatedTrain] = []
+    @MainActor var closedStationIds: Set<String> = []
 
     private var task: Task<Void, Never>?
 
@@ -1070,17 +1071,14 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
     }
 
     private static func runLoop(_ instance: TrainSimulatorService?) async {
-        let first = await projectTrains()
+        let closedIds = await MainActor.run { instance?.closedStationIds ?? [] }
+        let first = await projectTrains(closedStationIds: closedIds)
         await MainActor.run { instance?.trains = first }
         while !Task.isCancelled {
-            // 5s cadence — fast enough for a believable live feel, slow
-            // enough that we don't thrash SwiftUI Map annotations with
-            // dozens of @Published updates per second across all tabs.
-            // LivePositionsService runs its own 15s API poll on top; this
-            // loop just re-interpolates from the cached snapshot.
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             if Task.isCancelled { return }
-            let next = await projectTrains()
+            let ids = await MainActor.run { instance?.closedStationIds ?? [] }
+            let next = await projectTrains(closedStationIds: ids)
             await MainActor.run { instance?.trains = next }
         }
     }
@@ -1089,7 +1087,7 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
     /// train along its line's station_offsets table. The map dot lands on
     /// the same minute the bottom sheet projects, because both are derived
     /// from the same projector.
-    private static func projectTrains() async -> [SimulatedTrain] {
+    private static func projectTrains(closedStationIds: Set<String> = []) async -> [SimulatedTrain] {
         let service = await LivePositionsService.shared
         let activeTrains = await service.trains
         let offsetsByLine = await service.offsets
@@ -1133,6 +1131,7 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
 
             let from = stops[segIdx]
             let to = stops[segIdx + 1]
+            if closedStationIds.contains(from.stationId) || closedStationIds.contains(to.stationId) { continue }
             guard let fromCoord = stationCoords.coordinate(for: from.stationId),
                   let toCoord = stationCoords.coordinate(for: to.stationId) else { continue }
 

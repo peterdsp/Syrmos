@@ -16,6 +16,8 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.model.alerts.AlertSeverity
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLivePositionsService
@@ -58,6 +60,7 @@ data class MapUiState(
     val showLiveTrainsSheet: Boolean = false,
     val isLoading: Boolean = true,
     val locateUserRequest: Long = 0L,
+    val stationDisruptions: Map<String, AlertSeverity> = emptyMap(),
 )
 
 class MapViewModel(
@@ -70,6 +73,7 @@ class MapViewModel(
     private val livePositionsService: SyrmosLivePositionsService,
     private val stationOffsetsRepo: StationOffsetsRepository,
     private val scheduleSyncRepository: com.syrmos.core.data.sync.ScheduleSyncRepository,
+    private val announcementsRepository: AnnouncementsRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
@@ -82,6 +86,15 @@ class MapViewModel(
         observeLiveTrains()
         pollLivePositions()
         runTrainSimulation()
+        observeStationDisruptions()
+    }
+
+    private fun observeStationDisruptions() {
+        scope.launch {
+            announcementsRepository.stationDisruptions.collect { disruptions ->
+                _uiState.update { it.copy(stationDisruptions = disruptions) }
+            }
+        }
     }
 
     private fun loadMapData() {
@@ -213,10 +226,14 @@ class MapViewModel(
             while (isActive) {
                 val state = _uiState.value
                 if (state.lines.isNotEmpty() && state.lineStations.isNotEmpty()) {
+                    val closedIds = state.stationDisruptions
+                        .filterValues { it == AlertSeverity.CLOSURE }
+                        .keys
                     val simulated = simulateTrains(
                         state.lines,
                         state.lineStations,
                         livePositionsSnapshot,
+                        closedStationIds = closedIds,
                     )
                     // Suburban A1-A4 dedupe: railway.gov.gr `liveTrains` carry
                     // raw GPS. Whenever the live feed has a train on a line,
