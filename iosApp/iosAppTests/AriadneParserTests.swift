@@ -2,19 +2,19 @@ import XCTest
 @testable import Syrmos
 
 /// Mirrors the KMP `AthensTransitParserTest` so Ariadne behaves identically on
-/// iOS and Android/Web across all three supported languages.
+/// iOS and Android/Web across all four supported languages.
 final class AriadneParserTests: XCTestCase {
 
     private let vocab = AssistantVocabulary(
         stations: [
             StationVocab(id: "M2_SYN", names: ["Syntagma", "Σύνταγμα", "Sintagma"], lineIds: ["M2", "M3"]),
-            StationVocab(id: "M1_PIR", names: ["Piraeus", "Πειραιάς", "Pireas"], lineIds: ["M1", "A1"]),
-            StationVocab(id: "M3_AER", names: ["Airport", "Αεροδρόμιο", "Aeroporti", "Aeroport"], lineIds: ["M3", "A1"]),
+            StationVocab(id: "M1_PIR", names: ["Piraeus", "Πειραιάς", "Pireas", "Pireo"], lineIds: ["M1", "A1"]),
+            StationVocab(id: "M3_AER", names: ["Airport", "Αεροδρόμιο", "Aeroporti", "Aeroport", "Aeroporto"], lineIds: ["M3", "A1"]),
             StationVocab(id: "M1_MON", names: ["Monastiraki", "Μοναστηράκι"], lineIds: ["M1", "M3"]),
         ],
         lines: [
-            LineVocab(id: "M1", aliases: ["M1", "line 1", "γραμμή 1"]),
-            LineVocab(id: "M2", aliases: ["M2", "line 2", "γραμμή 2", "metro 2"]),
+            LineVocab(id: "M1", aliases: ["M1", "line 1", "γραμμή 1", "linea 1"]),
+            LineVocab(id: "M2", aliases: ["M2", "line 2", "γραμμή 2", "metro 2", "linea 2"]),
             LineVocab(id: "M3", aliases: ["M3", "line 3"]),
             LineVocab(id: "A1", aliases: ["A1", "airport line"]),
         ]
@@ -187,6 +187,39 @@ final class AriadneParserTests: XCTestCase {
         }
         XCTAssertEqual(from, "M1_PIR")
         XCTAssertEqual(to, "M2_SYN")
+    }
+
+    // MARK: - Italian
+
+    func test_italianDepartures() {
+        guard case let .showDepartures(stationId, _, _) = parser.parse("prossimi treni da Syntagma") else {
+            return XCTFail("expected departures")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
+    }
+
+    func test_italianPlanTrip() {
+        guard case let .planTrip(from, to, _, _) = parser.parse("come arrivo da Pireo verso Aeroporto") else {
+            return XCTFail("expected plan trip")
+        }
+        XCTAssertEqual(from, "M1_PIR")
+        XCTAssertEqual(to, "M3_AER")
+    }
+
+    func test_italianLastTrainAndFare() {
+        guard case .lastTrain = parser.parse("ultimo treno da Pireo") else {
+            return XCTFail("expected last train")
+        }
+        guard case .explainFare = parser.parse("quanto costa il biglietto per Aeroporto") else {
+            return XCTFail("expected fare")
+        }
+    }
+
+    func test_italianStationStatus() {
+        guard case let .stationStatus(stationId) = parser.parse("Syntagma è aperto?") else {
+            return XCTFail("expected station status")
+        }
+        XCTAssertEqual(stationId, "M2_SYN")
     }
 
     // MARK: - Station status (mirrors AriadneContextParserTest)

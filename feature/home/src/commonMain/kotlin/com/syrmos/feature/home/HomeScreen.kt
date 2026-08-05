@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -77,6 +78,7 @@ import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
+import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.RailNewsItem
@@ -361,10 +363,6 @@ fun HomeScreen(
             }
         }
 
-        item {
-            Box(Modifier.staggeredEntrance(5)) { NetworkOverview(lines = uiState.lines, lang = lang) }
-        }
-
         if (uiState.nearestStations.isNotEmpty()) {
             item {
                 NearbyStationsSection(
@@ -372,6 +370,17 @@ fun HomeScreen(
                     lines = uiState.lines,
                     lang = lang,
                     onStationClick = onStationClick,
+                )
+            }
+        }
+
+        val realTrains = uiState.liveTrains.filter { !it.origin.isNullOrEmpty() && !it.destination.isNullOrEmpty() }
+        if (realTrains.isNotEmpty()) {
+            item {
+                LiveTrainsSection(
+                    trains = realTrains,
+                    lines = uiState.lines,
+                    lang = lang,
                 )
             }
         }
@@ -386,23 +395,6 @@ fun HomeScreen(
             }
         }
 
-        if (uiState.lines.isNotEmpty()) {
-            item {
-                SectionTitle(text = L.LINES.text(lang))
-            }
-
-            val grouped = uiState.lines.groupBy { it.type }
-            listOf(LineType.METRO, LineType.TRAM, LineType.SUBURBAN).forEach { type ->
-                val linesForType = grouped[type] ?: return@forEach
-                items(linesForType) { line ->
-                    LineCard(
-                        line = line,
-                        lang = lang,
-                        onClick = { onLineClick(line.id) },
-                    )
-                }
-            }
-        }
     }
 
     com.syrmos.core.designsystem.component.CompactTabHeader(
@@ -447,6 +439,7 @@ private fun TrackAnyTrainChip(lang: AppLanguage, onClick: () -> Unit) {
 private fun trackAnyLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Παρακολούθηση συρμού"
     AppLanguage.ALBANIAN -> "Ndiq një tren"
+    AppLanguage.ITALIAN -> "Traccia un treno"
     else -> "Track a train"
 }
 
@@ -605,6 +598,7 @@ private fun EmergencyNumberRow(label: String, sub: String) {
 private fun tapHintLabel(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Πατήστε έναν αριθμό για κλήση."
     AppLanguage.ALBANIAN -> "Prek një numër për të thirrur."
+    AppLanguage.ITALIAN -> "Tocca un numero per chiamare."
     else -> "Tap a number to call."
 }
 
@@ -613,6 +607,7 @@ private fun emergencyTitle(condition: com.syrmos.core.model.weather.WeatherCondi
     return when (lang) {
         AppLanguage.GREEK -> if (storm) "Καταιγίδα σε εξέλιξη" else "Έντονη κακοκαιρία"
         AppLanguage.ALBANIAN -> if (storm) "Stuhi në zhvillim" else "Mot i keq"
+        AppLanguage.ITALIAN -> if (storm) "Temporale in corso" else "Maltempo severo"
         else -> if (storm) "Storm in progress" else "Severe weather"
     }
 }
@@ -1193,35 +1188,39 @@ private fun sourceConfidenceLabel(sc: SourceConfidence, lang: AppLanguage): Stri
 private fun thenWord(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "μετά"
     AppLanguage.ALBANIAN -> "pastaj"
+    AppLanguage.ITALIAN -> "poi"
     else -> "then"
 }
 
 private fun trackLabel(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Παρακολούθηση"; AppLanguage.ALBANIAN -> "Ndiq"; else -> "Track"
+    AppLanguage.GREEK -> "Παρακολούθηση"; AppLanguage.ALBANIAN -> "Ndiq"; AppLanguage.ITALIAN -> "Traccia"; else -> "Track"
 }
 private fun trackingOnLabel(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Παρακολουθείται"; AppLanguage.ALBANIAN -> "Po ndiqet"; else -> "Tracking"
+    AppLanguage.GREEK -> "Παρακολουθείται"; AppLanguage.ALBANIAN -> "Po ndiqet"; AppLanguage.ITALIAN -> "In tracciamento"; else -> "Tracking"
 }
 private fun stopTrackingLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Διακοπή παρακολούθησης"
     AppLanguage.ALBANIAN -> "Ndalo ndjekjen"
+    AppLanguage.ITALIAN -> "Interrompi tracciamento"
     else -> "Stop tracking"
 }
 private fun arrivingLabel(lang: AppLanguage, station: String) = when (lang) {
     AppLanguage.GREEK -> "Φτάνει $station"
     AppLanguage.ALBANIAN -> "Po arrin $station"
+    AppLanguage.ITALIAN -> "In arrivo a $station"
     else -> "Arriving $station"
 }
 private fun dueLabel(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Τώρα"; AppLanguage.ALBANIAN -> "Tani"; else -> "Due"
+    AppLanguage.GREEK -> "Τώρα"; AppLanguage.ALBANIAN -> "Tani"; AppLanguage.ITALIAN -> "Ora"; else -> "Due"
 }
 
 /** Mirrors iOS Departure.minutesAwayDisplay: "Now", "5 min", "3h 21min". */
-private fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
+internal fun formatCountdown(minutesAway: Int, lang: AppLanguage): String {
     if (minutesAway <= 1) {
         return when (lang) {
             AppLanguage.GREEK -> "Τώρα"
             AppLanguage.ALBANIAN -> "Tani"
+            AppLanguage.ITALIAN -> "Ora"
             else -> "Now"
         }
     }
@@ -1493,6 +1492,7 @@ private fun NearbyStationsSection(
             SectionTitle(text = when (lang) {
                 AppLanguage.GREEK -> "Κοντά μου"
                 AppLanguage.ALBANIAN -> "Pranë meje"
+                AppLanguage.ITALIAN -> "Vicino a me"
                 else -> "Near me"
             })
             Spacer(modifier = Modifier.weight(1f))
@@ -1518,9 +1518,19 @@ private fun NearbyStationsSection(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            stationLines.take(3).forEach { line ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(line.color.toComposeColor()),
+                                )
+                            }
+                        }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = station.stationName,
@@ -1528,26 +1538,22 @@ private fun NearbyStationsSection(
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                text = formatDistance(station.distanceMeters),
-                                style = MaterialTheme.typography.bodySmall,
+                                text = stationLines.joinToString(", ") { it.name },
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        Text(
+                            text = formatDistance(station.distanceMeters),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         Text(
                             text = "›",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        stationLines.take(3).forEach { line ->
-                            Text(
-                                text = line.name,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = line.color.toComposeColor(),
-                            )
-                        }
                     }
                 }
             }
@@ -1696,14 +1702,98 @@ private fun LineCard(
     }
 }
 
+@Composable
+private fun LiveTrainsSection(
+    trains: List<LiveSuburbanTrain>,
+    lines: List<Line>,
+    lang: AppLanguage,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(text = "🚆", style = MaterialTheme.typography.titleSmall)
+            SectionTitle(text = when (lang) {
+                AppLanguage.GREEK -> "Ζωντανά τρένα"
+                AppLanguage.ALBANIAN -> "Trenat aktiv"
+                AppLanguage.ITALIAN -> "Treni in tempo reale"
+                else -> "Live trains"
+            })
+        }
+
+        trains.take(4).forEach { train ->
+            val matchedLine = lines.firstOrNull { it.id == train.lineId }
+            val lineColor = matchedLine?.color?.toComposeColor() ?: SyrmosColorTokens.suburban
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = train.lineId,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(lineColor)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${train.origin.orEmpty()} → ${train.destination.orEmpty()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "#${train.trainNumber}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                            if (train.delayMinutes > 0) {
+                                Text(
+                                    text = when (lang) {
+                                        AppLanguage.GREEK -> "+${train.delayMinutes}′ καθυστέρηση"
+                                        AppLanguage.ALBANIAN -> "+${train.delayMinutes}′ vonesë"
+                                        AppLanguage.ITALIAN -> "+${train.delayMinutes}′ ritardo"
+                                        else -> "+${train.delayMinutes}′ delay"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = SyrmosColorTokens.warning,
+                                )
+                            }
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(SyrmosColorTokens.live),
+                    )
+                }
+            }
+        }
+    }
+}
+
 private fun Line.localizedName(lang: AppLanguage): String {
     return if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) nameEl else name
 }
 
 private fun formatDistance(meters: Int): String = when {
-    meters < 1000 -> "$meters m away"
+    meters < 1000 -> "$meters m"
     else -> {
         val tenths = meters / 100
-        "${tenths / 10}.${tenths % 10} km away"
+        "${tenths / 10}.${tenths % 10} km"
     }
 }

@@ -168,8 +168,9 @@ private fun feelsLikeLabel(lang: AppLanguage) = tri(lang, "Feels like", "Αίσ�
 private fun humidityLabel(lang: AppLanguage) = tri(lang, "Humidity", "Υγρασία", "Lagështia")
 private fun windLabel(lang: AppLanguage) = tri(lang, "Wind", "Άνεμος", "Era")
 
-private fun tri(lang: AppLanguage, en: String, el: String, sq: String) = when (lang) {
+private fun tri(lang: AppLanguage, en: String, el: String, sq: String, it: String = en) = when (lang) {
     AppLanguage.GREEK -> el
     AppLanguage.ALBANIAN -> sq
+    AppLanguage.ITALIAN -> it
     else -> en
 }

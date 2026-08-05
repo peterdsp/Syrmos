@@ -3,7 +3,7 @@ import Foundation
 // Ariadne, the offline Athens transit assistant on iOS. A faithful Swift mirror
 // of the KMP `AthensTransitParser` / `AssistantIntent` so iOS and Android/Web
 // behave identically: an intent router over the deterministic projector, never
-// a generative chatbot, fully offline, EN / EL / SQ.
+// a generative chatbot, fully offline, quadrilingual EN / EL / SQ / IT.
 
 enum DayContext: Equatable, Sendable { case today, tomorrow, weekend, saturday, sunday }
 
@@ -107,6 +107,7 @@ struct AssistantVocabulary {
                 aliases.append("line \(suffix)")
                 aliases.append("γραμμη \(suffix)")
                 aliases.append("linja \(suffix)")
+                aliases.append("linea \(suffix)")
                 if line.id.first == "M" { aliases.append("metro \(suffix)") }
                 if line.id.first == "T" { aliases.append("tram \(suffix)") }
                 if line.id.hasPrefix("DK") { aliases.append(contentsOf: ["odontotos", "rack railway", "scenic"]) }
@@ -119,9 +120,9 @@ struct AssistantVocabulary {
     /// Greeklish and extra SQ variants keyed by an accent-folded token from
     /// the station's EN or EL name. Mirrors KMP's SQ_AND_LATIN_ALIASES.
     private static let sqAndLatinAliases: [String: [String]] = [
-        "airport": ["Aeroport", "Aeroporti"],
-        "aerodromio": ["Aeroport", "Aeroporti"],
-        "piraeus": ["Pireas", "Pireu"],
+        "airport": ["Aeroport", "Aeroporti", "Aeroporto"],
+        "aerodromio": ["Aeroport", "Aeroporti", "Aeroporto"],
+        "piraeus": ["Pireas", "Pireu", "Pireo"],
         "syntagma": ["Sintagma"],
         "thessaloniki": ["Selanik", "Selaniku", "Thesaloniki"],
         "athens": ["Athina", "Athine", "Athinë"],
@@ -619,14 +620,17 @@ struct AthensTransitParser {
     // MARK: - Vocabulary (mirrors the KMP lists)
 
     private static let transitNouns = ["train", "trains", "metro", "tram", "station", "departure", "departures",
-        "τρεν", "μετρο", "τραμ", "σταθμ", "δρομολογ", "αναχωρη", "συρμ", "προαστιακ", "tren", "stacion", "nisje"]
+        "τρεν", "μετρο", "τραμ", "σταθμ", "δρομολογ", "αναχωρη", "συρμ", "προαστιακ", "tren", "stacion", "nisje",
+        "treno", "treni", "stazione", "partenza", "partenze", "suburbano"]
     private static let departureWords = ["next", "departure", "departures", "when", "trains", "leave", "leaving", "schedule",
-        "arrivals", "arriving", "next one", "how soon", "timetable",
+        "coming", "upcoming", "due", "arrivals", "arriving", "next one", "how soon", "timetable",
         "επομεν", "αναχωρη", "ποτε", "δρομολογ", "φευγει", "τρεν", "ερχεται", "ερχονται", "ωραριο", "επομενο",
-        "ardhsh", "kur", "nisje", "tren", "trena", "vjen", "orari", "ardhja"]
+        "ardhsh", "kur", "nisje", "tren", "trena", "vjen", "orari", "ardhja",
+        "prossim", "partenz", "quando", "orario", "arriv", "prossimo"]
     private static let lastTrainPhrases = ["last train", "last metro", "last one", "leave by", "final train", "last departure",
         "τελευται", "τελευταιο τρεν", "τελευταιος", "τελευταιο δρομολογιο",
-        "treni i fundit", "fundit", "i fundit", "tren i fundit", "nisja e fundit"]
+        "treni i fundit", "fundit", "i fundit", "tren i fundit", "nisja e fundit",
+        "ultimo treno", "ultima corsa", "ultimo metro", "ultima partenza"]
     // First / earliest service of the day. Mirror of lastTrainPhrases.
     private static let firstTrainPhrases = ["first train", "first metro", "first tram", "first one",
         "earliest train", "earliest metro", "first departure", "when does it start",
@@ -634,28 +638,32 @@ struct AthensTransitParser {
         "πρωτο τρεν", "πρωτο δρομολογιο", "πρωτος συρμος", "ποτε ξεκινα", "ποτε ξεκινουν",
         "εναρξη δρομολογιων", "πρωτο μετρο", "πρωτη αναχωρηση",
         "treni i pare", "nisja e pare", "tren i pare", "kur fillon", "kur fillojne",
-        "sherbimi i pare", "metroja e pare"]
+        "sherbimi i pare", "metroja e pare",
+        "primo treno", "prima corsa", "primo metro", "prima partenza", "quando inizia", "inizio servizio"]
     // Bare "first / earliest" position tokens (folded substrings). Count only
     // alongside a named station or line.
-    private static let firstTokens = ["first", "earliest", "πρωτ", "i pare", "e pare", "me heret"]
+    private static let firstTokens = ["first", "earliest", "πρωτ", "i pare", "e pare", "me heret", "primo", "prima"]
     // Step-free / wheelchair / lift accessibility cues.
     private static let accessibilityWords = ["accessible", "accessibility", "wheelchair", "step free", "step-free", "stepfree",
         "lift", "elevator", "disabled access", "disability access", "amea",
         "προσβασιμ", "προσβαση αμεα", "για αμεα", "αναπηρικ", "αμαξιδι", "ασανσερ", "αναβατοριο", "αναπηρια",
         "i aksesueshem", "aksesueshem", "aksesi", "karrige me rrota", "ashensor",
-        "per personat me aftesi", "personat me aftesi te kufizuara"]
+        "per personat me aftesi", "personat me aftesi te kufizuara",
+        "accessibil", "sedia a rotelle", "ascensore", "disabilita"]
     // "which line(s) serve X" — list the lines at a station.
     private static let whichLinesWords = ["which line", "which lines", "what line", "what lines",
         "which metro", "what metro", "lines serve", "lines serving", "lines at", "lines through",
         "lines that stop", "served by",
         "ποια γραμμη", "ποιες γραμμες", "τι γραμμη", "τι γραμμες", "ποιες γραμμ", "γραμμες περνανε",
-        "cila linje", "cilat linja", "cilat linje", "linjat qe", "cila metro"]
+        "cila linje", "cilat linja", "cilat linje", "linjat qe", "cila metro",
+        "quale linea", "quali linee", "che linea", "linee che passano"]
     // "how many stops / how far from A to B" — stop count.
     private static let stopsBetweenWords = ["how many stops", "how many stations", "number of stops",
         "number of stations", "how many stops away", "stops away", "stops between", "stations between",
         "how far apart",
         "ποσες στασεις", "ποσοι σταθμοι", "ποσους σταθμους", "ποσες σταθμοι", "ποσα στοπ",
-        "sa stacione", "sa ndalesa", "sa stacione ka", "sa ndalesa ka"]
+        "sa stacione", "sa ndalesa", "sa stacione ka", "sa ndalesa ka",
+        "quante fermate", "quante stazioni", "fermate tra", "stazioni tra"]
     // "and back" / "return" / "the other way" — reverse the last route.
     private static let reversePhrases = ["and back", "way back", "the other way", "return trip", "round trip",
         "return journey", "reverse", "reverse trip", "back again", "other direction", "opposite direction",
@@ -663,28 +671,41 @@ struct AthensTransitParser {
         "και πισω", "επιστροφη", "αντιστροφ", "το αναποδο", "το αντιθετο", "πισω παλι",
         "αναποδη διαδρομη", "για επιστροφη",
         "kthimi", "kthimin", "e kunderta", "rruga e kthimit", "anasjelltas",
-        "kthimi mbrapa", "kthej mbrapsht", "dhe kthimi"]
-    private static let planPhrases = ["how do i get", "how to get", "get to", "get me to", "route",
+        "kthimi mbrapa", "kthej mbrapsht", "dhe kthimi",
+        "andata e ritorno", "ritorno", "al contrario", "direzione opposta", "e ritorno"]
+    private static let planPhrases = ["how do i get", "how to get", "get to", "get me to", "route", "directions",
         "how do i go", "how to go", "go to", "can i go", "can i still", "can i reach",
         "take me to", "best way", "fastest way", "quickest way", "how can i get",
         "i want to go", "i need to go", "navigate to", "way to reach", "getting to",
         "πως πα", "πως πη", "πως φτα", "διαδρομη", "για να πα", "προλαβαινω", "μπορω να παω",
         "πως θα παω", "καλυτερος τροπος", "πιο γρηγορα", "θελω να παω", "πως μπορω να παω",
         "si shkoj", "si te shkoj", "rruga", "udhetim", "a mund te shkoj", "a arrij",
-        "si te vij", "rruga me e mire", "rruga me e shpejte", "dua te shkoj", "si mund te shkoj"]
-    private static let toMarkers = [" to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne "]
+        "si te vij", "rruga me e mire", "rruga me e shpejte", "dua te shkoj", "si mund te shkoj",
+        "come arrivo", "come andare", "percorso", "indicazioni", "modo migliore",
+        "modo piu veloce", "voglio andare", "come posso arrivare", "portami a"]
+    private static let toMarkers = [" to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ", " verso "]
     private static let findWords = ["where is", "find", "locate", "nearest", "near me", "closest",
-        "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ku eshte", "gjej", "me afert", "afer meje"]
-    private static let lineWords = ["line", "about", "tell me about", "γραμμη", "σχετικα", "linja", "rreth"]
+        "which station", "what station", "where's",
+        "που ειναι", "βρες", "κοντιν", "κοντα μου", "πλησιεστερ", "ποιος σταθμος",
+        "ku eshte", "gjej", "me afert", "afer meje", "cili stacion",
+        "dov'e", "dove si trova", "trova", "piu vicin", "vicino a me", "quale stazione"]
+    private static let lineWords = ["line", "about", "tell me about", "γραμμη", "σχετικα", "linja", "rreth",
+        "linea", "riguardo"]
     private static let fareWords = ["fare", "fares", "ticket", "tickets", "how much", "price", "cost", "cheap",
-        "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος", "bilete", "sa kushton", "kushton", "cmim", "cmimi"]
+        "ticket price", "how much does it cost", "how much is",
+        "εισιτηρι", "ποσο κανει", "ποσο κοστιζει", "τιμη", "κοστος", "τιμη εισιτηριου",
+        "bilete", "sa kushton", "kushton", "cmim", "cmimi", "cmimi i biletes",
+        "bigliett", "quanto costa", "prezzo", "costo", "tariffa"]
     private static let favoriteWords = ["favorite", "favourite", "save this", "bookmark", "add to favorites", "pin",
         "αγαπημεν", "αποθηκευσ", "προσθεσε στα αγαπημενα", "σημειωσε",
-        "i preferuar", "te preferuarat", "ruaj", "shto te te preferuarat"]
-    private static let airportWords = ["airport", "αεροδρομιο", "aeroport"]
+        "i preferuar", "te preferuarat", "ruaj", "shto te te preferuarat",
+        "preferit", "salva", "segnalibro", "aggiungi ai preferiti"]
+    private static let airportWords = ["airport", "αεροδρομιο", "aeroport", "aeroporto"]
     private static let alertWords = ["alert", "alerts", "status", "disruption", "delay", "delays", "problem", "closed", "closure",
-        "ειδοποι", "κατασταση", "καθυστερη", "προβλημα", "κλειστ", "διακοπη", "njoftim", "vonese", "mbyll"]
-    private static let mapWords = ["map", "show on map", "on the map", "χαρτη", "στον χαρτη", "harta", "ne harte"]
+        "ειδοποι", "κατασταση", "καθυστερη", "προβλημα", "κλειστ", "διακοπη", "njoftim", "vonese", "mbyll",
+        "avviso", "avvisi", "ritardo", "ritardi", "interruzione", "chiuso", "chiusura"]
+    private static let mapWords = ["map", "show on map", "on the map", "χαρτη", "στον χαρτη", "harta", "ne harte",
+        "mappa", "sulla mappa"]
     private static let help = ["what can you do", "help", "how do you work", "what do you do",
         // Identity: "who is she" answers with the intro instead of declining.
         "who are you", "who are u", "who r u", "who ru", "who is ariadne", "whos ariadne",
@@ -694,22 +715,27 @@ struct AthensTransitParser {
         "τι μπορεις", "βοηθεια", "πως δουλευ", "ποιος εισαι", "τι εισαι", "τι ειναι η αριαδνη",
         "ποια εισαι", "γεια", "γεια σου", "γεια σας", "καλημερα",
         "si funksionon", "ndihme", "cfare mund", "kush je", "cfare je", "cfare eshte ariadne",
-        "kush eshte ariadne", "pershendetje", "tung", "ckemi"]
+        "kush eshte ariadne", "pershendetje", "tung", "ckemi",
+        "cosa puoi fare", "aiuto", "come funzioni", "chi sei", "cos'e ariadne", "ciao",
+        "buongiorno", "buonasera", "salve"]
     private static let weatherWords = ["rain", "raining", "rainy", "weather", "storm", "wet",
-        "βροχη", "βρεχει", "καιρο", "κακοκαιρ", "shi", "moti", "stuhi"]
+        "βροχη", "βρεχει", "καιρο", "κακοκαιρ", "shi", "moti", "stuhi",
+        "pioggia", "piove", "meteo", "tempesta", "temporale"]
     private static let timePhrases = ["how long", "how many minutes", "how many hours",
         "how long does it take", "how long to get", "how much time", "minutes away", "how far",
         "ποση ωρα", "ποσα λεπτα", "ποσες ωρες", "ποσο θελει", "ποση ωρα κανει",
-        "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe"]
+        "sa gjate", "sa minuta", "sa ore", "sa larg", "sa kohe",
+        "quanto tempo", "quanti minuti", "quante ore", "quanto ci vuole", "quanto dista"]
     // Station operational-status cues. "closed"/"κλειστ"/"mbyll" overlap
     // alertWords on purpose: with a named station they mean "is this stop open?",
     // which the status branch (ordered first) handles.
     private static let stationStatusWords = ["open", "working", "operating", "operational", "running", "closed", "shut",
         "ανοιχτ", "λειτουργει", "δουλευει", "κλειστ", "ανοιξ",
-        "hapur", "punon", "funksionon", "mbyllur", "mbyll"]
+        "hapur", "punon", "funksionon", "mbyllur", "mbyll",
+        "aperto", "funzionante", "operativo", "chiuso"]
     // Words meaning "station", so "is the station open?" resolves even before the
     // specific stop is named.
-    private static let stationNounWords = ["station", "σταθμ", "stacion"]
+    private static let stationNounWords = ["station", "σταθμ", "stacion", "stazione"]
     // "I'm at / here / got off" context-set cues. Kept to multi-word or
     // distinctive tokens so a lone "in"/"on" can't trigger a location set.
     private static let locationPhrases = ["i'm at", "im at", "i am at", "i'm in", "im in", "i'm on", "im on",
@@ -718,11 +744,12 @@ struct AthensTransitParser {
         "currently at", "i'm inside", "im inside",
         "ειμαι στο", "ειμαι στη", "ειμαι στον", "ειμαι εδω", "ειμαι μεσα",
         "εφτασα", "μολις εφτασα", "κατεβηκα", "μολις κατεβηκα",
-        "jam te", "jam ne", "jam ketu", "jam brenda", "arrita", "zbrita", "sapo zbrita"]
-    private static let tomorrowWords = ["tomorrow", "αυριο", "neser"]
-    private static let weekendWords = ["weekend", "σαββατοκυριακο", "fundjave"]
-    private static let saturdayWords = ["saturday", "σαββατο", "te shtune", "shtune"]
-    private static let sundayWords = ["sunday", "κυριακη", "te diel", "diel"]
+        "jam te", "jam ne", "jam ketu", "jam brenda", "arrita", "zbrita", "sapo zbrita",
+        "sono a", "sono alla", "sono qui", "sono dentro", "sono arrivato", "sono sceso"]
+    private static let tomorrowWords = ["tomorrow", "αυριο", "neser", "domani"]
+    private static let weekendWords = ["weekend", "σαββατοκυριακο", "fundjave", "fine settimana"]
+    private static let saturdayWords = ["saturday", "σαββατο", "te shtune", "shtune", "sabato"]
+    private static let sundayWords = ["sunday", "κυριακη", "te diel", "diel", "domenica"]
 
     // Recovery: wrong train / wrong line / wrong direction.
     private static let wrongTrainPhrases = [
@@ -733,6 +760,8 @@ struct AthensTransitParser {
         "πηρα λαθος", "μπηκα σε λαθος", "δεν ειναι δικο μου",
         "tren i gabuar", "linja e gabuar", "gabim", "hyra ne trenin e gabuar",
         "nuk eshte treni im", "drejtim i gabuar",
+        "treno sbagliato", "linea sbagliata", "direzione sbagliata",
+        "ho preso il treno sbagliato", "non e il mio treno",
     ]
     // Recovery: missed stop / went past.
     private static let missedStopPhrases = [
@@ -743,6 +772,8 @@ struct AthensTransitParser {
         "ξεχασα να κατεβω", "δεν κατεβηκα", "προσπερασα",
         "humba stacionin", "humba ndalesan", "kalova stacionin", "shkova larg",
         "nuk zbrita", "harrova te zbris",
+        "ho perso la fermata", "ho superato la fermata", "non sono sceso",
+        "ho dimenticato di scendere",
     ]
     // Recovery: can I still make it / will I get there in time.
     private static let canIStillMakeItPhrases = [
@@ -752,6 +783,7 @@ struct AthensTransitParser {
         "προλαβαινω", "θα προλαβω", "εχω χρονο", "θα φτασω", "ειναι αργα",
         "a do ia dal", "a do arrij", "a kam kohe", "a eshte vone",
         "a mund te arrij", "a do ta kap",
+        "faccio ancora in tempo", "arrivo in tempo", "ho ancora tempo", "e troppo tardi",
     ]
 
     // Easter egg triggers. Substring match on folded text so "Liepuras",

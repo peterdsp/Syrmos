@@ -72,7 +72,7 @@ final class HomeFeaturesTests: XCTestCase {
     }
 
     private func dep(_ minutesAway: Int, _ time: String, line: String = "M2") -> Departure {
-        Departure(time: time, lineId: line, direction: "Elliniko", minutesAway: minutesAway, serviceType: "regular")
+        Departure(time: time, lineId: line, direction: "Elliniko", minutesAway: minutesAway, serviceType: "regular", trainNo: nil)
     }
 
     func test_picksLatestSlotWithinWindow() {

@@ -11,6 +11,9 @@
 		017B77BFA04BA95743C5C7EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D80912A3B4C5D6 /* Assets.xcassets */; };
 		020B9BA01E714B238FC04496 /* iosApp/Features/WhatsNew/WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D67A43DD93145FBB9809123 /* iosApp/Features/WhatsNew/WhatsNewView.swift */; };
 		03329116BFDB4F16A2A9B937 /* iosApp/DesignSystem/ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */; };
+		0A17A710F00D0710F00D0710 /* iosApp/DesignSystem/OfflinePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A17A711F00D0711F00D0711 /* iosApp/DesignSystem/OfflinePill.swift */; };
+		0A17A712F00D0712F00D0712 /* iosApp/DesignSystem/SyrmosAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A17A713F00D0713F00D0713 /* iosApp/DesignSystem/SyrmosAnimations.swift */; };
+		0A17A714F00D0714F00D0714 /* AlertDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A17A715F00D0715F00D0715 /* AlertDetailSheet.swift */; };
 		03FBB75EEE74C7E43F7A609A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71805 /* SettingsView.swift */; };
 		03FBB75EEE74C7E43F7A609B /* iosApp/DesignSystem/CompactTabHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */; };
 		0658B8596FD64D0EB5BE30A0 /* iosApp/Features/Fares/FaresView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD55D549DBE24531BEA4597D /* iosApp/Features/Fares/FaresView.swift */; };
@@ -210,6 +213,9 @@
 
 /* Begin PBXFileReference section */
 		09288EF8307B4CDC9D065AED /* iosApp/Features/Timetables/TimetablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/TimetablesView.swift; sourceTree = SOURCE_ROOT; };
+		0A17A711F00D0711F00D0711 /* iosApp/DesignSystem/OfflinePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/OfflinePill.swift; sourceTree = SOURCE_ROOT; };
+		0A17A713F00D0713F00D0713 /* iosApp/DesignSystem/SyrmosAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/SyrmosAnimations.swift; sourceTree = SOURCE_ROOT; };
+		0A17A715F00D0715F00D0715 /* AlertDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertDetailSheet.swift; sourceTree = "<group>"; };
 		0CC57A007A9CFBEF45359A28 /* SyrmosWatchComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SyrmosWatchComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		0F174A75E7C14871B9B77CAE /* iosApp/Core/Networking/SyrmosSchedulesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/SyrmosSchedulesService.swift; sourceTree = SOURCE_ROOT; };
@@ -578,6 +584,8 @@
 				D32687A748EF4519991403D6 /* iosApp/DesignSystem/WidgetKit/SyrmosLineTokens.swift */,
 				28CB0FF1A8E58A05798DED77 /* iosApp/DesignSystem/SyrmosColors.swift */,
 				37E20527B3ED48E6806B8138 /* iosApp/DesignSystem/ThemeManager.swift */,
+				0A17A711F00D0711F00D0711 /* iosApp/DesignSystem/OfflinePill.swift */,
+				0A17A713F00D0713F00D0713 /* iosApp/DesignSystem/SyrmosAnimations.swift */,
 				836DE84E99C06ABA19E71806 /* iosApp/DesignSystem/CompactTabHeader.swift */,
 			);
 			name = DesignSystem;
@@ -702,6 +710,7 @@
 				AA11BB22CC33DD44EE55BC02 /* TrackingCardBody.swift */,
 				AA11BB22CC33DD44EE55BD02 /* TrackPickerSheet.swift */,
 				AA11BB22CC33DD44EE55BE02 /* EmergencyWeatherCard.swift */,
+				0A17A715F00D0715F00D0715 /* AlertDetailSheet.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -900,6 +909,8 @@
 				26AC636F7C9B467B9097F8F6 /* iosApp/Features/Timetables/TimetablesIcons.swift in Sources */,
 				470A39F895004D4CB8BC04D4 /* iosApp/Core/Persistence/SyrmosTrainTimestampsStore.swift in Sources */,
 				03329116BFDB4F16A2A9B937 /* iosApp/DesignSystem/ThemeManager.swift in Sources */,
+				0A17A710F00D0710F00D0710 /* iosApp/DesignSystem/OfflinePill.swift in Sources */,
+				0A17A712F00D0712F00D0712 /* iosApp/DesignSystem/SyrmosAnimations.swift in Sources */,
 				8A72EAE7260D46FDA05D490B /* iosApp/Shared/SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* iosApp/Shared/StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* iosApp/Features/Timetables/TimetablesView.swift in Sources */,
@@ -932,6 +943,7 @@
 				AA11BB22CC33DD44EE55BC01 /* TrackingCardBody.swift in Sources */,
 				AA11BB22CC33DD44EE55BD01 /* TrackPickerSheet.swift in Sources */,
 				AA11BB22CC33DD44EE55BE01 /* EmergencyWeatherCard.swift in Sources */,
+				0A17A714F00D0714F00D0714 /* AlertDetailSheet.swift in Sources */,
 				090D4A73C523583CAAB95EAC /* LineDetailView.swift in Sources */,
 				8FD7065798C557186BA57411 /* LinesView.swift in Sources */,
 				F29B88836219BB903078C5DA /* MapView.swift in Sources */,

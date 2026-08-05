@@ -93,7 +93,8 @@ struct TimetablesView: View {
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader(
                     loc.language == .greek ? "Αναχωρήσεις" :
-                    loc.language == .albanian ? "Nisjet" : "Departures"
+                    loc.language == .albanian ? "Nisjet" :
+                    loc.language == .italian ? "Partenze" : "Departures"
                 )
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -139,6 +140,7 @@ struct TimetablesView: View {
         switch loc.language {
         case .greek: return "Επομενα δρομολογια απο τον επιλεγμενο σταθμο."
         case .albanian: return "Nisjet e ardhshme nga stacioni i zgjedhur."
+        case .italian: return "Prossime partenze dalla stazione selezionata."
         case .english: return "Next departures from the selected station."
         }
     }
@@ -244,6 +246,7 @@ private struct LinePickerCard: View {
         switch loc.language {
         case .greek: return "Γραμμη"
         case .albanian: return "Linja"
+        case .italian: return "Linea"
         case .english: return "Line"
         }
     }
@@ -306,6 +309,7 @@ private struct StationPickerCard: View {
         switch loc.language {
         case .greek: return "Σταθμος"
         case .albanian: return "Stacioni"
+        case .italian: return "Stazione"
         case .english: return "Station"
         }
     }
@@ -414,6 +418,7 @@ private struct DirectionSection: View {
         switch loc.language {
         case .greek: prefix = "Προς"
         case .albanian: prefix = "Drejt"
+        case .italian: prefix = "Verso"
         case .english: prefix = "Towards"
         }
         return "\(prefix) \(destinationLabel)"
@@ -425,6 +430,7 @@ private struct DirectionSection: View {
         switch loc.language {
         case .greek: return "\(count) επομενα δρομολογια"
         case .albanian: return "\(count) nisje te radhes"
+        case .italian: return "\(count) partenze imminenti"
         case .english: return "\(count) upcoming departures"
         }
     }
@@ -433,6 +439,7 @@ private struct DirectionSection: View {
         switch loc.language {
         case .greek: return "Προηγουμενα"
         case .albanian: return "Me pare"
+        case .italian: return "Precedenti"
         case .english: return "Earlier"
         }
     }
@@ -441,6 +448,7 @@ private struct DirectionSection: View {
         switch loc.language {
         case .greek: return "Ολα τα επομενα"
         case .albanian: return "Te gjitha"
+        case .italian: return "Tutte le prossime"
         case .english: return "All upcoming"
         }
     }
@@ -531,6 +539,7 @@ private struct FeaturedRow: View {
             switch loc.language {
             case .greek: return "Τωρα"
             case .albanian: return "Tani"
+            case .italian: return "Ora"
             case .english: return "Now"
             }
         }
@@ -541,6 +550,7 @@ private struct FeaturedRow: View {
         switch loc.language {
         case .greek: return "προς \(departure.direction)"
         case .albanian: return "drejt \(departure.direction)"
+        case .italian: return "verso \(departure.direction)"
         case .english: return "towards \(departure.direction)"
         }
     }
@@ -593,6 +603,7 @@ private struct EmptyRow: View {
     var body: some View {
         Text(loc.language == .greek ? "Δεν υπαρχουν διαθεσιμα δρομολογια." :
              loc.language == .albanian ? "Nuk ka nisje te disponueshme." :
+             loc.language == .italian ? "Nessuna partenza disponibile." :
              "No departures available.")
             .font(.subheadline)
             .foregroundStyle(.secondary)
@@ -694,6 +705,7 @@ private struct DayPickerRow: View {
             switch loc.language {
             case .greek: return "ΣΗΜ"
             case .albanian: return "SOT"
+            case .italian: return "OGGI"
             case .english: return "TODAY"
             }
         }
@@ -714,6 +726,7 @@ private struct DayPickerRow: View {
         switch loc.language {
         case .greek: return "el_GR"
         case .albanian: return "sq_AL"
+        case .italian: return "it_IT"
         case .english: return "en_US"
         }
     }

@@ -232,6 +232,18 @@ enum VehicleIcons {
     }
 }
 
+enum MapVehicleSelection: Identifiable {
+    case simulated(SimulatedTrain)
+    case live(LiveTrain)
+
+    var id: String {
+        switch self {
+        case .simulated(let train): return "sim:\(train.id)"
+        case .live(let train): return "live:\(train.id)"
+        }
+    }
+}
+
 struct TransitMapView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     // Use the shared singleton instances so we don't run two polling loops
@@ -242,7 +254,7 @@ struct TransitMapView: View {
     @ObservedObject private var trainSimulator = TrainSimulatorService.shared
     @StateObject private var locationManager = MapLocationManager()
     @State private var tappedStation: MapStationNode?
-    @State private var tappedTrain: LiveTrain?
+    @State private var tappedVehicle: MapVehicleSelection?
     @State private var showLiveTrainsSheet = false
     @State private var showLocationDeniedAlert = false
     /// When true, hide all moving train/tram annotations so the user can see
@@ -280,36 +292,45 @@ struct TransitMapView: View {
                     .presentationDragIndicator(.visible)
                     .presentationContentInteraction(.scrolls)
             }
-            .sheet(item: $tappedTrain) { train in
-                TrainDetailSheet(train: train)
-                    .presentationDetents([.fraction(0.7), .large])
-                    .presentationDragIndicator(.visible)
-                    .presentationContentInteraction(.scrolls)
+            .sheet(item: $tappedVehicle) { vehicle in
+                switch vehicle {
+                case .simulated(let train):
+                    SimulatedVehicleDetailSheet(train: train)
+                        .presentationDetents([.fraction(0.45), .medium])
+                        .presentationDragIndicator(.visible)
+                case .live(let train):
+                    TrainDetailSheet(train: train)
+                        .presentationDetents([.fraction(0.7), .large])
+                        .presentationDragIndicator(.visible)
+                        .presentationContentInteraction(.scrolls)
+                }
             }
             .sheet(isPresented: $showLiveTrainsSheet) {
                 LiveTrainsListSheet(
                     trains: liveTrainService.trains,
                     onSelect: { train in
                         showLiveTrainsSheet = false
-                        tappedTrain = train
+                        tappedVehicle = .live(train)
                     }
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
             .alert(
-                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : loc.language == .italian ? "La posizione è disattivata" : "Location is disabled",
                 isPresented: $showLocationDeniedAlert
             ) {
-                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : loc.language == .albanian ? "Hap Cilësimet" : "Open Settings") {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : loc.language == .albanian ? "Hap Cilësimet" : loc.language == .italian ? "Apri Impostazioni" : "Open Settings") {
                     locationManager.openSystemSettings()
                 }
-                Button(loc.language == .greek ? "Άκυρο" : loc.language == .albanian ? "Anulo" : "Cancel", role: .cancel) {}
+                Button(loc.language == .greek ? "Άκυρο" : loc.language == .albanian ? "Anulo" : loc.language == .italian ? "Annulla" : "Cancel", role: .cancel) {}
             } message: {
                 Text(loc.language == .greek
                     ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
                     : loc.language == .albanian
                     ? "Nuk i ke dhënë Syrmos leje për vendndodhjen. Dëshiron të hapësh Cilësimet për ta aktivizuar?"
+                    : loc.language == .italian
+                    ? "Non hai concesso a Syrmos l'accesso alla posizione. Vuoi aprire le Impostazioni per attivarlo?"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
         }
@@ -344,8 +365,8 @@ struct TransitMapView: View {
                     onStationTap: { stationId in
                         tappedStation = stations.first(where: { $0.id == stationId })
                     },
-                    onTrainTap: { train in
-                        tappedTrain = train
+                    onTrainTap: { vehicle in
+                        tappedVehicle = vehicle
                     }
                 )
                 // Extend the map underneath the CompactTabHeader at the
@@ -389,8 +410,8 @@ struct TransitMapView: View {
                     }
                     .accessibilityLabel(
                         vehiclesHidden
-                            ? (loc.language == .greek ? "Εμφάνιση οχημάτων" : loc.language == .albanian ? "Shfaq mjetet" : "Show vehicles")
-                            : (loc.language == .greek ? "Απόκρυψη οχημάτων" : loc.language == .albanian ? "Fshih mjetet" : "Hide vehicles")
+                            ? (loc.language == .greek ? "Εμφάνιση οχημάτων" : loc.language == .albanian ? "Shfaq mjetet" : loc.language == .italian ? "Mostra veicoli" : "Show vehicles")
+                            : (loc.language == .greek ? "Απόκρυψη οχημάτων" : loc.language == .albanian ? "Fshih mjetet" : loc.language == .italian ? "Nascondi veicoli" : "Hide vehicles")
                     )
 
                     Button {
@@ -515,7 +536,7 @@ struct StationSheetView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : "Close")
+            .accessibilityLabel(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : loc.language == .italian ? "Chiudi" : "Close")
         }
     }
 
@@ -546,14 +567,14 @@ struct StationSheetView: View {
         if station.isInterchange {
             HStack(spacing: 6) {
                 FactChip(icon: "arrow.left.arrow.right",
-                         label: loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : "Interchange")
+                         label: loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : loc.language == .italian ? "Interscambio" : "Interchange")
             }
         }
     }
 
     private var departuresList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : "Next departures")
+            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : loc.language == .italian ? "Prossime partenze" : "Next departures")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
@@ -577,7 +598,7 @@ struct StationSheetView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                Text(loc.language == .greek ? "Οδηγίες" : loc.language == .albanian ? "Udhëzime" : "Get directions")
+                Text(loc.language == .greek ? "Οδηγίες" : loc.language == .albanian ? "Udhëzime" : loc.language == .italian ? "Indicazioni" : "Get directions")
                     .fontWeight(.semibold)
             }
             .frame(maxWidth: .infinity)
@@ -917,7 +938,7 @@ struct DepartureRowView: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     if departure.serviceType == "airport" {
-                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : "Airport")
+                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : loc.language == .italian ? "Aeroporto" : "Airport")
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 6)
@@ -932,6 +953,8 @@ struct DepartureRowView: View {
                         ? "προς \(departure.direction)"
                         : loc.language == .albanian
                         ? "drejt \(departure.direction)"
+                        : loc.language == .italian
+                        ? "per \(departure.direction)"
                         : "to \(departure.direction)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -985,7 +1008,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
     /// apart from the no-op redraws triggered by annotation churn.
     let recenterToUserPing: Int
     let onStationTap: (String) -> Void
-    var onTrainTap: ((LiveTrain) -> Void)?
+    var onTrainTap: ((MapVehicleSelection) -> Void)?
 
     /// CARTO label-free minimal base tiles that replace Apple's map content.
     static func makeCartoOverlay(dark: Bool) -> MKTileOverlay {
@@ -1548,9 +1571,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
             mapView.deselectAnnotation(view.annotation, animated: false)
             if let station = view.annotation as? SyrmosStationAnnotation {
                 parent.onStationTap(station.station.id)
-            } else if let trainAnnotation = view.annotation as? SyrmosTrainAnnotation,
-                      case .live(let train) = trainAnnotation.kind {
-                parent.onTrainTap?(train)
+            } else if let trainAnnotation = view.annotation as? SyrmosTrainAnnotation {
+                parent.onTrainTap?(trainAnnotation.kind)
             }
         }
 
@@ -1653,8 +1675,7 @@ final class SyrmosStationAnnotation: NSObject, MKAnnotation {
 }
 
 final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
-    enum Kind { case simulated(SimulatedTrain); case live(LiveTrain) }
-    let kind: Kind
+    let kind: MapVehicleSelection
     @objc dynamic var coordinate: CLLocationCoordinate2D
     var id: String {
         switch kind {
@@ -1682,7 +1703,135 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
     }
 }
 
-// MARK: - Train Detail Sheet
+// MARK: - Vehicle Detail Sheets
+
+struct SimulatedVehicleDetailSheet: View {
+    let train: SimulatedTrain
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    private var lineColor: Color {
+        SyrmosData.lineColor(for: train.lineId)
+    }
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 15)) { context in
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 10) {
+                    Text(train.lineId)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(lineColor.opacity(0.15))
+                        .foregroundStyle(lineColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(train.lineName)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                        Text("\(text(en: "Towards", el: "Προς", sq: "Drejt", it: "Verso")) \(train.destinationName)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if train.isAirportService {
+                        Image(systemName: "airplane")
+                            .foregroundStyle(lineColor)
+                            .accessibilityLabel(text(en: "Airport service", el: "Δρομολόγιο αεροδρομίου", sq: "Shërbim aeroporti", it: "Servizio aeroportuale"))
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    vehicleRow(
+                        icon: "location.fill",
+                        label: text(en: "Estimated position", el: "Εκτιμώμενη θέση", sq: "Pozicioni i vlerësuar", it: "Posizione stimata"),
+                        value: train.currentStationName
+                    )
+                    vehicleRow(
+                        icon: "arrow.forward.circle.fill",
+                        label: text(en: "Next station", el: "Επόμενος σταθμός", sq: "Stacioni i ardhshëm", it: "Prossima stazione"),
+                        value: train.nextStationName
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack {
+                        Text(text(en: "Trip progress", el: "Πρόοδος διαδρομής", sq: "Përparimi i udhëtimit", it: "Avanzamento del viaggio"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(Int(progress(at: context.date) * 100))%")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    ProgressView(value: progress(at: context.date))
+                        .tint(lineColor)
+                }
+
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(lineColor)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(text(
+                            en: "Approximate estimate",
+                            el: "Κατά προσέγγιση εκτίμηση",
+                            sq: "Vlerësim i përafërt",
+                            it: "Stima approssimativa"
+                        ))
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        Text(text(
+                            en: "This is not a live position. Times, position, and progress are calculated from the published timetable and may differ from actual service.",
+                            el: "Δεν είναι ζωντανή θέση. Οι χρόνοι, η θέση και η πρόοδος υπολογίζονται από το δημοσιευμένο πρόγραμμα και μπορεί να διαφέρουν από την πραγματική κυκλοφορία.",
+                            sq: "Ky nuk është pozicion në kohë reale. Oraret, pozicioni dhe përparimi llogariten nga orari i publikuar dhe mund të ndryshojnë nga shërbimi real.",
+                            it: "Questa non è una posizione in tempo reale. Orari, posizione e avanzamento sono calcolati dall'orario pubblicato e possono differire dal servizio effettivo."
+                        ))
+                        .font(.caption)
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(lineColor.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(20)
+        }
+    }
+
+    private func vehicleRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .frame(width: 24)
+                .foregroundStyle(lineColor)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.body)
+                    .fontWeight(.medium)
+            }
+        }
+    }
+
+    private func progress(at date: Date) -> Double {
+        guard train.originEpoch > 0, train.totalTravelMinutes > 0 else { return 0 }
+        let duration = Double(train.totalTravelMinutes) * 60
+        return min(max((date.timeIntervalSince1970 - train.originEpoch) / duration, 0), 1)
+    }
+
+    private func text(en: String, el: String, sq: String, it: String) -> String {
+        switch loc.language {
+        case .english: return en
+        case .greek: return el
+        case .albanian: return sq
+        case .italian: return it
+        }
+    }
+}
 
 struct TrainDetailSheet: View {
     let train: LiveTrain

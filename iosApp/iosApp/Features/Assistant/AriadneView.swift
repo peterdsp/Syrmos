@@ -166,6 +166,11 @@ struct AriadneView: View {
             if hour >= 20 { return ["Treni i fundit M2", "Moti tani", "Si shkoj në shtëpi?"] }
             if hour < 9 { return ["M3 tjetër për Aeroport", "Moti tani", "Si shkoj në qendër?"] }
             return ["Moti tani", "Si shkoj në Aeroport?", "Treni i fundit M2"]
+        case .italian:
+            if severe { return ["Come torno a casa al coperto?", "Maltempo adesso", "Avvisi linee"] }
+            if hour >= 20 { return ["Ultimo M2", "Meteo adesso", "Come torno a casa?"] }
+            if hour < 9 { return ["Prossimo M3 per Aeroporto", "Meteo adesso", "Come arrivo in centro?"] }
+            return ["Meteo adesso", "Come arrivo all'Aeroporto?", "Ultimo M2"]
         case .english:
             if severe { return ["How do I get home covered?", "Severe weather now", "Line alerts"] }
             if hour >= 20 { return ["Last M2", "Weather now", "How do I get home?"] }
@@ -178,6 +183,7 @@ struct AriadneView: View {
         switch loc.language {
         case .greek: return "ΔΟΚΙΜΑΣΕ"
         case .albanian: return "PROVO"
+        case .italian: return "PROVA"
         case .english: return "TRY"
         }
     }
@@ -291,6 +297,7 @@ struct AriadneView: View {
         switch loc.language {
         case .greek: return "Κλείσιμο"
         case .albanian: return "Mbyll"
+        case .italian: return "Chiudi"
         default: return "Close"
         }
     }
@@ -299,6 +306,7 @@ struct AriadneView: View {
         switch loc.language {
         case .greek: return "Ο έξυπνος οδηγός συγκοινωνιών σου"
         case .albanian: return "Udhëzuesi yt i zgjuar i transportit"
+        case .italian: return "La tua guida intelligente ai trasporti"
         default: return "Your smart transit guide"
         }
     }
@@ -307,6 +315,7 @@ struct AriadneView: View {
         switch loc.language {
         case .greek: return "Ρώτησε για τρένα, σταθμούς, διαδρομές…"
         case .albanian: return "Pyet për trena, stacione, udhëtime…"
+        case .italian: return "Chiedi di treni, stazioni, percorsi…"
         default: return "Ask about trains, stations, routes…"
         }
     }
@@ -416,6 +425,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "Πιο έξυπνη Αριάδνη"
         case .albanian: return "Ariadne më e zgjuar"
+        case .italian: return "Ariadne più intelligente"
         case .english: return "Smarter Ariadne"
         }
     }
@@ -423,6 +433,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "Κατέβασε ένα AI στη συσκευή (~1.1 GB, μία φορά) για πιο ελεύθερη διατύπωση. Λειτουργεί offline μετά."
         case .albanian: return "Shkarko një AI në pajisje (~1.1 GB, një herë) për fjalë më të lira. Punon offline më pas."
+        case .italian: return "Scarica un AI sul dispositivo (~1.1 GB, una volta) per un linguaggio più libero. Funziona offline dopo."
         case .english: return "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
         }
     }
@@ -430,6 +441,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "Ληψη μοντελου AI..."
         case .albanian: return "Po shkarkohet modeli AI..."
+        case .italian: return "Download del modello AI..."
         case .english: return "Downloading AI model..."
         }
     }
@@ -438,6 +450,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "\(downloaded) / 1100 MB"
         case .albanian: return "\(downloaded) / 1100 MB"
+        case .italian: return "\(downloaded) / 1100 MB"
         case .english: return "\(downloaded) / 1100 MB"
         }
     }
@@ -445,6 +458,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "Η λήψη απέτυχε. Ο κανόνας-parser συνεχίζει να απαντά."
         case .albanian: return "Shkarkimi dështoi. Rregull-parser vazhdon të përgjigjet."
+        case .italian: return "Download fallito. Il parser delle regole continua a rispondere."
         case .english: return "Download failed. The rule parser still answers."
         }
     }
@@ -452,6 +466,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "Λήψη (~1.1 GB)"
         case .albanian: return "Shkarko (~1.1 GB)"
+        case .italian: return "Scarica (~1.1 GB)"
         case .english: return "Download (~1.1 GB)"
         }
     }
@@ -459,6 +474,7 @@ private struct AriadneModelBanner: View {
         switch loc.language {
         case .greek: return "Δοκίμασε ξανά"
         case .albanian: return "Provo sërish"
+        case .italian: return "Riprova"
         case .english: return "Try again"
         }
     }

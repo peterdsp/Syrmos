@@ -9,6 +9,7 @@ actual fun detectSystemLanguage(): AppLanguage {
     return when (NSLocale.currentLocale.languageCode) {
         "el" -> AppLanguage.GREEK
         "sq" -> AppLanguage.ALBANIAN
+        "it" -> AppLanguage.ITALIAN
         else -> AppLanguage.ENGLISH
     }
 }

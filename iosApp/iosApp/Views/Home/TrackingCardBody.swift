@@ -124,6 +124,7 @@ struct TrackingCardBody: View {
         switch lang {
         case .greek: return "ΖΩΝΤΑΝΑ"
         case .albanian: return "LIVE"
+        case .italian: return "LIVE"
         case .english: return "LIVE"
         }
     }
@@ -131,6 +132,7 @@ struct TrackingCardBody: View {
         switch lang {
         case .greek: return "προς"
         case .albanian: return "për"
+        case .italian: return "per"
         case .english: return "to"
         }
     }
@@ -138,6 +140,7 @@ struct TrackingCardBody: View {
         switch lang {
         case .greek: return "Τώρα"
         case .albanian: return "Tani"
+        case .italian: return "Ora"
         case .english: return "Due"
         }
     }
@@ -145,6 +148,7 @@ struct TrackingCardBody: View {
         switch lang {
         case .greek: return "Διακοπή παρακολούθησης"
         case .albanian: return "Ndalo ndjekjen"
+        case .italian: return "Interrompi tracciamento"
         case .english: return "Stop tracking"
         }
     }
@@ -162,12 +166,14 @@ struct TrackingCardBody: View {
             switch lang {
             case .greek: return "Σταθμός \(tracked.stationName)"
             case .albanian: return "Stacioni \(tracked.stationName)"
+            case .italian: return "Stazione \(tracked.stationName)"
             case .english: return "\(tracked.stationName)"
             }
         }
         switch lang {
         case .greek: return "Φτάνει \(tracked.stationName)"
         case .albanian: return "Po arrin \(tracked.stationName)"
+        case .italian: return "In arrivo \(tracked.stationName)"
         case .english: return "Arriving \(tracked.stationName)"
         }
     }

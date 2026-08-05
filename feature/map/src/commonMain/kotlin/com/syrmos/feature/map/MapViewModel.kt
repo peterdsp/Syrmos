@@ -53,6 +53,7 @@ data class MapUiState(
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val simulatedTrains: List<SimulatedTrain> = emptyList(),
     val selectedTrain: LiveSuburbanTrain? = null,
+    val selectedSimulatedTrain: SimulatedTrain? = null,
     val showTrains: Boolean = true,
     val showLiveTrainsSheet: Boolean = false,
     val isLoading: Boolean = true,
@@ -116,6 +117,8 @@ class MapViewModel(
                 selectedStation = station,
                 selectedStationLines = stationLines,
                 selectedStationDepartures = emptyList(),
+                selectedTrain = null,
+                selectedSimulatedTrain = null,
             )
         }
 
@@ -158,13 +161,26 @@ class MapViewModel(
     }
 
     fun selectTrain(trainId: String) {
-        val train = _uiState.value.liveTrains.find { it.id == trainId } ?: return
+        val state = _uiState.value
+        val liveTrain = state.liveTrains.find { it.id == trainId }
+        val simulatedTrain = state.simulatedTrains.find { it.id == trainId }
+        if (liveTrain == null && simulatedTrain == null) return
         clearSelection()
-        _uiState.update { it.copy(selectedTrain = train) }
+        _uiState.update {
+            it.copy(
+                selectedTrain = liveTrain,
+                selectedSimulatedTrain = simulatedTrain,
+            )
+        }
     }
 
     fun clearTrainSelection() {
-        _uiState.update { it.copy(selectedTrain = null) }
+        _uiState.update {
+            it.copy(
+                selectedTrain = null,
+                selectedSimulatedTrain = null,
+            )
+        }
     }
 
     fun toggleLiveTrainsSheet() {
@@ -221,7 +237,15 @@ class MapViewModel(
                         today = scheduleDayTypeString(),
                         nowMinutes = now.hour * 60 + now.minute + now.second / 60.0,
                     ).filter { it.lineId !in coveredByLive }
-                    _uiState.update { it.copy(simulatedTrains = filtered + projected) }
+                    val visibleTrains = filtered + projected
+                    _uiState.update { current ->
+                        current.copy(
+                            simulatedTrains = visibleTrains,
+                            selectedSimulatedTrain = current.selectedSimulatedTrain?.let { selected ->
+                                visibleTrains.find { it.id == selected.id }
+                            },
+                        )
+                    }
                 }
                 delay(1_000)
             }

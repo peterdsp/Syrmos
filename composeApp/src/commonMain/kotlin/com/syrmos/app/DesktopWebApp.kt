@@ -761,6 +761,7 @@ private fun TicketsCard(
     DashboardCard(title = when (lang) {
         AppLanguage.GREEK -> "Εισιτήρια OASA"
         AppLanguage.ALBANIAN -> "Biletat e OASA"
+        AppLanguage.ITALIAN -> "Biglietti OASA"
         else -> "OASA tickets"
     }) {
         val featured = products.take(6)
@@ -797,6 +798,7 @@ private fun TicketsCard(
             Text(when (lang) {
                 AppLanguage.GREEK -> "Αγορά μέσω Athena Card ↗"
                 AppLanguage.ALBANIAN -> "Bli përmes Athena Card ↗"
+                AppLanguage.ITALIAN -> "Acquista su Athena Card ↗"
                 else -> "Buy on Athena Card ↗"
             })
         }
@@ -804,6 +806,7 @@ private fun TicketsCard(
             text = when (lang) {
                 AppLanguage.GREEK -> "Τιμές από επίσημες πηγές OASA. Η αγορά γίνεται απευθείας στο athenacard.gr."
                 AppLanguage.ALBANIAN -> "Çmimet nga burimet zyrtare të OASA. Blerja bëhet drejtpërdrejt në athenacard.gr."
+                AppLanguage.ITALIAN -> "Prezzi dalle fonti ufficiali OASA. L'acquisto avviene direttamente su athenacard.gr."
                 else -> "Prices from official OASA sources. Purchase happens directly on athenacard.gr."
             },
             style = MaterialTheme.typography.labelSmall,
@@ -821,6 +824,7 @@ private fun InfoLinksCard(
     DashboardCard(title = when (lang) {
         AppLanguage.GREEK -> "Χρήσιμες πληροφορίες"
         AppLanguage.ALBANIAN -> "Informacione të dobishme"
+        AppLanguage.ITALIAN -> "Informazioni utili"
         else -> "Useful information"
     }) {
         links.forEach { link ->
@@ -863,6 +867,7 @@ private fun InfoLinksCard(
                         text = when (lang) {
                             AppLanguage.GREEK -> "Επιβεβαίωση στο "
                             AppLanguage.ALBANIAN -> "Verifiko në "
+                            AppLanguage.ITALIAN -> "Verifica su "
                             else -> "Verify on "
                         } + link.operatorId.uppercase() + "  ↗",
                         style = MaterialTheme.typography.labelMedium,
@@ -884,6 +889,7 @@ private fun HellenicTrainCard(
             text = when (lang) {
                 AppLanguage.GREEK -> "Εισιτήρια Προαστιακού (A1–A4), InterCity και υπεραστικών αμαξοστοιχιών απευθείας από την Hellenic Train."
                 AppLanguage.ALBANIAN -> "Bileta për Trenat periferik (A1–A4), InterCity dhe ndërqytetës direkt nga Hellenic Train."
+                AppLanguage.ITALIAN -> "Biglietti per treni suburbani (A1-A4), InterCity e interurbani direttamente da Hellenic Train."
                 else -> "Tickets for Suburban (A1–A4), InterCity and intercity trains directly from Hellenic Train."
             },
             style = MaterialTheme.typography.bodyMedium,
@@ -897,6 +903,7 @@ private fun HellenicTrainCard(
                 Text(when (lang) {
                     AppLanguage.GREEK -> "Αγορά εισιτηρίου ↗"
                     AppLanguage.ALBANIAN -> "Bli biletë ↗"
+                    AppLanguage.ITALIAN -> "Acquista biglietto ↗"
                     else -> "Buy ticket ↗"
                 })
             }
@@ -907,6 +914,7 @@ private fun HellenicTrainCard(
                 Text(when (lang) {
                     AppLanguage.GREEK -> "Πληροφορίες ↗"
                     AppLanguage.ALBANIAN -> "Informacione ↗"
+                    AppLanguage.ITALIAN -> "Informazioni ↗"
                     else -> "Info ↗"
                 })
             }

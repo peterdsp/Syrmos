@@ -480,12 +480,17 @@ internal actual fun PlatformMapView(
                 // Heading is baked into the triangle bitmap; refresh each segment.
                 existing.icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
             } else {
+                val trainId = train.id
                 val marker = Marker(mapView).apply {
                     position = snappedSimPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
                     title = "${train.lineName} > ${train.destinationName}"
                     snippet = "Near ${train.currentStationName}"
+                    setOnMarkerClickListener { _, _ ->
+                        onTrainSelected(trainId)
+                        true
+                    }
                 }
                 trainMarkers[train.id] = marker
                 mapView.overlays.add(marker)

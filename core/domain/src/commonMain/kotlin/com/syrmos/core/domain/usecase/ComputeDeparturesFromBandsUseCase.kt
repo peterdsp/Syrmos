@@ -229,7 +229,7 @@ class ComputeDeparturesFromBandsUseCase(
                         minutesAway = minutesAway,
                         direction = Direction.OUTBOUND,
                         lineId = "M3_AIR",
-                        notes = band.label.ifBlank { null },
+                        serviceType = "airport",
                     )
                 }
             }
@@ -418,7 +418,6 @@ class ComputeDeparturesFromBandsUseCase(
                 minutesAway = minutesAway,
                 direction = direction,
                 lineId = lineId,
-                notes = band.label.ifBlank { null },
             )
             slot += headway
             added++

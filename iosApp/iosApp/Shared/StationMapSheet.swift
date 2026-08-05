@@ -81,7 +81,7 @@ struct StationMapSheet: View {
 
                 if !departures.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(loc.language == .greek ? "ΕΠΟΜΕΝΑ ΔΡΟΜΟΛΟΓΙΑ" : loc.language == .albanian ? "NISJET E ARDHSHME" : "NEXT DEPARTURES")
+                        Text(loc.language == .greek ? "ΕΠΟΜΕΝΑ ΔΡΟΜΟΛΟΓΙΑ" : loc.language == .albanian ? "NISJET E ARDHSHME" : loc.language == .italian ? "PROSSIME PARTENZE" : "NEXT DEPARTURES")
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
 
@@ -119,7 +119,7 @@ struct StationMapSheet: View {
                     HStack(spacing: 6) {
                         ProgressView()
                             .scaleEffect(0.7)
-                        Text(loc.language == .greek ? "Φόρτωση..." : loc.language == .albanian ? "Duke ngarkuar..." : "Loading...")
+                        Text(loc.language == .greek ? "Φόρτωση..." : loc.language == .albanian ? "Duke ngarkuar..." : loc.language == .italian ? "Caricamento..." : "Loading...")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -129,7 +129,7 @@ struct StationMapSheet: View {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
                         .font(.headline)
-                    Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : loc.language == .albanian ? "Udhëzime navigimi" : "Get directions")
+                    Text(loc.language == .greek ? "Οδηγίες πλοήγησης" : loc.language == .albanian ? "Udhëzime navigimi" : loc.language == .italian ? "Indicazioni stradali" : "Get directions")
                         .font(.body.weight(.semibold))
                 }
                 .frame(maxWidth: .infinity)

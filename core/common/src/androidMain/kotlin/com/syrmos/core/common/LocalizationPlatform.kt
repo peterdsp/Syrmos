@@ -13,6 +13,7 @@ actual fun detectSystemLanguage(): AppLanguage {
     return when (Locale.getDefault().language) {
         "el" -> AppLanguage.GREEK
         "sq" -> AppLanguage.ALBANIAN
+        "it" -> AppLanguage.ITALIAN
         else -> AppLanguage.ENGLISH
     }
 }

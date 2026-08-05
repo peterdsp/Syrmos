@@ -72,12 +72,12 @@ struct WeatherCard: View {
         }
     }
 
-    private var feelsLike: String { tri("Feels like", "Αίσθηση", "Ndihet si") }
-    private var humidity: String { tri("Humidity", "Υγρασία", "Lagështia") }
-    private var wind: String { tri("Wind", "Άνεμος", "Era") }
+    private var feelsLike: String { tri("Feels like", "Αίσθηση", "Ndihet si", "Percepita") }
+    private var humidity: String { tri("Humidity", "Υγρασία", "Lagështia", "Umidità") }
+    private var wind: String { tri("Wind", "Άνεμος", "Era", "Vento") }
 
-    private func tri(_ en: String, _ el: String, _ sq: String) -> String {
-        switch loc.language { case .greek: return el; case .albanian: return sq; default: return en }
+    private func tri(_ en: String, _ el: String, _ sq: String, _ it: String? = nil) -> String {
+        switch loc.language { case .greek: return el; case .albanian: return sq; case .italian: return it ?? en; default: return en }
     }
 }
 
@@ -111,20 +111,20 @@ enum WeatherStyle {
     }
 
     static func label(_ c: WeatherCondition, _ lang: AppLanguage) -> String {
-        func tri(_ en: String, _ el: String, _ sq: String) -> String {
-            switch lang { case .greek: return el; case .albanian: return sq; default: return en }
+        func quad(_ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+            switch lang { case .greek: return el; case .albanian: return sq; case .italian: return it; default: return en }
         }
         switch c {
-        case .clear: return tri("Clear", "Αίθριος", "Kthjellët")
-        case .partlyCloudy: return tri("Partly cloudy", "Λίγα σύννεφα", "Pjesërisht me re")
-        case .cloudy: return tri("Cloudy", "Συννεφιά", "Me re")
-        case .fog: return tri("Fog", "Ομίχλη", "Mjegull")
-        case .drizzle: return tri("Drizzle", "Ψιχάλα", "Shi i imët")
-        case .rain: return tri("Rain", "Βροχή", "Shi")
-        case .showers: return tri("Showers", "Μπόρες", "Rrebeshe")
-        case .snow: return tri("Snow", "Χιόνι", "Borë")
-        case .thunderstorm: return tri("Thunderstorm", "Καταιγίδα", "Stuhi")
-        case .unknown: return tri("Weather", "Καιρός", "Moti")
+        case .clear: return quad("Clear", "Αίθριος", "Kthjellët", "Sereno")
+        case .partlyCloudy: return quad("Partly cloudy", "Λίγα σύννεφα", "Pjesërisht me re", "Parzialmente nuvoloso")
+        case .cloudy: return quad("Cloudy", "Συννεφιά", "Me re", "Nuvoloso")
+        case .fog: return quad("Fog", "Ομίχλη", "Mjegull", "Nebbia")
+        case .drizzle: return quad("Drizzle", "Ψιχάλα", "Shi i imët", "Pioggerella")
+        case .rain: return quad("Rain", "Βροχή", "Shi", "Pioggia")
+        case .showers: return quad("Showers", "Μπόρες", "Rrebeshe", "Rovesci")
+        case .snow: return quad("Snow", "Χιόνι", "Borë", "Neve")
+        case .thunderstorm: return quad("Thunderstorm", "Καταιγίδα", "Stuhi", "Temporale")
+        case .unknown: return quad("Weather", "Καιρός", "Moti", "Meteo")
         }
     }
 }

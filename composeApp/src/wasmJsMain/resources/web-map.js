@@ -62,6 +62,7 @@
             accessible: "Accessible",
             airport: "Airport",
             train: "Train",
+            route: "Route",
             live: "Live",
             estimated: "Estimated",
             offline_snapshot: "Offline snapshot",
@@ -134,6 +135,7 @@
             accessible: "Προσβάσιμος",
             airport: "Αεροδρόμιο",
             train: "Συρμός",
+            route: "Διαδρομή",
             live: "Ζωντανά",
             estimated: "Εκτίμηση",
             offline_snapshot: "Εκτός σύνδεσης",
@@ -206,6 +208,7 @@
             accessible: "I aksesueshëm",
             airport: "Aeroporti",
             train: "Tren",
+            route: "Itinerari",
             live: "Drejtpërdrejt",
             estimated: "Vlerësim",
             offline_snapshot: "Pa internet",
@@ -243,6 +246,79 @@
             whatsnew_get_app: "Merr aplikacionin",
             whatsnew_stay: "Vazhdo në web",
         },
+        it: {
+            brand_subtitle: "Mappa ferroviaria di Atene",
+            search_placeholder: "Cerca stazione (Syntagma, Pireo, Aeroporto)",
+            search_aria: "Cerca stazione",
+            locate_me: "La mia posizione",
+            location_unavailable: "Posizione non disponibile",
+            show_vehicles: "Mostra veicoli",
+            hide_vehicles: "Nascondi veicoli",
+            live_trains: "Treni in tempo reale",
+            trains_active: "{n} treni attivi",
+            nearby_stations: "Stazioni vicine",
+            popular_stations: "Stazioni principali",
+            oasa_tickets: "Tariffe",
+            fare_at_booking: "alla prenotazione",
+            plan_trip: "Calcola la tariffa",
+            fare_from: "Dalla stazione",
+            fare_to: "Alla stazione",
+            view_on_oasa: "Vedi su OASA ↗",
+            useful_information: "Informazioni utili",
+            tickets_unavailable: "Biglietti non disponibili",
+            no_fare_data: "Nessun dato tariffario",
+            select_a_station: "Seleziona una stazione",
+            done: "Fatto",
+            lines_at_this_station: "Linee in questa stazione",
+            next_departures: "Prossime partenze",
+            no_departures: "Nessuna partenza disponibile per questa stazione al momento.",
+            get_directions: "Indicazioni",
+            now: "Ora",
+            hero_next: "Prossima partenza",
+            then: "poi",
+            scheduled: "Programmato",
+            interchange: "Interscambio",
+            accessible: "Accessibile",
+            airport: "Aeroporto",
+            train: "Treno",
+            route: "Percorso",
+            live: "In tempo reale",
+            estimated: "Stimato",
+            offline_snapshot: "Snapshot offline",
+            check_operator: "Verifica operatore",
+            unknown: "sconosciuto",
+            next: "prossimo",
+            reduced: "Ridotto",
+            verify_on: "Verifica su {op} ↗",
+            ask_ariadne: "Chiedi ad Ariadne",
+            ariadne_title: "Ariadne",
+            ariadne_placeholder: "Chiedi ad Ariadne...",
+            send: "Invia",
+            ariadne_greeting: "Ciao, sono Ariadne. Chiedimi dei trasporti di Atene: prossime partenze, ultimo treno stasera, un viaggio da A a B, avvisi di servizio o prezzi dei biglietti.",
+            ariadne_looking_up: "Cerco {station}...",
+            ariadne_next_from: "Prossimi da {station}:",
+            ariadne_none_now: "Nessun treno da {station} in questo momento.",
+            ariadne_no_station: "Non ho trovato la stazione. Prova Syntagma, Pireo, Aeroporto.",
+            ariadne_did_you_mean: "Non ho capito bene. Intendevi {station}? Prova \"prossimi treni da {station}\".",
+            ariadne_try_asking: "Non ho capito. Chiedimi delle partenze, un percorso tra due stazioni o l'ultimo treno.",
+            search_ask_ariadne: "Chiedi ad Ariadne",
+            ariadne_open_map: "Apro {station} sulla mappa.",
+            ariadne_open_alerts: "Mostro gli avvisi di servizio.",
+            ariadne_open_route: "Apro le indicazioni da {from} a {to}.",
+            ariadne_eta_locating: "Ottengo la tua posizione per stimare il viaggio verso {station}...",
+            ariadne_eta_ask_origin: "Non ho potuto ottenere la tua posizione. Da quale stazione parti?",
+            ariadne_line: "La linea {id} collega {a} e {b}. Tocca la linea sulla mappa per vedere tutte le stazioni.",
+            ariadne_fare: "Il biglietto integrato di Atene (OASA) costa 1,20 euro (ridotto 0,50 euro). Il biglietto singolo metro per l'aeroporto costa 9 euro. Vedi Tariffe nel pannello laterale per tutte le reti.",
+            ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
+            ariadne_fare_booking: "{from} → {to} e un viaggio interurbano. Il prezzo viene stabilito alla prenotazione (percorso, data, classe). Sconti: prenotazione anticipata fino al 15%, andata e ritorno 20%, studenti fino al 50%. Prenota su hellenictrain.gr per la tariffa esatta.",
+            whatsnew_title: "Novita in Syrmos",
+            whatsnew_i1: "Hellenic Rail Atlas: design rinnovato con risposte a colpo d'occhio",
+            whatsnew_i2: "Ariadne ora collega stazioni e linee: tocca per andare direttamente",
+            whatsnew_i3: "Esplora tutte le stazioni con mappe interattive ed etichette linea",
+            whatsnew_i4: "Geolocalizzazione web per le stazioni vicine",
+            whatsnew_get_app: "Scarica l'app",
+            whatsnew_stay: "Continua sul web",
+        },
     };
 
     const LANG_STORAGE_KEY = "syrmos_lang";
@@ -252,12 +328,6 @@
             try { return localStorage.getItem(LANG_STORAGE_KEY); } catch (_) { return null; }
         })();
         if (saved && I18N[saved]) return saved;
-        // Use only the browser's PRIMARY language. The previous `.some(...)`
-        // pass matched if the language appeared anywhere in the navigator
-        // list, which on Athens-resident laptops with Shqip added for
-        // translation testing landed on Albanian (or vice versa). The
-        // product wants device-primary-or-English, full stop. Mirrors the
-        // iOS native + Android Kotlin actuals.
         const primary = (
             (navigator.languages && navigator.languages[0]) ||
             navigator.language ||
@@ -265,6 +335,7 @@
         ).toLowerCase();
         if (primary.startsWith("el")) return "el";
         if (primary.startsWith("sq")) return "sq";
+        if (primary.startsWith("it")) return "it";
         return "en";
     }
 
@@ -339,11 +410,110 @@
     const stationDepartures = document.getElementById("stationDepartures");
     const directionsLink = document.getElementById("directionsLink");
     const sheetClose = document.getElementById("sheetClose");
+    const trainSheet = document.getElementById("trainSheet");
+    const trainSheetTitle = document.getElementById("trainSheetTitle");
+    const trainSheetSubtitle = document.getElementById("trainSheetSubtitle");
+    const trainSheetClose = document.getElementById("trainSheetClose");
+    const trainSheetBadge = document.getElementById("trainSheetBadge");
+    const trainSheetRoute = document.getElementById("trainSheetRoute");
+    const trainSheetDelay = document.getElementById("trainSheetDelay");
+    const trainSheetTelemetry = document.getElementById("trainSheetTelemetry");
+    const trainSheetStream = document.getElementById("trainSheetStream");
     const stationSearch = document.getElementById("stationSearch");
     const searchResults = document.getElementById("searchResults");
     const locateButton = document.getElementById("locateButton");
     const zoomInButton = document.getElementById("zoomInButton");
     const zoomOutButton = document.getElementById("zoomOutButton");
+    let activeTrainSheet = null;
+
+    function vehicleCopy(key) {
+        const copy = {
+            title: { en: "Vehicle", el: "Όχημα", sq: "Mjeti", it: "Mezzo" },
+            towards: { en: "Towards", el: "Προς", sq: "Drejt", it: "Verso" },
+            current: { en: "Current position", el: "Τρέχουσα θέση", sq: "Pozicioni aktual", it: "Posizione attuale" },
+            estimatedPosition: { en: "Estimated position", el: "Εκτιμώμενη θέση", sq: "Pozicioni i vlerësuar", it: "Posizione stimata" },
+            nextStation: { en: "Next station", el: "Επόμενος σταθμός", sq: "Stacioni i ardhshëm", it: "Prossima stazione" },
+            progress: { en: "Trip progress", el: "Πρόοδος διαδρομής", sq: "Përparimi i udhëtimit", it: "Avanzamento del viaggio" },
+            estimatedTitle: { en: "Approximate estimate", el: "Κατά προσέγγιση εκτίμηση", sq: "Vlerësim i përafërt", it: "Stima approssimativa" },
+            estimated: { en: "This is not a live position. Times, position, and progress are calculated from the published timetable and may differ from actual service.", el: "Δεν είναι ζωντανή θέση. Οι χρόνοι, η θέση και η πρόοδος υπολογίζονται από το δημοσιευμένο πρόγραμμα και μπορεί να διαφέρουν από την πραγματική κυκλοφορία.", sq: "Ky nuk është pozicion në kohë reale. Oraret, pozicioni dhe përparimi llogariten nga orari i publikuar dhe mund të ndryshojnë nga shërbimi real.", it: "Questa non è una posizione in tempo reale. Orari, posizione e avanzamento sono calcolati dall'orario pubblicato e possono differire dal servizio effettivo." },
+            livePosition: { en: "Live position", el: "Ζωντανή θέση", sq: "Pozicioni drejtpërdrejt", it: "Posizione in tempo reale" },
+            delay: { en: "Delay", el: "Καθυστέρηση", sq: "Vonesa", it: "Ritardo" },
+            onTime: { en: "On time", el: "Στην ώρα του", sq: "Në orar", it: "In orario" },
+            minutes: { en: "min", el: "λεπτά", sq: "min", it: "min" },
+        };
+        return copy[key]?.[currentLang] || copy[key]?.en || key;
+    }
+
+    function hideTrainSheet() {
+        activeTrainSheet = null;
+        trainSheet.classList.add("station-sheet--hidden");
+    }
+
+    function showTrainSheet(kind, train) {
+        activeTrainSheet = { kind, train };
+        stationSheet.classList.add("station-sheet--hidden");
+        if (departureRefreshTimer) {
+            clearInterval(departureRefreshTimer);
+            departureRefreshTimer = null;
+        }
+
+        const isLive = kind === "live";
+        const line = isLive ? lineMap.get(train.lineId) : train.line;
+        const lineName = line?.name || train.lineId || vehicleCopy("title");
+        const lineId = line?.id || train.lineId || "";
+        const lineColor = line?.color || "#0072CE";
+        const destination = train.destination || "?";
+        const current = isLive ? (train.origin || vehicleCopy("livePosition")) : train.fromStation;
+        const next = isLive ? (train.nextStation || destination) : train.toStation;
+
+        trainSheetTitle.textContent = isLive && train.trainNumber
+            ? `${t("train")} ${train.trainNumber}`
+            : lineName;
+        trainSheetSubtitle.textContent = `${vehicleCopy("towards")} ${destination}`;
+        trainSheetBadge.innerHTML = `
+            <div class="line-badge" style="background:${escapeAttr(lineColor)}18;color:${escapeAttr(lineColor)}">
+                <span class="line-dot" style="background:${escapeAttr(lineColor)}"></span>
+                <span>${escapeHtml(lineId || lineName)}</span>
+            </div>`;
+        const positionLabel = isLive ? vehicleCopy("current") : vehicleCopy("estimatedPosition");
+        trainSheetRoute.innerHTML = `
+            <div class="departure-card">
+                <div class="departure-card__text">
+                    <div class="departure-card__line">${escapeHtml(positionLabel)}</div>
+                    <div class="departure-card__destination">${escapeHtml(current || "?")}</div>
+                </div>
+            </div>
+            <div class="departure-card">
+                <div class="departure-card__text">
+                    <div class="departure-card__line">${escapeHtml(vehicleCopy("nextStation"))}</div>
+                    <div class="departure-card__destination">${escapeHtml(next || "?")}</div>
+                </div>
+            </div>`;
+
+        if (isLive) {
+            const delay = Number(train.delay || 0);
+            const delayValue = delay > 0
+                ? `${delay} ${vehicleCopy("minutes")}`
+                : vehicleCopy("onTime");
+            trainSheetDelay.innerHTML = `<div><strong>${escapeHtml(vehicleCopy("delay"))}</strong><span>${escapeHtml(delayValue)}</span></div>`;
+        } else {
+            const percent = Math.round(Math.max(0, Math.min(1, Number(train.progress || 0))) * 100);
+            trainSheetDelay.innerHTML = `
+                <div class="meta-chip"><strong>${escapeHtml(vehicleCopy("progress"))}</strong><span>${percent}%</span></div>
+                <div class="departure-card vehicle-estimate"><div class="departure-card__text">
+                    <div class="departure-card__line">${escapeHtml(vehicleCopy("estimatedTitle"))}</div>
+                    <div class="departure-card__destination">${escapeHtml(vehicleCopy("estimated"))}</div>
+                </div></div>`;
+        }
+
+        trainSheetTelemetry.style.display = "none";
+        trainSheetStream.style.display = "none";
+        trainSheet.classList.remove("station-sheet--hidden");
+    }
+
+    onLanguageChange(() => {
+        if (activeTrainSheet) showTrainSheet(activeTrainSheet.kind, activeTrainSheet.train);
+    });
 
     const [stations, lines, routes, servicePatterns, vehicleManifest] = await Promise.all([
         fetch("files/seed/stations.json").then((r) => r.json()),
@@ -1531,6 +1701,7 @@
         const station = stationNodeMap.get(stationId);
         if (!station) return;
 
+        hideTrainSheet();
         updateMarkerSelection(stationId);
 
         if (panToMarker) {
@@ -1608,6 +1779,7 @@
         updateMarkerSelection(null);
         stationDepartures.innerHTML = "";
         stationSheet.classList.add("station-sheet--hidden");
+        hideTrainSheet();
         if (departureRefreshTimer) {
             clearInterval(departureRefreshTimer);
             departureRefreshTimer = null;
@@ -1698,6 +1870,7 @@
     sheetClose.addEventListener("click", () => {
         clearSelection();
     });
+    trainSheetClose.addEventListener("click", hideTrainSheet);
 
     locateButton.addEventListener("click", () => {
         if (!navigator.geolocation) return;
@@ -2017,6 +2190,10 @@
                 `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
                 { direction: "top", offset: [0, -10] }
             );
+            marker.on("click", (event) => {
+                L.DomEvent.stopPropagation(event.originalEvent || event);
+                showTrainSheet("live", train);
+            });
             liveTrainMarkers.set(train.id, marker);
         }
     }
@@ -2758,6 +2935,10 @@
                     `${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`,
                     { direction: "top", offset: [0, -12] }
                 );
+                marker.on("click", (event) => {
+                    L.DomEvent.stopPropagation(event.originalEvent || event);
+                    showTrainSheet("simulated", train);
+                });
 
                 simulatedTrainMarkers.set(train.id, marker);
             }
@@ -2791,11 +2972,13 @@
 
         liveTrainList.querySelectorAll("[data-train-id]").forEach((el) => {
             el.addEventListener("click", () => {
+                const train = trains.find((candidate) => candidate.id === el.getAttribute("data-train-id"));
                 const lat = parseFloat(el.getAttribute("data-train-lat"));
                 const lng = parseFloat(el.getAttribute("data-train-lng"));
                 if (!isNaN(lat) && !isNaN(lng)) {
                     map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.45 });
                 }
+                if (train) showTrainSheet("simulated", train);
             });
         });
     }

@@ -41,7 +41,7 @@ import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -296,7 +296,7 @@ private fun LiquidGlassTabBar(modifier: Modifier = Modifier) {
             LiquidGlassTabItem(ExploreTab, Icons.Filled.Explore)
             LiquidGlassTabItem(MapTab, Icons.Filled.Map)
             LiquidGlassTabItem(DeparturesTab, Icons.Filled.Flight)
-            LiquidGlassTabItem(MoreTab, Icons.Filled.Settings)
+            LiquidGlassTabItem(MoreTab, Icons.Filled.MoreVert)
         }
     }
 }
@@ -349,5 +349,6 @@ private fun AriadneLauncherPill(label: String, onClick: () -> Unit) {
 private fun askAriadneLabel(lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Ρώτα την Αριάδνη"
     AppLanguage.ALBANIAN -> "Pyet Ariadne"
+    AppLanguage.ITALIAN -> "Chiedi ad Ariadne"
     else -> "Ask Ariadne"
 }

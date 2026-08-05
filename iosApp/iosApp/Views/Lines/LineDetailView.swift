@@ -53,6 +53,8 @@ struct LineDetailView: View {
                             ? "\(stations.count) σταθμοί"
                             : loc.language == .albanian
                             ? "\(stations.count) stacione"
+                            : loc.language == .italian
+                            ? "\(stations.count) stazioni"
                             : "\(stations.count) stations")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -93,7 +95,7 @@ struct LineDetailView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "tram.fill")
                             .foregroundStyle(line.color)
-                        Text(loc.language == .greek ? "Ζωντανα τρενα" : loc.language == .albanian ? "Trenat aktiv" : "Live trains")
+                        Text(loc.language == .greek ? "Ζωντανα τρενα" : loc.language == .albanian ? "Trenat aktiv" : loc.language == .italian ? "Treni in tempo reale" : "Live trains")
                     }
                 }
             } else if !projectedDepartures.isEmpty {
@@ -130,7 +132,7 @@ struct LineDetailView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "clock.fill")
                             .foregroundStyle(line.color)
-                        Text(loc.language == .greek ? "Επομενες αναχωρησεις" : loc.language == .albanian ? "Nisjet e radhes" : "Upcoming departures")
+                        Text(loc.language == .greek ? "Επομενες αναχωρησεις" : loc.language == .albanian ? "Nisjet e radhes" : loc.language == .italian ? "Prossime partenze" : "Upcoming departures")
                     }
                 }
             }

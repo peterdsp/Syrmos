@@ -188,6 +188,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Αεροδρόμιο"
         case .albanian: return "Aeroporti"
+        case .italian: return "Aeroporto"
         case .english: return "Airport"
         }
     }
@@ -424,6 +425,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Άκυρο"
         case .albanian: return "Anulo"
+        case .italian: return "Annulla"
         case .english: return "Cancel"
         }
     }
@@ -431,6 +433,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Παρακολούθηση"
         case .albanian: return "Ndiq"
+        case .italian: return "Traccia"
         case .english: return "Track"
         }
     }
@@ -438,6 +441,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Συγκεκριμένο δρομολόγιο"
         case .albanian: return "Nje tren specifik"
+        case .italian: return "Un treno specifico"
         case .english: return "A specific train"
         }
     }
@@ -445,6 +449,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Επιλέξτε γραμμή, σταθμό και δρομολόγιο"
         case .albanian: return "Zgjidhni linjen, stacionin dhe nisjen"
+        case .italian: return "Scegli linea, stazione e partenza"
         case .english: return "Pick a line, station and departure"
         }
     }
@@ -452,6 +457,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Ολα τα δρομολόγια σε σταθμό"
         case .albanian: return "Te gjitha trenet ne stacion"
+        case .italian: return "Tutti i treni in stazione"
         case .english: return "All trains at a station"
         }
     }
@@ -459,6 +465,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Παρακολουθήστε συνεχώς τα δρομολόγια"
         case .albanian: return "Ndiqni vazhdimisht trenet"
+        case .italian: return "Segui le partenze in tempo reale"
         case .english: return "Continuously track departures"
         }
     }
@@ -466,6 +473,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
         case .albanian: return "Metroja vjen shpesh, nuk ka nevoje per ndjekje"
+        case .italian: return "La metro passa spesso, non serve tracciarla"
         case .english: return "Metro runs frequently, no need to track"
         }
     }
@@ -473,6 +481,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Επίλεξε γραμμή"
         case .albanian: return "Zgjidh linjen"
+        case .italian: return "Scegli una linea"
         case .english: return "Pick a line"
         }
     }
@@ -480,6 +489,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Κατεύθυνση"
         case .albanian: return "Drejtimi"
+        case .italian: return "Direzione"
         case .english: return "Direction"
         }
     }
@@ -487,6 +497,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Σταθμός"
         case .albanian: return "Stacion"
+        case .italian: return "Stazione"
         case .english: return "Station"
         }
     }
@@ -494,6 +505,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Δεν υπάρχουν επόμενες αναχωρήσεις."
         case .albanian: return "S'ka nisje te radhes."
+        case .italian: return "Nessuna partenza in programma."
         case .english: return "No upcoming departures."
         }
     }
@@ -501,6 +513,7 @@ struct TrackPickerSheet: View {
         switch loc.language {
         case .greek: return "Παρακολούθηση"
         case .albanian: return "Ndiq"
+        case .italian: return "Traccia"
         case .english: return "Track"
         }
     }

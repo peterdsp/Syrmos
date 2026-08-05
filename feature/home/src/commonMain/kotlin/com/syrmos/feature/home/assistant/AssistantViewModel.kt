@@ -187,6 +187,7 @@ class AssistantViewModel(
             "Heads up: $titles",
             "Προσοχή: $titles",
             "Kujdes: $titles",
+            it = "Attenzione: $titles",
         ))
     }
 
@@ -425,11 +426,13 @@ class AssistantViewModel(
         val stationId = intent.stationId
             ?: return botMessage(t("Okay, you're at the station. Where do you want to go next?",
                 "Οκ, είσαι στον σταθμό. Πού θέλεις να πας μετά;",
-                "Në rregull, je te stacioni. Ku do të shkosh më pas?"))
+                "Në rregull, je te stacioni. Ku do të shkosh më pas?",
+                it = "Ok, sei alla stazione. Dove vuoi andare adesso?"))
         val name = stationNameById(stationId)
         return botMessage(t("Got it. I'll use $name as your starting station.",
             "Οκ. Θα χρησιμοποιώ τον $name ως σταθμό εκκίνησης.",
-            "Në rregull. Do ta përdor $name si stacionin tënd të nisjes."))
+            "Në rregull. Do ta përdor $name si stacionin tënd të nisjes.",
+            it = "Capito. Uso $name come stazione di partenza."))
     }
 
     private suspend fun resolveStationStatus(intent: AssistantIntent.StationStatus): AssistantMessage {
@@ -446,7 +449,7 @@ class AssistantViewModel(
             fromUser = false,
             text = stationStatusText(stationName(station), advisory),
             action = AssistantAction.OpenStation(station.id),
-            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+            actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
     }
 
@@ -457,28 +460,34 @@ class AssistantViewModel(
             val lead = when (top.severity) {
                 AdvisorySeverity.CLOSURE -> t("Heads up, there's an active closure affecting $name.",
                     "Προσοχή, υπάρχει ενεργό κλείσιμο που αφορά τον $name.",
-                    "Kujdes, ka një mbyllje aktive që prek $name.")
+                    "Kujdes, ka një mbyllje aktive që prek $name.",
+                    it = "Attenzione, c'e' una chiusura attiva che riguarda $name.")
                 AdvisorySeverity.WARNING -> t("There's an active advisory affecting $name.",
                     "Υπάρχει ενεργή ειδοποίηση που αφορά τον $name.",
-                    "Ka një njoftim aktiv që prek $name.")
+                    "Ka një njoftim aktiv që prek $name.",
+                    it = "C'e' un avviso attivo che riguarda $name.")
                 AdvisorySeverity.INFO -> t("There's a notice affecting $name.",
                     "Υπάρχει ανακοίνωση που αφορά τον $name.",
-                    "Ka një njoftim që prek $name.")
+                    "Ka një njoftim që prek $name.",
+                    it = "C'e' un avviso che riguarda $name.")
             }
             val tail = t("Check official STASY alerts for details.",
                 "Δες τις επίσημες ανακοινώσεις της ΣΤΑΣΥ για λεπτομέρειες.",
-                "Kontrollo njoftimet zyrtare të STASY për detaje.")
+                "Kontrollo njoftimet zyrtare të STASY për detaje.",
+                it = "Controlla gli avvisi ufficiali di STASY per i dettagli.")
             return "$lead ${top.text} $tail"
         }
         val base = t(
             "I don't have a live closure alert for $name. Based on the normal timetable, the station should be operating. Check official STASY alerts if this is urgent.",
             "Δεν έχω ζωντανή ειδοποίηση κλεισίματος για τον $name. Με βάση το κανονικό πρόγραμμα, ο σταθμός πρέπει να λειτουργεί. Αν είναι επείγον, δες τις ανακοινώσεις της ΣΤΑΣΥ.",
             "Nuk kam njoftim live për mbyllje të $name. Sipas orarit normal, stacioni duhet të jetë në punë. Nëse është urgjente, kontrollo njoftimet e STASY.",
+            it = "Non ho un avviso di chiusura in tempo reale per $name. In base all'orario normale, la stazione dovrebbe essere operativa. Controlla gli avvisi ufficiali di STASY se e' urgente.",
         )
         return if (advisory.severeWeather) {
             base + " " + t("Severe weather is in effect, so allow extra time.",
                 "Επικρατεί κακοκαιρία, οπότε άφησε περιθώριο.",
-                "Ka mot të keq, ndaj lër kohë shtesë.")
+                "Ka mot të keq, ndaj lër kohë shtesë.",
+                it = "C'e' maltempo in corso, quindi prevedi tempo extra.")
         } else {
             base
         }
@@ -516,6 +525,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> a.title.ifBlank { a.titleEn }
             AppLanguage.ALBANIAN -> a.titleSq.ifBlank { a.titleEn.ifBlank { a.title } }
+            AppLanguage.ITALIAN -> a.titleEn.ifBlank { a.title }
             else -> a.titleEn.ifBlank { a.title }
         }
 
@@ -597,6 +607,7 @@ class AssistantViewModel(
                 when (lang) {
                     AppLanguage.GREEK -> "Μετάβαση στο ${leg.lineId} στις ${leg.departureTime} στον $at."
                     AppLanguage.ALBANIAN -> "Ndrysho në ${leg.lineId} në ${leg.departureTime} te $at."
+                    AppLanguage.ITALIAN -> "Cambia con ${leg.lineId} alle ${leg.departureTime} a $at."
                     else -> "Transfer to the ${leg.departureTime} ${leg.lineId} at $at."
                 }
             )
@@ -608,6 +619,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> "Πάρε τον συρμό στις $leaveAt από $from και θα είσαι στο $to στις $arrive. $slack λεπτά περιθώριο."
             AppLanguage.ALBANIAN -> "Merr trenin në $leaveAt nga $from dhe do të jesh në $to në $arrive. $slack minuta hapësirë."
+            AppLanguage.ITALIAN -> "Prendi il treno delle $leaveAt da $from e arriverai a $to entro le $arrive. Hai $slack min di margine."
             else -> "Board the $leaveAt from $from and you'll be at $to by $arrive. $slack min to spare."
         }
 
@@ -615,6 +627,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> "Στριμωγμένα. Το τρένο στις $leaveAt από $from είναι το τελευταίο που φτάνει στο $to μέχρι τις $arrive."
             AppLanguage.ALBANIAN -> "Ngushtë. Treni në $leaveAt nga $from është i fundit që arrin në $to deri në $arrive."
+            AppLanguage.ITALIAN -> "Tempi stretti. Il treno delle $leaveAt da $from è l'ultimo che arriva a $to entro le $arrive."
             else -> "Tight. The $leaveAt from $from is the last one that gets you to $to by $arrive."
         }
 
@@ -632,6 +645,7 @@ class AssistantViewModel(
     private fun noRouteText(from: String, to: String): String = when (LocalizationManager.language.value) {
         AppLanguage.GREEK -> "Δεν βρήκα διαδρομή από $from προς $to."
         AppLanguage.ALBANIAN -> "S'gjeta rrugë nga $from për te $to."
+        AppLanguage.ITALIAN -> "Non ho trovato un percorso da $from a $to."
         else -> "I couldn't find a route from $from to $to."
     }
 
@@ -639,6 +653,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> "Ξεκίνα από $from έως $leaveBy και θα είσαι στο $to στις $arrive. $slack λεπτά περιθώριο."
             AppLanguage.ALBANIAN -> "Nis nga $from deri në $leaveBy dhe do të jesh në $to në $arrive. $slack minuta hapësirë."
+            AppLanguage.ITALIAN -> "Parti da $from entro le $leaveBy e arriverai a $to entro le $arrive. Hai $slack min di margine."
             else -> "Leave $from by $leaveBy and you'll be at $to by $arrive. $slack min to spare."
         }
 
@@ -646,6 +661,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> "Στριμωγμένα. Πρέπει να είσαι εκτός από $from μέσα στα επόμενα $slack λεπτά για να προλάβεις στο $to στις $arrive."
             AppLanguage.ALBANIAN -> "Ngushtë. Duhet të nisesh nga $from brenda $slack minutash për të arritur në $to në $arrive."
+            AppLanguage.ITALIAN -> "Tempi stretti. Devi partire da $from entro $slack min per arrivare a $to entro le $arrive."
             else -> "Tight. You need to leave $from within the next $slack min to make $to by $arrive."
         }
 
@@ -653,6 +669,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> "Δύσκολο. Για να είσαι στο $to στις $arrive θα έπρεπε να έχεις ξεκινήσει πριν $minutesOver λεπτά."
             AppLanguage.ALBANIAN -> "E vështirë. Për të qenë në $to në $arrive duhej të kishe nisur $minutesOver minuta më parë."
+            AppLanguage.ITALIAN -> "Sei al limite. Per arrivare a $to entro le $arrive avresti dovuto partire $minutesOver min fa."
             else -> "Cutting it close. To make $to by $arrive you'd have needed to leave $minutesOver min ago."
         }
 
@@ -660,6 +677,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> "Έχεις άπλα. Ξεκίνα από $from όποτε θες μέσα στα επόμενα $slack λεπτά και θα φτάσεις στο $to στις $arrive."
             AppLanguage.ALBANIAN -> "Ke kohë. Nisu nga $from kur të duash brenda $slack minutash dhe do të jesh në $to në $arrive."
+            AppLanguage.ITALIAN -> "Hai tempo. Parti da $from in qualsiasi momento nei prossimi $slack min e arriverai a $to entro le $arrive."
             else -> "You have time. Leave $from anytime in the next $slack min and you'll reach $to by $arrive."
         }
 
@@ -708,6 +726,7 @@ class AssistantViewModel(
         val ageSuffix = if (ageMin >= 5) when (lang) {
             AppLanguage.GREEK -> " (πριν $ageMin λεπτά)"
             AppLanguage.ALBANIAN -> " ($ageMin min më parë)"
+            AppLanguage.ITALIAN -> " ($ageMin min fa)"
             else -> " ($ageMin min ago)"
         } else ""
         return when (lang) {
@@ -715,6 +734,8 @@ class AssistantViewModel(
                 "$placeName τώρα: ${tempC}°C, $cond. Αίσθηση ${feels}°C.$ageSuffix"
             AppLanguage.ALBANIAN ->
                 "$placeName tani: ${tempC}°C, $cond. Ndihet si ${feels}°C.$ageSuffix"
+            AppLanguage.ITALIAN ->
+                "$placeName adesso: ${tempC}°C, $cond. Percepiti ${feels}°C.$ageSuffix"
             else ->
                 "$placeName right now: ${tempC}°C, $cond. Feels like ${feels}°C.$ageSuffix"
         }
@@ -746,6 +767,18 @@ class AssistantViewModel(
                 com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM -> "stuhi"
                 com.syrmos.core.model.weather.WeatherCondition.UNKNOWN -> "e panjohur"
             }
+            AppLanguage.ITALIAN -> when (condition) {
+                com.syrmos.core.model.weather.WeatherCondition.CLEAR -> "sereno"
+                com.syrmos.core.model.weather.WeatherCondition.PARTLY_CLOUDY -> "parzialmente nuvoloso"
+                com.syrmos.core.model.weather.WeatherCondition.CLOUDY -> "nuvoloso"
+                com.syrmos.core.model.weather.WeatherCondition.FOG -> "nebbia"
+                com.syrmos.core.model.weather.WeatherCondition.DRIZZLE -> "pioviggine"
+                com.syrmos.core.model.weather.WeatherCondition.RAIN -> "pioggia"
+                com.syrmos.core.model.weather.WeatherCondition.SNOW -> "neve"
+                com.syrmos.core.model.weather.WeatherCondition.SHOWERS -> "rovesci"
+                com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM -> "temporale"
+                com.syrmos.core.model.weather.WeatherCondition.UNKNOWN -> "sconosciuto"
+            }
             else -> when (condition) {
                 com.syrmos.core.model.weather.WeatherCondition.CLEAR -> "clear"
                 com.syrmos.core.model.weather.WeatherCondition.PARTLY_CLOUDY -> "partly cloudy"
@@ -774,11 +807,13 @@ class AssistantViewModel(
                 "I don't have live weather right now, but Athens this time of year is usually $typical.",
                 "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως $typical.",
                 "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është $typical.",
+                it = "Non ho dati meteo in tempo reale ora, ma Atene in questo periodo dell'anno di solito e' $typical.",
             )
         }
         return t("I don't have weather data yet. Try again when you're online.",
             "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online.",
-            "Ende s'kam të dhëna moti. Provo përsëri kur je online.")
+            "Ende s'kam të dhëna moti. Provo përsëri kur je online.",
+            it = "Non ho ancora dati meteo. Riprova quando sei online.")
     }
 
     private fun catJoke(): String {
@@ -796,6 +831,13 @@ class AssistantViewModel(
                 "Pse ishte macja ulur mbi kompjuter? Për të vëzhguar miun.",
                 "Cila është ëmbëlsira e preferuar e maces? Muslet me çokollatë.",
                 "Si e mbyllin macet një grindje? Me një fshirje dhe një mjau.",
+            )
+            AppLanguage.ITALIAN -> listOf(
+                "Perché i gatti non giocano a poker nella giungla? Ci sono troppi ghepardi.",
+                "Come si chiama un mucchio di gattini? Una montagna di miao.",
+                "Perché il gatto era seduto sul computer? Per tenere d'occhio il mouse.",
+                "Qual è il dolce preferito del gatto? La mousse al cioccolato.",
+                "Come concludono una lite due gatti? Soffiano e fanno pace.",
             )
             else -> listOf(
                 "Why don't cats play poker in the jungle? Too many cheetahs.",
@@ -826,18 +868,20 @@ class AssistantViewModel(
         if (sorted.isEmpty()) {
             return botMessage(t("No more trains from ${stationName(station)} right now.",
                 "Δεν υπάρχουν άλλα δρομολόγια από ${stationName(station)} τώρα.",
-                "Nuk ka më trena nga ${stationName(station)} tani."))
+                "Nuk ka më trena nga ${stationName(station)} tani.",
+                it = "Nessun altro treno da ${stationName(station)} al momento."))
         }
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
             text = t("Next from ${stationName(station)}:",
                 "Επόμενα από ${stationName(station)}:",
-                "Të ardhshmet nga ${stationName(station)}:"),
+                "Të ardhshmet nga ${stationName(station)}:",
+                it = "Prossimi da ${stationName(station)}:"),
             departures = sorted,
             action = intent.lineId?.let { AssistantAction.OpenLine(normalizeLine(it)) }
                 ?: AssistantAction.OpenStation(station.id),
-            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+            actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
     }
 
@@ -859,7 +903,8 @@ class AssistantViewModel(
         if (sorted.isEmpty()) {
             return botMessage(t("I don't have $label's schedule for ${stationName(station)} offline.",
                 "Δεν έχω το πρόγραμμα του $label για ${stationName(station)} εκτός σύνδεσης.",
-                "Nuk e kam orarin e $label për ${stationName(station)} pa internet."))
+                "Nuk e kam orarin e $label për ${stationName(station)} pa internet.",
+                it = "Non ho l'orario di $label per ${stationName(station)} offline."))
         }
         val times = sorted.joinToString(", ") { "${it.lineId} ${it.time}" }
         return AssistantMessage(
@@ -867,18 +912,19 @@ class AssistantViewModel(
             fromUser = false,
             text = t("First trains $label from ${stationName(station)}: $times.",
                 "Πρώτα δρομολόγια $label από ${stationName(station)}: $times.",
-                "Trenat e parë $label nga ${stationName(station)}: $times."),
+                "Trenat e parë $label nga ${stationName(station)}: $times.",
+                it = "Primi treni $label da ${stationName(station)}: $times."),
             action = AssistantAction.OpenStation(station.id),
-            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+            actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
     }
 
     private fun dayLabel(day: DayContext): String = when (day) {
-        DayContext.TOMORROW -> t("tomorrow", "αύριο", "nesër")
-        DayContext.WEEKEND -> t("this weekend", "το Σαββατοκύριακο", "këtë fundjavë")
-        DayContext.SATURDAY -> t("Saturday", "το Σάββατο", "të shtunën")
-        DayContext.SUNDAY -> t("Sunday", "την Κυριακή", "të dielën")
-        DayContext.TODAY -> t("today", "σήμερα", "sot")
+        DayContext.TOMORROW -> t("tomorrow", "αύριο", "nesër", it = "domani")
+        DayContext.WEEKEND -> t("this weekend", "το Σαββατοκύριακο", "këtë fundjavë", it = "questo fine settimana")
+        DayContext.SATURDAY -> t("Saturday", "το Σάββατο", "të shtunën", it = "sabato")
+        DayContext.SUNDAY -> t("Sunday", "την Κυριακή", "të dielën", it = "domenica")
+        DayContext.TODAY -> t("today", "σήμερα", "sot", it = "oggi")
     }
 
     private suspend fun resolveLastTrain(intent: AssistantIntent.LastTrain): AssistantMessage {
@@ -888,15 +934,17 @@ class AssistantViewModel(
         val last = getLastTrain.latestEitherDirection(station.id, normalizeLine(lineId))
             ?: return botMessage(t("Service is over for tonight at ${stationName(station)}.",
                 "Τα δρομολόγια για απόψε τελείωσαν στον ${stationName(station)}.",
-                "Shërbimi për sonte ka mbaruar te ${stationName(station)}."))
+                "Shërbimi për sonte ka mbaruar te ${stationName(station)}.",
+                it = "Il servizio per stasera e' terminato a ${stationName(station)}."))
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
             text = t("Last ${displayLine(last.lineId)} from ${stationName(station)} leaves at ${last.time}. Leave by then.",
                 "Ο τελευταίος ${displayLine(last.lineId)} από ${stationName(station)} φεύγει ${last.time}. Φύγε ως τότε.",
-                "Treni i fundit ${displayLine(last.lineId)} nga ${stationName(station)} niset ${last.time}. Nisu deri atëherë."),
+                "Treni i fundit ${displayLine(last.lineId)} nga ${stationName(station)} niset ${last.time}. Nisu deri atëherë.",
+                it = "L'ultimo ${displayLine(last.lineId)} da ${stationName(station)} parte alle ${last.time}. Parti entro allora."),
             action = AssistantAction.OpenStation(station.id),
-            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+            actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
     }
 
@@ -914,15 +962,17 @@ class AssistantViewModel(
         val first = departures.distinctBy { it.time + it.lineId }.minByOrNull { it.minutesAway }
             ?: return botMessage(t("I don't have today's schedule for ${stationName(station)} offline.",
                 "Δεν έχω το σημερινό πρόγραμμα για ${stationName(station)} εκτός σύνδεσης.",
-                "Nuk e kam orarin e sotëm për ${stationName(station)} pa internet."))
+                "Nuk e kam orarin e sotëm për ${stationName(station)} pa internet.",
+                it = "Non ho l'orario di oggi per ${stationName(station)} offline."))
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
             text = t("First ${displayLine(first.lineId)} from ${stationName(station)} is at ${first.time}.",
                 "Το πρώτο ${displayLine(first.lineId)} από ${stationName(station)} είναι στις ${first.time}.",
-                "Treni i parë ${displayLine(first.lineId)} nga ${stationName(station)} është në ${first.time}."),
+                "Treni i parë ${displayLine(first.lineId)} nga ${stationName(station)} është në ${first.time}.",
+                it = "Il primo ${displayLine(first.lineId)} da ${stationName(station)} e' alle ${first.time}."),
             action = AssistantAction.OpenStation(station.id),
-            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+            actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
     }
 
@@ -933,11 +983,13 @@ class AssistantViewModel(
         val reply = if (station.accessibility) {
             t("$name is step-free accessible (lift / level access).",
                 "Ο $name είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).",
-                "$name është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë).")
+                "$name është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë).",
+                it = "$name e' accessibile senza gradini (ascensore / accesso a livello).")
         } else {
             t("$name is not marked step-free. Check for stairs-only access before you go.",
                 "Ο $name δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.",
-                "$name nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.")
+                "$name nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.",
+                it = "$name non e' segnato come accessibile senza gradini. Potrebbero esserci solo scale.")
         }
         return botMessage(reply)
     }
@@ -947,7 +999,8 @@ class AssistantViewModel(
         val route = session.lastRoute
             ?: return botMessage(t("Tell me a trip first, then I can flip it for the way back.",
                 "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή.",
-                "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."))
+                "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit.",
+                it = "Dimmi prima un viaggio, poi posso invertirlo per il ritorno."))
         return resolvePlanTrip(
             AssistantIntent.PlanTrip(
                 fromStationId = route.toStationId,
@@ -965,7 +1018,8 @@ class AssistantViewModel(
         if (lineIds.isEmpty()) {
             return botMessage(t("I don't have any lines listed for $name.",
                 "Δεν έχω γραμμές καταχωρημένες για $name.",
-                "Nuk kam linja të regjistruara për $name."))
+                "Nuk kam linja të regjistruara për $name.",
+                it = "Non ho linee registrate per $name."))
         }
         val list = lineIds.joinToString(", ") { displayLine(it) }
         return AssistantMessage(
@@ -973,9 +1027,10 @@ class AssistantViewModel(
             fromUser = false,
             text = t("$name is served by: $list.",
                 "Ο $name εξυπηρετείται από: $list.",
-                "$name shërbehet nga: $list."),
+                "$name shërbehet nga: $list.",
+                it = "$name e' servito da: $list."),
             action = AssistantAction.OpenStation(station.id),
-            actionLabel = t("Open", "Άνοιγμα", "Hap"),
+            actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
     }
 
@@ -987,19 +1042,22 @@ class AssistantViewModel(
         val route = planJourney.invoke(fromId, toId).first()
             ?: return botMessage(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
-                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+                "Nuk gjeta një rrugë hekurudhore mes tyre.",
+                it = "Non ho trovato un percorso ferroviario tra queste stazioni."))
         val stops = route.segments.sumOf { (it.stationCount - 1).coerceAtLeast(0) }
         val fromN = stationNameById(fromId)
         val toN = stationNameById(toId)
         val changePart = if (route.transferCount == 0) {
-            t("direct", "απευθείας", "direkt")
+            t("direct", "απευθείας", "direkt", it = "diretto")
         } else {
-            t("${route.transferCount} change(s)", "${route.transferCount} αλλαγή/ές", "${route.transferCount} ndërrim(e)")
+            t("${route.transferCount} change(s)", "${route.transferCount} αλλαγή/ές", "${route.transferCount} ndërrim(e)",
+                it = "${route.transferCount} cambio/i")
         }
         return botMessage(t(
             "$fromN to $toN is $stops stops, about ${route.totalMinutes} min ($changePart).",
             "$fromN προς $toN είναι $stops στάσεις, περίπου ${route.totalMinutes} λεπτά ($changePart).",
-            "$fromN te $toN janë $stops stacione, rreth ${route.totalMinutes} min ($changePart)."))
+            "$fromN te $toN janë $stops stacione, rreth ${route.totalMinutes} min ($changePart).",
+            it = "$fromN a $toN sono $stops fermate, circa ${route.totalMinutes} min ($changePart)."))
     }
 
     private suspend fun resolvePlanTrip(intent: AssistantIntent.PlanTrip): AssistantMessage {
@@ -1010,7 +1068,8 @@ class AssistantViewModel(
         val fastest = planJourney.invoke(fromId, toId).first()
             ?: return botMessage(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
-                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+                "Nuk gjeta një rrugë hekurudhore mes tyre.",
+                it = "Non ho trovato un percorso ferroviario tra queste stazioni."))
 
         // Offer a sheltered all-metro alternative only when the fastest route is
         // exposed (tram / surface) and a distinct metro-only path exists. On a
@@ -1034,14 +1093,16 @@ class AssistantViewModel(
 
         val linesText = routeLineText(best)
         val transfers = if (best.transferCount == 0) {
-            t("no change", "χωρίς αλλαγή", "pa ndërrim")
+            t("no change", "χωρίς αλλαγή", "pa ndërrim", it = "nessun cambio")
         } else {
-            t("${best.transferCount} change(s)", "${best.transferCount} αλλαγή/ές", "${best.transferCount} ndërrim(e)")
+            t("${best.transferCount} change(s)", "${best.transferCount} αλλαγή/ές", "${best.transferCount} ndërrim(e)",
+                it = "${best.transferCount} cambio/i")
         }
         // "This is direct" nod when the user asked for the easiest route.
         val directNote = if (intent.preference == com.syrmos.core.domain.assistant.RoutePreference.FEWEST_CHANGES &&
             best.transferCount == 0) {
-            " " + t("This is direct, no change needed.", "Είναι απευθείας, χωρίς αλλαγή.", "Është direkt, pa ndërrim.")
+            " " + t("This is direct, no change needed.", "Είναι απευθείας, χωρίς αλλαγή.", "Është direkt, pa ndërrim.",
+                it = "E' diretto, nessun cambio necessario.")
         } else {
             ""
         }
@@ -1051,6 +1112,7 @@ class AssistantViewModel(
                 "The faster route (${routeLineText(fastest)}, ${fastest.totalMinutes} min) is more exposed; in this weather I'd take this one.",
                 "Η πιο γρήγορη διαδρομή (${routeLineText(fastest)}, ${fastest.totalMinutes} λεπτά) είναι πιο εκτεθειμένη· με αυτόν τον καιρό θα προτιμούσα αυτή.",
                 "Rruga më e shpejtë (${routeLineText(fastest)}, ${fastest.totalMinutes} min) është më e ekspozuar; me këtë mot do të zgjidhja këtë.",
+                it = "Il percorso piu' veloce (${routeLineText(fastest)}, ${fastest.totalMinutes} min) e' piu' esposto; con questo tempo prenderei questo.",
             )
         } else {
             ""
@@ -1064,12 +1126,13 @@ class AssistantViewModel(
             severeWeather = weatherRepository.cached?.current?.condition?.isSevere == true,
         )
         val caveat = advisory.top?.let {
-            "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ") + it.text
+            "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ", it = "Attenzione: ") + it.text
         } ?: ""
         return botMessage(
             t("$linesText. About ${best.totalMinutes} min, $transfers.",
                 "$linesText. Περίπου ${best.totalMinutes} λεπτά, $transfers.",
-                "$linesText. Rreth ${best.totalMinutes} min, $transfers.") + directNote + tradeoff + exposure + caveat,
+                "$linesText. Rreth ${best.totalMinutes} min, $transfers.",
+                it = "$linesText. Circa ${best.totalMinutes} min, $transfers.") + directNote + tradeoff + exposure + caveat,
         )
     }
 
@@ -1104,10 +1167,11 @@ class AssistantViewModel(
 
     private fun shelterClause(exposure: Exposure): String = when (exposure) {
         Exposure.SHELTERED -> t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
-            "kryesisht nëntokë dhe e mbrojtur")
-        Exposure.MIXED -> t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
+            "kryesisht nëntokë dhe e mbrojtur", it = "per lo piu' sotterraneo e al coperto")
+        Exposure.MIXED -> t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe",
+            it = "in parte a livello della superficie")
         Exposure.EXPOSED -> t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
-            "në ajër të hapur (tram/sipërfaqe)")
+            "në ajër të hapur (tram/sipërfaqe)", it = "all'aperto (tram/fermate di superficie)")
     }
 
     /**
@@ -1121,41 +1185,45 @@ class AssistantViewModel(
         val lead = when (ctx.source) {
             com.syrmos.core.model.weather.WeatherSource.LIVE,
             com.syrmos.core.model.weather.WeatherSource.FORECAST -> {
-                val place = ctx.placeName ?: t("Athens", "Αθήνα", "Athinë")
+                val place = ctx.placeName ?: t("Athens", "Αθήνα", "Athinë", it = "Atene")
                 val now = liveStateClause(ctx.state)
                 t("$now in $place right now, and this route is $shelter.",
                     "$now στην $place τώρα, και η διαδρομή είναι $shelter.",
-                    "$now në $place tani, dhe kjo rrugë është $shelter.")
+                    "$now në $place tani, dhe kjo rrugë është $shelter.",
+                    it = "$now a $place in questo momento, e questo percorso e' $shelter.")
             }
             com.syrmos.core.model.weather.WeatherSource.SEASONAL_FALLBACK -> {
                 val typical = seasonalClause(ctx)
                 t("I don't have live weather right now, but Athens this time of year is usually $typical. This route is $shelter.",
                     "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως $typical. Η διαδρομή είναι $shelter.",
-                    "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është $typical. Kjo rrugë është $shelter.")
+                    "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është $typical. Kjo rrugë është $shelter.",
+                    it = "Non ho dati meteo in tempo reale ora, ma Atene in questo periodo dell'anno di solito e' $typical. Questo percorso e' $shelter.")
             }
             com.syrmos.core.model.weather.WeatherSource.UNKNOWN ->
                 t("I can't check the weather offline, but this route is $shelter.",
                     "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι $shelter.",
-                    "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është $shelter.")
+                    "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është $shelter.",
+                    it = "Non posso controllare il meteo offline, ma questo percorso e' $shelter.")
         }
         return if (nudge.isEmpty()) lead else "$lead $nudge"
     }
 
     private fun liveStateClause(state: com.syrmos.core.model.weather.WeatherState): String = when (state) {
-        com.syrmos.core.model.weather.WeatherState.RAINY -> t("It's wet", "Έχει βροχή", "Ka shi")
-        com.syrmos.core.model.weather.WeatherState.HOT -> t("It's hot", "Έχει ζέστη", "Bën vapë")
-        com.syrmos.core.model.weather.WeatherState.WINDY -> t("It's windy", "Έχει αέρα", "Ka erë")
-        com.syrmos.core.model.weather.WeatherState.NORMAL -> t("It's calm", "Ο καιρός είναι ήπιος", "Moti është i qetë")
+        com.syrmos.core.model.weather.WeatherState.RAINY -> t("It's wet", "Έχει βροχή", "Ka shi", it = "Piove")
+        com.syrmos.core.model.weather.WeatherState.HOT -> t("It's hot", "Έχει ζέστη", "Bën vapë", it = "Fa caldo")
+        com.syrmos.core.model.weather.WeatherState.WINDY -> t("It's windy", "Έχει αέρα", "Ka erë", it = "C'e' vento")
+        com.syrmos.core.model.weather.WeatherState.NORMAL -> t("It's calm", "Ο καιρός είναι ήπιος", "Moti është i qetë", it = "Il tempo e' calmo")
     }
 
     private fun seasonalClause(ctx: com.syrmos.core.model.weather.WeatherContext): String {
         val month = ctx.month ?: 0
         return when {
             ctx.state == com.syrmos.core.model.weather.WeatherState.HOT ->
-                t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë")
+                t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë", it = "caldo e secco")
             month in listOf(11, 12, 1, 2) ->
-                t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu")
-            else -> t("mild", "ήπια", "e butë")
+                t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu",
+                    it = "piu' fresco, con possibilita' di pioggia")
+            else -> t("mild", "ήπια", "e butë", it = "mite")
         }
     }
 
@@ -1166,15 +1234,18 @@ class AssistantViewModel(
             com.syrmos.core.model.weather.WeatherState.RAINY ->
                 t("A more underground option would keep you drier.",
                     "Μια πιο υπόγεια επιλογή θα σε κρατούσε πιο στεγνό.",
-                    "Një opsion më nëntokësor do të të mbante më të thatë.")
+                    "Një opsion më nëntokësor do të të mbante më të thatë.",
+                    it = "Un'opzione piu' sotterranea ti terrebbe piu' asciutto.")
             com.syrmos.core.model.weather.WeatherState.HOT ->
                 t("Prefer an underground route to avoid long sun-exposed waits.",
                     "Προτίμησε υπόγεια διαδρομή για να αποφύγεις αναμονές στον ήλιο.",
-                    "Zgjidh një rrugë nëntokësore për të shmangur pritjet në diell.")
+                    "Zgjidh një rrugë nëntokësore për të shmangur pritjet në diell.",
+                    it = "Preferisci un percorso sotterraneo per evitare lunghe attese al sole.")
             com.syrmos.core.model.weather.WeatherState.WINDY ->
                 t("Exposed tram/surface stretches can be gusty; metro is steadier.",
                     "Τα ανοιχτά τμήματα τραμ/επιφάνειας έχουν ριπές· το μετρό είναι πιο σταθερό.",
-                    "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.")
+                    "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.",
+                    it = "I tratti esposti del tram/superficie possono essere ventosi; la metro e' piu' stabile.")
             com.syrmos.core.model.weather.WeatherState.NORMAL -> ""
         }
     }
@@ -1191,21 +1262,25 @@ class AssistantViewModel(
         if (fromId == toId) {
             return botMessage(t("You're already at ${stationNameById(toId)}.",
                 "Είσαι ήδη στον ${stationNameById(toId)}.",
-                "Je tashmë te ${stationNameById(toId)}."))
+                "Je tashmë te ${stationNameById(toId)}.",
+                it = "Sei gia' a ${stationNameById(toId)}."))
         }
         val result = planJourney.invoke(fromId, toId).first()
             ?: return botMessage(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
-                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+                "Nuk gjeta një rrugë hekurudhore mes tyre.",
+                it = "Non ho trovato un percorso ferroviario tra queste stazioni."))
         val transfers = if (result.transferCount == 0) {
-            t("no change", "χωρίς αλλαγή", "pa ndërrim")
+            t("no change", "χωρίς αλλαγή", "pa ndërrim", it = "nessun cambio")
         } else {
-            t("${result.transferCount} change(s)", "${result.transferCount} αλλαγή/ές", "${result.transferCount} ndërrim(e)")
+            t("${result.transferCount} change(s)", "${result.transferCount} αλλαγή/ές", "${result.transferCount} ndërrim(e)",
+                it = "${result.transferCount} cambio/i")
         }
         return botMessage(t(
             "About ${result.totalMinutes} min from ${stationNameById(fromId)} to ${stationNameById(toId)}, $transfers.",
             "Περίπου ${result.totalMinutes} λεπτά από ${stationNameById(fromId)} προς ${stationNameById(toId)}, $transfers.",
-            "Rreth ${result.totalMinutes} min nga ${stationNameById(fromId)} te ${stationNameById(toId)}, $transfers."))
+            "Rreth ${result.totalMinutes} min nga ${stationNameById(fromId)} te ${stationNameById(toId)}, $transfers.",
+            it = "Circa ${result.totalMinutes} min da ${stationNameById(fromId)} a ${stationNameById(toId)}, $transfers."))
     }
 
     private fun stationNameById(id: String): String =
@@ -1216,16 +1291,18 @@ class AssistantViewModel(
         if (matches.isEmpty()) {
             return botMessage(t("I couldn't find a station matching that.",
                 "Δεν βρήκα σταθμό που να ταιριάζει.",
-                "Nuk gjeta një stacion që përputhet."))
+                "Nuk gjeta një stacion që përputhet.",
+                it = "Non ho trovato una stazione corrispondente."))
         }
         val top = matches.first()
         val names = matches.take(3).joinToString(", ") { stationName(it) }
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
-            text = t("Found: $names.", "Βρέθηκαν: $names.", "U gjet: $names."),
+            text = t("Found: $names.", "Βρέθηκαν: $names.", "U gjet: $names.", it = "Risultati: $names."),
             action = AssistantAction.OpenStation(top.id),
-            actionLabel = t("Open ${stationName(top)}", "Άνοιγμα ${stationName(top)}", "Hap ${stationName(top)}"),
+            actionLabel = t("Open ${stationName(top)}", "Άνοιγμα ${stationName(top)}", "Hap ${stationName(top)}",
+                it = "Apri ${stationName(top)}"),
         )
     }
 
@@ -1237,9 +1314,10 @@ class AssistantViewModel(
             fromUser = false,
             text = t("${line.name}: ${line.terminalA} to ${line.terminalB}, ${line.stationCount} stations.",
                 "${line.name}: ${line.terminalA} ως ${line.terminalB}, ${line.stationCount} σταθμοί.",
-                "${line.name}: ${line.terminalA} deri ${line.terminalB}, ${line.stationCount} stacione."),
+                "${line.name}: ${line.terminalA} deri ${line.terminalB}, ${line.stationCount} stacione.",
+                it = "${line.name}: da ${line.terminalA} a ${line.terminalB}, ${line.stationCount} stazioni."),
             action = AssistantAction.OpenLine(line.id),
-            actionLabel = t("Open line", "Άνοιγμα γραμμής", "Hap linjën"),
+            actionLabel = t("Open line", "Άνοιγμα γραμμής", "Hap linjën", it = "Apri linea"),
         )
     }
 
@@ -1271,12 +1349,13 @@ class AssistantViewModel(
         val a = stationName(from.id); val b = stationName(to.id)
         if (q.dynamic) {
             return t(
-                "$a → $b is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
-                "$a → $b είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",
-                "$a → $b është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr.",
+                "$a → $b is an intercity trip: the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
+                "$a → $b είναι υπεραστικό δρομολόγιο: η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",
+                "$a → $b është udhëtim ndërqytetës: çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr.",
+                it = "$a → $b è un viaggio intercity: il prezzo viene stabilito al momento della prenotazione (tratta, data, classe). Sconti: prenotazione anticipata fino al 15%, andata e ritorno 20% e studenti fino al 50%. Prenota su hellenictrain.gr per la tariffa esatta.",
             )
         }
-        val reduced = q.reducedPriceEur?.let { " (${t("reduced", "μειωμένο", "e reduktuar")} ${money(it)})" } ?: ""
+        val reduced = q.reducedPriceEur?.let { " (${t("reduced", "μειωμένο", "e reduktuar", it = "ridotto")} ${money(it)})" } ?: ""
         return "$a → $b: ${money(q.fullPriceEur)}$reduced. ${q.product} · ${q.operator}"
     }
 
@@ -1293,7 +1372,8 @@ class AssistantViewModel(
         if (products.isEmpty()) {
             return botMessage(t("I don't have fare prices available offline right now.",
                 "Δεν έχω διαθέσιμες τιμές εισιτηρίων εκτός σύνδεσης τώρα.",
-                "Nuk kam çmime biletash të disponueshme pa internet tani."))
+                "Nuk kam çmime biletash të disponueshme pa internet tani.",
+                it = "Al momento non ho prezzi dei biglietti disponibili offline."))
         }
         // Journey-derived: an airport fare if the word was used OR either
         // endpoint is actually an airport station.
@@ -1317,17 +1397,17 @@ class AssistantViewModel(
         val nowFavorite = favoritesRepository.toggleStation(stationId)
         val text = if (nowFavorite) {
             t("Added $name to your favorites.", "Πρόσθεσα τον $name στα αγαπημένα σου.",
-                "Shtova $name te të preferuarat e tua.")
+                "Shtova $name te të preferuarat e tua.", it = "Ho aggiunto $name ai preferiti.")
         } else {
             t("Removed $name from your favorites.", "Αφαίρεσα τον $name από τα αγαπημένα σου.",
-                "Hoqa $name nga të preferuarat e tua.")
+                "Hoqa $name nga të preferuarat e tua.", it = "Ho rimosso $name dai preferiti.")
         }
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
             text = text,
             action = station?.let { AssistantAction.OpenStation(it.id) },
-            actionLabel = station?.let { t("Open", "Άνοιγμα", "Hap") },
+            actionLabel = station?.let { t("Open", "Άνοιγμα", "Hap", it = "Apri") },
         )
     }
 
@@ -1341,6 +1421,7 @@ class AssistantViewModel(
         when (LocalizationManager.language.value) {
             AppLanguage.GREEK -> product.titleEl.ifBlank { product.titleEn }
             AppLanguage.ALBANIAN -> product.titleSq.ifBlank { product.titleEn }
+            AppLanguage.ITALIAN -> product.titleEn
             else -> product.titleEn
         }
 
@@ -1355,13 +1436,15 @@ class AssistantViewModel(
         val feed = announcementsRepository.feed.first()
         val alerts = feed.announcements.filter { it.isServiceAlert }
         return when {
-            alerts.isNotEmpty() -> botMessage(t("Active alerts: ", "Ενεργές ειδοποιήσεις: ", "Njoftime aktive: ") +
+            alerts.isNotEmpty() -> botMessage(t("Active alerts: ", "Ενεργές ειδοποιήσεις: ", "Njoftime aktive: ",
+                it = "Avvisi attivi: ") +
                 alerts.take(2).joinToString("; ") { it.title })
             feed.status != null && feed.status?.isAlert == true ->
                 botMessage(feed.status?.rawMessage.orEmpty())
             else -> botMessage(t("No active service alerts right now.",
                 "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.",
-                "Nuk ka njoftime aktive tani."))
+                "Nuk ka njoftime aktive tani.",
+                it = "Non ci sono avvisi di servizio attivi al momento."))
         }
     }
 
@@ -1371,14 +1454,16 @@ class AssistantViewModel(
             AssistantMessage(
                 id = nextId++,
                 fromUser = false,
-                text = t("Here's ${stationName(station)}.", "Ορίστε ${stationName(station)}.", "Ja ${stationName(station)}."),
+                text = t("Here's ${stationName(station)}.", "Ορίστε ${stationName(station)}.", "Ja ${stationName(station)}.",
+                    it = "Ecco ${stationName(station)}."),
                 action = AssistantAction.OpenStation(station.id),
-                actionLabel = t("Open", "Άνοιγμα", "Hap"),
+                actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
             )
         } else {
             botMessage(t("Open the Map tab to see live train positions.",
                 "Άνοιξε τον Χάρτη για ζωντανές θέσεις συρμών.",
-                "Hap Hartën për pozicionet e trenave."))
+                "Hap Hartën për pozicionet e trenave.",
+                it = "Apri la scheda Mappa per vedere le posizioni dei treni in tempo reale."))
         }
     }
 
@@ -1403,19 +1488,22 @@ class AssistantViewModel(
     private fun greeting(): AssistantMessage = botMessage(
         t("Hi, I'm Ariadne. Ask about departures, weather, or trips like \"airport by 21:30\".",
             "Γεια, είμαι η Αριάδνη. Ρώτησέ με για αναχωρήσεις, καιρό ή διαδρομές όπως «αεροδρόμιο στις 21:30».",
-            "Përshëndetje, jam Ariadne. Më pyet për nisje, motin ose udhëtime si «aeroporti në 21:30»."),
+            "Përshëndetje, jam Ariadne. Më pyet për nisje, motin ose udhëtime si «aeroporti në 21:30».",
+            it = "Ciao, sono Ariadne. Chiedimi di partenze, meteo o viaggi come \"aeroporto entro le 21:30\"."),
     )
 
     private fun helpText(): String = t(
         "I handle departures (today or a future day), last train home, trip planning (including \"be there by X:XX\"), weather at a station, service alerts, ticket prices, favorites, and Athens rail info. Offline-safe.",
         "Χειρίζομαι αναχωρήσεις (σήμερα ή άλλη μέρα), τελευταίο τρένο, σχεδιασμό διαδρομής (και «να είσαι εκεί στις X:XX»), καιρό σταθμού, ειδοποιήσεις, τιμές εισιτηρίων, αγαπημένα και πληροφορίες των συγκοινωνιών Αθήνας. Λειτουργώ offline.",
         "Trajtoj nisjet (sot ose një ditë tjetër), trenin e fundit, planifikim udhëtimi (edhe «të jesh atje deri në X:XX»), motin te një stacion, njoftime, çmime biletash, të preferuarat dhe informacione për transportin e Athinës. Punoj pa internet.",
+        it = "Gestisco partenze (oggi o in un altro giorno), ultimo treno, pianificazione dei viaggi (anche \"arrivare entro le X:XX\"), meteo in stazione, avvisi di servizio, prezzi dei biglietti, preferiti e informazioni sulla rete ferroviaria di Atene. Funziono offline.",
     )
 
     private fun outOfScopeText(): String = t(
         "I can only help with Syrmos and Athens public transport.",
         "Μπορώ να βοηθήσω μόνο με το Syrmos και τις συγκοινωνίες της Αθήνας.",
         "Mund të ndihmoj vetëm me Syrmos dhe transportin publik të Athinës.",
+        it = "Posso aiutarti solo con Syrmos e il trasporto pubblico di Atene.",
     )
 
     /**
@@ -1432,7 +1520,38 @@ class AssistantViewModel(
             )
         } + AriadneChatMessage(role = "user", text = text)
         val reply = service.chat(history) ?: return null
+        if (!isUsableReply(reply)) return null
         return botMessage(reply)
+    }
+
+    private companion object {
+        private val LEAKED_REASONING = listOf(
+            "(greek) or english",
+            "(english) or greek",
+            "user wrote in",
+            "user is asking",
+            "let me ",
+            "i need to ",
+            "i should ",
+            "step 1:",
+            "chain of thought",
+            "reasoning:",
+            "thinking:",
+            "internal note",
+        )
+        private val TRUNCATED_ENDINGS = listOf(
+            " is", " the", " a", " and", " or", " to",
+            " for", " with", " in", " of", " that", " from",
+        )
+
+        fun isUsableReply(text: String): Boolean {
+            val trimmed = text.trim()
+            if (trimmed.length < 8) return false
+            val lower = trimmed.lowercase()
+            if (LEAKED_REASONING.any { lower.contains(it) }) return false
+            if (TRUNCATED_ENDINGS.any { trimmed.endsWith(it) }) return false
+            return true
+        }
     }
 
     private fun recover(text: String, p: AthensTransitParser): AssistantMessage {
@@ -1441,21 +1560,23 @@ class AssistantViewModel(
     }
 
     private fun didYouMeanStation(name: String): String = t(
-        "I didn't quite catch that — did you mean $name? Try \"next trains from $name\".",
-        "Δεν το κατάλαβα ακριβώς — μήπως εννοείς $name; Δοκίμασε «επόμενα τρένα από $name».",
-        "Nuk e kuptova mirë — mos ke parasysh $name? Provo «trenat e ardhshëm nga $name».",
+        "I didn't quite catch that. Did you mean $name? Try \"next trains from $name\".",
+        "Δεν το κατάλαβα ακριβώς. Μήπως εννοείς $name; Δοκίμασε «επόμενα τρένα από $name».",
+        "Nuk e kuptova mirë. Mos ke parasysh $name? Provo «trenat e ardhshëm nga $name».",
+        it = "Non ho capito bene. Intendevi $name? Prova \"prossimi treni da $name\".",
     )
 
     private fun recoveryHelp(): String = t(
         "I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
         "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
         "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.",
+        it = "Non ho capito. Chiedimi delle partenze, di un percorso tra due stazioni o dell'ultimo treno.",
     )
 
     private fun clarify(missing: MissingSlot): String = when (missing) {
-        MissingSlot.ORIGIN_STATION -> t("From which station?", "Από ποιον σταθμό;", "Nga cili stacion?")
-        MissingSlot.DESTINATION_STATION -> t("To which station?", "Προς ποιον σταθμό;", "Te cili stacion?")
-        MissingSlot.STATION -> t("Which station?", "Ποιος σταθμός;", "Cili stacion?")
+        MissingSlot.ORIGIN_STATION -> t("From which station?", "Από ποιον σταθμό;", "Nga cili stacion?", it = "Da quale stazione?")
+        MissingSlot.DESTINATION_STATION -> t("To which station?", "Προς ποιον σταθμό;", "Te cili stacion?", it = "Verso quale stazione?")
+        MissingSlot.STATION -> t("Which station?", "Ποιος σταθμός;", "Cili stacion?", it = "Quale stazione?")
     }
 
     private fun resolveWrongTrain(intent: AssistantIntent.WrongTrain): AssistantMessage {
@@ -1464,10 +1585,12 @@ class AssistantViewModel(
             "Get off at the next stop and take the reverse service back towards $name.",
             "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο πίσω προς $name.",
             "Zbrit ne stacionin e ardhshem dhe merr trenin e kundert drejt $name.",
+            it = "Scendi alla prossima fermata e prendi il servizio nella direzione opposta verso $name.",
         ) else t(
             "Get off at the next stop and take the reverse service.",
             "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο.",
             "Zbrit ne stacionin e ardhshem dhe merr trenin e kundert.",
+            it = "Scendi alla prossima fermata e prendi il servizio nella direzione opposta.",
         )
         return botMessage(text, SourceConfidence.OFFLINE)
     }
@@ -1478,10 +1601,12 @@ class AssistantViewModel(
             "Get off at the next stop and double back to $name.",
             "Κατέβα στον επόμενο σταθμό και γύρνα πίσω προς $name.",
             "Zbrit ne stacionin e ardhshem dhe kthehu drejt $name.",
+            it = "Scendi alla prossima fermata e torna indietro verso $name.",
         ) else t(
             "Get off at the next stop and take the reverse service.",
             "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο.",
             "Zbrit ne stacionin e ardhshem dhe merr trenin e kundert.",
+            it = "Scendi alla prossima fermata e prendi il servizio nella direzione opposta.",
         )
         return botMessage(text, SourceConfidence.OFFLINE)
     }
@@ -1493,15 +1618,18 @@ class AssistantViewModel(
             "Tell me which station you're heading to so I can check.",
             "Πες μου σε ποιον σταθμό πας για να ελέγξω.",
             "Me thuaj te cili stacion shkon qe te kontrolloj.",
+            it = "Dimmi verso quale stazione stai andando, così posso controllare.",
         ))
         val text = if (fromName != null) t(
             "Check departures from $fromName to see the next train towards $toName.",
             "Δες τις αναχωρήσεις από $fromName για το επόμενο δρομολόγιο προς $toName.",
             "Shiko nisjet nga $fromName per trenin e ardhshem drejt $toName.",
+            it = "Controlla le partenze da $fromName per il prossimo treno verso $toName.",
         ) else t(
             "Tell me which station you're at so I can check if you can make it to $toName.",
             "Πες μου σε ποιον σταθμό είσαι για να ελέγξω αν προλαβαίνεις στο $toName.",
             "Me thuaj ne cilin stacion je qe te kontrolloj nese e arrin $toName.",
+            it = "Dimmi in quale stazione sei, così posso controllare se riesci ad arrivare a $toName.",
         )
         return botMessage(text, SourceConfidence.ESTIMATED)
     }
@@ -1510,9 +1638,10 @@ class AssistantViewModel(
         AssistantMessage(id = nextId++, fromUser = false, text = text, sourceConfidence = confidence)
     private fun userMessage(text: String) = AssistantMessage(id = nextId++, fromUser = true, text = text)
 
-    private fun t(en: String, el: String, sq: String): String = when (LocalizationManager.language.value) {
+    private fun t(en: String, el: String, sq: String, it: String = en): String = when (LocalizationManager.language.value) {
         AppLanguage.GREEK -> el
         AppLanguage.ALBANIAN -> sq
+        AppLanguage.ITALIAN -> it
         else -> en
     }
 }

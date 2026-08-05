@@ -59,7 +59,8 @@ final class AriadneModel: ObservableObject {
         messages.append(bot(t(
             "Heads up: \(titles)",
             "Προσοχή: \(titles)",
-            "Kujdes: \(titles)")))
+            "Kujdes: \(titles)",
+            "Attenzione: \(titles)")))
     }
 
     func ask(_ input: String) {
@@ -321,12 +322,14 @@ final class AriadneModel: ObservableObject {
         guard let stationId else {
             return bot(t("Okay, you're at the station. Where do you want to go next?",
                 "Οκ, είσαι στον σταθμό. Πού θέλεις να πας μετά;",
-                "Në rregull, je te stacioni. Ku do të shkosh më pas?"))
+                "Në rregull, je te stacioni. Ku do të shkosh më pas?",
+                "Ok, sei alla stazione. Dove vuoi andare adesso?"))
         }
         let stationName = station(stationId).map { name($0) } ?? stationId
         return bot(t("Got it. I'll use \(stationName) as your starting station.",
             "Οκ. Θα χρησιμοποιώ τον \(stationName) ως σταθμό εκκίνησης.",
-            "Në rregull. Do ta përdor \(stationName) si stacionin tënd të nisjes."))
+            "Në rregull. Do ta përdor \(stationName) si stacionin tënd të nisjes.",
+            "Capito. User\u{00F2} \(stationName) come stazione di partenza."))
     }
 
     // MARK: - Recovery intents
@@ -339,7 +342,8 @@ final class AriadneModel: ObservableObject {
             return bot(t(
                 "Stay calm. Get off at the next station and look for a platform going the other direction. Which line are you on?",
                 "Ηρέμησε. Κατέβα στον επόμενο σταθμό και βρες την αποβάθρα για την αντίθετη κατεύθυνση. Σε ποια γραμμή είσαι;",
-                "Qetësohu. Zbrit te stacioni i ardhshëm dhe gjej platformën për drejtimin tjetër. Në cilën linjë je?"), confidence: .scheduled)
+                "Qetësohu. Zbrit te stacioni i ardhshëm dhe gjej platformën për drejtimin tjetër. Në cilën linjë je?",
+                "Stai calmo. Scendi alla prossima stazione e cerca la banchina nella direzione opposta. Su quale linea sei?"), confidence: .scheduled)
         }
         let lineStations = SyrmosData.stations(for: normalizeLine(currentLineId))
         // Find an interchange station on this line where the user can switch.
@@ -350,12 +354,14 @@ final class AriadneModel: ObservableObject {
             return bot(t(
                 "Stay calm. Get off at \(stName), the next interchange. You can transfer to \(otherLines) there.",
                 "Ηρέμησε. Κατέβα στον \(stName), τον επόμενο κόμβο. Εκεί μπορείς να αλλάξεις σε \(otherLines).",
-                "Qetësohu. Zbrit te \(stName), ndërrimi i ardhshëm. Aty mund të kalosh te \(otherLines)."), confidence: .scheduled)
+                "Qetësohu. Zbrit te \(stName), ndërrimi i ardhshëm. Aty mund të kalosh te \(otherLines).",
+                "Stai calmo. Scendi a \(stName), il prossimo interscambio. L\u{00EC} puoi cambiare su \(otherLines)."), confidence: .scheduled)
         }
         return bot(t(
             "Stay calm. Get off at the next station and take the opposite direction back.",
             "Ηρέμησε. Κατέβα στον επόμενο σταθμό και πάρε την αντίθετη κατεύθυνση.",
-            "Qetësohu. Zbrit te stacioni i ardhshëm dhe merr drejtimin e kundërt."), confidence: .scheduled)
+            "Qetësohu. Zbrit te stacioni i ardhshëm dhe merr drejtimin e kundërt.",
+            "Stai calmo. Scendi alla prossima stazione e prendi la direzione opposta."), confidence: .scheduled)
     }
 
     /// Recovery: missed stop. Tell the user to stay on, get off at the next
@@ -366,12 +372,14 @@ final class AriadneModel: ObservableObject {
             return bot(t(
                 "No worries. Get off at the next station, cross to the opposite platform, and ride back to \(targetName).",
                 "Μην ανησυχείς. Κατέβα στον επόμενο σταθμό, πέρασε στην απέναντι αποβάθρα και γύρνα πίσω στον \(targetName).",
-                "Mos u shqetëso. Zbrit te stacioni i ardhshëm, kalo te platforma e kundërt dhe kthehu te \(targetName)."), confidence: .scheduled)
+                "Mos u shqetëso. Zbrit te stacioni i ardhshëm, kalo te platforma e kundërt dhe kthehu te \(targetName).",
+                "Nessun problema. Scendi alla prossima stazione, vai alla banchina opposta e torna a \(targetName)."), confidence: .scheduled)
         }
         return bot(t(
             "No worries. Get off at the next station and take the train in the opposite direction back.",
             "Μην ανησυχείς. Κατέβα στον επόμενο σταθμό και πάρε το τρένο στην αντίθετη κατεύθυνση.",
-            "Mos u shqetëso. Zbrit te stacioni i ardhshëm dhe merr trenin në drejtimin e kundërt."), confidence: .scheduled)
+            "Mos u shqetëso. Zbrit te stacioni i ardhshëm dhe merr trenin në drejtimin e kundërt.",
+            "Nessun problema. Scendi alla prossima stazione e prendi il treno nella direzione opposta."), confidence: .scheduled)
     }
 
     /// Recovery: can I still make it? Check if there are departures that get the
@@ -382,20 +390,23 @@ final class AriadneModel: ObservableObject {
             return bot(t(
                 "Make it to where? Tell me the station you're trying to reach.",
                 "Να προλάβεις πού; Πες μου ποιον σταθμό θέλεις να φτάσεις.",
-                "Të arrish ku? Më thuaj cilin stacion po përpiqesh të arrish."))
+                "Të arrish ku? Më thuaj cilin stacion po përpiqesh të arrish.",
+                "Arrivare dove? Dimmi la stazione che stai cercando di raggiungere."))
         }
         let fromId = from ?? session.currentStation
         guard let fromId else {
             return bot(t(
                 "Where are you now? Tell me your current station.",
                 "Πού είσαι τώρα; Πες μου τον σταθμό σου.",
-                "Ku je tani? Më thuaj stacionin tënd aktual."))
+                "Ku je tani? Më thuaj stacionin tënd aktual.",
+                "Dove sei adesso? Dimmi la tua stazione attuale."))
         }
         guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
             return bot(t(
                 "I couldn't find a rail route between those stations.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή μεταξύ αυτών των σταθμών.",
-                "Nuk gjeta rrugë hekurudhore mes këtyre stacioneve."), confidence: .scheduled)
+                "Nuk gjeta rrugë hekurudhore mes këtyre stacioneve.",
+                "Non ho trovato un percorso ferroviario tra queste stazioni."), confidence: .scheduled)
         }
         let toName = stationName(toId)
         let deps = ScheduleProjector.nextDepartures(for: fromId, lineIds: plan.legs.map { $0.lineId }, limit: 1)
@@ -403,13 +414,15 @@ final class AriadneModel: ObservableObject {
             return bot(t(
                 "Service has ended for tonight. No more trains to \(toName) right now.",
                 "Τα δρομολόγια τελείωσαν για απόψε. Δεν υπάρχουν άλλα τρένα προς \(toName) τώρα.",
-                "Shërbimi ka mbaruar për sonte. Nuk ka më trena për te \(toName) tani."), confidence: .scheduled)
+                "Shërbimi ka mbaruar për sonte. Nuk ka më trena për te \(toName) tani.",
+                "Il servizio \u{00E8} terminato per stasera. Nessun altro treno per \(toName) adesso."), confidence: .scheduled)
         }
         let fromName = stationName(fromId)
         return bot(t(
             "Yes, you can still make it. The trip from \(fromName) to \(toName) takes about \(plan.totalMinutes) min. There are still trains running.",
             "Ναι, μπορείς ακόμα να προλάβεις. Η διαδρομή από \(fromName) προς \(toName) κάνει περίπου \(plan.totalMinutes) λεπτά. Υπάρχουν ακόμα δρομολόγια.",
-            "Po, mund ta arrish akoma. Udhëtimi nga \(fromName) te \(toName) zgjat rreth \(plan.totalMinutes) min. Ka akoma trena."), confidence: .scheduled)
+            "Po, mund ta arrish akoma. Udhëtimi nga \(fromName) te \(toName) zgjat rreth \(plan.totalMinutes) min. Ka akoma trena.",
+            "S\u{00EC}, puoi ancora farcela. Il viaggio da \(fromName) a \(toName) dura circa \(plan.totalMinutes) min. Ci sono ancora treni in servizio."), confidence: .scheduled)
     }
 
     /// Honest station status: lead with any live advisory, else the timetable.
@@ -432,29 +445,35 @@ final class AriadneModel: ObservableObject {
             case .closure:
                 lead = t("Heads up, there's an active closure affecting \(name).",
                     "Προσοχή, υπάρχει ενεργό κλείσιμο που αφορά τον \(name).",
-                    "Kujdes, ka një mbyllje aktive që prek \(name).")
+                    "Kujdes, ka një mbyllje aktive që prek \(name).",
+                    "Attenzione, c'\u{00E8} una chiusura attiva che riguarda \(name).")
             case .warning:
                 lead = t("There's an active advisory affecting \(name).",
                     "Υπάρχει ενεργή ειδοποίηση που αφορά τον \(name).",
-                    "Ka një njoftim aktiv që prek \(name).")
+                    "Ka një njoftim aktiv që prek \(name).",
+                    "C'\u{00E8} un avviso attivo che riguarda \(name).")
             case .info:
                 lead = t("There's a notice affecting \(name).",
                     "Υπάρχει ανακοίνωση που αφορά τον \(name).",
-                    "Ka një njoftim që prek \(name).")
+                    "Ka një njoftim që prek \(name).",
+                    "C'\u{00E8} un avviso che riguarda \(name).")
             }
             let tail = t("Check official STASY alerts for details.",
                 "Δες τις επίσημες ανακοινώσεις της ΣΤΑΣΥ για λεπτομέρειες.",
-                "Kontrollo njoftimet zyrtare të STASY për detaje.")
+                "Kontrollo njoftimet zyrtare të STASY për detaje.",
+                "Controlla gli avvisi ufficiali di STASY per i dettagli.")
             return "\(lead) \(top.text) \(tail)"
         }
         let base = t(
             "I don't have a live closure alert for \(name). Based on the normal timetable, the station should be operating. Check official STASY alerts if this is urgent.",
             "Δεν έχω ζωντανή ειδοποίηση κλεισίματος για τον \(name). Με βάση το κανονικό πρόγραμμα, ο σταθμός πρέπει να λειτουργεί. Αν είναι επείγον, δες τις ανακοινώσεις της ΣΤΑΣΥ.",
-            "Nuk kam njoftim live për mbyllje të \(name). Sipas orarit normal, stacioni duhet të jetë në punë. Nëse është urgjente, kontrollo njoftimet e STASY.")
+            "Nuk kam njoftim live për mbyllje të \(name). Sipas orarit normal, stacioni duhet të jetë në punë. Nëse është urgjente, kontrollo njoftimet e STASY.",
+            "Non ho un avviso di chiusura in tempo reale per \(name). In base all'orario normale, la stazione dovrebbe essere operativa. Controlla gli avvisi ufficiali di STASY se \u{00E8} urgente.")
         if advisory.severeWeather {
             return base + " " + t("Severe weather is in effect, so allow extra time.",
                 "Επικρατεί κακοκαιρία, οπότε άφησε περιθώριο.",
-                "Ka mot të keq, ndaj lër kohë shtesë.")
+                "Ka mot të keq, ndaj lër kohë shtesë.",
+                "Il maltempo \u{00E8} in corso, quindi prevedi tempo extra.")
         }
         return base
     }
@@ -548,6 +567,7 @@ final class AriadneModel: ObservableObject {
         switch loc.language {
         case .greek: return "Δεν βρήκα διαδρομή από \(from) προς \(to)."
         case .albanian: return "S'gjeta rrugë nga \(from) për te \(to)."
+        case .italian: return "Non ho trovato un percorso da \(from) a \(to)."
         case .english: return "I couldn't find a route from \(from) to \(to)."
         }
     }
@@ -555,6 +575,7 @@ final class AriadneModel: ObservableObject {
         switch loc.language {
         case .greek: return "Ξεκίνα από \(from) έως \(leaveBy) και θα είσαι στο \(to) στις \(arrive). \(slack) λεπτά περιθώριο."
         case .albanian: return "Nis nga \(from) deri në \(leaveBy) dhe do të jesh në \(to) në \(arrive). \(slack) minuta hapësirë."
+        case .italian: return "Parti da \(from) entro le \(leaveBy) e arriverai a \(to) entro le \(arrive). Hai \(slack) min di margine."
         case .english: return "Leave \(from) by \(leaveBy) and you'll be at \(to) by \(arrive). \(slack) min to spare."
         }
     }
@@ -562,6 +583,7 @@ final class AriadneModel: ObservableObject {
         switch loc.language {
         case .greek: return "Στριμωγμένα. Πρέπει να είσαι εκτός από \(from) μέσα στα επόμενα \(slack) λεπτά για να προλάβεις στο \(to) στις \(arrive)."
         case .albanian: return "Ngushtë. Duhet të nisesh nga \(from) brenda \(slack) minutash për të arritur në \(to) në \(arrive)."
+        case .italian: return "Tempi stretti. Devi partire da \(from) entro \(slack) min per arrivare a \(to) entro le \(arrive)."
         case .english: return "Tight. You need to leave \(from) within the next \(slack) min to make \(to) by \(arrive)."
         }
     }
@@ -569,6 +591,7 @@ final class AriadneModel: ObservableObject {
         switch loc.language {
         case .greek: return "Δύσκολο. Για να είσαι στο \(to) στις \(arrive) θα έπρεπε να έχεις ξεκινήσει πριν \(minutesOver) λεπτά."
         case .albanian: return "E vështirë. Për të qenë në \(to) në \(arrive) duhej të kishe nisur \(minutesOver) minuta më parë."
+        case .italian: return "Sei al limite. Per arrivare a \(to) entro le \(arrive) avresti dovuto partire \(minutesOver) min fa."
         case .english: return "Cutting it close. To make \(to) by \(arrive) you'd have needed to leave \(minutesOver) min ago."
         }
     }
@@ -576,6 +599,7 @@ final class AriadneModel: ObservableObject {
         switch loc.language {
         case .greek: return "Έχεις άπλα. Ξεκίνα από \(from) όποτε θες μέσα στα επόμενα \(slack) λεπτά και θα φτάσεις στο \(to) στις \(arrive)."
         case .albanian: return "Ke kohë. Nisu nga \(from) kur të duash brenda \(slack) minutash dhe do të jesh në \(to) në \(arrive)."
+        case .italian: return "Hai tempo. Parti da \(from) in qualsiasi momento nei prossimi \(slack) min e arriverai a \(to) entro le \(arrive)."
         case .english: return "You have time. Leave \(from) anytime in the next \(slack) min and you'll reach \(to) by \(arrive)."
         }
     }
@@ -629,12 +653,14 @@ final class AriadneModel: ObservableObject {
             switch loc.language {
             case .greek: return " (πριν \(ageMin) λεπτά)"
             case .albanian: return " (\(ageMin) min më parë)"
+            case .italian: return " (\(ageMin) min fa)"
             case .english: return " (\(ageMin) min ago)"
             }
         }() : ""
         switch loc.language {
         case .greek:  return "\(placeName) τώρα: \(tempC)°C, \(cond). Αίσθηση \(feels)°C.\(ageSuffix)"
         case .albanian: return "\(placeName) tani: \(tempC)°C, \(cond). Ndihet si \(feels)°C.\(ageSuffix)"
+        case .italian: return "\(placeName) adesso: \(tempC)°C, \(cond). Percepiti \(feels)°C.\(ageSuffix)"
         case .english: return "\(placeName) right now: \(tempC)°C, \(cond). Feels like \(feels)°C.\(ageSuffix)"
         }
     }
@@ -667,6 +693,19 @@ final class AriadneModel: ObservableObject {
             case .thunderstorm: return "stuhi"
             case .unknown: return "e panjohur"
             }
+        case .italian:
+            switch c {
+            case .clear: return "sereno"
+            case .partlyCloudy: return "parzialmente nuvoloso"
+            case .cloudy: return "nuvoloso"
+            case .fog: return "nebbia"
+            case .drizzle: return "pioviggine"
+            case .rain: return "pioggia"
+            case .snow: return "neve"
+            case .showers: return "rovesci"
+            case .thunderstorm: return "temporale"
+            case .unknown: return "sconosciuto"
+            }
         case .english:
             switch c {
             case .clear: return "clear"
@@ -692,11 +731,13 @@ final class AriadneModel: ObservableObject {
             let typical = seasonalClause(ctx)
             return t("I don't have live weather right now, but Athens this time of year is usually \(typical).",
                 "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως \(typical).",
-                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është \(typical).")
+                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është \(typical).",
+                "Non ho il meteo in tempo reale adesso, ma Atene in questo periodo \u{00E8} di solito \(typical).")
         }
         return t("I don't have weather data yet. Try again when you're online.",
             "Δεν έχω ακόμα δεδομένα καιρού. Δοκίμασε ξανά όταν είσαι online.",
-            "Ende s'kam të dhëna moti. Provo përsëri kur je online.")
+            "Ende s'kam të dhëna moti. Provo përsëri kur je online.",
+            "Non ho ancora dati meteo. Riprova quando sei online.")
     }
 
     private func catJoke() -> String {
@@ -717,6 +758,14 @@ final class AriadneModel: ObservableObject {
                 "Pse ishte macja ulur mbi kompjuter? Për të vëzhguar miun.",
                 "Cila është ëmbëlsira e preferuar e maces? Muslet me çokollatë.",
                 "Si e mbyllin macet një grindje? Me një fshirje dhe një mjau.",
+            ]
+        case .italian:
+            jokes = [
+                "Perché i gatti non giocano a poker nella giungla? Ci sono troppi ghepardi.",
+                "Come si chiama un mucchio di gattini? Una montagna di miao.",
+                "Perché il gatto era seduto sul computer? Per tenere d'occhio il mouse.",
+                "Qual è il dolce preferito del gatto? La mousse al cioccolato.",
+                "Come concludono una lite due gatti? Soffiano e fanno pace.",
             ]
         default:
             jokes = [
@@ -744,10 +793,11 @@ final class AriadneModel: ObservableObject {
         if deps.isEmpty {
             return bot(t("No more trains from \(name(station)) right now.",
                 "Δεν υπάρχουν άλλα δρομολόγια από \(name(station)) τώρα.",
-                "Nuk ka më trena nga \(name(station)) tani."))
+                "Nuk ka më trena nga \(name(station)) tani.",
+                "Nessun altro treno da \(name(station)) adesso."))
         }
-        let header = t("Next from \(name(station)):", "Επομενα απο \(name(station)):", "Te ardhshmet nga \(name(station)):")
-        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))")
+        let header = t("Next from \(name(station)):", "Επομενα απο \(name(station)):", "Te ardhshmet nga \(name(station)):", "Prossimi da \(name(station)):")
+        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
         return AriadneMessage(fromUser: false, text: header, departures: Array(deps.prefix(4)), sourceConfidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
@@ -761,12 +811,14 @@ final class AriadneModel: ObservableObject {
         if deps.isEmpty {
             return bot(t("I don't have \(label)'s schedule for \(name(station)) offline.",
                 "Δεν έχω το πρόγραμμα \(label) για \(name(station)) εκτός σύνδεσης.",
-                "Nuk e kam orarin \(label) për \(name(station)) pa internet."), confidence: .offline)
+                "Nuk e kam orarin \(label) për \(name(station)) pa internet.",
+                "Non ho l'orario di \(label) per \(name(station)) offline."), confidence: .offline)
         }
         let times = deps.prefix(4).map { "\($0.lineId) \($0.time)" }.joined(separator: ", ")
         return bot(t("First trains \(label) from \(name(station)): \(times).",
             "Πρώτα δρομολόγια \(label) από \(name(station)): \(times).",
-            "Trenat e parë \(label) nga \(name(station)): \(times)."), confidence: .scheduled)
+            "Trenat e parë \(label) nga \(name(station)): \(times).",
+            "Primi treni \(label) da \(name(station)): \(times)."), confidence: .scheduled)
     }
 
     /// Days from today to the requested DayContext (Athens calendar). Mirrors
@@ -788,11 +840,11 @@ final class AriadneModel: ObservableObject {
 
     private func dayLabel(_ day: DayContext) -> String {
         switch day {
-        case .tomorrow: return t("tomorrow", "αύριο", "nesër")
-        case .weekend: return t("this weekend", "το Σαββατοκύριακο", "këtë fundjavë")
-        case .saturday: return t("Saturday", "το Σάββατο", "të shtunën")
-        case .sunday: return t("Sunday", "την Κυριακή", "të dielën")
-        case .today: return t("today", "σήμερα", "sot")
+        case .tomorrow: return t("tomorrow", "αύριο", "nesër", "domani")
+        case .weekend: return t("this weekend", "το Σαββατοκύριακο", "këtë fundjavë", "questo fine settimana")
+        case .saturday: return t("Saturday", "το Σάββατο", "të shtunën", "sabato")
+        case .sunday: return t("Sunday", "την Κυριακή", "të dielën", "domenica")
+        case .today: return t("today", "σήμερα", "sot", "oggi")
         }
     }
 
@@ -841,16 +893,18 @@ final class AriadneModel: ObservableObject {
                 return bot(t(
                     "\(a) → \(b) is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
                     "\(a) → \(b) είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr.",
-                    "\(a) → \(b) është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr."))
+                    "\(a) → \(b) është udhëtim ndërqytetës, çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr.",
+                    "\(a) → \(b) \u{00E8} un viaggio interurbano: il prezzo viene stabilito alla prenotazione (tratta, data, classe). Sconti: prenotazione anticipata fino al 15%, andata e ritorno 20%, studenti fino al 50%. Prenota su hellenictrain.gr per la tariffa esatta."))
             }
-            let reduced = q.reduced.map { " (\(t("reduced", "μειωμένο", "e reduktuar")) \(money($0)))" } ?? ""
+            let reduced = q.reduced.map { " (\(t("reduced", "μειωμένο", "e reduktuar", "ridotto")) \(money($0)))" } ?? ""
             return bot("\(a) → \(b): \(money(q.full))\(reduced). \(q.product) · \(q.op)")
         }
         let products = SyrmosFaresStore.shared.products
         if products.isEmpty {
             return bot(t("I don't have fare prices available offline right now.",
                 "Δεν έχω διαθέσιμες τιμές εισιτηρίων εκτός σύνδεσης τώρα.",
-                "Nuk kam çmime biletash të disponueshme pa internet tani."))
+                "Nuk kam çmime biletash të disponueshme pa internet tani.",
+                "Non ho i prezzi dei biglietti disponibili offline adesso."))
         }
         // Journey-derived: airport fare if the word was used OR either endpoint
         // is actually an airport station.
@@ -880,8 +934,8 @@ final class AriadneModel: ObservableObject {
         let label = st.map { name($0) } ?? id
         let nowFavorite = toggleFavorite(id)
         return bot(nowFavorite
-            ? t("Added \(label) to your favorites.", "Πρόσθεσα τον \(label) στα αγαπημένα σου.", "Shtova \(label) te të preferuarat e tua.")
-            : t("Removed \(label) from your favorites.", "Αφαίρεσα τον \(label) από τα αγαπημένα σου.", "Hoqa \(label) nga të preferuarat e tua."))
+            ? t("Added \(label) to your favorites.", "Πρόσθεσα τον \(label) στα αγαπημένα σου.", "Shtova \(label) te të preferuarat e tua.", "Aggiunto \(label) ai tuoi preferiti.")
+            : t("Removed \(label) from your favorites.", "Αφαίρεσα τον \(label) από τα αγαπημένα σου.", "Hoqa \(label) nga të preferuarat e tua.", "Rimosso \(label) dai tuoi preferiti."))
     }
 
     /// Favorites persistence on iOS (UserDefaults set of station ids). Returns
@@ -911,12 +965,14 @@ final class AriadneModel: ObservableObject {
         guard let last = ScheduleProjector.lastTrainTonight(for: station.id, lineIds: [line]) else {
             return bot(t("Service is over for tonight at \(name(station)).",
                 "Τα δρομολόγια για απόψε τελείωσαν στον \(name(station)).",
-                "Shërbimi për sonte ka mbaruar te \(name(station))."), confidence: .scheduled)
+                "Shërbimi për sonte ka mbaruar te \(name(station)).",
+                "Il servizio per stasera \u{00E8} terminato a \(name(station))."), confidence: .scheduled)
         }
-        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))")
+        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
         return bot(t("Last \(displayLine(last.lineId)) from \(name(station)) leaves at \(last.time). Leave by then.",
             "Ο τελευταίος \(displayLine(last.lineId)) από \(name(station)) φεύγει \(last.time). Φύγε ως τότε.",
-            "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë."), confidence: .scheduled, action: .openStation(station.id), actionLabel: label)
+            "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë.",
+            "L'ultimo \(displayLine(last.lineId)) da \(name(station)) parte alle \(last.time). Parti entro allora."), confidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
     /// First / earliest scheduled train of today at a station (mirror of last train).
@@ -930,12 +986,14 @@ final class AriadneModel: ObservableObject {
         guard let first = deps.min(by: { $0.minutesAway < $1.minutesAway }) else {
             return bot(t("I don't have today's schedule for \(name(station)) offline.",
                 "Δεν έχω το σημερινό πρόγραμμα για \(name(station)) εκτός σύνδεσης.",
-                "Nuk e kam orarin e sotëm për \(name(station)) pa internet."), confidence: .offline)
+                "Nuk e kam orarin e sotëm për \(name(station)) pa internet.",
+                "Non ho l'orario di oggi per \(name(station)) offline."), confidence: .offline)
         }
-        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))")
+        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
         return bot(t("First \(displayLine(first.lineId)) from \(name(station)) is at \(first.time).",
             "Το πρώτο \(displayLine(first.lineId)) από \(name(station)) είναι στις \(first.time).",
-            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time)."), confidence: .scheduled, action: .openStation(station.id), actionLabel: label)
+            "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time).",
+            "Il primo \(displayLine(first.lineId)) da \(name(station)) \u{00E8} alle \(first.time)."), confidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
     /// Step-free accessibility for one station, from the bundled flag. Never invented.
@@ -945,11 +1003,13 @@ final class AriadneModel: ObservableObject {
         if AriadneAccessibility.isAccessible(id) {
             return bot(t("\(n) is step-free accessible (lift / level access).",
                 "Ο \(n) είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).",
-                "\(n) është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë)."), confidence: .offline)
+                "\(n) është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë).",
+                "\(n) \u{00E8} accessibile senza gradini (ascensore / accesso a livello)."), confidence: .offline)
         }
         return bot(t("\(n) is not marked step-free. Check for stairs-only access before you go.",
             "Ο \(n) δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.",
-            "\(n) nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë."), confidence: .offline)
+            "\(n) nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.",
+            "\(n) non \u{00E8} segnato come accessibile senza gradini. Potrebbe avere solo scale."), confidence: .offline)
     }
 
     /// "and back?" — reverse the remembered route and re-plan.
@@ -957,7 +1017,8 @@ final class AriadneModel: ObservableObject {
         guard let route = session.lastRoute else {
             return bot(t("Tell me a trip first, then I can flip it for the way back.",
                 "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή.",
-                "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."))
+                "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit.",
+                "Dimmi prima un viaggio, poi lo inverto per il ritorno."))
         }
         return resolvePlanTrip(from: route.toStationId, to: route.fromStationId, lowExposure: false, preference: route.preference)
     }
@@ -970,13 +1031,15 @@ final class AriadneModel: ObservableObject {
         if lineIds.isEmpty {
             return bot(t("I don't have any lines listed for \(n).",
                 "Δεν έχω γραμμές καταχωρημένες για \(n).",
-                "Nuk kam linja të regjistruara për \(n)."))
+                "Nuk kam linja të regjistruara për \(n).",
+                "Non ho linee registrate per \(n)."))
         }
         let list = lineIds.joined(separator: ", ")
-        let label = t("Open \(n)", "Ανοιγμα \(n)", "Hap \(n)")
+        let label = t("Open \(n)", "Ανοιγμα \(n)", "Hap \(n)", "Apri \(n)")
         return bot(t("\(n) is served by: \(list).",
             "Ο \(n) εξυπηρετείται από: \(list).",
-            "\(n) shërbehet nga: \(list)."), confidence: .offline, action: .openStation(id), actionLabel: label)
+            "\(n) shërbehet nga: \(list).",
+            "\(n) \u{00E8} servita da: \(list)."), confidence: .offline, action: .openStation(id), actionLabel: label)
     }
 
     /// "How many stops / how far from A to B?" — stop count + rough duration.
@@ -986,17 +1049,19 @@ final class AriadneModel: ObservableObject {
         guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
             return bot(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
-                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+                "Nuk gjeta një rrugë hekurudhore mes tyre.",
+                "Non ho trovato un percorso ferroviario tra queste."))
         }
         let stops = plan.legs.reduce(0) { $0 + $1.stops }
         let fromN = station(fromId).map { name($0) } ?? fromId
         let toN = station(toId).map { name($0) } ?? toId
         let changePart = plan.transfers == 0
-            ? t("direct", "απευθείας", "direkt")
-            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
+            ? t("direct", "απευθείας", "direkt", "diretto")
+            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)", "\(plan.transfers) cambio/i")
         return bot(t("\(fromN) to \(toN) is \(stops) stops, about \(plan.totalMinutes) min (\(changePart)).",
             "\(fromN) προς \(toN) είναι \(stops) στάσεις, περίπου \(plan.totalMinutes) λεπτά (\(changePart)).",
-            "\(fromN) te \(toN) janë \(stops) stacione, rreth \(plan.totalMinutes) min (\(changePart))."), confidence: .scheduled)
+            "\(fromN) te \(toN) janë \(stops) stacione, rreth \(plan.totalMinutes) min (\(changePart)).",
+            "\(fromN) a \(toN) sono \(stops) fermate, circa \(plan.totalMinutes) min (\(changePart))."), confidence: .scheduled)
     }
 
     /// Full point-to-point routing via `JourneyPlanner` (Dijkstra), matching
@@ -1008,7 +1073,8 @@ final class AriadneModel: ObservableObject {
         guard let fastest = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
             return bot(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
-                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+                "Nuk gjeta një rrugë hekurudhore mes tyre.",
+                "Non ho trovato un percorso ferroviario tra queste."))
         }
 
         // Offer a sheltered all-metro alternative only when the fastest route is
@@ -1029,18 +1095,19 @@ final class AriadneModel: ObservableObject {
 
         let legs = routeLineText(best)
         let transfers = best.transfers == 0
-            ? t("no change", "χωρίς αλλαγή", "pa ndërrim")
-            : t("\(best.transfers) change(s)", "\(best.transfers) αλλαγή/ές", "\(best.transfers) ndërrim(e)")
+            ? t("no change", "χωρίς αλλαγή", "pa ndërrim", "nessun cambio")
+            : t("\(best.transfers) change(s)", "\(best.transfers) αλλαγή/ές", "\(best.transfers) ndërrim(e)", "\(best.transfers) cambio/i")
         // "This is direct" nod when the user asked for the easiest route.
         let directNote = (preference == .fewestChanges && best.transfers == 0)
-            ? " " + t("This is direct, no change needed.", "Είναι απευθείας, χωρίς αλλαγή.", "Është direkt, pa ndërrim.")
+            ? " " + t("This is direct, no change needed.", "Είναι απευθείας, χωρίς αλλαγή.", "Është direkt, pa ndërrim.", "\u{00C8} diretto, nessun cambio necessario.")
             : ""
         // When the ranker overrode the fastest route (weather tilt), say why.
         let tradeoff = (best != fastest)
             ? "\n" + t(
                 "The faster route (\(routeLineText(fastest)), \(fastest.totalMinutes) min) is more exposed; in this weather I'd take this one.",
                 "Η πιο γρήγορη διαδρομή (\(routeLineText(fastest)), \(fastest.totalMinutes) λεπτά) είναι πιο εκτεθειμένη· με αυτόν τον καιρό θα προτιμούσα αυτή.",
-                "Rruga më e shpejtë (\(routeLineText(fastest)), \(fastest.totalMinutes) min) është më e ekspozuar; me këtë mot do të zgjidhja këtë.")
+                "Rruga më e shpejtë (\(routeLineText(fastest)), \(fastest.totalMinutes) min) është më e ekspozuar; me këtë mot do të zgjidhja këtë.",
+                "Il percorso pi\u{00F9} veloce (\(routeLineText(fastest)), \(fastest.totalMinutes) min) \u{00E8} pi\u{00F9} esposto; con questo tempo prenderei questo.")
             : ""
         let exposure = lowExposure ? "\n" + weatherAdvice(best) : ""
         // Surface any STASY advisory that intersects the route. The Swift Plan
@@ -1055,10 +1122,11 @@ final class AriadneModel: ObservableObject {
             notices: currentNotices(),
             severeWeather: WeatherStore.shared.snapshot?.current.condition.isSevere == true
         )
-        let caveat = advisory.top.map { "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ") + $0.text } ?? ""
+        let caveat = advisory.top.map { "\n" + t("Heads up: ", "Προσοχή: ", "Kujdes: ", "Attenzione: ") + $0.text } ?? ""
         return bot(t("\(legs). About \(best.totalMinutes) min, \(transfers).",
             "\(legs). Περίπου \(best.totalMinutes) λεπτά, \(transfers).",
-            "\(legs). Rreth \(best.totalMinutes) min, \(transfers).") + directNote + tradeoff + exposure + caveat, confidence: .scheduled)
+            "\(legs). Rreth \(best.totalMinutes) min, \(transfers).",
+            "\(legs). Circa \(best.totalMinutes) min, \(transfers).") + directNote + tradeoff + exposure + caveat, confidence: .scheduled)
     }
 
     /// A route's shelter, from its legs' line types. Mirror of KMP `routeExposure`.
@@ -1093,19 +1161,22 @@ final class AriadneModel: ObservableObject {
         if fromId == toId {
             return bot(t("You're already at \(stationName(toId)).",
                 "Είσαι ήδη στον \(stationName(toId)).",
-                "Je tashmë te \(stationName(toId))."))
+                "Je tashmë te \(stationName(toId)).",
+                "Sei già a \(stationName(toId))."))
         }
         guard let plan = JourneyPlanner.plan(from: fromId, to: toId, language: loc.language) else {
             return bot(t("I couldn't find a rail route between those.",
                 "Δεν βρήκα σιδηροδρομική διαδρομή ανάμεσά τους.",
-                "Nuk gjeta një rrugë hekurudhore mes tyre."))
+                "Nuk gjeta një rrugë hekurudhore mes tyre.",
+                "Non ho trovato un percorso ferroviario tra queste stazioni."))
         }
         let transfers = plan.transfers == 0
-            ? t("no change", "χωρίς αλλαγή", "pa ndërrim")
-            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)")
+            ? t("no change", "χωρίς αλλαγή", "pa ndërrim", "nessun cambio")
+            : t("\(plan.transfers) change(s)", "\(plan.transfers) αλλαγή/ές", "\(plan.transfers) ndërrim(e)", "\(plan.transfers) cambio/i")
         return bot(t("About \(plan.totalMinutes) min from \(stationName(fromId)) to \(stationName(toId)), \(transfers).",
             "Περίπου \(plan.totalMinutes) λεπτά από \(stationName(fromId)) προς \(stationName(toId)), \(transfers).",
-            "Rreth \(plan.totalMinutes) min nga \(stationName(fromId)) te \(stationName(toId)), \(transfers)."), confidence: .scheduled)
+            "Rreth \(plan.totalMinutes) min nga \(stationName(fromId)) te \(stationName(toId)), \(transfers).",
+            "Circa \(plan.totalMinutes) min da \(stationName(fromId)) a \(stationName(toId)), \(transfers)."), confidence: .scheduled)
     }
 
     private func stationName(_ id: String) -> String {
@@ -1139,12 +1210,13 @@ final class AriadneModel: ObservableObject {
         switch exposure {
         case .sheltered:
             return t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
-                "kryesisht nëntokë dhe e mbrojtur")
+                "kryesisht nëntokë dhe e mbrojtur", "perlopiù sotterraneo e riparato")
         case .mixed:
-            return t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe")
+            return t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe",
+                "in parte in superficie")
         case .exposed:
             return t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
-                "në ajër të hapur (tram/sipërfaqe)")
+                "në ajër të hapur (tram/sipërfaqe)", "all'aperto (tram/fermate in superficie)")
         }
     }
 
@@ -1157,42 +1229,46 @@ final class AriadneModel: ObservableObject {
         let lead: String
         switch ctx.source {
         case .live, .forecast:
-            let place = ctx.placeName ?? t("Athens", "Αθήνα", "Athinë")
+            let place = ctx.placeName ?? t("Athens", "Αθήνα", "Athinë", "Atene")
             let now = liveStateClause(ctx.state)
             lead = t("\(now) in \(place) right now, and this route is \(shelter).",
                 "\(now) στην \(place) τώρα, και η διαδρομή είναι \(shelter).",
-                "\(now) në \(place) tani, dhe kjo rrugë është \(shelter).")
+                "\(now) në \(place) tani, dhe kjo rrugë është \(shelter).",
+                "\(now) a \(place) in questo momento e questo percorso è \(shelter).")
         case .seasonalFallback:
             let typical = seasonalClause(ctx)
             lead = t("I don't have live weather right now, but Athens this time of year is usually \(typical). This route is \(shelter).",
                 "Δεν έχω ζωντανό καιρό τώρα, αλλά η Αθήνα αυτή την εποχή είναι συνήθως \(typical). Η διαδρομή είναι \(shelter).",
-                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është \(typical). Kjo rrugë është \(shelter).")
+                "Nuk kam mot live tani, por Athina në këtë periudhë zakonisht është \(typical). Kjo rrugë është \(shelter).",
+                "Non ho il meteo in tempo reale, ma Atene in questo periodo è di solito \(typical). Questo percorso è \(shelter).")
         case .unknown:
             lead = t("I can't check the weather offline, but this route is \(shelter).",
                 "Δεν μπορώ να δω τον καιρό εκτός σύνδεσης, αλλά η διαδρομή είναι \(shelter).",
-                "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është \(shelter).")
+                "Nuk e kontrolloj dot motin pa internet, por kjo rrugë është \(shelter).",
+                "Non posso controllare il meteo offline, ma questo percorso è \(shelter).")
         }
         return nudge.isEmpty ? lead : "\(lead) \(nudge)"
     }
 
     private func liveStateClause(_ state: WeatherState) -> String {
         switch state {
-        case .rainy: return t("It's wet", "Έχει βροχή", "Ka shi")
-        case .hot: return t("It's hot", "Έχει ζέστη", "Bën vapë")
-        case .windy: return t("It's windy", "Έχει αέρα", "Ka erë")
-        case .normal: return t("It's calm", "Ο καιρός είναι ήπιος", "Moti është i qetë")
+        case .rainy: return t("It's wet", "Έχει βροχή", "Ka shi", "Piove")
+        case .hot: return t("It's hot", "Έχει ζέστη", "Bën vapë", "Fa caldo")
+        case .windy: return t("It's windy", "Έχει αέρα", "Ka erë", "C'è vento")
+        case .normal: return t("It's calm", "Ο καιρός είναι ήπιος", "Moti është i qetë", "Il tempo è mite")
         }
     }
 
     private func seasonalClause(_ ctx: WeatherContext) -> String {
         let month = ctx.month ?? 0
         if ctx.state == .hot {
-            return t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë")
+            return t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë", "caldo e secco")
         }
         if [11, 12, 1, 2].contains(month) {
-            return t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu")
+            return t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu",
+                "più fresco, con possibile pioggia")
         }
-        return t("mild", "ήπια", "e butë")
+        return t("mild", "ήπια", "e butë", "mite")
     }
 
     /// Optional nudge toward shelter when the weather makes exposure matter.
@@ -1202,15 +1278,18 @@ final class AriadneModel: ObservableObject {
         case .rainy:
             return t("A more underground option would keep you drier.",
                 "Μια πιο υπόγεια επιλογή θα σε κρατούσε πιο στεγνό.",
-                "Një opsion më nëntokësor do të të mbante më të thatë.")
+                "Një opsion më nëntokësor do të të mbante më të thatë.",
+                "Un'opzione più sotterranea ti terrebbe più al riparo dalla pioggia.")
         case .hot:
             return t("Prefer an underground route to avoid long sun-exposed waits.",
                 "Προτίμησε υπόγεια διαδρομή για να αποφύγεις αναμονές στον ήλιο.",
-                "Zgjidh një rrugë nëntokësore për të shmangur pritjet në diell.")
+                "Zgjidh një rrugë nëntokësore për të shmangur pritjet në diell.",
+                "Preferisci un percorso sotterraneo per evitare lunghe attese al sole.")
         case .windy:
             return t("Exposed tram/surface stretches can be gusty; metro is steadier.",
                 "Τα ανοιχτά τμήματα τραμ/επιφάνειας έχουν ριπές· το μετρό είναι πιο σταθερό.",
-                "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.")
+                "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.",
+                "I tratti esposti in tram o in superficie possono essere ventosi; la metro è più riparata.")
         case .normal:
             return ""
         }
@@ -1223,20 +1302,24 @@ final class AriadneModel: ObservableObject {
         }
         guard let top = matches.first else {
             return bot(t("I couldn't find a station matching that.",
-                "Δεν βρήκα σταθμό που να ταιριάζει.", "Nuk gjeta një stacion që përputhet."))
+                "Δεν βρήκα σταθμό που να ταιριάζει.", "Nuk gjeta një stacion që përputhet.",
+                "Non ho trovato una stazione corrispondente."))
         }
         let names = matches.prefix(3).map { name($0) }.joined(separator: ", ")
-        let label = t("Open \(name(top))", "Ανοιγμα \(name(top))", "Hap \(name(top))")
-        return bot(t("Found: \(names).", "Βρέθηκαν: \(names).", "U gjet: \(names)."), action: .openStation(top.id), actionLabel: label)
+        let label = t("Open \(name(top))", "Ανοιγμα \(name(top))", "Hap \(name(top))", "Apri \(name(top))")
+        return bot(t("Found: \(names).", "Βρέθηκαν: \(names).", "U gjet: \(names).", "Risultati: \(names)."),
+            action: .openStation(top.id), actionLabel: label)
     }
 
     private func resolveExplainLine(_ lineId: String) -> AriadneMessage {
         let normalized = normalizeLine(lineId)
         guard let line = SyrmosData.line(for: normalized) else { return bot(outOfScopeText()) }
-        let label = t("Open \(line.name)", "Ανοιγμα \(line.name)", "Hap \(line.name)")
+        let label = t("Open \(line.name)", "Ανοιγμα \(line.name)", "Hap \(line.name)", "Apri \(line.name)")
         return bot(t("\(line.name): \(line.terminalA) to \(line.terminalB), \(line.stationCount) stations.",
             "\(line.name): \(line.terminalA) ως \(line.terminalB), \(line.stationCount) σταθμοί.",
-            "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione."), confidence: .offline, action: .openLine(normalized), actionLabel: label)
+            "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione.",
+            "\(line.name): da \(line.terminalA) a \(line.terminalB), \(line.stationCount) stazioni."),
+            confidence: .offline, action: .openLine(normalized), actionLabel: label)
     }
 
     private func resolveAlerts(lineId: String?) async -> AriadneMessage {
@@ -1245,23 +1328,27 @@ final class AriadneModel: ObservableObject {
         if let first = alerts.first {
             let titles = alerts.prefix(2).map { $0.displayTitle(language: loc.language) }.joined(separator: "; ")
             _ = first
-            return bot(t("Active alerts: \(titles)", "Ενεργές ειδοποιήσεις: \(titles)", "Njoftime aktive: \(titles)"), confidence: .live)
+            return bot(t("Active alerts: \(titles)", "Ενεργές ειδοποιήσεις: \(titles)", "Njoftime aktive: \(titles)",
+                "Avvisi attivi: \(titles)"), confidence: .live)
         }
         if let status = alertsService.serviceStatus, status.status == "alert" {
             return bot(status.displayMessage(language: loc.language), confidence: .live)
         }
         return bot(t("No active service alerts right now.",
-            "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.", "Nuk ka njoftime aktive tani."), confidence: .live)
+            "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.", "Nuk ka njoftime aktive tani.",
+            "Non ci sono avvisi di servizio attivi al momento."), confidence: .live)
     }
 
     private func resolveOpenMap(_ stationId: String?) -> AriadneMessage {
         if let id = stationId, let st = station(id) {
             return bot(t("\(name(st)) is on the Map tab, with live train positions.",
                 "Ο \(name(st)) είναι στον Χάρτη, με ζωντανές θέσεις συρμών.",
-                "\(name(st)) është te Harta, me pozicione të drejtpërdrejta."))
+                "\(name(st)) është te Harta, me pozicione të drejtpërdrejta.",
+                "\(name(st)) è nella scheda Mappa, con le posizioni dei treni in tempo reale."))
         }
         return bot(t("Open the Map tab to see live train positions.",
-            "Άνοιξε τον Χάρτη για ζωντανές θέσεις συρμών.", "Hap Hartën për pozicionet e trenave."))
+            "Άνοιξε τον Χάρτη για ζωντανές θέσεις συρμών.", "Hap Hartën për pozicionet e trenave.",
+            "Apri la scheda Mappa per vedere le posizioni dei treni in tempo reale."))
     }
 
     // MARK: - LLM fallback
@@ -1278,7 +1365,41 @@ final class AriadneModel: ObservableObject {
         guard let reply = await AriadneAPIService.shared.chat(messages: chatHistory) else {
             return nil
         }
+        guard Self.isUsableReply(reply) else { return nil }
         return bot(reply)
+    }
+
+    private static let leakedReasoningPatterns: [String] = [
+        "(greek) or english",
+        "(english) or greek",
+        "user wrote in",
+        "user is asking",
+        "let me ",
+        "i need to ",
+        "i should ",
+        "step 1:",
+        "chain of thought",
+        "reasoning:",
+        "thinking:",
+        "internal note",
+    ]
+
+    private static func isUsableReply(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.count < 8 { return false }
+        let lower = trimmed.lowercased()
+        for pattern in leakedReasoningPatterns {
+            if lower.contains(pattern) { return false }
+        }
+        if trimmed.hasSuffix(" is") || trimmed.hasSuffix(" the") ||
+           trimmed.hasSuffix(" a") || trimmed.hasSuffix(" and") ||
+           trimmed.hasSuffix(" or") || trimmed.hasSuffix(" to") ||
+           trimmed.hasSuffix(" for") || trimmed.hasSuffix(" with") ||
+           trimmed.hasSuffix(" in") || trimmed.hasSuffix(" of") ||
+           trimmed.hasSuffix(" that") || trimmed.hasSuffix(" from") {
+            return false
+        }
+        return true
     }
 
     // MARK: - Helpers
@@ -1312,19 +1433,22 @@ final class AriadneModel: ObservableObject {
     private func greeting() -> AriadneMessage {
         bot(t("Hi, I'm Ariadne. Ask about departures, weather, or trips like \"airport by 21:30\".",
             "Γεια, είμαι η Αριάδνη. Ρώτησέ με για αναχωρήσεις, καιρό ή διαδρομές όπως «αεροδρόμιο στις 21:30».",
-            "Përshëndetje, jam Ariadne. Më pyet për nisje, motin ose udhëtime si «aeroporti në 21:30»."))
+            "Përshëndetje, jam Ariadne. Më pyet për nisje, motin ose udhëtime si «aeroporti në 21:30».",
+            "Ciao, sono Ariadne. Chiedimi di partenze, meteo o viaggi come \"aeroporto entro le 21:30\"."))
     }
 
     private func helpText() -> String {
         t("I handle departures, last train home, trip planning (including \"be there by X:XX\"), weather at a station, service alerts, ticket prices, and Athens rail info. Offline-safe.",
             "Χειρίζομαι αναχωρήσεις, τελευταίο τρένο, σχεδιασμό διαδρομής (και «να είσαι εκεί στις X:XX»), καιρό σταθμού, ειδοποιήσεις, τιμές εισιτηρίων και πληροφορίες των συγκοινωνιών Αθήνας. Λειτουργώ offline.",
-            "Trajtoj nisjet, trenin e fundit, planifikim udhëtimi (edhe «të jesh atje deri në X:XX»), motin te një stacion, njoftime, çmime biletash dhe informacione për transportin e Athinës. Punoj pa internet.")
+            "Trajtoj nisjet, trenin e fundit, planifikim udhëtimi (edhe «të jesh atje deri në X:XX»), motin te një stacion, njoftime, çmime biletash dhe informacione për transportin e Athinës. Punoj pa internet.",
+            "Gestisco partenze, ultimo treno, pianificazione dei viaggi (anche \"arrivare entro le X:XX\"), meteo in stazione, avvisi di servizio, prezzi dei biglietti e informazioni sulla rete ferroviaria di Atene. Funziono offline.")
     }
 
     private func outOfScopeText() -> String {
         t("I can only help with Syrmos and Athens public transport.",
             "Μπορώ να βοηθήσω μόνο με το Syrmos και τις συγκοινωνίες της Αθήνας.",
-            "Mund të ndihmoj vetëm me Syrmos dhe transportin publik të Athinës.")
+            "Mund të ndihmoj vetëm me Syrmos dhe transportin publik të Athinës.",
+            "Posso aiutarti solo con Syrmos e il trasporto pubblico di Atene.")
     }
 
     /// Graceful recovery for a dead-ended turn: suggest the closest station if
@@ -1337,22 +1461,24 @@ final class AriadneModel: ObservableObject {
     }
 
     private func didYouMeanStation(_ name: String) -> String {
-        t("I didn't quite catch that — did you mean \(name)? Try \"next trains from \(name)\".",
-            "Δεν το κατάλαβα ακριβώς — μήπως εννοείς \(name); Δοκίμασε «επόμενα τρένα από \(name)».",
-            "Nuk e kuptova mirë — mos ke parasysh \(name)? Provo «trenat e ardhshëm nga \(name)».")
+        t("I didn't quite catch that. Did you mean \(name)? Try \"next trains from \(name)\".",
+            "Δεν το κατάλαβα ακριβώς. Μήπως εννοείς \(name); Δοκίμασε «επόμενα τρένα από \(name)».",
+            "Nuk e kuptova mirë. Mos ke parasysh \(name)? Provo «trenat e ardhshëm nga \(name)».",
+            "Non ho capito bene. Intendevi \(name)? Prova \"prossimi treni da \(name)\".")
     }
 
     private func recoveryHelp() -> String {
         t("I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
             "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
-            "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.")
+            "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.",
+            "Non ho capito. Chiedimi delle partenze, di un percorso tra due stazioni o dell'ultimo treno.")
     }
 
     private func clarify(_ missing: MissingSlot) -> String {
         switch missing {
-        case .originStation: return t("From which station?", "Από ποιον σταθμό;", "Nga cili stacion?")
-        case .destinationStation: return t("To which station?", "Προς ποιον σταθμό;", "Te cili stacion?")
-        case .station: return t("Which station?", "Ποιος σταθμός;", "Cili stacion?")
+        case .originStation: return t("From which station?", "Από ποιον σταθμό;", "Nga cili stacion?", "Da quale stazione?")
+        case .destinationStation: return t("To which station?", "Προς ποιον σταθμό;", "Te cili stacion?", "Verso quale stazione?")
+        case .station: return t("Which station?", "Ποιος σταθμός;", "Cili stacion?", "Quale stazione?")
         }
     }
 
@@ -1364,10 +1490,11 @@ final class AriadneModel: ObservableObject {
         AriadneMessage(fromUser: false, text: text, sourceConfidence: confidence, action: action, actionLabel: actionLabel)
     }
 
-    private func t(_ en: String, _ el: String, _ sq: String) -> String {
+    private func t(_ en: String, _ el: String, _ sq: String, _ it: String? = nil) -> String {
         switch loc.language {
         case .greek: return el
         case .albanian: return sq
+        case .italian: return it ?? en
         default: return en
         }
     }

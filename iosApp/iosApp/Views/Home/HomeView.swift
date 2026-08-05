@@ -67,18 +67,20 @@ struct HomeView: View {
                     .presentationDragIndicator(.visible)
             }
             .alert(
-                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : "Location is disabled",
+                loc.language == .greek ? "Η τοποθεσία είναι απενεργοποιημένη" : loc.language == .albanian ? "Vendndodhja është e çaktivizuar" : loc.language == .italian ? "La posizione e disabilitata" : "Location is disabled",
                 isPresented: $showLocationDeniedAlert
             ) {
-                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : loc.language == .albanian ? "Hap Cilësimet" : "Open Settings") {
+                Button(loc.language == .greek ? "Άνοιγμα Ρυθμίσεων" : loc.language == .albanian ? "Hap Cilësimet" : loc.language == .italian ? "Apri Impostazioni" : "Open Settings") {
                     locationService.openSystemSettings()
                 }
-                Button(loc.language == .greek ? "Άκυρο" : loc.language == .albanian ? "Anulo" : "Cancel", role: .cancel) {}
+                Button(loc.language == .greek ? "Άκυρο" : loc.language == .albanian ? "Anulo" : loc.language == .italian ? "Annulla" : "Cancel", role: .cancel) {}
             } message: {
                 Text(loc.language == .greek
                     ? "Δεν έχετε δώσει άδεια τοποθεσίας στο Syrmos. Θέλετε να ανοίξετε τις Ρυθμίσεις για να την ενεργοποιήσετε;"
                     : loc.language == .albanian
                     ? "Nuk i ke dhënë Syrmos leje për vendndodhjen. Dëshiron të hapësh Cilësimet për ta aktivizuar?"
+                    : loc.language == .italian
+                    ? "Non hai concesso a Syrmos l'accesso alla posizione. Vuoi aprire le Impostazioni per abilitarlo?"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
             // The legacy "New data available" alert was removed — schedule
@@ -257,6 +259,7 @@ struct HomeView: View {
         switch loc.language {
         case .greek: return "Παρακολούθηση συρμού"
         case .albanian: return "Ndiq një tren"
+        case .italian: return "Segui un treno"
         case .english: return "Track a train"
         }
     }
@@ -309,7 +312,7 @@ struct HomeView: View {
                         .filter { $0.minutesAway > next.minutesAway }
                         .map { $0.minutesAwayDisplay(language: loc.language) }
                     if !thenTimes.isEmpty {
-                        let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : "then"
+                        let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : loc.language == .italian ? "poi" : "then"
                         Text("\(thenWord) \(thenTimes.joined(separator: ", "))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -321,8 +324,8 @@ struct HomeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: isTracked ? "location.fill" : "bell.fill")
                             Text(isTracked
-                                ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : "Tracking")
-                                : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : "Track"))
+                                ? (loc.language == .greek ? "Παρακολουθείται" : loc.language == .albanian ? "Po ndiqet" : loc.language == .italian ? "Monitoraggio" : "Tracking")
+                                : (loc.language == .greek ? "Παρακολούθηση" : loc.language == .albanian ? "Ndiq" : loc.language == .italian ? "Segui" : "Track"))
                                 .fontWeight(.semibold)
                         }
                         .font(.caption)
@@ -432,11 +435,11 @@ struct HomeView: View {
                         .font(.title2)
                         .foregroundStyle(.blue)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(loc.language == .greek ? "Κοντά μου" : loc.language == .albanian ? "Pranë meje" : "Near me")
+                        Text(loc.language == .greek ? "Κοντά μου" : loc.language == .albanian ? "Pranë meje" : loc.language == .italian ? "Vicino a me" : "Near me")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
-                        Text(loc.language == .greek ? "Ενεργοποιήστε την τοποθεσία για να δείτε κοντινούς σταθμούς" : loc.language == .albanian ? "Aktivizo vendndodhjen për të parë stacionet afër" : "Enable location to see nearby stations")
+                        Text(loc.language == .greek ? "Ενεργοποιήστε την τοποθεσία για να δείτε κοντινούς σταθμούς" : loc.language == .albanian ? "Aktivizo vendndodhjen për të parë stacionet afër" : loc.language == .italian ? "Abilita la posizione per vedere le stazioni vicine" : "Enable location to see nearby stations")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -461,7 +464,7 @@ struct HomeView: View {
                     HStack {
                         Image(systemName: "location.fill")
                             .foregroundStyle(.blue)
-                        Text(loc.language == .greek ? "Κοντά μου" : loc.language == .albanian ? "Pranë meje" : "Near me")
+                        Text(loc.language == .greek ? "Κοντά μου" : loc.language == .albanian ? "Pranë meje" : loc.language == .italian ? "Vicino a me" : "Near me")
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
@@ -544,7 +547,7 @@ struct HomeView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "tram.fill")
                         .foregroundStyle(Color.suburbanPurple)
-                    Text(loc.language == .greek ? "Ζωντανά τρένα" : loc.language == .albanian ? "Trenat aktiv" : "Live trains")
+                    Text(loc.language == .greek ? "Ζωντανά τρένα" : loc.language == .albanian ? "Trenat aktiv" : loc.language == .italian ? "Treni in tempo reale" : "Live trains")
                         .font(.title3)
                         .fontWeight(.semibold)
                 }
@@ -571,7 +574,7 @@ struct HomeView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                                 if train.delayMinutes > 0 {
-                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : "+\(train.delayMinutes)′ delay")
+                                    Text(loc.language == .greek ? "+\(train.delayMinutes)′ καθυστέρηση" : loc.language == .albanian ? "+\(train.delayMinutes)′ vonesë" : loc.language == .italian ? "+\(train.delayMinutes)′ ritardo" : "+\(train.delayMinutes)′ delay")
                                         .font(.caption2)
                                         .foregroundStyle(SyrmosTokens.warning)
                                 }
@@ -646,7 +649,7 @@ struct HomeView: View {
                 HStack {
                     Image(systemName: "newspaper.fill")
                         .foregroundStyle(.blue)
-                    Text(loc.language == .greek ? "Σιδηροδρομικα Νεα" : loc.language == .albanian ? "Lajme Hekurudhore" : "Rail News")
+                    Text(loc.language == .greek ? "Σιδηροδρομικα Νεα" : loc.language == .albanian ? "Lajme Hekurudhore" : loc.language == .italian ? "Notizie ferroviarie" : "Rail News")
                         .font(.title3)
                         .fontWeight(.semibold)
                     Spacer()
@@ -744,6 +747,8 @@ struct HomeView: View {
                     ? "Λειτουργία 24/7 σήμερα"
                     : loc.language == .albanian
                     ? "Shërbim 24/7 sot"
+                    : loc.language == .italian
+                    ? "Servizio 24/7 oggi"
                     : "24/7 service today"
             }
         }
@@ -752,6 +757,8 @@ struct HomeView: View {
             ? "Δρομολόγια έως \(latest)"
             : loc.language == .albanian
             ? "Trena deri në \(latest)"
+            : loc.language == .italian
+            ? "Treni fino alle \(latest)"
             : "Trains until \(latest)"
     }
 
@@ -786,6 +793,7 @@ private func heroCountdownText(secondsAway: Int, language: AppLanguage) -> Strin
         switch language {
         case .greek: return "Τώρα"
         case .albanian: return "Tani"
+        case .italian: return "Ora"
         default: return "Now"
         }
     }
@@ -833,6 +841,8 @@ struct NearbyStationDestination: View {
                          ? "Ο σταθμός δεν είναι ακόμη διαθέσιμος"
                          : loc.language == .albanian
                          ? "Ky stacion ende nuk është i disponueshëm"
+                         : loc.language == .italian
+                         ? "Questa stazione non e ancora disponibile."
                          : "This station isn't available yet.")
                         .foregroundStyle(.secondary)
                 }

@@ -18,12 +18,15 @@ enum AirportData {
             switch (line, lang) {
             case ("M3", .greek): return "Μετρό Γραμμή 3"
             case ("M3", .albanian): return "Metroja Linja 3"
+            case ("M3", .italian): return "Metro Linea 3"
             case ("M3", _): return "Metro Line 3"
             case ("A1", .greek): return "Προαστιακός A1 (Πειραιάς - Αεροδρόμιο)"
             case ("A1", .albanian): return "Treni periferik A1 (Pireu - Aeroporti)"
+            case ("A1", .italian): return "Suburbano A1 (Pireo - Aeroporto)"
             case ("A1", _): return "Suburban A1 (Piraeus - Airport)"
             case ("A2", .greek): return "Προαστιακός A2 (Άνω Λιόσια - Αεροδρόμιο)"
             case ("A2", .albanian): return "Treni periferik A2 (Ano Liosia - Aeroporti)"
+            case ("A2", .italian): return "Suburbano A2 (Ano Liosia - Aeroporto)"
             case ("A2", _): return "Suburban A2 (Ano Liosia - Airport)"
             default: return line
             }

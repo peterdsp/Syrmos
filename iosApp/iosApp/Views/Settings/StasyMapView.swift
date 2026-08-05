@@ -20,17 +20,17 @@ struct StasyMapView: View {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
-                        Text(loc.language == .greek ? "Δεν βρέθηκε ο χάρτης." : loc.language == .albanian ? "Harta nuk u gjet." : "Map not found in bundle.")
+                        Text(loc.language == .greek ? "Δεν βρέθηκε ο χάρτης." : loc.language == .albanian ? "Harta nuk u gjet." : loc.language == .italian ? "Mappa non trovata." : "Map not found in bundle.")
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .navigationTitle(loc.language == .greek ? "Σιδηροδρομικό δίκτυο Αθήνας" : loc.language == .albanian ? "Hekurudhat e zonës metropolitane të Athinës" : "Athens metropolitan area railways")
+            .navigationTitle(loc.language == .greek ? "Σιδηροδρομικό δίκτυο Αθήνας" : loc.language == .albanian ? "Hekurudhat e zonës metropolitane të Athinës" : loc.language == .italian ? "Rete ferroviaria metropolitana di Atene" : "Athens metropolitan area railways")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : "Close") {
+                    Button(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : loc.language == .italian ? "Chiudi" : "Close") {
                         dismiss()
                     }
                 }

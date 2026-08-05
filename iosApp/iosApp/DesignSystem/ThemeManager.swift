@@ -15,12 +15,15 @@ enum AppTheme: String, CaseIterable, Identifiable {
         case (.system, .english):  return "System"
         case (.system, .greek):    return "Σύστημα"
         case (.system, .albanian): return "Sistemi"
+        case (.system, .italian):  return "Sistema"
         case (.light, .english):   return "Light"
         case (.light, .greek):     return "Φωτεινό"
         case (.light, .albanian):  return "E ndritshme"
+        case (.light, .italian):   return "Chiaro"
         case (.dark, .english):    return "Dark"
         case (.dark, .greek):      return "Σκοτεινό"
         case (.dark, .albanian):   return "E errët"
+        case (.dark, .italian):    return "Scuro"
         }
     }
 

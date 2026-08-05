@@ -81,18 +81,21 @@ class DepartureTrackingNotifier(private val context: Context) {
     private fun channelName(lang: AppLanguage) = when (lang) {
         AppLanguage.GREEK -> "Παρακολούθηση συρμού"
         AppLanguage.ALBANIAN -> "Ndjekja e trenit"
+        AppLanguage.ITALIAN -> "Tracciamento partenza"
         else -> "Departure tracking"
     }
 
     private fun trackingLabel(lang: AppLanguage) = when (lang) {
         AppLanguage.GREEK -> "Παρακολούθηση"
         AppLanguage.ALBANIAN -> "Po ndiqet"
+        AppLanguage.ITALIAN -> "In tracciamento"
         else -> "Tracking"
     }
 
     private fun toLabel(lang: AppLanguage) = when (lang) {
         AppLanguage.GREEK -> "προς"
         AppLanguage.ALBANIAN -> "drejt"
+        AppLanguage.ITALIAN -> "verso"
         else -> "to"
     }
 

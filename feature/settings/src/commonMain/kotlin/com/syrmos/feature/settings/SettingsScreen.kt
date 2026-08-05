@@ -74,9 +74,11 @@ fun SettingsScreen(
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
     var showContact by remember { mutableStateOf(false) }
-    val openStasyMap = rememberStasyMapOpener()
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val openStasyMap = {
+        uriHandler.openUri("https://syrmos.peterdsp.dev/files/stasy_system_map.pdf")
+    }
     val showVehicles by MapPreferences.showLiveVehicles.collectAsState()
     val defaultRegion by MapPreferences.defaultRegion.collectAsState()
     var showRegionPicker by remember { mutableStateOf(false) }
@@ -107,6 +109,7 @@ fun SettingsScreen(
                 SettingsSection(title = when (lang) {
                     AppLanguage.GREEK -> "Βοηθος"
                     AppLanguage.ALBANIAN -> "Asistent"
+                    AppLanguage.ITALIAN -> "Assistente"
                     else -> "Assistant"
                 }) {
                     Row(
@@ -127,6 +130,7 @@ fun SettingsScreen(
                                 text = when (lang) {
                                     AppLanguage.GREEK -> "Ο βοηθος σου στα τρενα"
                                     AppLanguage.ALBANIAN -> "Asistenti yt i trenave"
+                                    AppLanguage.ITALIAN -> "Il tuo assistente ferroviario"
                                     else -> "Your rail assistant"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
@@ -200,12 +204,14 @@ fun SettingsScreen(
                 SettingsSection(title = when (lang) {
                     AppLanguage.GREEK -> "Χαρτης"
                     AppLanguage.ALBANIAN -> "Harta"
+                    AppLanguage.ITALIAN -> "Preferenze mappa"
                     else -> "Map preferences"
                 }) {
                     NotifToggleRow(
                         title = when (lang) {
                             AppLanguage.GREEK -> "Ζωντανα οχηματα"
                             AppLanguage.ALBANIAN -> "Mjetet e gjalla"
+                            AppLanguage.ITALIAN -> "Veicoli in tempo reale"
                             else -> "Live vehicles"
                         },
                         checked = showVehicles,
@@ -217,6 +223,7 @@ fun SettingsScreen(
                             title = when (lang) {
                                 AppLanguage.GREEK -> "Προεπιλεγμενη περιοχη"
                                 AppLanguage.ALBANIAN -> "Rajoni i parazgjedhur"
+                                AppLanguage.ITALIAN -> "Regione predefinita"
                                 else -> "Default region"
                             },
                             value = regionLabel(defaultRegion, lang),
@@ -243,6 +250,7 @@ fun SettingsScreen(
                     text = when (lang) {
                         AppLanguage.GREEK -> "Τα ζωντανα οχηματα εμφανιζονται σαν κινουμενα τριγωνα στον χαρτη."
                         AppLanguage.ALBANIAN -> "Mjetet e gjalla shfaqen si trekendsha levizes ne harte."
+                        AppLanguage.ITALIAN -> "I veicoli in tempo reale appaiono come triangoli in movimento sulla mappa."
                         else -> "Live vehicles appear as moving triangles on the map."
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -258,6 +266,7 @@ fun SettingsScreen(
                 SettingsSection(title = when (lang) {
                     AppLanguage.GREEK -> "Διαχειριστες"
                     AppLanguage.ALBANIAN -> "Operatoret"
+                    AppLanguage.ITALIAN -> "Operatori"
                     else -> "Operators"
                 }) {
                     OperatorRow(
@@ -265,6 +274,7 @@ fun SettingsScreen(
                         detail = when (lang) {
                             AppLanguage.GREEK -> "Μετρο & Τραμ Αθηνας"
                             AppLanguage.ALBANIAN -> "Metro & Tramvaj Athine"
+                            AppLanguage.ITALIAN -> "Metro e Tram di Atene"
                             else -> "Athens Metro & Tram"
                         },
                         onClick = { uriHandler.openUri("https://www.stasy.gr") },
@@ -275,6 +285,7 @@ fun SettingsScreen(
                         detail = when (lang) {
                             AppLanguage.GREEK -> "Αστικες συγκοινωνιες Αθηνας"
                             AppLanguage.ALBANIAN -> "Transporti publik Athine"
+                            AppLanguage.ITALIAN -> "Trasporto pubblico di Atene"
                             else -> "Athens public transport"
                         },
                         onClick = { uriHandler.openUri("https://www.oasa.gr") },
@@ -285,6 +296,7 @@ fun SettingsScreen(
                         detail = when (lang) {
                             AppLanguage.GREEK -> "Προαστιακος & Υπεραστικα"
                             AppLanguage.ALBANIAN -> "Periferike & Nderqytetese"
+                            AppLanguage.ITALIAN -> "Suburbano e Intercity"
                             else -> "Suburban & Intercity"
                         },
                         onClick = { uriHandler.openUri("https://www.hellenictrain.gr") },
@@ -295,6 +307,7 @@ fun SettingsScreen(
                         detail = when (lang) {
                             AppLanguage.GREEK -> "Μετρο Θεσσαλονικης"
                             AppLanguage.ALBANIAN -> "Metro Selanik"
+                            AppLanguage.ITALIAN -> "Metro di Salonicco"
                             else -> "Thessaloniki Metro"
                         },
                         onClick = { uriHandler.openUri("https://www.oseth.gr") },
@@ -304,6 +317,7 @@ fun SettingsScreen(
                     text = when (lang) {
                         AppLanguage.GREEK -> "Οι τιμες και τα δρομολογια διαχειριζονται απο τους αντιστοιχους φορεις."
                         AppLanguage.ALBANIAN -> "Cmimet dhe oraret menaxhohen nga operatoret perkates."
+                        AppLanguage.ITALIAN -> "Tariffe e orari sono gestiti dai rispettivi operatori."
                         else -> "Fares and schedules are managed by their respective operators."
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -323,12 +337,14 @@ fun SettingsScreen(
             SettingsSection(title = when (lang) {
                 AppLanguage.GREEK -> "Ειδοποιησεις"
                 AppLanguage.ALBANIAN -> "Njoftimet"
+                AppLanguage.ITALIAN -> "Notifiche"
                 else -> "Notifications"
             }) {
                 NotifToggleRow(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Ειδοποιησεις υπηρεσιας"
                         AppLanguage.ALBANIAN -> "Njoftimet e sherbimit"
+                        AppLanguage.ITALIAN -> "Avvisi di servizio"
                         else -> "Service alerts"
                     },
                     checked = serviceAlertsOn,
@@ -339,6 +355,7 @@ fun SettingsScreen(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Καιρικες ειδοποιησεις"
                         AppLanguage.ALBANIAN -> "Njoftimet e motit"
+                        AppLanguage.ITALIAN -> "Avvisi meteo"
                         else -> "Weather alerts"
                     },
                     checked = weatherAlertsOn,
@@ -349,6 +366,7 @@ fun SettingsScreen(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Ειδοποιησεις κοντινου σταθμου"
                         AppLanguage.ALBANIAN -> "Njoftimet e stacionit te afert"
+                        AppLanguage.ITALIAN -> "Avvisi stazione vicina"
                         else -> "Nearby station alerts"
                     },
                     checked = nearbyAlertsOn,
@@ -359,6 +377,7 @@ fun SettingsScreen(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Πρωινη ενημερωση (07:00)"
                         AppLanguage.ALBANIAN -> "Perditesimi i mengjesit (07:00)"
+                        AppLanguage.ITALIAN -> "Riepilogo mattutino (07:00)"
                         else -> "Morning digest (07:00)"
                     },
                     checked = morningDigestOn,
@@ -384,12 +403,14 @@ fun SettingsScreen(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Τελευταια ενημερωση"
                         AppLanguage.ALBANIAN -> "Perditesimi i fundit"
+                        AppLanguage.ITALIAN -> "Ultimo aggiornamento"
                         else -> "Last updated"
                     },
                     value = lastSync?.toString()?.replace("T", " ")?.substringBefore(".")
                         ?: when (lang) {
                             AppLanguage.GREEK -> "Ποτε"
                             AppLanguage.ALBANIAN -> "Asnjehere"
+                            AppLanguage.ITALIAN -> "Mai"
                             else -> "Never"
                         },
                 )
@@ -429,6 +450,7 @@ fun SettingsScreen(
                         text = when (lang) {
                             AppLanguage.GREEK -> "Ελεγχος τωρα"
                             AppLanguage.ALBANIAN -> "Kontrollo tani"
+                            AppLanguage.ITALIAN -> "Controlla ora"
                             else -> "Check now"
                         },
                         style = MaterialTheme.typography.bodyLarge,
@@ -444,12 +466,14 @@ fun SettingsScreen(
                 SettingsSection(title = when (lang) {
                     AppLanguage.GREEK -> "Εισιτηρια"
                     AppLanguage.ALBANIAN -> "Bileta"
+                    AppLanguage.ITALIAN -> "Biglietti"
                     else -> "Tickets"
                 }) {
                     SettingsRow(
                         title = when (lang) {
                             AppLanguage.GREEK -> "Τιμοκαταλογος εισιτηριων"
                             AppLanguage.ALBANIAN -> "Cmimet e biletave"
+                            AppLanguage.ITALIAN -> "Prezzi dei biglietti"
                             else -> "Ticket prices"
                         },
                         value = "›",
@@ -466,6 +490,7 @@ fun SettingsScreen(
                             text = when (lang) {
                                 AppLanguage.GREEK -> "Ανεπαφη πληρωμη"
                                 AppLanguage.ALBANIAN -> "Pagesa pa kontakt"
+                                AppLanguage.ITALIAN -> "Pagamento contactless"
                                 else -> "Contactless payment"
                             },
                             style = MaterialTheme.typography.bodyLarge,
@@ -474,6 +499,7 @@ fun SettingsScreen(
                             text = when (lang) {
                                 AppLanguage.GREEK -> "Πληρωστε στις πυλες μετρο/τραμ η μεσα σε τραμ και τρενα με Apple Pay, Google Wallet η ανεπαφη καρτα."
                                 AppLanguage.ALBANIAN -> "Paguaj ne portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose cdo karte pa kontakt."
+                                AppLanguage.ITALIAN -> "Paga ai tornelli metro/tram e a bordo di tram e treni con Apple Pay, Google Wallet o qualsiasi carta contactless."
                                 else -> "Tap to pay at metro/tram gates and onboard trams and trains with Apple Pay, Google Wallet, or any contactless card."
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -485,6 +511,7 @@ fun SettingsScreen(
                     text = when (lang) {
                         AppLanguage.GREEK -> "Οι τιμες διαχειριζονται απο OASA, STASY και Hellenic Train. Το Syrmos εμφανιζει τις επισημες τιμες."
                         AppLanguage.ALBANIAN -> "Cmimet menaxhohen nga OASA, STASY dhe Hellenic Train. Syrmos shfaq cmimet zyrtare."
+                        AppLanguage.ITALIAN -> "I prezzi sono gestiti da OASA, STASY e Hellenic Train. Syrmos mostra i prezzi ufficiali."
                         else -> "Prices are managed by OASA, STASY and Hellenic Train. Syrmos displays the official prices."
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -513,12 +540,14 @@ fun SettingsScreen(
                     SettingsSection(title = when (lang) {
                         AppLanguage.GREEK -> "Μηχανη Ariadne"
                         AppLanguage.ALBANIAN -> "Motori i Ariadne"
+                        AppLanguage.ITALIAN -> "Motore Ariadne"
                         else -> "Ariadne engine"
                     }) {
                         SettingsRow(
                             title = when (lang) {
                                 AppLanguage.GREEK -> "Μηχανη"
                                 AppLanguage.ALBANIAN -> "Motori"
+                                AppLanguage.ITALIAN -> "Motore"
                                 else -> "Engine"
                             },
                             value = engine.engineLabel(lang),
@@ -539,17 +568,20 @@ fun SettingsScreen(
             SettingsSection(title = when (lang) {
                 AppLanguage.GREEK -> "Χαρτης δικτυου"
                 AppLanguage.ALBANIAN -> "Harta e rrjetit"
+                AppLanguage.ITALIAN -> "Mappa della rete"
                 else -> "Network map"
             }) {
                 SettingsRow(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Σιδηροδρομικο δικτυο Αθηνας"
                         AppLanguage.ALBANIAN -> "Hekurudhat e zones metropolitane te Athines"
+                        AppLanguage.ITALIAN -> "Rete ferroviaria dell'area metropolitana di Atene"
                         else -> "Athens metropolitan area railways"
                     },
                     value = when (lang) {
                         AppLanguage.GREEK -> "Ανοιγμα >"
                         AppLanguage.ALBANIAN -> "Hap >"
+                        AppLanguage.ITALIAN -> "Apri >"
                         else -> "Open >"
                     },
                     onClick = { openStasyMap() },
@@ -562,17 +594,20 @@ fun SettingsScreen(
             SettingsSection(title = when (lang) {
                 AppLanguage.GREEK -> "Επικοινωνια"
                 AppLanguage.ALBANIAN -> "Kontakt"
+                AppLanguage.ITALIAN -> "Contatto"
                 else -> "Contact"
             }) {
                 SettingsRow(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Επικοινωνια με τον μηχανικο"
                         AppLanguage.ALBANIAN -> "Kontakto zhvilluesin"
+                        AppLanguage.ITALIAN -> "Contatta lo sviluppatore"
                         else -> "Contact engineer"
                     },
                     value = when (lang) {
                         AppLanguage.GREEK -> "Ανοιγμα >"
                         AppLanguage.ALBANIAN -> "Hap >"
+                        AppLanguage.ITALIAN -> "Apri >"
                         else -> "Open >"
                     },
                     onClick = { showContact = true },
@@ -628,21 +663,25 @@ private fun regionLabel(region: String, lang: AppLanguage): String = when (regio
     "athens" -> when (lang) {
         AppLanguage.GREEK -> "Αθηνα"
         AppLanguage.ALBANIAN -> "Athine"
+        AppLanguage.ITALIAN -> "Atene"
         else -> "Athens"
     }
     "thessaloniki" -> when (lang) {
         AppLanguage.GREEK -> "Θεσσαλονικη"
         AppLanguage.ALBANIAN -> "Selanik"
+        AppLanguage.ITALIAN -> "Salonicco"
         else -> "Thessaloniki"
     }
     "patras" -> when (lang) {
         AppLanguage.GREEK -> "Πατρα"
         AppLanguage.ALBANIAN -> "Patra"
+        AppLanguage.ITALIAN -> "Patrasso"
         else -> "Patras"
     }
     "national" -> when (lang) {
         AppLanguage.GREEK -> "Ολη η Ελλαδα"
         AppLanguage.ALBANIAN -> "E gjithe Greqia"
+        AppLanguage.ITALIAN -> "Tutta la Grecia"
         else -> "All Greece"
     }
     else -> region
@@ -728,12 +767,14 @@ private fun AriadneEngineStatus.engineLabel(lang: AppLanguage): String = if (isS
     when (lang) {
         AppLanguage.GREEK -> "Εξυπνη λειτουργια"
         AppLanguage.ALBANIAN -> "Modaliteti i zgjuar"
+        AppLanguage.ITALIAN -> "Modalita intelligente"
         else -> "Clever mode"
     }
 } else {
     when (lang) {
         AppLanguage.GREEK -> "Αναλυτης κανονων"
         AppLanguage.ALBANIAN -> "Analizues rregullash"
+        AppLanguage.ITALIAN -> "Analizzatore di regole"
         else -> "Rule parser"
     }
 }
@@ -742,26 +783,31 @@ private fun AriadneEngineStatus.engineDetail(lang: AppLanguage): String = when (
     AriadneEngineStatus.AVAILABLE -> when (lang) {
         AppLanguage.GREEK -> "Το Gemini Nano διορθωνει την ερωτηση σας πριν την αναλυση, εξ ολοκληρου στη συσκευη."
         AppLanguage.ALBANIAN -> "Gemini Nano rregullon pyetjen tuaj para analizes, plotesisht ne pajisje."
+        AppLanguage.ITALIAN -> "Gemini Nano corregge la tua domanda prima dell'analisi, interamente sul dispositivo."
         else -> "Gemini Nano cleans up your question before parsing, fully on device."
     }
     AriadneEngineStatus.MODEL_NOT_DOWNLOADED -> when (lang) {
         AppLanguage.GREEK -> "Το μοντελο στη συσκευη δεν εχει κατεβει ακομη. Το Syrmos χρησιμοποιει τον αναλυτη κανονων."
         AppLanguage.ALBANIAN -> "Modeli ne pajisje nuk eshte shkarkuar ende. Syrmos perdor analizuesin e rregullave."
+        AppLanguage.ITALIAN -> "Il modello sul dispositivo non e ancora stato scaricato. Syrmos usa l'analizzatore di regole."
         else -> "The on-device model isn't downloaded yet. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.AICORE_MISSING -> when (lang) {
         AppLanguage.GREEK -> "Το AICore δεν υπαρχει σε αυτη τη συσκευη. Το Syrmos χρησιμοποιει τον αναλυτη κανονων."
         AppLanguage.ALBANIAN -> "AICore mungon ne kete pajisje. Syrmos perdor analizuesin e rregullave."
+        AppLanguage.ITALIAN -> "AICore non e presente su questo dispositivo. Syrmos usa l'analizzatore di regole."
         else -> "AICore isn't present on this device. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.DEVICE_NOT_ELIGIBLE -> when (lang) {
         AppLanguage.GREEK -> "Αυτη η συσκευη δεν υποστηριζει μοντελο στη συσκευη. Το Syrmos χρησιμοποιει τον αναλυτη κανονων."
         AppLanguage.ALBANIAN -> "Kjo pajisje nuk mbeshtet model ne pajisje. Syrmos perdor analizuesin e rregullave."
+        AppLanguage.ITALIAN -> "Questo dispositivo non supporta un modello sul dispositivo. Syrmos usa l'analizzatore di regole."
         else -> "This device can't run an on-device model. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.RULE_PARSER -> when (lang) {
         AppLanguage.GREEK -> "Το Syrmos χρησιμοποιει τον ντετερμινιστικο αναλυτη κανονων, εξ ολοκληρου εκτος συνδεσης."
         AppLanguage.ALBANIAN -> "Syrmos perdor analizuesin determinist te rregullave, plotesisht jashte linje."
+        AppLanguage.ITALIAN -> "Syrmos usa l'analizzatore deterministico di regole, completamente offline."
         else -> "Syrmos uses the deterministic rule parser, fully offline."
     }
 }
@@ -770,16 +816,19 @@ private fun AppThemeMode.localizedName(lang: AppLanguage): String = when (this) 
     AppThemeMode.SYSTEM -> when (lang) {
         AppLanguage.GREEK -> "Συστημα"
         AppLanguage.ALBANIAN -> "Sistemi"
+        AppLanguage.ITALIAN -> "Sistema"
         else -> "System"
     }
     AppThemeMode.LIGHT -> when (lang) {
         AppLanguage.GREEK -> "Φωτεινο"
         AppLanguage.ALBANIAN -> "E ndritshme"
+        AppLanguage.ITALIAN -> "Chiaro"
         else -> "Light"
     }
     AppThemeMode.DARK -> when (lang) {
         AppLanguage.GREEK -> "Σκοτεινο"
         AppLanguage.ALBANIAN -> "E erret"
+        AppLanguage.ITALIAN -> "Scuro"
         else -> "Dark"
     }
 }
