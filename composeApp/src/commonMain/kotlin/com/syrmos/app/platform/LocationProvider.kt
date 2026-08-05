@@ -21,4 +21,9 @@ expect fun consumePendingAssistantQuery(): String?
 
 expect fun consumePendingNotificationDeepLink(): Pair<String, String?>?
 
+expect fun readSelectedTabId(): String?
+expect fun writeSelectedTabId(tabId: String)
+expect fun readSelectedDesktopSectionId(): String?
+expect fun writeSelectedDesktopSectionId(sectionId: String)
+
 expect suspend fun requestNotificationPermission()

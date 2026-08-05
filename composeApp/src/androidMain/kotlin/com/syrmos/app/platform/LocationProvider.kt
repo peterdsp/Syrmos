@@ -110,12 +110,33 @@ private val _pendingNotificationDeepLink = kotlinx.coroutines.flow.MutableStateF
 
 fun setPendingNotificationDeepLink(type: String, alertId: String?) {
     _pendingNotificationDeepLink.value = NotificationDeepLink(type, alertId)
+    com.syrmos.app.NotificationNavBus.post(type, alertId)
 }
 
 actual fun consumePendingNotificationDeepLink(): Pair<String, String?>? {
     val current = _pendingNotificationDeepLink.value ?: return null
     _pendingNotificationDeepLink.value = null
     return current.type to current.alertId
+}
+
+private const val SELECTED_TAB_KEY = "syrmos.selectedTab"
+private const val SELECTED_DESKTOP_SECTION_KEY = "syrmos.selectedDesktopSection"
+
+actual fun readSelectedTabId(): String? =
+    appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)?.getString(SELECTED_TAB_KEY, null)
+
+actual fun writeSelectedTabId(tabId: String) {
+    appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        ?.edit()?.putString(SELECTED_TAB_KEY, tabId)?.apply()
+}
+
+actual fun readSelectedDesktopSectionId(): String? =
+    appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        ?.getString(SELECTED_DESKTOP_SECTION_KEY, null)
+
+actual fun writeSelectedDesktopSectionId(sectionId: String) {
+    appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        ?.edit()?.putString(SELECTED_DESKTOP_SECTION_KEY, sectionId)?.apply()
 }
 
 @SuppressLint("MissingPermission")

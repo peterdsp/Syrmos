@@ -40,7 +40,10 @@ struct StationDetailView: View {
                                 .font(.title3)
                                 .foregroundStyle(.secondary)
 
-                            LinePillsRow(lineIds: station.lineIds)
+                            LinePillsRow(
+                                lineIds: station.lineIds,
+                                disruptions: stasyService.lineDisruptions
+                            )
                         }
                         Spacer()
                         Image(systemName: "map.fill")
@@ -151,6 +154,10 @@ struct StationDetailView: View {
                                         .fill(SyrmosData.lineColor(for: departure.lineId))
                                         .frame(width: 12, height: 12)
                                 }
+                            }
+                            .overlay(alignment: .topTrailing) {
+                                LineDisruptionDot(severity: stasyService.lineDisruptions[departure.lineId])
+                                    .offset(x: 3, y: -3)
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -305,11 +312,12 @@ struct StationDetailView: View {
 
 private struct LinePillsRow: View {
     let lineIds: [String]
+    let disruptions: [String: String]
 
     var body: some View {
         FlowLayout(spacing: 6) {
             ForEach(lineIds, id: \.self) { lineId in
-                StationLinePill(lineId: lineId)
+                StationLinePill(lineId: lineId, disruptionSeverity: disruptions[lineId])
             }
         }
     }
@@ -317,6 +325,7 @@ private struct LinePillsRow: View {
 
 private struct StationLinePill: View {
     let lineId: String
+    let disruptionSeverity: String?
 
     var body: some View {
         HStack(spacing: 5) {
@@ -338,6 +347,10 @@ private struct StationLinePill: View {
                     Capsule().strokeBorder(SyrmosData.lineColor(for: lineId).opacity(0.4), lineWidth: 0.8)
                 )
         )
+        .overlay(alignment: .topTrailing) {
+            LineDisruptionDot(severity: disruptionSeverity)
+                .offset(x: 3, y: -3)
+        }
     }
 
     private var shortLabel: String {
