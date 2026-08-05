@@ -67,21 +67,8 @@ struct LinesView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .top, spacing: 8) {
-                ZStack(alignment: .trailing) {
-                    CompactTabHeader(loc[.explore], subtitle: pulseText(loc.language, "Greece, live and community powered", "Ελλαδα, ζωντανα και με τη δυναμη της κοινοτητας", "Greqia, live dhe me fuqine e komunitetit", "Grecia, live e alimentata dalla comunita"))
-                    Button {
-                        railPulseDestination = .contribution
-                    } label: {
-                        Image(systemName: "person.crop.circle")
-                            .font(.title3)
-                            .frame(width: 42, height: 42)
-                            .background(Color.syrmosSurface, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 28)
-                    .accessibilityLabel(pulseText(loc.language, "Local contribution", "Τοπικη συνεισφορα", "Kontributi lokal", "Contributo locale"))
-                }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                exploreHeader
             }
             .toolbar(.hidden, for: .navigationBar)
             .task { await stasyService.fetchAnnouncements() }
@@ -111,6 +98,55 @@ struct LinesView: View {
     }
 
     // MARK: - Segmented Control
+
+    private var exploreHeader: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(loc[.explore])
+                    .font(.title2.weight(.bold))
+                Text(
+                    pulseText(
+                        loc.language,
+                        "Greece, live and community powered",
+                        "Ελλαδα, ζωντανα και με τη δυναμη της κοινοτητας",
+                        "Greqia, live dhe me fuqine e komunitetit",
+                        "Grecia, live e alimentata dalla comunita"
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                railPulseDestination = .contribution
+            } label: {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(Color.syrmosPrimary)
+                    .frame(width: 44, height: 44)
+                    .background(Color.syrmosPrimary.opacity(0.10), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(
+                pulseText(
+                    loc.language,
+                    "Local contribution",
+                    "Τοπικη συνεισφορα",
+                    "Kontributi lokal",
+                    "Contributo locale"
+                )
+            )
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .background(Color.syrmosBackground)
+        .overlay(alignment: .bottom) {
+            Divider().opacity(0.35)
+        }
+    }
 
     private var segmentedControl: some View {
         HStack(spacing: 4) {
@@ -167,30 +203,62 @@ struct LinesView: View {
             .listRowSeparator(.hidden)
         }
 
-        Text(
-            searchText.isEmpty
-                ? pulseText(loc.language, "Explore farther", "Εξερευνησε περισσοτερα", "Eksploro me tej", "Esplora oltre")
-                : pulseText(loc.language, "Search results", "Αποτελεσματα αναζητησης", "Rezultatet", "Risultati")
-        )
-        .font(.headline)
+        HStack(spacing: 8) {
+            Text(
+                searchText.isEmpty
+                    ? pulseText(loc.language, "Explore farther", "Εξερευνησε περισσοτερα", "Eksploro me tej", "Esplora oltre")
+                    : pulseText(loc.language, "Search results", "Αποτελεσματα αναζητησης", "Rezultatet", "Risultati")
+            )
+            .font(.headline)
+
+            Text("\(filteredDestinations.count)")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(Color.syrmosPrimary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color.syrmosPrimary.opacity(0.10), in: Capsule())
+
+            Spacer()
+
+            if filteredDestinations.count > 1 {
+                Image(systemName: "arrow.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
         .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 2, trailing: 16))
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
 
-        ForEach(Array(filteredDestinations.enumerated()), id: \.element.id) { index, dest in
-            NavigationLink {
-                DestinationDetailView(
-                    destination: dest,
-                    onStationViewed: { stationId, lineId in
-                        RecentStationStore.record(stationId: stationId, lineId: lineId)
-                        recentStations = RecentStationStore.load()
+        if filteredDestinations.isEmpty {
+            ContentUnavailableView.search(text: searchText)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 12) {
+                    ForEach(Array(filteredDestinations.enumerated()), id: \.element.id) { index, dest in
+                        NavigationLink {
+                            DestinationDetailView(
+                                destination: dest,
+                                onStationViewed: { stationId, lineId in
+                                    RecentStationStore.record(stationId: stationId, lineId: lineId)
+                                    recentStations = RecentStationStore.load()
+                                }
+                            )
+                        } label: {
+                            DestinationCard(destination: dest, language: loc.language)
+                        }
+                        .buttonStyle(.plain)
+                        .syrmosEntrance(index: index)
                     }
-                )
-            } label: {
-                DestinationCard(destination: dest, language: loc.language)
+                }
+                .scrollTargetLayout()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
             }
-            .syrmosEntrance(index: index)
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            .scrollTargetBehavior(.viewAligned)
+            .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
         }
@@ -209,21 +277,39 @@ struct LinesView: View {
     }
 
     private var browseAllRow: some View {
-        HStack(spacing: 12) {
-            Text("📍")
-                .font(.title3)
-            Text(browseAllLabel)
-                .font(.subheadline)
-                .fontWeight(.medium)
+        HStack(spacing: 13) {
+            Image(systemName: "map.fill")
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Color.syrmosPrimary)
+                .frame(width: 40, height: 40)
+                .background(Color.syrmosPrimary.opacity(0.10), in: Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(browseAllLabel)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(browseAllSubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
             Spacer()
+
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.syrmosPrimary)
+                .frame(width: 30, height: 30)
+                .background(Color.syrmosPrimary.opacity(0.08), in: Circle())
         }
-        .padding(16)
+        .padding(.trailing, 38)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.syrmosPrimary.opacity(0.10), lineWidth: 1)
+        }
     }
 
     // MARK: - Your Network (lines catalog)
@@ -346,6 +432,15 @@ struct LinesView: View {
         case .albanian: return "Shfleto te gjitha 389 stacionet"
         case .italian: return "Sfoglia tutte le 389 stazioni"
         case .english: return "Browse all 389 stations"
+        }
+    }
+
+    private var browseAllSubtitle: String {
+        switch loc.language {
+        case .greek: return "Μετρο, τραμ, προαστιακος και υπεραστικα"
+        case .albanian: return "Metro, tramvaj, periferike dhe nderqytetese"
+        case .italian: return "Metro, tram, suburbano e intercity"
+        case .english: return "Metro, tram, suburban and intercity"
         }
     }
 
@@ -474,53 +569,67 @@ private struct DestinationCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(primaryColor)
-                .frame(width: 4)
-                .padding(.vertical, 8)
-
-            HStack(alignment: .center, spacing: 14) {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .top) {
                 Text(destination.emoji)
-                    .font(.system(size: 28))
-                    .frame(width: 48, height: 48)
-                    .background(primaryColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .font(.system(size: 30))
+                    .frame(width: 54, height: 54)
+                    .background(primaryColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(destination.name(language))
-                        .font(.subheadline)
-                        .fontWeight(.bold)
+                Spacer()
 
-                    Text(destination.hook(language))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-
-                    HStack(spacing: 5) {
-                        ForEach(destination.connections, id: \.self) { lineId in
-                            Text(SyrmosLineTokens.label(for: lineId))
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 2)
-                                .background(SyrmosLineTokens.color(for: lineId), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-                        }
-                    }
-                    .padding(.top, 2)
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.tertiary)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(primaryColor)
+                    .frame(width: 32, height: 32)
+                    .background(primaryColor.opacity(0.10), in: Circle())
             }
-            .padding(.leading, 12)
-            .padding(.trailing, 14)
-            .padding(.vertical, 14)
+
+            Text(destination.name(language))
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Text(destination.hook(language))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            Spacer(minLength: 0)
+
+            HStack(spacing: 5) {
+                ForEach(destination.connections, id: \.self) { lineId in
+                    Text(SyrmosLineTokens.label(for: lineId))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(SyrmosLineTokens.color(for: lineId), in: Capsule())
+                }
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(15)
+        .frame(width: 242, height: 184, alignment: .topLeading)
+        .background {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.syrmosSurface)
+                .overlay {
+                    LinearGradient(
+                        colors: [primaryColor.opacity(0.16), .clear, .clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(primaryColor.opacity(0.14), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.07), radius: 10, y: 4)
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 
