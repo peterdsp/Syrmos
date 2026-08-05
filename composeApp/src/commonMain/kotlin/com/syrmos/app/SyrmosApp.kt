@@ -55,11 +55,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.syrmos.app.platform.consumePendingAssistantQuery
-import com.syrmos.app.platform.consumePendingNotificationDeepLink
 import com.syrmos.app.platform.markOnboardingCompleted
 import com.syrmos.app.platform.readOnboardingCompleted
 import com.syrmos.app.platform.readLastWhatsNewVersion
 import com.syrmos.app.platform.markWhatsNewSeen
+import com.syrmos.app.platform.readSelectedTabId
+import com.syrmos.app.platform.writeSelectedTabId
 import com.syrmos.app.screen.OnboardingScreen
 import com.syrmos.app.screen.WhatsNewDialog
 import org.jetbrains.compose.resources.painterResource
@@ -82,6 +83,7 @@ import com.syrmos.app.tab.MoreTab
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.data.sync.FaresRepository
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
@@ -98,6 +100,7 @@ fun SyrmosApp() {
     val scheduleSync = koinInject<ScheduleSyncRepository>()
     val stationOffsets = koinInject<StationOffsetsRepository>()
     val fares = koinInject<FaresRepository>()
+    val announcements = koinInject<AnnouncementsRepository>()
     val visualOverrides = koinInject<VisualOverridesRepository>()
     var isSeeded by remember { mutableStateOf(false) }
     var hasCompletedOnboarding by remember { mutableStateOf(readOnboardingCompleted()) }
@@ -126,6 +129,7 @@ fun SyrmosApp() {
         runCatching { scheduleSync.hydrateFromBundleIfNeeded() }
         runCatching { stationOffsets.hydrateFromBundleIfNeeded() }
         runCatching { fares.hydrateFromBundleIfNeeded() }
+        runCatching { announcements.hydrateFromBundleIfNeeded() }
         runCatching { visualOverrides.hydrateFromBundleIfNeeded() }
     }
 
@@ -160,22 +164,25 @@ fun SyrmosApp() {
                 if (isWebPlatform && maxWidth >= 900.dp) {
                     DesktopWebApp()
                 } else {
-                    TabNavigator(HomeTab) {
+                    val initialTab = remember { tabFromId(readSelectedTabId()) }
+                    TabNavigator(initialTab) {
                         val pendingQuery = remember { consumePendingAssistantQuery() }
                         var showAriadne by remember { mutableStateOf(pendingQuery != null) }
                         androidx.compose.runtime.CompositionLocalProvider(
                             LocalAriadneOpener provides { showAriadne = true }
                         ) {
-                        val pendingNotif = remember { consumePendingNotificationDeepLink() }
-                        val tabNavigator2 = LocalTabNavigator.current
-                        LaunchedEffect(pendingNotif) {
-                            if (pendingNotif != null) {
-                                tabNavigator2.current = HomeTab
-                            }
-                        }
                         val lang by LocalizationManager.language.collectAsState()
                         val tabNavigator = LocalTabNavigator.current
                         val currentTab = tabNavigator.current
+                        LaunchedEffect(Unit) {
+                            NotificationNavBus.events.collect { event ->
+                                tabNavigator.current = HomeTab
+                                NotificationNavBus.dispatchToHome(event)
+                            }
+                        }
+                        LaunchedEffect(currentTab) {
+                            writeSelectedTabId(tabId(currentTab))
+                        }
                         // Hide the launcher on More (would sit on the
                         // scrolling controls) and on Map (the Locate +
                         // Vehicles buttons already own bottom-right).
@@ -257,6 +264,22 @@ fun SyrmosApp() {
             }
         }
     }
+}
+
+private fun tabFromId(id: String?): Tab = when (id) {
+    "explore" -> ExploreTab
+    "map" -> MapTab
+    "departures" -> DeparturesTab
+    "more" -> MoreTab
+    else -> HomeTab
+}
+
+private fun tabId(tab: Tab): String = when (tab) {
+    ExploreTab -> "explore"
+    MapTab -> "map"
+    DeparturesTab -> "departures"
+    MoreTab -> "more"
+    else -> "home"
 }
 
 @Composable

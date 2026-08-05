@@ -21,6 +21,7 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
         val viewModel = koinInject<StationDetailViewModel>()
         val announcementsRepo = koinInject<AnnouncementsRepository>()
         val feed by announcementsRepo.feed.collectAsState()
+        val lineDisruptions by announcementsRepo.lineDisruptions.collectAsState()
         val lang by LocalizationManager.language.collectAsState()
         val uiState by viewModel.uiState.collectAsState()
 
@@ -49,6 +50,7 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
         StationDetailScreen(
             viewModel = viewModel,
             alertBanner = alertBanner,
+            lineDisruptions = lineDisruptions,
             onBack = { navigator.pop() },
         )
     }

@@ -96,7 +96,10 @@ enum AnnouncementCategory: String {
 
 @MainActor
 final class STASYService: ObservableObject {
-    @Published var announcements: [STASYAnnouncement] = []
+    @Published var announcements: [STASYAnnouncement] = [] {
+        didSet { lineDisruptions = Self.deriveLineDisruptions(from: announcements) }
+    }
+    @Published private(set) var lineDisruptions: [String: String] = [:]
     @Published var isLoading = false
     @Published var lastUpdated: Date?
     @Published var error: String?
@@ -115,6 +118,27 @@ final class STASYService: ObservableObject {
         if announcements.isEmpty && serviceStatus == nil {
             hydrateFromBundleIfNeeded()
         }
+    }
+
+    private static func deriveLineDisruptions(from announcements: [STASYAnnouncement]) -> [String: String] {
+        let rank = ["info": 0, "warning": 1, "closure": 2]
+        var result: [String: String] = [:]
+        for announcement in announcements where announcement.category == .serviceAlert {
+            let severity = announcement.severity.lowercased()
+            for rawLineId in announcement.affectedLines {
+                let lineId = rawLineId.uppercased()
+                if rank[severity, default: 0] > rank[result[lineId] ?? "info", default: 0] {
+                    result[lineId] = severity
+                }
+                if lineId == "M3_AIR", rank[severity, default: 0] > rank[result["M3"] ?? "info", default: 0] {
+                    result["M3"] = severity
+                }
+                if lineId == "M3", rank[severity, default: 0] > rank[result["M3_AIR"] ?? "info", default: 0] {
+                    result["M3_AIR"] = severity
+                }
+            }
+        }
+        return result
     }
 
     private struct APIPayload: Decodable {

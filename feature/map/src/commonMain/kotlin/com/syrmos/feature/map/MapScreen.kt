@@ -77,6 +77,7 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.LineColorIndicator
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.designsystem.component.formatMinutesAway
 import com.syrmos.core.designsystem.component.liquidGlassOverlay
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
@@ -84,6 +85,7 @@ import kotlin.math.roundToInt
 import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
 import org.koin.compose.koinInject
@@ -96,6 +98,8 @@ fun MapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
+    val announcementsRepository = koinInject<AnnouncementsRepository>()
+    val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
 
     Box(
         modifier = Modifier
@@ -219,6 +223,7 @@ fun MapScreen(
 
             StationSheetCard(
                 uiState = uiState,
+                lineDisruptions = lineDisruptions,
                 onClose = viewModel::clearSelection,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -318,6 +323,7 @@ fun MapScreen(
 @Composable
 private fun StationSheetCard(
     uiState: MapUiState,
+    lineDisruptions: Map<String, AlertSeverity>,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -385,7 +391,11 @@ private fun StationSheetCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     uiState.selectedStationLines.forEach { line ->
-                        LineBadge(line = line, lang = lang)
+                        LineBadge(
+                            line = line,
+                            lang = lang,
+                            disruptionSeverity = lineDisruptions[line.id],
+                        )
                     }
                 }
             }
@@ -437,7 +447,11 @@ private fun StationSheetCard(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                LineColorIndicator(lineColor = departure.line.color, size = 10.dp)
+                                LineColorIndicator(
+                                    lineColor = departure.line.color,
+                                    size = 10.dp,
+                                    disruptionSeverity = lineDisruptions[departure.line.id],
+                                )
                                 Column {
                                     Text(
                                         text = departure.line.localizedName(lang),
@@ -503,7 +517,11 @@ private fun StationSheetCard(
 }
 
 @Composable
-private fun LineBadge(line: Line, lang: AppLanguage = AppLanguage.ENGLISH) {
+private fun LineBadge(
+    line: Line,
+    lang: AppLanguage = AppLanguage.ENGLISH,
+    disruptionSeverity: AlertSeverity? = null,
+) {
     Surface(
         shape = RoundedCornerShape(999.dp),
         color = line.color.toComposeColor().copy(alpha = 0.12f),
@@ -513,7 +531,11 @@ private fun LineBadge(line: Line, lang: AppLanguage = AppLanguage.ENGLISH) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            LineColorIndicator(lineColor = line.color, size = 10.dp)
+            LineColorIndicator(
+                lineColor = line.color,
+                size = 10.dp,
+                disruptionSeverity = disruptionSeverity,
+            )
             Text(
                 text = line.localizedName(lang),
                 style = MaterialTheme.typography.labelLarge,

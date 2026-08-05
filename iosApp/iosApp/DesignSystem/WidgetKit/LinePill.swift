@@ -6,6 +6,7 @@ import SwiftUI
 struct LinePill: View {
     let lineId: String
     var size: Size = .regular
+    var disruptionSeverity: String? = nil
 
     enum Size {
         case small, regular, large
@@ -59,7 +60,24 @@ struct LinePill: View {
                 SyrmosLineTokens.color(for: lineId),
                 in: RoundedRectangle(cornerRadius: size.corner, style: .continuous)
             )
+            .overlay(alignment: .topTrailing) {
+                LineDisruptionDot(severity: disruptionSeverity)
+                    .offset(x: 3, y: -3)
+            }
             // Reads in tinted StandBy and accented Lock Screen modes.
             .widgetAccentable()
+    }
+}
+
+struct LineDisruptionDot: View {
+    let severity: String?
+
+    var body: some View {
+        if severity == "warning" || severity == "closure" {
+            Circle()
+                .fill(severity == "closure" ? SyrmosTokens.disruption : SyrmosTokens.warning)
+                .frame(width: 7, height: 7)
+                .accessibilityHidden(true)
+        }
     }
 }

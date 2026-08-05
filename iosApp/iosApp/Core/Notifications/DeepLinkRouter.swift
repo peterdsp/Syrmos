@@ -9,7 +9,7 @@ final class DeepLinkRouter: ObservableObject {
         case serviceAlert(id: String)
         case weatherAlert
         case morningDigest
-        case nearbyAlert
+        case nearbyAlert(stationId: String?)
         case station(id: String)
         case line(id: String)
     }

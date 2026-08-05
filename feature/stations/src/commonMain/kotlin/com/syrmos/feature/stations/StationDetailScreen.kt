@@ -58,12 +58,14 @@ import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineColor
+import com.syrmos.core.model.alerts.AlertSeverity
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun StationDetailScreen(
     viewModel: StationDetailViewModel,
     alertBanner: AlertBannerInfo? = null,
+    lineDisruptions: Map<String, AlertSeverity> = emptyMap(),
     onBack: () -> Unit = {},
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
 ) {
@@ -317,6 +319,7 @@ fun StationDetailScreen(
                             }
                         } else null,
                         language = lang,
+                        disruptionSeverity = lineDisruptions[departure.lineId],
                     )
                 }
             }

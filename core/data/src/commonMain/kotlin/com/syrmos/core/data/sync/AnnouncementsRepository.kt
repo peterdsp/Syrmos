@@ -6,6 +6,7 @@ import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYAnnouncementService
 import com.syrmos.core.network.STASYFeed
 import com.syrmos.core.network.STASYServiceStatus
+import com.syrmos.core.model.alerts.AlertSeverity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +36,9 @@ class AnnouncementsRepository(
     private val _feed = MutableStateFlow(STASYFeed(status = null, announcements = emptyList()))
     val feed: StateFlow<STASYFeed> = _feed.asStateFlow()
 
+    private val _lineDisruptions = MutableStateFlow<Map<String, AlertSeverity>>(emptyMap())
+    val lineDisruptions: StateFlow<Map<String, AlertSeverity>> = _lineDisruptions.asStateFlow()
+
     /** Cold-start hydration from the bundled snapshot. Safe to call multiple
      *  times; a live refresh won't be clobbered because we only hydrate when
      *  the in-memory feed is empty. */
@@ -49,10 +53,10 @@ class AnnouncementsRepository(
         val payload = runCatching {
             json.decodeFromString<BundledPayload>(body)
         }.getOrNull() ?: return
-        _feed.value = STASYFeed(
+        updateFeed(STASYFeed(
             status = payload.status?.toModel(),
             announcements = payload.announcements.map { it.toModel() },
-        )
+        ))
     }
 
     /** Live refresh from /api/announcements. Silent on network failure. */
@@ -62,8 +66,13 @@ class AnnouncementsRepository(
         // Record it so the home offline-alive pill flips to "live".
         LiveDataFreshness.markLive()
         if (latest.status != null || latest.announcements.isNotEmpty()) {
-            _feed.value = latest
+            updateFeed(latest)
         }
+    }
+
+    private fun updateFeed(value: STASYFeed) {
+        _feed.value = value
+        _lineDisruptions.value = deriveLineDisruptions(value.announcements)
     }
 
     @Serializable
@@ -131,4 +140,27 @@ class AnnouncementsRepository(
             validUntil = validUntil,
         )
     }
+}
+
+internal fun deriveLineDisruptions(
+    announcements: List<STASYAnnouncement>,
+): Map<String, AlertSeverity> = buildMap {
+    announcements.asSequence()
+        .filter { it.isServiceAlert }
+        .forEach { announcement ->
+            val severity = AlertSeverity.fromRaw(announcement.severity)
+            announcement.affectedLines.forEach { rawLineId ->
+                val lineId = rawLineId.trim().uppercase()
+                if (lineId.isBlank()) return@forEach
+                val aliases = when (lineId) {
+                    "M3_AIR" -> listOf(lineId, "M3")
+                    "M3" -> listOf(lineId, "M3_AIR")
+                    else -> listOf(lineId)
+                }
+                aliases.forEach { alias ->
+                    val current = get(alias)
+                    if (current == null || severity.rank > current.rank) put(alias, severity)
+                }
+            }
+        }
 }

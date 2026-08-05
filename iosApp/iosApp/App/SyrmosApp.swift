@@ -49,20 +49,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
     ) {
         let category = response.notification.request.content.categoryIdentifier
         let alertId = response.notification.request.content.userInfo["alertId"] as? String ?? ""
+        let stationId = response.notification.request.content.userInfo["stationId"] as? String
 
         Task { @MainActor in
-            switch category {
-            case "SERVICE_ALERT":
-                DeepLinkRouter.shared.pending = .serviceAlert(id: alertId)
-            case "WEATHER_ALERT":
-                DeepLinkRouter.shared.pending = .weatherAlert
-            case "MORNING_DIGEST":
-                DeepLinkRouter.shared.pending = .morningDigest
-            case "NEARBY_ALERT":
-                DeepLinkRouter.shared.pending = .nearbyAlert
-            default:
-                DeepLinkRouter.shared.pending = .morningDigest
-            }
+            routeNotification(category: category, alertId: alertId, stationId: stationId)
         }
         completionHandler()
     }
@@ -110,6 +100,19 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.backgroundColor = .systemBackground
         self.window = window
         window.makeKeyAndVisible()
+
+        if let response = connectionOptions.notificationResponse {
+            let content = response.notification.request.content
+            let alertId = content.userInfo["alertId"] as? String ?? ""
+            let stationId = content.userInfo["stationId"] as? String
+            Task { @MainActor in
+                routeNotification(
+                    category: content.categoryIdentifier,
+                    alertId: alertId,
+                    stationId: stationId
+                )
+            }
+        }
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
@@ -179,9 +182,8 @@ struct RootView: View {
 private let kOnboardingCompletedKey = "syrmos.onboarding.completed.v1"
 
 struct ContentView: View {
-    @State private var selectedTab: SyrmosTab = .home
+    @AppStorage("syrmos.selectedTab") private var selectedTab: SyrmosTab = .home
     @State private var showAriadne = false
-    @State private var deepLinkedAlert: STASYAnnouncement?
     @ObservedObject private var loc = LocalizationManager.shared
     @ObservedObject private var themeManager = ThemeManager.shared
     @ObservedObject private var deepLinkRouter = DeepLinkRouter.shared
@@ -279,21 +281,9 @@ struct ContentView: View {
         .onChange(of: deepLinkRouter.pending) { _, destination in
             guard let destination else { return }
             switch destination {
-            case .station, .line:
-                selectedTab = .home
-            case .serviceAlert(let id):
-                deepLinkRouter.pending = nil
-                selectedTab = .home
-                if let alert = STASYService.cachedAlert(byId: id) {
-                    deepLinkedAlert = alert
-                }
-            case .weatherAlert, .morningDigest, .nearbyAlert:
-                deepLinkRouter.pending = nil
+            case .station(_), .line(_), .serviceAlert(_), .weatherAlert, .morningDigest, .nearbyAlert(_):
                 selectedTab = .home
             }
-        }
-        .sheet(item: $deepLinkedAlert) { alert in
-            AlertDetailSheet(alert: alert, language: loc.language)
         }
     }
 
@@ -307,7 +297,23 @@ struct ContentView: View {
     }
 }
 
-enum SyrmosTab {
+@MainActor
+private func routeNotification(category: String, alertId: String, stationId: String?) {
+    switch category {
+    case "SERVICE_ALERT":
+        DeepLinkRouter.shared.pending = .serviceAlert(id: alertId)
+    case "WEATHER_ALERT":
+        DeepLinkRouter.shared.pending = .weatherAlert
+    case "MORNING_DIGEST":
+        DeepLinkRouter.shared.pending = .morningDigest
+    case "NEARBY_ALERT":
+        DeepLinkRouter.shared.pending = .nearbyAlert(stationId: stationId)
+    default:
+        DeepLinkRouter.shared.pending = .morningDigest
+    }
+}
+
+enum SyrmosTab: String {
     case home, explore, map, departures, more
 }
 

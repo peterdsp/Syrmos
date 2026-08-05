@@ -41,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,9 +59,12 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.FaresRepository
+import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
@@ -75,6 +79,8 @@ import com.syrmos.feature.map.MapStationNode
 import com.syrmos.feature.map.MapViewModel
 import androidx.compose.ui.platform.LocalUriHandler
 import org.koin.compose.koinInject
+import com.syrmos.app.platform.readSelectedDesktopSectionId
+import com.syrmos.app.platform.writeSelectedDesktopSectionId
 
 private enum class DesktopSection(
     val title: String,
@@ -100,8 +106,18 @@ fun DesktopWebApp() {
     val fareInfoLinks by faresRepo.infoLinks.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     val uriHandler = LocalUriHandler.current
-    var selectedSection by remember { mutableStateOf(DesktopSection.Planner) }
+    var selectedSection by remember {
+        mutableStateOf(
+            DesktopSection.entries.firstOrNull {
+                it.name.equals(readSelectedDesktopSectionId(), ignoreCase = true)
+            } ?: DesktopSection.Planner,
+        )
+    }
     var search by remember { mutableStateOf("") }
+
+    LaunchedEffect(selectedSection) {
+        writeSelectedDesktopSectionId(selectedSection.name.lowercase())
+    }
 
     Row(
         modifier = Modifier
@@ -443,6 +459,8 @@ private fun StationSummary(
     lines: List<Line>,
     lang: AppLanguage,
 ) {
+    val announcementsRepository = koinInject<AnnouncementsRepository>()
+    val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             text = station.displayName(),
@@ -461,7 +479,7 @@ private fun StationSummary(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             lines.forEach { line ->
-                LineBadge(line, lang)
+                LineBadge(line, lang, lineDisruptions[line.id])
             }
         }
         Text(
@@ -1063,7 +1081,11 @@ private fun ScheduleRow(
 }
 
 @Composable
-private fun LineBadge(line: Line, lang: AppLanguage = AppLanguage.ENGLISH) {
+private fun LineBadge(
+    line: Line,
+    lang: AppLanguage = AppLanguage.ENGLISH,
+    disruptionSeverity: AlertSeverity? = null,
+) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
@@ -1072,12 +1094,10 @@ private fun LineBadge(line: Line, lang: AppLanguage = AppLanguage.ENGLISH) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(line.color.toComposeColor())
-                .width(8.dp)
-                .height(8.dp),
+        LineColorIndicator(
+            lineColor = line.color,
+            size = 8.dp,
+            disruptionSeverity = disruptionSeverity,
         )
         Text(
             text = line.localizedName(lang),

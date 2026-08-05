@@ -153,6 +153,12 @@ final class NotificationService: ObservableObject {
         content.body = alert.displayTitle(language: lang)
         content.sound = .default
         content.categoryIdentifier = "NEARBY_ALERT"
+        content.userInfo = [
+            "stationId": closeStations.first?.station.stationIds.first
+                ?? closeStations.first?.station.id
+                ?? "",
+            "alertId": alert.id,
+        ]
 
         let request = UNNotificationRequest(
             identifier: "syrmos.nearby.\(prefix.hashValue)",

@@ -19,17 +19,19 @@ struct HomeView: View {
     @State private var isNearMeExpanded = true
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
+    @AppStorage("syrmos.selectedTab") private var selectedTab: SyrmosTab = .home
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 20) {
-                    answerSection.syrmosEntrance(index: 0)
+                    answerSection.syrmosEntrance(index: 0).id(HomeAnchor.weather)
                     alertsSection.syrmosEntrance(index: 1)
                     railNewsSection.syrmosEntrance(index: 2)
-                    nearMeSection.syrmosEntrance(index: 3)
+                    nearMeSection.syrmosEntrance(index: 3).id(HomeAnchor.nearby)
                     liveTrainsSection.syrmosEntrance(index: 4)
                 }
                 .padding(.horizontal)
@@ -60,6 +62,7 @@ struct HomeView: View {
                     nearbyStations: locationService.nearbyStations,
                     alerts: stasyService.announcements
                 )
+                handleDeepLink(deepLinkRouter.pending, proxy: proxy)
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
@@ -97,19 +100,48 @@ struct HomeView: View {
                     LineDetailView(line: line, stations: SyrmosData.stations(for: dest.id))
                 }
             }
-            .onChange(of: deepLinkRouter.pending) { _, destination in
-                guard let destination else { return }
-                switch destination {
-                case .station(let id):
-                    deepLinkRouter.pending = nil
-                    navigationPath.append(DeepLinkStation(id: id))
-                case .line(let id):
-                    deepLinkRouter.pending = nil
-                    navigationPath.append(DeepLinkLine(id: id))
-                default:
-                    break
+            .navigationDestination(for: DeepLinkAlert.self) { dest in
+                if let alert = stasyService.announcements.first(where: { $0.id == dest.id })
+                    ?? STASYService.cachedAlert(byId: dest.id) {
+                    AlertDetailSheet(alert: alert, language: loc.language)
+                } else {
+                    ContentUnavailableView(
+                        "Alert unavailable",
+                        systemImage: "exclamationmark.triangle"
+                    )
                 }
             }
+            .onChange(of: deepLinkRouter.pending) { _, destination in
+                handleDeepLink(destination, proxy: proxy)
+            }
+            }
+        }
+    }
+
+    private func handleDeepLink(
+        _ destination: DeepLinkRouter.Destination?,
+        proxy: ScrollViewProxy
+    ) {
+        guard let destination else { return }
+        selectedTab = .home
+        deepLinkRouter.pending = nil
+        switch destination {
+        case .station(let id):
+            navigationPath.append(DeepLinkStation(id: id))
+        case .line(let id):
+            navigationPath.append(DeepLinkLine(id: id))
+        case .serviceAlert(let id):
+            navigationPath.append(DeepLinkAlert(id: id))
+        case .weatherAlert:
+            withAnimation { proxy.scrollTo(HomeAnchor.weather, anchor: .top) }
+        case .nearbyAlert(let stationId):
+            if let stationId, !stationId.isEmpty {
+                navigationPath.append(DeepLinkStation(id: stationId))
+            } else {
+                withAnimation { proxy.scrollTo(HomeAnchor.nearby, anchor: .top) }
+            }
+        case .morningDigest:
+            withAnimation { proxy.scrollTo(HomeAnchor.weather, anchor: .top) }
         }
     }
 
@@ -283,14 +315,11 @@ struct HomeView: View {
                     HStack(alignment: .center, spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 8) {
-                                Text(next.lineId)
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 2)
-                                    .background(lineColor)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                LinePill(
+                                    lineId: next.lineId,
+                                    size: .small,
+                                    disruptionSeverity: stasyService.lineDisruptions[next.lineId]
+                                )
                                 Text("\(loc[.to]) \(next.direction)")
                                     .font(.headline)
                                     .lineLimit(1)
@@ -492,6 +521,10 @@ struct HomeView: View {
                                     Circle()
                                         .fill(SyrmosData.lineColor(for: lineId))
                                         .frame(width: 8, height: 8)
+                                        .overlay(alignment: .topTrailing) {
+                                            LineDisruptionDot(severity: stasyService.lineDisruptions[lineId])
+                                                .offset(x: 3, y: -3)
+                                        }
                                 }
                             }
 
@@ -784,6 +817,15 @@ struct DeepLinkStation: Hashable {
 
 struct DeepLinkLine: Hashable {
     let id: String
+}
+
+struct DeepLinkAlert: Hashable {
+    let id: String
+}
+
+private enum HomeAnchor: Hashable {
+    case weather
+    case nearby
 }
 
 // MARK: - Hero countdown formatting (mirrors KMP HeroCountdown.kt)
