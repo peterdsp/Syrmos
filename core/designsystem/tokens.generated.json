@@ -1,6 +1,7 @@
 {
   "color": {
     "arrivalFar": "#757575",
+    "arrivalImminent": "#DC2626",
     "arrivalModerate": "#E65100",
     "arrivalSoon": "#2E7D32",
     "brand": "#1466B8",
@@ -36,13 +37,15 @@
     "warningContainerDark": "#291705"
   },
   "motion": {
+    "contextSlideMs": 250,
     "durationFastMs": 150,
     "durationMediumMs": 300,
     "durationSlowMs": 450,
     "glideX1": 0.16,
     "glideX2": 0.3,
     "glideY1": 1.0,
-    "glideY2": 1.0
+    "glideY2": 1.0,
+    "liveVehicleMs": 1000
   },
   "semantic": {
     "color": {
@@ -90,8 +93,12 @@
     "captionSize": 11,
     "clockLine": 18,
     "clockSize": 15,
+    "contextTagLine": 12,
+    "contextTagSize": 10,
     "displayNowLine": 48,
     "displayNowSize": 44,
+    "displayPulseLine": 60,
+    "displayPulseSize": 56,
     "headlineLine": 28,
     "headlineSize": 22,
     "labelLine": 16,

@@ -9,7 +9,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,10 +50,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.DataFreshness
@@ -75,6 +80,7 @@ import com.syrmos.core.common.extensions.parseTime
 import com.syrmos.core.common.extensions.secondsUntil
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
+import com.syrmos.core.designsystem.theme.tokens.SyrmosTypographyTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
@@ -85,6 +91,7 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.model.weather.WeatherSnapshot
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.RailNewsItem
 import com.syrmos.core.network.STASYAnnouncement
@@ -99,6 +106,7 @@ fun HomeScreen(
     onStationClick: (String) -> Unit = {},
     onLineClick: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
+    onMapClick: () -> Unit = {},
     scrollToWeatherRequest: Int = 0,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -127,12 +135,8 @@ fun HomeScreen(
         uiState.lastTrain,
     ) {
         if (scrollToWeatherRequest > 0 && uiState.weather != null) {
-            val weatherIndex =
-                (if (tracked != null) 1 else 0) +
-                    1 +
-                    (if (tracked == null) 1 else 0) +
-                    (if (uiState.lastTrain != null) 1 else 0)
-            listState.animateScrollToItem(weatherIndex)
+            val weatherIsContextCard = uiState.weather?.current?.condition?.isWet == true
+            listState.animateScrollToItem(if (weatherIsContextCard) 2 else 0)
         }
     }
     LaunchedEffect(tracked?.lineId, tracked?.targetEpochSeconds) {
@@ -237,14 +241,30 @@ fun HomeScreen(
         contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        // Answer-first: the lead element is one actionable line ("Next M2 to
-        // Syntagma, 4 min"). Everything else (timetable tiles, alerts, lines)
-        // is demoted below it so the screen reads like a companion, not a
-        // schedule. The offline-alive pill rides in the hero's eyebrow row so
-        // the user always knows whether the countdown is live or predicted.
         val activeTrack = tracked
-        if (activeTrack != null) {
-            item {
+        item {
+            Box(Modifier.staggeredEntrance(0)) {
+            if (activeTrack != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        PulseContextTag(
+                            text = pulseContextLabel(
+                                lang = lang,
+                                isTracking = true,
+                                isDisrupted = false,
+                                isLateNight = false,
+                            ),
+                            color = uiState.lines.firstOrNull { it.id == activeTrack.lineId }
+                                ?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue,
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        FreshnessPill(freshness = uiState.freshness, lang = lang)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TrackAnyTrainChip(lang = lang, onClick = { showTrackPicker = true })
+                    }
                 val trackedLine = uiState.lines.firstOrNull { it.id == activeTrack.lineId }
                 val accent = trackedLine?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
                 TrackingCard(
@@ -254,36 +274,16 @@ fun HomeScreen(
                     lineAccent = accent,
                     onStop = { DepartureTracking.stop() },
                 )
-            }
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth().staggeredEntrance(0),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                FreshnessPill(freshness = uiState.freshness, lang = lang)
-                Spacer(modifier = Modifier.weight(1f))
-                TrackAnyTrainChip(
-                    lang = lang,
-                    onClick = { showTrackPicker = true },
-                )
-            }
-        }
-
-        // Answer-hero shows the "next train" for the nearest station. When
-        // the user is already tracking a specific train, the countdown lives
-        // in the TrackingCard above and this card duplicates it. Hide it
-        // while tracking is active so there is exactly one countdown on
-        // screen. If the user wants a different next train, they can stop
-        // tracking or use the Lines tab.
-        if (activeTrack == null) {
-            item {
-                Box(Modifier.staggeredEntrance(1)) {
+                }
+            } else {
                 AnswerHero(
                     next = uiState.nextDeparture,
                     line = uiState.nextDepartureLine,
                     upcoming = uiState.upcomingDepartures,
+                    lastTrain = uiState.lastTrain,
+                    lastTrainLine = uiState.lastTrainLine,
+                    weather = uiState.weather,
+                    freshness = uiState.freshness,
                     hasLocation = uiState.nearestStations.isNotEmpty(),
                     isTracked = false,
                     nowEpoch = nowEpoch,
@@ -292,6 +292,7 @@ fun HomeScreen(
                     onStationClick = {
                         uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
                     },
+                    onPicker = { showTrackPicker = true },
                     onTrack = {
                         val next = uiState.nextDeparture
                         val station = uiState.nearestStations.firstOrNull()
@@ -321,68 +322,38 @@ fun HomeScreen(
                         }
                     },
                 )
-                }
+            }
             }
         }
 
-        val lastTrain = uiState.lastTrain
-        if (lastTrain != null) {
-            item {
-                Box(Modifier.staggeredEntrance(2)) {
-                    LastTrainTeaser(
-                        lastTrain = lastTrain,
-                        line = uiState.lastTrainLine,
-                        lang = lang,
-                    )
-                }
-            }
+        item {
+            LivingMapStrip(
+                station = uiState.nearestStations.firstOrNull(),
+                line = uiState.nextDepartureLine,
+                liveTrainCount = uiState.liveTrains.size,
+                lang = lang,
+                onClick = onMapClick,
+                modifier = Modifier.staggeredEntrance(1),
+            )
         }
 
         val weather = uiState.weather
         if (weather != null) {
             if (weather.current.condition.isSevere) {
-                item { Box(Modifier.staggeredEntrance(3)) { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) } }
+                item { Box(Modifier.staggeredEntrance(2)) { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) } }
+            } else if (weather.current.condition.isWet) {
+                item { Box(Modifier.staggeredEntrance(2)) { WeatherCard(snapshot = weather, lang = lang) } }
             }
-            item { Box(Modifier.staggeredEntrance(4)) { WeatherCard(snapshot = weather, lang = lang) } }
         }
 
-        // Section order mirrors iOS: alerts/news + service status appear
-        // immediately under the welcome subtitle so users see operational
-        // state before any of the navigation tiles.
         val alerts = uiState.announcements.filter { it.isServiceAlert }
-        if (alerts.isNotEmpty()) {
-            item {
-                AlertsSection(
-                    alerts = alerts,
-                    lang = lang,
-                    onOpenUrl = onOpenUrl,
-                )
-            }
-        } else if (uiState.announcements.isNotEmpty()) {
-            item {
-                LatestNewsSection(
-                    announcement = uiState.announcements.first(),
-                    lang = lang,
-                    onOpenUrl = onOpenUrl,
-                )
-            }
-        }
-
         val status = uiState.serviceStatus
-        // Hide the pill when an alert is already represented in the
-        // serviceAlert cards above — otherwise the same banner text
-        // renders twice on the home screen.
-        val pillRedundant = status?.isAlert == true && alerts.isNotEmpty()
-        if (status != null && !pillRedundant) {
+        if (alerts.isNotEmpty() || uiState.announcements.isNotEmpty() || uiState.railNews.isNotEmpty() || status != null) {
             item {
-                ServiceStatusPill(status = status, lang = lang)
-            }
-        }
-
-        if (uiState.railNews.isNotEmpty()) {
-            item {
-                RailNewsSection(
+                InsightsStream(
+                    announcements = uiState.announcements,
                     news = uiState.railNews,
+                    status = status,
                     lang = lang,
                     onOpenUrl = onOpenUrl,
                 )
@@ -391,9 +362,10 @@ fun HomeScreen(
 
         if (uiState.nearestStations.isNotEmpty()) {
             item {
-                NearbyStationsSection(
+                RadialNearbySection(
                     stations = uiState.nearestStations,
                     lines = uiState.lines,
+                    departures = uiState.upcomingDepartures,
                     lineDisruptions = lineDisruptions,
                     lang = lang,
                     onStationClick = onStationClick,
@@ -683,34 +655,67 @@ private fun AnswerHero(
     next: UpcomingDeparture?,
     line: Line?,
     upcoming: List<UpcomingDeparture> = emptyList(),
+    lastTrain: GetLastTrainUseCase.LastTrain?,
+    lastTrainLine: Line?,
+    weather: WeatherSnapshot?,
+    freshness: DataFreshness,
     hasLocation: Boolean,
     isTracked: Boolean,
     nowEpoch: Long,
     lang: AppLanguage,
     disruptionSeverity: AlertSeverity? = null,
     onStationClick: () -> Unit,
+    onPicker: () -> Unit,
     onTrack: () -> Unit,
 ) {
     val accent = line?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
-    Card(
+    val hour = currentAthensTime().hour
+    val isLateNight = lastTrain != null && (hour >= 22 || hour < 5)
+    val isDisrupted = disruptionSeverity == AlertSeverity.WARNING || disruptionSeverity == AlertSeverity.CLOSURE
+    val stateColor = when {
+        isDisrupted -> SyrmosColorTokens.disruption
+        isLateNight -> SyrmosColorTokens.warning
+        freshness != DataFreshness.LIVE -> SyrmosColorTokens.offline
+        else -> SyrmosColorTokens.brand
+    }
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        stateColor.copy(alpha = if (isSystemInDarkTheme()) 0.18f else 0.12f),
+                        MaterialTheme.colorScheme.surface,
+                    ),
+                ),
+            )
+            .border(1.dp, stateColor.copy(alpha = 0.22f), RoundedCornerShape(24.dp))
             .then(if (next != null) Modifier.clickable(onClick = onStationClick) else Modifier),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .animateContentSize()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = L.NEXT_TRAIN.text(lang).uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PulseContextTag(
+                    text = pulseContextLabel(
+                        lang = lang,
+                        isTracking = false,
+                        isDisrupted = isDisrupted,
+                        isLateNight = isLateNight,
+                    ),
+                    color = stateColor,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                FreshnessPill(freshness = freshness, lang = lang)
+            }
 
             if (next != null) {
                 val athensNow = currentAthensTime()
@@ -719,45 +724,34 @@ private fun AnswerHero(
                 val countdown = heroCountdown(secsAway, L.NOW.text(lang))
                 val countdownColor = heroCountdownColor(countdown, accent)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            LineBadge(
-                                line = line,
-                                fallbackId = next.lineId,
-                                accent = accent,
-                                disruptionSeverity = disruptionSeverity,
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "${L.TO.text(lang)} ${destinationName(line, next.direction, lang)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        Text(
-                            text = next.time,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        sourceConfidenceLabel(next.sourceConfidence, lang)?.let { chipLabel ->
-                            Spacer(modifier = Modifier.height(4.dp))
-                            SourceConfidenceChip(confidence = next.sourceConfidence, label = chipLabel)
-                        }
-                    }
+                Text(
+                    text = if (isLateNight) lastTrainsTonightLabel(lang) else L.NEXT_TRAIN.text(lang),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = stateColor,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LineBadge(
+                        line = line,
+                        fallbackId = next.lineId,
+                        accent = accent,
+                        disruptionSeverity = disruptionSeverity,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = countdown.text,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = countdownColor,
-                        modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
+                        text = "${L.TO.text(lang)} ${destinationName(line, next.direction, lang)}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Text(
+                    text = countdown.text,
+                    style = SyrmosTypographyTokens.displayPulse,
+                    color = countdownColor,
+                    modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
+                )
                 val thenTimes = upcoming.drop(1).take(2)
                     .filter { it.minutesAway > next.minutesAway }
                     .map { formatCountdown(it.minutesAway, lang) }
@@ -768,23 +762,40 @@ private fun AnswerHero(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            if (isTracked) MaterialTheme.colorScheme.surfaceVariant else accent.copy(alpha = 0.14f),
-                        )
-                        .clickable(enabled = !isTracked, onClick = onTrack)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(text = if (isTracked) "📍" else "🔔", style = MaterialTheme.typography.labelMedium)
+                sourceConfidenceLabel(next.sourceConfidence, lang)?.let { chipLabel ->
+                    SourceConfidenceChip(confidence = next.sourceConfidence, label = chipLabel)
+                }
+                if (isDisrupted) {
                     Text(
-                        text = if (isTracked) trackingOnLabel(lang) else trackLabel(lang),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isTracked) MaterialTheme.colorScheme.onSurfaceVariant else accent,
+                        text = disruptionPulseMessage(lang),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = SyrmosColorTokens.disruption,
+                    )
+                }
+                if (lastTrain != null) {
+                    LastTrainTeaser(lastTrain = lastTrain, line = lastTrainLine, lang = lang)
+                }
+                weather?.let {
+                    Text(
+                        text = weatherPulseMessage(it, lang),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PulseActionChip(
+                        icon = if (isTracked) "📍" else "🔔",
+                        label = if (isTracked) trackingOnLabel(lang) else trackLabel(lang),
+                        color = accent,
+                        enabled = !isTracked,
+                        onClick = onTrack,
+                    )
+                    PulseActionChip(
+                        icon = "🎯",
+                        label = trackAnyLabel(lang),
+                        color = SyrmosColorTokens.brand,
+                        onClick = onPicker,
                     )
                 }
             } else {
@@ -796,6 +807,12 @@ private fun AnswerHero(
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                PulseActionChip(
+                    icon = "🎯",
+                    label = trackAnyLabel(lang),
+                    color = SyrmosColorTokens.brand,
+                    onClick = onPicker,
                 )
             }
         }

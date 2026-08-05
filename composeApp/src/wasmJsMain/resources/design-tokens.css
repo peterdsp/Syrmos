@@ -51,6 +51,8 @@
   --sy-duration-fast-ms: 150ms;
   --sy-duration-medium-ms: 300ms;
   --sy-duration-slow-ms: 450ms;
+  --sy-context-slide-ms: 250ms;
+  --sy-live-vehicle-ms: 1000ms;
   --sy-ease-glide: cubic-bezier(0.16, 1.0, 0.30, 1.0);
   /* typography */
   --sy-weight-regular: 400;
@@ -59,6 +61,10 @@
   --sy-weight-bold: 700;
   --sy-font-display-now-size: 44px;
   --sy-font-display-now-line: 48px;
+  --sy-font-display-pulse-size: 56px;
+  --sy-font-display-pulse-line: 60px;
+  --sy-font-context-tag-size: 10px;
+  --sy-font-context-tag-line: 12px;
   --sy-font-headline-size: 22px;
   --sy-font-headline-line: 28px;
   --sy-font-title-size: 17px;
@@ -92,7 +98,6 @@ body {
 }
 
 /* Dark values follow the app theme toggle, not the OS preference. */
-html.dark-mode,
 body.dark-mode {
   --sy-brand: #8ECAFF;
   --sy-surface: #0F1216;
@@ -102,36 +107,4 @@ body.dark-mode {
   --sy-on-surface-muted: #9AA3AF;
   --sy-outline: #2A2F37;
   --sy-warning-container: #291705;
-}
-
-/* Staggered entrance: translateY(12px) + fade, using train-glide easing */
-@keyframes sy-entrance {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.sy-entrance {
-  animation: sy-entrance var(--sy-duration-slow-ms, 450ms) var(--sy-ease-glide) both;
-}
-.sy-entrance-1 { animation-delay: 40ms; }
-.sy-entrance-2 { animation-delay: 80ms; }
-.sy-entrance-3 { animation-delay: 120ms; }
-.sy-entrance-4 { animation-delay: 160ms; }
-.sy-entrance-5 { animation-delay: 200ms; }
-.sy-entrance-6 { animation-delay: 240ms; }
-.sy-entrance-7 { animation-delay: 280ms; }
-.sy-entrance-8 { animation-delay: 320ms; }
-
-/* Live pulse: scale + opacity cycle, 2s */
-@keyframes sy-live-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%      { transform: scale(1.15); opacity: 0.7; }
-}
-.sy-live-pulse {
-  animation: sy-live-pulse 2s ease-in-out infinite;
-}
-
-/* Reduce Motion: degrade all to simple opacity cross-fades */
-@media (prefers-reduced-motion: reduce) {
-  .sy-entrance { animation: none; opacity: 1; transform: none; }
-  .sy-live-pulse { animation: none; }
 }

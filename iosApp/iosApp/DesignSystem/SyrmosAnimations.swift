@@ -2,6 +2,9 @@ import SwiftUI
 
 extension Animation {
     static let trainGlide = Animation.timingCurve(0.16, 1.0, 0.30, 1.0, duration: 0.3)
+    static let pulseMorph = Animation.spring(response: 0.45, dampingFraction: 0.82)
+    static let mapExpand = Animation.spring(response: 0.5, dampingFraction: 0.78)
+    static let contextSlide = Animation.easeOut(duration: 0.25)
 
     static func trainGlide(duration: Double) -> Animation {
         .timingCurve(0.16, 1.0, 0.30, 1.0, duration: duration)
