@@ -67,14 +67,37 @@ def _has_greek(text: str) -> bool:
     return bool(_GREEK_LETTER_RE.search(text))
 
 
+def _is_valid_italian_translation(text: str) -> bool:
+    lowered = text.lower()
+    return bool(text) and not _has_greek(text) and not any(
+        marker in lowered
+        for marker in ("error 500", "that's an error", "there was an error", "server error")
+    )
+
+
 def _translate(text: str, target: str) -> str:
     text = text.strip()
     if not text or (target != "it" and not _has_greek(text)):
         return text
+    if target == "it":
+        try:
+            from deep_translator import GoogleTranslator
+            translated = (GoogleTranslator(source="el", target="it").translate(text) or "").strip()
+            if _is_valid_italian_translation(translated):
+                return translated
+        except Exception:
+            pass
+        try:
+            from deep_translator import MyMemoryTranslator
+            translated = (
+                MyMemoryTranslator(source="greek", target="italian").translate(text) or ""
+            ).strip()
+            return translated if _is_valid_italian_translation(translated) else ""
+        except Exception:
+            return ""
     try:
         from deep_translator import GoogleTranslator
-        source = "auto" if target == "it" else "el"
-        result = GoogleTranslator(source=source, target=target).translate(text)
+        result = GoogleTranslator(source="el", target=target).translate(text)
         return (result or "").strip() or text
     except Exception:
         return text
@@ -247,8 +270,10 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                     " affected_lines, severity, valid_from, valid_until)"
                     " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     " ON CONFLICT(id) DO UPDATE SET"
-                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq, title_it=excluded.title_it,"
-                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq, summary_it=excluded.summary_it,"
+                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
+                    " title_it=COALESCE(NULLIF(excluded.title_it, ''), announcements.title_it),"
+                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq,"
+                    " summary_it=COALESCE(NULLIF(excluded.summary_it, ''), announcements.summary_it),"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
                     " valid_from=excluded.valid_from, valid_until=excluded.valid_until",

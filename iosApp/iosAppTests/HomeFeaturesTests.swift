@@ -101,4 +101,28 @@ final class HomeFeaturesTests: XCTestCase {
         let deps = [dep(-3, "23:00"), dep(12, "23:15")]
         XCTAssertEqual(selectLastTrain(deps, maxLookaheadMinutes: 12 * 60)?.time, "23:15")
     }
+
+    // MARK: - Italian station names
+
+    func test_italianLiveTrainRouteUsesItalianExonyms() {
+        XCTAssertEqual(
+            SyrmosData.resolveStation("Αθήνα", en: "Athens", language: .italian),
+            "Atene"
+        )
+        XCTAssertEqual(
+            SyrmosData.resolveStation("Θεσσαλονίκη", en: "Thessaloniki", language: .italian),
+            "Salonicco"
+        )
+        XCTAssertEqual(
+            SyrmosData.resolveStation("Πειραιάς", en: "Piraeus", language: .italian),
+            "Pireo"
+        )
+    }
+
+    func test_italianStationNameKeepsNamesWithoutAnItalianExonym() {
+        XCTAssertEqual(
+            SyrmosData.resolveStation("Σύνταγμα", en: "Syntagma", language: .italian),
+            "Syntagma"
+        )
+    }
 }
