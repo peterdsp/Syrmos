@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -63,6 +64,7 @@ import kotlinx.datetime.Clock
 import com.syrmos.core.designsystem.animation.livePulse
 import com.syrmos.core.designsystem.animation.staggeredEntrance
 import com.syrmos.core.designsystem.component.OfflinePill
+import com.syrmos.core.designsystem.component.DisruptionDot
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.component.heroCountdown
 import com.syrmos.core.designsystem.component.heroCountdownColor
@@ -75,6 +77,8 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
+import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
@@ -94,9 +98,12 @@ fun HomeScreen(
     onStationClick: (String) -> Unit = {},
     onLineClick: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
+    scrollToWeatherRequest: Int = 0,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
+    val announcementsRepository = koinInject<AnnouncementsRepository>()
+    val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
     var showTrackPicker by remember { mutableStateOf(false) }
     val tracked by DepartureTracking.active.collectAsState()
     var nowEpoch by remember { mutableStateOf(Clock.System.now().epochSeconds) }
@@ -111,6 +118,22 @@ fun HomeScreen(
     val suburbanTracker: RailwayGovLiveTrackerService = koinInject()
     val gpsLineIds = setOf("A1", "A2", "A3", "A4")
     val getNextDeparturesForTrack = koinInject<GetNextDeparturesUseCase>()
+    val listState = rememberLazyListState()
+    LaunchedEffect(
+        scrollToWeatherRequest,
+        uiState.weather,
+        tracked,
+        uiState.lastTrain,
+    ) {
+        if (scrollToWeatherRequest > 0 && uiState.weather != null) {
+            val weatherIndex =
+                (if (tracked != null) 1 else 0) +
+                    1 +
+                    (if (tracked == null) 1 else 0) +
+                    (if (uiState.lastTrain != null) 1 else 0)
+            listState.animateScrollToItem(weatherIndex)
+        }
+    }
     LaunchedEffect(tracked?.lineId, tracked?.targetEpochSeconds) {
         val t = tracked ?: return@LaunchedEffect
         val offsets = livePositionsService.fetchStationOffsets() ?: return@LaunchedEffect
@@ -209,6 +232,7 @@ fun HomeScreen(
     ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
@@ -263,6 +287,7 @@ fun HomeScreen(
                     isTracked = false,
                     nowEpoch = nowEpoch,
                     lang = lang,
+                    disruptionSeverity = uiState.nextDeparture?.lineId?.let(lineDisruptions::get),
                     onStationClick = {
                         uiState.nearestStations.firstOrNull()?.let { onStationClick(it.stationId) }
                     },
@@ -368,6 +393,7 @@ fun HomeScreen(
                 NearbyStationsSection(
                     stations = uiState.nearestStations,
                     lines = uiState.lines,
+                    lineDisruptions = lineDisruptions,
                     lang = lang,
                     onStationClick = onStationClick,
                 )
@@ -660,6 +686,7 @@ private fun AnswerHero(
     isTracked: Boolean,
     nowEpoch: Long,
     lang: AppLanguage,
+    disruptionSeverity: AlertSeverity? = null,
     onStationClick: () -> Unit,
     onTrack: () -> Unit,
 ) {
@@ -697,7 +724,12 @@ private fun AnswerHero(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            LineBadge(line = line, fallbackId = next.lineId, accent = accent)
+                            LineBadge(
+                                line = line,
+                                fallbackId = next.lineId,
+                                accent = accent,
+                                disruptionSeverity = disruptionSeverity,
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "${L.TO.text(lang)} ${destinationName(line, next.direction, lang)}",
@@ -770,7 +802,12 @@ private fun AnswerHero(
 }
 
 @Composable
-private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
+private fun LineBadge(
+    line: Line?,
+    fallbackId: String,
+    accent: Color,
+    disruptionSeverity: AlertSeverity? = null,
+) {
     val label = line?.id ?: fallbackId
     Box(
         modifier = Modifier
@@ -783,6 +820,10 @@ private fun LineBadge(line: Line?, fallbackId: String, accent: Color) {
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = Color.White,
+        )
+        DisruptionDot(
+            severity = disruptionSeverity,
+            modifier = Modifier.align(Alignment.TopEnd),
         )
     }
 }
@@ -1484,6 +1525,7 @@ private fun NewsCard(
 private fun NearbyStationsSection(
     stations: List<com.syrmos.core.model.location.NearestStationResult>,
     lines: List<Line>,
+    lineDisruptions: Map<String, AlertSeverity>,
     lang: AppLanguage,
     onStationClick: (String) -> Unit,
 ) {
@@ -1532,11 +1574,10 @@ private fun NearbyStationsSection(
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             stationLines.take(3).forEach { line ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(line.color.toComposeColor()),
+                                com.syrmos.core.designsystem.component.LineColorIndicator(
+                                    lineColor = line.color,
+                                    size = 8.dp,
+                                    disruptionSeverity = lineDisruptions[line.id],
                                 )
                             }
                         }

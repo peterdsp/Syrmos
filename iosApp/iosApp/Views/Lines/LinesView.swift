@@ -13,6 +13,7 @@ struct LinesView: View {
     @State private var selectedType: TransitType? = nil
     @State private var segment: ExploreSegment = .destinations
     @State private var recentStations: [RecentStation] = RecentStationStore.load()
+    @StateObject private var stasyService = STASYService()
 
     private var filteredLines: [TransitLine] {
         lines.filter { line in
@@ -51,6 +52,7 @@ struct LinesView: View {
                 CompactTabHeader(loc[.explore])
             }
             .toolbar(.hidden, for: .navigationBar)
+            .task { await stasyService.fetchAnnouncements() }
         }
     }
 
@@ -196,7 +198,10 @@ struct LinesView: View {
                                     stations: SyrmosData.stations(for: line.id)
                                 )
                             } label: {
-                                LineRow(line: line)
+                                LineRow(
+                                    line: line,
+                                    disruptionSeverity: stasyService.lineDisruptions[line.id]
+                                )
                             }
                         }
                     }
@@ -348,56 +353,56 @@ struct CuratedDestination: Identifiable, Sendable {
     let lineId: String
     let name: @Sendable (AppLanguage) -> String
     let hook: @Sendable (AppLanguage) -> String
-    let connection: String
+    let connections: [String]
 
     nonisolated static let all: [CuratedDestination] = [
         CuratedDestination(
             id: "airport", emoji: "✈️", stationId: "A1_AIR", lineId: "A1",
             name: { l in l == .greek ? "Αεροδρομιο Αθηνων" : l == .albanian ? "Aeroporti i Athines" : l == .italian ? "Aeroporto di Atene" : "Athens Airport" },
             hook: { l in l == .greek ? "Η πιο γρηγορη διαδρομη στο τερματικο" : l == .albanian ? "Rruga jote me e shpejte drejt terminalit" : l == .italian ? "La via piu veloce per il terminal" : "Your fastest route to the terminal" },
-            connection: "A1 / A2"
+            connections: ["M3", "A1", "A2"]
         ),
         CuratedDestination(
             id: "piraeus", emoji: "⛴️", stationId: "M1_PIR", lineId: "M1",
             name: { l in l == .greek ? "Πειραιας" : l == .albanian ? "Pireu" : l == .italian ? "Porto del Pireo" : "Piraeus Port" },
             hook: { l in l == .greek ? "Πλοια, κρουαζιερες, παραλιακες συνδεσεις" : l == .albanian ? "Tragete, kroaziera, lidhje bregdetare" : l == .italian ? "Traghetti, crociere, collegamenti costieri" : "Ferries, cruises, coastal connections" },
-            connection: "M1 / A1"
+            connections: ["M1", "M3", "A1"]
         ),
         CuratedDestination(
             id: "monastiraki", emoji: "🏛️", stationId: "M1_MON", lineId: "M1",
             name: { l in l == .greek ? "Μοναστηρακι" : l == .albanian ? "Monastiraki" : l == .italian ? "Monastiraki" : "Monastiraki" },
             hook: { l in l == .greek ? "Ιστορικη καρδια, δυο γραμμες μετρο" : l == .albanian ? "Zemra historike, dy linja metroje" : l == .italian ? "Cuore storico, due linee metro" : "Historic heart, two metro lines" },
-            connection: "M1 + M3"
+            connections: ["M1", "M3"]
         ),
         CuratedDestination(
             id: "kifisia", emoji: "🌳", stationId: "M1_KIF", lineId: "M1",
             name: { l in l == .greek ? "Κηφισια" : l == .albanian ? "Kifisia" : l == .italian ? "Kifisia" : "Kifisia" },
             hook: { l in l == .greek ? "Βορεια προαστια, τερμα πρασινης γραμμης" : l == .albanian ? "Periferia veriore, terminali i linjes se gjelber" : l == .italian ? "Periferia nord, capolinea linea verde" : "Northern suburbs, green line terminus" },
-            connection: "M1"
+            connections: ["M1"]
         ),
         CuratedDestination(
             id: "thessaloniki", emoji: "🌆", stationId: "GR_THE", lineId: "IC1",
             name: { l in l == .greek ? "Θεσσαλονικη" : l == .albanian ? "Selanik" : l == .italian ? "Salonicco Centrale" : "Thessaloniki Central" },
             hook: { l in l == .greek ? "Η δευτερη πολη της Ελλαδας με τρενο" : l == .albanian ? "Qyteti i dyte i Greqise me tren" : l == .italian ? "La seconda citta della Grecia in treno" : "Greece's second city by rail" },
-            connection: "IC"
+            connections: ["IC", "TM1"]
         ),
         CuratedDestination(
             id: "meteora", emoji: "⛰️", stationId: "KB_KAL", lineId: "KB1",
             name: { l in l == .greek ? "Μετεωρα / Καλαμπακα" : l == .albanian ? "Meteora / Kalambaka" : l == .italian ? "Meteora / Kalampaka" : "Meteora / Kalampaka" },
             hook: { l in l == .greek ? "Μοναστηρια στον ουρανο" : l == .albanian ? "Manastire ne qiell" : l == .italian ? "Monasteri nel cielo" : "Monasteries in the sky" },
-            connection: "IC"
+            connections: ["IC"]
         ),
         CuratedDestination(
             id: "patras", emoji: "🌉", stationId: "PA_AND", lineId: "PS1",
             name: { l in l == .greek ? "Πατρα" : l == .albanian ? "Patra" : l == .italian ? "Patrasso" : "Patras" },
             hook: { l in l == .greek ? "Η πυλη της Πελοποννησου" : l == .albanian ? "Porta e Peloponezit" : l == .italian ? "La porta del Peloponneso" : "Gateway to the Peloponnese" },
-            connection: "Suburban"
+            connections: ["PS1"]
         ),
         CuratedDestination(
             id: "diakopto", emoji: "🚂", stationId: "KI_DIA", lineId: "DK1",
             name: { l in l == .greek ? "Οδοντωτος Διακοπτου" : l == .albanian ? "Hekurudha e dhembezuar Diakopto" : l == .italian ? "Ferrovia a cremagliera di Diakopto" : "Diakopto Rack Railway" },
             hook: { l in l == .greek ? "Μια απο τις πιο γραφικες διαδρομες της Ευρωπης" : l == .albanian ? "Nje nga udhetimet me piktoreske te Europes" : l == .italian ? "Uno dei percorsi piu panoramici d'Europa" : "One of Europe's most scenic rides" },
-            connection: "Rack"
+            connections: ["DK1"]
         ),
     ]
 }
@@ -408,31 +413,56 @@ private struct DestinationCard: View {
     let destination: CuratedDestination
     let language: AppLanguage
 
+    private var primaryColor: Color {
+        SyrmosLineTokens.color(for: destination.connections.first ?? destination.lineId)
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Text(destination.emoji)
-                .font(.title)
+        HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(primaryColor)
+                .frame(width: 4)
+                .padding(.vertical, 8)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(destination.name(language))
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+            HStack(alignment: .center, spacing: 14) {
+                Text(destination.emoji)
+                    .font(.system(size: 28))
+                    .frame(width: 48, height: 48)
+                    .background(primaryColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                Text(destination.hook(language))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(destination.name(language))
+                        .font(.subheadline)
+                        .fontWeight(.bold)
 
-                Text(destination.connection)
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.syrmosPrimary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.syrmosPrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .padding(.top, 6)
+                    Text(destination.hook(language))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+
+                    HStack(spacing: 5) {
+                        ForEach(destination.connections, id: \.self) { lineId in
+                            Text(SyrmosLineTokens.label(for: lineId))
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 2)
+                                .background(SyrmosLineTokens.color(for: lineId), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tertiary)
             }
+            .padding(.leading, 12)
+            .padding(.trailing, 14)
+            .padding(.vertical, 14)
         }
-        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
@@ -498,13 +528,18 @@ extension TransitType {
 
 struct LineRow: View {
     let line: TransitLine
+    var disruptionSeverity: String? = nil
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
         HStack(spacing: 12) {
-            Circle()
-                .fill(line.color)
-                .frame(width: 12, height: 12)
+            ZStack(alignment: .topTrailing) {
+                Circle()
+                    .fill(line.color)
+                    .frame(width: 12, height: 12)
+                LineDisruptionDot(severity: disruptionSeverity)
+                    .offset(x: 3, y: -3)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(line.localizedName(loc.language))

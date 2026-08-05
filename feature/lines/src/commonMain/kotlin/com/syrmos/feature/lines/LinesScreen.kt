@@ -48,6 +48,7 @@ import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.designsystem.animation.staggeredEntrance
 import com.syrmos.core.designsystem.component.CompactTabHeader
 import com.syrmos.core.designsystem.component.LineColorIndicator
@@ -55,25 +56,27 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Region
+import com.syrmos.core.model.alerts.AlertSeverity
+import org.koin.compose.koinInject
 
 private data class Destination(
     val nameKey: L,
     val hookKey: L,
     val emoji: String,
-    val connectionLabel: String,
+    val connections: List<String>,
     val stationId: String,
     val lineId: String,
 )
 
 private val CURATED_DESTINATIONS = listOf(
-    Destination(L.DEST_AIRPORT, L.DEST_AIRPORT_HOOK, "✈️", "A1 / A2", stationId = "A1_AIR", lineId = "A1"),
-    Destination(L.DEST_PIRAEUS, L.DEST_PIRAEUS_HOOK, "⛴️", "M1 / A1", stationId = "M1_PIR", lineId = "M1"),
-    Destination(L.DEST_MONASTIRAKI, L.DEST_MONASTIRAKI_HOOK, "🏛️", "M1 + M3", stationId = "M1_MON", lineId = "M1"),
-    Destination(L.DEST_KIFISIA, L.DEST_KIFISIA_HOOK, "🌳", "M1", stationId = "M1_KIF", lineId = "M1"),
-    Destination(L.DEST_THESSALONIKI, L.DEST_THESSALONIKI_HOOK, "🌆", "IC", stationId = "GR_THE", lineId = "IC1"),
-    Destination(L.DEST_METEORA, L.DEST_METEORA_HOOK, "⛰️", "IC", stationId = "KB_KAL", lineId = "KB1"),
-    Destination(L.DEST_PATRAS, L.DEST_PATRAS_HOOK, "🌉", "Suburban", stationId = "PA_AND", lineId = "PS1"),
-    Destination(L.DEST_DIAKOPTO, L.DEST_DIAKOPTO_HOOK, "🚂", "Rack", stationId = "KI_DIA", lineId = "DK1"),
+    Destination(L.DEST_AIRPORT, L.DEST_AIRPORT_HOOK, "✈️", listOf("M3", "A1", "A2"), stationId = "A1_AIR", lineId = "A1"),
+    Destination(L.DEST_PIRAEUS, L.DEST_PIRAEUS_HOOK, "⛴️", listOf("M1", "M3", "A1"), stationId = "M1_PIR", lineId = "M1"),
+    Destination(L.DEST_MONASTIRAKI, L.DEST_MONASTIRAKI_HOOK, "🏛️", listOf("M1", "M3"), stationId = "M1_MON", lineId = "M1"),
+    Destination(L.DEST_KIFISIA, L.DEST_KIFISIA_HOOK, "🌳", listOf("M1"), stationId = "M1_KIF", lineId = "M1"),
+    Destination(L.DEST_THESSALONIKI, L.DEST_THESSALONIKI_HOOK, "🌆", listOf("IC", "TM1"), stationId = "GR_THE", lineId = "IC1"),
+    Destination(L.DEST_METEORA, L.DEST_METEORA_HOOK, "⛰️", listOf("IC"), stationId = "KB_KAL", lineId = "KB1"),
+    Destination(L.DEST_PATRAS, L.DEST_PATRAS_HOOK, "🌉", listOf("PS1"), stationId = "PA_AND", lineId = "PS1"),
+    Destination(L.DEST_DIAKOPTO, L.DEST_DIAKOPTO_HOOK, "🚂", listOf("DK1"), stationId = "KI_DIA", lineId = "DK1"),
 )
 
 @Composable
@@ -85,6 +88,8 @@ fun LinesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
+    val announcementsRepository = koinInject<AnnouncementsRepository>()
+    val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
 
     Box(
         modifier = Modifier
@@ -202,6 +207,7 @@ fun LinesScreen(
                                         LineRow(
                                             line = line,
                                             lang = lang,
+                                            disruptionSeverity = lineDisruptions[line.id],
                                             onClick = { onLineClick(line.id) },
                                         )
                                         if (index < linesForType.lastIndex) {
@@ -274,6 +280,20 @@ private fun SegmentedControl(
     }
 }
 
+private fun lineColorForId(lineId: String): androidx.compose.ui.graphics.Color {
+    val normalized = if (lineId.startsWith("M3")) "M3" else lineId
+    return when (normalized) {
+        "M1" -> SyrmosColorTokens.metroGreen
+        "M2" -> SyrmosColorTokens.metroRed
+        "M3" -> SyrmosColorTokens.metroBlue
+        "T6", "T7" -> SyrmosColorTokens.tram
+        else -> SyrmosColorTokens.suburban
+    }
+}
+
+private fun linePillLabel(lineId: String): String =
+    if (lineId.startsWith("M3")) "M3" else lineId
+
 @Composable
 private fun DestinationCard(
     destination: Destination,
@@ -281,6 +301,8 @@ private fun DestinationCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val primaryColor = lineColorForId(destination.connections.first())
+
     Surface(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
@@ -288,41 +310,73 @@ private fun DestinationCard(
         tonalElevation = 1.dp,
         shadowElevation = 2.dp,
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text(
-                text = destination.emoji,
-                style = MaterialTheme.typography.headlineMedium,
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(80.dp)
+                    .padding(vertical = 8.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(primaryColor),
             )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = destination.nameKey.text(lang),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = destination.hookKey.text(lang),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = SyrmosColorTokens.brand.copy(alpha = 0.10f),
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp, end = 14.dp, top = 14.dp, bottom = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(primaryColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = destination.connectionLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = SyrmosColorTokens.brand,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        text = destination.emoji,
+                        style = MaterialTheme.typography.headlineSmall,
                     )
                 }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = destination.nameKey.text(lang),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = destination.hookKey.text(lang),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        destination.connections.forEach { lineId ->
+                            Surface(
+                                shape = RoundedCornerShape(5.dp),
+                                color = lineColorForId(lineId),
+                            ) {
+                                Text(
+                                    text = linePillLabel(lineId),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = androidx.compose.ui.graphics.Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Text(
+                    text = "›",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                )
             }
         }
     }
@@ -551,6 +605,7 @@ private fun TypeFilterRow(
 private fun LineRow(
     line: Line,
     lang: AppLanguage,
+    disruptionSeverity: AlertSeverity? = null,
     onClick: () -> Unit,
 ) {
     Row(
@@ -561,7 +616,11 @@ private fun LineRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LineColorIndicator(lineColor = line.color, size = 12.dp)
+        LineColorIndicator(
+            lineColor = line.color,
+            size = 12.dp,
+            disruptionSeverity = disruptionSeverity,
+        )
 
         Column(modifier = Modifier.weight(1f)) {
             Text(

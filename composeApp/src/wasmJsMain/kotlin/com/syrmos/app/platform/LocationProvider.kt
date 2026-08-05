@@ -72,6 +72,21 @@ actual fun consumePendingAssistantQuery(): String? = null
 
 actual fun consumePendingNotificationDeepLink(): Pair<String, String?>? = null
 
+private const val SELECTED_TAB_KEY = "syrmos.selectedTab"
+private const val SELECTED_DESKTOP_SECTION_KEY = "syrmos.selectedDesktopSection"
+
+actual fun readSelectedTabId(): String? = localStorage.getItem(SELECTED_TAB_KEY)
+
+actual fun writeSelectedTabId(tabId: String) {
+    localStorage.setItem(SELECTED_TAB_KEY, tabId)
+}
+
+actual fun readSelectedDesktopSectionId(): String? = localStorage.getItem(SELECTED_DESKTOP_SECTION_KEY)
+
+actual fun writeSelectedDesktopSectionId(sectionId: String) {
+    localStorage.setItem(SELECTED_DESKTOP_SECTION_KEY, sectionId)
+}
+
 actual suspend fun requestNotificationPermission() {
     // Web does not support push notification permission via this path.
 }

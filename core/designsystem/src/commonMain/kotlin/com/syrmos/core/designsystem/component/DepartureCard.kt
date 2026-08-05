@@ -3,6 +3,7 @@ package com.syrmos.core.designsystem.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.schedule.SourceConfidence
+import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.LineColor
 import org.jetbrains.compose.resources.painterResource
 
@@ -44,6 +46,7 @@ fun DepartureCard(
     sourceLabel: String? = null,
     airportLabel: String? = null,
     language: AppLanguage = AppLanguage.ENGLISH,
+    disruptionSeverity: AlertSeverity? = null,
 ) {
     val vehicleResource = lineId?.let { VehicleIcons.resourceFor(it, direction, isAirport) }
     Card(
@@ -64,15 +67,27 @@ fun DepartureCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (vehicleResource != null) {
-                    Image(
-                        painter = painterResource(vehicleResource),
-                        contentDescription = "$lineName $direction",
-                        modifier = Modifier.width(44.dp).height(28.dp),
-                        contentScale = ContentScale.Fit,
-                    )
-                } else {
-                    LineColorIndicator(lineColor = lineColor, size = 16.dp)
+                Box {
+                    if (vehicleResource != null) {
+                        Image(
+                            painter = painterResource(vehicleResource),
+                            contentDescription = "$lineName $direction",
+                            modifier = Modifier.width(44.dp).height(28.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    } else {
+                        LineColorIndicator(
+                            lineColor = lineColor,
+                            size = 16.dp,
+                            disruptionSeverity = disruptionSeverity,
+                        )
+                    }
+                    if (vehicleResource != null && disruptionSeverity != null) {
+                        DisruptionDot(
+                            severity = disruptionSeverity,
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        )
+                    }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(

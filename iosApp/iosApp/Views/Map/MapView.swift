@@ -443,6 +443,7 @@ struct TransitMapView: View {
 struct StationSheetView: View {
     let station: MapStationNode
     @ObservedObject private var loc = LocalizationManager.shared
+    @StateObject private var stasyService = STASYService()
     @Environment(\.dismiss) private var dismiss
     @State private var departures: [Departure] = []
 
@@ -477,6 +478,7 @@ struct StationSheetView: View {
                 .background(.thinMaterial)
         }
         .onAppear(perform: reloadDepartures)
+        .task { await stasyService.fetchAnnouncements() }
         .onReceive(refreshTimer) { _ in reloadDepartures() }
     }
 
@@ -548,6 +550,10 @@ struct StationSheetView: View {
                     Circle()
                         .fill(SyrmosData.lineColor(for: lineId))
                         .frame(width: 8, height: 8)
+                        .overlay(alignment: .topTrailing) {
+                            LineDisruptionDot(severity: stasyService.lineDisruptions[lineId])
+                                .offset(x: 3, y: -3)
+                        }
                     Text(SyrmosData.line(for: lineId)?.localizedName(loc.language) ?? lineId)
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -580,7 +586,10 @@ struct StationSheetView: View {
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
             ForEach(departures.prefix(6)) { dep in
-                DepartureRowView(departure: dep)
+                DepartureRowView(
+                    departure: dep,
+                    disruptionSeverity: stasyService.lineDisruptions[dep.lineId]
+                )
                 if dep.id != departures.prefix(6).last?.id {
                     Divider().padding(.leading, 28)
                 }
@@ -923,6 +932,7 @@ struct LiveTrainMarker: View {
 
 struct DepartureRowView: View {
     let departure: Departure
+    var disruptionSeverity: String? = nil
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
@@ -931,6 +941,10 @@ struct DepartureRowView: View {
             RoundedRectangle(cornerRadius: 3, style: .continuous)
                 .fill(SyrmosData.lineColor(for: departure.lineId))
                 .frame(width: 4, height: 32)
+                .overlay(alignment: .topTrailing) {
+                    LineDisruptionDot(severity: disruptionSeverity)
+                        .offset(x: 3, y: -3)
+                }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -1151,25 +1165,26 @@ struct SyrmosMKMapView: UIViewRepresentable {
         let existing = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
         var seenSim: Set<String> = []
         var seenLive: Set<String> = []
-        // Refresh the Coordinator's per-train descriptor cache. The
-        // displayLink reads these every frame; we only write here when
-        // the simulator pushes a new snapshot. Position itself is
-        // recomputed live, not tweened from the snapshot's coordinate.
         for ann in existing {
             switch ann.kind {
-            case .simulated:
-                if let train = wantSim[ann.id] {
+            case .simulated(let t):
+                if let train = wantSim[t.id] {
                     context.coordinator.updateDescriptor(for: ann.id, train: train)
-                    seenSim.insert(ann.id)
+                    if let view = mv.view(for: ann) {
+                        let color = UIColor(SyrmosData.line(for: train.lineId)?.color
+                            ?? SyrmosData.lineColor(for: train.lineId))
+                        view.image = Coordinator.triangleTrainImage(color: color, bearing: train.bearing)
+                    }
+                    seenSim.insert(t.id)
                 } else {
                     context.coordinator.dropDescriptor(id: ann.id)
                     mv.removeAnnotation(ann)
                 }
-            case .live:
-                if !wantLive.keys.contains(ann.id) {
+            case .live(let t):
+                if !wantLive.keys.contains(t.id) {
                     mv.removeAnnotation(ann)
                 } else {
-                    seenLive.insert(ann.id)
+                    seenLive.insert(t.id)
                 }
             }
         }
