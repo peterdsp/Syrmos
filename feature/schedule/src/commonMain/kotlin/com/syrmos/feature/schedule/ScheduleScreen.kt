@@ -720,7 +720,14 @@ private fun GlassPill(
 
 private fun lineDisplayLabel(line: Line?, lang: AppLanguage): String {
     if (line == null) return ""
-    return if (lang == AppLanguage.GREEK && line.nameEl.isNotBlank()) line.nameEl else line.name
+    if (lang == AppLanguage.GREEK && line.nameEl.isNotBlank()) return line.nameEl
+    if (lang == AppLanguage.ITALIAN) return line.name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return line.name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return line.name
 }
 
 private fun stationDisplayName(station: Station?, lang: AppLanguage): String {

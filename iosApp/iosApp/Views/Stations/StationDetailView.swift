@@ -155,7 +155,7 @@ struct StationDetailView: View {
 
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 4) {
-                                    Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                                    Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     if departure.serviceType == "airport" {

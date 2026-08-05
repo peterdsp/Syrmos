@@ -224,7 +224,7 @@ private struct LinePickerCard: View {
     }
 
     private func lineLabel(_ line: TransitLine) -> String {
-        loc.language == .greek && !line.nameEl.isEmpty ? line.nameEl : line.name
+        line.localizedName(loc.language)
     }
 
     private var iconName: String {
@@ -502,7 +502,7 @@ private struct FeaturedRow: View {
                 )
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
                     .font(.headline)
                 Text(directionLabel)
                     .font(.subheadline)
@@ -571,7 +571,7 @@ private struct ExpandedRow: View {
                 .padding(.leading, 22)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(SyrmosData.line(for: departure.lineId)?.name ?? departure.lineId)
+                Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                 if departure.sourceConfidence != .unknown {
