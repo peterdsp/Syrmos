@@ -369,7 +369,7 @@ internal actual fun PlatformMapView(
         }
     }
 
-    LaunchedEffect(uiState.mapStations, uiState.selectedStation, mapBand, mapMoveTick) {
+    LaunchedEffect(uiState.mapStations, uiState.selectedStation, uiState.stationDisruptions, mapBand, mapMoveTick) {
         // A major hub is a genuine cross-modal transfer: its lines span 2+ distinct
         // types. is_interchange is over-applied, so this tighter rule is what the
         // country band shows. Same rule on web + iOS.
@@ -414,11 +414,17 @@ internal actual fun PlatformMapView(
             if (!shouldDraw(station)) return@forEach
             val existing = stationMarkers[station.id]
             val isSelected = uiState.selectedStation?.id == station.id
-            // Raw per-line hex (matches web + the polylines); enum only as a last resort.
-            val tintArgb = station.lineIds.firstNotNullOfOrNull { lineColors[it] }
-                ?: station.lineIds.firstNotNullOfOrNull { lineId ->
-                    uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
-                }?.toArgb() ?: 0xFF64748B.toInt()
+            val isClosed = station.stationIds.any { sid ->
+                uiState.stationDisruptions[sid] == com.syrmos.core.model.alerts.AlertSeverity.CLOSURE
+            }
+            val tintArgb = if (isClosed) {
+                0xFF9E9E9E.toInt()
+            } else {
+                station.lineIds.firstNotNullOfOrNull { lineColors[it] }
+                    ?: station.lineIds.firstNotNullOfOrNull { lineId ->
+                        uiState.lines.find { it.id == lineId }?.color?.toComposeColor()
+                    }?.toArgb() ?: 0xFF64748B.toInt()
+            }
 
             // A single clean coloured dot with a white ring, exactly like web's
             // circleMarker. We used to swap in per-station artwork PNGs (the
