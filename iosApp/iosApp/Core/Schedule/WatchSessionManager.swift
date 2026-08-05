@@ -71,6 +71,22 @@ final class WatchSessionManager: NSObject, @unchecked Sendable {
 #if canImport(WatchConnectivity)
 extension WatchSessionManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        recordRailPulse(message)
+    }
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
+        recordRailPulse(userInfo)
+    }
+    private func recordRailPulse(_ payload: [String: Any]) {
+        guard let signal = payload["railpulse_signal"] as? String else { return }
+        let defaults = UserDefaults(suiteName: "group.com.syrmosApp.ios") ?? .standard
+        let confirmed = defaults.object(forKey: "railpulse_confirmed") as? Int ?? 347
+        let thisWeek = defaults.object(forKey: "railpulse_week") as? Int ?? 28
+        defaults.set(confirmed + 1, forKey: "railpulse_confirmed")
+        defaults.set(thisWeek + 1, forKey: "railpulse_week")
+        defaults.set(signal, forKey: "railpulse_last_signal")
+        defaults.set(Date().timeIntervalSince1970, forKey: "railpulse_last_signal_epoch")
+    }
     #if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) {}
     func sessionDidDeactivate(_ session: WCSession) {

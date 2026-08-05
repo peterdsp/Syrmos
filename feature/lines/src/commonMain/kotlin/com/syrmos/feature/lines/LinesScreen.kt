@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -39,6 +40,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -90,8 +94,35 @@ fun LinesScreen(
     val lang by LocalizationManager.language.collectAsState()
     val announcementsRepository = koinInject<AnnouncementsRepository>()
     val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
+    var reportContext by remember { mutableStateOf<RailPulseReportContext?>(null) }
+    var railPulseDestination by remember { mutableStateOf<RailPulseDestination?>(null) }
 
-    Box(
+    val filteredDestinations = CURATED_DESTINATIONS.filter { destination ->
+        if (uiState.searchQuery.isBlank()) return@filter true
+        val query = uiState.searchQuery.lowercase()
+        destination.nameKey.text(lang).lowercase().contains(query) ||
+            destination.hookKey.text(lang).lowercase().contains(query) ||
+            destination.stationId.lowercase().contains(query) ||
+            destination.lineId.lowercase().contains(query) ||
+            destination.connections.any { it.lowercase().contains(query) }
+    }
+
+    when (railPulseDestination) {
+        RailPulseDestination.STATION -> RailPulseStationScreen(
+            lang = lang,
+            onBack = { railPulseDestination = null },
+            onReport = { reportContext = it },
+        )
+        RailPulseDestination.TRAIN -> RailPulseTrainScreen(
+            lang = lang,
+            onBack = { railPulseDestination = null },
+            onReport = { reportContext = it },
+        )
+        RailPulseDestination.CONTRIBUTION -> RailPulseContributionScreen(
+            lang = lang,
+            onBack = { railPulseDestination = null },
+        )
+        null -> Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
@@ -103,6 +134,14 @@ fun LinesScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
+                SearchBar(
+                    query = uiState.searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChanged,
+                    lang = lang,
+                )
+            }
+
+            item {
                 SegmentedControl(
                     selected = uiState.segment,
                     onSelected = viewModel::onSegmentChanged,
@@ -112,7 +151,46 @@ fun LinesScreen(
 
             when (uiState.segment) {
                 ExploreSegment.DESTINATIONS -> {
-                    itemsIndexed(CURATED_DESTINATIONS) { index, dest ->
+                    if (uiState.searchQuery.isBlank()) {
+                        item {
+                            ExploreRailPulseContent(
+                                lang = lang,
+                                onReport = { reportContext = it },
+                                onOpenStation = { railPulseDestination = RailPulseDestination.STATION },
+                                onOpenTrain = { railPulseDestination = RailPulseDestination.TRAIN },
+                            )
+                        }
+                        item {
+                            Text(
+                                text = pulseText(lang, "Explore farther", "Εξερευνησε πιο μακρια", "Eksploro me larg", "Esplora piu lontano"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
+                    } else {
+                        item {
+                            Text(
+                                text = pulseText(lang, "Search results", "Αποτελεσματα αναζητησης", "Rezultatet e kerkimit", "Risultati di ricerca"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
+                    }
+
+                    if (filteredDestinations.isEmpty()) {
+                        item {
+                            Text(
+                                text = pulseText(lang, "No destinations found", "Δεν βρεθηκαν προορισμοι", "Nuk u gjeten destinacione", "Nessuna destinazione trovata"),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 24.dp, horizontal = 8.dp),
+                            )
+                        }
+                    }
+
+                    itemsIndexed(filteredDestinations) { index, dest ->
                         DestinationCard(
                             destination = dest,
                             lang = lang,
@@ -125,18 +203,13 @@ fun LinesScreen(
                         BrowseAllStationsRow(
                             lang = lang,
                             onClick = onBrowseAllClick,
-                            modifier = Modifier.staggeredEntrance(CURATED_DESTINATIONS.size),
+                            modifier = Modifier.staggeredEntrance(filteredDestinations.size),
                         )
                     }
                 }
                 ExploreSegment.YOUR_NETWORK -> {
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            SearchBar(
-                                query = uiState.searchQuery,
-                                onQueryChange = viewModel::onSearchQueryChanged,
-                                lang = lang,
-                            )
                             RegionFilterRow(
                                 selectedRegion = uiState.selectedRegion,
                                 onRegionSelected = viewModel::onRegionSelected,
@@ -231,6 +304,26 @@ fun LinesScreen(
                 .align(Alignment.TopCenter)
                 .zIndex(1f),
         )
+
+        Surface(
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 28.dp).zIndex(2f),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+            shadowElevation = 3.dp,
+        ) {
+            IconButton(onClick = { railPulseDestination = RailPulseDestination.CONTRIBUTION }) {
+                Icon(Icons.Filled.Person, contentDescription = pulseText(lang, "Local contribution", "Τοπικη συνεισφορα", "Kontributi lokal", "Contributo locale"))
+            }
+        }
+    }
+    }
+
+    reportContext?.let { context ->
+        RailPulseQuickReportSheet(
+            context = context,
+            lang = lang,
+            onDismiss = { reportContext = null },
+        )
     }
 }
 
@@ -252,8 +345,8 @@ private fun SegmentedControl(
             ExploreSegment.entries.forEach { segment ->
                 val isSelected = segment == selected
                 val label = when (segment) {
-                    ExploreSegment.DESTINATIONS -> L.DESTINATIONS.text(lang)
-                    ExploreSegment.YOUR_NETWORK -> L.YOUR_NETWORK.text(lang)
+                    ExploreSegment.DESTINATIONS -> pulseText(lang, "Discover", "Ανακαλυψε", "Zbulo", "Scopri")
+                    ExploreSegment.YOUR_NETWORK -> pulseText(lang, "Network", "Δικτυο", "Rrjeti", "Rete")
                 }
                 Surface(
                     modifier = Modifier
@@ -445,10 +538,10 @@ private fun SearchBar(
                 if (query.isEmpty()) {
                     Text(
                         text = when (lang) {
-                            AppLanguage.GREEK -> "Αναζητηση γραμμης η σταθμου..."
-                            AppLanguage.ALBANIAN -> "Kerko linje ose stacion..."
-                            AppLanguage.ITALIAN -> "Cerca linea o stazione..."
-                            else -> "Search line or station..."
+                            AppLanguage.GREEK -> "Προορισμος, σταθμος, γραμμη η τρενο..."
+                            AppLanguage.ALBANIAN -> "Destinacion, stacion, linje ose tren..."
+                            AppLanguage.ITALIAN -> "Destinazione, stazione, linea o treno..."
+                            else -> "Destination, station, line or train..."
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),

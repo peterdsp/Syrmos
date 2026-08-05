@@ -16,7 +16,12 @@ struct WatchContentView: View {
         NavigationStack {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let now = context.date.timeIntervalSince1970
-                DeparturesList(snapshot: snap, now: now)
+                DeparturesList(
+                    snapshot: snap,
+                    now: now,
+                    lastSignal: provider.lastRailPulseSignal,
+                    onReport: provider.submitRailPulse
+                )
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -51,6 +56,8 @@ struct WatchContentView: View {
 private struct DeparturesList: View {
     let snapshot: WatchSnapshot
     let now: TimeInterval
+    let lastSignal: String?
+    let onReport: (String) -> Void
 
     var body: some View {
         let departures = Array(snapshot.departures.prefix(3))
@@ -60,6 +67,7 @@ private struct DeparturesList: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 WatchHeader(stationName: snapshot.stationName)
+                RailPulseWatchCard(lastSignal: lastSignal, onReport: onReport)
 
                 if heroActive, let hero = soonest {
                     HeroDeparture(departure: hero, now: now, language: snapshot.language)
@@ -96,6 +104,37 @@ private struct DeparturesList: View {
             }
             .padding(.horizontal, 2)
         }
+    }
+}
+
+private struct RailPulseWatchCard: View {
+    let lastSignal: String?
+    let onReport: (String) -> Void
+
+    private let actions = ["Crowded", "Delay", "Broken AC", "Normal"]
+
+    var body: some View {
+        VStack(spacing: 9) {
+            Text("TRAIN 1635").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
+            Text("Standing").font(.title3.bold())
+            Text("•••").font(.title2).foregroundStyle(Color(hex: 0xFFC24A))
+            Text("31 confirmed").font(.caption.bold())
+            Text("updated 90 sec").font(.caption2).foregroundStyle(.secondary)
+            if let lastSignal {
+                Text("✓ \(lastSignal)").font(.caption2.bold()).foregroundStyle(.green)
+            }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
+                ForEach(actions, id: \.self) { action in
+                    Button(action) { onReport(action.lowercased()) }
+                        .font(.system(size: 9, weight: .semibold))
+                        .buttonStyle(.borderedProminent)
+                        .tint(action == "Normal" ? .green : action == "Delay" ? .red : .purple)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(10)
+        .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

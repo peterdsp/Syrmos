@@ -3,7 +3,9 @@ package com.syrmos.android
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import com.syrmos.core.common.AppLanguage
@@ -65,10 +67,21 @@ class DepartureTrackingNotifier(private val context: Context) {
         } else {
             tracked.scheduledTime
         }
+        val confirmIntent = Intent(context, RailPulseNotificationReceiver::class.java)
+            .putExtra(RailPulseNotificationReceiver.EXTRA_SIGNAL, "crowded")
+        val confirmPendingIntent = PendingIntent.getBroadcast(
+            context,
+            4202,
+            confirmIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val community = communityLabel(lang)
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(context.applicationInfo.icon)
             .setContentTitle(title)
-            .setContentText(body)
+            .setContentText("$body · $community")
+            .setStyle(Notification.BigTextStyle().bigText("$body\n$community\nStanding room only · 31 confirmations · updated 90 sec ago"))
+            .addAction(0, confirmLabel(lang), confirmPendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setUsesChronometer(true)
@@ -97,6 +110,20 @@ class DepartureTrackingNotifier(private val context: Context) {
         AppLanguage.ALBANIAN -> "drejt"
         AppLanguage.ITALIAN -> "verso"
         else -> "to"
+    }
+
+    private fun communityLabel(lang: AppLanguage) = when (lang) {
+        AppLanguage.GREEK -> "Κοινοτητα: κοσμος"
+        AppLanguage.ALBANIAN -> "Komuniteti: plot"
+        AppLanguage.ITALIAN -> "Comunita: affollato"
+        else -> "Community: crowded"
+    }
+
+    private fun confirmLabel(lang: AppLanguage) = when (lang) {
+        AppLanguage.GREEK -> "Επιβεβαιωση κοσμου"
+        AppLanguage.ALBANIAN -> "Konfirmo turmen"
+        AppLanguage.ITALIAN -> "Conferma affollato"
+        else -> "Confirm crowded"
     }
 
     companion object {

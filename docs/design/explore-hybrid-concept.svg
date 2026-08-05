@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="932" viewBox="0 0 430 932" role="img" aria-labelledby="title desc">
+  <title id="title">Syrmos Explore hybrid concept</title>
+  <desc id="desc">A mobile Explore screen combining immediate journey recommendations, an Ariadne route thread, and an intercity destination deck.</desc>
+  <defs>
+    <linearGradient id="pageGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FBFAF8"/>
+      <stop offset="1" stop-color="#F1EEE9"/>
+    </linearGradient>
+    <linearGradient id="heroGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F5FBF7"/>
+    </linearGradient>
+    <linearGradient id="meteoraGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.58" stop-color="#F7F1FC"/>
+      <stop offset="1" stop-color="#E8DDF4"/>
+    </linearGradient>
+    <linearGradient id="primaryButton" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#087A3E"/>
+      <stop offset="1" stop-color="#169B57"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#2A231C" flood-opacity="0.09"/>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#2A231C" flood-opacity="0.10"/>
+    </filter>
+    <clipPath id="screenClip">
+      <rect width="430" height="932" rx="42"/>
+    </clipPath>
+    <style>
+      .ui { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #171614; }
+      .muted { fill: #77736E; }
+      .tiny { font-size: 10px; }
+      .caption { font-size: 12px; }
+      .body { font-size: 14px; }
+      .label { font-size: 15px; font-weight: 650; }
+      .title { font-size: 25px; font-weight: 760; letter-spacing: -0.6px; }
+      .hero { font-size: 22px; font-weight: 760; letter-spacing: -0.4px; }
+      .metric { font-size: 18px; font-weight: 760; }
+    </style>
+  </defs>
+
+  <g clip-path="url(#screenClip)">
+    <rect width="430" height="932" fill="url(#pageGlow)"/>
+
+    <!-- Status bar -->
+    <text class="ui body" x="28" y="28" font-weight="700">09:41</text>
+    <rect x="170" y="8" width="90" height="27" rx="14" fill="#050505"/>
+    <g fill="#171614">
+      <rect x="355" y="20" width="4" height="7" rx="2"/>
+      <rect x="362" y="17" width="4" height="10" rx="2"/>
+      <rect x="369" y="14" width="4" height="13" rx="2"/>
+      <path d="M382 19c7-7 16-7 23 0l-3 3c-5-5-12-5-17 0zm5 6c4-4 8-4 12 0l-3 3c-2-2-4-2-6 0z"/>
+      <rect x="409" y="16" width="15" height="9" rx="2" fill="none" stroke="#171614" stroke-width="1.5"/>
+      <rect x="411" y="18" width="10" height="5" rx="1"/>
+    </g>
+
+    <!-- Header and search -->
+    <text class="ui title" x="24" y="73">Eksploro</text>
+    <circle cx="390" cy="64" r="19" fill="#FFFFFF" stroke="#E7E2DC"/>
+    <path d="M383 65a7 7 0 1 1 2 5l-4 4" fill="none" stroke="#5F5A55" stroke-width="2" stroke-linecap="round"/>
+    <path d="M383 59v6h5" fill="none" stroke="#5F5A55" stroke-width="2" stroke-linecap="round"/>
+
+    <rect x="20" y="92" width="390" height="52" rx="22" fill="#FFFFFF" stroke="#E7E2DC" filter="url(#softShadow)"/>
+    <circle cx="46" cy="117" r="8" fill="none" stroke="#5F5A55" stroke-width="2"/>
+    <path d="M52 123l6 6" stroke="#5F5A55" stroke-width="2" stroke-linecap="round"/>
+    <text class="ui body muted" x="72" y="123">Ku dëshiron të shkosh?</text>
+
+    <!-- Context controls -->
+    <g class="ui caption">
+      <rect x="20" y="158" width="158" height="38" rx="19" fill="#FFFFFF" stroke="#E3DED7"/>
+      <path d="M39 171a7 7 0 0 1 14 0c0 7-7 12-7 12s-7-5-7-12z" fill="none" stroke="#2D2A27" stroke-width="1.8"/>
+      <circle cx="46" cy="171" r="2.2" fill="#2D2A27"/>
+      <text x="61" y="181" font-weight="650">Nga Kallithea</text>
+
+      <rect x="186" y="158" width="78" height="38" rx="19" fill="#E9F4FF" stroke="#C9E0F6"/>
+      <circle cx="205" cy="177" r="7" fill="none" stroke="#0877D1" stroke-width="1.7"/>
+      <path d="M205 173v4l3 2" stroke="#0877D1" stroke-width="1.7" stroke-linecap="round"/>
+      <text x="218" y="181" fill="#0877D1" font-weight="700">Tani</text>
+
+      <rect x="272" y="158" width="138" height="38" rx="19" fill="#FFFFFF" stroke="#E3DED7"/>
+      <text x="291" y="181" font-weight="650">Deri 45 min</text>
+      <path d="M390 173l5 5 5-5" fill="none" stroke="#77736E" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+
+    <!-- Now Lens hero -->
+    <rect x="20" y="210" width="390" height="344" rx="26" fill="url(#heroGlow)" filter="url(#shadow)"/>
+    <rect x="38" y="228" width="175" height="27" rx="14" fill="#DFF3E6"/>
+    <path d="M54 235l-5 9h6l-2 7 10-12h-6l2-4z" fill="#087A3E"/>
+    <text class="ui caption" x="69" y="246" fill="#087A3E" font-weight="760">Zgjedhja më e shpejtë</text>
+
+    <circle cx="58" cy="287" r="23" fill="#E6F4EA"/>
+    <path d="M44 298h28M48 294h20M50 278h16M53 278v16M59 278v16M65 278v16M48 277l11-8 11 8" fill="none" stroke="#087A3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text class="ui hero" x="94" y="284">Monastiraki</text>
+    <text class="ui caption muted" x="94" y="305">Zemra historike, pa ndërrim</text>
+
+    <!-- Ariadne route thread -->
+    <path d="M56 365 C105 365 111 329 164 329 S243 365 302 329 S344 336 370 336" fill="none" stroke="#D7E9DC" stroke-width="11" stroke-linecap="round"/>
+    <path d="M56 365 C105 365 111 329 164 329 S243 365 302 329 S344 336 370 336" fill="none" stroke="#0B8B48" stroke-width="4" stroke-linecap="round"/>
+    <g fill="#FFFFFF" stroke="#0B8B48" stroke-width="3">
+      <circle cx="56" cy="365" r="8"/>
+      <circle cx="164" cy="329" r="6"/>
+      <circle cx="302" cy="329" r="6"/>
+      <circle cx="370" cy="336" r="8"/>
+    </g>
+    <circle cx="56" cy="365" r="3" fill="#0B8B48" stroke="none"/>
+    <circle cx="370" cy="336" r="3" fill="#0B8B48" stroke="none"/>
+    <text class="ui tiny muted" x="38" y="389">Kallithea</text>
+    <text class="ui tiny muted" x="334" y="359">Monastiraki</text>
+    <rect x="197" y="339" width="35" height="21" rx="7" fill="#078A45"/>
+    <text class="ui caption" x="205" y="354" fill="#FFFFFF" font-weight="760">M1</text>
+
+    <!-- Metrics -->
+    <g class="ui">
+      <line x1="116" y1="405" x2="116" y2="446" stroke="#E7E2DC"/>
+      <line x1="218" y1="405" x2="218" y2="446" stroke="#E7E2DC"/>
+      <line x1="313" y1="405" x2="313" y2="446" stroke="#E7E2DC"/>
+      <text class="metric" x="42" y="424" fill="#087A3E">18 min</text>
+      <text class="tiny muted" x="42" y="442">Koha totale</text>
+      <text class="label" x="132" y="424">M1 në 3 min</text>
+      <text class="tiny muted" x="132" y="442">Nisja tjetër</text>
+      <text class="metric" x="236" y="424">€1,20</text>
+      <text class="tiny muted" x="236" y="442">Përafërsisht</text>
+      <text class="label" x="329" y="424">0</text>
+      <text class="tiny muted" x="329" y="442">Ndërrime</text>
+    </g>
+
+    <rect x="38" y="462" width="354" height="30" rx="10" fill="#EEF5FD"/>
+    <circle cx="55" cy="477" r="8" fill="none" stroke="#0877D1" stroke-width="1.7"/>
+    <text class="ui tiny" x="52.7" y="480.5" fill="#0877D1" font-weight="760">i</text>
+    <text class="ui caption" x="70" y="481" fill="#0877D1" font-weight="650">Orar dhe çmim i përafërt</text>
+
+    <rect x="38" y="504" width="354" height="36" rx="15" fill="url(#primaryButton)"/>
+    <text class="ui body" x="170" y="527" fill="#FFFFFF" font-weight="760" style="fill:#FFFFFF">Nis udhëtimin</text>
+    <path d="M300 522h24m-7-7 7 7-7 7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Journey Deck -->
+    <text class="ui label" x="22" y="588">Eksploro më larg</text>
+    <text class="ui caption" x="337" y="588" fill="#0877D1" font-weight="650">Shiko të gjitha</text>
+
+    <rect x="20" y="604" width="390" height="201" rx="23" fill="url(#meteoraGlow)" filter="url(#softShadow)"/>
+    <rect x="20" y="604" width="5" height="201" rx="2.5" fill="#6F2DA8"/>
+    <text class="ui tiny" x="42" y="628" fill="#6F2DA8" font-weight="760" letter-spacing="0.8">UDHËTIM RAJONAL</text>
+    <text class="ui hero" x="42" y="658">Meteora /</text>
+    <text class="ui hero" x="42" y="684">Kalambaka</text>
+    <text class="ui caption muted" x="42" y="706">Manastire mbi shkëmbinj</text>
+
+    <!-- Restrained scenic illustration -->
+    <circle cx="346" cy="639" r="28" fill="#FFF6DC" opacity="0.9"/>
+    <path d="M252 719l32-61 20 27 31-65 53 99z" fill="#D3C2E3"/>
+    <path d="M276 719l30-50 22 27 20-38 40 61z" fill="#B79ACA"/>
+    <path d="M308 657h38v28h-38z" fill="#F4E9D7"/>
+    <path d="M304 657l23-17 23 17z" fill="#A85A3A"/>
+    <rect x="322" y="670" width="9" height="15" fill="#78523F"/>
+    <path d="M246 722h150" stroke="#6F2DA8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M270 714h64c15 0 25 4 35 8h-99z" fill="#FFFFFF" stroke="#6F2DA8" stroke-width="2"/>
+    <rect x="282" y="708" width="13" height="6" rx="2" fill="#B9D9F2"/>
+    <rect x="300" y="708" width="13" height="6" rx="2" fill="#B9D9F2"/>
+    <rect x="318" y="708" width="13" height="6" rx="2" fill="#B9D9F2"/>
+
+    <g class="ui">
+      <rect x="42" y="734" width="82" height="48" rx="12" fill="#FFFFFF" opacity="0.86"/>
+      <text class="label" x="56" y="755">3 h 48 min</text>
+      <text class="tiny muted" x="56" y="772">Koha totale</text>
+
+      <rect x="132" y="734" width="72" height="48" rx="12" fill="#FFFFFF" opacity="0.86"/>
+      <text class="label" x="146" y="755">nga €18</text>
+      <text class="tiny muted" x="146" y="772">Çmimi</text>
+
+      <rect x="212" y="734" width="79" height="48" rx="12" fill="#FFFFFF" opacity="0.86"/>
+      <text class="label" x="226" y="755">1 ndërrim</text>
+      <text class="tiny muted" x="226" y="772">Lidhja</text>
+
+      <rect x="299" y="734" width="92" height="48" rx="12" fill="#FFFFFF" opacity="0.86"/>
+      <text class="caption" x="313" y="754" fill="#6F2DA8" font-weight="760">I përafërt</text>
+      <text class="tiny muted" x="313" y="772">Kontrollo</text>
+    </g>
+
+    <!-- Floating Ariadne control -->
+    <circle cx="376" cy="817" r="28" fill="#FFFFFF" filter="url(#shadow)" stroke="#D9E6F4"/>
+    <path d="M362 808c6-7 22-7 28 0v20h-28z" fill="#0A4C85"/>
+    <circle cx="369" cy="813" r="6" fill="#FFF"/>
+    <circle cx="383" cy="813" r="6" fill="#FFF"/>
+    <circle cx="369" cy="813" r="2" fill="#171614"/>
+    <circle cx="383" cy="813" r="2" fill="#171614"/>
+    <path d="M373 820l3 4 3-4z" fill="#E2A446"/>
+    <path d="M362 807l7-4 2 7m19-3-7-4-2 7" fill="none" stroke="#0A4C85" stroke-width="3"/>
+
+    <!-- Bottom navigation -->
+    <rect x="12" y="844" width="406" height="76" rx="34" fill="#FFFFFF" fill-opacity="0.96" stroke="#E7E2DC" filter="url(#shadow)"/>
+    <g class="ui tiny" text-anchor="middle">
+      <path d="M48 878l16-14 16 14v18H68v-12h-8v12H48z" fill="#252321"/>
+      <text x="64" y="911">Kryesore</text>
+
+      <circle cx="142" cy="879" r="23" fill="#E8F1FF"/>
+      <circle cx="142" cy="878" r="12" fill="#1769C2"/>
+      <path d="M137 883l4-9 7-4-4 9z" fill="#FFFFFF"/>
+      <text x="142" y="911" fill="#1769C2" font-weight="760">Eksploro</text>
+
+      <path d="M208 866l12 6 12-6v30l-12 6-12-6-12 6v-30z" fill="#252321"/>
+      <path d="M208 866v30m12-24v30" stroke="#FFFFFF" stroke-width="1.4"/>
+      <text x="220" y="911">Harta</text>
+
+      <path d="M283 882h17l13-15h7l-8 15h13c4 0 7 2 7 5s-3 5-7 5h-13l8 15h-7l-13-15h-17l-6 7h-5l3-12-3-12h5z" transform="translate(0,-6)" fill="#252321"/>
+      <text x="302" y="911">Aeroporti</text>
+
+      <circle cx="376" cy="879" r="17" fill="#252321"/>
+      <circle cx="369" cy="879" r="2" fill="#FFFFFF"/>
+      <circle cx="376" cy="879" r="2" fill="#FFFFFF"/>
+      <circle cx="383" cy="879" r="2" fill="#FFFFFF"/>
+      <text x="376" y="911">Më shumë</text>
+    </g>
+    <rect x="153" y="924" width="124" height="5" rx="2.5" fill="#171614"/>
+  </g>
+</svg>

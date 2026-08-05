@@ -13,6 +13,8 @@ struct LinesView: View {
     @State private var selectedType: TransitType? = nil
     @State private var segment: ExploreSegment = .destinations
     @State private var recentStations: [RecentStation] = RecentStationStore.load()
+    @State private var presentedSheet: ExploreSheet?
+    @State private var railPulseDestination: RailPulseDestination?
     @StateObject private var stasyService = STASYService()
 
     private var filteredLines: [TransitLine] {
@@ -31,9 +33,26 @@ struct LinesView: View {
         }
     }
 
+    private var filteredDestinations: [CuratedDestination] {
+        guard !searchText.isEmpty else { return CuratedDestination.all }
+        let query = searchText.lowercased()
+        return CuratedDestination.all.filter { destination in
+            destination.name(loc.language).lowercased().contains(query)
+                || destination.hook(loc.language).lowercased().contains(query)
+                || destination.stationId.lowercased().contains(query)
+                || destination.lineId.lowercased().contains(query)
+                || destination.connections.contains { $0.lowercased().contains(query) }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
+                ExploreUniversalSearchField(text: $searchText, language: loc.language)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+
                 segmentedControl
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
@@ -49,10 +68,45 @@ struct LinesView: View {
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
-                CompactTabHeader(loc[.explore])
+                ZStack(alignment: .trailing) {
+                    CompactTabHeader(loc[.explore], subtitle: pulseText(loc.language, "Greece, live and community powered", "Ελλαδα, ζωντανα και με τη δυναμη της κοινοτητας", "Greqia, live dhe me fuqine e komunitetit", "Grecia, live e alimentata dalla comunita"))
+                    Button {
+                        railPulseDestination = .contribution
+                    } label: {
+                        Image(systemName: "person.crop.circle")
+                            .font(.title3)
+                            .frame(width: 42, height: 42)
+                            .background(Color.syrmosSurface, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 28)
+                    .accessibilityLabel(pulseText(loc.language, "Local contribution", "Τοπικη συνεισφορα", "Kontributi lokal", "Contributo locale"))
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
             .task { await stasyService.fetchAnnouncements() }
+            .navigationDestination(item: $railPulseDestination) { destination in
+                switch destination {
+                case .station:
+                    RailPulseStationDetailView(language: loc.language) { context in
+                        presentedSheet = .quickReport(context)
+                    }
+                case .train:
+                    RailPulseTrainDetailView(language: loc.language) { context in
+                        presentedSheet = .quickReport(context)
+                    }
+                case .contribution:
+                    RailPulseContributionView(language: loc.language)
+                }
+            }
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .quickReport(let context):
+                RailPulseQuickReportSheet(context: context, language: loc.language)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
         }
     }
 
@@ -65,9 +119,9 @@ struct LinesView: View {
                 let label: String = {
                     switch seg {
                     case .destinations:
-                        return destinationsLabel
+                        return pulseText(loc.language, "Discover", "Ανακαλυψε", "Zbulo", "Scopri")
                     case .yourNetwork:
-                        return yourNetworkLabel
+                        return pulseText(loc.language, "Network", "Δικτυο", "Rrjeti", "Rete")
                     }
                 }()
 
@@ -101,7 +155,29 @@ struct LinesView: View {
 
     @ViewBuilder
     private var destinationsContent: some View {
-        ForEach(Array(CuratedDestination.all.enumerated()), id: \.element.id) { index, dest in
+        if searchText.isEmpty {
+            ExploreRailPulseContent(
+                language: loc.language,
+                onReport: { context in presentedSheet = .quickReport(context) },
+                onOpenStation: { railPulseDestination = .station },
+                onOpenTrain: { railPulseDestination = .train }
+            )
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }
+
+        Text(
+            searchText.isEmpty
+                ? pulseText(loc.language, "Explore farther", "Εξερευνησε περισσοτερα", "Eksploro me tej", "Esplora oltre")
+                : pulseText(loc.language, "Search results", "Αποτελεσματα αναζητησης", "Rezultatet", "Risultati")
+        )
+        .font(.headline)
+        .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 2, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+
+        ForEach(Array(filteredDestinations.enumerated()), id: \.element.id) { index, dest in
             NavigationLink {
                 DestinationDetailView(
                     destination: dest,
@@ -119,15 +195,17 @@ struct LinesView: View {
             .listRowSeparator(.hidden)
         }
 
-        NavigationLink {
-            BrowseAllStationsView()
-        } label: {
-            browseAllRow
+        if searchText.isEmpty {
+            NavigationLink {
+                BrowseAllStationsView()
+            } label: {
+                browseAllRow
+            }
+            .syrmosEntrance(index: filteredDestinations.count)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
         }
-        .syrmosEntrance(index: CuratedDestination.all.count)
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 
     private var browseAllRow: some View {
@@ -210,32 +288,10 @@ struct LinesView: View {
         }
     }
 
-    // MARK: - Lines Toolbar (search + filters)
+    // MARK: - Lines Toolbar
 
     private var linesToolbar: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.tertiary)
-                    .font(.subheadline)
-
-                TextField(searchPlaceholder, text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.subheadline)
-                    .autocorrectionDisabled()
-
-                if !searchText.isEmpty {
-                    Button { searchText = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.tertiary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color.syrmosSurfaceMuted, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(Array(regionOptions.enumerated()), id: \.offset) { _, opt in
