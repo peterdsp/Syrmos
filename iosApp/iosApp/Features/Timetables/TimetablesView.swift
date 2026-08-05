@@ -31,9 +31,9 @@ struct TimetablesView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 18) {
+                VStack(spacing: 10) {
                     DayPickerRow(selectedOffset: $dayOffset)
-                        .padding(.top, 4)
+                        .padding(.top, 2)
 
                     LinePickerCard(
                         selectedLineId: Binding(
@@ -86,8 +86,8 @@ struct TimetablesView: View {
                         .padding(.horizontal, 24)
                         .padding(.top, 4)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 32)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 20)
             }
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
@@ -185,20 +185,20 @@ private struct LinePickerCard: View {
                 }
             }
         } label: {
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 10) {
                 Image(systemName: iconName)
-                    .font(.title3)
+                    .font(.subheadline)
                     .foregroundStyle(tint)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 28, height: 28)
                     .background(tint.opacity(0.15), in: Circle())
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(lineHeaderLabel.uppercased())
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
                     Text(currentLineLabel)
-                        .font(.headline)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -207,13 +207,13 @@ private struct LinePickerCard: View {
                 Spacer()
 
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.footnote.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .glassCardBackground()
-            .contentShape(RoundedRectangle(cornerRadius: 20))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .glassCardBackground(cornerRadius: 16)
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
     }
@@ -274,33 +274,33 @@ private struct StationPickerCard: View {
             }
         } label: {
             let current = stations.first { $0.id == selectedStationId }
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 10) {
                 Image(systemName: "mappin.circle.fill")
-                    .font(.title3)
+                    .font(.subheadline)
                     .foregroundStyle(.tint)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 28, height: 28)
                     .background(.tint.opacity(0.12), in: Circle())
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(stationLabel.uppercased())
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
                     Text(loc.language == .greek ? (current?.nameEl ?? "") : (current?.name ?? ""))
-                        .font(.title3.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.footnote.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .glassCardBackground()
-            .contentShape(RoundedRectangle(cornerRadius: 20))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .glassCardBackground(cornerRadius: 16)
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
     }
@@ -329,7 +329,7 @@ private struct DirectionSection: View {
     enum Mode { case featured, showPast, showAll }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 8) {
             header
 
             if let featured = featuredDeparture {
@@ -346,14 +346,14 @@ private struct DirectionSection: View {
                     ForEach(Array(expandedDepartures.enumerated()), id: \.offset) { idx, dep in
                         ExpandedRow(departure: dep, isToday: isToday, tint: tint)
                         if idx < expandedDepartures.count - 1 {
-                            Divider().opacity(0.18).padding(.leading, 44)
+                            Divider().opacity(0.18).padding(.leading, 36)
                         }
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 if isToday, !pastDepartures.isEmpty {
                     GlassPill(
                         label: earlierLabel,
@@ -379,26 +379,25 @@ private struct DirectionSection: View {
                     }
                 }
             }
-            .padding(.top, 2)
         }
-        .padding(16)
-        .glassCardBackground()
+        .padding(12)
+        .glassCardBackground(cornerRadius: 16)
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.title3.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tint)
-                .frame(width: 36, height: 36)
+                .frame(width: 28, height: 28)
                 .background(tint.opacity(0.15), in: Circle())
             VStack(alignment: .leading, spacing: 0) {
                 Text(title)
-                    .font(.title3.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                 if let subtitle = subtitle {
                     Text(subtitle)
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -491,21 +490,21 @@ private struct FeaturedRow: View {
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 10) {
             Circle()
                 .fill(SyrmosData.lineColor(for: departure.lineId))
-                .frame(width: 36, height: 36)
+                .frame(width: 28, height: 28)
                 .overlay(
                     Image(systemName: "train.side.front.car")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
                 )
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
                 Text(directionLabel)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                 if departure.sourceConfidence != .unknown {
                     SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
@@ -514,24 +513,24 @@ private struct FeaturedRow: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: 1) {
                 if isToday {
                     Text(minutesLabel)
-                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundStyle(tint)
                         .monospacedDigit()
                     Text(departure.time)
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.tertiary)
                 } else {
                     Text(departure.time)
-                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundStyle(tint)
                         .monospacedDigit()
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 
     private var minutesLabel: String {
@@ -563,16 +562,16 @@ private struct ExpandedRow: View {
     @ObservedObject private var loc = LocalizationManager.shared
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             Circle()
                 .fill(tint.opacity(0.18))
-                .overlay(Circle().fill(tint).frame(width: 6, height: 6))
-                .frame(width: 14, height: 14)
-                .padding(.leading, 22)
+                .overlay(Circle().fill(tint).frame(width: 5, height: 5))
+                .frame(width: 12, height: 12)
+                .padding(.leading, 18)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.primary)
                 if departure.sourceConfidence != .unknown {
                     SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
@@ -581,19 +580,19 @@ private struct ExpandedRow: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 if isToday, departure.minutesAway > 0 {
                     Text(departure.minutesAwayDisplay(language: loc.language))
-                        .font(.caption.weight(.medium))
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
                 Text(departure.time)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
                     .monospacedDigit()
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 6)
         .padding(.trailing, 4)
     }
 }
@@ -605,9 +604,9 @@ private struct EmptyRow: View {
              loc.language == .albanian ? "Nuk ka nisje te disponueshme." :
              loc.language == .italian ? "Nessuna partenza disponibile." :
              "No departures available.")
-            .font(.subheadline)
+            .font(.caption)
             .foregroundStyle(.secondary)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
     }
 }
 
@@ -620,14 +619,14 @@ private struct GlassPill: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 Image(systemName: systemImage)
-                    .font(.caption.weight(.semibold))
+                    .font(.caption2.weight(.semibold))
                 Text(label)
-                    .font(.subheadline.weight(.medium))
+                    .font(.caption.weight(.medium))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .foregroundStyle(isActive ? .white : tint)
             .background(
                 Capsule()
@@ -666,7 +665,7 @@ private struct DayPickerRow: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 ForEach(0..<7, id: \.self) { offset in
                     let isSelected = selectedOffset == offset
                     Button {
@@ -674,15 +673,15 @@ private struct DayPickerRow: View {
                             selectedOffset = offset
                         }
                     } label: {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 1) {
                             Text(dayName(offset))
-                                .font(.caption2.weight(.semibold))
+                                .font(.system(size: 9, weight: .semibold))
                                 .foregroundStyle(isSelected ? .white : .secondary)
                             Text(dayNumber(offset))
-                                .font(.headline)
+                                .font(.subheadline.weight(.bold))
                                 .foregroundStyle(isSelected ? .white : .primary)
                         }
-                        .frame(width: 54, height: 54)
+                        .frame(width: 44, height: 44)
                         .background(
                             Circle()
                                 .fill(isSelected ? AnyShapeStyle(Color.metroBlue) : AnyShapeStyle(.thinMaterial))
@@ -694,8 +693,8 @@ private struct DayPickerRow: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 2)
+            .padding(.horizontal, 2)
+            .padding(.vertical, 1)
         }
     }
 

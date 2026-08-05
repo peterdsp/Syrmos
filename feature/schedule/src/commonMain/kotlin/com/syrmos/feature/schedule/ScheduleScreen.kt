@@ -158,9 +158,9 @@ fun ScheduleScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(top = 76.dp, bottom = 140.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(horizontal = 14.dp)
+                .padding(top = 76.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             DayPickerRow(selected = dayOffset, onSelect = { dayOffset = it }, lang = lang)
             LinePickerCard(
@@ -216,7 +216,7 @@ private fun DayPickerRow(selected: Int, onSelect: (Int) -> Unit, lang: AppLangua
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         for (offset in 0..6) {
             val isSelected = offset == selected
@@ -228,7 +228,7 @@ private fun DayPickerRow(selected: Int, onSelect: (Int) -> Unit, lang: AppLangua
                 color = tint,
                 contentColor = fg,
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .clickable { onSelect(offset) },
             ) {
@@ -236,13 +236,13 @@ private fun DayPickerRow(selected: Int, onSelect: (Int) -> Unit, lang: AppLangua
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = dayLabel(offset, lang),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = androidx.compose.ui.unit.TextUnit(9f, androidx.compose.ui.unit.TextUnitType.Sp)),
                             fontWeight = FontWeight.SemiBold,
                             color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = dayNumber(offset).toString(),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = fg,
                         )
@@ -325,14 +325,14 @@ private fun LinePickerCard(
             Surface(
                 shape = CircleShape,
                 color = tint.copy(alpha = 0.15f),
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(28.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Filled.Train, contentDescription = null,
-                        tint = tint, modifier = Modifier.size(20.dp))
+                        tint = tint, modifier = Modifier.size(16.dp))
                 }
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = when (lang) {
@@ -383,14 +383,14 @@ private fun StationPickerCard(
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(28.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Filled.LocationOn, contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                 }
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = when (lang) {
@@ -429,12 +429,12 @@ private fun StationPickerCard(
 private fun GlassCard(content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        Box(modifier = Modifier.padding(16.dp)) { content() }
+        Box(modifier = Modifier.padding(12.dp)) { content() }
     }
 }
 
@@ -463,31 +463,31 @@ private fun DepartureSection(
                 Surface(
                     shape = CircleShape,
                     color = accent.copy(alpha = 0.15f),
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(28.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val icon = if (kind == DirectionKind.OUTBOUND) Icons.Filled.ArrowForward else Icons.Filled.ArrowBack
                         Icon(icon, contentDescription = null, tint = accent,
-                            modifier = Modifier.size(20.dp))
+                            modifier = Modifier.size(16.dp))
                     }
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = directionTitle(kind, destinationLabel, lang),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     if (upcoming.size > 1) {
                         Text(
                             text = upcomingSubtitle(upcoming.size, lang),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             if (featured != null) {
                 FeaturedRow(featured, isToday, accent, lang)
@@ -525,8 +525,8 @@ private fun DepartureSection(
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (isToday && past.isNotEmpty()) {
                     GlassPill(
                         label = when (lang) {
@@ -585,23 +585,23 @@ private fun FeaturedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
         Surface(
             shape = CircleShape,
             color = accent.copy(alpha = 0.2f),
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(28.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Train, contentDescription = null, tint = accent,
-                    modifier = Modifier.size(18.dp))
+                    modifier = Modifier.size(14.dp))
             }
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = d.lineId,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = directionLine(d.destinationLabel, lang),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
@@ -615,19 +615,19 @@ private fun FeaturedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
             if (isToday) {
                 Text(
                     text = if (minsAway <= 1) nowLabel(lang) else com.syrmos.core.designsystem.component.formatMinutesAway(minsAway, lang),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = accent,
                 )
                 Text(
                     text = d.time,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 Text(
                     text = d.time,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = accent,
                 )
@@ -642,27 +642,27 @@ private fun ExpandedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
         .let { it.time.hour * 60 + it.time.minute }
     val minsAway = (d.timeMinutes - nowMin).coerceAtLeast(0)
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .size(12.dp)
+                .size(10.dp)
                 .clip(CircleShape)
                 .background(accent.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center,
         ) {
-            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(accent))
+            Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(accent))
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = d.lineId,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
             )
             Text(
                 text = directionLine(d.destinationLabel, lang),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
@@ -672,17 +672,17 @@ private fun ExpandedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
                 label = scheduleSourceLabel(d.sourceConfidence, lang),
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             if (isToday && minsAway > 0) {
                 Text(
                     text = com.syrmos.core.designsystem.component.formatMinutesAway(minsAway, lang),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = d.time,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -712,11 +712,11 @@ private fun GlassPill(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
-            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge, color = fg, fontWeight = FontWeight.Medium)
+            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium, color = fg, fontWeight = FontWeight.Medium)
         }
     }
 }
