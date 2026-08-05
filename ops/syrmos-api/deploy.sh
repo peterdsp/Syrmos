@@ -57,7 +57,11 @@ export SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
 .venv/bin/python -m scripts.seed_fare_products
 .venv/bin/python -m scripts.seed_station_offsets
 .venv/bin/python -m syrmos_admin.scraper_24mmm || echo "scraper failed, continuing"
-.venv/bin/python -m syrmos_admin.scraper_rail_news || echo "rail news scraper failed, continuing"
+.venv/bin/python -m syrmos_admin.scraper_stasy_announcements || echo "STASY scraper failed, continuing"
+.venv/bin/python -m syrmos_admin.scraper_hellenic_train || echo "Hellenic Train scraper failed, continuing"
+.venv/bin/python -m syrmos_admin.scraper_ht_important_info || echo "Hellenic Train alerts scraper failed, continuing"
+.venv/bin/python -m syrmos_admin.scraper_oseth || echo "OSETH scraper failed, continuing"
+.venv/bin/python -m syrmos_admin.scraper_thessmetro || echo "Thessaloniki Metro scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.generator
 REMOTE
 
@@ -71,15 +75,27 @@ ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-seed-daily.service /etc/systemd/s
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-seed-daily.timer /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-osm-shapes.service /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-osm-shapes.timer /etc/systemd/system/"
-ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-rail-news.service /etc/systemd/system/"
-ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-rail-news.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-stasy.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-stasy.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-hellenic-train.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-hellenic-train.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-ht-important-info.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-ht-important-info.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-oseth.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-oseth.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-thessmetro.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-thessmetro.timer /etc/systemd/system/"
 ssh "$PI" "sudo systemctl daemon-reload"
 ssh "$PI" "sudo systemctl enable --now syrmos-admin.service"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-24mmm.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-backup.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-seed-daily.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-osm-shapes.timer"
-ssh "$PI" "sudo systemctl enable --now syrmos-scraper-rail-news.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-scraper-stasy.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-scraper-hellenic-train.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-scraper-ht-important-info.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-scraper-oseth.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-scraper-thessmetro.timer"
 
 echo ">>> patching ~/syrmos-proxy/nginx.conf with /api/departures/next + /api/ariadne/chat + reloading nginx"
 ssh "$PI" bash <<'REMOTE'

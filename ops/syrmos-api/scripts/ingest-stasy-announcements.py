@@ -38,14 +38,17 @@ def _translate_factory(target: str):
                 return ""
             try:
                 out = translator.translate(text[:4500])  # API cap is ~5k chars
-                return out or text
+                translated = (out or "").strip()
+                if target == "it" and not translated:
+                    return ""
+                return translated or text
             except Exception as e:
                 print(f"  translation failed ({e!r}); falling back to GR", file=sys.stderr)
-                return text
+                return "" if target == "it" else text
         return tr
     except ImportError:
         print("  deep-translator not installed; storing GR text in *_en columns", file=sys.stderr)
-        return lambda s: s or ""
+        return (lambda _s: "") if target == "it" else (lambda s: s or "")
 
 
 def _ensure_translation_columns(conn: sqlite3.Connection) -> None:

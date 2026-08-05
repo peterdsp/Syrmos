@@ -420,18 +420,37 @@ enum SyrmosData {
         return map
     }()
 
+    private static let englishToItalian: [String: String] = [
+        "athens": "Atene",
+        "athina": "Atene",
+        "piraeus": "Pireo",
+        "pireas": "Pireo",
+        "thessaloniki": "Salonicco",
+        "larisa": "Larissa",
+        "larissa": "Larissa",
+        "patra": "Patrasso",
+        "patras": "Patrasso",
+    ]
+
+    static func localizedStationName(_ englishName: String, language: AppLanguage) -> String {
+        let trimmed = englishName.trimmingCharacters(in: .whitespaces)
+        guard language == .italian else { return trimmed }
+        return englishToItalian[trimmed.lowercased()] ?? trimmed
+    }
+
     static func translatedStationName(_ greekName: String, language: AppLanguage) -> String {
         let trimmed = greekName.trimmingCharacters(in: .whitespaces)
         if language == .greek { return trimmed }
-        return greekToEnglish[trimmed.lowercased()] ?? trimmed
+        let english = greekToEnglish[trimmed.lowercased()] ?? trimmed
+        return localizedStationName(english, language: language)
     }
 
     static func resolveStation(_ greek: String, en: String, language: AppLanguage) -> String {
         let trimmed = greek.trimmingCharacters(in: .whitespaces)
         if language == .greek { return trimmed }
         let enTrimmed = en.trimmingCharacters(in: .whitespaces)
-        if !enTrimmed.isEmpty { return enTrimmed }
-        return greekToEnglish[trimmed.lowercased()] ?? trimmed
+        let english = enTrimmed.isEmpty ? (greekToEnglish[trimmed.lowercased()] ?? trimmed) : enTrimmed
+        return localizedStationName(english, language: language)
     }
 
     /// Lines that actually carry trains. The default for anything the user acts on.

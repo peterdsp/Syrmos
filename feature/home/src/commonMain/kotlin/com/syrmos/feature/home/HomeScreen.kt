@@ -57,6 +57,7 @@ import com.syrmos.core.common.DataFreshness
 import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
 import kotlinx.coroutines.delay
@@ -1596,7 +1597,7 @@ private fun NearbyStationsSection(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = station.stationName,
+                                text = StationNameTranslator.localizeEnglish(station.stationName, lang),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                             )
@@ -1812,7 +1813,8 @@ private fun LiveTrainsSection(
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "${train.origin.orEmpty()} → ${train.destination.orEmpty()}",
+                            text = "${StationNameTranslator.resolve(train.origin, train.originEn, lang)} " +
+                                "→ ${StationNameTranslator.resolve(train.destination, train.destinationEn, lang)}",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,

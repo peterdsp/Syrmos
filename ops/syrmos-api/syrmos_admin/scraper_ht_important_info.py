@@ -55,14 +55,37 @@ def _has_greek(text: str) -> bool:
     return bool(_GREEK_LETTER_RE.search(text))
 
 
+def _is_valid_italian_translation(text: str) -> bool:
+    lowered = text.lower()
+    return bool(text) and not _has_greek(text) and not any(
+        marker in lowered
+        for marker in ("error 500", "that's an error", "there was an error", "server error")
+    )
+
+
 def _translate(text: str, target: str) -> str:
     text = text.strip()
     if not text or (target != "it" and not _has_greek(text)):
         return text
+    if target == "it":
+        try:
+            from deep_translator import GoogleTranslator
+            translated = (GoogleTranslator(source="el", target="it").translate(text) or "").strip()
+            if _is_valid_italian_translation(translated):
+                return translated
+        except Exception:
+            pass
+        try:
+            from deep_translator import MyMemoryTranslator
+            translated = (
+                MyMemoryTranslator(source="greek", target="italian").translate(text) or ""
+            ).strip()
+            return translated if _is_valid_italian_translation(translated) else ""
+        except Exception:
+            return ""
     try:
         from deep_translator import GoogleTranslator
-        source = "auto" if target == "it" else "el"
-        result = GoogleTranslator(source=source, target=target).translate(text)
+        result = GoogleTranslator(source="el", target=target).translate(text)
         return (result or "").strip() or text
     except Exception:
         return text
@@ -124,6 +147,35 @@ _LINE_SLUG_MAP = {
     "intercity": [],
     "international": [],
 }
+
+_LINE_CATEGORY_IT = {
+    "IC & ICE Express": "IC e ICE Express",
+    "Περιφερειακές Γραμμές Βόρειας Ελλάδας": "Linee regionali della Grecia settentrionale",
+    "Προαστιακές - Περιφερειακές Γραμμές Αθήνας": "Linee suburbane e regionali di Atene",
+    "Προαστιακή Γραμμή Πάτρας": "Linea suburbana di Patrasso",
+    "Τοπικές Γραμμές Κεντρικής Ελλάδας": "Linee locali della Grecia centrale",
+    "Τοπικές Γραμμές Νοτίου Ελλάδας": "Linee locali della Grecia meridionale",
+}
+
+_ISSUE_TYPE_IT = {
+    "Έκτακτες κυκλοφοριακές ρυθμίσεις": "Modifiche straordinarie alla circolazione",
+    "Έκτακτο γεγονός": "Evento straordinario",
+    "Διακοπή Κυκλοφορίας Γραμμής": "Interruzione della circolazione",
+    "Καθυστέρηση Δρομολογίου": "Ritardo del servizio",
+    "Κατάργηση Δρομολογίου": "Cancellazione del servizio",
+    "Μερική Κατάργηση Δρομολογίου": "Cancellazione parziale del servizio",
+    "Μονοδρόμηση Γραμμής": "Circolazione a binario unico",
+    "Υποκατάσταση με Λεωφορεία ΗΤ": "Servizio sostitutivo con autobus HT",
+}
+
+
+def _translate_alert_title_it(line_category: str, issue_type: str) -> str:
+    category_it = _LINE_CATEGORY_IT.get(line_category)
+    issue_it = _ISSUE_TYPE_IT.get(issue_type)
+    if category_it and issue_it:
+        return f"{category_it}: {issue_it}"
+    title = f"{line_category}: {issue_type}" if issue_type else line_category
+    return _translate_it(title)
 
 
 def _affected_lines_from_slug(slug: str) -> list[str]:
@@ -188,7 +240,7 @@ def parse_important_info(html: str) -> list[AlertItem]:
 
                 title_en = _translate_en(title)
                 title_sq = _translate_sq(title)
-                title_it = _translate_it(title)
+                title_it = _translate_alert_title_it(line_category, issue_type)
                 summary_en = _translate_en(summary) if summary else ""
                 summary_sq = _translate_sq(summary) if summary else ""
                 summary_it = _translate_it(summary) if summary else ""
@@ -229,8 +281,10 @@ def upsert(conn: sqlite3.Connection, items: list[AlertItem]) -> int:
                     " affected_lines, severity, valid_from, valid_until)"
                     " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     " ON CONFLICT(id) DO UPDATE SET"
-                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq, title_it=excluded.title_it,"
-                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq, summary_it=excluded.summary_it,"
+                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
+                    " title_it=COALESCE(NULLIF(excluded.title_it, ''), announcements.title_it),"
+                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq,"
+                    " summary_it=COALESCE(NULLIF(excluded.summary_it, ''), announcements.summary_it),"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
                     " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
@@ -262,6 +316,12 @@ def upsert(conn: sqlite3.Connection, items: list[AlertItem]) -> int:
                         item.published_at, None,
                     ),
                 )
+        if items:
+            placeholders = ",".join("?" for _ in items)
+            cur.execute(
+                f"DELETE FROM announcements WHERE id LIKE 'ht-alert-%' AND id NOT IN ({placeholders})",
+                tuple(item.entry_id for item in items),
+            )
         cur.execute("COMMIT")
         return len(items)
     except Exception:

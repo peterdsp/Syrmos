@@ -544,7 +544,11 @@ struct HomeView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(loc.language == .greek ? nearby.station.nameEl : nearby.station.displayName)
+                                Text(
+                                    loc.language == .greek
+                                        ? nearby.station.nameEl
+                                        : SyrmosData.localizedStationName(nearby.station.displayName, language: loc.language)
+                                )
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.primary)
@@ -613,7 +617,10 @@ struct HomeView: View {
                                 .clipShape(Capsule())
                         }
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(train.origin) → \(train.destination)")
+                            Text(
+                                "\(SyrmosData.resolveStation(train.origin, en: train.originEn, language: loc.language)) "
+                                    + "→ \(SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: loc.language))"
+                            )
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .lineLimit(1)
