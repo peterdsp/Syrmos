@@ -574,7 +574,12 @@ private fun FeaturedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.semantics(mergeDescendants = true) {
-            contentDescription = "${d.lineId} towards ${d.destinationLabel}, $minsAway minutes, at ${d.time}"
+            contentDescription = when (lang) {
+                AppLanguage.GREEK -> "${d.lineId} προς ${d.destinationLabel}, $minsAway λεπτά, στις ${d.time}"
+                AppLanguage.ALBANIAN -> "${d.lineId} drejt ${d.destinationLabel}, $minsAway minuta, në ${d.time}"
+                AppLanguage.ITALIAN -> "${d.lineId} verso ${d.destinationLabel}, $minsAway minuti, alle ${d.time}"
+                else -> "${d.lineId} towards ${d.destinationLabel}, $minsAway minutes, at ${d.time}"
+            }
         },
     ) {
         Surface(
@@ -609,7 +614,7 @@ private fun FeaturedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
         Column(horizontalAlignment = Alignment.End) {
             if (isToday) {
                 Text(
-                    text = if (minsAway <= 1) nowLabel(lang) else com.syrmos.core.designsystem.component.formatMinutesAway(minsAway),
+                    text = if (minsAway <= 1) nowLabel(lang) else com.syrmos.core.designsystem.component.formatMinutesAway(minsAway, lang),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = accent,
@@ -670,7 +675,7 @@ private fun ExpandedRow(d: ProjectedDeparture, isToday: Boolean, accent: Color, 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (isToday && minsAway > 0) {
                 Text(
-                    text = com.syrmos.core.designsystem.component.formatMinutesAway(minsAway),
+                    text = com.syrmos.core.designsystem.component.formatMinutesAway(minsAway, lang),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

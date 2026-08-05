@@ -174,7 +174,12 @@ fun LineDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = when (lang) {
+                                AppLanguage.GREEK -> "Πίσω"
+                                AppLanguage.ALBANIAN -> "Prapa"
+                                AppLanguage.ITALIAN -> "Indietro"
+                                else -> "Back"
+                            },
                         )
                     }
                 },

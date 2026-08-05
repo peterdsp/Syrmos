@@ -14,6 +14,7 @@ struct DepartureRowCompact: View {
     /// via the OS (`Text(timerInterval:)`) with zero reload cost; otherwise the
     /// static `minutesAway` chip is shown.
     var target: Date? = nil
+    var languageCode: String = "en"
 
     var body: some View {
         HStack(spacing: 8) {
@@ -29,7 +30,7 @@ struct DepartureRowCompact: View {
                 }
             }
             Spacer(minLength: 4)
-            LiveMinutes(minutesAway: minutesAway, target: target)
+            LiveMinutes(minutesAway: minutesAway, target: target, languageCode: languageCode)
                 .font(.caption)
                 .fontWeight(.semibold)
                 .monospacedDigit()
@@ -45,12 +46,22 @@ struct DepartureRowCompact: View {
 struct LiveMinutes: View {
     let minutesAway: Int
     var target: Date? = nil
+    var languageCode: String = "en"
+
+    private var nowLabel: String {
+        switch languageCode {
+        case "el": return "τώρα"
+        case "sq": return "tani"
+        case "it": return "ora"
+        default: return "now"
+        }
+    }
 
     var body: some View {
         if let target {
             let imminent = target.timeIntervalSinceNow <= 60
             if imminent {
-                Text("now")
+                Text(nowLabel)
                     .foregroundStyle(.red)
             } else {
                 Text(timerInterval: Date()...target, countsDown: true)
@@ -59,7 +70,7 @@ struct LiveMinutes: View {
                     .foregroundStyle(.primary)
             }
         } else {
-            Text(minutesAway <= 1 ? "now" : "\(minutesAway)m")
+            Text(minutesAway <= 1 ? nowLabel : "\(minutesAway)m")
                 .foregroundStyle(minutesAway <= 2 ? .red : .primary)
         }
     }

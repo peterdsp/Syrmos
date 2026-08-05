@@ -472,7 +472,12 @@ private fun SearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear",
+                        contentDescription = when (lang) {
+                            AppLanguage.GREEK -> "Καθαρισμός"
+                            AppLanguage.ALBANIAN -> "Pastro"
+                            AppLanguage.ITALIAN -> "Cancella"
+                            else -> "Clear"
+                        },
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )

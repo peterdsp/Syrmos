@@ -151,15 +151,29 @@ fun DepartureCard(
  * "Now" once the train is at the platform, "Xh Ymin" past one hour so
  * late-night views like Nikaia M3 at 02:09 show "3h 21min" instead of
  * the unreadable "201 min" the bare number used to render. */
-fun formatMinutesAway(minutesAway: Int, language: AppLanguage = AppLanguage.ENGLISH): String = when {
-    minutesAway <= 0 -> when (language) {
-        AppLanguage.GREEK -> "Τώρα"
-        AppLanguage.ALBANIAN -> "Tani"
-        AppLanguage.ITALIAN -> "Ora"
-        else -> "Now"
+fun formatMinutesAway(minutesAway: Int, language: AppLanguage = AppLanguage.ENGLISH): String {
+    val minAbbr = when (language) {
+        AppLanguage.GREEK -> "λεπ"
+        AppLanguage.ALBANIAN -> "min"
+        AppLanguage.ITALIAN -> "min"
+        else -> "min"
     }
-    minutesAway == 1 -> "1 min"
-    minutesAway < 60 -> "$minutesAway min"
-    minutesAway % 60 == 0 -> "${minutesAway / 60}h"
-    else -> "${minutesAway / 60}h ${minutesAway % 60}min"
+    val hAbbr = when (language) {
+        AppLanguage.GREEK -> "ω"
+        AppLanguage.ALBANIAN -> "o"
+        AppLanguage.ITALIAN -> "h"
+        else -> "h"
+    }
+    return when {
+        minutesAway <= 0 -> when (language) {
+            AppLanguage.GREEK -> "Τώρα"
+            AppLanguage.ALBANIAN -> "Tani"
+            AppLanguage.ITALIAN -> "Ora"
+            else -> "Now"
+        }
+        minutesAway == 1 -> "1 $minAbbr"
+        minutesAway < 60 -> "$minutesAway $minAbbr"
+        minutesAway % 60 == 0 -> "${minutesAway / 60}$hAbbr"
+        else -> "${minutesAway / 60}$hAbbr ${minutesAway % 60}$minAbbr"
+    }
 }
