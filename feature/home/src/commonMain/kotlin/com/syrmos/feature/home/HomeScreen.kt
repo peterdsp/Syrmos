@@ -1538,7 +1538,7 @@ private fun NearbyStationsSection(
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                text = stationLines.joinToString(", ") { it.name },
+                                text = stationLines.joinToString(", ") { it.localizedName(lang) },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -1787,7 +1787,14 @@ private fun LiveTrainsSection(
 }
 
 private fun Line.localizedName(lang: AppLanguage): String {
-    return if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) nameEl else name
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
 }
 
 private fun formatDistance(meters: Int): String = when {

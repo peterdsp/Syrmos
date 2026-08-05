@@ -590,7 +590,14 @@ private fun LineRow(
 }
 
 private fun Line.localizedName(lang: AppLanguage): String {
-    return if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) nameEl else name
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
 }
 
 private fun LineType.localizedName(lang: AppLanguage): String {

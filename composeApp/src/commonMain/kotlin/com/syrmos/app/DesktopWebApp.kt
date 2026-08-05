@@ -461,7 +461,7 @@ private fun StationSummary(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             lines.forEach { line ->
-                LineBadge(line)
+                LineBadge(line, lang)
             }
         }
         Text(
@@ -1063,7 +1063,7 @@ private fun ScheduleRow(
 }
 
 @Composable
-private fun LineBadge(line: Line) {
+private fun LineBadge(line: Line, lang: AppLanguage = AppLanguage.ENGLISH) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
@@ -1080,7 +1080,7 @@ private fun LineBadge(line: Line) {
                 .height(8.dp),
         )
         Text(
-            text = line.name,
+            text = line.localizedName(lang),
             style = MaterialTheme.typography.labelMedium,
             color = line.color.toComposeColor(),
             fontWeight = FontWeight.SemiBold,
@@ -1089,7 +1089,14 @@ private fun LineBadge(line: Line) {
 }
 
 private fun Line.localizedName(lang: AppLanguage): String {
-    return if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) nameEl else name
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
 }
 
 @Suppress("unused")

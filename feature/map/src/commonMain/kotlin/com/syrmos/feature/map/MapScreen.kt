@@ -321,6 +321,7 @@ private fun StationSheetCard(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val lang by LocalizationManager.language.collectAsState()
     val station = uiState.selectedStation ?: return
     val uriHandler = LocalUriHandler.current
 
@@ -384,7 +385,7 @@ private fun StationSheetCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     uiState.selectedStationLines.forEach { line ->
-                        LineBadge(line = line)
+                        LineBadge(line = line, lang = lang)
                     }
                 }
             }
@@ -439,7 +440,7 @@ private fun StationSheetCard(
                                 LineColorIndicator(lineColor = departure.line.color, size = 10.dp)
                                 Column {
                                     Text(
-                                        text = departure.line.name,
+                                        text = departure.line.localizedName(lang),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.SemiBold,
                                     )
@@ -502,7 +503,7 @@ private fun StationSheetCard(
 }
 
 @Composable
-private fun LineBadge(line: Line) {
+private fun LineBadge(line: Line, lang: AppLanguage = AppLanguage.ENGLISH) {
     Surface(
         shape = RoundedCornerShape(999.dp),
         color = line.color.toComposeColor().copy(alpha = 0.12f),
@@ -514,7 +515,7 @@ private fun LineBadge(line: Line) {
         ) {
             LineColorIndicator(lineColor = line.color, size = 10.dp)
             Text(
-                text = line.name,
+                text = line.localizedName(lang),
                 style = MaterialTheme.typography.labelLarge,
                 color = line.color.toComposeColor(),
                 fontWeight = FontWeight.SemiBold,
@@ -616,7 +617,7 @@ private fun SimulatedTrainDetailCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        if (line != null) LineBadge(line)
+                        if (line != null) LineBadge(line, lang)
                         Text(
                             text = train.lineName,
                             style = MaterialTheme.typography.headlineSmall,
@@ -823,7 +824,7 @@ private fun TrainDetailCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (line != null) {
-                            LineBadge(line = line)
+                            LineBadge(line = line, lang = lang)
                         }
                         Text(
                             text = "Train ${train.trainNumber}",
@@ -1146,6 +1147,17 @@ private fun TelemetryCell(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
     }
+}
+
+private fun Line.localizedName(lang: AppLanguage): String {
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
 }
 
 private fun resolveStation(greek: String?, english: String?, lang: AppLanguage): String? {
