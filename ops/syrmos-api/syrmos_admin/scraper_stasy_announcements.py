@@ -101,6 +101,79 @@ LINE_KEYWORDS: list[tuple[str, str]] = [
 ]
 
 # Severity keywords (Greek + English).
+
+# Station-level detection for the M3 airport extension (the most common
+# partial-closure announcement). Maps Greek + English keywords to canonical
+# station IDs used by the client apps.
+STATION_KEYWORDS: list[tuple[str, str]] = [
+    ('δουκίσσης πλακεντίας', 'DOUK_PLAK'),
+    ('doukissis plakentias', 'DOUK_PLAK'),
+    ('δουκ. πλακεντίας', 'DOUK_PLAK'),
+    ('παλλήνη', 'PALLINI'),
+    ('pallini', 'PALLINI'),
+    ('κάντζα', 'KANTZA'),
+    ('kantza', 'KANTZA'),
+    ('κορωπί', 'KOROPI'),
+    ('koropi', 'KOROPI'),
+    ('αεροδρόμιο', 'AIRPORT'),
+    ('airport', 'AIRPORT'),
+    ('πεντέλη', 'PENTELI'),
+    ('penteli', 'PENTELI'),
+    # M3 central stations
+    ('σύνταγμα', 'M3_SYN'),
+    ('syntagma', 'M3_SYN'),
+    ('ευαγγελισμός', 'M3_EVA'),
+    ('ευαγγελισμος', 'M3_EVA'),
+    ('evangelismos', 'M3_EVA'),
+    ('μέγαρο μουσικής', 'M3_MEG'),
+    ('μεγαρο μουσικης', 'M3_MEG'),
+    ('megaro mousikis', 'M3_MEG'),
+    ('megaro musikis', 'M3_MEG'),
+    ('εθνική άμυνα', 'M3_ETH'),
+    ('εθνικη αμυνα', 'M3_ETH'),
+    ('ethniki amyna', 'M3_ETH'),
+    ('χολαργός', 'M3_HOL'),
+    ('holargos', 'M3_HOL'),
+    ('νομισματοκοπείο', 'M3_NOM'),
+    ('nomismatokopeio', 'M3_NOM'),
+    ('αγ. μαρίνα', 'M3_AGM'),
+    ('agia marina', 'M3_AGM'),
+    ('μοναστηράκι', 'M3_MON'),
+    ('monastiraki', 'M3_MON'),
+    # Generic M3 extension stations
+    ('σταθμοί επέκτασης', 'DOUK_PLAK'),
+    ('extension stations', 'DOUK_PLAK'),
+]
+
+_SERVICE_UNTIL_RE = re.compile(
+    r'(?:μέχρι|έως|ως|κλείνουν στις|until|closes? at|service until)\s*(\d{1,2}[:.:]\d{2})',
+    re.IGNORECASE,
+)
+
+
+def detect_affected_stations(text: str) -> list[str]:
+    lowered = text.lower()
+    found: set[str] = set()
+    for keyword, station_id in STATION_KEYWORDS:
+        if keyword in lowered:
+            found.add(station_id)
+    return sorted(found)
+
+
+def detect_service_until_time(text: str) -> str | None:
+    m = _SERVICE_UNTIL_RE.search(text)
+    if m:
+        raw = m.group(1).replace('.', ':')
+        parts = raw.split(':')
+        if len(parts) == 2:
+            try:
+                h, mi = int(parts[0]), int(parts[1])
+                if 0 <= h <= 23 and 0 <= mi <= 59:
+                    return f'{h:02d}:{mi:02d}'
+            except ValueError:
+                pass
+    return None
+
 CLOSURE_KEYWORDS = (
     "δεν λειτουργ", "δεν θα λειτουργ", "ακινητοποι",
     "διακοπή κυκλοφορ", "κλειστ", "αναστολή λειτουργ",
@@ -281,6 +354,8 @@ class AnnouncementItem:
     valid_from: str | None = None
     valid_until: str | None = None
     closure_dates: list[str] = field(default_factory=list)
+    affected_station_ids: list[str] = field(default_factory=list)
+    service_until_time: str | None = None
 
 
 def _ascii_url(url: str) -> str:
@@ -785,6 +860,8 @@ def build_announcement(
         title_it=title_it,
         summary_it=summary_it,
         affected_lines=affected,
+        affected_station_ids=detect_affected_stations(classifier_text),
+        service_until_time=detect_service_until_time(classifier_text),
         severity=severity,
         valid_from=valid_from,
         valid_until=valid_until,
@@ -814,8 +891,9 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                     "INSERT INTO announcements"
                     "(id, title, title_en, title_sq, title_it, summary, summary_en, summary_sq, summary_it,"
                     " url, date, category, sort_order,"
-                    " affected_lines, severity, valid_from, valid_until)"
-                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                    " affected_lines, severity, valid_from, valid_until,"
+                    " affected_station_ids, service_until_time)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     " ON CONFLICT(id) DO UPDATE SET"
                     " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
                     " title_it=COALESCE(NULLIF(excluded.title_it, ''), announcements.title_it),"
@@ -823,13 +901,16 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                     " summary_it=COALESCE(NULLIF(excluded.summary_it, ''), announcements.summary_it),"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
-                    " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
+                    " valid_from=excluded.valid_from, valid_until=excluded.valid_until,"
+                    " affected_station_ids=excluded.affected_station_ids, service_until_time=excluded.service_until_time",
                     (
                         item.slug, item.title, item.title_en, item.title_sq, item.title_it,
                         item.summary, item.summary_en, item.summary_sq, item.summary_it,
                         item.url, item.publish_date, category, idx,
                         affected_json, item.severity,
                         item.valid_from, item.valid_until,
+                        json.dumps(item.affected_station_ids, ensure_ascii=False),
+                        item.service_until_time,
                     ),
                 )
             except sqlite3.OperationalError:
@@ -843,7 +924,8 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                     " summary=excluded.summary, summary_en=excluded.summary_en,"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
-                    " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
+                    " valid_from=excluded.valid_from, valid_until=excluded.valid_until,"
+                    " affected_station_ids=excluded.affected_station_ids, service_until_time=excluded.service_until_time",
                     (
                         item.slug, item.title, item.title_en, item.summary, item.summary_en,
                         item.url, item.publish_date, category, idx,
@@ -921,6 +1003,7 @@ def run_once(now: date | None = None) -> int:
         # valid_from or valid_until. The inline banner usually has no date,
         # so anchor valid_from to today — the banner only exists while STASY
         # publishes it, so "fresh as of today" is the right semantics.
+        station_text = banner_gr + " " + banner_en
         synthetic = AnnouncementItem(
             slug="stasy-homepage-alert",
             title=banner_gr,
@@ -933,6 +1016,8 @@ def run_once(now: date | None = None) -> int:
             title_it=banner_it,
             summary_it=banner_it,
             affected_lines=affected,
+            affected_station_ids=detect_affected_stations(station_text),
+            service_until_time=homepage_status.get("service_until") or detect_service_until_time(station_text),
             severity="warning",
             valid_from=vf_detected or now.isoformat(),
             valid_until=vu_detected,
