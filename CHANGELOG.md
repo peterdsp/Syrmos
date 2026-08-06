@@ -2,13 +2,26 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.8**, iOS build 122 and Android versionCode 207. Burned Android version codes never reusable: 105, 106, 109-138, and 200-207. Next Android release must use 208+.
+Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.9**, iOS build 123 and Android versionCode 208. Burned Android version codes never reusable: 105, 106, 109-138, and 200-208. Next Android release must use 209+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 2.0.0-beta.9 - 2026-08-06
+
+The capsule markers and web redesign beta.
+
+- **Capsule vehicle markers.** All three platforms now render moving vehicles as smooth 24x13 capsule markers (border-radius 6, 2px white border) instead of directional triangles. Shared interpolation math (distance table, cubic-bezier train-glide easing, bearing low-pass filter) lives in KMP core:common so only the rendering layer is per-platform.
+- **Web three-column layout.** Desktop web gets a nav rail (72px), context rail (352px), and flex map canvas. Responsive breakpoints at 960px and 720px collapse rails progressively. Dark mode uses CSS custom properties via body.dark-mode.
+- **Smooth rAF animation (web).** Vehicles animate along polyline geometry using requestAnimationFrame with cubic-bezier(0.16,1,0.30,1) easing and bearing rotation with a 0.15/frame low-pass filter.
+- **iOS capsule + bearing.** CADisplayLink tick now computes per-frame bearing from coordinate deltas, applies low-pass filter, and re-renders capsule image with rotation. Train-glide easing replaces the old smoothstep.
+- **Android capsule.** Triangle bitmap replaced with density-scaled rounded-rect capsule using MapDesignTokens from core:common.
+- **OASA airport bus integration.** Pi-side scraper polls OASA telematics API for X93/X95/X96/X97 airport buses every 30s, writes atomic JSON, nginx serves with 15s cache. KMP OasaAirportBusService + OasaLiveArrivalsProvider wired into the live arrivals router.
+
+iOS 2.0.0 build 123 / Android 2.0.0 versionCode 208. Tagged as `v2.0.0-beta.9`.
 
 ## 2.0.0-beta.8 - 2026-08-06
 
