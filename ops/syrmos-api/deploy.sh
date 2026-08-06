@@ -193,9 +193,38 @@ block = """        # --- anonymous Ichnos community reporting ---
             add_header Cache-Control "no-store" always;
         }
 
+        location = /api/community/history {
+            proxy_pass http://127.0.0.1:8092/api/community/history$is_args$args;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Cache-Control "no-store" always;
+        }
+
         """
 p.write_text(txt.replace(marker, block + marker, 1))
 print("patched community reporting")
+PY
+fi
+if ! grep -q "/api/community/history" "$conf"; then
+  cp "$conf" "$conf.bak.community-history.$(date +%s)"
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "syrmos-proxy/nginx.conf"
+txt = p.read_text()
+marker = "# --- admin UI (FastAPI"
+block = """        # --- permanent anonymous Ichnos aggregate history ---
+        location = /api/community/history {
+            proxy_pass http://127.0.0.1:8092/api/community/history$is_args$args;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Cache-Control "no-store" always;
+        }
+
+        """
+p.write_text(txt.replace(marker, block + marker, 1))
+print("patched community history")
 PY
 fi
 /usr/sbin/nginx -t -c "$conf" -p ~/syrmos-proxy/

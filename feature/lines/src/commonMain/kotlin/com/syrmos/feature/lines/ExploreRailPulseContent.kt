@@ -257,7 +257,7 @@ internal fun ExploreRailPulseContent(
     Spacer(Modifier.height(10.dp))
     SectionTitle(
         title = pulseText(lang, "Ichnos across Greece", "Ichnos σε ολη την Ελλαδα", "Ichnos ne gjithe Greqine", "Ichnos in tutta la Grecia"),
-        action = pulseText(lang, "See all", "Ολα", "Shiko te gjitha", "Vedi tutto"),
+        action = pulseText(lang, "History", "Ιστορικο", "Historia", "Storico"),
         onAction = onSeeAll,
     )
 
@@ -688,7 +688,7 @@ internal fun RailPulseQuickReportSheet(
                     }
                 }
                 Text(
-                    text = pulseText(lang, "Sent anonymously to Ichnos. No account, device ID, or location is included. Active reports expire after two hours and are deleted within seven days.", "Σταλθηκε ανωνυμα στο Ichnos. Δεν περιλαμβανεται λογαριασμος, αναγνωριστικο συσκευης η τοποθεσια. Οι ενεργες αναφορες ληγουν σε δυο ωρες και διαγραφονται εντος επτα ημερων.", "U dergua anonimisht te Ichnos. Nuk perfshihet llogari, ID pajisjeje ose vendndodhje. Raportet aktive skadojne pas dy oresh dhe fshihen brenda shtate ditesh.", "Inviata anonimamente a Ichnos. Non vengono inclusi account, ID del dispositivo o posizione. Le segnalazioni attive scadono dopo due ore e vengono eliminate entro sette giorni."),
+                    text = pulseText(lang, "Sent anonymously to Ichnos. No account, device ID, or location is included. Active reports expire after two hours and are deleted within seven days. An anonymous daily count remains in railway history.", "Σταλθηκε ανωνυμα στο Ichnos. Δεν περιλαμβανεται λογαριασμος, αναγνωριστικο συσκευης η τοποθεσια. Οι ενεργες αναφορες ληγουν σε δυο ωρες και διαγραφονται εντος επτα ημερων. Ενα ανωνυμο ημερησιο συνολο παραμενει στο σιδηροδρομικο ιστορικο.", "U dergua anonimisht te Ichnos. Nuk perfshihet llogari, ID pajisjeje ose vendndodhje. Raportet aktive skadojne pas dy oresh dhe fshihen brenda shtate ditesh. Nje numer anonim ditor mbetet ne historine hekurudhore.", "Inviata anonimamente a Ichnos. Non vengono inclusi account, ID del dispositivo o posizione. Le segnalazioni attive scadono dopo due ore e vengono eliminate entro sette giorni. Un conteggio giornaliero anonimo resta nello storico ferroviario."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

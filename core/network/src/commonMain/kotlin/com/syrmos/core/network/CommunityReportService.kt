@@ -43,6 +43,24 @@ data class CommunitySummary(
 }
 
 @Serializable
+data class CommunityHistoryBucket(
+    val period: String,
+    val totalReports: Int = 0,
+    val positiveReports: Int = 0,
+    val issueReports: Int = 0,
+    val counts: Map<String, Int> = emptyMap(),
+)
+
+@Serializable
+data class CommunityHistory(
+    val granularity: String = "day",
+    val scopeId: String? = null,
+    val buckets: List<CommunityHistoryBucket> = emptyList(),
+    val updatedAt: String = "",
+    val privacy: String = "",
+)
+
+@Serializable
 private data class CommunityReportRequest(
     val reportId: String,
     val scopeId: String,
@@ -69,6 +87,20 @@ class CommunityReportService(private val httpClient: HttpClient) {
         }
         if (response.status != HttpStatusCode.OK) return@runCatching null
         json.decodeFromString<CommunitySummary>(response.bodyAsText())
+    }.getOrNull()
+
+    suspend fun fetchHistory(
+        period: String = "day",
+        scopeId: String? = null,
+        limit: Int = 31,
+    ): CommunityHistory? = runCatching {
+        val response = httpClient.get("$BASE_URL/api/community/history") {
+            parameter("period", period)
+            parameter("limit", limit)
+            if (!scopeId.isNullOrBlank()) parameter("scopeId", scopeId)
+        }
+        if (response.status != HttpStatusCode.OK) return@runCatching null
+        json.decodeFromString<CommunityHistory>(response.bodyAsText())
     }.getOrNull()
 
     suspend fun submit(

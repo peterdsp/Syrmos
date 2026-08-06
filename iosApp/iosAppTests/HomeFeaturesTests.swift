@@ -125,4 +125,31 @@ final class HomeFeaturesTests: XCTestCase {
             "Syntagma"
         )
     }
+
+    // MARK: - Permanent anonymous Ichnos history contract
+
+    func test_ichnosHistoryDecodesGoodAndIssueCounts() throws {
+        let payload = """
+        {
+          "granularity":"day",
+          "scopeId":null,
+          "buckets":[{
+            "period":"2026-08-06",
+            "totalReports":3,
+            "positiveReports":2,
+            "issueReports":1,
+            "counts":{"normal":1,"clean":1,"delayed":1}
+          }],
+          "updatedAt":"2026-08-06T03:00:00Z",
+          "privacy":"Permanent anonymous aggregates only."
+        }
+        """
+
+        let history = try JSONDecoder().decode(IchnosCommunityHistory.self, from: Data(payload.utf8))
+
+        XCTAssertEqual(history.granularity, "day")
+        XCTAssertEqual(history.buckets.first?.totalReports, 3)
+        XCTAssertEqual(history.buckets.first?.positiveReports, 2)
+        XCTAssertEqual(history.buckets.first?.counts["delayed"], 1)
+    }
 }

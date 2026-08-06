@@ -1118,6 +1118,21 @@ def api_community_summary(scopeId: str | None = None) -> JSONResponse:
         return JSONResponse(community_mod.summary(conn, scope_id=scopeId))
 
 
+@app.get("/api/community/history")
+def api_community_history(
+    period: str = "day",
+    scopeId: str | None = None,
+    limit: int = 31,
+) -> JSONResponse:
+    try:
+        with get_db() as conn:
+            return JSONResponse(
+                community_mod.history(conn, period=period, scope_id=scopeId, limit=limit)
+            )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from None
+
+
 # Public projector endpoint. Single source of truth for what the apps render
 # in the Next Departures lists. It bypasses admin auth deliberately because it
 # is read only.

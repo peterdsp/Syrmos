@@ -145,6 +145,9 @@ struct RailPulseAllActivityView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var summary: IchnosCommunitySummary?
     @State private var didLoad = false
+    @State private var selectedHistoryPeriod: IchnosHistoryPeriod = .day
+    @State private var history: IchnosCommunityHistory?
+    @State private var didLoadHistory = false
 
     var body: some View {
         ScrollView {
@@ -156,6 +159,18 @@ struct RailPulseAllActivityView: View {
                 )
                 communityNotice(language)
                 communityIssueList(language: language, summary: summary, didLoad: didLoad)
+                pulseSectionTitle(pulseText(language, "Greek railway history", "Ιστορικο ελληνικων σιδηροδρομων", "Historia e hekurudhave greke", "Storico ferroviario greco"))
+                Text(pulseText(language, "Actual anonymous user reports are kept as daily totals, then grouped by month or year. Estimated journeys are never added to this history.", "Οι πραγματικες ανωνυμες αναφορες χρηστων κρατουνται ως ημερησια συνολα και ομαδοποιουνται ανα μηνα η ετος. Οι εκτιμωμενες διαδρομες δεν προστιθενται ποτε σε αυτο το ιστορικο.", "Raportet reale anonime te perdoruesve ruhen si totale ditore dhe grupohen sipas muajit ose vitit. Udhetimet e vleresuara nuk shtohen kurre ne kete histori.", "Le segnalazioni anonime reali degli utenti vengono conservate come totali giornalieri e raggruppate per mese o anno. I viaggi stimati non vengono mai aggiunti allo storico."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("", selection: $selectedHistoryPeriod) {
+                    ForEach(IchnosHistoryPeriod.allCases) { period in
+                        Text(period.title(language)).tag(period)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel(pulseText(language, "History period", "Περιοδος ιστορικου", "Periudha e historise", "Periodo storico"))
+                IchnosHistoryContent(language: language, history: history, didLoad: didLoadHistory)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 110)
@@ -167,7 +182,184 @@ struct RailPulseAllActivityView: View {
             summary = await IchnosCommunityService.shared.fetchSummary()
             didLoad = true
         }
+        .task(id: selectedHistoryPeriod) {
+            didLoadHistory = false
+            history = await IchnosCommunityService.shared.fetchHistory(
+                period: selectedHistoryPeriod.rawValue,
+                limit: selectedHistoryPeriod.limit
+            )
+            guard !Task.isCancelled else { return }
+            didLoadHistory = true
+        }
     }
+}
+
+private enum IchnosHistoryPeriod: String, CaseIterable, Identifiable {
+    case day
+    case month
+    case year
+
+    var id: String { rawValue }
+    var limit: Int {
+        switch self {
+        case .day: return 366
+        case .month: return 120
+        case .year: return 50
+        }
+    }
+
+    func title(_ language: AppLanguage) -> String {
+        switch self {
+        case .day: return pulseText(language, "Days", "Ημερες", "Dite", "Giorni")
+        case .month: return pulseText(language, "Months", "Μηνες", "Muaj", "Mesi")
+        case .year: return pulseText(language, "Years", "Ετη", "Vite", "Anni")
+        }
+    }
+}
+
+private struct IchnosHistoryContent: View {
+    let language: AppLanguage
+    let history: IchnosCommunityHistory?
+    let didLoad: Bool
+
+    var body: some View {
+        if let history, !history.buckets.isEmpty {
+            let total = history.buckets.reduce(0) { $0 + $1.totalReports }
+            let positive = history.buckets.reduce(0) { $0 + $1.positiveReports }
+            let issues = history.buckets.reduce(0) { $0 + $1.issueReports }
+            HStack(spacing: 10) {
+                pulseMetric(pulseText(language, "REPORTS", "ΑΝΑΦΟΡΕΣ", "RAPORTE", "SEGNALAZIONI"), total.formatted(), .primary)
+                pulseMetric(pulseText(language, "GOOD", "ΚΑΛΑ", "MIRE", "BENE"), positive.formatted(), SyrmosTokens.live)
+                pulseMetric(pulseText(language, "ISSUES", "ΠΡΟΒΛΗΜΑΤΑ", "PROBLEME", "PROBLEMI"), issues.formatted(), issues > 0 ? SyrmosTokens.disruption : .secondary)
+            }
+            ForEach(Array(history.buckets.reversed())) { bucket in
+                IchnosHistoryBucketCard(language: language, bucket: bucket)
+            }
+            Text(pulseText(language, "Only anonymous aggregate counts are permanent. Individual reports are deleted within seven days.", "Μονο τα ανωνυμα συγκεντρωτικα συνολα παραμενουν μονιμα. Οι μεμονωμενες αναφορες διαγραφονται εντος επτα ημερων.", "Vetem totalet anonime te grumbulluara ruhen pergjithmone. Raportet individuale fshihen brenda shtate ditesh.", "Solo i conteggi aggregati anonimi restano permanenti. Le singole segnalazioni vengono eliminate entro sette giorni."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+        } else if let history, history.buckets.isEmpty {
+            VStack(spacing: 8) {
+                Image(systemName: "calendar.badge.clock").font(.title2).foregroundStyle(.secondary)
+                Text(pulseText(language, "No reports recorded for this period yet", "Δεν εχουν καταγραφει αναφορες για αυτη την περιοδο", "Ende nuk ka raporte per kete periudhe", "Nessuna segnalazione registrata per questo periodo"))
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text(pulseText(language, "History starts with accepted Ichnos reports. It never invents past numbers.", "Το ιστορικο ξεκινα με αποδεκτες αναφορες Ichnos. Δεν επινοει ποτε παλιους αριθμους.", "Historia fillon me raportet e pranuara Ichnos. Nuk shpik kurre numra te kaluar.", "Lo storico inizia con le segnalazioni Ichnos accettate. Non inventa mai numeri passati."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(24)
+            .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        } else if didLoad {
+            VStack(spacing: 8) {
+                Image(systemName: "wifi.exclamationmark").font(.title2).foregroundStyle(SyrmosTokens.warning)
+                Text(pulseText(language, "History is temporarily unavailable", "Το ιστορικο δεν ειναι προσωρινα διαθεσιμο", "Historia nuk eshte perkohesisht e disponueshme", "Lo storico non e temporaneamente disponibile"))
+                    .font(.subheadline.weight(.semibold))
+                Text(pulseText(language, "Check your connection and try again.", "Ελεγξε τη συνδεση σου και προσπαθησε ξανα.", "Kontrollo lidhjen dhe provo perseri.", "Controlla la connessione e riprova."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(24)
+            .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        } else {
+            ForEach(0..<3, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.syrmosSurface)
+                    .frame(height: 116)
+                    .redacted(reason: .placeholder)
+            }
+        }
+    }
+}
+
+private struct IchnosHistoryBucketCard: View {
+    let language: AppLanguage
+    let bucket: IchnosHistoryBucket
+
+    private var positiveRatio: Double {
+        guard bucket.totalReports > 0 else { return 0 }
+        return Double(bucket.positiveReports) / Double(bucket.totalReports)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(ichnosHistoryPeriodLabel(bucket.period, language: language)).font(.headline)
+                Spacer()
+                Text("\(bucket.totalReports.formatted()) \(pulseText(language, "reports", "αναφορες", "raporte", "segnalazioni"))")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+            }
+            GeometryReader { geometry in
+                HStack(spacing: 2) {
+                    Rectangle()
+                        .fill(SyrmosTokens.live)
+                        .frame(width: max(0, geometry.size.width * positiveRatio - 1))
+                    Rectangle()
+                        .fill(SyrmosTokens.disruption)
+                }
+            }
+            .frame(height: 8)
+            .clipShape(Capsule())
+            HStack {
+                Label("\(bucket.positiveReports) \(pulseText(language, "good", "καλα", "mire", "bene"))", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(SyrmosTokens.live)
+                Spacer()
+                Label("\(bucket.issueReports) \(pulseText(language, "issues", "προβληματα", "probleme", "problemi"))", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(bucket.issueReports > 0 ? SyrmosTokens.disruption : .secondary)
+            }
+            .font(.caption.bold())
+            let breakdown = ichnosHistoryBreakdown(bucket.counts, language: language)
+            if !breakdown.isEmpty {
+                Text(breakdown).font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private func ichnosHistoryPeriodLabel(_ value: String, language: AppLanguage) -> String {
+    let formats = ["yyyy-MM-dd", "yyyy-MM", "yyyy"]
+    let locale = Locale(identifier: language == .greek ? "el_GR" : language == .albanian ? "sq_AL" : language == .italian ? "it_IT" : "en_US")
+    for format in formats {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = format
+        guard let date = parser.date(from: value) else { continue }
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.dateFormat = format == "yyyy-MM-dd" ? "d MMM yyyy" : (format == "yyyy-MM" ? "LLLL yyyy" : "yyyy")
+        return formatter.string(from: date)
+    }
+    return value
+}
+
+private func ichnosHistoryBreakdown(_ counts: [String: Int], language: AppLanguage) -> String {
+    let order = ["normal", "clean", "delayed", "crowded", "stopped", "too_hot", "access", "facilities", "safety", "other"]
+    return order.compactMap { signal in
+        guard let count = counts[signal], count > 0 else { return nil }
+        let label: String
+        switch signal {
+        case "normal": label = pulseText(language, "OK", "Καλα", "Ne rregull", "OK")
+        case "clean": label = pulseText(language, "clean", "καθαρα", "paster", "pulito")
+        case "delayed": label = pulseText(language, "delayed", "καθυστερηση", "vonese", "ritardo")
+        case "crowded": label = pulseText(language, "crowded", "κοσμος", "plot", "affollato")
+        case "stopped": label = pulseText(language, "stopped", "διακοπη", "ndaluar", "fermo")
+        case "too_hot": label = pulseText(language, "too hot", "πολυ ζεστη", "shume nxehte", "troppo caldo")
+        case "access": label = pulseText(language, "access", "προσβαση", "akses", "accesso")
+        case "facilities": label = pulseText(language, "facilities", "παροχες", "sherbime", "servizi")
+        case "safety": label = pulseText(language, "safety", "ασφαλεια", "siguri", "sicurezza")
+        default: label = pulseText(language, "other", "αλλο", "tjeter", "altro")
+        }
+        return "\(label) \(count)"
+    }.joined(separator: " · ")
 }
 
 struct RailPulseContributionView: View {
@@ -200,7 +392,7 @@ struct RailPulseContributionView: View {
                 weeklyActivity
                 VStack(alignment: .leading, spacing: 4) {
                     Text(pulseText(language, "Private by construction", "Ιδιωτικο απο τον σχεδιασμο", "Privat nga ndertimi", "Privato per costruzione")).font(.subheadline.weight(.semibold))
-                    Text(pulseText(language, "Local progress stays on this device. Network reports contain no account, device ID, or location and are deleted within seven days.", "Η τοπικη προοδος μενει στη συσκευη. Οι αναφορες δικτυου δεν περιεχουν λογαριασμο, αναγνωριστικο συσκευης η τοποθεσια και διαγραφονται εντος επτα ημερων.", "Progresi lokal mbetet ne pajisje. Raportet ne rrjet nuk permbajne llogari, ID pajisjeje ose vendndodhje dhe fshihen brenda shtate ditesh.", "I progressi locali restano sul dispositivo. Le segnalazioni in rete non contengono account, ID del dispositivo o posizione e vengono eliminate entro sette giorni.")).font(.caption).foregroundStyle(.secondary)
+                    Text(pulseText(language, "Local progress stays on this device. Individual reports contain no account, device ID, or location and are deleted within seven days. Only anonymous daily totals remain for railway history.", "Η τοπικη προοδος μενει στη συσκευη. Οι μεμονωμενες αναφορες δεν περιεχουν λογαριασμο, αναγνωριστικο συσκευης η τοποθεσια και διαγραφονται εντος επτα ημερων. Μονο τα ανωνυμα ημερησια συνολα παραμενουν για το σιδηροδρομικο ιστορικο.", "Progresi lokal mbetet ne pajisje. Raportet individuale nuk permbajne llogari, ID pajisjeje ose vendndodhje dhe fshihen brenda shtate ditesh. Vetem totalet anonime ditore mbeten per historine hekurudhore.", "I progressi locali restano sul dispositivo. Le singole segnalazioni non contengono account, ID del dispositivo o posizione e vengono eliminate entro sette giorni. Solo i totali giornalieri anonimi restano per lo storico ferroviario.")).font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(16)
                 .background(SyrmosTokens.suburban.opacity(0.10), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
