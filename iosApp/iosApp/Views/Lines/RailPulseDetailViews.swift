@@ -473,7 +473,9 @@ private struct IchnosSummaryPanel: View {
             }
             Spacer(minLength: 4)
             Button(pulseText(language, "Report", "Αναφορα", "Raporto", "Segnala"), action: onReport)
-                .buttonStyle(.borderedProminent).tint(.primary)
+                .buttonStyle(.borderedProminent)
+                .tint(Color.syrmosAdaptive(light: SyrmosTokens.onSurface, dark: SyrmosTokens.Dark.onSurface))
+                .foregroundStyle(Color.syrmosAdaptive(light: SyrmosTokens.surface, dark: SyrmosTokens.Dark.surface))
         }
         .padding(14)
         .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))

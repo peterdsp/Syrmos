@@ -19,6 +19,10 @@
         greyedColor: "#94a3b8",
         busDash: "2 7",
         greyedDash: "6 8",
+        VEHICLE_W: 24,
+        VEHICLE_H: 13,
+        VEHICLE_RADIUS: 6,
+        VEHICLE_BORDER: 2,
     };
 
     // --- i18n -----------------------------------------------------------
@@ -408,6 +412,7 @@
     const lineBadges = document.getElementById("lineBadges");
     const stationMeta = document.getElementById("stationMeta");
     const stationDepartures = document.getElementById("stationDepartures");
+    const contextDepartures = document.getElementById("contextDepartures");
     const directionsLink = document.getElementById("directionsLink");
     const sheetClose = document.getElementById("sheetClose");
     const trainSheet = document.getElementById("trainSheet");
@@ -1647,6 +1652,7 @@
             : buildStationDepartures(station);
         if (!departures.length) {
             stationDepartures.innerHTML = `<div class="departure-empty">${t("no_departures")}</div>`;
+            if (contextDepartures) contextDepartures.innerHTML = stationDepartures.innerHTML;
             return;
         }
 
@@ -1695,6 +1701,7 @@
                 </div>
             `;
         }).join("");
+        if (contextDepartures) contextDepartures.innerHTML = stationDepartures.innerHTML;
     }
 
     function selectStation(stationId, panToMarker) {
@@ -1778,6 +1785,7 @@
     function clearSelection() {
         updateMarkerSelection(null);
         stationDepartures.innerHTML = "";
+        if (contextDepartures) contextDepartures.innerHTML = "";
         stationSheet.classList.add("station-sheet--hidden");
         hideTrainSheet();
         if (departureRefreshTimer) {
@@ -2452,6 +2460,20 @@
 
             // Answer-first peek line.
             if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;
+
+            // Sync to the context-rail answer-hero (visible in new layout).
+            const heroOverline = document.getElementById("heroOverline");
+            const heroBadge = document.getElementById("heroBadge");
+            const heroDest = document.getElementById("heroDestination");
+            const heroCount = document.getElementById("heroCountdown");
+            const heroMeta = document.getElementById("heroMeta");
+            const heroLive = document.getElementById("heroLiveChip");
+            if (heroOverline) heroOverline.textContent = data.station.name || data.station.nameEl || "";
+            if (heroBadge) { heroBadge.textContent = next.line?.name || ""; heroBadge.style.background = color; heroBadge.style.color = "#fff"; heroBadge.style.display = ""; }
+            if (heroDest) heroDest.textContent = next.direction || next.destination || "";
+            if (heroCount) heroCount.textContent = countEl.textContent;
+            if (heroMeta) heroMeta.textContent = then ? `${t("then")} ${then}` : "";
+            if (heroLive) heroLive.style.display = srcConf === "live" ? "" : "none";
         }
 
         refreshData();
@@ -2882,16 +2904,86 @@
     // Trains are DIRECTIONAL TRIANGLES (a small DOM divIcon), not dots, so they're
     // instantly distinct from the round station stops and show which way each one
     // is heading. Only ~50 of them, so the DOM cost is trivial vs the canvas dots.
-    function trainMarkerIcon(train) {
-        const color = train.line.color || "#0072CE";
-        const rot = Math.round(train.bearing || 0);
+    // Train-glide cubic-bezier(0.16, 1, 0.30, 1) easing function.
+    function trainGlideEase(t) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        const p1x = 0.16, p1y = 1.0, p2x = 0.30, p2y = 1.0;
+        let lo = 0, hi = 1;
+        for (let i = 0; i < 20; i++) {
+            const mid = (lo + hi) / 2;
+            const x = 3 * (1 - mid) * (1 - mid) * mid * p1x + 3 * (1 - mid) * mid * mid * p2x + mid * mid * mid;
+            if (x < t) lo = mid; else hi = mid;
+        }
+        const s = (lo + hi) / 2;
+        return 3 * (1 - s) * (1 - s) * s * p1y + 3 * (1 - s) * s * s * p2y + s * s * s;
+    }
+
+    function capsuleIcon(color, bearing) {
+        const w = MAP_TOKENS.VEHICLE_W, h = MAP_TOKENS.VEHICLE_H;
+        const r = MAP_TOKENS.VEHICLE_RADIUS, b = MAP_TOKENS.VEHICLE_BORDER;
+        const rot = Math.round(bearing || 0);
         return L.divIcon({
-            className: "sim-train-tri",
-            html: `<svg width="20" height="20" viewBox="0 0 20 20" class="train-tri" style="transform: rotate(${rot}deg);">`
-                + `<path d="M10 2 L17 17 L3 17 Z" fill="${color}" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
+            className: "vehicle-capsule-wrap",
+            html: `<div class="vehicle-capsule" style="background:${color};transform:rotate(${rot}deg)"></div>`,
+            iconSize: [w, h],
+            iconAnchor: [w / 2, h / 2],
         });
+    }
+
+    // Smooth vehicle animation state. Each entry: { marker, sTarget, sCurrent,
+    // bearingTarget, bearingCurrent, lineId, lastUpdate, color }
+    const vehicleAnimState = new Map();
+    const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const ANIM_DURATION = 1000; // 1s glide per update
+    const BEARING_FILTER = 0.15;
+
+    function shortAngleDiff(from, to) {
+        let d = ((to - from) % 360 + 540) % 360 - 180;
+        return d;
+    }
+
+    let vehicleAnimRunning = false;
+    function startVehicleAnimLoop() {
+        if (vehicleAnimRunning) return;
+        vehicleAnimRunning = true;
+        let lastFrame = performance.now();
+        function tick(now) {
+            if (document.hidden || vehicleAnimState.size === 0) {
+                vehicleAnimRunning = false;
+                return;
+            }
+            const dt = Math.min(now - lastFrame, 50); // cap at 50ms
+            lastFrame = now;
+            const belowZoom = map.getZoom() < MAP_TOKENS.majorHubMinZoom;
+
+            vehicleAnimState.forEach((state) => {
+                if (belowZoom || REDUCE_MOTION) return;
+                const elapsed = now - state.lastUpdate;
+                const t = Math.min(elapsed / ANIM_DURATION, 1);
+                const eased = trainGlideEase(t);
+                state.sCurrent = state.sStart + (state.sTarget - state.sStart) * eased;
+                state.bearingCurrent += shortAngleDiff(state.bearingCurrent, state.bearingTarget) * BEARING_FILTER;
+
+                const poly = linePolyline(state.lineId);
+                if (poly) {
+                    const pos = pointAtArc(poly, state.sCurrent);
+                    if (pos && isFinite(pos[0]) && isFinite(pos[1])) {
+                        state.marker.setLatLng(pos);
+                    }
+                }
+                const capsule = state.marker.getElement()?.querySelector(".vehicle-capsule");
+                if (capsule) {
+                    capsule.style.transform = `rotate(${Math.round(state.bearingCurrent)}deg)`;
+                }
+            });
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function trainMarkerIcon(train) {
+        return capsuleIcon(train.line.color || "#0072CE", train.bearing || 0);
     }
 
     function renderSimulatedTrainsOnMap(trains) {
@@ -2920,13 +3012,36 @@
         });
 
         for (const train of trains) {
+            const poly = linePolyline(train.line.id);
+            let sTarget = 0;
+            if (poly) {
+                let bestIdx = 0, bestD = Infinity;
+                for (let i = 0; i < poly.coords.length; i++) {
+                    const d = distanceMeters(poly.coords[i][0], poly.coords[i][1], train.lat, train.lng);
+                    if (d < bestD) { bestD = d; bestIdx = i; }
+                }
+                sTarget = poly.cum[bestIdx];
+            }
+            const now = performance.now();
+
             if (simulatedTrainMarkers.has(train.id)) {
                 const m = simulatedTrainMarkers.get(train.id);
-                m.setLatLng([train.lat, train.lng]);
-                m.setIcon(trainMarkerIcon(train)); // keep the heading current
+                if (REDUCE_MOTION || !poly) {
+                    m.setLatLng([train.lat, train.lng]);
+                    const capsule = m.getElement()?.querySelector(".vehicle-capsule");
+                    if (capsule) capsule.style.transform = `rotate(${Math.round(train.bearing || 0)}deg)`;
+                }
+                const st = vehicleAnimState.get(train.id);
+                if (st) {
+                    st.sStart = st.sCurrent;
+                    st.sTarget = sTarget;
+                    st.bearingTarget = train.bearing || 0;
+                    st.lastUpdate = now;
+                }
+                m.setTooltipContent(`${train.line.name} → ${train.destination}<br>Near ${train.fromStation}`);
             } else {
                 const marker = L.marker([train.lat, train.lng], {
-                    icon: trainMarkerIcon(train),
+                    icon: capsuleIcon(train.line.color || "#0072CE", train.bearing || 0),
                     keyboard: false,
                     zIndexOffset: 1000,
                 }).addTo(map);
@@ -2941,8 +3056,24 @@
                 });
 
                 simulatedTrainMarkers.set(train.id, marker);
+                vehicleAnimState.set(train.id, {
+                    marker,
+                    sTarget,
+                    sCurrent: sTarget,
+                    sStart: sTarget,
+                    bearingTarget: train.bearing || 0,
+                    bearingCurrent: train.bearing || 0,
+                    lineId: train.line.id,
+                    lastUpdate: now,
+                    color: train.line.color || "#0072CE",
+                });
             }
         }
+        // Clean up anim state for removed trains
+        vehicleAnimState.forEach((_, id) => {
+            if (!activeIds.has(id)) vehicleAnimState.delete(id);
+        });
+        startVehicleAnimLoop();
     }
 
     function renderSimulatedTrainsInPanel(trains) {
@@ -2982,6 +3113,57 @@
             });
         });
     }
+
+    // OASA airport bus positions on the map.
+    const oasaBusMarkers = new Map();
+    const OASA_BUS_COLORS = { X93: "#E67E22", X95: "#0072CE", X96: "#27AE60", X97: "#8E44AD" };
+    let oasaBusData = null;
+
+    function busMarkerIcon(bus) {
+        const color = OASA_BUS_COLORS[bus.lineId] || "#E67E22";
+        return capsuleIcon(color, bus.heading || 0);
+    }
+
+    function renderOasaBuses(vehicles) {
+        if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
+            oasaBusMarkers.forEach((m) => m.remove());
+            oasaBusMarkers.clear();
+            return;
+        }
+        const activeIds = new Set(vehicles.map((v) => `oasa_${v.vehicleId}`));
+        oasaBusMarkers.forEach((marker, id) => {
+            if (!activeIds.has(id)) { marker.remove(); oasaBusMarkers.delete(id); }
+        });
+        for (const v of vehicles) {
+            const id = `oasa_${v.vehicleId}`;
+            if (oasaBusMarkers.has(id)) {
+                const m = oasaBusMarkers.get(id);
+                m.setLatLng([v.lat, v.lng]);
+                m.setIcon(busMarkerIcon(v));
+            } else {
+                const marker = L.marker([v.lat, v.lng], {
+                    icon: busMarkerIcon(v),
+                    keyboard: false,
+                    zIndexOffset: 900,
+                }).addTo(map);
+                marker.bindTooltip(`${v.lineId} bus #${v.vehicleId}`, { direction: "top", offset: [0, -12] });
+                oasaBusMarkers.set(id, marker);
+            }
+        }
+    }
+
+    async function pollOasaBuses() {
+        try {
+            const resp = await fetch("https://api-syrmos.peterdsp.dev/api/oasa-airport-buses");
+            if (!resp.ok) return;
+            oasaBusData = await resp.json();
+            if (oasaBusData && oasaBusData.vehicles) {
+                renderOasaBuses(oasaBusData.vehicles);
+            }
+        } catch (_) {}
+    }
+    setInterval(pollOasaBuses, 30_000);
+    setTimeout(pollOasaBuses, 3000);
 
     const panelStyle = document.createElement("style");
     panelStyle.textContent = `

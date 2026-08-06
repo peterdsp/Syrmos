@@ -1189,7 +1189,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
                     if let view = mv.view(for: ann) {
                         let color = UIColor(SyrmosData.line(for: train.lineId)?.color
                             ?? SyrmosData.lineColor(for: train.lineId))
-                        view.image = Coordinator.triangleTrainImage(color: color, bearing: train.bearing)
+                        view.image = Coordinator.capsuleTrainImage(color: color, bearing: train.bearing)
                     }
                     seenSim.insert(t.id)
                 } else {
@@ -1352,6 +1352,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
             mapView = nil
         }
 
+        private var smoothBearings: [String: Double] = [:]
+
         @objc private func tick() {
             guard let mv = mapView, !descriptors.isEmpty else { return }
             let now = Date().timeIntervalSince1970
@@ -1359,10 +1361,36 @@ struct SyrmosMKMapView: UIViewRepresentable {
             for ann in trainAnns {
                 guard let d = descriptors[ann.id] else { continue }
                 guard let next = livePosition(descriptor: d, nowEpoch: now) else { continue }
-                if next.latitude != ann.coordinate.latitude || next.longitude != ann.coordinate.longitude {
+                let moved = next.latitude != ann.coordinate.latitude || next.longitude != ann.coordinate.longitude
+                if moved {
+                    let rawBearing = bearing(from: ann.coordinate, to: next)
+                    let prev = smoothBearings[ann.id] ?? rawBearing
+                    let smoothed = lowPassBearing(current: prev, target: rawBearing, alpha: 0.15)
+                    smoothBearings[ann.id] = smoothed
                     ann.coordinate = next
+                    if let view = mv.view(for: ann) {
+                        let color = UIColor(SyrmosData.line(for: ann.lineId)?.color
+                            ?? SyrmosData.lineColor(for: ann.lineId))
+                        view.image = Coordinator.capsuleTrainImage(color: color, bearing: smoothed)
+                    }
                 }
             }
+        }
+
+        private func bearing(from a: CLLocationCoordinate2D, to b: CLLocationCoordinate2D) -> Double {
+            let dLng = (b.longitude - a.longitude) * .pi / 180
+            let lat1 = a.latitude * .pi / 180
+            let lat2 = b.latitude * .pi / 180
+            let y = sin(dLng) * cos(lat2)
+            let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLng)
+            return (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+        }
+
+        private func lowPassBearing(current: Double, target: Double, alpha: Double) -> Double {
+            var diff = target - current
+            if diff > 180 { diff -= 360 }
+            if diff < -180 { diff += 360 }
+            return (current + alpha * diff + 360).truncatingRemainder(dividingBy: 360)
         }
 
         /// Resolve the train's exact position on the polyline at the
@@ -1421,11 +1449,28 @@ struct SyrmosMKMapView: UIViewRepresentable {
             )
         }
 
-        // MARK: - Station-aware easing (mirrors KMP TrainSimulator.stationAwareEase)
+        // MARK: - Train-glide easing (mirrors KMP VehicleInterpolation.trainGlideEase)
 
         private func stationAwareEase(_ t: Double) -> Double {
+            trainGlideEase(t)
+        }
+
+        private func trainGlideEase(_ t: Double) -> Double {
             let c = min(max(t, 0), 1)
-            return c * c * (3.0 - 2.0 * c)
+            let cx = 3.0 * 0.16
+            let bx = 3.0 * (0.30 - 0.16) - cx
+            let ax = 1.0 - cx - bx
+            let cy = 3.0 * 1.0
+            let by = 3.0 * (1.0 - 1.0) - cy
+            let ay = 1.0 - cy - by
+            var g = c
+            for _ in 0..<8 {
+                let xVal = ((ax * g + bx) * g + cx) * g
+                let slope = (3.0 * ax * g + 2.0 * bx) * g + cx
+                if slope == 0 { break }
+                g -= (xVal - c) / slope
+            }
+            return ((ay * g + by) * g + cy) * g
         }
 
         // MARK: - Polyline distance helpers
@@ -1559,7 +1604,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.annotation = annotation
                 v.canShowCallout = false
                 v.image = trainImage(for: train)
-                v.frame.size = CGSize(width: 28, height: 22)
+                let capsuleCanvas = max(MapDesignTokens.vehicleW, MapDesignTokens.vehicleH) + 8
+                v.frame.size = CGSize(width: capsuleCanvas, height: capsuleCanvas)
                 // Same decluttering rule as stations: below the regional band the
                 // whole fleet would pile into one blob on the coastline, so hide
                 // vehicles until the map is zoomed in far enough to place them on
@@ -1644,23 +1690,27 @@ struct SyrmosMKMapView: UIViewRepresentable {
         /// suburban A-lines (no per-line sprite). Rotated to the travel heading
         /// (compass bearing, 0 = north), coloured by line with a white outline -
         /// the iOS mirror of the web + Android triangle markers.
-        static func triangleTrainImage(color: UIColor, bearing: Double) -> UIImage {
-            let size = CGSize(width: 22, height: 22)
+        static func capsuleTrainImage(color: UIColor, bearing: Double) -> UIImage {
+            let w = MapDesignTokens.vehicleW
+            let h = MapDesignTokens.vehicleH
+            let border = MapDesignTokens.vehicleBorder
+            let radius = MapDesignTokens.vehicleRadius
+            let pad: CGFloat = 4
+            let canvas = max(w, h) + pad * 2
+            let size = CGSize(width: canvas, height: canvas)
             let renderer = UIGraphicsImageRenderer(size: size)
             return renderer.image { ctx in
                 let cg = ctx.cgContext
-                cg.translateBy(x: size.width / 2, y: size.height / 2)
-                cg.rotate(by: CGFloat(bearing) * .pi / 180) // clockwise, 0 = up = north
-                let r = size.width * 0.42
-                let path = UIBezierPath()
-                path.move(to: CGPoint(x: 0, y: -r))
-                path.addLine(to: CGPoint(x: r * 0.82, y: r * 0.72))
-                path.addLine(to: CGPoint(x: -r * 0.82, y: r * 0.72))
-                path.close()
+                cg.translateBy(x: canvas / 2, y: canvas / 2)
+                cg.rotate(by: CGFloat(bearing) * .pi / 180)
+                let rect = CGRect(x: -w / 2, y: -h / 2, width: w, height: h)
+                let path = UIBezierPath(roundedRect: rect, cornerRadius: radius)
                 color.setFill(); path.fill()
-                path.lineWidth = size.width * 0.09
-                path.lineJoinStyle = .round
-                UIColor.white.setStroke(); path.stroke()
+                let inset = rect.insetBy(dx: border / 2, dy: border / 2)
+                let stroke = UIBezierPath(roundedRect: inset, cornerRadius: radius - border / 2)
+                stroke.lineWidth = border
+                UIColor.white.setStroke(); stroke.stroke()
+                cg.setShadow(offset: CGSize(width: 0, height: 2), blur: 8, color: UIColor(white: 0.08, alpha: 0.3).cgColor)
             }
         }
 
@@ -1680,7 +1730,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
             let color = UIColor(SyrmosData.line(for: lineId)?.color
                 ?? SyrmosData.lineColor(for: lineId))
-            return Self.triangleTrainImage(color: color, bearing: bearing)
+            return Self.capsuleTrainImage(color: color, bearing: bearing)
         }
     }
 }
