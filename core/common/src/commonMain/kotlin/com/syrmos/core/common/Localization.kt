@@ -221,10 +221,10 @@ enum class L {
             else -> "About"
         }
         ABOUT_TEXT -> when (lang) {
-            AppLanguage.GREEK -> "Δεδομένα δρομολογίων από τα επίσημα προγράμματα ΣΤΑΣΥ και Hellenic Train. Η εφαρμογή δεν σχετίζεται με ΣΤΑΣΥ, Hellenic Train ή ΟΑΣΑ."
-            AppLanguage.ALBANIAN -> "Të dhënat e orareve nga oraret zyrtare STASY dhe Hellenic Train. Ky aplikacion nuk është i lidhur me STASY, Hellenic Train ose OASA."
-            AppLanguage.ITALIAN -> "Dati degli orari da STASY e Hellenic Train. Questa app non è affiliata con STASY, Hellenic Train o OASA."
-            else -> "Schedule data from STASY and Hellenic Train official timetables. This app is not affiliated with STASY, Hellenic Train or OASA."
+            AppLanguage.GREEK -> "Οι πληροφορίες μεταφορών μπορεί να περιλαμβάνουν δημόσια ή επίσημα δεδομένα από ΣΤΑΣΥ, ΟΑΣΑ, ΟΣΕΘ, ΟΑΣΘ, Μετρό Θεσσαλονίκης, ΟΣΕ και Hellenic Train, για μετρό, τραμ, InterCity, περιφερειακές και προαστιακές υπηρεσίες, συμπεριλαμβανομένων των Προαστιακών Αθήνας, Θεσσαλονίκης και Πάτρας. Το Syrmos είναι ανεξάρτητο και δεν συνδέεται, δεν υποστηρίζεται και δεν λειτουργεί από κανέναν από αυτούς τους φορείς ή παρόχους."
+            AppLanguage.ALBANIAN -> "Informacioni i transportit mund të përfshijë të dhëna publike ose zyrtare nga STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE dhe Hellenic Train, për shërbimet e metrosë, tramvajit, InterCity, rajonale dhe periferike, përfshirë hekurudhat periferike të Athinës, Selanikut dhe Patrës. Syrmos është i pavarur dhe nuk është i lidhur, miratuar apo operuar nga asnjë prej këtyre autoriteteve ose operatorëve."
+            AppLanguage.ITALIAN -> "Le informazioni sui trasporti possono includere dati pubblici o ufficiali di STASY, OASA, OSETH, OASTH, Metropolitana di Salonicco, OSE e Hellenic Train, relativi a metro, tram, InterCity, servizi regionali e suburbani, comprese le ferrovie suburbane di Atene, Salonicco e Patrasso. Syrmos è indipendente e non è affiliata, approvata o gestita da nessuna di queste autorità o operatori."
+            else -> "Transport information may include public or official data from STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE and Hellenic Train, covering metro, tram, InterCity, regional and suburban services, including Athens, Thessaloniki and Patras Suburban Railway. Syrmos is independent and is not affiliated with, endorsed by or operated by any of these authorities or operators."
         }
         COULD_NOT_REACH -> when (lang) {
             AppLanguage.GREEK -> "Δεν ήταν δυνατή η σύνδεση με stasy.gr"

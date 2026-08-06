@@ -32,6 +32,7 @@ from urllib.parse import quote, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 from . import db as dbmod
+from .translation import translate_from_greek
 
 USER_AGENT = "syrmos-stasy-scraper/1.0 (+https://syrmos.peterdsp.dev)"
 # The Greek index (/ανακοινώσεις/) is rendered client-side via JS and
@@ -167,14 +168,6 @@ def _has_greek(text: str) -> bool:
     return bool(_GREEK_LETTER_RE.search(text))
 
 
-def _is_valid_italian_translation(text: str) -> bool:
-    lowered = text.lower()
-    return bool(text) and not _has_greek(text) and not any(
-        marker in lowered
-        for marker in ("error 500", "that's an error", "there was an error", "server error")
-    )
-
-
 def _translate_gr_en(text: str) -> str:
     """Translate Greek text to English via deep-translator (Google).
     Returns the original text on any failure so the scraper never errors
@@ -191,39 +184,16 @@ def _translate_gr_sq(text: str) -> str:
 
 
 def _translate_it(text: str) -> str:
-    text = text.strip()
-    if not text:
-        return ""
-    try:
-        from deep_translator import GoogleTranslator
-        translated = GoogleTranslator(source="auto", target="it").translate(text)
-        translated = (translated or "").strip()
-        if _is_valid_italian_translation(translated):
-            return translated
-    except Exception:
-        pass
-    try:
-        from deep_translator import MyMemoryTranslator
-        translated = MyMemoryTranslator(source="greek", target="italian").translate(text)
-        translated = (translated or "").strip()
-        return translated if _is_valid_italian_translation(translated) else ""
-    except Exception:
-        return ""
+    return translate_from_greek(text, "it")
 
 
 def _translate_gr_to(text: str, target_lang: str) -> str:
-    text = text.strip()
-    if not text or not _has_greek(text):
-        return text
-    try:
-        from deep_translator import GoogleTranslator
-        translated = GoogleTranslator(source="el", target=target_lang).translate(text)
-        translated = (translated or "").strip() or text
-        if target_lang == "en":
-            return _canonicalise_station_names(translated)
-        return _canonicalise_station_names_sq(translated)
-    except Exception:
-        return text
+    translated = translate_from_greek(text, target_lang)
+    if not translated:
+        return ""
+    if target_lang == "en":
+        return _canonicalise_station_names(translated)
+    return _canonicalise_station_names_sq(translated)
 
 
 def _canonicalise_station_names_sq(text: str) -> str:
@@ -942,7 +912,7 @@ def run_once(now: date | None = None) -> int:
     # text using the same detectors the normal path uses.
     if homepage_status and homepage_status["status"] == "alert" and homepage_status["raw_message"]:
         banner_gr = homepage_status["raw_message"]
-        banner_en = homepage_status["raw_message_en"] or banner_gr
+        banner_en = homepage_status["raw_message_en"] or ""
         banner_sq = homepage_status.get("raw_message_sq") or ""
         banner_it = homepage_status.get("raw_message_it") or ""
         affected = detect_affected_lines(banner_gr + " " + banner_en)

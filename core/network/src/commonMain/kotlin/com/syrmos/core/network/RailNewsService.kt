@@ -1,5 +1,6 @@
 package com.syrmos.core.network
 
+import com.syrmos.core.common.AppLanguage
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -23,7 +24,29 @@ data class RailNewsItem(
     val publishedAt: String,
     val thumbnailUrl: String = "",
     val categories: List<String> = emptyList(),
-)
+) {
+    fun localizedTitle(language: AppLanguage): String = when (language) {
+        AppLanguage.GREEK -> title
+        AppLanguage.ALBANIAN -> titleSq.takeIf { it.isUsableLocalizedContent() }
+            ?: "Njoftim hekurudhor"
+        AppLanguage.ITALIAN -> titleIt.takeIf { it.isUsableLocalizedContent() }
+            ?: "Avviso ferroviario"
+        else -> titleEn.takeIf { it.isUsableLocalizedContent() }
+            ?: title.takeIf { it.isUsableLocalizedContent() }
+            ?: "Rail announcement"
+    }
+
+    fun localizedSummary(language: AppLanguage): String = when (language) {
+        AppLanguage.GREEK -> summary
+        AppLanguage.ALBANIAN -> summarySq.takeIf { it.isUsableLocalizedContent() }
+            ?: "Hap njoftimin zyrtar për hollësi të plota."
+        AppLanguage.ITALIAN -> summaryIt.takeIf { it.isUsableLocalizedContent() }
+            ?: "Apri l'avviso ufficiale per tutti i dettagli."
+        else -> summaryEn.takeIf { it.isUsableLocalizedContent() }
+            ?: summary.takeIf { it.isUsableLocalizedContent() }
+            ?: "Open the official notice for full details."
+    }
+}
 
 class RailNewsService(private val httpClient: HttpClient) {
     private val json = Json { ignoreUnknownKeys = true }

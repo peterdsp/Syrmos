@@ -103,7 +103,7 @@ internal fun pulseContextLabel(
         when (hour) {
             in 5..10 -> localized(lang, "Morning commute", "Πρωινή μετακίνηση", "Udhëtimi i mëngjesit", "Viaggio mattutino")
             in 17..20 -> localized(lang, "Evening return", "Βραδινή επιστροφή", "Kthimi i mbrëmjes", "Rientro serale")
-            else -> localized(lang, "Your rail pulse", "Ο παλμός της διαδρομής", "Pulsi i udhëtimit", "Il tuo impulso ferroviario")
+            else -> localized(lang, "Your Ichnos status", "Η κατασταση Ichnos", "Gjendja jote Ichnos", "Il tuo stato Ichnos")
         }
     }
 }
@@ -215,7 +215,7 @@ internal fun InsightsStream(
             add(
                 HomeInsight(
                     title = localized(lang, "Network status", "Κατάσταση δικτύου", "Gjendja e rrjetit", "Stato della rete"),
-                    summary = localizedValue(lang, it.rawMessageEn, it.rawMessage, it.rawMessageSq, it.rawMessageIt),
+                    summary = it.localizedMessage(lang),
                     source = "Syrmos",
                     timestamp = "",
                     url = "",
@@ -226,8 +226,8 @@ internal fun InsightsStream(
         announcements.sortedByDescending { it.isServiceAlert }.forEach { item ->
             add(
                 HomeInsight(
-                    title = localizedValue(lang, item.titleEn, item.title, item.titleSq, item.titleIt),
-                    summary = localizedValue(lang, item.summaryEn, item.summary, item.summarySq, item.summaryIt),
+                    title = item.localizedTitle(lang),
+                    summary = item.localizedSummary(lang),
                     source = "STASY",
                     timestamp = item.date,
                     url = item.url,
@@ -238,8 +238,8 @@ internal fun InsightsStream(
         news.forEach { item ->
             add(
                 HomeInsight(
-                    title = localizedValue(lang, item.titleEn, item.title, item.titleSq, item.titleIt),
-                    summary = localizedValue(lang, item.summaryEn, item.summary, item.summarySq, item.summaryIt),
+                    title = item.localizedTitle(lang),
+                    summary = item.localizedSummary(lang),
                     source = "Hellenic Train",
                     timestamp = item.publishedAt.take(10),
                     url = item.url,

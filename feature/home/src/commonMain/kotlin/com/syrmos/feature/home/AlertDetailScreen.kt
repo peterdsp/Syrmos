@@ -127,19 +127,11 @@ fun AlertDetailScreen(
     }
 }
 
-private fun localizedTitle(alert: STASYAnnouncement, language: AppLanguage): String = when (language) {
-    AppLanguage.GREEK -> alert.title
-    AppLanguage.ALBANIAN -> alert.titleSq.ifBlank { alert.titleEn.ifBlank { alert.title } }
-    AppLanguage.ITALIAN -> alert.titleIt.ifBlank { alert.titleEn.ifBlank { alert.title } }
-    else -> alert.titleEn.ifBlank { alert.title }
-}
+private fun localizedTitle(alert: STASYAnnouncement, language: AppLanguage): String =
+    alert.localizedTitle(language)
 
-private fun localizedSummary(alert: STASYAnnouncement, language: AppLanguage): String = when (language) {
-    AppLanguage.GREEK -> alert.summary
-    AppLanguage.ALBANIAN -> alert.summarySq.ifBlank { alert.summaryEn.ifBlank { alert.summary } }
-    AppLanguage.ITALIAN -> alert.summaryIt.ifBlank { alert.summaryEn.ifBlank { alert.summary } }
-    else -> alert.summaryEn.ifBlank { alert.summary }
-}
+private fun localizedSummary(alert: STASYAnnouncement, language: AppLanguage): String =
+    alert.localizedSummary(language)
 
 private fun alertTitle(language: AppLanguage) = when (language) {
     AppLanguage.GREEK -> "Ειδοποιηση"

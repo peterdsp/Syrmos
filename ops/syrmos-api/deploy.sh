@@ -97,7 +97,7 @@ ssh "$PI" "sudo systemctl enable --now syrmos-scraper-ht-important-info.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-oseth.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-thessmetro.timer"
 
-echo ">>> patching ~/syrmos-proxy/nginx.conf with /api/departures/next + /api/ariadne/chat + reloading nginx"
+echo ">>> patching ~/syrmos-proxy/nginx.conf with dynamic API routes + reloading nginx"
 ssh "$PI" bash <<'REMOTE'
 set -e
 conf=~/syrmos-proxy/nginx.conf
@@ -152,6 +152,50 @@ block = """        # --- Ariadne LLM chat (proxied to FastAPI) ---
         """
 p.write_text(txt.replace(marker, block + marker, 1))
 print("patched ariadne")
+PY
+fi
+if ! grep -q "/api/community/summary" "$conf"; then
+  cp "$conf" "$conf.bak.community.$(date +%s)"
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "syrmos-proxy/nginx.conf"
+txt = p.read_text()
+marker = "# --- admin UI (FastAPI"
+block = """        # --- anonymous Ichnos community reporting ---
+        location = /api/community/reports {
+            proxy_pass http://127.0.0.1:8092/api/community/reports;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Content-Type $content_type;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "POST, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Content-Type" always;
+            add_header Cache-Control "no-store" always;
+            if ($request_method = OPTIONS) { return 204; }
+        }
+
+        location ~ ^/api/community/reports/([A-Za-z0-9_-]+)$ {
+            proxy_pass http://127.0.0.1:8092/api/community/reports/$1;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "DELETE, OPTIONS" always;
+            add_header Cache-Control "no-store" always;
+            if ($request_method = OPTIONS) { return 204; }
+        }
+
+        location = /api/community/summary {
+            proxy_pass http://127.0.0.1:8092/api/community/summary$is_args$args;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Cache-Control "no-store" always;
+        }
+
+        """
+p.write_text(txt.replace(marker, block + marker, 1))
+print("patched community reporting")
 PY
 fi
 /usr/sbin/nginx -t -c "$conf" -p ~/syrmos-proxy/

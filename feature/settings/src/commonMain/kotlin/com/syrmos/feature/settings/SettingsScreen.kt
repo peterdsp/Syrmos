@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -38,7 +39,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.Switch
-import androidx.compose.ui.platform.LocalUriHandler
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.AppThemeMode
 import com.syrmos.core.common.AriadneEngineStatus
@@ -76,9 +76,6 @@ fun SettingsScreen(
     var showContact by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
-    val openStasyMap = {
-        uriHandler.openUri("https://syrmos.peterdsp.dev/files/stasy_system_map.pdf")
-    }
     val showVehicles by MapPreferences.showLiveVehicles.collectAsState()
     val defaultRegion by MapPreferences.defaultRegion.collectAsState()
     var showRegionPicker by remember { mutableStateOf(false) }
@@ -560,32 +557,6 @@ fun SettingsScreen(
                         modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }
-            }
-        }
-
-        // Map
-        item {
-            SettingsSection(title = when (lang) {
-                AppLanguage.GREEK -> "Χαρτης δικτυου"
-                AppLanguage.ALBANIAN -> "Harta e rrjetit"
-                AppLanguage.ITALIAN -> "Mappa della rete"
-                else -> "Network map"
-            }) {
-                SettingsRow(
-                    title = when (lang) {
-                        AppLanguage.GREEK -> "Σιδηροδρομικο δικτυο Αθηνας"
-                        AppLanguage.ALBANIAN -> "Hekurudhat e zones metropolitane te Athines"
-                        AppLanguage.ITALIAN -> "Rete ferroviaria dell'area metropolitana di Atene"
-                        else -> "Athens metropolitan area railways"
-                    },
-                    value = when (lang) {
-                        AppLanguage.GREEK -> "Ανοιγμα >"
-                        AppLanguage.ALBANIAN -> "Hap >"
-                        AppLanguage.ITALIAN -> "Apri >"
-                        else -> "Open >"
-                    },
-                    onClick = { openStasyMap() },
-                )
             }
         }
 

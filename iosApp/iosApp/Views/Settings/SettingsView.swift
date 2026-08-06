@@ -8,7 +8,6 @@ struct SyrmosSettingsView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var refreshAlert: RefreshAlert?
     @State private var showContactSheet = false
-    @State private var showSystemMap = false
     @State private var showAriadne = false
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
     @AppStorage("syrmos.map.showLiveVehicles") private var showLiveVehicles: Bool = true
@@ -38,7 +37,6 @@ struct SyrmosSettingsView: View {
                     developerSection
                 }
 
-                mapSection
                 contactSection
 
                 #if DEBUG
@@ -60,9 +58,6 @@ struct SyrmosSettingsView: View {
                 CompactTabHeader(loc[.moreTab])
             }
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showSystemMap) {
-                StasyMapView()
-            }
             .sheet(isPresented: $showAriadne) {
                 AriadneView()
             }
@@ -409,29 +404,6 @@ struct SyrmosSettingsView: View {
             )
             .font(.caption)
             .foregroundStyle(.secondary)
-        }
-    }
-
-    // MARK: - Map (static)
-
-    private var mapSection: some View {
-        Section(loc.language == .greek ? "Χαρτης δικτυου" : loc.language == .albanian ? "Harta e rrjetit" : loc.language == .italian ? "Mappa della rete" : "Network map") {
-            Button {
-                showSystemMap = true
-            } label: {
-                HStack {
-                    Label(
-                        loc.language == .greek ? "Σιδηροδρομικο δικτυο Αθηνας" : loc.language == .albanian ? "Hekurudhat e zones metropolitane te Athines" : loc.language == .italian ? "Rete ferroviaria dell'area metropolitana di Atene" : "Athens metropolitan area railways",
-                        systemImage: "map"
-                    )
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote)
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
         }
     }
 

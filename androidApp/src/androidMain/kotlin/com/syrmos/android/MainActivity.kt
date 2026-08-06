@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.syrmos.app.SyrmosApp
 import com.syrmos.app.platform.setLocationPermissionRequester
+import com.syrmos.app.platform.setAirportCalendarPermissionRequester
 import com.syrmos.app.platform.setNotificationPermissionRequester
 import com.syrmos.app.platform.setPendingAssistantQuery
 import kotlinx.coroutines.CompletableDeferred
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
 
     private var pending: CompletableDeferred<Unit>? = null
     private var notifPending: CompletableDeferred<Unit>? = null
+    private var calendarPending: CompletableDeferred<Unit>? = null
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -32,6 +34,13 @@ class MainActivity : ComponentActivity() {
     ) {
         notifPending?.complete(Unit)
         notifPending = null
+    }
+
+    private val calendarPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        calendarPending?.complete(Unit)
+        calendarPending = null
     }
 
     // Location for the "Near Me" Glance widget (nearest station + walking
@@ -91,6 +100,13 @@ class MainActivity : ComponentActivity() {
             deferred.await()
         }
 
+        setAirportCalendarPermissionRequester {
+            val deferred = CompletableDeferred<Unit>()
+            calendarPending = deferred
+            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+            deferred.await()
+        }
+
         handleAssistantIntent(intent)
         handleNotificationIntent(intent)
 
@@ -135,6 +151,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         setLocationPermissionRequester(null)
+        setAirportCalendarPermissionRequester(null)
         super.onDestroy()
     }
 }

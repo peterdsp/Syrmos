@@ -28,8 +28,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,12 +56,14 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.designsystem.animation.staggeredEntrance
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Region
+import com.syrmos.core.model.transit.Station
 import com.syrmos.core.model.alerts.AlertSeverity
 import org.koin.compose.koinInject
 
@@ -90,13 +93,34 @@ fun LinesScreen(
     onLineClick: (String) -> Unit = {},
     onDestinationClick: (stationId: String, lineId: String) -> Unit = { _, _ -> },
     onBrowseAllClick: () -> Unit = {},
+    onDetectOrigin: suspend () -> String? = { null },
+    onRequestLocationOrigin: suspend () -> String? = { null },
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     val announcementsRepository = koinInject<AnnouncementsRepository>()
+    val stationRepository = koinInject<StationRepositoryImpl>()
     val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
+    val originStations by remember(stationRepository) { stationRepository.getAllStations() }
+        .collectAsState(initial = emptyList())
     var reportContext by remember { mutableStateOf<RailPulseReportContext?>(null) }
     var railPulseDestination by remember { mutableStateOf<RailPulseDestination?>(null) }
+    var manualOrigin by remember { mutableStateOf<Station?>(null) }
+    var gpsOriginName by remember { mutableStateOf<String?>(null) }
+    var showOriginPicker by remember { mutableStateOf(false) }
+
+    PlatformBackHandler(enabled = railPulseDestination != null) {
+        railPulseDestination = null
+    }
+
+    val selectedOriginName = manualOrigin?.let { stationName(it, lang) } ?: gpsOriginName
+    val selectedOriginId = manualOrigin?.id ?: gpsOriginName?.let { currentName ->
+        originStations.firstOrNull { stationName(it, lang) == currentName }?.id
+    }
+
+    LaunchedEffect(Unit) {
+        gpsOriginName = onDetectOrigin()
+    }
 
     val filteredDestinations = CURATED_DESTINATIONS.filter { destination ->
         if (uiState.searchQuery.isBlank()) return@filter true
@@ -120,6 +144,10 @@ fun LinesScreen(
             onReport = { reportContext = it },
         )
         RailPulseDestination.CONTRIBUTION -> RailPulseContributionScreen(
+            lang = lang,
+            onBack = { railPulseDestination = null },
+        )
+        RailPulseDestination.FEED -> RailPulseFeedScreen(
             lang = lang,
             onBack = { railPulseDestination = null },
         )
@@ -159,6 +187,10 @@ fun LinesScreen(
                                 onReport = { reportContext = it },
                                 onOpenStation = { railPulseDestination = RailPulseDestination.STATION },
                                 onOpenTrain = { railPulseDestination = RailPulseDestination.TRAIN },
+                                onSeeAll = { railPulseDestination = RailPulseDestination.FEED },
+                                originId = selectedOriginId,
+                                originName = selectedOriginName,
+                                onChooseOrigin = { showOriginPicker = true },
                             )
                         }
                         item {
@@ -328,6 +360,31 @@ fun LinesScreen(
             onDismiss = { reportContext = null },
         )
     }
+
+    if (showOriginPicker) {
+        ExploreOriginPickerSheet(
+            lang = lang,
+            stations = originStations,
+            selectedStationId = manualOrigin?.id,
+            onUseLocation = onRequestLocationOrigin,
+            onLocationSelected = { name ->
+                gpsOriginName = name
+                manualOrigin = null
+                showOriginPicker = false
+            },
+            onStationSelected = { station ->
+                manualOrigin = station
+                showOriginPicker = false
+            },
+            onDismiss = { showOriginPicker = false },
+        )
+    }
+}
+
+private fun stationName(station: Station, lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> station.nameEl
+    AppLanguage.ALBANIAN -> station.nameSq ?: station.name
+    else -> station.name
 }
 
 @Composable
@@ -374,7 +431,7 @@ private fun ExploreHeader(
             ) {
                 IconButton(onClick = onContributionClick) {
                     Icon(
-                        imageVector = Icons.Filled.Person,
+                        imageVector = Icons.Filled.Train,
                         contentDescription = pulseText(
                             lang,
                             "Local contribution",
