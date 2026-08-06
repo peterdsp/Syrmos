@@ -326,7 +326,7 @@ struct HomeView: View {
         if (17...20).contains(hour) {
             return homeText("Evening return", "Βραδινή επιστροφή", "Kthimi i mbrëmjes", "Rientro serale")
         }
-        return homeText("Your rail pulse", "Ο παλμός της διαδρομής", "Pulsi i udhëtimit", "Il tuo impulso ferroviario")
+        return homeText("Your Ichnos status", "Η κατασταση Ichnos", "Gjendja jote Ichnos", "Il tuo stato Ichnos")
     }
 
     private func pulseContextTag(_ text: String, color: Color) -> some View {

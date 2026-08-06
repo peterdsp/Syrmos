@@ -2,13 +2,27 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.6**, iOS build 120 and Android versionCode 205. Burned Android version codes never reusable: 105, 106, 109-138, and 200-205. Next Android release must use 206+.
+Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.7**, iOS build 121 and Android versionCode 206. Burned Android version codes never reusable: 105, 106, 109-138, and 200-206. Next Android release must use 207+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 2.0.0-beta.7 - 2026-08-06
+
+The production Ichnos and Airport Hub beta.
+
+- **Production anonymous Ichnos reporting.** Android, iOS, Apple Watch, Live Activities, and tracked-departure notifications submit privacy-minimized reports to the Raspberry Pi API. Reports contain no account, device identifier, or precise location, expire from active summaries after two hours, and are deleted after seven days.
+- **Honest community summaries.** When no problem is active, Ichnos shows a deterministic daily journey estimate clearly labeled as an estimate. A single active issue hides the estimate and surfaces the issue instead. Report refinement and undo update the server rather than demo-only local counters.
+- **Local contributor identity.** Personal names, profile photos, and the unexplained settings action are removed. Each device receives a playful rail-themed contributor title, while progress and milestones remain local.
+- **Airport Calendar Hub.** Android and iOS can read airport-related events from the device calendar, browse the next eight days, and adjust metro, suburban rail, and bus planning for a selected future date. No sample flight or fabricated live timetable remains.
+- **Navigation and layout repairs.** Contribution and Ichnos detail screens support system back navigation, including iOS left-edge swipe. The quick-report sheet and station bottom sheet fit correctly above the tab bar and safe area.
+- **Four-language content integrity.** English, Greek, Albanian, and Italian announcement content is selected from validated server translations. Visible RailPulse naming is replaced with Ichnos throughout the app.
+- **Settings and attribution cleanup.** The redundant Network map row is removed. The disclaimer now covers STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE, Hellenic Train, and Athens, Thessaloniki, and Patras suburban services.
+
+iOS 2.0.0 build 121 / Android 2.0.0 versionCode 206. Tagged as `v2.0.0-beta.7`.
 
 ## 2.0.0-beta.6 - 2026-08-06
 

@@ -15,7 +15,18 @@ struct LinesView: View {
     @State private var recentStations: [RecentStation] = RecentStationStore.load()
     @State private var presentedSheet: ExploreSheet?
     @State private var railPulseDestination: RailPulseDestination?
+    @State private var manualOrigin: MapStationNode?
     @StateObject private var stasyService = STASYService()
+    @StateObject private var locationService = LocationService()
+
+    private var exploreOrigin: MapStationNode? {
+        manualOrigin ?? locationService.nearbyStations.first?.station
+    }
+
+    private var exploreOriginName: String? {
+        guard let exploreOrigin else { return nil }
+        return loc.language == .greek ? exploreOrigin.nameEl : exploreOrigin.displayName
+    }
 
     private var filteredLines: [TransitLine] {
         lines.filter { line in
@@ -84,6 +95,8 @@ struct LinesView: View {
                     }
                 case .contribution:
                     RailPulseContributionView(language: loc.language)
+                case .feed:
+                    RailPulseAllActivityView(language: loc.language)
                 }
             }
         }
@@ -93,8 +106,16 @@ struct LinesView: View {
                 RailPulseQuickReportSheet(context: context, language: loc.language)
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
+            case .originPicker:
+                ExploreOriginPickerSheet(
+                    language: loc.language,
+                    locationService: locationService,
+                    selectedStationId: exploreOrigin?.id,
+                    onSelect: { station in manualOrigin = station }
+                )
             }
         }
+        .onAppear { locationService.requestIfNeeded() }
     }
 
     // MARK: - Segmented Control
@@ -123,7 +144,7 @@ struct LinesView: View {
             Button {
                 railPulseDestination = .contribution
             } label: {
-                Image(systemName: "person.crop.circle.fill")
+                Image(systemName: "tram.fill")
                     .font(.title2)
                     .foregroundStyle(Color.syrmosPrimary)
                     .frame(width: 44, height: 44)
@@ -196,7 +217,12 @@ struct LinesView: View {
                 language: loc.language,
                 onReport: { context in presentedSheet = .quickReport(context) },
                 onOpenStation: { railPulseDestination = .station },
-                onOpenTrain: { railPulseDestination = .train }
+                onOpenTrain: { railPulseDestination = .train },
+                onSeeAll: { railPulseDestination = .feed },
+                originId: exploreOrigin?.id,
+                originName: exploreOriginName,
+                originUsesGPS: manualOrigin == nil && locationService.nearbyStations.first != nil,
+                onChooseOrigin: { presentedSheet = .originPicker }
             )
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
             .listRowBackground(Color.clear)

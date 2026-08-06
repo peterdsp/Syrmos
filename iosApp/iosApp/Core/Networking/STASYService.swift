@@ -47,14 +47,14 @@ struct STASYAnnouncement: Identifiable {
     ) {
         self.id = id
         self.title = title
-        self.titleEn = titleEn
-        self.titleSq = titleSq
-        self.titleIt = titleIt
+        self.titleEn = Self.safeTitle(titleEn, source: title, language: .english, category: category)
+        self.titleSq = Self.safeTitle(titleSq, source: title, language: .albanian, category: category)
+        self.titleIt = Self.safeTitle(titleIt, source: title, language: .italian, category: category)
         self.date = date
         self.summary = summary
-        self.summaryEn = summaryEn
-        self.summarySq = summarySq
-        self.summaryIt = summaryIt
+        self.summaryEn = Self.safeSummary(summaryEn, source: summary, language: .english)
+        self.summarySq = Self.safeSummary(summarySq, source: summary, language: .albanian)
+        self.summaryIt = Self.safeSummary(summaryIt, source: summary, language: .italian)
         self.url = url
         self.category = category
         self.affectedLines = affectedLines
@@ -83,6 +83,45 @@ struct STASYAnnouncement: Identifiable {
         case .albanian: return summarySq.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summarySq
         case .italian: return summaryIt.isEmpty ? (summaryEn.isEmpty ? summary : summaryEn) : summaryIt
         case .english: return summaryEn.isEmpty ? summary : summaryEn
+        }
+    }
+
+    static func isUsableTranslation(_ text: String) -> Bool {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        return !text.unicodeScalars.contains { scalar in
+            (0x0370...0x03FF).contains(scalar.value) || (0x1F00...0x1FFF).contains(scalar.value)
+        }
+    }
+
+    private static func safeTitle(
+        _ candidate: String,
+        source: String,
+        language: AppLanguage,
+        category: AnnouncementCategory
+    ) -> String {
+        if isUsableTranslation(candidate) { return candidate }
+        if language == .english, isUsableTranslation(source) { return source }
+        let isAlert = category == .serviceAlert
+        switch language {
+        case .greek: return source
+        case .albanian: return isAlert ? "Njoftim për shërbimin" : "Njoftim hekurudhor"
+        case .italian: return isAlert ? "Avviso sul servizio" : "Avviso ferroviario"
+        case .english: return isAlert ? "Service alert" : "Rail announcement"
+        }
+    }
+
+    private static func safeSummary(
+        _ candidate: String,
+        source: String,
+        language: AppLanguage
+    ) -> String {
+        if isUsableTranslation(candidate) { return candidate }
+        if language == .english, isUsableTranslation(source) { return source }
+        switch language {
+        case .greek: return source
+        case .albanian: return "Hap njoftimin zyrtar për hollësi të plota."
+        case .italian: return "Apri l'avviso ufficiale per tutti i dettagli."
+        case .english: return "Open the official notice for full details."
         }
     }
 }
@@ -200,13 +239,14 @@ final class STASYService: ObservableObject {
             case .greek:
                 return rawMessage
             case .albanian:
-                if let sq = rawMessageSq, !sq.isEmpty { return sq }
-                return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
+                if let sq = rawMessageSq, STASYAnnouncement.isUsableTranslation(sq) { return sq }
+                return "Njoftim për shërbimin. Hap njoftimin zyrtar për hollësi."
             case .italian:
-                if let it = rawMessageIt, !it.isEmpty { return it }
-                return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
+                if let it = rawMessageIt, STASYAnnouncement.isUsableTranslation(it) { return it }
+                return "Avviso sul servizio. Apri l'avviso ufficiale per i dettagli."
             case .english:
-                return (rawMessageEn?.isEmpty == false ? rawMessageEn! : rawMessage)
+                if let en = rawMessageEn, STASYAnnouncement.isUsableTranslation(en) { return en }
+                return "Service alert. Open the official notice for details."
             }
         }
     }
