@@ -26,6 +26,7 @@ VALID_SIGNALS = {
 }
 POSITIVE_SIGNALS = {"normal", "clean"}
 REPORT_TTL_MINUTES = 120
+VALID_HISTORY_PERIODS = {"day", "month", "year"}
 
 
 def utc_now() -> dt.datetime:
@@ -34,6 +35,52 @@ def utc_now() -> dt.datetime:
 
 def _iso(value: dt.datetime) -> str:
     return value.astimezone(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _report_day(value: dt.datetime) -> str:
+    return value.astimezone(ATHENS).date().isoformat()
+
+
+def _adjust_daily_aggregate(
+    conn: sqlite3.Connection,
+    *,
+    report_day: str,
+    scope_id: str,
+    scope_label: str,
+    signal: str,
+    amount: int,
+    now: dt.datetime,
+) -> None:
+    if amount > 0:
+        conn.execute(
+            """
+            INSERT INTO community_report_daily(
+                report_day, scope_id, scope_label, signal, report_count, updated_at
+            ) VALUES(?,?,?,?,?,?)
+            ON CONFLICT(report_day, scope_id, signal) DO UPDATE SET
+                scope_label=excluded.scope_label,
+                report_count=community_report_daily.report_count + excluded.report_count,
+                updated_at=excluded.updated_at
+            """,
+            (report_day, scope_id, scope_label, signal, amount, _iso(now)),
+        )
+        return
+
+    conn.execute(
+        """
+        UPDATE community_report_daily
+        SET report_count = MAX(0, report_count + ?), updated_at = ?
+        WHERE report_day = ? AND scope_id = ? AND signal = ?
+        """,
+        (amount, _iso(now), report_day, scope_id, signal),
+    )
+    conn.execute(
+        """
+        DELETE FROM community_report_daily
+        WHERE report_day = ? AND scope_id = ? AND signal = ? AND report_count = 0
+        """,
+        (report_day, scope_id, signal),
+    )
 
 
 def validate_report(payload: dict[str, Any]) -> dict[str, str]:
@@ -80,34 +127,67 @@ def upsert_report(
     values = validate_report(payload)
     current = now or utc_now()
     expires_at = current + dt.timedelta(minutes=REPORT_TTL_MINUTES)
-    conn.execute(
-        """
-        INSERT INTO community_reports(
-            report_id, scope_id, scope_label, signal, detail, platform,
-            locale, created_at, expires_at
-        ) VALUES(?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(report_id) DO UPDATE SET
-            scope_id=excluded.scope_id,
-            scope_label=excluded.scope_label,
-            signal=excluded.signal,
-            detail=excluded.detail,
-            platform=excluded.platform,
-            locale=excluded.locale,
-            created_at=excluded.created_at,
-            expires_at=excluded.expires_at
-        """,
-        (
-            values["report_id"],
-            values["scope_id"],
-            values["scope_label"],
-            values["signal"],
-            values["detail"] or None,
-            values["platform"],
-            values["locale"] or None,
-            _iso(current),
-            _iso(expires_at),
-        ),
-    )
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        existing = conn.execute(
+            """
+            SELECT scope_id, scope_label, signal, created_at
+            FROM community_reports WHERE report_id = ?
+            """,
+            (values["report_id"],),
+        ).fetchone()
+        if existing:
+            existing_created = dt.datetime.fromisoformat(existing["created_at"].replace("Z", "+00:00"))
+            _adjust_daily_aggregate(
+                conn,
+                report_day=_report_day(existing_created),
+                scope_id=existing["scope_id"],
+                scope_label=existing["scope_label"],
+                signal=existing["signal"],
+                amount=-1,
+                now=current,
+            )
+        conn.execute(
+            """
+            INSERT INTO community_reports(
+                report_id, scope_id, scope_label, signal, detail, platform,
+                locale, created_at, expires_at
+            ) VALUES(?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(report_id) DO UPDATE SET
+                scope_id=excluded.scope_id,
+                scope_label=excluded.scope_label,
+                signal=excluded.signal,
+                detail=excluded.detail,
+                platform=excluded.platform,
+                locale=excluded.locale,
+                created_at=excluded.created_at,
+                expires_at=excluded.expires_at
+            """,
+            (
+                values["report_id"],
+                values["scope_id"],
+                values["scope_label"],
+                values["signal"],
+                values["detail"] or None,
+                values["platform"],
+                values["locale"] or None,
+                _iso(current),
+                _iso(expires_at),
+            ),
+        )
+        _adjust_daily_aggregate(
+            conn,
+            report_day=_report_day(current),
+            scope_id=values["scope_id"],
+            scope_label=values["scope_label"],
+            signal=values["signal"],
+            amount=1,
+            now=current,
+        )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
     return {
         "ok": True,
         "reportId": values["report_id"],
@@ -115,10 +195,42 @@ def upsert_report(
     }
 
 
-def delete_report(conn: sqlite3.Connection, report_id: str) -> bool:
+def delete_report(
+    conn: sqlite3.Connection,
+    report_id: str,
+    *,
+    now: dt.datetime | None = None,
+) -> bool:
     if not REPORT_ID_RE.fullmatch(report_id):
         raise ValueError("invalid reportId")
-    cursor = conn.execute("DELETE FROM community_reports WHERE report_id = ?", (report_id,))
+    current = now or utc_now()
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        existing = conn.execute(
+            """
+            SELECT scope_id, scope_label, signal, created_at
+            FROM community_reports WHERE report_id = ?
+            """,
+            (report_id,),
+        ).fetchone()
+        if not existing:
+            conn.execute("COMMIT")
+            return False
+        created_at = dt.datetime.fromisoformat(existing["created_at"].replace("Z", "+00:00"))
+        cursor = conn.execute("DELETE FROM community_reports WHERE report_id = ?", (report_id,))
+        _adjust_daily_aggregate(
+            conn,
+            report_day=_report_day(created_at),
+            scope_id=existing["scope_id"],
+            scope_label=existing["scope_label"],
+            signal=existing["signal"],
+            amount=-1,
+            now=current,
+        )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
     return cursor.rowcount > 0
 
 
@@ -218,4 +330,78 @@ def summary(
         "estimatedDailyJourneys": estimated_daily,
         "issues": [],
         "updatedAt": _iso(current),
+    }
+
+
+def history(
+    conn: sqlite3.Connection,
+    *,
+    period: str = "day",
+    scope_id: str | None = None,
+    limit: int = 31,
+    now: dt.datetime | None = None,
+) -> dict[str, Any]:
+    if period not in VALID_HISTORY_PERIODS:
+        raise ValueError("period must be day, month, or year")
+    if not 1 <= limit <= 366:
+        raise ValueError("limit must be between 1 and 366")
+    if scope_id is not None and not SCOPE_ID_RE.fullmatch(scope_id):
+        raise ValueError("invalid scopeId")
+
+    period_expression = {
+        "day": "report_day",
+        "month": "substr(report_day, 1, 7)",
+        "year": "substr(report_day, 1, 4)",
+    }[period]
+    params: list[Any] = []
+    where = "report_count > 0"
+    if scope_id:
+        where += " AND scope_id = ?"
+        params.append(scope_id)
+    params.append(limit)
+    rows = conn.execute(
+        f"""
+        SELECT bucket, signal, SUM(report_count) AS report_count
+        FROM (
+            SELECT {period_expression} AS bucket, signal, report_count
+            FROM community_report_daily
+            WHERE {where}
+        )
+        WHERE bucket IN (
+            SELECT DISTINCT {period_expression}
+            FROM community_report_daily
+            WHERE {where}
+            ORDER BY {period_expression} DESC
+            LIMIT ?
+        )
+        GROUP BY bucket, signal
+        ORDER BY bucket ASC, signal ASC
+        """,
+        params[:-1] + params[:-1] + [params[-1]],
+    ).fetchall()
+
+    grouped: dict[str, dict[str, int]] = {}
+    for row in rows:
+        grouped.setdefault(row["bucket"], {})[row["signal"]] = int(row["report_count"])
+    buckets = []
+    for bucket, counts in grouped.items():
+        positive = sum(count for signal, count in counts.items() if signal in POSITIVE_SIGNALS)
+        total = sum(counts.values())
+        buckets.append(
+            {
+                "period": bucket,
+                "totalReports": total,
+                "positiveReports": positive,
+                "issueReports": total - positive,
+                "counts": {signal: counts.get(signal, 0) for signal in sorted(VALID_SIGNALS)},
+            }
+        )
+
+    current = now or utc_now()
+    return {
+        "granularity": period,
+        "scopeId": scope_id,
+        "buckets": buckets,
+        "updatedAt": _iso(current),
+        "privacy": "Permanent anonymous aggregates only. Individual reports are deleted within seven days.",
     }
