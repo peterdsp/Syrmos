@@ -234,13 +234,13 @@ enum LocalizedKey {
         case (.about, .albanian): return "Rreth"
         case (.about, .italian): return "Informazioni"
         case (.aboutText, .english):
-            return "Schedule data from STASY and Hellenic Train official timetables. This app is not affiliated with STASY, Hellenic Train or OASA."
+            return "Transport information may include public or official data from STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE and Hellenic Train, covering metro, tram, InterCity, regional and suburban services, including Athens, Thessaloniki and Patras Suburban Railway. Syrmos is independent and is not affiliated with, endorsed by or operated by any of these authorities or operators."
         case (.aboutText, .greek):
-            return "Δεδομένα δρομολογίων από τα επίσημα προγράμματα ΣΤΑΣΥ και Hellenic Train. Η εφαρμογή δεν σχετίζεται με ΣΤΑΣΥ, Hellenic Train ή ΟΑΣΑ."
+            return "Οι πληροφορίες μεταφορών μπορεί να περιλαμβάνουν δημόσια ή επίσημα δεδομένα από ΣΤΑΣΥ, ΟΑΣΑ, ΟΣΕΘ, ΟΑΣΘ, Μετρό Θεσσαλονίκης, ΟΣΕ και Hellenic Train, για μετρό, τραμ, InterCity, περιφερειακές και προαστιακές υπηρεσίες, συμπεριλαμβανομένων των Προαστιακών Αθήνας, Θεσσαλονίκης και Πάτρας. Το Syrmos είναι ανεξάρτητο και δεν συνδέεται, δεν υποστηρίζεται και δεν λειτουργεί από κανέναν από αυτούς τους φορείς ή παρόχους."
         case (.aboutText, .albanian):
-            return "Të dhënat e orareve nga oraret zyrtare STASY dhe Hellenic Train. Ky aplikacion nuk është i lidhur me STASY, Hellenic Train ose OASA."
+            return "Informacioni i transportit mund të përfshijë të dhëna publike ose zyrtare nga STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE dhe Hellenic Train, për shërbimet e metrosë, tramvajit, InterCity, rajonale dhe periferike, përfshirë hekurudhat periferike të Athinës, Selanikut dhe Patrës. Syrmos është i pavarur dhe nuk është i lidhur, miratuar apo operuar nga asnjë prej këtyre autoriteteve ose operatorëve."
         case (.aboutText, .italian):
-            return "Dati degli orari da STASY e Hellenic Train. Questa app non è affiliata con STASY, Hellenic Train o OASA."
+            return "Le informazioni sui trasporti possono includere dati pubblici o ufficiali di STASY, OASA, OSETH, OASTH, Metropolitana di Salonicco, OSE e Hellenic Train, relativi a metro, tram, InterCity, servizi regionali e suburbani, comprese le ferrovie suburbane di Atene, Salonicco e Patrasso. Syrmos è indipendente e non è affiliata, approvata o gestita da nessuna di queste autorità o operatori."
         case (.couldNotReach, .english): return "Could not reach stasy.gr"
         case (.couldNotReach, .greek): return "Δεν ήταν δυνατή η σύνδεση με stasy.gr"
         case (.couldNotReach, .albanian): return "Nuk arritëm të lidhemi me stasy.gr"

@@ -1,6 +1,7 @@
 package com.syrmos.core.network.di
 
 import com.syrmos.core.network.AriadneChatService
+import com.syrmos.core.network.CommunityReportService
 import com.syrmos.core.network.RailNewsService
 import com.syrmos.core.network.STASYAnnouncementService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
@@ -39,4 +40,5 @@ val networkModule = module {
     single { SyrmosVisualOverridesService(httpClient = get()) }
     single { WeatherService(httpClient = get()) }
     single { AriadneChatService(httpClient = get()) }
+    single { CommunityReportService(httpClient = get()) }
 }

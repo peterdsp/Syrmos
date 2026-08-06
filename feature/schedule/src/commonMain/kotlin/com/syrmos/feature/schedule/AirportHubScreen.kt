@@ -1,0 +1,606 @@
+package com.syrmos.feature.schedule
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AirplanemodeActive
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.sync.ScheduleSyncRepository
+import com.syrmos.core.data.sync.StationOffsetsRepository
+import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import org.koin.compose.koinInject
+
+data class AirportCalendarTrip(
+    val id: String,
+    val title: String,
+    val startEpochMillis: Long,
+    val location: String,
+)
+
+@Composable
+fun AirportHubScreen(
+    calendarTrips: List<AirportCalendarTrip>,
+    calendarConnected: Boolean,
+    onConnectCalendar: () -> Unit,
+) {
+    val sync = koinInject<ScheduleSyncRepository>()
+    val offsetsRepo = koinInject<StationOffsetsRepository>()
+    val bundles by sync.lineBundles.collectAsState()
+    val offsets by offsetsRepo.offsets.collectAsState()
+    val lang by LocalizationManager.language.collectAsState()
+    val zone = remember { TimeZone.of("Europe/Athens") }
+
+    var dayOffset by remember { mutableIntStateOf(0) }
+    var selectedRoute by remember { mutableStateOf("M3") }
+    var flightMinutes by remember { mutableIntStateOf(18 * 60 + 40) }
+
+    val selectedTrip = remember(calendarTrips, dayOffset) {
+        val selectedDate = airportTodayPlus(dayOffset)
+        calendarTrips.firstOrNull { trip ->
+            Instant.fromEpochMilliseconds(trip.startEpochMillis).toLocalDateTime(zone).date == selectedDate
+        }
+    }
+
+    LaunchedEffect(selectedTrip?.id) {
+        selectedTrip?.let { trip ->
+            val time = Instant.fromEpochMilliseconds(trip.startEpochMillis).toLocalDateTime(zone).time
+            flightMinutes = time.hour * 60 + time.minute
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        sync.hydrateFromBundleIfNeeded()
+        offsetsRepo.hydrateFromBundleIfNeeded()
+    }
+
+    val now = Clock.System.now().toLocalDateTime(zone)
+    val airportDepartures = remember(bundles, offsets, dayOffset, now.date) {
+        DepartureProjection.compute(
+            bundles = bundles,
+            offsets = offsetsRepo,
+            stationId = "M3_AER",
+            lineId = "M3",
+            dayOffset = dayOffset,
+            now = now,
+        )
+    }
+    val airportBoundDepartures = remember(bundles, offsets, dayOffset, now.date) {
+        DepartureProjection.compute(
+            bundles = bundles,
+            offsets = offsetsRepo,
+            stationId = "M3_SYN",
+            lineId = "M3",
+            dayOffset = dayOffset,
+            now = now,
+        ).filter { it.destinationLabel.isAirportLabel() }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(top = 8.dp, bottom = 126.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        AirportHero(lang)
+        CalendarHub(
+            lang = lang,
+            selectedDay = dayOffset,
+            flightMinutes = flightMinutes,
+            selectedTrip = selectedTrip,
+            calendarConnected = calendarConnected,
+            onConnectCalendar = onConnectCalendar,
+            onDaySelected = { dayOffset = it },
+            onFlightMinutesChanged = { flightMinutes = it.coerceIn(0, 1439) },
+        )
+        AirportRouteOverview(lang, selectedRoute, dayOffset, onRouteSelected = { selectedRoute = it })
+        PredictiveItinerary(lang, flightMinutes, airportBoundDepartures, selectedTrip?.title)
+        NextAirportServices(lang, dayOffset, airportDepartures, now.time.hour * 60 + now.time.minute)
+        Text(
+            text = airportText(lang, "Airport services", "Υπηρεσίες αεροδρομίου", "Shërbimet e aeroportit", "Servizi aeroportuali"),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        AirportDepartureRows(lang, dayOffset, airportDepartures)
+        AirportAlert(lang)
+    }
+}
+
+@Composable
+private fun AirportHero(lang: AppLanguage) {
+    val shape = RoundedCornerShape(28.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(12.dp, shape)
+            .clip(shape)
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF0B3D71), Color(0xFF155E9F), Color(0xFF45398F)),
+                ),
+            )
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Surface(color = Color.White.copy(alpha = 0.16f), shape = CircleShape, modifier = Modifier.size(48.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.AirplanemodeActive, null, tint = Color.White, modifier = Modifier.size(25.dp))
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    airportText(lang, "AIRPORT", "ΑΕΡΟΔΡΟΜΙΟ", "AEROPORTI", "AEROPORTO"),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.82f),
+                )
+                Text("Eleftherios Venizelos", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    airportText(lang, "Routes, scheduled departures and trip planning", "Διαδρομές, προγραμματισμένες αναχωρήσεις και σχεδιασμός", "Linja, nisje të programuara dhe planifikim udhëtimi", "Percorsi, partenze programmate e pianificazione"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.82f),
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            HeroPill("M3", Icons.Filled.Train)
+            HeroPill("X95", Icons.Filled.DirectionsBus)
+            HeroPill("24/7", Icons.Filled.AccessTime)
+            Spacer(Modifier.weight(1f))
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF63E6A6)))
+            Text(airportText(lang, "Schedules", "Ωράρια", "Oraret", "Orari"), color = Color.White, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun HeroPill(label: String, icon: ImageVector) {
+    Row(
+        modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 9.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(13.dp))
+        Text(label, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun CalendarHub(
+    lang: AppLanguage,
+    selectedDay: Int,
+    flightMinutes: Int,
+    selectedTrip: AirportCalendarTrip?,
+    calendarConnected: Boolean,
+    onConnectCalendar: () -> Unit,
+    onDaySelected: (Int) -> Unit,
+    onFlightMinutesChanged: (Int) -> Unit,
+) {
+    AirportCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.CalendarMonth, null, tint = SyrmosColorTokens.metroBlue)
+                Spacer(Modifier.width(8.dp))
+                Text(airportText(lang, "Calendar Hub", "Κέντρο ημερολογίου", "Qendra e kalendarit", "Centro calendario"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text(airportDateLabel(selectedDay, lang), style = MaterialTheme.typography.labelMedium, color = SyrmosColorTokens.metroBlue, fontWeight = FontWeight.SemiBold)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (offset in 0..6) {
+                    val selected = offset == selectedDay
+                    Surface(
+                        shape = CircleShape,
+                        color = if (selected) SyrmosColorTokens.metroBlue else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.size(46.dp).clickable { onDaySelected(offset) },
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                            Text(airportDayLabel(offset, lang), style = MaterialTheme.typography.labelSmall, color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(airportTodayPlus(offset).dayOfMonth.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(SyrmosColorTokens.metroBlue.copy(alpha = 0.08f)).padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        if (selectedTrip != null) airportText(lang, "SAVED AIRPORT TRIP", "ΑΠΟΘΗΚΕΥΜΕΝΟ ΤΑΞΙΔΙ", "UDHETIM I RUAJTUR", "VIAGGIO SALVATO")
+                        else airportText(lang, "PLANNED DEPARTURE", "ΠΡΟΓΡΑΜΜΑΤΙΣΜΕΝΗ ΑΝΑΧΩΡΗΣΗ", "NISJE E PLANIFIKUAR", "PARTENZA PIANIFICATA"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        selectedTrip?.title ?: airportText(lang, "No saved airport trip", "Δεν υπαρχει αποθηκευμενο ταξιδι", "Nuk ka udhetim te ruajtur", "Nessun viaggio salvato"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(enabled = !calendarConnected, onClick = onConnectCalendar),
+                    ) {
+                        Icon(
+                            if (calendarConnected) Icons.Filled.CheckCircle else Icons.Filled.CalendarMonth,
+                            null,
+                            tint = if (calendarConnected) SyrmosColorTokens.live else SyrmosColorTokens.metroBlue,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (selectedTrip != null) airportText(lang, "From device calendar", "Απο το ημερολογιο συσκευης", "Nga kalendari i pajisjes", "Dal calendario del dispositivo")
+                            else if (calendarConnected) airportText(lang, "Calendar connected", "Το ημερολογιο συνδεθηκε", "Kalendari u lidh", "Calendario collegato")
+                            else airportText(lang, "Connect device calendar", "Συνδεση ημερολογιου συσκευης", "Lidh kalendarin e pajisjes", "Collega il calendario"),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (calendarConnected) SyrmosColorTokens.live else SyrmosColorTokens.metroBlue,
+                        )
+                    }
+                }
+                IconButton(onClick = { onFlightMinutesChanged(flightMinutes - 10) }, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Filled.Remove, null, modifier = Modifier.size(18.dp))
+                }
+                Text(clockString(flightMinutes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SyrmosColorTokens.metroBlue)
+                IconButton(onClick = { onFlightMinutesChanged(flightMinutes + 10) }, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AirportRouteOverview(lang: AppLanguage, selectedRoute: String, dayOffset: Int, onRouteSelected: (String) -> Unit) {
+    AirportCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(airportText(lang, "Airport route overview", "Επισκόπηση διαδρομών αεροδρομίου", "Pamja e linjave të aeroportit", "Panoramica percorsi aeroporto"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                if (dayOffset == 0) airportText(lang, "Route diagram for services to the terminal", "Διάγραμμα διαδρομών προς τον τερματικό σταθμό", "Skema e linjave drejt terminalit", "Schema dei percorsi verso il terminal")
+                else airportText(lang, "Planned service for the selected day", "Προγραμματισμένη υπηρεσία για την επιλεγμένη ημέρα", "Shërbimi i planifikuar për ditën e zgjedhur", "Servizio previsto per il giorno selezionato"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("M3", "X95", "X93").forEach { route ->
+                    val color = airportRouteColor(route)
+                    val selected = route == selectedRoute
+                    Surface(
+                        color = if (selected) color else color.copy(alpha = 0.12f),
+                        shape = CircleShape,
+                        modifier = Modifier.clickable { onRouteSelected(route) },
+                    ) {
+                        Text(route, modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp), color = if (selected) Color.White else color, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            AirportMapCanvas(selectedRoute)
+        }
+    }
+}
+
+@Composable
+private fun AirportMapCanvas(route: String) {
+    val color = airportRouteColor(route)
+    Box(
+        modifier = Modifier.fillMaxWidth().height(170.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(Color(0xFFDDEAF2), Color(0xFFEDE8F5)))),
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            var x = 0f
+            while (x < size.width + 60f) {
+                drawLine(Color.White.copy(alpha = 0.55f), Offset(x, 0f), Offset(x + 58f, size.height), 1.5f)
+                x += 42f
+            }
+            var y = 18f
+            while (y < size.height) {
+                drawLine(Color.White.copy(alpha = 0.55f), Offset(0f, y), Offset(size.width, y - 18f), 1.5f)
+                y += 38f
+            }
+            val path = Path().apply {
+                moveTo(size.width * 0.13f, size.height * 0.74f)
+                cubicTo(size.width * 0.36f, size.height * 0.85f, size.width * 0.62f, size.height * 0.18f, size.width * 0.86f, size.height * 0.25f)
+            }
+            drawPath(path, color, style = Stroke(width = 7f, cap = StrokeCap.Round))
+            drawCircle(Color.White, 18f, Offset(size.width * 0.13f, size.height * 0.74f))
+            drawCircle(color, 18f, Offset(size.width * 0.86f, size.height * 0.25f), style = Stroke(width = 6f))
+            drawCircle(color, 15f, Offset(size.width * 0.56f, size.height * 0.48f))
+        }
+        Text("S", modifier = Modifier.align(Alignment.BottomStart).padding(start = 34.dp, bottom = 35.dp), color = color, fontWeight = FontWeight.Bold)
+        Text("A", modifier = Modifier.align(Alignment.TopEnd).padding(end = 45.dp, top = 31.dp), color = color, fontWeight = FontWeight.Bold)
+        Icon(
+            if (route == "M3") Icons.Filled.Train else Icons.Filled.DirectionsBus,
+            null,
+            tint = Color.White,
+            modifier = Modifier.align(Alignment.Center).size(20.dp),
+        )
+    }
+}
+
+@Composable
+private fun PredictiveItinerary(lang: AppLanguage, flightMinutes: Int, departures: List<ProjectedDeparture>, tripTitle: String?) {
+    val target = flightMinutes - 133
+    val metroMinutes = departures.mapNotNull { d -> clockMinutes(d.time) }.lastOrNull { it <= target }
+        ?: departures.firstOrNull()?.time?.let(::clockMinutes)
+
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Brush.linearGradient(listOf(SyrmosColorTokens.metroBlue.copy(alpha = 0.12f), SyrmosColorTokens.suburban.copy(alpha = 0.09f)))).border(1.dp, SyrmosColorTokens.metroBlue.copy(alpha = 0.15f), RoundedCornerShape(20.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.AutoAwesome, null, tint = SyrmosColorTokens.metroBlue)
+            Spacer(Modifier.width(8.dp))
+            Text(airportText(lang, "Smart trip plan", "Έξυπνο πλάνο ταξιδιού", "Plani i mençur i udhëtimit", "Piano di viaggio intelligente"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Text(
+                tripTitle?.let { airportText(lang, "For $it", "Για $it", "Per $it", "Per $it") }
+                    ?: airportText(lang, "Manual plan", "Χειροκινητο πλανο", "Plan manual", "Piano manuale"),
+                style = MaterialTheme.typography.labelSmall,
+                color = SyrmosColorTokens.suburban,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (metroMinutes != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ItineraryStep(clockString(metroMinutes - 12), airportText(lang, "Leave", "Αναχώρηση", "Nisja", "Parti"), Icons.AutoMirrored.Filled.DirectionsWalk, Modifier.weight(1f))
+                Connector()
+                ItineraryStep(clockString(metroMinutes), "M3 Syntagma", Icons.Filled.Train, Modifier.weight(1f))
+                Connector()
+                ItineraryStep(clockString(metroMinutes + 43), airportText(lang, "Terminal", "Τερματικός", "Terminali", "Terminal"), Icons.Filled.AirplanemodeActive, Modifier.weight(1f))
+            }
+        } else {
+            Text(
+                airportText(lang, "No scheduled M3 departure was found for this date. Choose another day or check official operator information.", "Δεν βρέθηκε προγραμματισμένη αναχώρηση M3 για αυτή την ημερομηνία. Επιλέξτε άλλη ημέρα ή ελέγξτε τις επίσημες πληροφορίες.", "Nuk u gjet nisje e programuar M3 për këtë datë. Zgjidh një ditë tjetër ose kontrollo informacionin zyrtar.", "Nessuna partenza M3 programmata trovata per questa data. Scegli un altro giorno o controlla le informazioni ufficiali."),
+                style = MaterialTheme.typography.bodySmall,
+                color = SyrmosColorTokens.disruption,
+            )
+        }
+        Text(
+            airportText(lang, "Includes the selected day's timetable and a 90 minute airport buffer.", "Περιλαμβάνει το ωράριο της επιλεγμένης ημέρας και περιθώριο 90 λεπτών.", "Përfshin orarin e ditës së zgjedhur dhe 90 minuta rezervë në aeroport.", "Include l'orario del giorno selezionato e 90 minuti di margine in aeroporto."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ItineraryStep(time: String, title: String, icon: ImageVector, modifier: Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), modifier = Modifier.size(32.dp)) {
+            Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = SyrmosColorTokens.metroBlue, modifier = Modifier.size(17.dp)) }
+        }
+        Text(time, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun Connector() {
+    Box(Modifier.width(18.dp).height(2.dp).background(SyrmosColorTokens.metroBlue.copy(alpha = 0.28f)))
+}
+
+@Composable
+private fun NextAirportServices(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, nowMinutes: Int) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(airportText(lang, "Next services from the airport", "Επόμενα δρομολόγια από το αεροδρόμιο", "Shërbimet e radhës nga aeroporti", "Prossimi servizi dall'aeroporto"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val next = departures.firstOrNull()
+            val main = if (next == null) "-" else if (dayOffset == 0) formatMinutes((next.timeMinutes - nowMinutes).coerceAtLeast(0), lang) else next.time
+            val following = departures.getOrNull(1)?.time
+            ServiceTile("M3", Icons.Filled.Train, main, "Syntagma", following?.let { airportText(lang, "Then $it", "Έπειτα $it", "Pastaj $it", "Poi $it") } ?: airportText(lang, "No later departure in the current schedule", "Δεν υπάρχει επόμενη αναχώρηση στο τρέχον ωράριο", "Nuk ka nisje tjetër në orarin aktual", "Nessuna partenza successiva nell'orario attuale"), airportText(lang, "Scheduled", "Προγραμματισμένο", "Programuar", "Programmato"), SyrmosColorTokens.metroBlue, Modifier.weight(1f))
+            ServiceTile("X95", Icons.Filled.DirectionsBus, "24/7", "Syntagma", airportText(lang, "Check OASA for current bus times", "Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια", "Kontrollo OASA për oraret aktuale", "Controlla OASA per gli orari attuali"), airportText(lang, "Express", "Express", "Express", "Express"), SyrmosColorTokens.warning, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun ServiceTile(route: String, icon: ImageVector, main: String, destination: String, detail: String, status: String, color: Color, modifier: Modifier) {
+    Surface(modifier = modifier, shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(5.dp))
+                Text(route, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = color)
+                Spacer(Modifier.weight(1f))
+                Text(status, style = MaterialTheme.typography.labelSmall, color = color)
+            }
+            Text(main, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = if (route == "M3") SyrmosColorTokens.warning else color, maxLines = 1)
+            Text(destination, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>) {
+    val rows = departures.take(3).map { AirportRow("M3", "Syntagma", airportText(lang, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), it.time, SyrmosColorTokens.metroBlue) } + listOf(
+        AirportRow("X95", "Syntagma", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
+        AirportRow("X93", "Kifisos", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.suburban),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.take(5).forEach { row ->
+            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 3.dp) {
+                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(shape = CircleShape, color = row.color, modifier = Modifier.size(38.dp)) {
+                        Box(contentAlignment = Alignment.Center) { Text(row.route, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(row.destination, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(row.time, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = row.color)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AirportAlert(lang: AppLanguage) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(SyrmosColorTokens.disruption.copy(alpha = 0.06f)).border(1.dp, SyrmosColorTokens.disruption.copy(alpha = 0.16f), RoundedCornerShape(18.dp)).padding(14.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(Icons.Filled.Warning, null, tint = SyrmosColorTokens.disruption)
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(airportText(lang, "Service alerts", "Ειδοποιήσεις υπηρεσίας", "Njoftime shërbimi", "Avvisi di servizio"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                airportText(lang, "Check official operator notices before leaving. Syrmos does not infer a clear status when no alert feed is available.", "Ελέγξτε τις επίσημες ανακοινώσεις πριν φύγετε. Το Syrmos δεν συμπεραίνει ότι όλα λειτουργούν κανονικά όταν δεν υπάρχει ροή ειδοποιήσεων.", "Kontrollo njoftimet zyrtare para nisjes. Syrmos nuk supozon se gjithçka është në rregull kur nuk ka burim njoftimesh.", "Controlla gli avvisi ufficiali prima di partire. Syrmos non presume che tutto sia regolare quando non è disponibile un feed di avvisi."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AirportCard(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
+        Box(Modifier.padding(16.dp)) { content() }
+    }
+}
+
+private data class AirportRow(val route: String, val destination: String, val detail: String, val time: String, val color: Color)
+
+private fun airportText(lang: AppLanguage, en: String, el: String, sq: String, it: String): String = when (lang) {
+    AppLanguage.GREEK -> el
+    AppLanguage.ALBANIAN -> sq
+    AppLanguage.ITALIAN -> it
+    else -> en
+}
+
+private fun String.isAirportLabel(): Boolean {
+    val normalized = lowercase()
+    return normalized.contains("airport") || normalized.contains("aeroport") || normalized.contains("αεροδρόμιο")
+}
+
+private fun airportRouteColor(route: String): Color = when (route) {
+    "M3" -> SyrmosColorTokens.metroBlue
+    "X95" -> SyrmosColorTokens.warning
+    else -> SyrmosColorTokens.suburban
+}
+
+private fun clockMinutes(value: String): Int? {
+    val parts = value.split(":").mapNotNull { it.toIntOrNull() }
+    return if (parts.size == 2) parts[0] * 60 + parts[1] else null
+}
+
+private fun clockString(rawMinutes: Int): String {
+    val minutes = ((rawMinutes % 1440) + 1440) % 1440
+    return "${(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}"
+}
+
+private fun formatMinutes(minutes: Int, lang: AppLanguage): String {
+    if (minutes <= 1) return airportText(lang, "Now", "Τώρα", "Tani", "Ora")
+    return if (minutes < 60) "$minutes min" else "${minutes / 60}h ${minutes % 60}min"
+}
+
+private fun airportDayLabel(offset: Int, lang: AppLanguage): String {
+    if (offset == 0) return airportText(lang, "TODAY", "ΣΗΜ", "SOT", "OGGI")
+    return when (lang to airportTodayPlus(offset).dayOfWeek) {
+        AppLanguage.GREEK to DayOfWeek.MONDAY -> "ΔΕΥ"; AppLanguage.GREEK to DayOfWeek.TUESDAY -> "ΤΡΙ"; AppLanguage.GREEK to DayOfWeek.WEDNESDAY -> "ΤΕΤ"; AppLanguage.GREEK to DayOfWeek.THURSDAY -> "ΠΕΜ"; AppLanguage.GREEK to DayOfWeek.FRIDAY -> "ΠΑΡ"; AppLanguage.GREEK to DayOfWeek.SATURDAY -> "ΣΑΒ"; AppLanguage.GREEK to DayOfWeek.SUNDAY -> "ΚΥΡ"
+        AppLanguage.ALBANIAN to DayOfWeek.MONDAY -> "HËN"; AppLanguage.ALBANIAN to DayOfWeek.TUESDAY -> "MAR"; AppLanguage.ALBANIAN to DayOfWeek.WEDNESDAY -> "MËR"; AppLanguage.ALBANIAN to DayOfWeek.THURSDAY -> "ENJ"; AppLanguage.ALBANIAN to DayOfWeek.FRIDAY -> "PRE"; AppLanguage.ALBANIAN to DayOfWeek.SATURDAY -> "SHT"; AppLanguage.ALBANIAN to DayOfWeek.SUNDAY -> "DIE"
+        AppLanguage.ITALIAN to DayOfWeek.MONDAY -> "LUN"; AppLanguage.ITALIAN to DayOfWeek.TUESDAY -> "MAR"; AppLanguage.ITALIAN to DayOfWeek.WEDNESDAY -> "MER"; AppLanguage.ITALIAN to DayOfWeek.THURSDAY -> "GIO"; AppLanguage.ITALIAN to DayOfWeek.FRIDAY -> "VEN"; AppLanguage.ITALIAN to DayOfWeek.SATURDAY -> "SAB"; AppLanguage.ITALIAN to DayOfWeek.SUNDAY -> "DOM"
+        else -> airportTodayPlus(offset).dayOfWeek.name.take(3)
+    }
+}
+
+private fun airportDateLabel(offset: Int, lang: AppLanguage): String {
+    val date = airportTodayPlus(offset)
+    return "${airportDayLabel(offset, lang)} ${date.dayOfMonth}/${date.monthNumber}"
+}
+
+private fun airportTodayPlus(offset: Int): LocalDate {
+    var date = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens")).date
+    repeat(offset) { date = airportNextDay(date) }
+    return date
+}
+
+private fun airportNextDay(date: LocalDate): LocalDate {
+    val days = when (date.monthNumber) {
+        1, 3, 5, 7, 8, 10, 12 -> 31
+        4, 6, 9, 11 -> 30
+        else -> if ((date.year % 4 == 0 && date.year % 100 != 0) || date.year % 400 == 0) 29 else 28
+    }
+    return when {
+        date.dayOfMonth < days -> LocalDate(date.year, date.monthNumber, date.dayOfMonth + 1)
+        date.monthNumber < 12 -> LocalDate(date.year, date.monthNumber + 1, 1)
+        else -> LocalDate(date.year + 1, 1, 1)
+    }
+}

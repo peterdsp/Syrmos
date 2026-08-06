@@ -68,19 +68,23 @@ class DepartureTrackingNotifier(private val context: Context) {
             tracked.scheduledTime
         }
         val confirmIntent = Intent(context, RailPulseNotificationReceiver::class.java)
-            .putExtra(RailPulseNotificationReceiver.EXTRA_SIGNAL, "crowded")
+            .putExtra(RailPulseNotificationReceiver.EXTRA_SIGNAL, "normal")
+            .putExtra(RailPulseNotificationReceiver.EXTRA_SCOPE_ID, tracked.lineId)
+            .putExtra(
+                RailPulseNotificationReceiver.EXTRA_SCOPE_LABEL,
+                "${tracked.lineId} at ${tracked.stationName}",
+            )
         val confirmPendingIntent = PendingIntent.getBroadcast(
             context,
             4202,
             confirmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val community = communityLabel(lang)
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(context.applicationInfo.icon)
             .setContentTitle(title)
-            .setContentText("$body · $community")
-            .setStyle(Notification.BigTextStyle().bigText("$body\n$community\nStanding room only · 31 confirmations · updated 90 sec ago"))
+            .setContentText(body)
+            .setStyle(Notification.BigTextStyle().bigText(body))
             .addAction(0, confirmLabel(lang), confirmPendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -112,18 +116,11 @@ class DepartureTrackingNotifier(private val context: Context) {
         else -> "to"
     }
 
-    private fun communityLabel(lang: AppLanguage) = when (lang) {
-        AppLanguage.GREEK -> "Κοινοτητα: κοσμος"
-        AppLanguage.ALBANIAN -> "Komuniteti: plot"
-        AppLanguage.ITALIAN -> "Comunita: affollato"
-        else -> "Community: crowded"
-    }
-
     private fun confirmLabel(lang: AppLanguage) = when (lang) {
-        AppLanguage.GREEK -> "Επιβεβαιωση κοσμου"
-        AppLanguage.ALBANIAN -> "Konfirmo turmen"
-        AppLanguage.ITALIAN -> "Conferma affollato"
-        else -> "Confirm crowded"
+        AppLanguage.GREEK -> "Ολα καλα"
+        AppLanguage.ALBANIAN -> "Gjithcka ne rregull"
+        AppLanguage.ITALIAN -> "Tutto bene"
+        else -> "Everything OK"
     }
 
     companion object {
