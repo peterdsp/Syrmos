@@ -215,7 +215,8 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
     for sql, en_flag, sq_flag, it_flag in (
         (
             "SELECT id, title, title_en, title_sq, title_it, summary, summary_en, summary_sq, summary_it,"
-            " url, date, category, affected_lines, severity, valid_from, valid_until"
+            " url, date, category, affected_lines, severity, valid_from, valid_until,"
+            " affected_station_ids, service_until_time"
             " FROM announcements ORDER BY sort_order",
             True, True, True,
         ),
@@ -324,6 +325,8 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
             "severity": severity,
             "validFrom": r["valid_from"] if "valid_from" in cols else None,
             "validUntil": r["valid_until"] if "valid_until" in cols else None,
+            "affectedStationIds": _decode_lines(r["affected_station_ids"]) if "affected_station_ids" in cols else [],
+            "serviceUntilTime": r["service_until_time"] if "service_until_time" in cols else None,
         })
     return {
         "updatedAt": _now_iso(),
