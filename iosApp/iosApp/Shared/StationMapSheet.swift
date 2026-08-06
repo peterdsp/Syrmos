@@ -50,82 +50,92 @@ struct StationMapSheet: View {
 
             StationFocusedMap(station: station, routes: routePolylines)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 200)
+                .frame(height: 190)
+                .clipped()
 
-            VStack(spacing: 12) {
-                HStack(spacing: 6) {
-                    ForEach(station.lineIds, id: \.self) { lineId in
-                        HStack(spacing: 5) {
-                            Circle()
-                                .fill(SyrmosData.lineColor(for: lineId))
-                                .frame(width: 7, height: 7)
-                            Text(shortLineLabel(for: lineId))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.primary)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .overlay(
-                                    Capsule().strokeBorder(
-                                        SyrmosData.lineColor(for: lineId).opacity(0.4),
-                                        lineWidth: 0.8
-                                    )
-                                )
-                        )
-                    }
-                    Spacer()
-                }
-
-                if !departures.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(loc.language == .greek ? "ΕΠΟΜΕΝΑ ΔΡΟΜΟΛΟΓΙΑ" : loc.language == .albanian ? "NISJET E ARDHSHME" : loc.language == .italian ? "PROSSIME PARTENZE" : "NEXT DEPARTURES")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-
-                        ForEach(departures.prefix(4)) { dep in
-                            HStack {
+            ScrollView {
+                VStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        ForEach(station.lineIds, id: \.self) { lineId in
+                            HStack(spacing: 5) {
                                 Circle()
-                                    .fill(SyrmosData.lineColor(for: dep.lineId))
-                                    .frame(width: 8, height: 8)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(SyrmosData.line(for: dep.lineId)?.localizedName(loc.language) ?? dep.lineId)
-                                        .font(.caption.weight(.medium))
-                                    Text(dep.direction)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 1) {
-                                    Text(dep.minutesAwayDisplay(language: loc.language))
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(dep.minutesAway <= 5 ? Color.arrivalSoon : .primary)
-                                    Text(dep.time)
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
+                                    .fill(SyrmosData.lineColor(for: lineId))
+                                    .frame(width: 7, height: 7)
+                                Text(shortLineLabel(for: lineId))
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.primary)
                             }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
                             .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                Capsule()
                                     .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        Capsule().strokeBorder(
+                                            SyrmosData.lineColor(for: lineId).opacity(0.4),
+                                            lineWidth: 0.8
+                                        )
+                                    )
                             )
                         }
+                        Spacer()
                     }
-                } else if !hasLoaded {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                        Text(loc.language == .greek ? "Φόρτωση..." : loc.language == .albanian ? "Duke ngarkuar..." : loc.language == .italian ? "Caricamento..." : "Loading...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 8)
-                }
 
+                    if !departures.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(loc.language == .greek ? "ΕΠΟΜΕΝΑ ΔΡΟΜΟΛΟΓΙΑ" : loc.language == .albanian ? "NISJET E ARDHSHME" : loc.language == .italian ? "PROSSIME PARTENZE" : "NEXT DEPARTURES")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
+                            ForEach(departures.prefix(4)) { dep in
+                                HStack {
+                                    Circle()
+                                        .fill(SyrmosData.lineColor(for: dep.lineId))
+                                        .frame(width: 8, height: 8)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(SyrmosData.line(for: dep.lineId)?.localizedName(loc.language) ?? dep.lineId)
+                                            .font(.caption.weight(.medium))
+                                        Text(dep.direction)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    VStack(alignment: .trailing, spacing: 1) {
+                                        Text(dep.minutesAwayDisplay(language: loc.language))
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(dep.minutesAway <= 5 ? Color.arrivalSoon : .primary)
+                                        Text(dep.time)
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(.ultraThinMaterial)
+                                )
+                            }
+                        }
+                    } else if !hasLoaded {
+                        HStack(spacing: 6) {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                            Text(loc.language == .greek ? "Φόρτωση..." : loc.language == .albanian ? "Duke ngarkuar..." : loc.language == .italian ? "Caricamento..." : "Loading...")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 12)
+            }
+            .scrollIndicators(.automatic)
+
+            Divider()
+            Button(action: openDirections) {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
                         .font(.headline)
@@ -145,19 +155,20 @@ struct StationMapSheet: View {
                 )
                 .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 3)
                 .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .onTapGesture(perform: openDirections)
             }
+            .buttonStyle(.plain)
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.vertical, 12)
+            .background(.thinMaterial)
         }
         .background(
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
         )
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.fraction(0.78), .large])
         .presentationDragIndicator(.visible)
+        .presentationContentInteraction(.scrolls)
         .presentationBackground(.ultraThinMaterial)
         .onAppear { loadDepartures() }
         .onReceive(refreshTimer) { _ in loadDepartures() }

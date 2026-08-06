@@ -36,4 +36,20 @@ class DateTimeExtensionsTest {
         assertEquals(LocalDate(2026, 7, 9), currentAthensDate(lateUtc))
         assertEquals(LocalTime(1, 30), currentAthensTime(lateUtc))
     }
+
+    @Test
+    fun daylight_saving_starts_on_the_last_sunday_of_march() {
+        val before = FixedClock(Instant.parse("2026-03-29T00:59:00Z"))
+        val after = FixedClock(Instant.parse("2026-03-29T01:00:00Z"))
+        assertEquals(LocalTime(2, 59), currentAthensTime(before))
+        assertEquals(LocalTime(4, 0), currentAthensTime(after))
+    }
+
+    @Test
+    fun daylight_saving_ends_on_the_last_sunday_of_october() {
+        val before = FixedClock(Instant.parse("2026-10-25T00:59:00Z"))
+        val after = FixedClock(Instant.parse("2026-10-25T01:00:00Z"))
+        assertEquals(LocalTime(3, 59), currentAthensTime(before))
+        assertEquals(LocalTime(3, 0), currentAthensTime(after))
+    }
 }
