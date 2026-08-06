@@ -64,6 +64,12 @@ enum MapDesignTokens {
     /// network alone carries the map. Mirrors MapDesignTokens.LINES_ONLY_MAX_ZOOM.
     static let linesOnlyMaxZoom: Double = 7
 
+    // Vehicle capsule markers.
+    static let vehicleW: CGFloat = 24
+    static let vehicleH: CGFloat = 13
+    static let vehicleRadius: CGFloat = 6
+    static let vehicleBorder: CGFloat = 2
+
     // Line strokes.
     static let greyedColor = "#94A3B8"
     static let busDash: [CGFloat] = [2, 7]

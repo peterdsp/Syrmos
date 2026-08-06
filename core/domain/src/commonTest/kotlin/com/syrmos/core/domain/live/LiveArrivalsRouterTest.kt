@@ -7,12 +7,18 @@ import kotlinx.coroutines.test.runTest
 
 class LiveArrivalsRouterTest {
 
+    private fun stubOasaProvider() = object : LiveArrivalsProvider {
+        override val sourceId = "telematics.oasa.gr"
+        override fun lineIds() = setOf("X93", "X95", "X96", "X97")
+        override suspend fun arrivals(stationId: String, lineId: String, limit: Int): List<LiveArrivalsProvider.LiveArrival>? = null
+    }
+
     @Test
     fun returnsNullWhenAllProvidersReturnNull() = runTest {
         val router = LiveArrivalsRouter(
             providers = listOf(
                 StasyLiveArrivalsProvider(),
-                OasaLiveArrivalsProvider(),
+                stubOasaProvider(),
                 HellenicTrainLiveArrivalsProvider(),
             )
         )

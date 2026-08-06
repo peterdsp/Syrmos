@@ -74,14 +74,34 @@ class StasyLiveArrivalsProvider : LiveArrivalsProvider {
 }
 
 /**
- * OASA Telematics (bus/trolley historically; metro/tram unconfirmed) placeholder.
- * OASA's public telematics page is HTML-only today. If they expose a JSON feed,
- * implement the parser here.
+ * OASA Telematics provider for airport express buses (X93, X95, X96, X97).
+ * Consumes the Pi-cached /api/oasa-airport-buses endpoint, which polls
+ * telematics.oasa.gr every 30 seconds.
  */
-class OasaLiveArrivalsProvider : LiveArrivalsProvider {
+class OasaLiveArrivalsProvider(
+    private val service: com.syrmos.core.network.OasaAirportBusService,
+) : LiveArrivalsProvider {
     override val sourceId: String = "telematics.oasa.gr"
-    override fun lineIds(): Set<String> = setOf("M1", "M2", "M3", "M3_AIR", "T6", "T7")
-    override suspend fun arrivals(stationId: String, lineId: String, limit: Int): List<LiveArrivalsProvider.LiveArrival>? = null
+    override fun lineIds(): Set<String> = setOf("X93", "X95", "X96", "X97")
+
+    override suspend fun arrivals(stationId: String, lineId: String, limit: Int): List<LiveArrivalsProvider.LiveArrival>? {
+        val resp = service.fetchAirportBuses() ?: return null
+        val matching = resp.airportArrivals
+            .filter { it.lineId == lineId }
+            .take(limit)
+        if (matching.isEmpty()) return null
+        return matching.map { a ->
+            LiveArrivalsProvider.LiveArrival(
+                minutesAway = a.minutesAway,
+                direction = if (a.lineId == "X93") "Kifisos - Airport"
+                    else if (a.lineId == "X95") "Syntagma - Airport"
+                    else if (a.lineId == "X96") "Piraeus - Airport"
+                    else "Elliniko - Airport",
+                vehicleId = a.vehicleId.takeIf { it.isNotBlank() },
+                isLive = true,
+            )
+        }
+    }
 }
 
 /**

@@ -32,7 +32,7 @@
     <!-- Open Graph (LinkedIn, Facebook, Slack, etc.) -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Syrmos">
-    <meta property="og:title" content="Syrmos — Athens Metro, Tram & Suburban Departures">
+    <meta property="og:title" content="Syrmos -- Athens Metro, Tram & Suburban Departures">
     <meta property="og:description" content="Live departures, GPS nearest station, live train map. iOS, Android, and Web.">
     <meta property="og:url" content="https://syrmos.peterdsp.dev/">
     <meta property="og:image" content="https://syrmos.peterdsp.dev/favicon.png">
@@ -41,11 +41,11 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Syrmos — Athens Metro, Tram & Suburban Departures">
+    <meta name="twitter:title" content="Syrmos -- Athens Metro, Tram & Suburban Departures">
     <meta name="twitter:description" content="Free, offline-first companion for OASA Metro, Tram, and Hellenic Train Suburban.">
     <meta name="twitter:image" content="https://syrmos.peterdsp.dev/favicon.png">
 
-    <!-- Structured data — helps Google show app + organization knowledge panel -->
+    <!-- Structured data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -129,52 +129,61 @@
     '<title>Syrmos - Download the App</title>' +
     '<meta name="theme-color" content="#0072CE">' +
     '<link rel="icon" type="image/png" href="favicon.png">' +
+    '<link rel="stylesheet" href="design-tokens.css">' +
     '<style>' +
     '*{margin:0;padding:0;box-sizing:border-box}' +
-    'body{font-family:system-ui,-apple-system,sans-serif;min-height:100dvh;display:flex;align-items:center;justify-content:center;' +
-    'background:linear-gradient(160deg,#f0f4fa 0%,#dce6f5 40%,#c8d8ec 100%);color:#1a2a3a;padding:24px;text-align:center}' +
-    '@media(prefers-color-scheme:dark){body{background:linear-gradient(160deg,#0a1120 0%,#111d33 40%,#162644 100%);color:#e0e8f4}}' +
-    '.card{max-width:380px;width:100%}' +
-    '.logo{width:80px;height:80px;border-radius:20px;margin:0 auto 20px;box-shadow:0 8px 24px rgba(0,0,0,.15)}' +
-    'h1{font-size:28px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em}' +
-    '.subtitle{font-size:15px;color:#5a6f8a;margin-bottom:28px;line-height:1.5}' +
-    '@media(prefers-color-scheme:dark){.subtitle{color:#8fa6c8}}' +
-    '.features{text-align:left;margin-bottom:32px;padding:0 8px}' +
-    '.feature{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:14px;line-height:1.4}' +
-    '.feature-icon{flex-shrink:0;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;' +
-    'background:rgba(26,92,184,.1);color:#1A5CB8}' +
-    '@media(prefers-color-scheme:dark){.feature-icon{background:rgba(100,160,255,.12);color:#7ab4ff}}' +
-    '.badges{display:flex;flex-direction:column;gap:12px;align-items:center;margin-bottom:24px}' +
-    '.badge-link{display:block;height:48px}' +
-    '.badge-link img{height:48px;width:auto}' +
-    '.web-link{font-size:13px;color:#5a6f8a}' +
-    '.web-link a{color:#1A5CB8;text-decoration:none;font-weight:500}' +
-    '@media(prefers-color-scheme:dark){.web-link{color:#8fa6c8}.web-link a{color:#7ab4ff}}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;' +
+    'min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+    'background:var(--sy-surface);color:var(--sy-on-surface);padding:24px 20px;text-align:center}' +
+    '@media(prefers-color-scheme:dark){body{--sy-brand:#8ECAFF;--sy-surface:#0F1216;--sy-surface-muted:#171B21;' +
+    '--sy-surface-card:#1B2028;--sy-on-surface:#E6ECF5;--sy-on-surface-muted:#9AA3AF;--sy-outline:#2A2F37}}' +
+    '.m-card{max-width:380px;width:100%}' +
+    '.m-logo{width:88px;height:88px;border-radius:22px;margin:0 auto 24px;' +
+    'box-shadow:0 12px 32px rgba(0,0,0,.18)}' +
+    '.m-name{font-size:32px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px}' +
+    '.m-tagline{font-size:15px;font-weight:500;color:var(--sy-on-surface-muted);margin-bottom:8px}' +
+    '.m-desc{font-size:14px;line-height:1.6;color:var(--sy-on-surface-muted);margin-bottom:32px;max-width:320px;margin-left:auto;margin-right:auto}' +
+    '.m-features{text-align:left;margin-bottom:36px;display:flex;flex-direction:column;gap:14px}' +
+    '.m-feat{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.4;color:var(--sy-on-surface)}' +
+    '.m-feat-dot{flex-shrink:0;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;' +
+    'font-size:15px;background:rgba(20,102,184,.08);color:var(--sy-brand)}' +
+    '.m-badges{display:flex;flex-direction:column;gap:12px;align-items:center;margin-bottom:20px}' +
+    '.m-badge{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:260px;' +
+    'height:52px;border-radius:var(--sy-radius-md,12px);font:600 15px/1 system-ui,sans-serif;' +
+    'text-decoration:none;transition:transform .15s}' +
+    '.m-badge:active{transform:scale(.97)}' +
+    '.m-badge--ios{background:#000;color:#fff}' +
+    '.m-badge--android{background:var(--sy-brand);color:#fff}' +
+    '.m-badge svg{width:22px;height:22px;fill:currentColor}' +
+    '.m-footer{font-size:12px;color:var(--sy-on-surface-muted);margin-top:16px}' +
+    '.m-footer a{color:var(--sy-brand);text-decoration:none;font-weight:500}' +
     '</style></head><body>' +
-    '<div class="card">' +
-    '<img class="logo" src="favicon.png" alt="Syrmos">' +
-    '<h1>Syrmos</h1>' +
-    '<p class="subtitle">Greece Rail Times - live departures, schedules, and maps for Metro, Tram, Suburban, and Intercity trains.</p>' +
-    '<div class="features">' +
-    '<div class="feature"><div class="feature-icon">&#x1F687;</div><div>Live departure countdowns and GPS nearest station</div></div>' +
-    '<div class="feature"><div class="feature-icon">&#x1F4F1;</div><div>Works offline with full schedule data</div></div>' +
-    '<div class="feature"><div class="feature-icon">&#x1F30D;</div><div>English, Greek, and Albanian languages</div></div>' +
-    '<div class="feature"><div class="feature-icon">&#x1F514;</div><div>Service alerts and real-time train positions</div></div>' +
+    '<div class="m-card">' +
+    '<img class="m-logo" src="favicon.png" alt="Syrmos">' +
+    '<div class="m-name">Syrmos</div>' +
+    '<div class="m-tagline">Greece Rail Times</div>' +
+    '<p class="m-desc">Live departures, offline schedules, and maps for Metro, Tram, Suburban, and Intercity trains across Greece.</p>' +
+    '<div class="m-features">' +
+    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="10" cy="10" r="3"/><circle cx="10" cy="10" r="7"/></svg></div><div>Live departure countdowns and GPS nearest station</div></div>' +
+    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 14V7a3 3 0 013-3h8a3 3 0 013 3v7"/><path d="M3 11h14"/><circle cx="7" cy="13" r="1"/><circle cx="13" cy="13" r="1"/></svg></div><div>Works offline with full schedule data</div></div>' +
+    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14M4.5 5.5l11 9M4.5 14.5l11-9"/></svg></div><div>English, Greek, Albanian, and Italian</div></div>' +
+    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 3l2 5h5l-4 3 1.5 5L10 13l-4.5 3L7 11 3 8h5z"/></svg></div><div>Service alerts and real-time train positions</div></div>' +
     '</div>' +
-    '<div class="badges">' +
-    '<a class="badge-link" href="https://apps.apple.com/app/id6777650671"><img src="app-store.svg" alt="Download on the App Store"></a>' +
-    '<a class="badge-link" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="google-play.svg" alt="Get it on Google Play"></a>' +
+    '<div class="m-badges">' +
+    '<a class="m-badge m-badge--ios" href="https://apps.apple.com/app/id6777650671">' +
+    '<svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83"/><path d="M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg>' +
+    'App Store</a>' +
+    '<a class="m-badge m-badge--android" href="https://play.google.com/store/apps/details?id=com.syrmos.android">' +
+    '<svg viewBox="0 0 24 24"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302-2.302 2.302L15.396 12l2.302-2.302zM5.864 1.469L16.8 7.8l-2.302 2.302-8.634-8.633z"/></svg>' +
+    'Google Play</a>' +
     '</div>' +
-    '<p class="web-link">Syrmos web is available on desktop only.</p>' +
+    '<p class="m-footer">Or visit <a href="https://syrmos.peterdsp.dev">syrmos.peterdsp.dev</a> on desktop</p>' +
     '</div></body>';
 })();
 </script>
 <div class="app-shell">
-    <div id="map"></div>
 
-    <!-- One inline icon sprite: monochrome line icons drawn with currentColor,
-         so they inherit each button's text colour and flip light/dark for free.
-         Replaces the emoji/text glyphs the header controls used to render. -->
+    <!-- Inline SVG icon sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
         <defs>
             <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="20.5" y1="20.5" x2="16.4" y2="16.4"/></symbol>
@@ -186,60 +195,81 @@
             <symbol id="ic-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="7.4"/><line x1="12" y1="1.8" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22.2"/><line x1="1.8" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22.2" y2="12"/></symbol>
             <symbol id="ic-brain" viewBox="0 0 24 24"><path d="M12 2.8l1.9 5.2 5.2 1.9-5.2 1.9L12 17l-1.9-5.2L4.9 9.9l5.2-1.9Z"/><path d="M18.5 15.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7Z"/></symbol>
             <symbol id="ic-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+            <symbol id="ic-home" viewBox="0 0 24 24"><path d="M4 12l8-8 8 8"/><path d="M6 10.5V19a1 1 0 001 1h3.5v-4.5a1.5 1.5 0 013 0V20H17a1 1 0 001-1v-8.5"/></symbol>
+            <symbol id="ic-explore" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="14.5,9.5 9.5,14.5 10.5,10.5 14.5,9.5"/><polygon points="9.5,14.5 14.5,9.5 13.5,13.5 9.5,14.5"/></symbol>
+            <symbol id="ic-map" viewBox="0 0 24 24"><path d="M3 7l6-3 6 3 6-3v14l-6 3-6-3-6 3V7z"/><line x1="9" y1="4" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="20"/></symbol>
+            <symbol id="ic-departures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></symbol>
+            <symbol id="ic-more" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="18" r="1.2"/></symbol>
+            <symbol id="ic-wifi-off" viewBox="0 0 24 24"><path d="M1 1l22 22"/><path d="M9.2 16.8a3.5 3.5 0 015.6 0"/><circle cx="12" cy="20" r="1"/><path d="M6.3 13.7a7.9 7.9 0 014.3-2.4M17.7 13.7a7.9 7.9 0 00-2.4-1.6"/><path d="M3.4 10.5A12.3 12.3 0 017 8.2M20.6 10.5a12.3 12.3 0 00-5.3-3.2"/></symbol>
         </defs>
     </svg>
-    <header class="top-bar">
-        <div class="brand-block">
-            <div class="brand">Syrmos</div>
-            <div class="subtitle" data-i18n="brand_subtitle">Greece rail map</div>
-            <div class="store-badges">
-                <a href="https://apps.apple.com/app/id6777650671"
-                   target="_blank" rel="noopener"
-                   aria-label="Download Syrmos on the App Store">
-                    <img src="app-store.svg" alt="Download on the App Store" height="36" loading="lazy">
-                </a>
-                <a href="https://play.google.com/store/apps/details?id=com.syrmos.android"
-                   target="_blank" rel="noopener"
-                   aria-label="Get it on Google Play">
-                    <img src="google-play.svg" alt="Get it on Google Play" height="36" loading="lazy">
-                </a>
-            </div>
+
+    <!-- ===== Nav Rail (72px, left) ===== -->
+    <nav class="nav-rail" aria-label="Main navigation">
+        <img class="nav-rail__logo" src="favicon.png" alt="Syrmos" width="40" height="40">
+        <div class="nav-rail__items">
+            <button class="nav-item nav-item--active" type="button" data-nav="home" aria-label="Home" title="Home">
+                <svg class="ic" aria-hidden="true"><use href="#ic-home"/></svg>
+            </button>
+            <button class="nav-item" type="button" data-nav="explore" aria-label="Explore" title="Explore">
+                <svg class="ic" aria-hidden="true"><use href="#ic-explore"/></svg>
+            </button>
+            <button class="nav-item" type="button" data-nav="map" aria-label="Map" title="Map">
+                <svg class="ic" aria-hidden="true"><use href="#ic-map"/></svg>
+            </button>
+            <button class="nav-item" type="button" data-nav="departures" aria-label="Departures" title="Departures">
+                <svg class="ic" aria-hidden="true"><use href="#ic-departures"/></svg>
+            </button>
+            <button class="nav-item" type="button" data-nav="more" aria-label="More" title="More">
+                <svg class="ic" aria-hidden="true"><use href="#ic-more"/></svg>
+            </button>
         </div>
+        <div class="nav-rail__footer">
+            <button id="themeToggle" class="nav-rail__theme" type="button" aria-label="Toggle dark mode">
+                <svg class="ic" aria-hidden="true"><use href="#ic-theme"/></svg>
+            </button>
+            <span id="navLangLabel" class="nav-rail__lang">EL</span>
+        </div>
+    </nav>
+
+    <!-- ===== Context Rail (352px, second column) ===== -->
+    <aside class="context-rail" id="contextRail">
         <section class="search-card">
             <div class="search-input-shell">
                 <svg class="ic search-icon" aria-hidden="true"><use href="#ic-search"/></svg>
-                <input id="stationSearch" class="search-input" type="search" placeholder="Search station, Syntagma, Piraeus, Airport" data-i18n-placeholder="search_placeholder" data-i18n-aria="search_aria" aria-label="Search station">
+                <input id="stationSearch" class="search-input" type="search" data-i18n-placeholder="search_placeholder" data-i18n-aria="search_aria" aria-label="Search station">
             </div>
             <div id="searchResults" class="search-results"></div>
         </section>
-        <div class="map-controls">
-            <div id="languagePicker" class="language-picker" role="group" aria-label="Language">
-                <button class="language-pill" type="button" data-lang="en" aria-pressed="false">EN</button>
-                <button class="language-pill" type="button" data-lang="el" aria-pressed="false">EL</button>
-                <button class="language-pill" type="button" data-lang="sq" aria-pressed="false">SQ</button>
-                <button class="language-pill" type="button" data-lang="it" aria-pressed="false">IT</button>
-            </div>
-            <div class="control-cluster">
-                <div class="zoom-controls" aria-label="Map zoom controls">
-                    <button id="zoomOutButton" class="control-button" type="button" aria-label="Zoom out"><svg class="ic" aria-hidden="true"><use href="#ic-zoom-out"/></svg></button>
-                    <button id="zoomInButton" class="control-button" type="button" aria-label="Zoom in"><svg class="ic" aria-hidden="true"><use href="#ic-zoom-in"/></svg></button>
-                </div>
-                <button id="themeToggle" class="control-button" type="button" aria-label="Toggle dark mode"><svg class="ic" aria-hidden="true"><use href="#ic-theme"/></svg></button>
-                <button id="liveTrainsButton" class="control-button" type="button" aria-label="Live trains" title="Live trains" style="display:none"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l0 2a3 3 0 0 0 3 3l10 0a3 3 0 0 0 3-3l0-2"/><path d="M4 11l0-3a3 3 0 0 1 3-3l10 0a3 3 0 0 1 3 3l0 3"/><path d="M12 4l0 4"/><path d="M4 11l16 0"/><circle cx="8.5" cy="14.5" r="1"/><circle cx="15.5" cy="14.5" r="1"/></svg></button>
-                <button id="vehiclesToggle" class="control-button" type="button" data-i18n-aria="hide_vehicles" data-i18n-title="hide_vehicles" aria-label="Hide vehicles" title="Hide vehicles"><svg class="ic" aria-hidden="true"><use href="#ic-vehicles"/></svg></button>
-                <button id="locateButton" class="control-button" type="button" data-i18n-aria="locate_me" data-i18n-title="locate_me" aria-label="Locate me" title="Locate me"><svg class="ic" aria-hidden="true"><use href="#ic-locate"/></svg></button>
-            </div>
-        </div>
-    </header>
 
-    <aside class="insight-panel" id="insightPanel">
-        <div class="panel-peek" id="panelPeek">
-            <span class="panel-peek__icon">●</span>
-            <span id="panelPeekText" class="panel-peek__text" data-i18n="live_trains">Live trains</span>
-            <span class="panel-peek__chevron">▲</span>
-        </div>
+        <section id="answerHero" class="answer-hero">
+            <div class="answer-hero__overline">
+                <span id="heroOverline" class="answer-hero__station"></span>
+                <span id="heroLiveChip" class="live-chip" style="display:none">
+                    <span class="live-chip__dot"></span>
+                    <span class="live-chip__label">Live</span>
+                </span>
+            </div>
+            <div class="answer-hero__main">
+                <span id="heroBadge" class="line-badge" style="display:none"></span>
+                <span id="heroDestination" class="answer-hero__dest"></span>
+            </div>
+            <div class="answer-hero__countdown-row">
+                <span id="heroCountdown" class="answer-hero__countdown"></span>
+                <span id="heroMeta" class="answer-hero__meta"></span>
+            </div>
+            <div class="answer-hero__actions">
+                <button id="heroTrack" class="pill-button pill-button--primary" type="button" data-i18n="track">Track</button>
+                <button id="heroStation" class="pill-button pill-button--secondary" type="button" data-i18n="the_station">The station</button>
+            </div>
+        </section>
 
-        <div class="panel-cards-wrap">
+        <section class="departures-card">
+            <div class="departures-card__header" data-i18n="next_departures">Next departures</div>
+            <div id="contextDepartures" class="departure-list" role="list"></div>
+        </section>
+
+        <div class="panel-cards-wrap" id="contextPanelCards">
             <div class="panel-card">
                 <div class="panel-card__title" data-i18n="live_trains">Live trains</div>
                 <div id="liveTrainList" class="panel-list"></div>
@@ -250,9 +280,6 @@
                 <div id="nearbyStationList" class="panel-list"></div>
             </div>
 
-            <!-- Cards below stay in the mobile bottom sheet but are
-                 visually hoisted into the right-hand desktop panel via
-                 .insight-panel--right CSS when the viewport is wide. -->
             <div class="panel-card panel-card--right-on-desktop">
                 <div class="panel-card__title" data-i18n="popular_stations">Popular stations</div>
                 <div id="popularStationList" class="panel-list"></div>
@@ -261,7 +288,7 @@
             <div class="panel-card panel-card--right-on-desktop">
                 <div class="panel-card__title" data-i18n="oasa_tickets">OASA tickets</div>
                 <div id="faresList" class="panel-list"></div>
-                <a id="faresLink" class="panel-link" href="https://www.oasa.gr/en/tickets/prices-of-products/" target="_blank" rel="noopener" data-i18n="view_on_oasa">View on OASA ↗</a>
+                <a id="faresLink" class="panel-link" href="https://www.oasa.gr/en/tickets/prices-of-products/" target="_blank" rel="noopener" data-i18n="view_on_oasa">View on OASA</a>
             </div>
 
             <div class="panel-card panel-card--right-on-desktop">
@@ -269,16 +296,81 @@
                 <div id="infoLinksList" class="info-links-list"></div>
             </div>
         </div>
+
+        <div class="context-spacer"></div>
+
+        <div class="offline-pill" id="offlinePill">
+            <svg class="ic" aria-hidden="true"><use href="#ic-wifi-off"/></svg>
+            <span id="offlinePillText">Offline snapshot active</span>
+        </div>
     </aside>
 
-    <!-- Mirror of the bottom sheet for wide desktop layouts. JS moves the
-         right-on-desktop cards into here on load + resize so they sit on
-         the right edge of the viewport with the map between the two
-         columns. Stays empty (and visually collapsed) on mobile. -->
+    <!-- Legacy panel container (JS uses these IDs for reparenting).
+         Stays hidden on the new layout; its child IDs are above in context-rail. -->
+    <aside class="insight-panel" id="insightPanel" style="display:none">
+        <div class="panel-peek" id="panelPeek">
+            <span class="panel-peek__icon"></span>
+            <span id="panelPeekText" class="panel-peek__text" data-i18n="live_trains">Live trains</span>
+            <span class="panel-peek__chevron"></span>
+        </div>
+        <div class="panel-cards-wrap"></div>
+    </aside>
     <aside class="insight-panel insight-panel--right" id="insightPanelRight" aria-hidden="true">
         <div class="panel-cards-wrap" id="insightPanelRightWrap"></div>
     </aside>
 
+    <!-- ===== Map Canvas (flex:1, third column) ===== -->
+    <main class="map-canvas">
+        <div id="map"></div>
+
+        <!-- Map chrome: top-left region chips -->
+        <div class="map-chrome map-chrome--tl" id="regionChips">
+            <button class="region-chip region-chip--active" type="button" data-region="athens" data-i18n="athens">Athens</button>
+            <button class="region-chip" type="button" data-region="thessaloniki" data-i18n="thessaloniki">Thessaloniki</button>
+            <button class="region-chip" type="button" data-region="national" data-i18n="national">National</button>
+        </div>
+
+        <!-- Map chrome: top-right language + theme -->
+        <div class="map-chrome map-chrome--tr">
+            <div id="languagePicker" class="lang-segmented" role="group" aria-label="Language">
+                <button class="lang-seg language-pill" type="button" data-lang="en" aria-pressed="false">EN</button>
+                <button class="lang-seg language-pill" type="button" data-lang="el" aria-pressed="false">EL</button>
+                <button class="lang-seg language-pill" type="button" data-lang="sq" aria-pressed="false">SQ</button>
+            </div>
+            <button id="themeToggleMap" class="chrome-button" type="button" aria-label="Toggle dark mode">
+                <svg class="ic" aria-hidden="true"><use href="#ic-theme"/></svg>
+            </button>
+        </div>
+
+        <!-- Map chrome: bottom-right zoom + locate -->
+        <div class="map-chrome map-chrome--br">
+            <div class="zoom-stack">
+                <button id="zoomInButton" class="chrome-button" type="button" aria-label="Zoom in">
+                    <svg class="ic" aria-hidden="true"><use href="#ic-zoom-in"/></svg>
+                </button>
+                <button id="zoomOutButton" class="chrome-button" type="button" aria-label="Zoom out">
+                    <svg class="ic" aria-hidden="true"><use href="#ic-zoom-out"/></svg>
+                </button>
+            </div>
+            <button id="locateButton" class="chrome-button chrome-button--accent" type="button" data-i18n-aria="locate_me" aria-label="Locate me">
+                <svg class="ic" aria-hidden="true"><use href="#ic-locate"/></svg>
+            </button>
+        </div>
+
+        <!-- Map chrome: bottom-left live-status pill -->
+        <div class="map-chrome map-chrome--bl">
+            <div class="live-status-pill" id="liveStatusPill">
+                <span class="live-status-pill__dot"></span>
+                <span id="liveStatusText" data-i18n="live_trains">Live trains</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Hidden controls for JS backward compatibility -->
+    <button id="liveTrainsButton" type="button" aria-hidden="true" style="display:none"></button>
+    <button id="vehiclesToggle" type="button" aria-hidden="true" style="display:none"></button>
+
+    <!-- ===== Station Sheet ===== -->
     <section id="stationSheet" class="station-sheet station-sheet--hidden" aria-live="polite">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
@@ -310,6 +402,7 @@
         </a>
     </section>
 
+    <!-- ===== Train Sheet ===== -->
     <section id="trainSheet" class="station-sheet station-sheet--hidden" aria-live="polite">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
@@ -335,11 +428,11 @@
             </div>
 
             <div id="trainSheetTelemetry" class="sheet-block" style="display:none"></div>
-
             <div id="trainSheetStream" class="sheet-block" style="display:none"></div>
         </div>
     </section>
 
+    <!-- ===== Live Trains Drawer ===== -->
     <section id="liveTrainsDrawer" class="station-sheet station-sheet--hidden" aria-live="polite">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
@@ -360,11 +453,7 @@
         </div>
     </section>
 
-    <!-- Ariadne: offline assistant. Floating pill opens a slide-in panel
-         with a text input. Answers are canned templates that call the
-         same web-map.js hooks the panels already use (open station sheet,
-         open Google Maps directions, show alerts). No LLM, no network for
-         parsing. -->
+    <!-- ===== Ariadne Assistant ===== -->
     <button id="ariadneLauncher" class="ariadne-launcher" type="button" aria-label="Ask Ariadne" title="Ask Ariadne">
         <img class="ariadne-launcher__img" src="ariadne-mark.png" alt="Ask Ariadne" width="40" height="40">
     </button>
@@ -374,7 +463,7 @@
             <div class="ariadne-panel__title">
                 <img class="ariadne-panel__lockup" src="ariadne-lockup.png" alt="Ariadne">
             </div>
-            <button id="ariadneBrain" class="control-button" type="button"
+            <button id="ariadneBrain" class="chrome-button" type="button"
                     aria-label="Smarter answers"
                     title="Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)"><svg class="ic" aria-hidden="true"><use href="#ic-brain"/></svg></button>
             <button id="ariadneClose" class="ghost-button" type="button" data-i18n="done">Done</button>
@@ -388,111 +477,17 @@
         </form>
     </aside>
 
-    <!-- Widgets showcase (1.2 "Widgets Everywhere"). Purely marketing: a
-         CSS-only modal (no JS, checkbox-hack toggle) with fake iPhone + Pixel
-         frames rendering the widget gallery in CSS. Sells the home-screen
-         widgets for App Store / Play screenshots. -->
-    <style>
-      .ws-toggle { position: absolute; opacity: 0; pointer-events: none; }
-      .ws-launcher {
-        position: fixed; left: 16px; bottom: 24px; z-index: 1200;
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 12px 18px; border-radius: 999px; cursor: pointer;
-        font: 600 14px/1 system-ui, sans-serif; color: #fff;
-        background: var(--sy-brand); box-shadow: 0 6px 18px rgba(26,92,184,.35);
-      }
-      .ws-overlay {
-        display: none; position: fixed; inset: 0; z-index: 1300;
-        align-items: center; justify-content: center; padding: 24px;
-      }
-      .ws-toggle:checked ~ .ws-overlay { display: flex; }
-      .ws-scrim { position: absolute; inset: 0; background: rgba(6,10,20,.62); backdrop-filter: blur(4px); cursor: pointer; }
-      .ws-card {
-        position: relative; z-index: 1; width: min(920px, 96vw);
-        max-height: 90vh; overflow: auto; border-radius: 22px; padding: 22px;
-        background: #0c1524; color: #eaf0fb; box-shadow: 0 20px 60px rgba(0,0,0,.5);
-      }
-      .ws-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-      .ws-head h2 { font: 700 20px/1.2 system-ui, sans-serif; margin: 0; }
-      .ws-close { padding: 8px 14px; border-radius: 999px; cursor: pointer; background: rgba(255,255,255,.12); color: #fff; font: 600 13px/1 system-ui; }
-      .ws-sub { color: #9fb2d0; font: 400 13px/1.4 system-ui; margin: 4px 0 18px; }
-      .ws-frames { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
-      .ws-phone { width: 300px; border-radius: 34px; padding: 14px; background: linear-gradient(160deg,#11203a,#0a1120); box-shadow: inset 0 0 0 2px rgba(255,255,255,.06); }
-      .ws-phone__label { text-align: center; color: #8fa6c8; font: 600 11px/1 system-ui; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
-      .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .ws-tile { border-radius: 18px; padding: 12px; background: rgba(255,255,255,.07); backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
-      .ws-tile--wide { grid-column: 1 / -1; }
-      .ws-pill { display: inline-flex; min-width: 30px; justify-content: center; padding: 2px 7px; border-radius: 6px; font: 700 11px/1.4 system-ui; color: #fff; }
-      .ws-m1 { background: var(--sy-metro-green); } .ws-m2 { background: var(--sy-metro-red); } .ws-m3 { background: var(--sy-metro-blue); } .ws-t { background: var(--sy-tram); }
-      .ws-min { font: 800 30px/1 system-ui; color: #eaf0fb; margin: 8px 0 2px; }
-      .ws-dest { font: 600 12px/1.3 system-ui; color: #eaf0fb; }
-      .ws-station { font: 400 11px/1.3 system-ui; color: #9fb2d0; }
-      .ws-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
-      .ws-row .ws-dest { flex: 1; }
-      .ws-row .ws-when { font: 700 12px/1 system-ui; color: #eaf0fb; }
-      .ws-android .ws-tile { border-radius: 24px; background: rgba(255,255,255,.09); }
-      @media (max-width: 680px) { .ws-frames { gap: 16px; } .ws-phone { width: 88vw; max-width: 320px; } }
-    </style>
-    <!-- Widgets are a mobile home-screen feature; the launcher is hidden on web.
-         The checkbox + overlay markup stays inert (nothing toggles it). -->
-    <input type="checkbox" id="wsToggle" class="ws-toggle" aria-hidden="true">
-    <div class="ws-overlay" role="dialog" aria-modal="true" aria-label="Syrmos on your Home Screen">
-      <label for="wsToggle" class="ws-scrim" aria-label="Close"></label>
-      <div class="ws-card">
-        <div class="ws-head">
-          <h2>Syrmos on your Home Screen</h2>
-          <label for="wsToggle" class="ws-close">Close</label>
+    <!-- Legacy: brand-block and top-bar for JS that queries .top-bar for height -->
+    <header class="top-bar" style="display:none!important" aria-hidden="true">
+        <div class="brand-block">
+            <div class="brand">Syrmos</div>
+            <div class="subtitle" data-i18n="brand_subtitle">Greece rail map</div>
+            <div class="store-badges"></div>
         </div>
-        <p class="ws-sub">Live, offline departures at a glance — home screen, lock screen, and Apple Watch.</p>
-        <div class="ws-frames">
-          <div class="ws-phone ws-phone--ios">
-            <div class="ws-phone__label">iPhone</div>
-            <div class="ws-grid">
-              <div class="ws-tile">
-                <span class="ws-pill ws-m3">M3</span>
-                <div class="ws-min">3 min</div>
-                <div class="ws-dest">Doukissis Plakentias</div>
-                <div class="ws-station">Syntagma</div>
-              </div>
-              <div class="ws-tile">
-                <span class="ws-pill ws-m2">M2</span>
-                <div class="ws-min">4 min</div>
-                <div class="ws-dest">Elliniko</div>
-                <div class="ws-station">Syntagma</div>
-              </div>
-              <div class="ws-tile ws-tile--wide">
-                <div class="ws-station" style="margin-bottom:6px;font-weight:600;color:#eaf0fb;">Syntagma · Live Departures</div>
-                <div class="ws-row"><span class="ws-pill ws-m3">M3</span><span class="ws-dest">Airport</span><span class="ws-when">11m ✈</span></div>
-                <div class="ws-row"><span class="ws-pill ws-m2">M2</span><span class="ws-dest">Anthoupoli</span><span class="ws-when">6m</span></div>
-                <div class="ws-row"><span class="ws-pill ws-m3">M3</span><span class="ws-dest">Dimotiko Theatro</span><span class="ws-when">8m</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="ws-phone ws-phone--android ws-android">
-            <div class="ws-phone__label">Pixel</div>
-            <div class="ws-grid">
-              <div class="ws-tile">
-                <span class="ws-pill ws-m1">M1</span>
-                <div class="ws-min">2 min</div>
-                <div class="ws-dest">Kifisia</div>
-                <div class="ws-station">Monastiraki</div>
-              </div>
-              <div class="ws-tile">
-                <span class="ws-pill ws-t">T7</span>
-                <div class="ws-min">7 min</div>
-                <div class="ws-dest">Syntagma</div>
-                <div class="ws-station">SEF</div>
-              </div>
-              <div class="ws-tile ws-tile--wide">
-                <div class="ws-station" style="margin-bottom:6px;font-weight:600;color:#eaf0fb;">Near me</div>
-                <div class="ws-row"><span class="ws-pill ws-m1">M1</span><span class="ws-dest">Monastiraki</span><span class="ws-when">2 min walk</span></div>
-                <div class="ws-row"><span class="ws-pill ws-m3">M3</span><span class="ws-dest">Syntagma</span><span class="ws-when">6 min walk</span></div>
-              </div>
-            </div>
-          </div>
+        <div class="map-controls">
+            <div class="control-cluster"></div>
         </div>
-      </div>
-    </div>
+    </header>
 </div>
 
 <script

@@ -246,6 +246,7 @@ private struct AirportHeroCard: View {
 
             HStack(spacing: 10) {
                 airportHeroPill("M3", "tram.fill")
+                airportHeroPill("A1", "tram.fill")
                 airportHeroPill("X95", "bus.fill")
                 airportHeroPill("24/7", "clock.fill")
                 Spacer()
@@ -364,7 +365,7 @@ private struct AirportRouteMapCard: View {
     @Binding var selectedRoute: String
     let dayOffset: Int
 
-    private let routes = ["M3", "X95", "X93"]
+    private let routes = ["M3", "A1", "X95", "X93", "X96", "X97"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -409,7 +410,7 @@ private struct AirportRouteMapCard: View {
                     airportMapStop("S", x: 0.13, y: 0.74, size: proxy.size)
                     airportMapStop("A", x: 0.86, y: 0.25, size: proxy.size)
 
-                    Image(systemName: selectedRoute == "M3" ? "tram.fill" : "bus.fill")
+                    Image(systemName: (selectedRoute == "M3" || selectedRoute == "A1") ? "tram.fill" : "bus.fill")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
@@ -434,7 +435,12 @@ private struct AirportRouteMapCard: View {
     }
 
     private func routeColor(_ route: String) -> Color {
-        route == "M3" ? Color.metroBlue : (route == "X95" ? SyrmosTokens.warning : SyrmosTokens.suburban)
+        switch route {
+        case "M3": return Color.metroBlue
+        case "A1": return SyrmosTokens.suburban
+        case "X95", "X93", "X96", "X97": return SyrmosTokens.warning
+        default: return SyrmosTokens.suburban
+        }
     }
 
     private func airportMapGrid(size: CGSize) -> Path {
@@ -649,7 +655,7 @@ private struct AirportDepartureList: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(Array(rows.prefix(5).enumerated()), id: \.offset) { _, row in
+            ForEach(Array(rows.prefix(9).enumerated()), id: \.offset) { _, row in
                 HStack(spacing: 12) {
                     Text(row.route)
                         .font(.caption.weight(.bold))
@@ -670,11 +676,18 @@ private struct AirportDepartureList: View {
     }
 
     private var rows: [AirportListRow] {
+        let busDetail = airportText(language, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali.")
         var output = metroDepartures.prefix(3).map {
             AirportListRow(route: $0.lineId == "M3_AIR" ? "M3" : $0.lineId, destination: "Syntagma", detail: airportText(language, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), time: $0.time, color: Color.metroBlue)
         }
-        output.append(AirportListRow(route: "X95", destination: "Syntagma", detail: airportText(language, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), time: "24/7", color: SyrmosTokens.warning))
-        output.append(AirportListRow(route: "X93", destination: "Kifisos", detail: airportText(language, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), time: "24/7", color: SyrmosTokens.suburban))
+        let suburbanDeps = metroDepartures.filter { $0.lineId == "A1" || $0.lineId == "A2" }.prefix(2)
+        for dep in suburbanDeps {
+            output.append(AirportListRow(route: dep.lineId, destination: airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), detail: airportText(language, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), time: dep.time, color: SyrmosTokens.suburban))
+        }
+        output.append(AirportListRow(route: "X95", destination: "Syntagma", detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
+        output.append(AirportListRow(route: "X93", destination: "Kifisos", detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
+        output.append(AirportListRow(route: "X96", destination: airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
+        output.append(AirportListRow(route: "X97", destination: airportText(language, "Elliniko", "Ελληνικό", "Elliniko", "Elliniko"), detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
         return output
     }
 
