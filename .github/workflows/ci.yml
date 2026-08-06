@@ -13,7 +13,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Reusable CI is called by both release workflows for the same tag. Include
+  # the caller workflow name so iOS and Android cannot cancel each other.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
