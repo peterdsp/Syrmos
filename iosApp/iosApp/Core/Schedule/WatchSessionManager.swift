@@ -79,13 +79,41 @@ extension WatchSessionManager: WCSessionDelegate {
     }
     private func recordRailPulse(_ payload: [String: Any]) {
         guard let signal = payload["railpulse_signal"] as? String else { return }
-        let defaults = UserDefaults(suiteName: "group.com.syrmosApp.ios") ?? .standard
-        let confirmed = defaults.object(forKey: "railpulse_confirmed") as? Int ?? 347
-        let thisWeek = defaults.object(forKey: "railpulse_week") as? Int ?? 28
-        defaults.set(confirmed + 1, forKey: "railpulse_confirmed")
-        defaults.set(thisWeek + 1, forKey: "railpulse_week")
-        defaults.set(signal, forKey: "railpulse_last_signal")
-        defaults.set(Date().timeIntervalSince1970, forKey: "railpulse_last_signal_epoch")
+        Task {
+            let reportId = "report_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            var request = URLRequest(url: URL(string: "https://api-syrmos.peterdsp.dev/api/community/reports")!)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: [
+                "reportId": reportId,
+                "scopeId": "network",
+                "scopeLabel": "Apple Watch",
+                "signal": normalizedIchnosSignal(signal),
+                "detail": "",
+                "platform": "ios",
+                "locale": "",
+            ])
+            guard let (_, response) = try? await URLSession.shared.data(for: request),
+                  (response as? HTTPURLResponse)?.statusCode == 200 else { return }
+            let defaults = UserDefaults(suiteName: "group.com.syrmosApp.ios") ?? .standard
+            let confirmed = defaults.object(forKey: "ichnos_v2_confirmed") as? Int ?? 0
+            let thisWeek = defaults.object(forKey: "ichnos_v2_week") as? Int ?? 0
+            defaults.set(confirmed + 1, forKey: "ichnos_v2_confirmed")
+            defaults.set(thisWeek + 1, forKey: "ichnos_v2_week")
+            defaults.set(signal, forKey: "ichnos_v2_last_signal")
+            defaults.set(Date().timeIntervalSince1970, forKey: "ichnos_v2_last_signal_epoch")
+        }
+    }
+
+    private func normalizedIchnosSignal(_ signal: String) -> String {
+        switch signal.lowercased() {
+        case "normal", "everything ok": return "normal"
+        case "delay", "delayed": return "delayed"
+        case "crowded": return "crowded"
+        case "stopped": return "stopped"
+        case "broken ac", "facilities": return "facilities"
+        default: return "other"
+        }
     }
     #if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) {}

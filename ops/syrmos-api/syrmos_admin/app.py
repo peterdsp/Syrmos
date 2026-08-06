@@ -22,6 +22,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from . import ariadne as ariadne_mod
+from . import community as community_mod
 from . import db as dbmod
 from . import generator
 from . import projector as projector_mod
@@ -1081,6 +1082,40 @@ async def api_ariadne_chat(request: Request) -> JSONResponse:
 @app.get("/healthz")
 def healthz() -> JSONResponse:
     return JSONResponse({"ok": True})
+
+
+# Public anonymous Ichnos reporting. These endpoints intentionally store no
+# account, device identifier, precise location, or source IP.
+
+@app.post("/api/community/reports")
+async def api_community_report_submit(request: Request) -> JSONResponse:
+    try:
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise ValueError("JSON object required")
+        with get_db() as conn:
+            result = community_mod.upsert_report(conn, payload)
+        return JSONResponse(result)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from None
+
+
+@app.delete("/api/community/reports/{report_id}")
+def api_community_report_delete(report_id: str) -> JSONResponse:
+    try:
+        with get_db() as conn:
+            deleted = community_mod.delete_report(conn, report_id)
+        return JSONResponse({"ok": True, "deleted": deleted})
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from None
+
+
+@app.get("/api/community/summary")
+def api_community_summary(scopeId: str | None = None) -> JSONResponse:
+    if scopeId is not None and not community_mod.SCOPE_ID_RE.fullmatch(scopeId):
+        raise HTTPException(status_code=400, detail="invalid scopeId")
+    with get_db() as conn:
+        return JSONResponse(community_mod.summary(conn, scope_id=scopeId))
 
 
 # Public projector endpoint. Single source of truth for what the apps render

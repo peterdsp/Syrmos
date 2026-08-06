@@ -1413,12 +1413,7 @@ private fun ServiceStatusPill(
     status: STASYServiceStatus,
     lang: AppLanguage,
 ) {
-    val message = when (lang) {
-        AppLanguage.GREEK -> status.rawMessage
-        AppLanguage.ALBANIAN -> status.rawMessageSq.ifEmpty { status.rawMessageEn.ifEmpty { status.rawMessage } }
-        AppLanguage.ITALIAN -> status.rawMessageIt.ifEmpty { status.rawMessageEn.ifEmpty { status.rawMessage } }
-        else -> status.rawMessageEn.ifEmpty { status.rawMessage }
-    }
+    val message = status.localizedMessage(lang)
     if (message.isBlank()) return
     val bg = if (status.isAlert) SyrmosColorTokens.warning.copy(alpha = 0.12f) else SyrmosColorTokens.live.copy(alpha = 0.1f)
     val accent = if (status.isAlert) SyrmosColorTokens.arrivalModerate else SyrmosColorTokens.arrivalSoon
@@ -1515,12 +1510,7 @@ private fun NewsCard(
     lang: AppLanguage,
     onOpenUrl: (String) -> Unit,
 ) {
-    val title = when (lang) {
-        AppLanguage.GREEK -> item.title
-        AppLanguage.ALBANIAN -> item.titleSq.ifEmpty { item.titleEn.ifEmpty { item.title } }
-        AppLanguage.ITALIAN -> item.titleIt.ifEmpty { item.titleEn.ifEmpty { item.title } }
-        else -> item.titleEn.ifEmpty { item.title }
-    }
+    val title = item.localizedTitle(lang)
     val date = item.publishedAt.take(10)
     val hasUrl = item.url.isNotBlank()
     Card(
@@ -1700,12 +1690,7 @@ private fun AlertCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = when (lang) {
-                        AppLanguage.GREEK -> announcement.title
-                        AppLanguage.ALBANIAN -> announcement.titleSq.ifEmpty { announcement.titleEn.ifEmpty { announcement.title } }
-                        AppLanguage.ITALIAN -> announcement.titleIt.ifEmpty { announcement.titleEn.ifEmpty { announcement.title } }
-                        else -> announcement.titleEn.ifEmpty { announcement.title }
-                    },
+                    text = announcement.localizedTitle(lang),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )

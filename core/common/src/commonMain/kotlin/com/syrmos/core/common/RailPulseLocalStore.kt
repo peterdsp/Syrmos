@@ -15,9 +15,9 @@ data class RailPulseContributionSnapshot(
  * never a user identifier, report history, location, or free-form content.
  */
 object RailPulseLocalStore {
-    private const val CONFIRMED_KEY = "railpulse_confirmed"
-    private const val QUALITY_KEY = "railpulse_quality"
-    private const val WEEK_KEY = "railpulse_week"
+    private const val CONFIRMED_KEY = "ichnos_v2_confirmed"
+    private const val QUALITY_KEY = "ichnos_v2_quality"
+    private const val WEEK_KEY = "ichnos_v2_week"
 
     private val _snapshot = MutableStateFlow(load())
     val snapshot: StateFlow<RailPulseContributionSnapshot> = _snapshot.asStateFlow()
@@ -41,9 +41,9 @@ object RailPulseLocalStore {
     }
 
     private fun load() = RailPulseContributionSnapshot(
-        confirmed = loadStringPref(CONFIRMED_KEY, "347").toIntOrNull() ?: 347,
-        qualityPercent = loadStringPref(QUALITY_KEY, "96").toIntOrNull() ?: 96,
-        thisWeek = loadStringPref(WEEK_KEY, "28").toIntOrNull() ?: 28,
+        confirmed = loadStringPref(CONFIRMED_KEY, "0").toIntOrNull() ?: 0,
+        qualityPercent = loadStringPref(QUALITY_KEY, "0").toIntOrNull() ?: 0,
+        thisWeek = loadStringPref(WEEK_KEY, "0").toIntOrNull() ?: 0,
     )
 
     private fun update(value: RailPulseContributionSnapshot) {
