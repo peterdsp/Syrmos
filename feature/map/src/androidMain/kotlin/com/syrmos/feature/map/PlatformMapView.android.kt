@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.common.map.MapDesignTokens
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.SimulatedTrain
@@ -484,13 +485,13 @@ internal actual fun PlatformMapView(
             if (existing != null) {
                 existing.position = snappedSimPos
                 // Heading is baked into the triangle bitmap; refresh each segment.
-                existing.icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
+                existing.icon = buildCapsuleTrainBitmap(res, lineColor, train.bearing)
             } else {
                 val trainId = train.id
                 val marker = Marker(mapView).apply {
                     position = snappedSimPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = buildTriangleTrainBitmap(res, lineColor, train.bearing)
+                    icon = buildCapsuleTrainBitmap(res, lineColor, train.bearing)
                     title = "${train.lineName} > ${train.destinationName}"
                     snippet = "Near ${train.currentStationName}"
                     setOnMarkerClickListener { _, _ ->
@@ -684,24 +685,27 @@ private fun buildZoomPin(
 /// train is heading (compass [bearingDeg], 0 = north), coloured by line with a
 /// white outline so it reads on the flat light/dark base - the native mirror of
 /// the web triangle markers.
-private fun buildTriangleTrainBitmap(res: android.content.res.Resources, color: Int, bearingDeg: Double): android.graphics.drawable.Drawable {
-    val size = 40
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+private fun buildCapsuleTrainBitmap(res: android.content.res.Resources, color: Int, bearingDeg: Double): android.graphics.drawable.Drawable {
+    val density = res.displayMetrics.density
+    val w = MapDesignTokens.VEHICLE_W * density
+    val h = MapDesignTokens.VEHICLE_H * density
+    val border = MapDesignTokens.VEHICLE_BORDER * density
+    val radius = MapDesignTokens.VEHICLE_RADIUS * density
+    val pad = 4 * density
+    val canvas_size = (maxOf(w, h) + pad * 2).toInt()
+    val bitmap = Bitmap.createBitmap(canvas_size, canvas_size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    val cx = size / 2f
-    val cy = size / 2f
-    val r = size * 0.40f
+    val cx = canvas_size / 2f
+    val cy = canvas_size / 2f
     canvas.save()
-    canvas.rotate(bearingDeg.toFloat(), cx, cy) // clockwise; 0 = up = north
-    val path = android.graphics.Path().apply {
-        moveTo(cx, cy - r)
-        lineTo(cx + r * 0.82f, cy + r * 0.72f)
-        lineTo(cx - r * 0.82f, cy + r * 0.72f)
-        close()
-    }
-    canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; style = Paint.Style.FILL })
-    canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = 0xFFFFFFFF.toInt(); style = Paint.Style.STROKE; strokeWidth = size * 0.08f; strokeJoin = Paint.Join.ROUND
+    canvas.rotate(bearingDeg.toFloat(), cx, cy)
+    val rect = RectF(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    canvas.drawRoundRect(rect, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color; style = Paint.Style.FILL
+        setShadowLayer(8 * density, 0f, 2 * density, 0x4D14181F)
+    })
+    canvas.drawRoundRect(rect, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = 0xFFFFFFFF.toInt(); style = Paint.Style.STROKE; strokeWidth = border
     })
     canvas.restore()
     return BitmapDrawable(res, bitmap)

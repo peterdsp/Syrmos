@@ -65,6 +65,16 @@ object MapDesignTokens {
      */
     const val LINES_ONLY_MAX_ZOOM = 7
 
+    // --- Vehicle capsule markers ---------------------------------------------
+    /** Capsule width in logical points. */
+    const val VEHICLE_W = 24
+    /** Capsule height in logical points. */
+    const val VEHICLE_H = 13
+    /** Capsule corner radius. */
+    const val VEHICLE_RADIUS = 6
+    /** White border width around a capsule. */
+    const val VEHICLE_BORDER = 2
+
     // --- Line strokes --------------------------------------------------------
     /** Suspended / not-yet-open lines render greyed. */
     const val GREYED_COLOR = "#94A3B8"

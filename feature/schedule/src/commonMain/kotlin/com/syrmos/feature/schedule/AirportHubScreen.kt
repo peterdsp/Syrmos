@@ -127,6 +127,16 @@ fun AirportHubScreen(
             now = now,
         )
     }
+    val suburbanAirportDepartures = remember(bundles, offsets, dayOffset, now.date) {
+        DepartureProjection.compute(
+            bundles = bundles,
+            offsets = offsetsRepo,
+            stationId = "A1_AIR",
+            lineId = "A1",
+            dayOffset = dayOffset,
+            now = now,
+        )
+    }
     val airportBoundDepartures = remember(bundles, offsets, dayOffset, now.date) {
         DepartureProjection.compute(
             bundles = bundles,
@@ -161,13 +171,13 @@ fun AirportHubScreen(
         )
         AirportRouteOverview(lang, selectedRoute, dayOffset, onRouteSelected = { selectedRoute = it })
         PredictiveItinerary(lang, flightMinutes, airportBoundDepartures, selectedTrip?.title)
-        NextAirportServices(lang, dayOffset, airportDepartures, now.time.hour * 60 + now.time.minute)
+        NextAirportServices(lang, dayOffset, airportDepartures, suburbanAirportDepartures, now.time.hour * 60 + now.time.minute)
         Text(
             text = airportText(lang, "Airport services", "Υπηρεσίες αεροδρομίου", "Shërbimet e aeroportit", "Servizi aeroportuali"),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
-        AirportDepartureRows(lang, dayOffset, airportDepartures)
+        AirportDepartureRows(lang, dayOffset, airportDepartures, suburbanAirportDepartures)
         AirportAlert(lang)
     }
 }
@@ -212,6 +222,7 @@ private fun AirportHero(lang: AppLanguage) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             HeroPill("M3", Icons.Filled.Train)
+            HeroPill("A1", Icons.Filled.Train)
             HeroPill("X95", Icons.Filled.DirectionsBus)
             HeroPill("24/7", Icons.Filled.AccessTime)
             Spacer(Modifier.weight(1f))
@@ -336,7 +347,7 @@ private fun AirportRouteOverview(lang: AppLanguage, selectedRoute: String, dayOf
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("M3", "X95", "X93").forEach { route ->
+                listOf("M3", "A1", "X95", "X93", "X96", "X97").forEach { route ->
                     val color = airportRouteColor(route)
                     val selected = route == selectedRoute
                     Surface(
@@ -382,7 +393,7 @@ private fun AirportMapCanvas(route: String) {
         Text("S", modifier = Modifier.align(Alignment.BottomStart).padding(start = 34.dp, bottom = 35.dp), color = color, fontWeight = FontWeight.Bold)
         Text("A", modifier = Modifier.align(Alignment.TopEnd).padding(end = 45.dp, top = 31.dp), color = color, fontWeight = FontWeight.Bold)
         Icon(
-            if (route == "M3") Icons.Filled.Train else Icons.Filled.DirectionsBus,
+            if (route == "M3" || route == "A1") Icons.Filled.Train else Icons.Filled.DirectionsBus,
             null,
             tint = Color.White,
             modifier = Modifier.align(Alignment.Center).size(20.dp),
@@ -454,7 +465,7 @@ private fun Connector() {
 }
 
 @Composable
-private fun NextAirportServices(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, nowMinutes: Int) {
+private fun NextAirportServices(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, suburbanDepartures: List<ProjectedDeparture>, nowMinutes: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(airportText(lang, "Next services from the airport", "Επόμενα δρομολόγια από το αεροδρόμιο", "Shërbimet e radhës nga aeroporti", "Prossimi servizi dall'aeroporto"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -462,7 +473,10 @@ private fun NextAirportServices(lang: AppLanguage, dayOffset: Int, departures: L
             val main = if (next == null) "-" else if (dayOffset == 0) formatMinutes((next.timeMinutes - nowMinutes).coerceAtLeast(0), lang) else next.time
             val following = departures.getOrNull(1)?.time
             ServiceTile("M3", Icons.Filled.Train, main, "Syntagma", following?.let { airportText(lang, "Then $it", "Έπειτα $it", "Pastaj $it", "Poi $it") } ?: airportText(lang, "No later departure in the current schedule", "Δεν υπάρχει επόμενη αναχώρηση στο τρέχον ωράριο", "Nuk ka nisje tjetër në orarin aktual", "Nessuna partenza successiva nell'orario attuale"), airportText(lang, "Scheduled", "Προγραμματισμένο", "Programuar", "Programmato"), SyrmosColorTokens.metroBlue, Modifier.weight(1f))
-            ServiceTile("X95", Icons.Filled.DirectionsBus, "24/7", "Syntagma", airportText(lang, "Check OASA for current bus times", "Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια", "Kontrollo OASA për oraret aktuale", "Controlla OASA per gli orari attuali"), airportText(lang, "Express", "Express", "Express", "Express"), SyrmosColorTokens.warning, Modifier.weight(1f))
+            val nextA1 = suburbanDepartures.firstOrNull()
+            val mainA1 = if (nextA1 == null) "-" else if (dayOffset == 0) formatMinutes((nextA1.timeMinutes - nowMinutes).coerceAtLeast(0), lang) else nextA1.time
+            val followingA1 = suburbanDepartures.getOrNull(1)?.time
+            ServiceTile("A1", Icons.Filled.Train, mainA1, airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), followingA1?.let { airportText(lang, "Then $it", "Έπειτα $it", "Pastaj $it", "Poi $it") } ?: airportText(lang, "No later departure in the current schedule", "Δεν υπάρχει επόμενη αναχώρηση στο τρέχον ωράριο", "Nuk ka nisje tjetër në orarin aktual", "Nessuna partenza successiva nell'orario attuale"), airportText(lang, "Scheduled", "Προγραμματισμένο", "Programuar", "Programmato"), SyrmosColorTokens.suburban, Modifier.weight(1f))
         }
     }
 }
@@ -486,13 +500,18 @@ private fun ServiceTile(route: String, icon: ImageVector, main: String, destinat
 }
 
 @Composable
-private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>) {
-    val rows = departures.take(3).map { AirportRow("M3", "Syntagma", airportText(lang, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), it.time, SyrmosColorTokens.metroBlue) } + listOf(
+private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, suburbanDepartures: List<ProjectedDeparture>) {
+    val metroRows = departures.take(3).map { AirportRow("M3", "Syntagma", airportText(lang, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), it.time, SyrmosColorTokens.metroBlue) }
+    val suburbanRows = suburbanDepartures.take(2).map { AirportRow("A1", airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), airportText(lang, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), it.time, SyrmosColorTokens.suburban) }
+    val busRows = listOf(
         AirportRow("X95", "Syntagma", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
-        AirportRow("X93", "Kifisos", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.suburban),
+        AirportRow("X93", "Kifisos", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
+        AirportRow("X96", airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
+        AirportRow("X97", airportText(lang, "Elliniko", "Ελληνικό", "Elliniko", "Elliniko"), airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
     )
+    val rows = metroRows + suburbanRows + busRows
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.take(5).forEach { row ->
+        rows.take(9).forEach { row ->
             Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 3.dp) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(shape = CircleShape, color = row.color, modifier = Modifier.size(38.dp)) {
@@ -552,7 +571,8 @@ private fun String.isAirportLabel(): Boolean {
 
 private fun airportRouteColor(route: String): Color = when (route) {
     "M3" -> SyrmosColorTokens.metroBlue
-    "X95" -> SyrmosColorTokens.warning
+    "A1" -> SyrmosColorTokens.suburban
+    "X95", "X93", "X96", "X97" -> SyrmosColorTokens.warning
     else -> SyrmosColorTokens.suburban
 }
 

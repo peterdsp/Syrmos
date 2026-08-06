@@ -32,7 +32,7 @@ val domainModule = module {
     // operator publishes a real-time arrivals feed for Athens). When any
     // operator does, fill in the relevant provider, no other code changes.
     single { StasyLiveArrivalsProvider() }
-    single { OasaLiveArrivalsProvider() }
+    single { OasaLiveArrivalsProvider(service = get()) }
     single { HellenicTrainLiveArrivalsProvider() }
     single {
         LiveArrivalsRouter(
