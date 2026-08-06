@@ -2,13 +2,24 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.7**, iOS build 121 and Android versionCode 206. Burned Android version codes never reusable: 105, 106, 109-138, and 200-206. Next Android release must use 207+.
+Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.8**, iOS build 122 and Android versionCode 207. Burned Android version codes never reusable: 105, 106, 109-138, and 200-207. Next Android release must use 208+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 2.0.0-beta.8 - 2026-08-06
+
+The permanent Ichnos history beta.
+
+- **Anonymous railway history.** Every accepted community report now updates a permanent daily aggregate by scope and condition. Individual reports still expire and are deleted, while anonymous counts remain available across days, months, and years.
+- **Good and issue trends.** Android and iOS show matching reports, good, and issue totals with period bars and condition breakdowns. Estimated journeys are never written into historical totals.
+- **Correct refinements and undo.** Changing a report moves its count between historical buckets without double counting. Undo removes the count as well as the active report.
+- **Live Raspberry Pi persistence.** Database schema 26, the history endpoint, reverse proxy route, and deployment migration are installed on the production Pi.
+
+iOS 2.0.0 build 122 / Android 2.0.0 versionCode 207. Tagged as `v2.0.0-beta.8`.
 
 ## 2.0.0-beta.7 - 2026-08-06
 
