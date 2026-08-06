@@ -1,5 +1,6 @@
 package com.syrmos.core.network
 
+import com.syrmos.core.common.AppLanguage
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -28,7 +29,29 @@ data class STASYAnnouncement(
     val validFrom: String? = null,           // YYYY-MM-DD or null
     val validUntil: String? = null,
     val serviceUntilTime: String? = null,    // "HH:MM" cutoff after which this alert activates
-)
+) {
+    fun localizedTitle(language: AppLanguage): String = when (language) {
+        AppLanguage.GREEK -> title
+        AppLanguage.ALBANIAN -> titleSq.takeIf { it.isUsableLocalizedContent() }
+            ?: if (isServiceAlert) "Njoftim për shërbimin" else "Njoftim hekurudhor"
+        AppLanguage.ITALIAN -> titleIt.takeIf { it.isUsableLocalizedContent() }
+            ?: if (isServiceAlert) "Avviso sul servizio" else "Avviso ferroviario"
+        else -> titleEn.takeIf { it.isUsableLocalizedContent() }
+            ?: title.takeIf { it.isUsableLocalizedContent() }
+            ?: if (isServiceAlert) "Service alert" else "Rail announcement"
+    }
+
+    fun localizedSummary(language: AppLanguage): String = when (language) {
+        AppLanguage.GREEK -> summary
+        AppLanguage.ALBANIAN -> summarySq.takeIf { it.isUsableLocalizedContent() }
+            ?: "Hap njoftimin zyrtar për hollësi të plota."
+        AppLanguage.ITALIAN -> summaryIt.takeIf { it.isUsableLocalizedContent() }
+            ?: "Apri l'avviso ufficiale per tutti i dettagli."
+        else -> summaryEn.takeIf { it.isUsableLocalizedContent() }
+            ?: summary.takeIf { it.isUsableLocalizedContent() }
+            ?: "Open the official notice for full details."
+    }
+}
 
 /** Network-wide STASY service-status badge. `status` is `normal`, `alert`,
  *  or `unknown`; `serviceUntil` is "HH:MM" when an alert sets a cutoff. */
@@ -42,7 +65,22 @@ data class STASYServiceStatus(
 ) {
     val isAlert: Boolean get() = status == "alert"
     val isNormal: Boolean get() = status == "normal"
+
+    fun localizedMessage(language: AppLanguage): String = when (language) {
+        AppLanguage.GREEK -> rawMessage
+        AppLanguage.ALBANIAN -> rawMessageSq.takeIf { it.isUsableLocalizedContent() }
+            ?: "Njoftim për shërbimin. Hap njoftimin zyrtar për hollësi."
+        AppLanguage.ITALIAN -> rawMessageIt.takeIf { it.isUsableLocalizedContent() }
+            ?: "Avviso sul servizio. Apri l'avviso ufficiale per i dettagli."
+        else -> rawMessageEn.takeIf { it.isUsableLocalizedContent() }
+            ?: "Service alert. Open the official notice for details."
+    }
 }
+
+internal fun String.isUsableLocalizedContent(): Boolean =
+    isNotBlank() && none { character ->
+        character in '\u0370'..'\u03FF' || character in '\u1F00'..'\u1FFF'
+    }
 
 data class STASYFeed(
     val status: STASYServiceStatus?,

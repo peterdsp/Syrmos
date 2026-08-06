@@ -350,10 +350,10 @@ final class DepartureTracking: ObservableObject {
                 upcoming: upcomingTrains(for: d),
                 lastTrain: lastTrainTonight(for: d),
                 currentStation: d.currentStationName,
-                communityStatus: "Crowded",
-                communityDetail: "Standing room only",
-                communityConfirmations: 31,
-                communityUpdatedSeconds: 90,
+                communityStatus: nil,
+                communityDetail: nil,
+                communityConfirmations: nil,
+                communityUpdatedSeconds: nil,
                 unexpectedStop: false
             )
             do {
@@ -384,10 +384,10 @@ final class DepartureTracking: ObservableObject {
                 upcoming: upcomingTrains(for: d),
                 lastTrain: lastTrainTonight(for: d),
                 currentStation: d.currentStationName,
-                communityStatus: "Crowded",
-                communityDetail: "Standing room only",
-                communityConfirmations: 31,
-                communityUpdatedSeconds: 90,
+                communityStatus: nil,
+                communityDetail: nil,
+                communityConfirmations: nil,
+                communityUpdatedSeconds: nil,
                 unexpectedStop: false
             )
             Task {

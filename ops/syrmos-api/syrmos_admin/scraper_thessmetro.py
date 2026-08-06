@@ -22,6 +22,7 @@ from urllib.parse import quote, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 from . import db as dbmod
+from .translation import translate_from_greek
 
 # The site blocks non-browser User-Agents with a 403
 USER_AGENT = (
@@ -32,7 +33,6 @@ INDEX_URL = "https://www.thessmetro.gr/νέα-ανακοινώσεις/"
 TIMEOUT_SECONDS = 30
 MAX_ENTRIES = 50
 
-_GREEK_LETTER_RE = re.compile(r"[Ͱ-Ͽἀ-῿]")
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 # Date pattern: DD.MM.YYYY
@@ -63,44 +63,8 @@ def _ascii_url(url: str) -> str:
     ))
 
 
-def _has_greek(text: str) -> bool:
-    return bool(_GREEK_LETTER_RE.search(text))
-
-
-def _is_valid_italian_translation(text: str) -> bool:
-    lowered = text.lower()
-    return bool(text) and not _has_greek(text) and not any(
-        marker in lowered
-        for marker in ("error 500", "that's an error", "there was an error", "server error")
-    )
-
-
 def _translate(text: str, target: str) -> str:
-    text = text.strip()
-    if not text or (target != "it" and not _has_greek(text)):
-        return text
-    if target == "it":
-        try:
-            from deep_translator import GoogleTranslator
-            translated = (GoogleTranslator(source="el", target="it").translate(text) or "").strip()
-            if _is_valid_italian_translation(translated):
-                return translated
-        except Exception:
-            pass
-        try:
-            from deep_translator import MyMemoryTranslator
-            translated = (
-                MyMemoryTranslator(source="greek", target="italian").translate(text) or ""
-            ).strip()
-            return translated if _is_valid_italian_translation(translated) else ""
-        except Exception:
-            return ""
-    try:
-        from deep_translator import GoogleTranslator
-        result = GoogleTranslator(source="el", target=target).translate(text)
-        return (result or "").strip() or text
-    except Exception:
-        return text
+    return translate_from_greek(text, target)
 
 
 def _translate_en(text: str) -> str:

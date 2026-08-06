@@ -523,12 +523,7 @@ class AssistantViewModel(
     }
 
     private fun localizedAnnouncementTitle(a: com.syrmos.core.network.STASYAnnouncement): String =
-        when (LocalizationManager.language.value) {
-            AppLanguage.GREEK -> a.title.ifBlank { a.titleEn }
-            AppLanguage.ALBANIAN -> a.titleSq.ifBlank { a.titleEn.ifBlank { a.title } }
-            AppLanguage.ITALIAN -> a.titleIt.ifBlank { a.titleEn.ifBlank { a.title } }
-            else -> a.titleEn.ifBlank { a.title }
-        }
+        a.localizedTitle(LocalizationManager.language.value)
 
     private suspend fun resolvePlanByArrival(intent: AssistantIntent.PlanTripByArrival): AssistantMessage {
         val fromId = intent.fromStationId ?: return botMessage(clarify(MissingSlot.ORIGIN_STATION))
@@ -1449,14 +1444,7 @@ class AssistantViewModel(
                 it = "Avvisi attivi: ") +
                 alerts.take(2).joinToString("; ") { localizedAnnouncementTitle(it) })
             feed.status != null && feed.status?.isAlert == true ->
-                botMessage(when (LocalizationManager.language.value) {
-                    AppLanguage.GREEK -> feed.status?.rawMessage.orEmpty()
-                    AppLanguage.ALBANIAN -> feed.status?.rawMessageSq.orEmpty()
-                        .ifBlank { feed.status?.rawMessageEn.orEmpty() }
-                    AppLanguage.ITALIAN -> feed.status?.rawMessageIt.orEmpty()
-                        .ifBlank { feed.status?.rawMessageEn.orEmpty() }
-                    else -> feed.status?.rawMessageEn.orEmpty()
-                }.ifBlank { feed.status?.rawMessage.orEmpty() })
+                botMessage(feed.status!!.localizedMessage(LocalizationManager.language.value))
             else -> botMessage(t("No active service alerts right now.",
                 "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.",
                 "Nuk ka njoftime aktive tani.",
