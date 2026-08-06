@@ -33,6 +33,24 @@ struct IchnosCommunitySummary: Codable {
     var hasIssues: Bool { displayMode == "issues" && !issues.isEmpty }
 }
 
+struct IchnosHistoryBucket: Codable, Identifiable {
+    let period: String
+    let totalReports: Int
+    let positiveReports: Int
+    let issueReports: Int
+    let counts: [String: Int]
+
+    var id: String { period }
+}
+
+struct IchnosCommunityHistory: Codable {
+    let granularity: String
+    let scopeId: String?
+    let buckets: [IchnosHistoryBucket]
+    let updatedAt: String
+    let privacy: String
+}
+
 actor IchnosCommunityService {
     static let shared = IchnosCommunityService()
     private let baseURL = URL(string: "https://api-syrmos.peterdsp.dev")!
@@ -47,6 +65,26 @@ actor IchnosCommunityService {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
             return try JSONDecoder().decode(IchnosCommunitySummary.self, from: data)
+        } catch {
+            return nil
+        }
+    }
+
+    func fetchHistory(period: String = "day", scopeId: String? = nil, limit: Int = 31) async -> IchnosCommunityHistory? {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/community/history"), resolvingAgainstBaseURL: false)
+        var queryItems = [
+            URLQueryItem(name: "period", value: period),
+            URLQueryItem(name: "limit", value: String(limit)),
+        ]
+        if let scopeId, !scopeId.isEmpty {
+            queryItems.append(URLQueryItem(name: "scopeId", value: scopeId))
+        }
+        components?.queryItems = queryItems
+        guard let url = components?.url else { return nil }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+            return try JSONDecoder().decode(IchnosCommunityHistory.self, from: data)
         } catch {
             return nil
         }
@@ -246,7 +284,7 @@ struct ExploreRailPulseContent: View {
             routePulseHero
             sectionTitle(
                 pulseText(language, "Ichnos across Greece", "Ichnos σε ολη την Ελλαδα", "Ichnos ne gjithe Greqine", "Ichnos in tutta la Grecia"),
-                action: pulseText(language, "See all", "Ολα", "Shiko te gjitha", "Vedi tutto"),
+                action: pulseText(language, "History", "Ιστορικο", "Historia", "Storico"),
                 onAction: onSeeAll
             )
             ForEach(feed) { item in
@@ -674,7 +712,7 @@ struct RailPulseQuickReportSheet: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 14)
                     .background(SyrmosTokens.live, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                    Text(pulseText(language, "No account, device ID, or location is included. Active reports expire after two hours and are deleted within seven days.", "Δεν περιλαμβανεται λογαριασμος, αναγνωριστικο συσκευης η τοποθεσια. Οι ενεργες αναφορες ληγουν σε δυο ωρες και διαγραφονται εντος επτα ημερων.", "Nuk perfshihet llogari, ID pajisjeje ose vendndodhje. Raportet aktive skadojne pas dy oresh dhe fshihen brenda shtate ditesh.", "Non vengono inclusi account, ID del dispositivo o posizione. Le segnalazioni attive scadono dopo due ore e vengono eliminate entro sette giorni."))
+                    Text(pulseText(language, "No account, device ID, or location is included. Active reports expire after two hours and are deleted within seven days. An anonymous daily count remains in railway history.", "Δεν περιλαμβανεται λογαριασμος, αναγνωριστικο συσκευης η τοποθεσια. Οι ενεργες αναφορες ληγουν σε δυο ωρες και διαγραφονται εντος επτα ημερων. Ενα ανωνυμο ημερησιο συνολο παραμενει στο σιδηροδρομικο ιστορικο.", "Nuk perfshihet llogari, ID pajisjeje ose vendndodhje. Raportet aktive skadojne pas dy oresh dhe fshihen brenda shtate ditesh. Nje numer anonim ditor mbetet ne historine hekurudhore.", "Non vengono inclusi account, ID del dispositivo o posizione. Le segnalazioni attive scadono dopo due ore e vengono eliminate entro sette giorni. Un conteggio giornaliero anonimo resta nello storico ferroviario."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
