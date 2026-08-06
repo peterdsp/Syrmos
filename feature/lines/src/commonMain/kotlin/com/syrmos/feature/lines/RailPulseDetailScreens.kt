@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +47,8 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.RailPulseLocalStore
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.network.CommunityReportService
+import com.syrmos.core.network.CommunityHistory
+import com.syrmos.core.network.CommunityHistoryBucket
 import com.syrmos.core.network.CommunitySummary
 import org.koin.compose.koinInject
 
@@ -54,6 +57,12 @@ internal enum class RailPulseDestination {
     TRAIN,
     CONTRIBUTION,
     FEED,
+}
+
+private enum class IchnosHistoryPeriod(val wireName: String, val limit: Int) {
+    DAY("day", 366),
+    MONTH("month", 120),
+    YEAR("year", 50),
 }
 
 private fun railContributorLevel(confirmed: Int): Int = (confirmed / 100 + 1).coerceAtLeast(1)
@@ -154,8 +163,16 @@ internal fun RailPulseTrainScreen(
 internal fun RailPulseFeedScreen(lang: AppLanguage, onBack: () -> Unit) {
     val communityService = koinInject<CommunityReportService>()
     var summary by remember { mutableStateOf<CommunitySummary?>(null) }
+    var selectedPeriod by remember { mutableStateOf(IchnosHistoryPeriod.DAY) }
+    var history by remember { mutableStateOf<CommunityHistory?>(null) }
+    var didLoadHistory by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         summary = communityService.fetchSummary()
+    }
+    LaunchedEffect(selectedPeriod) {
+        didLoadHistory = false
+        history = communityService.fetchHistory(selectedPeriod.wireName, limit = selectedPeriod.limit)
+        didLoadHistory = true
     }
     RailPulseDetailLayout(
         title = pulseText(lang, "Ichnos activity", "Δραστηριοτητα Ichnos", "Aktiviteti Ichnos", "Attivita Ichnos"),
@@ -164,7 +181,166 @@ internal fun RailPulseFeedScreen(lang: AppLanguage, onBack: () -> Unit) {
     ) {
         item { CommunityNotice(lang) }
         communityIssueRows(lang, summary)
+        item { PulseSectionTitle(pulseText(lang, "Greek railway history", "Ιστορικο ελληνικων σιδηροδρομων", "Historia e hekurudhave greke", "Storico ferroviario greco")) }
+        item {
+            Text(
+                pulseText(lang, "Actual anonymous user reports are kept as daily totals, then grouped by month or year. Estimated journeys are never added to this history.", "Οι πραγματικες ανωνυμες αναφορες χρηστων κρατουνται ως ημερησια συνολα και ομαδοποιουνται ανα μηνα η ετος. Οι εκτιμωμενες διαδρομες δεν προστιθενται ποτε σε αυτο το ιστορικο.", "Raportet reale anonime te perdoruesve ruhen si totale ditore dhe grupohen sipas muajit ose vitit. Udhetimet e vleresuara nuk shtohen kurre ne kete histori.", "Le segnalazioni anonime reali degli utenti vengono conservate come totali giornalieri e raggruppate per mese o anno. I viaggi stimati non vengono mai aggiunti allo storico."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            IchnosHistoryPeriodSelector(lang, selectedPeriod) { selectedPeriod = it }
+        }
+        communityHistoryRows(lang, history, didLoadHistory)
     }
+}
+
+@Composable
+private fun IchnosHistoryPeriodSelector(
+    lang: AppLanguage,
+    selected: IchnosHistoryPeriod,
+    onSelected: (IchnosHistoryPeriod) -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        IchnosHistoryPeriod.entries.forEach { period ->
+            val active = period == selected
+            Surface(
+                modifier = Modifier.weight(1f).clickable { onSelected(period) },
+                shape = RoundedCornerShape(14.dp),
+                color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surface,
+                shadowElevation = if (active) 0.dp else 2.dp,
+            ) {
+                Text(
+                    text = when (period) {
+                        IchnosHistoryPeriod.DAY -> pulseText(lang, "Days", "Ημερες", "Dite", "Giorni")
+                        IchnosHistoryPeriod.MONTH -> pulseText(lang, "Months", "Μηνες", "Muaj", "Mesi")
+                        IchnosHistoryPeriod.YEAR -> pulseText(lang, "Years", "Ετη", "Vite", "Anni")
+                    },
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.communityHistoryRows(
+    lang: AppLanguage,
+    history: CommunityHistory?,
+    didLoad: Boolean,
+) {
+    if (history != null && history.buckets.isNotEmpty()) {
+        val total = history.buckets.sumOf { it.totalReports }
+        val positive = history.buckets.sumOf { it.positiveReports }
+        val issues = history.buckets.sumOf { it.issueReports }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                MetricCard(pulseText(lang, "REPORTS", "ΑΝΑΦΟΡΕΣ", "RAPORTE", "SEGNALAZIONI"), total.toString(), Color.Black, Modifier.weight(1f))
+                MetricCard(pulseText(lang, "GOOD", "ΚΑΛΑ", "MIRE", "BENE"), positive.toString(), SyrmosColorTokens.live, Modifier.weight(1f))
+                MetricCard(pulseText(lang, "ISSUES", "ΠΡΟΒΛΗΜΑΤΑ", "PROBLEME", "PROBLEMI"), issues.toString(), if (issues > 0) SyrmosColorTokens.disruption else Color.Gray, Modifier.weight(1f))
+            }
+        }
+        history.buckets.asReversed().forEach { bucket ->
+            item(key = "history:${history.granularity}:${bucket.period}") {
+                IchnosHistoryBucketCard(lang, bucket)
+            }
+        }
+        item {
+            Text(
+                pulseText(lang, "Only anonymous aggregate counts are permanent. Individual reports are deleted within seven days.", "Μονο τα ανωνυμα συγκεντρωτικα συνολα παραμενουν μονιμα. Οι μεμονωμενες αναφορες διαγραφονται εντος επτα ημερων.", "Vetem totalet anonime te grumbulluara ruhen pergjithmone. Raportet individuale fshihen brenda shtate ditesh.", "Solo i conteggi aggregati anonimi restano permanenti. Le singole segnalazioni vengono eliminate entro sette giorni."),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+    } else if (didLoad) {
+        item {
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 3.dp) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        if (history == null) pulseText(lang, "History is temporarily unavailable", "Το ιστορικο δεν ειναι προσωρινα διαθεσιμο", "Historia nuk eshte perkohesisht e disponueshme", "Lo storico non e temporaneamente disponibile")
+                        else pulseText(lang, "No reports recorded for this period yet", "Δεν εχουν καταγραφει αναφορες για αυτη την περιοδο", "Ende nuk ka raporte per kete periudhe", "Nessuna segnalazione registrata per questo periodo"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        pulseText(lang, "History starts with accepted Ichnos reports. It never invents past numbers.", "Το ιστορικο ξεκινα με αποδεκτες αναφορες Ichnos. Δεν επινοει ποτε παλιους αριθμους.", "Historia fillon me raportet e pranuara Ichnos. Nuk shpik kurre numra te kaluar.", "Lo storico inizia con le segnalazioni Ichnos accettate. Non inventa mai numeri passati."),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+    } else {
+        items(3) { index ->
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(116.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f + index * 0.05f),
+            ) {}
+        }
+    }
+}
+
+@Composable
+private fun IchnosHistoryBucketCard(lang: AppLanguage, bucket: CommunityHistoryBucket) {
+    val positiveRatio = if (bucket.totalReports == 0) 0f else bucket.positiveReports.toFloat() / bucket.totalReports.toFloat()
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(ichnosHistoryPeriodLabel(bucket.period), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text("${bucket.totalReports} ${pulseText(lang, "reports", "αναφορες", "raporte", "segnalazioni")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            }
+            Row(modifier = Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)) {
+                Box(Modifier.weight(positiveRatio.coerceAtLeast(0.001f)).fillMaxSize().background(SyrmosColorTokens.live))
+                Box(Modifier.weight((1f - positiveRatio).coerceAtLeast(0.001f)).fillMaxSize().background(SyrmosColorTokens.disruption))
+            }
+            Row {
+                Text("✓ ${bucket.positiveReports} ${pulseText(lang, "good", "καλα", "mire", "bene")}", style = MaterialTheme.typography.labelMedium, color = SyrmosColorTokens.live, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text("! ${bucket.issueReports} ${pulseText(lang, "issues", "προβληματα", "probleme", "problemi")}", style = MaterialTheme.typography.labelMedium, color = if (bucket.issueReports > 0) SyrmosColorTokens.disruption else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            }
+            val breakdown = ichnosHistoryBreakdown(bucket.counts, lang)
+            if (breakdown.isNotBlank()) {
+                Text(breakdown, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+private fun ichnosHistoryPeriodLabel(value: String): String = when (value.length) {
+    10 -> "${value.substring(8, 10)}/${value.substring(5, 7)}/${value.substring(0, 4)}"
+    7 -> "${value.substring(5, 7)}/${value.substring(0, 4)}"
+    else -> value
+}
+
+private fun ichnosHistoryBreakdown(counts: Map<String, Int>, lang: AppLanguage): String {
+    val labels = mapOf(
+        "normal" to pulseText(lang, "OK", "Καλα", "Ne rregull", "OK"),
+        "clean" to pulseText(lang, "clean", "καθαρα", "paster", "pulito"),
+        "delayed" to pulseText(lang, "delayed", "καθυστερηση", "vonese", "ritardo"),
+        "crowded" to pulseText(lang, "crowded", "κοσμος", "plot", "affollato"),
+        "stopped" to pulseText(lang, "stopped", "διακοπη", "ndaluar", "fermo"),
+        "too_hot" to pulseText(lang, "too hot", "πολυ ζεστη", "shume nxehte", "troppo caldo"),
+        "access" to pulseText(lang, "access", "προσβαση", "akses", "accesso"),
+        "facilities" to pulseText(lang, "facilities", "παροχες", "sherbime", "servizi"),
+        "safety" to pulseText(lang, "safety", "ασφαλεια", "siguri", "sicurezza"),
+        "other" to pulseText(lang, "other", "αλλο", "tjeter", "altro"),
+    )
+    return listOf("normal", "clean", "delayed", "crowded", "stopped", "too_hot", "access", "facilities", "safety", "other")
+        .mapNotNull { signal -> counts[signal]?.takeIf { it > 0 }?.let { "${labels[signal]} $it" } }
+        .joinToString(" · ")
 }
 
 @Composable
@@ -246,7 +422,7 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
             Surface(shape = RoundedCornerShape(18.dp), color = Color(0xFFF0E8FA)) {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(pulseText(lang, "Private by construction", "Ιδιωτικο απο τον σχεδιασμο", "Privat nga ndertimi", "Privato per costruzione"), fontWeight = FontWeight.SemiBold)
-                    Text(pulseText(lang, "Progress stays local. Anonymous network reports contain no account, device id, or precise location and are deleted after seven days.", "Η προοδος μενει τοπικα. Οι ανωνυμες αναφορες δεν περιεχουν λογαριασμο, αναγνωριστικο συσκευης η ακριβη τοποθεσια και διαγραφονται μετα απο επτα ημερες.", "Progresi mbetet lokal. Raportet anonime nuk permbajne llogari, identifikues pajisjeje ose vendndodhje te sakte dhe fshihen pas shtate ditesh.", "I progressi restano locali. Le segnalazioni anonime non includono account, identificatori del dispositivo o posizione precisa e vengono eliminate dopo sette giorni."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(pulseText(lang, "Progress stays local. Individual anonymous reports contain no account, device id, or precise location and are deleted after seven days. Only daily aggregate counts remain for railway history.", "Η προοδος μενει τοπικα. Οι μεμονωμενες ανωνυμες αναφορες δεν περιεχουν λογαριασμο, αναγνωριστικο συσκευης η ακριβη τοποθεσια και διαγραφονται μετα απο επτα ημερες. Μονο τα ημερησια συγκεντρωτικα συνολα παραμενουν για το σιδηροδρομικο ιστορικο.", "Progresi mbetet lokal. Raportet individuale anonime nuk permbajne llogari, identifikues pajisjeje ose vendndodhje te sakte dhe fshihen pas shtate ditesh. Vetem totalet ditore te grumbulluara mbeten per historine hekurudhore.", "I progressi restano locali. Le singole segnalazioni anonime non includono account, identificatori del dispositivo o posizione precisa e vengono eliminate dopo sette giorni. Solo i totali giornalieri aggregati restano per lo storico ferroviario."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
