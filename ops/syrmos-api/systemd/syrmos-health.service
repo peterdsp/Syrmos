@@ -1,0 +1,12 @@
+[Unit]
+Description=Syrmos API self-healing health check
+Documentation=https://github.com/peterdsp/Syrmos
+After=network-online.target syrmos-admin.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Runs as root (default) so it can restart services without sudo.
+ExecStart=/home/peterdsp/syrmos-api/bin/syrmos-health.sh
+# Never let a slow probe hang the timer.
+TimeoutStartSec=90

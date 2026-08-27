@@ -1,0 +1,14 @@
+[Unit]
+Description=Run the Syrmos API health check every 2 minutes
+Documentation=https://github.com/peterdsp/Syrmos
+
+[Timer]
+# First run shortly after boot, then every 2 minutes.
+OnBootSec=90s
+OnUnitActiveSec=2min
+AccuracySec=15s
+# Do not stack missed runs if the Pi was asleep.
+Persistent=false
+
+[Install]
+WantedBy=timers.target
