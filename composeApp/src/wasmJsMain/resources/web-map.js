@@ -3067,12 +3067,23 @@
             const poly = linePolyline(train.line.id);
             let sTarget = 0;
             if (poly) {
-                let bestIdx = 0, bestD = Infinity;
-                for (let i = 0; i < poly.coords.length; i++) {
-                    const d = distanceMeters(poly.coords[i][0], poly.coords[i][1], train.lat, train.lng);
-                    if (d < bestD) { bestD = d; bestIdx = i; }
+                // Project the train's TRUE position onto the nearest POINT of each
+                // segment (not the nearest vertex). Nearest-vertex snapping mapped a
+                // coastal/looping train to a far vertex, so the animated marker glided
+                // across a bay into the sea even though train.lat/lng was correct — and
+                // it visibly drifted while zooming. Segment projection keeps the glide
+                // target locked to the real position on the track.
+                let bestD = Infinity;
+                for (let i = 0; i < poly.coords.length - 1; i++) {
+                    const ay = poly.coords[i][0], ax = poly.coords[i][1];
+                    const by = poly.coords[i + 1][0], bx = poly.coords[i + 1][1];
+                    const dy = by - ay, dx = bx - ax;
+                    const len2 = dy * dy + dx * dx;
+                    let ti = len2 > 0 ? (((train.lat - ay) * dy + (train.lng - ax) * dx) / len2) : 0;
+                    ti = ti < 0 ? 0 : ti > 1 ? 1 : ti;
+                    const d = distanceMeters(ay + dy * ti, ax + dx * ti, train.lat, train.lng);
+                    if (d < bestD) { bestD = d; sTarget = poly.cum[i] + (poly.cum[i + 1] - poly.cum[i]) * ti; }
                 }
-                sTarget = poly.cum[bestIdx];
             }
             const now = performance.now();
 
@@ -3507,9 +3518,9 @@
         ariadneStyle.textContent = `
             .ariadne-launcher {
                 position: fixed; z-index: 900;
-                /* Mobile: bottom-right, lifted clear of the CARTO attribution
-                   and the bottom sheet peek so it never overlaps them. */
-                right: 16px; bottom: 92px;
+                /* Sits directly below the top-right dark-mode toggle, aligned to
+                   the same right edge — a fixed, deliberate spot on every screen. */
+                right: 16px; top: 64px; bottom: auto; left: auto;
                 display: inline-flex; align-items: center; justify-content: center;
                 padding: 0; border: none; cursor: pointer;
                 width: 56px; height: 56px; border-radius: 50%;
@@ -3578,17 +3589,16 @@
                never runs into the right-hand info column. Mobile keeps
                the default bottom-right anchor. */
             @media (min-width: 721px) {
-                /* Desktop: bottom-right, just left of the right-hand info column
-                   (OASA / useful-info cards, ~300px at right:16), so the owl sits
-                   at the map's bottom-right above the controls and never overlaps
-                   the cards. Was bottom-left (left:312) which read as out of place. */
+                /* The old right-hand info column is gone, so anchor the owl below
+                   the top-right dark-mode toggle and open the chat panel at the
+                   bottom-right (standard), full normal width. */
                 .ariadne-launcher {
-                    left: auto; right: 332px; bottom: 20px;
+                    left: auto; right: 16px; top: 64px; bottom: auto;
                 }
                 .ariadne-panel {
-                    left: auto; right: 332px; bottom: 20px;
-                    width: min(360px, calc(100vw - 680px));
-                    max-height: min(440px, calc(100vh - 120px));
+                    left: auto; right: 16px; bottom: 16px; top: auto;
+                    width: min(380px, calc(100vw - 32px));
+                    max-height: min(560px, calc(100vh - 32px));
                 }
             }
         `;
