@@ -3285,7 +3285,6 @@
         @media (min-width: 721px) {
             .insight-panel { left: 16px !important; right: auto !important; width: min(280px, calc(100vw - 32px)) !important; }
             .panel-card { padding: 12px !important; border-radius: 16px !important; }
-            .panel-list { max-height: 22vh !important; }
             .panel-item { padding: 8px 10px !important; border-radius: 12px !important; }
             .panel-item__title { font-size: 13px !important; }
             .panel-item__meta { font-size: 11px !important; }
