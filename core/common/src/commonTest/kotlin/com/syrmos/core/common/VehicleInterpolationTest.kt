@@ -69,4 +69,42 @@ class VehicleInterpolationTest {
         val dist = VehicleInterpolation.haversineM(a, b)
         assertTrue(dist in 1000.0..2000.0, "two close points ~1.3km apart, got $dist")
     }
+
+    @Test
+    fun stationArcProjectsOntoSegmentNotVertex() {
+        // One long east-west segment (only two vertices).
+        val poly = listOf(LatLng(37.90, 23.70), LatLng(37.90, 23.80))
+        val table = VehicleInterpolation.buildDistanceTable(poly)
+        // A station near the MIDDLE of the segment, slightly north of the line.
+        val arc = VehicleInterpolation.stationArc(poly, table, LatLng(37.905, 23.75))
+        // Nearest-vertex snapping would return 0 or table.last(); segment
+        // projection must land mid-segment.
+        assertTrue(
+            arc in table.last() * 0.4..table.last() * 0.6,
+            "expected mid-segment arc, got $arc of ${table.last()}",
+        )
+    }
+
+    @Test
+    fun positionBetweenFollowsBendNotChord() {
+        // L-shaped track: east along lat 37.90, then north along lng 23.80.
+        val poly = listOf(LatLng(37.90, 23.70), LatLng(37.90, 23.80), LatLng(37.95, 23.80))
+        val table = VehicleInterpolation.buildDistanceTable(poly)
+        val from = LatLng(37.90, 23.70)
+        val to = LatLng(37.95, 23.80)
+        val onTrack = VehicleInterpolation.positionBetween(poly, table, from, to, 0.5)
+        // Halfway by arc-length rides the eastbound leg (lat ~37.90); the straight
+        // chord would sit at lat 37.925 inside the corner.
+        assertTrue(abs(onTrack.lat - 37.90) < 0.01, "should ride the eastbound leg, got ${onTrack.lat}")
+        assertTrue(abs(onTrack.lat - 37.925) > 0.01, "should differ from the chord midpoint")
+    }
+
+    @Test
+    fun positionBetweenFallsBackToChordWithoutGeometry() {
+        val from = LatLng(37.90, 23.70)
+        val to = LatLng(37.95, 23.80)
+        val p = VehicleInterpolation.positionBetween(emptyList(), doubleArrayOf(), from, to, 0.5)
+        assertEquals(37.925, p.lat, 1e-6)
+        assertEquals(23.75, p.lng, 1e-6)
+    }
 }
