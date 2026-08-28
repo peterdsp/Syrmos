@@ -32,29 +32,32 @@ import androidx.compose.ui.graphics.luminance
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 
-// Flat, label-free minimal base like the railway.gov.gr live tracker: CARTO
-// Positron (light) / Dark-Matter (dark), no streets, no place labels. Our coloured
-// line network + station/train markers carry the structure, so the map reads as a
-// clean transit diagram instead of a road atlas. Follows the app theme, not the
-// language (there are no labels to localise).
-private fun cartoNoLabels(name: String, style: String): ITileSource = XYTileSource(
-    name, 0, 20, 256, ".png",
-    arrayOf(
-        "https://a.basemaps.cartocdn.com/$style/",
-        "https://b.basemaps.cartocdn.com/$style/",
-        "https://c.basemaps.cartocdn.com/$style/",
-        "https://d.basemaps.cartocdn.com/$style/",
-    ),
-    "© OpenStreetMap, © CARTO",
-)
-private val CARTO_LIGHT: ITileSource = cartoNoLabels("CartoLightNoLabels", "light_nolabels")
-private val CARTO_DARK: ITileSource = cartoNoLabels("CartoDarkNoLabels", "dark_nolabels")
+// Flat, label-free minimal base like the railway.gov.gr live tracker: keyless
+// Esri "Gray Canvas" (light / dark), no streets, no place labels. Replaces CARTO
+// Positron/Dark-Matter, which started returning "API KEY REQUIRED" placeholder
+// tiles — the same switch iOS and the web map made. Our coloured line network +
+// station/train markers carry the structure, so the map reads as a clean transit
+// diagram. Follows the app theme, not the language (there are no labels).
+private fun esriGrayNoLabels(name: String, service: String): ITileSource = object : XYTileSource(
+    name, 0, 16, 256, "",
+    arrayOf("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/$service/MapServer/tile/"),
+    "© OpenStreetMap, Tiles © Esri",
+) {
+    // Esri's tile path order is {z}/{y}/{x} (y before x), unlike the XYZ default
+    // {z}/{x}/{y}. Gray Canvas is native to z16; osmdroid upsamples beyond it.
+    override fun getTileURLString(pMapTileIndex: Long): String =
+        baseUrl + MapTileIndex.getZoom(pMapTileIndex) + "/" +
+            MapTileIndex.getY(pMapTileIndex) + "/" + MapTileIndex.getX(pMapTileIndex)
+}
+private val ESRI_LIGHT: ITileSource = esriGrayNoLabels("EsriGrayLight", "World_Light_Gray_Base")
+private val ESRI_DARK: ITileSource = esriGrayNoLabels("EsriGrayDark", "World_Dark_Gray_Base")
 
-private fun tileSourceFor(dark: Boolean): ITileSource = if (dark) CARTO_DARK else CARTO_LIGHT
+private fun tileSourceFor(dark: Boolean): ITileSource = if (dark) ESRI_DARK else ESRI_LIGHT
 
 /**
  * OSM-derived rail route geometry shipped at `assets/files/seed/schedules-v2/shapes.json`.

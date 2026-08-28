@@ -8,6 +8,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import com.syrmos.core.model.location.UserLocation
 import kotlinx.coroutines.Dispatchers
@@ -165,7 +166,12 @@ actual suspend fun requestUserLocation(): UserLocation? = withContext(Dispatcher
                 @Deprecated("Deprecated") override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
             }
             val provider = if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
-            lm.requestLocationUpdates(provider, 0L, 0f, listener)
+            // Pass an explicit Looper: this runs on a background coroutine
+            // dispatcher (no Looper), and the 4-arg overload creates its callback
+            // Handler on the CURRENT thread, which crashes with "Can't create
+            // handler ... that has not called Looper.prepare()". Deliver callbacks
+            // on the main Looper instead (they only resume the coroutine).
+            lm.requestLocationUpdates(provider, 0L, 0f, listener, Looper.getMainLooper())
             cont.invokeOnCancellation { lm.removeUpdates(listener) }
         }
     }
