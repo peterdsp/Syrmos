@@ -127,3 +127,21 @@ data class SeedServicePattern(
     @SerialName("station_ids") val stationIds: List<String>? = null,
     @SerialName("excluded_station_ids") val excludedStationIds: List<String>? = null,
 )
+
+/**
+ * The generator's `schedules-v2/shapes.json`: OSM route geometry per line, the
+ * same file the web map consumes. Shape: `{version, source, shapes:{lineId:
+ * {coordinates:[[lat,lng], ...]}}}`. Only [coordinates] is needed on device;
+ * the extra keys (osmRelationId/from/to/points) are ignored.
+ */
+@Serializable
+data class SeedShapesPayload(
+    val version: Int = 0,
+    val source: String = "",
+    val shapes: Map<String, SeedShape> = emptyMap(),
+)
+
+@Serializable
+data class SeedShape(
+    @SerialName("coordinates") val coordinates: List<List<Double>> = emptyList(),
+)

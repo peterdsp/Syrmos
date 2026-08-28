@@ -1,5 +1,7 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.common.map.VehicleInterpolation
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineColor
 import com.syrmos.core.model.transit.LineStatus
@@ -359,5 +361,63 @@ class TrainSimulatorTest {
             snapshot = snapshotWith(trains = listOf(train), generatedAtEpochSeconds = now),
         )
         assertEquals(1, result.size, "An operational line must still yield trains")
+    }
+
+    // --- geometry wiring --------------------------------------------------
+    //
+    // When per-line track geometry is supplied, a simulated train must ride the
+    // real polyline instead of the straight chord between its two stations (the
+    // chord cuts across bays and put coastal trains in the sea). The arc math
+    // itself is pinned in VehicleInterpolationTest; THIS test proves the
+    // `geometry` argument is actually threaded through simulateTrains().
+
+    @Test
+    fun placesTrainOnLineGeometryNotChordWhenGeometryProvided() {
+        val now = Clock.System.now().epochSeconds
+        // elapsedMinutes 5 -> halfway between Station A (0min) and Station B (10min).
+        val train = SyrmosLivePositionsService.LiveTrain(
+            lineId = "M3",
+            directionKey = "outbound",
+            originDepartureMinute = 0.0,
+            elapsedMinutes = 5.0,
+            totalTravelMinutes = 20,
+            serviceType = "regular",
+        )
+        // L-shaped M3 track: east along lat 37.98 to a corner, then north to B.
+        // The straight chord A->B would cut the corner; arc-following rides it.
+        val m3Polyline = listOf(
+            LatLng(37.98, 23.73),   // Station A (polyline start)
+            LatLng(37.98, 23.75),   // corner
+            LatLng(37.99, 23.74),   // Station B (polyline end)
+        )
+        val snapshot = snapshotWith(trains = listOf(train), generatedAtEpochSeconds = now)
+
+        val chord = simulateTrains(listOf(m3Line), m3LineStations, snapshot).first()
+        val onTrack = simulateTrains(
+            listOf(m3Line),
+            m3LineStations,
+            snapshot,
+            geometry = mapOf("M3" to m3Polyline),
+        ).first()
+
+        // 1) Geometry must MOVE the train off the chord — this is the wiring proof.
+        val delta = VehicleInterpolation.haversineM(
+            LatLng(chord.latitude, chord.longitude),
+            LatLng(onTrack.latitude, onTrack.longitude),
+        )
+        assertTrue(delta > 200.0, "geometry must shift the train off the chord, got ${delta}m")
+
+        // 2) The geometry position must sit ON the polyline, not float beside it.
+        val table = VehicleInterpolation.buildDistanceTable(m3Polyline)
+        val nearest = VehicleInterpolation.pointAtArc(
+            m3Polyline,
+            table,
+            VehicleInterpolation.stationArc(m3Polyline, table, LatLng(onTrack.latitude, onTrack.longitude)),
+        )
+        val offTrack = VehicleInterpolation.haversineM(
+            LatLng(onTrack.latitude, onTrack.longitude),
+            nearest,
+        )
+        assertTrue(offTrack < 50.0, "geometry train must lie on the track, off by ${offTrack}m")
     }
 }
