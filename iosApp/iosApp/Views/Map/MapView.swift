@@ -1026,12 +1026,18 @@ struct SyrmosMKMapView: UIViewRepresentable {
     let onStationTap: (String) -> Void
     var onTrainTap: ((MapVehicleSelection) -> Void)?
 
-    /// CARTO label-free minimal base tiles that replace Apple's map content.
-    static func makeCartoOverlay(dark: Bool) -> MKTileOverlay {
-        let style = dark ? "dark_nolabels" : "light_nolabels"
-        let overlay = MKTileOverlay(urlTemplate: "https://a.basemaps.cartocdn.com/\(style)/{z}/{x}/{y}@2x.png")
+    /// Keyless Esri "Gray Canvas" label-free base tiles that replace Apple's map
+    /// content. Replaces CARTO Positron/Dark-Matter, which started returning
+    /// "API KEY REQUIRED" placeholder tiles — the same switch the web map made.
+    /// Esri's tile path order is {z}/{y}/{x} (y before x, unlike CARTO's
+    /// {z}/{x}/{y}). The Gray Canvas base is native to z16; MKTileOverlayRenderer
+    /// upsamples the z16 tiles for deeper zooms, so maximumZ caps the requests.
+    static func makeEsriGrayOverlay(dark: Bool) -> MKTileOverlay {
+        let service = dark ? "World_Dark_Gray_Base" : "World_Light_Gray_Base"
+        let overlay = MKTileOverlay(
+            urlTemplate: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/\(service)/MapServer/tile/{z}/{y}/{x}")
         overlay.canReplaceMapContent = true
-        overlay.maximumZ = 20
+        overlay.maximumZ = 16
         return overlay
     }
 
@@ -1049,8 +1055,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // consistent header. Rotation still works; it just has no ornament.
         mv.showsCompass = false
 
-        // Flat, label-free minimal base like the railway.gov.gr live tracker: a
-        // CARTO Positron (light) / Dark-Matter (dark) tile overlay that REPLACES
+        // Flat, label-free minimal base like the railway.gov.gr live tracker: an
+        // Esri Gray Canvas (light / dark) tile overlay that REPLACES
         // Apple's detailed base map, so there is no street clutter or POI noise -
         // our coloured line network + station/train dots are the whole picture.
         // The base tiles MUST go at `.aboveRoads` (the LOWEST overlay level).
@@ -1061,7 +1067,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // draw above overlays regardless of level. Base at the bottom, polylines
         // pinned to `.aboveLabels` below, so the lines sit on the flat base.
         let dark = mv.traitCollection.userInterfaceStyle == .dark
-        let baseTiles = Self.makeCartoOverlay(dark: dark)
+        let baseTiles = Self.makeEsriGrayOverlay(dark: dark)
         mv.addOverlay(baseTiles, level: .aboveRoads)
         context.coordinator.baseTileOverlay = baseTiles
         context.coordinator.baseTileDark = dark
@@ -1147,7 +1153,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         if context.coordinator.baseTileDark != dark {
             context.coordinator.baseTileDark = dark
             if let old = context.coordinator.baseTileOverlay { mv.removeOverlay(old) }
-            let overlay = SyrmosMKMapView.makeCartoOverlay(dark: dark)
+            let overlay = SyrmosMKMapView.makeEsriGrayOverlay(dark: dark)
             mv.addOverlay(overlay, level: .aboveRoads)
             context.coordinator.baseTileOverlay = overlay
         }
