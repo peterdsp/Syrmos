@@ -20,11 +20,9 @@ Data provenance:
   on the frequency-band path like the Athens metro and tram, not the
   scheduled-trips path used for suburban lines.
 
-TM2 (Kalamaria extension) is seeded as status='under_construction': it opens end
-of July 2026 (targeted the 28th). OSM independently tags its relation
-construction:route=subway. It renders greyed on the map and every prediction path
-skips it, so it can never produce a departure or a train. Opening it is then a
-data change: flip status to 'operational' and give it bands + offsets.
+TM2 (Kalamaria extension) is seeded status='operational': it opened to the public
+on 27 August 2026 (Nomarchia, Kalamaria, Aretsou, Nea Krini, Mikra). It renders
+solid in its official Line 2 blue (#0070FF) and carries bands + offsets like TM1.
 
 Suburban (TP1 Larisa, TP2 Edessa/Florina, TP3 Sindos, TP4 Serres-Drama) is NOT
 here yet. It uses the scheduled-trips path and its per-stop times come from
