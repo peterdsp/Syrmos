@@ -1725,23 +1725,44 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
         }
 
-        private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
-            // Every moving vehicle is a single heading-rotated directional
-            // triangle in the line colour - a pixel mirror of web's one
-            // `trainMarkerIcon` for the whole fleet. Native used to hand metro
-            // and tram their own per-line sprite artwork, which is exactly why
-            // the trains looked nothing like web; web draws only triangles.
-            // Colour is the primary line's raw hex from lines.json (same source
-            // web reads), so a moving train matches its own line.
-            let lineId: String
-            let bearing: Double
-            switch train.kind {
-            case .simulated(let t): lineId = t.lineId; bearing = t.bearing
-            case .live(let t):      lineId = t.lineId; bearing = 0
+        /// Live GPS trains are ring/pin markers (pulsing ring + white-bordered
+        /// core), mirroring the web map's live-train-marker. A ring reads as a
+        /// fixed GPS pin, so a suburban train reported off any drawn line — e.g.
+        /// the generic "P" Proastiakos, which has no single polyline to snap to —
+        /// looks intentional instead of a capsule stranded off the track.
+        static func liveTrainRingImage(color: UIColor) -> UIImage {
+            let core: CGFloat = 16
+            let ring: CGFloat = 28
+            let pad: CGFloat = 5
+            let canvas = ring + pad * 2
+            let renderer = UIGraphicsImageRenderer(size: CGSize(width: canvas, height: canvas))
+            return renderer.image { ctx in
+                let cg = ctx.cgContext
+                let c = canvas / 2
+                let ringPath = UIBezierPath(ovalIn: CGRect(x: c - ring / 2, y: c - ring / 2, width: ring, height: ring))
+                ringPath.lineWidth = 2.5
+                color.withAlphaComponent(0.30).setStroke(); ringPath.stroke()
+                cg.setShadow(offset: CGSize(width: 0, height: 2), blur: 6, color: UIColor(white: 0.08, alpha: 0.3).cgColor)
+                let coreRect = CGRect(x: c - core / 2, y: c - core / 2, width: core, height: core)
+                color.setFill(); UIBezierPath(ovalIn: coreRect).fill()
+                cg.setShadow(offset: .zero, blur: 0, color: nil)
+                let border = UIBezierPath(ovalIn: coreRect.insetBy(dx: 1, dy: 1))
+                border.lineWidth = 2; UIColor.white.setStroke(); border.stroke()
             }
-            let color = UIColor(SyrmosData.line(for: lineId)?.color
-                ?? SyrmosData.lineColor(for: lineId))
-            return Self.capsuleTrainImage(color: color, bearing: bearing)
+        }
+
+        private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
+            // Simulated (projected) trains ride their line as an oriented capsule;
+            // live GPS trains are ring pins (mirroring web). Colour is the line's
+            // raw hex from lines.json (same source web reads).
+            switch train.kind {
+            case .simulated(let t):
+                let color = UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
+                return Self.capsuleTrainImage(color: color, bearing: t.bearing)
+            case .live(let t):
+                let color = UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
+                return Self.liveTrainRingImage(color: color)
+            }
         }
     }
 }
