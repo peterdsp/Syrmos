@@ -36,6 +36,15 @@ RELATION_FOR_LINE = {
     "A2": 8467443,
     "A3": 8467442,
     "A4": 8467515,
+    # Thessaloniki metro.
+    "TM1": 6152448,   # New Railway Station -> Nea Elvetia
+    "TM2": 7898294,   # New Railway Station -> Mikra
+    # National / regional railways. (KP1 Kiato-Patra and PU2 Kastelokampos-
+    # Agios Vasileios are rail-replacement / shuttle BUSES with no railway
+    # route relation, so they keep the straight station line.)
+    "AL1": 14122316,  # Alexandroupoli Port -> Ormenio (Evros corridor)
+    "PS1": 11748538,  # Patras Proastiakos, Agios Andreas -> Kato Achaia (via Kaminia)
+    "DK1": 16276919,  # Diakopto -> Kalavryta rack railway (Odontotos)
 }
 
 OUT_DIR = os.environ.get(

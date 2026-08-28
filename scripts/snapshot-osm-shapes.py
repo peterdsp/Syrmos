@@ -48,6 +48,11 @@ RELATION_FOR_LINE = {
     # under_construction status here until the Kalamaria extension opens.
     "TM1": 6152448,  # New Railway Station -> Nea Elvetia
     "TM2": 7898294,  # New Railway Station -> Mikra (under construction)
+    # National / regional railways. KP1 (Kiato-Patra) and PU2 (uni shuttle) are
+    # BUSES with no railway route relation, so they keep the straight station line.
+    "AL1": 14122316,  # Alexandroupoli Port -> Ormenio (Evros corridor)
+    "PS1": 11748538,  # Patras Proastiakos, Agios Andreas -> Kato Achaia (via Kaminia)
+    "DK1": 16276919,  # Diakopto -> Kalavryta rack railway (Odontotos)
 }
 
 
