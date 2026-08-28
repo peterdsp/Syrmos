@@ -1174,7 +1174,7 @@ body.dark-mode .live-status-pill {
 /* ===== Ariadne Launcher ===== */
 .ariadne-launcher {
     position: fixed;
-    right: 24px; bottom: 24px;
+    right: 16px; top: 64px; bottom: auto;
     z-index: 1200;
     width: 56px; height: 56px;
     border: none; border-radius: 50%;
@@ -1532,12 +1532,30 @@ body.dark-mode .leaflet-tile-pane {
 }
 
 @media (max-width: 720px) {
-    .context-rail { display: none; }
+    /* The left panel becomes a bottom sheet instead of vanishing, so departures,
+       live trains and nearby stations stay usable on phones. */
+    .context-rail {
+        display: flex;
+        position: fixed;
+        left: 0; right: 0; bottom: 0; top: auto;
+        flex: none;
+        width: 100vw;
+        max-height: 44vh;
+        border-right: none;
+        border-top: 1px solid var(--sy-border-subtle);
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -8px 28px rgba(0,0,0,.20);
+        z-index: 1100;
+        padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+        gap: 10px;
+    }
     .map-canvas { flex: 1; width: 100vw; }
     .map-chrome--tl { top: 12px; left: 12px; }
     .map-chrome--tr { top: 12px; right: 12px; }
-    .map-chrome--br { bottom: 16px; right: 12px; }
-    .map-chrome--bl { bottom: 16px; left: 12px; }
+    /* Lift the zoom/locate controls + Ariadne clear of the bottom sheet. */
+    .map-chrome--br { bottom: calc(44vh + 12px); right: 12px; }
+    .map-chrome--bl { bottom: calc(44vh + 12px); left: 12px; }
+    .ariadne-launcher { top: 56px; right: 12px; }
 }
 
 /* ===== Severe Weather Banner (JS-injected but base here) ===== */
