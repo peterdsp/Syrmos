@@ -2,6 +2,7 @@ package com.syrmos.core.data.di
 
 import com.syrmos.core.data.repository.FavoritesRepository
 import com.syrmos.core.data.repository.LineRepositoryImpl
+import com.syrmos.core.data.repository.LineGeometryRepositoryImpl
 import com.syrmos.core.data.repository.ScheduleRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.repository.TransitPatternRepositoryImpl
@@ -29,4 +30,5 @@ val dataModule = module {
     single { ScheduleRepositoryImpl(database = get()) }
     single { FavoritesRepository(database = get()) }
     single { TransitPatternRepositoryImpl(resourceReader = get()) }
+    single { LineGeometryRepositoryImpl(resourceReader = get()) }
 }
