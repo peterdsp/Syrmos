@@ -2031,21 +2031,44 @@
     // and no trains (decluttered away) — it read as "empty". Frame the Athens
     // region so metro + tram + suburban + live trains are all on screen at launch;
     // zoom out for the country. (GPS "locate me" still recenters on the user.)
-    try {
-        // Frame the Athens METRO + TRAM core, not every athens-region stop. The
-        // suburban A-lines run out to Kiato (100km west) and Chalkida (80km north),
-        // so fitting them zoomed the launch view out to all of Attica and pushed the
-        // metro to the edge behind the panel. The core set opens tight on the network
-        // the user actually rides; suburban + the rest resolve as you pan / zoom out.
-        const CORE_LINE_IDS = new Set(["M1", "M2", "M3", "M3_AIR", "T6", "T7"]);
-        const coreStations = stationNodes.filter((s) =>
-            (s.line_ids || s.lineIds || []).some((id) => CORE_LINE_IDS.has(id))
-        );
-        const focus = coreStations.length ? coreStations : stationNodes;
-        const bounds = L.latLngBounds(focus.map((station) => [station.latitude, station.longitude]));
-        map.fitBounds(bounds.pad(0.15));
-    } catch (e) {
-        console.error("fitBounds failed", e);
+    // Frame the Athens METRO + TRAM core, not every athens-region stop. The
+    // suburban A-lines run out to Kiato (100km west) and Chalkida (80km north),
+    // so fitting them zoomed the launch view out to all of Attica and pushed the
+    // metro to the edge behind the panel. The core set opens tight on the network
+    // the user actually rides; suburban + the rest resolve as you pan / zoom out.
+    function fitAthensCore() {
+        try {
+            const CORE_LINE_IDS = new Set(["M1", "M2", "M3", "M3_AIR", "T6", "T7"]);
+            const coreStations = stationNodes.filter((s) =>
+                (s.line_ids || s.lineIds || []).some((id) => CORE_LINE_IDS.has(id))
+            );
+            const focus = coreStations.length ? coreStations : stationNodes;
+            if (!focus.length) return;
+            const bounds = L.latLngBounds(focus.map((station) => [station.latitude, station.longitude]));
+            if (bounds.isValid()) map.fitBounds(bounds.pad(0.15));
+        } catch (e) {
+            console.error("fitBounds failed", e);
+        }
+    }
+    // Frame Athens now. But if the map booted inside a zero-size container — a
+    // hidden pane, a background tab, an embed not yet laid out — fitBounds
+    // computes a broken all-world view (centred near null island) and never
+    // recovers on its own. So when the container has no dimensions at boot,
+    // re-fit exactly once as soon as it gets real size. Normal foreground loads
+    // are already sized, skip the observer entirely, and see zero change.
+    map.invalidateSize();
+    fitAthensCore();
+    const mapContainerEl = map.getContainer();
+    const mapSizedAtBoot = mapContainerEl && mapContainerEl.clientWidth > 0 && mapContainerEl.clientHeight > 0;
+    if (!mapSizedAtBoot && mapContainerEl && typeof ResizeObserver !== "undefined") {
+        const refitOnce = new ResizeObserver(() => {
+            if (mapContainerEl.clientWidth > 0 && mapContainerEl.clientHeight > 0) {
+                refitOnce.disconnect();
+                map.invalidateSize();
+                fitAthensCore();
+            }
+        });
+        refitOnce.observe(mapContainerEl);
     }
 
     // Region chips (Athens / Thessaloniki / National / Patras) fly the map to
