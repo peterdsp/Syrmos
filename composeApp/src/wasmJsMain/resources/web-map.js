@@ -2458,8 +2458,10 @@
             const chipEl = el(".hero-card__chip");
             const srcConf = next.sourceConfidence || "scheduled";
             const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
-            chipEl.className = `src-chip src-chip--${srcConf}`;
-            chipEl.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[srcConf] || srcLabels.scheduled}`;
+            if (chipEl) {
+                chipEl.className = `src-chip src-chip--${srcConf}`;
+                chipEl.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[srcConf] || srcLabels.scheduled}`;
+            }
 
             // Answer-first peek line.
             if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;
@@ -2674,14 +2676,28 @@
     function stationArc(poly, lineId, station) {
         const key = `${lineId}|${station.id}`;
         if (stationArcCache.has(key)) return stationArcCache.get(key);
-        let best = 0, bestD = Infinity;
-        for (let i = 0; i < poly.coords.length; i++) {
-            const d = distanceMeters(poly.coords[i][0], poly.coords[i][1], station.latitude, station.longitude);
-            if (d < bestD) { bestD = d; best = i; }
+        const { coords, cum } = poly;
+        const slat = station.latitude, slng = station.longitude;
+        // Project the station onto the nearest POINT of each polyline segment,
+        // not the nearest vertex. Sparse vertices on a winding coast made the
+        // old nearest-vertex snap map a station to a far vertex, so the arc
+        // interpolation between two stations landed the train's dot offshore
+        // (the Faliro–Voula coast). Point-to-segment projection keeps the arc
+        // (and thus every interpolated train) on the real track. lat/lng is
+        // treated as locally planar, which is accurate at city scale.
+        let bestArc = 0, bestD = Infinity;
+        for (let i = 0; i < coords.length - 1; i++) {
+            const ay = coords[i][0], ax = coords[i][1];
+            const by = coords[i + 1][0], bx = coords[i + 1][1];
+            const dy = by - ay, dx = bx - ax;
+            const len2 = dy * dy + dx * dx;
+            let ti = len2 > 0 ? (((slat - ay) * dy + (slng - ax) * dx) / len2) : 0;
+            ti = ti < 0 ? 0 : ti > 1 ? 1 : ti;
+            const d = distanceMeters(ay + dy * ti, ax + dx * ti, slat, slng);
+            if (d < bestD) { bestD = d; bestArc = cum[i] + (cum[i + 1] - cum[i]) * ti; }
         }
-        const arc = poly.cum[best];
-        stationArcCache.set(key, arc);
-        return arc;
+        stationArcCache.set(key, bestArc);
+        return bestArc;
     }
     function pointAtArc(poly, arc) {
         const { coords, cum } = poly;
