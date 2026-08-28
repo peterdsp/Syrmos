@@ -568,6 +568,15 @@
     const stationNodeMap = new Map(stationNodes.map((station) => [station.id, station]));
     const markers = new Map();
     const liveTrainMarkers = new Map();
+    // Live trains live in a dedicated layer group. clearLayers() wipes EVERY
+    // marker each render, so nothing can leak. The old code tracked markers in a
+    // Map keyed by train.id and cleared by iterating it — but trains sharing an
+    // id (or a null id, e.g. the "P … to unknown" suburban trains that resolve to
+    // the same key) overwrote each other in the Map, stranding the untracked
+    // marker on the map forever. Those orphans piled up over every 10s poll and
+    // marched out into the Saronic Gulf — the "live trains in the sea" the feed
+    // never actually reported.
+    const liveTrainLayer = L.layerGroup();
     let departureRefreshTimer = null;
     const lineStations = new Map(
         routes.map((route) => [
@@ -1939,7 +1948,7 @@
             vehiclesToggle.title = vehiclesHidden ? t("show_vehicles") : t("hide_vehicles");
             window.__syrmosVehiclesHidden = vehiclesHidden;
             if (vehiclesHidden) {
-                liveTrainMarkers.forEach((marker) => marker.remove());
+                liveTrainLayer.clearLayers();
                 liveTrainMarkers.clear();
                 simulatedTrainMarkers.forEach((marker) => marker.remove());
                 simulatedTrainMarkers.clear();
@@ -2211,7 +2220,8 @@
 
     function renderLiveTrains(trains) {
         lastLiveTrains = trains;
-        liveTrainMarkers.forEach((marker) => marker.remove());
+        if (!map.hasLayer(liveTrainLayer)) liveTrainLayer.addTo(map);
+        liveTrainLayer.clearLayers();
         liveTrainMarkers.clear();
 
         if (trains.length) {
@@ -2268,7 +2278,7 @@
                 icon,
                 keyboard: false,
                 zIndexOffset: 1000,
-            }).addTo(map);
+            }).addTo(liveTrainLayer);
             marker.bindTooltip(
                 `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
                 { direction: "top", offset: [0, -10] }
