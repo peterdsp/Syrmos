@@ -4,6 +4,8 @@ import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.common.map.VehicleInterpolation
 import com.syrmos.core.network.SyrmosLivePositionsService
 import com.syrmos.core.network.SyrmosSchedulesService
 import kotlinx.datetime.Clock
@@ -31,6 +33,10 @@ fun simulateTrains(
     lineStations: Map<String, List<Station>>,
     snapshot: LivePositionsSnapshot?,
     closedStationIds: Set<String> = emptySet(),
+    /// Per-line track polylines ([lat,lng] in order). When present, a train is
+    /// placed ALONG the line's geometry instead of on a straight chord between
+    /// stations (which cuts across bays). Empty = chord, the prior behaviour.
+    geometry: Map<String, List<LatLng>> = emptyMap(),
 ): List<SimulatedTrain> {
     if (snapshot == null || snapshot.trains.isEmpty()) return emptyList()
     // Only operational lines get trains. A line that is built but not open (e.g.
@@ -41,6 +47,9 @@ fun simulateTrains(
     // that carries none.
     val lineById = lines.filter { it.isOperational }.associateBy { it.id }
     val stationById: Map<String, Station> = lineStations.values.flatten().associateBy { it.id }
+    // Precompute a distance table per line so trains ride the real track.
+    val geoTables: Map<String, Pair<List<LatLng>, DoubleArray>> =
+        geometry.mapValues { (_, poly) -> poly to VehicleInterpolation.buildDistanceTable(poly) }
 
     val nowEpochSeconds = Clock.System.now().epochSeconds
     val trains = mutableListOf<SimulatedTrain>()
@@ -85,8 +94,19 @@ fun simulateTrains(
         } else 0.0
         val fraction = stationAwareEase(linearFrac)
 
-        val lat = fromStation.latitude + (toStation.latitude - fromStation.latitude) * fraction
-        val lon = fromStation.longitude + (toStation.longitude - fromStation.longitude) * fraction
+        val pos = geoTables[displayLineId]?.takeIf { it.first.size >= 2 }?.let { (poly, table) ->
+            VehicleInterpolation.positionBetween(
+                poly, table,
+                LatLng(fromStation.latitude, fromStation.longitude),
+                LatLng(toStation.latitude, toStation.longitude),
+                fraction,
+            )
+        } ?: LatLng(
+            fromStation.latitude + (toStation.latitude - fromStation.latitude) * fraction,
+            fromStation.longitude + (toStation.longitude - fromStation.longitude) * fraction,
+        )
+        val lat = pos.lat
+        val lon = pos.lng
         val direction = if (raw.directionKey == "outbound") Direction.OUTBOUND else Direction.INBOUND
 
         trains += SimulatedTrain(
@@ -137,11 +157,14 @@ fun projectScheduledTrains(
     bundles: Map<String, SyrmosSchedulesService.LineSchedule>,
     today: String,
     nowMinutes: Double,
+    geometry: Map<String, List<LatLng>> = emptyMap(),
 ): List<SimulatedTrain> {
     if (bundles.isEmpty()) return emptyList()
     val lineById = lines.filter { it.isOperational }.associateBy { it.id }
     val stationById: Map<String, Station> = lineStations.values.flatten().associateBy { it.id }
     val out = mutableListOf<SimulatedTrain>()
+    val geoTables: Map<String, Pair<List<LatLng>, DoubleArray>> =
+        geometry.mapValues { (_, poly) -> poly to VehicleInterpolation.buildDistanceTable(poly) }
 
     for (line in lineById.values) {
         if (line.id in LIVE_POSITION_LINES) continue
@@ -170,8 +193,19 @@ fun projectScheduledTrains(
             val dur = (t[seg + 1] - t[seg]).toDouble()
             val linearFrac = if (dur > 0) ((nowMinutes - t[seg]) / dur).coerceIn(0.0, 1.0) else 0.0
             val frac = stationAwareEase(linearFrac)
-            val lat = from.latitude + (to.latitude - from.latitude) * frac
-            val lon = from.longitude + (to.longitude - from.longitude) * frac
+            val pos = geoTables[line.id]?.takeIf { it.first.size >= 2 }?.let { (poly, table) ->
+                VehicleInterpolation.positionBetween(
+                    poly, table,
+                    LatLng(from.latitude, from.longitude),
+                    LatLng(to.latitude, to.longitude),
+                    frac,
+                )
+            } ?: LatLng(
+                from.latitude + (to.latitude - from.latitude) * frac,
+                from.longitude + (to.longitude - from.longitude) * frac,
+            )
+            val lat = pos.lat
+            val lon = pos.lng
             val direction = if (trip.direction.lowercase() == "outbound") Direction.OUTBOUND else Direction.INBOUND
             val dest = stationById[stops.last().stationId]?.name ?: line.terminalB
 
