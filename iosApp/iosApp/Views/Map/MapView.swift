@@ -1708,7 +1708,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
             return renderer.image { ctx in
                 let cg = ctx.cgContext
                 cg.translateBy(x: canvas / 2, y: canvas / 2)
-                cg.rotate(by: CGFloat(bearing) * .pi / 180)
+                // The capsule is a horizontal pill (w > h), so its long axis points
+                // east at 0°. Bearing is a compass heading (0 = north), so subtract
+                // 90° to turn the pill to point along the direction of travel —
+                // identical to the web's `rotate(bearing - 90deg)`. Without this the
+                // pill stayed horizontal on north-south lines (most of the metro).
+                cg.rotate(by: CGFloat(bearing - 90) * .pi / 180)
                 let rect = CGRect(x: -w / 2, y: -h / 2, width: w, height: h)
                 let path = UIBezierPath(roundedRect: rect, cornerRadius: radius)
                 color.setFill(); path.fill()
