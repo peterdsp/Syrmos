@@ -33,6 +33,10 @@
     const I18N = {
         en: {
             brand_subtitle: "Athens rail map",
+            athens: "Athens",
+            thessaloniki: "Thessaloniki",
+            national: "National",
+            patras: "Patras",
             search_placeholder: "Search station, Syntagma, Piraeus, Airport",
             search_aria: "Search station",
             locate_me: "Locate me",
@@ -2034,6 +2038,32 @@
         map.fitBounds(bounds.pad(0.15));
     } catch (e) {
         console.error("fitBounds failed", e);
+    }
+
+    // Region chips (Athens / Thessaloniki / National / Patras) fly the map to
+    // that network. They were inert markup before; this makes them a real
+    // geographic filter — the network you pick frames the view.
+    try {
+        const chips = document.getElementById("regionChips");
+        if (chips) {
+            const lineRegion = new Map(lines.map((l) => [l.id, l.region]));
+            const regionBounds = (region) => {
+                const pts = stationNodes
+                    .filter((s) => (s.line_ids || s.lineIds || []).some((id) => lineRegion.get(id) === region))
+                    .map((s) => [s.latitude, s.longitude]);
+                return pts.length ? L.latLngBounds(pts) : null;
+            };
+            chips.addEventListener("click", (e) => {
+                const btn = e.target.closest(".region-chip");
+                if (!btn) return;
+                chips.querySelectorAll(".region-chip").forEach((c) => c.classList.remove("region-chip--active"));
+                btn.classList.add("region-chip--active");
+                const b = regionBounds(btn.getAttribute("data-region"));
+                if (b && b.isValid()) map.fitBounds(b.pad(0.15));
+            });
+        }
+    } catch (e) {
+        console.error("region chips wiring failed", e);
     }
 
     // Each guarded so one panel's failure can't cascade and abort the rest of
