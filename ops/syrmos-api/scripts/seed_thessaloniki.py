@@ -80,7 +80,7 @@ LINES = [
     ("TM1", "metro", "Line 1", "Γραμμή 1", "#FF0000",
      "New Railway Station", "Nea Elvetia", 20, "operational"),
     ("TM2", "metro", "Line 2", "Γραμμή 2", "#0070FF",
-     "New Railway Station", "Mikra", 21, "under_construction"),
+     "New Railway Station", "Mikra", 21, "operational"),
 ]
 
 # --- schedule -------------------------------------------------------------
@@ -108,6 +108,12 @@ DAY_TYPES_MON_SAT = ("mon_thu", "fri", "sat")
 # same spacing as the wider gaps toward Nea Elvetia.
 TM1_RUNTIME_MIN = 18.5
 DWELL_SECONDS = 20
+
+# TM2's ordered stations: the shared TM1 trunk (NSS..25is Martiou) then the
+# Kalamaria branch. Used for distance-derived offsets; TM2's runtime is scaled
+# from TM1's pace over TM2's own length (see seed_offsets), since the operator
+# publishes no per-train timetable for the driverless metro.
+TM2_STATIONS = TM1_STATIONS[:11] + TM2_OWN_STATIONS
 
 
 def haversine_m(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -190,24 +196,30 @@ def seed_line_stations(conn: sqlite3.Connection) -> int:
 
 
 def seed_schedule(conn: sqlite3.Connection) -> tuple[int, int]:
-    """Rules + frequency bands. TM1 only: TM2 does not run yet."""
+    """Rules + frequency bands for both driverless metro lines.
+
+    TM1 and TM2 are the same driverless system on the same Thessmetro FAQ, so
+    they share the open/close window and headway bands (each line's own trains
+    run on that headway; the shared trunk simply carries both).
+    """
     conn.execute("DELETE FROM schedule_rules WHERE line_id IN ('TM1','TM2')")
     conn.execute("DELETE FROM frequency_bands WHERE line_id IN ('TM1','TM2')")
 
-    rules = [("TM1", dt, OPEN_TIME, CLOSE_TIME, 0, "Thessmetro FAQ; driverless, dynamic headway")
-             for dt in DAY_TYPES_MON_SAT + ("sun",)]
+    rules, bands = [], []
+    for line_id in ("TM1", "TM2"):
+        for dt in DAY_TYPES_MON_SAT + ("sun",):
+            rules.append((line_id, dt, OPEN_TIME, CLOSE_TIME, 0,
+                          "Thessmetro FAQ; driverless, dynamic headway"))
+        for dt in DAY_TYPES_MON_SAT:
+            for (start, end, headway, label) in MON_SAT_BANDS:
+                bands.append((line_id, dt, start, end, headway, label, "both"))
+        for (start, end, headway, label) in SUN_BANDS:
+            bands.append((line_id, "sun", start, end, headway, label, "both"))
     conn.executemany(
         "INSERT INTO schedule_rules(line_id, day_type, open_time, close_time,"
         " is_24_7, notes) VALUES(?,?,?,?,?,?)",
         rules,
     )
-
-    bands = []
-    for dt in DAY_TYPES_MON_SAT:
-        for (start, end, headway, label) in MON_SAT_BANDS:
-            bands.append(("TM1", dt, start, end, headway, label, "both"))
-    for (start, end, headway, label) in SUN_BANDS:
-        bands.append(("TM1", "sun", start, end, headway, label, "both"))
     conn.executemany(
         "INSERT INTO frequency_bands(line_id, day_type, time_start, time_end,"
         " headway_minutes, label, direction) VALUES(?,?,?,?,?,?,?)",
@@ -217,23 +229,38 @@ def seed_schedule(conn: sqlite3.Connection) -> tuple[int, int]:
 
 
 def seed_offsets(conn: sqlite3.Connection) -> int:
-    """Per-station offsets for TM1, both directions. TM2 gets none: it does not run.
+    """Per-station offsets for both metro lines, both directions, distance-derived.
 
     Symmetric by direction: a driverless metro runs the same profile each way,
-    unlike the Athens suburban lines whose inbound and outbound differ.
+    unlike the Athens suburban lines whose inbound and outbound differ. TM2's
+    end-to-end runtime is scaled from TM1's pace (min per metre) over TM2's own
+    length, since the operator publishes no per-train timetable.
     """
     conn.execute("DELETE FROM station_offsets WHERE line_id IN ('TM1','TM2')")
-    origin_en = TM1_STATIONS[0][1]
-    dest_en = TM1_STATIONS[-1][1]
+
+    def route_length_m(stns) -> float:
+        pts = [(s[3], s[4]) for s in stns]
+        return sum(haversine_m(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
+
+    pace_min_per_m = TM1_RUNTIME_MIN / route_length_m(TM1_STATIONS)
+    tm2_runtime = round(pace_min_per_m * route_length_m(TM2_STATIONS), 1)
+    specs = [
+        ("TM1", TM1_STATIONS, TM1_RUNTIME_MIN),
+        ("TM2", TM2_STATIONS, tm2_runtime),
+    ]
+
     rows = []
-    for direction in ("outbound", "inbound"):
-        stations = TM1_STATIONS if direction == "outbound" else list(reversed(TM1_STATIONS))
-        o_en = origin_en if direction == "outbound" else dest_en
-        d_en = dest_en if direction == "outbound" else origin_en
-        offsets = distance_offsets(stations, TM1_RUNTIME_MIN)
-        for seq, (station, mins) in enumerate(zip(stations, offsets)):
-            rows.append(("TM1", direction, o_en, d_en, seq, station[1], station[0],
-                         mins, "thessmetro-distance"))
+    for line_id, line_stations_list, runtime in specs:
+        origin_en = line_stations_list[0][1]
+        dest_en = line_stations_list[-1][1]
+        for direction in ("outbound", "inbound"):
+            stations = line_stations_list if direction == "outbound" else list(reversed(line_stations_list))
+            o_en = origin_en if direction == "outbound" else dest_en
+            d_en = dest_en if direction == "outbound" else origin_en
+            offsets = distance_offsets(stations, runtime)
+            for seq, (station, mins) in enumerate(zip(stations, offsets)):
+                rows.append((line_id, direction, o_en, d_en, seq, station[1], station[0],
+                             mins, "thessmetro-distance"))
     conn.executemany(
         "INSERT INTO station_offsets(line_id, direction, origin, destination,"
         " stop_sequence, station_en, station_id, minutes_from_origin, source)"
@@ -260,11 +287,11 @@ def main() -> None:
         raise
 
     print(f"stations:      {n_st}")
-    print(f"lines:         {n_ln} (TM1 operational, TM2 under_construction)")
+    print(f"lines:         {n_ln} (TM1 + TM2 operational)")
     print(f"line_stations: {n_ls}")
     print(f"schedule_rules:{n_rules}")
-    print(f"bands:         {n_bands} (TM1 only)")
-    print(f"offsets:       {n_off} (TM1 only, distance-derived)")
+    print(f"bands:         {n_bands} (TM1 + TM2, driverless FAQ headways)")
+    print(f"offsets:       {n_off} (TM1 + TM2, distance-derived)")
 
     athens = conn.execute(
         "SELECT COUNT(*) FROM lines WHERE region='athens'").fetchone()[0]
