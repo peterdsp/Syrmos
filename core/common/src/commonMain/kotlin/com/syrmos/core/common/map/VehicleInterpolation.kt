@@ -61,6 +61,62 @@ object VehicleInterpolation {
         return lerp(polyline[lo], polyline[hi], frac)
     }
 
+    /**
+     * Arc-length (metres along [polyline]) of the point NEAREST to [station],
+     * found by projecting the station onto each segment rather than snapping to
+     * the nearest vertex. Sparse vertices on a winding coast made the vertex
+     * snap map a station to a far vertex and push interpolated trains offshore;
+     * segment projection keeps the arc on the real track. [table] must be
+     * buildDistanceTable(polyline). Treated as locally planar (accurate at city
+     * scale).
+     */
+    fun stationArc(polyline: List<LatLng>, table: DoubleArray, station: LatLng): Double {
+        if (polyline.size < 2) return 0.0
+        var bestArc = 0.0
+        var bestDist = Double.MAX_VALUE
+        for (i in 0 until polyline.size - 1) {
+            val a = polyline[i]
+            val b = polyline[i + 1]
+            val dy = b.lat - a.lat
+            val dx = b.lng - a.lng
+            val len2 = dy * dy + dx * dx
+            val t = if (len2 > 0.0) {
+                (((station.lat - a.lat) * dy + (station.lng - a.lng) * dx) / len2).coerceIn(0.0, 1.0)
+            } else 0.0
+            val d = haversineM(LatLng(a.lat + dy * t, a.lng + dx * t), station)
+            if (d < bestDist) {
+                bestDist = d
+                bestArc = table[i] + (table[i + 1] - table[i]) * t
+            }
+        }
+        return bestArc
+    }
+
+    /**
+     * Position [fraction] of the way from [fromStation] to [toStation] ALONG the
+     * line [polyline], so a vehicle rides the real track instead of a chord that
+     * would cut across a bay. Falls back to the straight chord when there is no
+     * usable geometry or the arc mapping overshoots both stations (mirrors the
+     * web map's trainPosition guard).
+     */
+    fun positionBetween(
+        polyline: List<LatLng>,
+        table: DoubleArray,
+        fromStation: LatLng,
+        toStation: LatLng,
+        fraction: Double,
+    ): LatLng {
+        val chord = lerp(fromStation, toStation, fraction)
+        if (polyline.size < 2) return chord
+        val arcFrom = stationArc(polyline, table, fromStation)
+        val arcTo = stationArc(polyline, table, toStation)
+        val p = pointAtArc(polyline, table, arcFrom + (arcTo - arcFrom) * fraction)
+        val segLen = haversineM(fromStation, toStation)
+        return if (haversineM(p, fromStation) <= segLen + 600.0 &&
+            haversineM(p, toStation) <= segLen + 600.0
+        ) p else chord
+    }
+
     fun bearingDeg(from: LatLng, to: LatLng): Double {
         val dLng = toRadians(to.lng - from.lng)
         val lat1 = toRadians(from.lat)
