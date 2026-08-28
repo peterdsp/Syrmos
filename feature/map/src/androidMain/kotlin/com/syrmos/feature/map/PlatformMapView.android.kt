@@ -698,7 +698,12 @@ private fun buildCapsuleTrainBitmap(res: android.content.res.Resources, color: I
     val cx = canvas_size / 2f
     val cy = canvas_size / 2f
     canvas.save()
-    canvas.rotate(bearingDeg.toFloat(), cx, cy)
+    // The capsule is a horizontal pill (w > h), so its long axis points east at
+    // 0°. Bearing is a compass heading (0 = north), so subtract 90° to turn the
+    // pill along the direction of travel — identical to the web's
+    // `rotate(bearing - 90deg)`. Without this the pill stayed horizontal on
+    // north-south lines (most of the metro).
+    canvas.rotate((bearingDeg - 90).toFloat(), cx, cy)
     val rect = RectF(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
     canvas.drawRoundRect(rect, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = color; style = Paint.Style.FILL
