@@ -68,31 +68,6 @@ body.dark-mode .nav-item--active {
     background: rgba(142,202,255,.10);
 }
 
-.nav-rail__footer {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 12px; margin-top: auto;
-}
-
-.nav-rail__theme {
-    display: flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px;
-    border: none; border-radius: 12px;
-    background: transparent; cursor: pointer;
-    color: var(--sy-text-secondary);
-    transition: background var(--sy-duration-fast-ms) ease;
-}
-.nav-rail__theme:hover { background: var(--sy-background-subtle); }
-.nav-rail__theme:focus-visible {
-    outline: 2px solid var(--sy-accent);
-    outline-offset: 2px;
-}
-
-.nav-rail__lang {
-    font-size: 10px; font-weight: 600;
-    color: var(--sy-text-secondary);
-    letter-spacing: .04em;
-}
-
 /* ===== Context Rail (352px) ===== */
 .context-rail {
     flex: 0 0 352px;

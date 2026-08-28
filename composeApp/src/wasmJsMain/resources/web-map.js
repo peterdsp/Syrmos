@@ -3283,12 +3283,17 @@
     `;
     document.head.appendChild(panelStyle);
 
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-        // Swap the line-icon (moon in light, sun in dark) instead of writing a
-        // text glyph, which would blow away the inline <svg><use>.
+    // Theme lives in ONE place now: the top-right moon next to the language
+    // pill (matching the intended top-right control cluster). The left rail's
+    // old moon AND the dead "EL" label — which never even updated — were
+    // removed, so language + theme no longer appear in two places. Apply the
+    // saved / preferred theme on load regardless of the button, then wire the
+    // moon. Swap the line-icon (moon in light, sun in dark) rather than a text
+    // glyph, which would blow away the inline <svg><use>.
+    (function wireTheme() {
+        const themeBtn = document.getElementById("themeToggleMap");
         const setThemeIcon = (isDark) => {
-            const use = themeToggle.querySelector("use");
+            const use = themeBtn && themeBtn.querySelector("use");
             if (use) use.setAttribute("href", isDark ? "#ic-sun" : "#ic-theme");
         };
         const saved = localStorage.getItem("syrmos-theme");
@@ -3297,14 +3302,53 @@
             document.body.classList.add("dark-mode");
             setThemeIcon(true);
         }
-        themeToggle.addEventListener("click", () => {
-            const isDark = document.body.classList.toggle("dark-mode");
-            setThemeIcon(isDark);
-            localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
-            // Swap the base map to the matching light / dark minimal tiles.
-            if (window.__syrmosApplyTileLayer) window.__syrmosApplyTileLayer();
+        if (themeBtn) {
+            themeBtn.addEventListener("click", () => {
+                const isDark = document.body.classList.toggle("dark-mode");
+                setThemeIcon(isDark);
+                localStorage.setItem("syrmos-theme", isDark ? "dark" : "light");
+                // Swap the base map to the matching light / dark minimal tiles.
+                if (window.__syrmosApplyTileLayer) window.__syrmosApplyTileLayer();
+            });
+        }
+    })();
+
+    // Left nav rail: the five icons were inert placeholders from the redesign.
+    // Wire each to a real, DISTINCT action. The app is one map + one scrolling
+    // context panel, so "navigation" means framing the map and jumping the
+    // panel. Clicking also moves the active highlight.
+    (function wireNavRail() {
+        const items = document.querySelector(".nav-rail__items");
+        if (!items) return;
+        const contextRail = document.getElementById("contextRail");
+        const panelTop = () => { if (contextRail) contextRail.scrollTo({ top: 0, behavior: "smooth" }); };
+        const jumpTo = (sel) => {
+            const el = document.querySelector(sel);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+        // Frame the ENTIRE network (all of Greece), distinct from Home's Athens core.
+        const fitAll = () => {
+            try {
+                const b = L.latLngBounds(stationNodes.map((s) => [s.latitude, s.longitude]));
+                if (b.isValid()) map.fitBounds(b.pad(0.1)); else fitAthensCore();
+            } catch (_) { fitAthensCore(); }
+        };
+        const actions = {
+            home() { clearSelection(); fitAthensCore(); panelTop(); },       // reset to the Athens home view
+            explore() { panelTop(); if (stationSearch) stationSearch.focus(); }, // start searching a station
+            map() { clearSelection(); fitAll(); },                           // see the whole network on the map
+            departures() { jumpTo(".departures-card"); },                    // jump to next departures + live trains
+            more() { jumpTo("#infoLinksList"); },                            // jump to useful info / links
+        };
+        items.querySelectorAll(".nav-item").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                items.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("nav-item--active"));
+                btn.classList.add("nav-item--active");
+                const run = actions[btn.getAttribute("data-nav")];
+                if (run) run();
+            });
         });
-    }
+    })();
 
     // Ariadne panel wiring. The parser (window.SyrmosAriadne) is offline and
     // deterministic; this block just routes its intents into the same web
