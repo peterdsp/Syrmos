@@ -1974,6 +1974,10 @@
         const z = map.getZoom();
         applyStationVisibility(z);
         renderSimulatedTrainsOnMap(lastSimulatedTrains);
+        // Live trains declutter on the SAME zoom rule as the simulated dots.
+        // Without this they stayed full-size when zoomed out and collapsed into a
+        // single pile on the coastline that read as "trains in the sea".
+        renderLiveTrains(lastLiveTrains);
         if (DEBUG) logMarkerAudit(z);
     });
 
@@ -2015,6 +2019,10 @@
     // entire rest of init (hero, popular, nearby, live trains, simulator).
     const simulatedTrainMarkers = new Map();
     let lastSimulatedTrains = [];
+    // Last live-train snapshot, so the zoomend handler can re-render the live
+    // fleet at the new zoom (declutter when zoomed out, restore when zoomed in)
+    // without waiting for the next poll.
+    let lastLiveTrains = [];
 
     // Guard the fit anyway, so no future handler throw during it can abort init.
     // Open framed on the ATHENS network, not the whole country. The app went
@@ -2179,6 +2187,7 @@
     }
 
     function renderLiveTrains(trains) {
+        lastLiveTrains = trains;
         liveTrainMarkers.forEach((marker) => marker.remove());
         liveTrainMarkers.clear();
 
@@ -2198,10 +2207,16 @@
             }
         }
 
-        // The Hide vehicles toggle: keep the live-train list panel populated
-        // (users still want to know what's running) but skip rendering any
-        // marker on the map itself.
-        if (window.__syrmosVehiclesHidden) {
+        // Keep the live-train list panel populated (users still want to know
+        // what's running) but skip rendering markers on the MAP when either the
+        // manual "Hide vehicles" toggle is on OR the map is zoomed out past the
+        // regional threshold. Zoomed out, the whole Athens live fleet collapses
+        // into a single full-size pile on the coastline that reads as "trains in
+        // the sea" — the same reason the simulated dots declutter at this zoom, so
+        // the live markers must follow the identical rule. The zoomend handler
+        // re-runs this from lastLiveTrains, so zooming back in restores every
+        // marker at its true coordinate (Piraeus, Rentis, Koropi…) untouched.
+        if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
             return;
         }
 
@@ -2222,30 +2237,11 @@
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
             });
-            // Keep a live train on its own track. railway.gov.gr GPS occasionally
-            // reports a suburban train far offshore (signal loss near the coast or
-            // in tunnels); plotting that verbatim drops a dot in the open sea. If
-            // the raw fix is >3 km from this line's polyline it is a glitch, so ride
-            // the nearest point on the real track. An accurate fix (on/near the
-            // track) is used exactly as reported.
-            let plat = train.lat, plng = train.lng;
-            const gpsPoly = linePolyline(train.lineId);
-            if (gpsPoly) {
-                let bestD = Infinity, sy = train.lat, sx = train.lng;
-                const cs = gpsPoly.coords;
-                for (let i = 0; i < cs.length - 1; i++) {
-                    const ay = cs[i][0], ax = cs[i][1];
-                    const dy = cs[i + 1][0] - ay, dx = cs[i + 1][1] - ax;
-                    const len2 = dy * dy + dx * dx;
-                    let ti = len2 > 0 ? (((train.lat - ay) * dy + (train.lng - ax) * dx) / len2) : 0;
-                    ti = ti < 0 ? 0 : ti > 1 ? 1 : ti;
-                    const py = ay + dy * ti, px = ax + dx * ti;
-                    const d = distanceMeters(py, px, train.lat, train.lng);
-                    if (d < bestD) { bestD = d; sy = py; sx = px; }
-                }
-                if (bestD > 3000) { plat = sy; plng = sx; }
-            }
-            const marker = L.marker([plat, plng], {
+            // Plot the live train at its TRUE reported coordinate — no snapping,
+            // no clamping. The feed is accurate (Piraeus port, Rentis depot,
+            // Koropi…); the only reason a dot ever looked "in the sea" was the
+            // zoomed-out pile-up, which the zoom guard above now handles.
+            const marker = L.marker([train.lat, train.lng], {
                 icon,
                 keyboard: false,
                 zIndexOffset: 1000,
