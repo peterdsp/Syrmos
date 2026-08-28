@@ -1,5 +1,7 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.data.repository.LineGeometryRepositoryImpl
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.ScheduleRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
@@ -74,6 +76,7 @@ class MapViewModel(
     private val stationOffsetsRepo: StationOffsetsRepository,
     private val scheduleSyncRepository: com.syrmos.core.data.sync.ScheduleSyncRepository,
     private val announcementsRepository: AnnouncementsRepository,
+    private val lineGeometryRepository: LineGeometryRepositoryImpl,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
@@ -223,6 +226,11 @@ class MapViewModel(
 
     private fun runTrainSimulation() {
         scope.launch {
+            // Bundled OSM route geometry (same shapes.json the web map uses). Loaded
+            // once — it is static and memoised — so both simulated and projected
+            // trains ride the real track instead of a straight chord between stops.
+            // Empty map (missing seed) makes the simulator fall back to chords.
+            val geometry: Map<String, List<LatLng>> = lineGeometryRepository.getLineGeometry()
             while (isActive) {
                 val state = _uiState.value
                 if (state.lines.isNotEmpty() && state.lineStations.isNotEmpty()) {
@@ -234,6 +242,7 @@ class MapViewModel(
                         state.lineStations,
                         livePositionsSnapshot,
                         closedStationIds = closedIds,
+                        geometry = geometry,
                     )
                     // Suburban A1-A4 dedupe: railway.gov.gr `liveTrains` carry
                     // raw GPS. Whenever the live feed has a train on a line,
@@ -253,6 +262,7 @@ class MapViewModel(
                         bundles = scheduleSyncRepository.lineBundles.value,
                         today = scheduleDayTypeString(),
                         nowMinutes = now.hour * 60 + now.minute + now.second / 60.0,
+                        geometry = geometry,
                     ).filter { it.lineId !in coveredByLive }
                     val visibleTrains = filtered + projected
                     _uiState.update { current ->
