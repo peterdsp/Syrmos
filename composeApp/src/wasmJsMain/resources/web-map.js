@@ -958,13 +958,16 @@
     }
     function tileSourceFor() {
         const dark = isDarkTheme();
+        // Esri "Gray Canvas" — a clean, minimal, KEYLESS raster basemap, close to
+        // CARTO's Positron / Dark Matter (which now demands an API key). No signup,
+        // no key. Note Esri uses {z}/{y}/{x} order and serves to native z16.
         return {
             url: dark
-                ? "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-                : "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
-            subdomains: "abcd",
-            attribution: "&copy; OpenStreetMap, &copy; CARTO",
+                ? "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            attribution: "&copy; OpenStreetMap, Tiles &copy; Esri",
             maxZoom: 20,
+            maxNativeZoom: 16,
         };
     }
 
@@ -973,8 +976,8 @@
         const cfg = tileSourceFor();
         const next = L.tileLayer(cfg.url, {
             maxZoom: cfg.maxZoom,
+            maxNativeZoom: cfg.maxNativeZoom,
             attribution: cfg.attribution,
-            subdomains: cfg.subdomains,
         });
         next.addTo(map);
         if (activeTileLayer) {
@@ -2922,7 +2925,10 @@
     function capsuleIcon(color, bearing) {
         const w = MAP_TOKENS.VEHICLE_W, h = MAP_TOKENS.VEHICLE_H;
         const r = MAP_TOKENS.VEHICLE_RADIUS, b = MAP_TOKENS.VEHICLE_BORDER;
-        const rot = Math.round(bearing || 0);
+        // The capsule is wider than tall, so its long axis defaults to horizontal
+        // (pointing east). Rotate by bearing-90 so the long axis follows the track
+        // direction of travel instead of sitting across it.
+        const rot = Math.round((bearing || 0) - 90);
         return L.divIcon({
             className: "vehicle-capsule-wrap",
             html: `<div class="vehicle-capsule" style="background:${color};transform:rotate(${rot}deg)"></div>`,
@@ -2974,7 +2980,7 @@
                 }
                 const capsule = state.marker.getElement()?.querySelector(".vehicle-capsule");
                 if (capsule) {
-                    capsule.style.transform = `rotate(${Math.round(state.bearingCurrent)}deg)`;
+                    capsule.style.transform = `rotate(${Math.round(state.bearingCurrent - 90)}deg)`;
                 }
             });
             requestAnimationFrame(tick);
@@ -3029,7 +3035,7 @@
                 if (REDUCE_MOTION || !poly) {
                     m.setLatLng([train.lat, train.lng]);
                     const capsule = m.getElement()?.querySelector(".vehicle-capsule");
-                    if (capsule) capsule.style.transform = `rotate(${Math.round(train.bearing || 0)}deg)`;
+                    if (capsule) capsule.style.transform = `rotate(${Math.round((train.bearing || 0) - 90)}deg)`;
                 }
                 const st = vehicleAnimState.get(train.id);
                 if (st) {
