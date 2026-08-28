@@ -962,7 +962,12 @@ body.dark-mode .live-status-pill {
     overflow: visible !important;
 }
 .live-train-marker {
-    position: relative;
+    /* MUST stay position:absolute — Leaflet positions every marker icon with an
+       absolute transform. Overriding it to position:relative drops the icons into
+       the marker-pane's normal flow, so they stack vertically and each renders at
+       flow-offset + transform instead of its true pixel — the exact cause of live
+       trains "marching into the sea" south of their real coordinate. */
+    position: absolute;
     display: flex; align-items: center; justify-content: center;
 }
 .live-train-marker__pulse {
