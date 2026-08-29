@@ -161,7 +161,7 @@ struct AlertDetailSheet: View {
 
     private var noDetailLabel: String {
         switch language {
-        case .greek: "Δεν υπαρχουν περισσοτερες πληροφοριες."
+        case .greek: "Δεν υπάρχουν περισσότερες πληροφορίες."
         case .albanian: "Nuk ka informacion te metejshem."
         case .italian: "Nessun dettaglio ulteriore disponibile."
         default: "No further details available."
