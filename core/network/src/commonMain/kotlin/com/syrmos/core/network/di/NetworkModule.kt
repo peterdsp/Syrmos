@@ -13,6 +13,7 @@ import com.syrmos.core.network.SyrmosSchedulesService
 import com.syrmos.core.network.SyrmosVisualOverridesService
 import com.syrmos.core.network.WeatherService
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -28,6 +29,15 @@ val networkModule = module {
                         isLenient = true
                     }
                 )
+            }
+            // Without this the Web (Ktor JS/fetch) engine has NO default timeout,
+            // so a half-open socket (tunnel, network handoff, captive portal)
+            // hangs the 10s live-poll loop forever with no recovery. Bound every
+            // request so a stalled call fails and the loop retries.
+            install(HttpTimeout) {
+                requestTimeoutMillis = 30_000
+                connectTimeoutMillis = 15_000
+                socketTimeoutMillis = 30_000
             }
         }
     }

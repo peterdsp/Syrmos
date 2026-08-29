@@ -125,12 +125,15 @@ class CommunityReportService(private val httpClient: HttpClient) {
                 )
             )
         }
-        if (response.status != HttpStatusCode.OK) return@runCatching null
+        // Accept any 2xx — a resource-creating POST conventionally returns 201,
+        // which was being treated as failure and prompting a duplicate retry.
+        if (response.status.value !in 200..299) return@runCatching null
         json.decodeFromString<CommunityReportReceipt>(response.bodyAsText())
     }.getOrNull()
 
     suspend fun delete(reportId: String): Boolean = runCatching {
-        httpClient.delete("$BASE_URL/api/community/reports/$reportId").status == HttpStatusCode.OK
+        // Accept any 2xx — DELETE conventionally returns 204 No Content.
+        httpClient.delete("$BASE_URL/api/community/reports/$reportId").status.value in 200..299
     }.getOrDefault(false)
 
     fun newReportId(): String {

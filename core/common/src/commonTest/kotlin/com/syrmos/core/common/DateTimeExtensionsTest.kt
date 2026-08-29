@@ -31,6 +31,17 @@ class DateTimeExtensionsTest {
     }
 
     @Test
+    fun parseTime_malformed_does_not_crash() {
+        // No colon, empty, non-numeric, minute out of range, and an extreme
+        // hour must all degrade gracefully instead of throwing.
+        assertEquals(LocalTime(0, 0), parseTime(""))
+        assertEquals(LocalTime(0, 0), parseTime("1200"))
+        assertEquals(LocalTime(0, 0), parseTime("abc:xyz"))
+        assertEquals(LocalTime(12, 59), parseTime("12:99"))
+        assertEquals(LocalTime(0, 0), parseTime("48:00"))
+    }
+
+    @Test
     fun minutesUntil_same_day() {
         val now = LocalTime(10, 0)
         val departure = LocalTime(10, 15)
