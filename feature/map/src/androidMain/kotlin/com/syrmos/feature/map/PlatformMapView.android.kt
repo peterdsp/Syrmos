@@ -589,10 +589,15 @@ internal actual fun PlatformMapView(
 
 private fun parseHex(hex: String): Int {
     val s = hex.removePrefix("#")
+    val fallback = 0xFF64748B.toInt()
+    // toIntOrNull/toLongOrNull so a malformed override colour (e.g. "#12PQ56"
+    // or an rgb(...) string) falls back to grey instead of throwing a
+    // NumberFormatException — one caller (the polyline builder) runs inside a
+    // LaunchedEffect with no surrounding try/catch and would crash the map.
     return when (s.length) {
-        6 -> 0xFF000000.toInt() or s.toInt(16)
-        8 -> s.toLong(16).toInt()
-        else -> 0xFF64748B.toInt()
+        6 -> s.toIntOrNull(16)?.let { 0xFF000000.toInt() or it } ?: fallback
+        8 -> s.toLongOrNull(16)?.toInt() ?: fallback
+        else -> fallback
     }
 }
 
