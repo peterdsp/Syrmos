@@ -1393,6 +1393,15 @@
         return now.hour * 60 + now.minute;
     }
 
+    // A Date whose LOCAL getters (getHours/getMinutes/getSeconds/getDate/getDay/
+    // getMonth) read Europe/Athens wall-clock, so every schedule and simulation
+    // computation is correct no matter what timezone the viewer's device is on.
+    // Only use it for wall-clock FIELDS — its epoch (getTime) is deliberately
+    // shifted and must not be treated as a real instant.
+    function athensNow() {
+        return new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Athens" }));
+    }
+
     function formatTimeFromNow(minutesAway) {
         const now = currentAthensParts();
         const total = (now.hour * 60 + now.minute + minutesAway) % (24 * 60);
@@ -1540,7 +1549,7 @@
         if (!apiTrainTimestamps || !apiTrainTimestamps.trains?.length) return [];
         const wantedNames = new Set([station.name, station.nameEl].filter(Boolean));
         const out = [];
-        const now = new Date();
+        const now = athensNow();
         const nowMinutes = now.getHours() * 60 + now.getMinutes();
         for (const train of apiTrainTimestamps.trains) {
             const stop = train.stops.find((s) => wantedNames.has(s.stationNameEn) || wantedNames.has(s.stationNameEl));
@@ -1548,7 +1557,12 @@
             const [h, m] = stop.time.split(":").map((n) => parseInt(n, 10));
             if (Number.isNaN(h) || Number.isNaN(m)) continue;
             let minutesAway = h * 60 + m - nowMinutes;
-            if (minutesAway < 0 || minutesAway > 240) continue;  // drop past and >4h ahead
+            // A published HH:MM smaller than now is tomorrow's early service, not
+            // the past — wrap it forward a day so a 00:15 train at 23:50 reads
+            // 25 min instead of being dropped. The >4h cap below still discards
+            // trains that have genuinely left.
+            if (minutesAway < 0) minutesAway += 24 * 60;
+            if (minutesAway > 240) continue;
             const last = train.stops[train.stops.length - 1];
             const line = lineMap.get(train.lineId);
             // Track that is built but not open carries no service, so it can have
@@ -1559,6 +1573,11 @@
                 direction: last.stationNameEn,
                 minutesAway,
                 timeMinutes: h * 60 + m,
+                // Consumers (departure card at renderDepartures, Ariadne intents)
+                // read `.time`; the band projector emits `time`, so the PDF path
+                // must too or suburban rows show a blank clock and Ariadne can't
+                // parse them. `timeLabel` kept as an alias for any legacy reader.
+                time: stop.time,
                 timeLabel: stop.time,
                 trainNo: train.trainNo,
             });
@@ -1571,7 +1590,7 @@
         const real = realTimetableDepartures(station);
         if (real.length) return real;
         if (!apiSchedules || apiSchedules.size === 0) return [];
-        const nowDate = new Date();
+        const nowDate = athensNow();
         const result = [];
         const expanded = expandLineIds(station.stationIds[0] || station.id, station.lineIds);
         for (const lineId of expanded) {
@@ -2546,7 +2565,7 @@
             el(".hero-card__then").textContent = then ? `${t("then")} ${then}` : "";
 
             // Countdown from the absolute departure minute-of-day.
-            const now = new Date();
+            const now = athensNow();
             const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
             let secAway = next.timeMinutes * 60 - nowSec;
             if (secAway < -60) secAway = next.minutesAway * 60; // crossed midnight / stale
@@ -2956,7 +2975,7 @@
     function projectScheduledTrains() {
         if (!apiSchedules || apiSchedules.size === 0) return [];
         const out = [];
-        const now = new Date();
+        const now = athensNow();
         const today = dayTypeFor(now, resolveHolidayDayType(now));
         const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
         for (const line of lines) {
@@ -2970,7 +2989,10 @@
                 const td = (trip.dayType || "").toLowerCase();
                 if (td && td !== today) continue;
                 if (trip.validDates) {
-                    const isoToday = now.toISOString().slice(0, 10);
+                    // Build the date from Athens wall-clock parts, NOT toISOString
+                    // (that returns the shifted-epoch UTC day and would be off by
+                    // one for the early-morning Athens hours).
+                    const isoToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
                     if (!trip.validDates.split(",").includes(isoToday)) continue;
                 }
                 const stops = trip.stops;
@@ -3967,7 +3989,7 @@
                     const from = intent.from ? stationMap.get(intent.from) : null;
                     const to = intent.to ? stationMap.get(intent.to) : null;
                     if (!from || !to) return { text: window.SyrmosAriadne.outOfScope(currentLang) };
-                    const now = new Date();
+                    const now = athensNow();
                     const nowMin = now.getHours() * 60 + now.getMinutes();
                     const roughDuration = 25;
                     const targetMin = intent.arriveByMinutes != null
@@ -4288,18 +4310,22 @@
                     if (boardNode && typeof buildStationDepartures === "function") {
                         try {
                             const deps = buildStationDepartures(boardNode) || [];
-                            const now = new Date();
-                            const nowMin = now.getHours() * 60 + now.getMinutes();
+                            // deps carry minutesAway (always >= 0 and already
+                            // midnight-correct); the soonest upcoming train is
+                            // just the smallest. Re-parsing the wrapped HH:MM and
+                            // comparing to a wall-clock "now" broke after midnight
+                            // (a 00:10 train has mins=10, never > a 23:xx now) and
+                            // silently skipped suburban rows.
                             for (const d of deps) {
-                                const m = /^(\d{1,2}):(\d{2})$/.exec(d.time || "");
-                                if (!m) continue;
-                                const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-                                if (mins > nowMin) { nextDep = { time: d.time, mins }; break; }
+                                if (d.minutesAway == null) continue;
+                                if (nextDep == null || d.minutesAway < nextDep.mins) {
+                                    nextDep = { time: d.time || "", mins: d.minutesAway };
+                                }
                             }
                         } catch (_) {}
                     }
                     if (nextDep && fromName) {
-                        const wait = nextDep.mins - (new Date().getHours() * 60 + new Date().getMinutes());
+                        const wait = nextDep.mins;
                         const text = currentLang === "el"
                             ? `Ναι. Επόμενο δρομολόγιο από ${fromName} στις ${nextDep.time} (σε ${wait} λεπτά) προς ${toName}.`
                             : currentLang === "sq"
