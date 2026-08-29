@@ -44,8 +44,12 @@ final class SyrmosRouteShapesStore: @unchecked Sendable {
         else { return [:] }
         var built: [String: [CLLocationCoordinate2D]] = [:]
         for (lineId, shape) in payload.shapes {
-            built[lineId] = shape.coordinates.map {
-                CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1])
+            // Guard each pair's length — a malformed/truncated shapes.json entry
+            // (e.g. [[38.07, 23.80], [38.08]]) would otherwise trap on $0[1] and
+            // crash the map at static init. Drop bad pairs, matching the Android
+            // and KMP loaders. The bundled file is clean today; this is defensive.
+            built[lineId] = shape.coordinates.compactMap {
+                $0.count >= 2 ? CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) : nil
             }
         }
         return built
