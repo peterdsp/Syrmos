@@ -589,6 +589,20 @@ The same architecture applies on all platforms:
 | Entity details | Page or bottom sheet | Context rail beside map or content |
 | Full inventory | Full-screen list | Split view or data table |
 
+**Web amendment (v1.2.11, approved 2026-08-29).** On web only, the primary
+navigation is refined to five task workspaces — **Now, Plan, Explore,
+Departures, Tickets** — around a permanent map canvas. Map is the canvas, not a
+navigation item; the former **More** contents move to rail-bottom utility
+controls (settings, language, theme, offline data, about) with a persistent
+service-health indicator on the rail; **Tickets** and **Plan** are promoted to
+workspaces (see §19.11, §19.12). iOS and Android keep Model A's bottom-tab set
+(Home, Network, Map, Departures, More). Ariadne remains a global action, never a
+workspace, on every platform. Rationale: on web the map is always present as the
+canvas, so a Map tab is redundant; a "More" drawer hid Tickets and settings; and
+promoting Plan and Tickets matches the two most common web tasks. Each web
+workspace must be a genuinely different panel task with its own deep-linkable
+URL, never a scroll anchor on one long document.
+
 ### 19.4 Responsive shell
 
 | Width | Navigation | Content model |
@@ -850,6 +864,13 @@ estimated price.
 Tickets and fares lives in More and appears contextually on route, line,
 station, and Ariadne answers.
 
+**Web amendment (v1.2.11).** On web, Tickets is a top-level workspace: a fare
+finder that leads with the most relevant product (From / To / rider type), states
+airport exclusions and operator restrictions prominently, keeps the full
+catalogue behind operator/category filters, and moves long rules into a
+searchable Guide. It still appears contextually (two or three relevant rules)
+beside a selected route, line, station, and Ariadne answer.
+
 ### 19.12 More and settings
 
 Settings becomes the **More** destination with traveler-focused groups:
@@ -863,6 +884,11 @@ Settings becomes the **More** destination with traveler-focused groups:
 
 Developer diagnostics remain available behind an explicit developer entry.
 They do not sit among common traveler settings.
+
+**Web amendment (v1.2.11).** On web there is no "More" workspace. These groups
+relocate to rail-bottom utility controls (settings, language, theme, offline
+data) plus a persistent service-health indicator on the rail; Tickets is its own
+workspace (§19.11). iOS and Android keep the More destination unchanged.
 
 ### 19.13 Alerts, weather, and service notices
 
