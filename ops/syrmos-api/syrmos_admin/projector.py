@@ -849,8 +849,16 @@ def active_trains(
         yesterday_weekday = 7 if weekday == 1 else weekday - 1
         yesterday_dt = _day_type(yesterday_weekday, None)
         descriptors.append((yesterday_dt, -24 * 60, False))
+        # Overnight continuation: yesterday's early-morning (< 05:00) bands
+        # projected at TODAY's clock. This is how Saturday-night 24h service
+        # (M2/M3/T6/T7) that runs past midnight into Sunday shows as active
+        # trains on the map. Mirrors _project_line's next-day extension so the
+        # map and the departures list agree; without it active_trains went dark
+        # after midnight even though weekend all-night trains were running.
+        if now_minutes < 6 * 60 and yesterday_dt != today_dt:
+            descriptors.append((yesterday_dt, 0, True))
 
-        for dt, shift, _next_day_only in descriptors:
+        for dt, shift, next_day_only in descriptors:
             rule = next((r for r in bundle["rules"] if r["dayType"] == dt), None)
             if rule is None:
                 continue
@@ -886,8 +894,12 @@ def active_trains(
                     effective_now = now_minutes - shift
                     # 2-hour slack on either side so a train that departed
                     # right before service open or right after close is still
-                    # found when interpolating its tail end.
-                    if effective_now < open_min - 120 or effective_now > effective_close + 120:
+                    # found when interpolating its tail end. The next-day
+                    # extension descriptor deliberately runs BEFORE the day's
+                    # open time (it is the overnight tail), so skip the lower
+                    # bound for it and only reject bands fully past close.
+                    too_early = (not next_day_only) and effective_now < open_min - 120
+                    if too_early or effective_now > effective_close + 120:
                         continue
 
             open_min_rule_at = _minutes_of_day(rule["openTime"]) if rule else None
@@ -895,8 +907,13 @@ def active_trains(
             for b in bundle["bands"]:
                 if b["dayType"] != dt:
                     continue
-                if shift == 0 and rule is not None and not rule["is247"]:
-                    rs = _minutes_of_day(b["timeStart"])
+                rs = _minutes_of_day(b["timeStart"])
+                if next_day_only:
+                    # Only the overnight-extension bands (before ~05:00) belong
+                    # to the next civil day; skip everything else.
+                    if rs is None or rs >= NEXT_DAY_EXTENSION_CUTOFF_MIN:
+                        continue
+                elif shift == 0 and rule is not None and not rule["is247"]:
                     if (rs is not None and open_min_rule_at is not None
                             and rs < open_min_rule_at
                             and rs < NEXT_DAY_EXTENSION_CUTOFF_MIN):
