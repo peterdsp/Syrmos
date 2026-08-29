@@ -1203,10 +1203,19 @@ struct SyrmosMKMapView: UIViewRepresentable {
                     mv.removeAnnotation(ann)
                 }
             case .live(let t):
-                if !wantLive.keys.contains(t.id) {
-                    mv.removeAnnotation(ann)
-                } else {
+                if let train = wantLive[t.id] {
+                    // Refresh the live train in place: move the ring pin to its
+                    // new GPS position (snapped to the track) and replace the
+                    // telemetry snapshot. Without this the marker froze at its
+                    // first-seen coordinate for the train's whole run — live
+                    // trains have no tick descriptor, so the reconcile is the
+                    // only thing that can move them. Mirrors Android.
+                    ann.kind = .live(train)
+                    ann.coordinate = context.coordinator.snapToPolyline(
+                        coord: train.coordinate, lineId: train.lineId)
                     seenLive.insert(t.id)
+                } else {
+                    mv.removeAnnotation(ann)
                 }
             }
         }
@@ -1350,6 +1359,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
 
         func dropDescriptor(id: String) {
             descriptors.removeValue(forKey: id)
+            // Also prune the bearing cache — simulated-train ids are unique per
+            // departure, so without this it accumulates one dead entry per train
+            // for the life of the process (slow leak over a long session).
+            smoothBearings.removeValue(forKey: id)
         }
 
         func detachDisplayLink() {
@@ -1786,7 +1799,11 @@ final class SyrmosStationAnnotation: NSObject, MKAnnotation {
 }
 
 final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
-    let kind: MapVehicleSelection
+    // Mutable so a persisting live train's fresh telemetry (position, speed,
+    // next station, delay) can be written on each poll — didSelect reads .kind
+    // at tap time, so the detail sheet stays current instead of showing the
+    // first-seen snapshot. id/lineId derive from the stable train id.
+    var kind: MapVehicleSelection
     @objc dynamic var coordinate: CLLocationCoordinate2D
     var id: String {
         switch kind {
