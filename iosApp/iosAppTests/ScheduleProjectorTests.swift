@@ -165,3 +165,54 @@ final class ScheduleProjectorTests: XCTestCase {
         }
     }
 }
+
+/// Locks the airport-hub model that drives the Airport tab. The Thessaloniki
+/// metro-leg station/line IDs must match the seeded data
+/// (ops/.../seed_thessaloniki_airport_buses.py + schedules-v2/lines.json), or
+/// the "Metro departures to the airport shuttle" list silently goes empty.
+/// The Kotlin side (feature/schedule/AirportHubScreen.kt) mirrors these exact
+/// IDs, so a change here is a change there.
+final class AirportHubTests: XCTestCase {
+
+    func testAthensHubHasDirectRail() {
+        let hub = AirportHub.hub(.athens)
+        XCTAssertEqual(hub.code, "ATH")
+        XCTAssertEqual(hub.name, "Eleftherios Venizelos")
+        XCTAssertTrue(hub.hasDirectRail)
+        XCTAssertEqual(hub.airportStationId, "M3_AER")
+        XCTAssertTrue(hub.directRailLineIds.contains("M3"))
+        XCTAssertTrue(hub.directRailLineIds.contains("A1"))
+        XCTAssertTrue(hub.directRailLineIds.contains("A2"))
+        XCTAssertTrue(hub.connections.isEmpty, "Athens uses the rich rail cards, not the connections list")
+    }
+
+    func testThessalonikiHubIsBusFedWithNoDirectRail() {
+        let hub = AirportHub.hub(.thessaloniki)
+        XCTAssertEqual(hub.code, "SKG")
+        XCTAssertEqual(hub.name, "Makedonia")
+        XCTAssertFalse(hub.hasDirectRail)
+        XCTAssertTrue(hub.airportStationId.isEmpty, "the terminal is reached by bus, not direct rail")
+    }
+
+    func testThessalonikiConnectionsCoverMetroShuttleAndDirectBus() {
+        let hub = AirportHub.hub(.thessaloniki)
+        XCTAssertEqual(hub.connections.map(\.badge), ["L2 + X3", "L1 + 2X", "1X / 1N", "79"])
+        // The two metro+shuttle options are rail-led; the two direct options are bus.
+        XCTAssertEqual(hub.connections.filter { $0.mode == .metroBus }.count, 2)
+        XCTAssertEqual(hub.connections.filter { $0.mode == .bus }.count, 2)
+    }
+
+    func testThessalonikiMetroLegsMatchSeededInterchangeIds() {
+        let hub = AirportHub.hub(.thessaloniki)
+        XCTAssertEqual(hub.metroLegs.map(\.stationId), ["TM2_MIK", "TM1_NEL"])
+        XCTAssertEqual(hub.metroLegs.map(\.lineIds), [["TM2"], ["TM1"]])
+    }
+
+    func testHubLocalizationFallsBackToEnglish() {
+        let hub = AirportHub.hub(.thessaloniki)
+        XCTAssertTrue(hub.subtitle.text(.english).contains("Metro"))
+        XCTAssertTrue(hub.subtitle.text(.greek).contains("Μετρό"))
+        // An unmapped language uses the English default.
+        XCTAssertEqual(hub.cityName.text(.english), "Thessaloniki")
+    }
+}

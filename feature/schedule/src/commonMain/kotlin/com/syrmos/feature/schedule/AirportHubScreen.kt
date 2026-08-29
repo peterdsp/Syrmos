@@ -94,8 +94,10 @@ fun AirportHubScreen(
     val zone = remember { TimeZone.of("Europe/Athens") }
 
     var dayOffset by remember { mutableIntStateOf(0) }
+    var selectedCity by remember { mutableStateOf(AirportCity.ATHENS) }
     var selectedRoute by remember { mutableStateOf("M3") }
     var flightMinutes by remember { mutableIntStateOf(18 * 60 + 40) }
+    val hub = remember(selectedCity) { airportHub(selectedCity) }
 
     val selectedTrip = remember(calendarTrips, dayOffset) {
         val selectedDate = airportTodayPlus(dayOffset)
@@ -147,6 +149,20 @@ fun AirportHubScreen(
             now = now,
         ).filter { it.destinationLabel.isAirportLabel() }
     }
+    // Thessaloniki: next metro departures at each interchange that feeds an
+    // airport shuttle (the shuttle bus itself has no per-stop timetable).
+    val metroLegDepartures = remember(bundles, offsets, dayOffset, now.date, selectedCity) {
+        hub.metroLegs.associate { leg ->
+            leg.stationId to DepartureProjection.compute(
+                bundles = bundles,
+                offsets = offsetsRepo,
+                stationId = leg.stationId,
+                lineId = leg.lineId,
+                dayOffset = dayOffset,
+                now = now,
+            )
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -158,7 +174,11 @@ fun AirportHubScreen(
             .padding(top = 8.dp, bottom = 126.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        AirportHero(lang)
+        AirportHero(hub, lang)
+        AirportCitySelector(selectedCity, lang, onSelect = {
+            selectedCity = it
+            selectedRoute = "M3"
+        })
         CalendarHub(
             lang = lang,
             selectedDay = dayOffset,
@@ -169,32 +189,38 @@ fun AirportHubScreen(
             onDaySelected = { dayOffset = it },
             onFlightMinutesChanged = { flightMinutes = it.coerceIn(0, 1439) },
         )
-        AirportRouteOverview(lang, selectedRoute, dayOffset, onRouteSelected = { selectedRoute = it })
-        PredictiveItinerary(lang, flightMinutes, airportBoundDepartures, selectedTrip?.title)
-        NextAirportServices(lang, dayOffset, airportDepartures, suburbanAirportDepartures, now.time.hour * 60 + now.time.minute)
-        Text(
-            text = airportText(lang, "Airport services", "Υπηρεσίες αεροδρομίου", "Shërbimet e aeroportit", "Servizi aeroportuali"),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
-        AirportDepartureRows(lang, dayOffset, airportDepartures, suburbanAirportDepartures)
+        if (hub.hasDirectRail) {
+            AirportRouteOverview(lang, selectedRoute, dayOffset, onRouteSelected = { selectedRoute = it })
+            PredictiveItinerary(lang, flightMinutes, airportBoundDepartures, selectedTrip?.title)
+            NextAirportServices(lang, dayOffset, airportDepartures, suburbanAirportDepartures, now.time.hour * 60 + now.time.minute)
+            Text(
+                text = airportText(lang, "Airport services", "Υπηρεσίες αεροδρομίου", "Shërbimet e aeroportit", "Servizi aeroportuali"),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            AirportDepartureRows(lang, dayOffset, airportDepartures, suburbanAirportDepartures)
+        } else {
+            AirportConnections(hub, lang)
+            Text(
+                text = airportText(lang, "Metro departures to the airport shuttle", "Αναχωρήσεις μετρό προς το λεωφορείο αεροδρομίου", "Nisjet e metros drejt autobusit të aeroportit", "Partenze metro verso la navetta aeroporto"),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            AirportMetroLegs(hub, lang, dayOffset, metroLegDepartures, now.time.hour * 60 + now.time.minute)
+        }
         AirportAlert(lang)
     }
 }
 
 @Composable
-private fun AirportHero(lang: AppLanguage) {
+private fun AirportHero(hub: AirportHubData, lang: AppLanguage) {
     val shape = RoundedCornerShape(28.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(12.dp, shape)
             .clip(shape)
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF0B3D71), Color(0xFF155E9F), Color(0xFF45398F)),
-                ),
-            )
+            .background(Brush.linearGradient(hub.gradient))
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -212,22 +238,139 @@ private fun AirportHero(lang: AppLanguage) {
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.82f),
                 )
-                Text("Eleftherios Venizelos", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(hub.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(
-                    airportText(lang, "Routes, scheduled departures and trip planning", "Διαδρομές, προγραμματισμένες αναχωρήσεις και σχεδιασμός", "Linja, nisje të programuara dhe planifikim udhëtimi", "Percorsi, partenze programmate e pianificazione"),
+                    hub.subtitle.t(lang),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.82f),
                 )
             }
+            Surface(color = Color.White.copy(alpha = 0.16f), shape = CircleShape) {
+                Text(hub.code, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            HeroPill("M3", Icons.Filled.Train)
-            HeroPill("A1", Icons.Filled.Train)
-            HeroPill("X95", Icons.Filled.DirectionsBus)
-            HeroPill("24/7", Icons.Filled.AccessTime)
+            hub.pills.forEach { (label, icon) -> HeroPill(label, icon) }
             Spacer(Modifier.weight(1f))
             Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF63E6A6)))
             Text(airportText(lang, "Schedules", "Ωράρια", "Oraret", "Orari"), color = Color.White, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun AirportCitySelector(selected: AirportCity, lang: AppLanguage, onSelect: (AirportCity) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        listOf(airportHub(AirportCity.ATHENS), airportHub(AirportCity.THESSALONIKI)).forEach { hub ->
+            val isSelected = hub.city == selected
+            val shape = RoundedCornerShape(14.dp)
+            val background: Modifier = if (isSelected) {
+                Modifier.background(Brush.horizontalGradient(hub.gradient), shape)
+            } else {
+                Modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f), shape)
+            }
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(shape)
+                    .then(background)
+                    .clickable { onSelect(hub.city) }
+                    .padding(vertical = 10.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    Icons.Filled.AirplanemodeActive,
+                    null,
+                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(14.dp),
+                )
+                Column {
+                    Text(hub.cityName.t(lang), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface)
+                    Text(hub.code, style = MaterialTheme.typography.labelSmall, color = if (isSelected) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AirportConnections(hub: AirportHubData, lang: AppLanguage) {
+    AirportCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(airportText(lang, "How to reach the airport", "Πώς να φτάσετε στο αεροδρόμιο", "Si të shkoni në aeroport", "Come raggiungere l'aeroporto"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    airportText(lang, "The metro does not reach the terminal yet, so finish on a shuttle bus.", "Το μετρό δεν φτάνει ακόμη στον τερματικό, οπότε ολοκληρώστε με λεωφορείο.", "Metroja nuk arrin ende te terminali, prandaj përfundoni me autobus.", "La metro non arriva ancora al terminal, quindi si prosegue in navetta."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            hub.connections.forEach { c ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)).padding(12.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Surface(shape = RoundedCornerShape(11.dp), color = c.color, modifier = Modifier.size(38.dp)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(if (c.isBus) Icons.Filled.DirectionsBus else Icons.Filled.Train, null, tint = Color.White, modifier = Modifier.size(19.dp))
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Surface(shape = CircleShape, color = c.color.copy(alpha = 0.12f)) {
+                                Text(c.badge, color = c.color, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+                            }
+                            Text(c.title.t(lang), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        }
+                        Text(c.detail.t(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Text(
+                airportText(lang, "Shuttle and city bus times are set by OASTH/OSETH. The metro departures below are live from the timetable.", "Τα δρομολόγια λεωφορείων ορίζονται από τον ΟΑΣΘ/ΟΣΕΘ. Οι αναχωρήσεις μετρό παρακάτω είναι από το ωράριο.", "Oraret e autobusëve caktohen nga OASTH/OSETH. Nisjet e metros më poshtë janë nga orari.", "Gli orari dei bus sono fissati da OASTH/OSETH. Le partenze metro qui sotto sono da orario."),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AirportMetroLegs(hub: AirportHubData, lang: AppLanguage, dayOffset: Int, legDepartures: Map<String, List<ProjectedDeparture>>, nowMinutes: Int) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        hub.metroLegs.forEach { leg ->
+            val deps = legDepartures[leg.stationId].orEmpty()
+            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 3.dp) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Surface(shape = CircleShape, color = leg.color, modifier = Modifier.size(34.dp)) {
+                            Box(contentAlignment = Alignment.Center) { Text(leg.badge, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(leg.stationName.t(lang), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(leg.towards.t(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (deps.isEmpty()) {
+                        Text(
+                            airportText(lang, "No scheduled metro departure in the current window.", "Καμία προγραμματισμένη αναχώρηση μετρό αυτή τη στιγμή.", "Asnjë nisje e programuar e metros tani.", "Nessuna partenza metro programmata al momento."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            deps.take(4).forEach { dep ->
+                                val label = if (dayOffset == 0) formatMinutes((dep.timeMinutes - nowMinutes).coerceAtLeast(0), lang) else dep.time
+                                Surface(shape = CircleShape, color = leg.color.copy(alpha = 0.12f)) {
+                                    Text(label, color = leg.color, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -556,6 +699,157 @@ private fun AirportCard(content: @Composable () -> Unit) {
 }
 
 private data class AirportRow(val route: String, val destination: String, val detail: String, val time: String, val color: Color)
+
+// MARK: - Multi-airport hubs (mirrors iOS AirportData.swift)
+
+enum class AirportCity { ATHENS, THESSALONIKI }
+
+private data class AirportL10n(val en: String, val el: String, val sq: String, val it: String) {
+    fun t(lang: AppLanguage): String = airportText(lang, en, el, sq, it)
+}
+
+private data class AirportConnectionData(
+    val badge: String,
+    val color: Color,
+    val isBus: Boolean,
+    val title: AirportL10n,
+    val detail: AirportL10n,
+)
+
+private data class AirportMetroLegData(
+    val stationId: String,
+    val lineId: String,
+    val badge: String,
+    val color: Color,
+    val stationName: AirportL10n,
+    val towards: AirportL10n,
+)
+
+private data class AirportHubData(
+    val city: AirportCity,
+    val code: String,
+    val name: String,
+    val cityName: AirportL10n,
+    val subtitle: AirportL10n,
+    val gradient: List<Color>,
+    val pills: List<Pair<String, ImageVector>>,
+    val hasDirectRail: Boolean,
+    val connections: List<AirportConnectionData>,
+    val metroLegs: List<AirportMetroLegData>,
+)
+
+private fun airportHub(city: AirportCity): AirportHubData = when (city) {
+    AirportCity.ATHENS -> AirportHubData(
+        city = city,
+        code = "ATH",
+        name = "Eleftherios Venizelos",
+        cityName = AirportL10n("Athens", "Αθήνα", "Athinë", "Atene"),
+        subtitle = AirportL10n(
+            "Routes, scheduled departures and trip planning",
+            "Διαδρομές, προγραμματισμένες αναχωρήσεις και σχεδιασμός",
+            "Linja, nisje të programuara dhe planifikim udhëtimi",
+            "Percorsi, partenze programmate e pianificazione",
+        ),
+        gradient = listOf(Color(0xFF0B3D71), Color(0xFF155E9F), Color(0xFF45398F)),
+        pills = listOf(
+            "M3" to Icons.Filled.Train,
+            "A1" to Icons.Filled.Train,
+            "X95" to Icons.Filled.DirectionsBus,
+            "24/7" to Icons.Filled.AccessTime,
+        ),
+        hasDirectRail = true,
+        connections = emptyList(),
+        metroLegs = emptyList(),
+    )
+    AirportCity.THESSALONIKI -> AirportHubData(
+        city = city,
+        code = "SKG",
+        name = "Makedonia",
+        cityName = AirportL10n("Thessaloniki", "Θεσσαλονίκη", "Selanik", "Salonicco"),
+        subtitle = AirportL10n(
+            "Metro plus a shuttle, or a direct bus to the terminal",
+            "Μετρό και λεωφορείο, ή απευθείας λεωφορείο στον τερματικό",
+            "Metro plus autobus, ose autobus i drejtpërdrejtë te terminali",
+            "Metro più navetta, o bus diretto al terminal",
+        ),
+        gradient = listOf(Color(0xFF0B5563), Color(0xFF0E7C8B), Color(0xFF1E5FA0)),
+        pills = listOf(
+            "L2" to Icons.Filled.Train,
+            "X3" to Icons.Filled.DirectionsBus,
+            "1X" to Icons.Filled.DirectionsBus,
+            "24/7" to Icons.Filled.AccessTime,
+        ),
+        hasDirectRail = false,
+        connections = listOf(
+            AirportConnectionData(
+                badge = "L2 + X3",
+                color = Color(0xFF0070FF),
+                isBus = false,
+                title = AirportL10n("Metro Line 2 + X3 shuttle", "Μετρό Γραμμή 2 + λεωφορείο Χ3", "Metro Linja 2 + autobusi X3", "Metro Linea 2 + navetta X3"),
+                detail = AirportL10n(
+                    "Ride Line 2 to Mikra, then the X3 shuttle to the terminal (about 10 min).",
+                    "Με τη Γραμμή 2 ως τη Μίκρα, μετά το λεωφορείο Χ3 στον τερματικό (περίπου 10 λεπτά).",
+                    "Merr Linjën 2 deri te Mikra, pastaj autobusin X3 te terminali (rreth 10 min).",
+                    "Con la Linea 2 fino a Mikra, poi la navetta X3 al terminal (circa 10 min).",
+                ),
+            ),
+            AirportConnectionData(
+                badge = "L1 + 2X",
+                color = Color(0xFFFF0000),
+                isBus = false,
+                title = AirportL10n("Metro Line 1 + 2X shuttle", "Μετρό Γραμμή 1 + λεωφορείο 2Χ", "Metro Linja 1 + autobusi 2X", "Metro Linea 1 + navetta 2X"),
+                detail = AirportL10n(
+                    "Ride Line 1 to Nea Elvetia, then the 2X shuttle to the terminal.",
+                    "Με τη Γραμμή 1 ως τη Νέα Ελβετία, μετά το λεωφορείο 2Χ στον τερματικό.",
+                    "Merr Linjën 1 deri te Nea Elvetia, pastaj autobusin 2X te terminali.",
+                    "Con la Linea 1 fino a Nea Elvetia, poi la navetta 2X al terminal.",
+                ),
+            ),
+            AirportConnectionData(
+                badge = "1X / 1N",
+                color = Color(0xFF5B6770),
+                isBus = true,
+                title = AirportL10n("Direct airport bus", "Απευθείας λεωφορείο αεροδρομίου", "Autobus i drejtpërdrejtë", "Bus diretto aeroporto"),
+                detail = AirportL10n(
+                    "1X links the terminal with the city centre, the New Railway Station and KTEL Makedonia. 1N runs overnight.",
+                    "Το 1Χ συνδέει τον τερματικό με το κέντρο, τον Νέο Σιδηροδρομικό Σταθμό και τα ΚΤΕΛ Μακεδονία. Το 1Ν λειτουργεί τη νύχτα.",
+                    "1X lidh terminalin me qendrën, Stacionin e Ri Hekurudhor dhe KTEL Makedonia. 1N punon natën.",
+                    "1X collega il terminal con il centro, la nuova stazione ferroviaria e KTEL Makedonia. 1N opera di notte.",
+                ),
+            ),
+            AirportConnectionData(
+                badge = "79",
+                color = Color(0xFF5B6770),
+                isBus = true,
+                title = AirportL10n("Bus 79", "Λεωφορείο 79", "Autobusi 79", "Autobus 79"),
+                detail = AirportL10n(
+                    "Connects the terminal with the eastern bus station (IKEA / Pylaia).",
+                    "Συνδέει τον τερματικό με τον ανατολικό σταθμό υπεραστικών (IKEA / Πυλαία).",
+                    "Lidh terminalin me stacionin lindor të autobusëve (IKEA / Pylaia).",
+                    "Collega il terminal con la stazione bus orientale (IKEA / Pylaia).",
+                ),
+            ),
+        ),
+        metroLegs = listOf(
+            AirportMetroLegData(
+                stationId = "TM2_MIK",
+                lineId = "TM2",
+                badge = "L2",
+                color = Color(0xFF0070FF),
+                stationName = AirportL10n("Mikra", "Μίκρα", "Mikra", "Mikra"),
+                towards = AirportL10n("X3 shuttle to the terminal", "Λεωφορείο Χ3 στον τερματικό", "Autobusi X3 te terminali", "Navetta X3 al terminal"),
+            ),
+            AirportMetroLegData(
+                stationId = "TM1_NEL",
+                lineId = "TM1",
+                badge = "L1",
+                color = Color(0xFFFF0000),
+                stationName = AirportL10n("Nea Elvetia", "Νέα Ελβετία", "Nea Elvetia", "Nea Elvetia"),
+                towards = AirportL10n("2X shuttle to the terminal", "Λεωφορείο 2Χ στον τερματικό", "Autobusi 2X te terminali", "Navetta 2X al terminal"),
+            ),
+        ),
+    )
+}
 
 private fun airportText(lang: AppLanguage, en: String, el: String, sq: String, it: String): String = when (lang) {
     AppLanguage.GREEK -> el

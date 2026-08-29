@@ -96,12 +96,19 @@ private final class AirportCalendarStore: ObservableObject {
 struct TimetablesView: View {
     @ObservedObject private var loc = LocalizationManager.shared
     @State private var dayOffset: Int = 0
+    @State private var selectedCity: AirportCity = .athens
     @State private var selectedRoute = "M3"
     @State private var airportDepartures: [Departure] = []
     @State private var cityAirportDepartures: [Departure] = []
+    /// Thessaloniki only: next metro departures at each interchange station
+    /// (Mikra on L2, Nea Elvetia on L1) that feeds an airport shuttle, keyed by
+    /// station id. Athens is fed by direct rail so it uses the two lists above.
+    @State private var metroLegDepartures: [String: [Departure]] = [:]
     @State private var flightTime = TimetablesView.defaultFlightTime
     @State private var nowTick = Date()
     @StateObject private var calendarStore = AirportCalendarStore()
+
+    private var hub: AirportHub { AirportHub.hub(selectedCity) }
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
@@ -118,7 +125,9 @@ struct TimetablesView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 14) {
-                    AirportHeroCard(language: loc.language)
+                    AirportHeroCard(hub: hub, language: loc.language)
+
+                    AirportCityPicker(selectedCity: $selectedCity, language: loc.language)
 
                     AirportCalendarHub(
                         language: loc.language,
@@ -129,41 +138,62 @@ struct TimetablesView: View {
                         onConnectCalendar: { Task { await calendarStore.connect() } }
                     )
 
-                    AirportRouteMapCard(
-                        language: loc.language,
-                        selectedRoute: $selectedRoute,
-                        dayOffset: dayOffset
-                    )
-
-                    AirportPredictiveCard(
-                        language: loc.language,
-                        dayOffset: dayOffset,
-                        flightTime: flightTime,
-                        airportBoundDepartures: cityAirportDepartures,
-                        tripTitle: selectedCalendarEvent?.title
-                    )
-
-                    AirportNextServicesCard(
-                        language: loc.language,
-                        dayOffset: dayOffset,
-                        metroDepartures: airportDepartures
-                    )
-
-                    airportSectionTitle(
-                        airportText(
-                            loc.language,
-                            "Airport services",
-                            "Υπηρεσίες αεροδρομίου",
-                            "Shërbimet e aeroportit",
-                            "Servizi aeroportuali"
+                    if hub.hasDirectRail {
+                        AirportRouteMapCard(
+                            language: loc.language,
+                            selectedRoute: $selectedRoute,
+                            dayOffset: dayOffset
                         )
-                    )
 
-                    AirportDepartureList(
-                        language: loc.language,
-                        dayOffset: dayOffset,
-                        metroDepartures: airportDepartures
-                    )
+                        AirportPredictiveCard(
+                            language: loc.language,
+                            dayOffset: dayOffset,
+                            flightTime: flightTime,
+                            airportBoundDepartures: cityAirportDepartures,
+                            tripTitle: selectedCalendarEvent?.title
+                        )
+
+                        AirportNextServicesCard(
+                            language: loc.language,
+                            dayOffset: dayOffset,
+                            metroDepartures: airportDepartures
+                        )
+
+                        airportSectionTitle(
+                            airportText(
+                                loc.language,
+                                "Airport services",
+                                "Υπηρεσίες αεροδρομίου",
+                                "Shërbimet e aeroportit",
+                                "Servizi aeroportuali"
+                            )
+                        )
+
+                        AirportDepartureList(
+                            language: loc.language,
+                            dayOffset: dayOffset,
+                            metroDepartures: airportDepartures
+                        )
+                    } else {
+                        AirportConnectionsCard(hub: hub, language: loc.language)
+
+                        airportSectionTitle(
+                            airportText(
+                                loc.language,
+                                "Metro departures to the airport shuttle",
+                                "Αναχωρήσεις μετρό προς το λεωφορείο αεροδρομίου",
+                                "Nisjet e metros drejt autobusit të aeroportit",
+                                "Partenze metro verso la navetta aeroporto"
+                            )
+                        )
+
+                        AirportMetroLegsCard(
+                            hub: hub,
+                            language: loc.language,
+                            dayOffset: dayOffset,
+                            departuresByStation: metroLegDepartures
+                        )
+                    }
 
                     AirportServiceAlertCard(language: loc.language)
                 }
@@ -183,6 +213,10 @@ struct TimetablesView: View {
                 nowTick = Date()
                 reload()
             }
+            .onChange(of: selectedCity) { _, _ in
+                selectedRoute = "M3"
+                reload()
+            }
             .onChange(of: dayOffset) { _, _ in
                 reload()
                 if let event = selectedCalendarEvent { flightTime = event.startDate }
@@ -195,10 +229,30 @@ struct TimetablesView: View {
 
     private func reload() {
         let selectedDay = dayOffset
+        let currentHub = hub
         Task { @MainActor in
+            guard currentHub.hasDirectRail else {
+                // Thessaloniki: no direct rail. Surface the next metro departures
+                // at each interchange that feeds an airport shuttle.
+                airportDepartures = []
+                cityAirportDepartures = []
+                var legs: [String: [Departure]] = [:]
+                for leg in currentHub.metroLegs {
+                    legs[leg.stationId] = ScheduleProjector.nextDepartures(
+                        for: leg.stationId,
+                        lineIds: leg.lineIds,
+                        limit: 6,
+                        dayOffset: selectedDay,
+                        timeHorizonMinutes: 180
+                    )
+                }
+                metroLegDepartures = legs
+                return
+            }
+            metroLegDepartures = [:]
             airportDepartures = ScheduleProjector.nextDepartures(
-                for: "M3_AER",
-                lineIds: ["M3", "M3_AIR", "A1", "A2"],
+                for: currentHub.airportStationId,
+                lineIds: currentHub.directRailLineIds,
                 limit: 24,
                 dayOffset: selectedDay
             )
@@ -215,6 +269,7 @@ struct TimetablesView: View {
 // MARK: - Airport hub
 
 private struct AirportHeroCard: View {
+    let hub: AirportHub
     let language: AppLanguage
 
     var body: some View {
@@ -229,26 +284,25 @@ private struct AirportHeroCard: View {
                         .font(.caption.weight(.bold))
                         .tracking(1.2)
                         .opacity(0.82)
-                    Text("Eleftherios Venizelos")
+                    Text(hub.name)
                         .font(.title2.bold())
-                    Text(airportText(
-                        language,
-                        "Routes, scheduled departures and trip planning",
-                        "Διαδρομές, προγραμματισμένες αναχωρήσεις και σχεδιασμός",
-                        "Linja, nisje të programuara dhe planifikim udhëtimi",
-                        "Percorsi, partenze programmate e pianificazione"
-                    ))
-                    .font(.caption)
-                    .opacity(0.82)
+                    Text(hub.subtitle.text(language))
+                        .font(.caption)
+                        .opacity(0.82)
                 }
                 Spacer(minLength: 0)
+                Text(hub.code)
+                    .font(.caption.weight(.bold))
+                    .tracking(1)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.white.opacity(0.16), in: Capsule())
             }
 
             HStack(spacing: 10) {
-                airportHeroPill("M3", "tram.fill")
-                airportHeroPill("A1", "tram.fill")
-                airportHeroPill("X95", "bus.fill")
-                airportHeroPill("24/7", "clock.fill")
+                ForEach(Array(hub.pills.enumerated()), id: \.offset) { _, pill in
+                    airportHeroPill(pill.title, pill.icon)
+                }
                 Spacer()
                 HStack(spacing: 5) {
                     Circle().fill(Color(hex: 0x63E6A6)).frame(width: 8, height: 8)
@@ -261,13 +315,13 @@ private struct AirportHeroCard: View {
         .padding(18)
         .background(
             LinearGradient(
-                colors: [Color(hex: 0x0B3D71), Color(hex: 0x155E9F), Color(hex: 0x45398F)],
+                colors: hub.gradient.map { Color(hex: $0) },
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             ),
             in: RoundedRectangle(cornerRadius: 28, style: .continuous)
         )
-        .shadow(color: Color(hex: 0x0B3D71).opacity(0.22), radius: 14, y: 8)
+        .shadow(color: Color(hex: hub.gradient.first ?? 0x0B3D71).opacity(0.22), radius: 14, y: 8)
         .accessibilityElement(children: .combine)
     }
 
@@ -277,6 +331,48 @@ private struct AirportHeroCard: View {
             .padding(.horizontal, 9)
             .padding(.vertical, 6)
             .background(.white.opacity(0.14), in: Capsule())
+    }
+}
+
+// MARK: - Airport city switcher
+
+private struct AirportCityPicker: View {
+    @Binding var selectedCity: AirportCity
+    let language: AppLanguage
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(AirportHub.all) { hub in
+                let isSelected = hub.city == selectedCity
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedCity = hub.city }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "airplane")
+                            .font(.caption2.weight(.bold))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(hub.cityName.text(language))
+                                .font(.caption.weight(.bold))
+                            Text(hub.code)
+                                .font(.system(size: 9, weight: .semibold))
+                                .opacity(0.7)
+                        }
+                    }
+                    .foregroundStyle(isSelected ? .white : Color.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        isSelected
+                            ? AnyShapeStyle(LinearGradient(colors: hub.gradient.map { Color(hex: $0) }, startPoint: .leading, endPoint: .trailing))
+                            : AnyShapeStyle(Color.primary.opacity(0.06)),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(hub.cityName.text(language))
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
     }
 }
 
@@ -699,6 +795,136 @@ private struct AirportListRow {
     let detail: String
     let time: String
     let color: Color
+}
+
+// MARK: - Thessaloniki connections (metro + shuttle, or direct bus)
+
+private struct AirportConnectionsCard: View {
+    let hub: AirportHub
+    let language: AppLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(airportText(language, "How to reach the airport", "Πώς να φτάσετε στο αεροδρόμιο", "Si të shkoni në aeroport", "Come raggiungere l'aeroporto"))
+                    .font(.headline)
+                Text(airportText(language, "The metro does not reach the terminal yet, so finish on a shuttle bus.", "Το μετρό δεν φτάνει ακόμη στον τερματικό, οπότε ολοκληρώστε με λεωφορείο.", "Metroja nuk arrin ende te terminali, prandaj përfundoni me autobus.", "La metro non arriva ancora al terminal, quindi si prosegue in navetta."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 10) {
+                ForEach(hub.connections) { connection in
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: icon(for: connection.mode))
+                            .font(.callout.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 38, height: 38)
+                            .background(Color(hex: connection.colorHex), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Text(connection.badge)
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(Color(hex: connection.colorHex))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Color(hex: connection.colorHex).opacity(0.12), in: Capsule())
+                                Text(connection.title.text(language))
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer(minLength: 0)
+                            }
+                            Text(connection.detail.text(language))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+                    .glassCardBackground(cornerRadius: 16)
+                }
+            }
+
+            Text(airportText(
+                language,
+                "Shuttle and city bus times are set by OASTH/OSETH. The metro departures below are live from the timetable.",
+                "Τα δρομολόγια λεωφορείων ορίζονται από τον ΟΑΣΘ/ΟΣΕΘ. Οι αναχωρήσεις μετρό παρακάτω είναι από το ωράριο.",
+                "Oraret e autobusëve caktohen nga OASTH/OSETH. Nisjet e metros më poshtë janë nga orari.",
+                "Gli orari dei bus sono fissati da OASTH/OSETH. Le partenze metro qui sotto sono da orario."
+            ))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .glassCardBackground(cornerRadius: 22)
+    }
+
+    private func icon(for mode: AirportConnection.Mode) -> String {
+        switch mode {
+        case .metro, .rail, .metroBus: return "tram.fill"
+        case .bus: return "bus.fill"
+        }
+    }
+}
+
+private struct AirportMetroLegsCard: View {
+    let hub: AirportHub
+    let language: AppLanguage
+    let dayOffset: Int
+    let departuresByStation: [String: [Departure]]
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ForEach(hub.metroLegs) { leg in
+                let deps = departuresByStation[leg.stationId] ?? []
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        Text(leg.badge)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                            .background(Color(hex: leg.colorHex), in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(leg.stationName.text(language))
+                                .font(.subheadline.weight(.semibold))
+                            Text(leg.towards.text(language))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    if deps.isEmpty {
+                        Text(airportText(
+                            language,
+                            "No scheduled metro departure in the current window.",
+                            "Καμία προγραμματισμένη αναχώρηση μετρό αυτή τη στιγμή.",
+                            "Asnjë nisje e programuar e metros tani.",
+                            "Nessuna partenza metro programmata al momento."
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    } else {
+                        HStack(spacing: 8) {
+                            ForEach(Array(deps.prefix(4).enumerated()), id: \.offset) { _, dep in
+                                Text(dayOffset == 0 ? dep.minutesAwayDisplay(language: language) : dep.time)
+                                    .font(.caption.weight(.bold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(Color(hex: leg.colorHex))
+                                    .padding(.horizontal, 9)
+                                    .padding(.vertical, 5)
+                                    .background(Color(hex: leg.colorHex).opacity(0.12), in: Capsule())
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .glassCardBackground(cornerRadius: 16)
+            }
+        }
+    }
 }
 
 private struct AirportServiceAlertCard: View {
