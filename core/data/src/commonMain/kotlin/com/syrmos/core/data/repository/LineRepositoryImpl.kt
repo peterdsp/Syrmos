@@ -56,7 +56,11 @@ class LineRepositoryImpl(
                 id = seed.id,
                 name = seed.name,
                 nameEl = seed.nameEl,
-                type = LineType.valueOf(seed.type.uppercase()),
+                // Safe like the sibling fields (Region/LineStatus/LineColor):
+                // a bare valueOf() throws on an unknown type and aborts the whole
+                // seed map, dropping every line. Fall back to a generic type.
+                type = runCatching { LineType.valueOf(seed.type.uppercase()) }
+                    .getOrDefault(LineType.SUBURBAN),
                 color = LineColor.fromHexOrType(seed.color, seed.type),
                 terminalA = seed.terminalA,
                 terminalB = seed.terminalB,

@@ -56,10 +56,14 @@ class PlanJourneyUseCase(
         allLines: List<Line>,
     ): JourneyResult? {
         val graph = mutableMapOf<String, MutableList<Edge>>()
+        // id -> display name, so emitted segments carry real station names
+        // instead of raw IDs.
+        val stationNames = mutableMapOf<String, String>()
 
         // Build edges from station ordering on each line
         for (line in allLines) {
             val stations = stationRepository.getStationsOnLine(line.id).first()
+            stations.forEach { stationNames[it.id] = it.name }
             for (i in 0 until stations.size - 1) {
                 val a = stations[i]
                 val b = stations[i + 1]
@@ -140,56 +144,7 @@ class PlanJourneyUseCase(
             node = prev
         }
 
-        // Merge consecutive edges on the same line into segments
-        val segments = mutableListOf<JourneySegment>()
-        var currentLineId: String? = null
-        var segmentStartStation = fromStationId
-        var segmentStationCount = 0
-        var segmentMinutes = 0
-
-        for ((stationId, edge) in path) {
-            if (edge == null) continue
-            if (edge.lineId != currentLineId) {
-                if (currentLineId != null) {
-                    segments.add(
-                        JourneySegment(
-                            lineId = currentLineId,
-                            lineName = edge.lineName,
-                            fromStationId = segmentStartStation,
-                            fromStationName = segmentStartStation,
-                            toStationId = stationId,
-                            toStationName = stationId,
-                            stationCount = segmentStationCount,
-                            estimatedMinutes = segmentMinutes,
-                            isTransfer = false,
-                        )
-                    )
-                }
-                currentLineId = edge.lineId
-                segmentStartStation = stationId
-                segmentStationCount = 1
-                segmentMinutes = edge.weight
-            } else {
-                segmentStationCount++
-                segmentMinutes += edge.weight
-            }
-        }
-
-        if (currentLineId != null) {
-            segments.add(
-                JourneySegment(
-                    lineId = currentLineId,
-                    lineName = currentLineId,
-                    fromStationId = segmentStartStation,
-                    fromStationName = segmentStartStation,
-                    toStationId = toStationId,
-                    toStationName = toStationId,
-                    stationCount = segmentStationCount,
-                    estimatedMinutes = segmentMinutes,
-                    isTransfer = false,
-                )
-            )
-        }
+        val segments = reconstructSegments(path, fromStationId, toStationId, stationNames)
 
         val totalMinutes = distances[toStationId] ?: 0
         val transferCount = (segments.size - 1).coerceAtLeast(0)
@@ -209,10 +164,93 @@ class PlanJourneyUseCase(
     }
 }
 
-private data class Edge(
+internal data class Edge(
     val toStationId: String,
     val lineId: String,
     val lineName: String,
     val weight: Int,
     val isTransfer: Boolean,
 )
+
+/**
+ * Merges a Dijkstra path into line segments. Extracted as a pure function so the
+ * reconstruction rules (keep the origin, close a line change at the interchange,
+ * carry real station names) can be unit tested without a database.
+ *
+ * Each `path` element is (stationId, edge) where `edge` LEADS TO stationId and
+ * starts at the previous element's station (the origin for the very first). So a
+ * line change at element k must close the running segment at the PREVIOUS station
+ * (the interchange), not at the station one stop past it.
+ */
+internal fun reconstructSegments(
+    path: List<Pair<String, Edge?>>,
+    fromStationId: String,
+    toStationId: String,
+    stationNames: Map<String, String>,
+): List<JourneySegment> {
+    val segments = mutableListOf<JourneySegment>()
+    fun nameOf(id: String): String = stationNames[id] ?: id
+    var currentLineId: String? = null
+    var currentLineName = ""
+    var segmentStartStation = fromStationId
+    var segmentStationCount = 0
+    var segmentMinutes = 0
+    var prevStationId = fromStationId
+
+    for ((stationId, edge) in path) {
+        if (edge == null) { prevStationId = stationId; continue }
+        when {
+            currentLineId == null -> {
+                // First segment keeps the origin as its start (the old code
+                // overwrote it with the second station, dropping the origin).
+                currentLineId = edge.lineId
+                currentLineName = edge.lineName
+                segmentStationCount = 1
+                segmentMinutes = edge.weight
+            }
+            edge.lineId != currentLineId -> {
+                segments.add(
+                    JourneySegment(
+                        lineId = currentLineId,
+                        lineName = currentLineName,
+                        fromStationId = segmentStartStation,
+                        fromStationName = nameOf(segmentStartStation),
+                        toStationId = prevStationId,
+                        toStationName = nameOf(prevStationId),
+                        stationCount = segmentStationCount,
+                        estimatedMinutes = segmentMinutes,
+                        isTransfer = false,
+                    )
+                )
+                currentLineId = edge.lineId
+                currentLineName = edge.lineName
+                segmentStartStation = prevStationId
+                segmentStationCount = 1
+                segmentMinutes = edge.weight
+            }
+            else -> {
+                segmentStationCount++
+                segmentMinutes += edge.weight
+            }
+        }
+        prevStationId = stationId
+    }
+
+    if (currentLineId != null) {
+        segments.add(
+            JourneySegment(
+                lineId = currentLineId,
+                lineName = currentLineName,
+                fromStationId = segmentStartStation,
+                fromStationName = nameOf(segmentStartStation),
+                toStationId = toStationId,
+                toStationName = nameOf(toStationId),
+                stationCount = segmentStationCount,
+                estimatedMinutes = segmentMinutes,
+                isTransfer = false,
+            )
+        )
+    }
+
+    return segments
+}
