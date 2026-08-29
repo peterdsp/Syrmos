@@ -72,6 +72,8 @@
             train: "Train",
             route: "Route",
             live: "Live",
+            updated_ago: "updated {t} ago",
+            live_unknown_age: "Live, age unknown",
             estimated: "Estimated",
             offline_snapshot: "Offline snapshot",
             check_operator: "Check operator",
@@ -145,6 +147,8 @@
             train: "Συρμός",
             route: "Διαδρομή",
             live: "Ζωντανά",
+            updated_ago: "ενημέρωση πριν {t}",
+            live_unknown_age: "Ζωντανά, άγνωστη ώρα",
             estimated: "Εκτίμηση",
             offline_snapshot: "Εκτός σύνδεσης",
             check_operator: "Δείτε πάροχο",
@@ -218,6 +222,8 @@
             train: "Tren",
             route: "Itinerari",
             live: "Drejtpërdrejt",
+            updated_ago: "përditësuar {t} më parë",
+            live_unknown_age: "Drejtpërdrejt, kohë e panjohur",
             estimated: "Vlerësim",
             offline_snapshot: "Pa internet",
             check_operator: "Kontrolloni operatorin",
@@ -291,6 +297,8 @@
             train: "Treno",
             route: "Percorso",
             live: "In tempo reale",
+            updated_ago: "aggiornato {t} fa",
+            live_unknown_age: "In tempo reale, età sconosciuta",
             estimated: "Stimato",
             offline_snapshot: "Snapshot offline",
             check_operator: "Verifica operatore",
@@ -2069,6 +2077,8 @@
     // fleet at the new zoom (declutter when zoomed out, restore when zoomed in)
     // without waiting for the next poll.
     let lastLiveTrains = [];
+    // ISO timestamp of the last real telematics batch (see updateLiveTrains).
+    let liveTrainsUpdatedAt = null;
 
     // Guard the fit anyway, so no future handler throw during it can abort init.
     // Open framed on the ATHENS network, not the whole country. The app went
@@ -2225,7 +2235,7 @@
                     return;
                 }
                 const payload = await res.json();
-                updateLiveTrains(payload.trains || []);
+                updateLiveTrains(payload.trains || [], payload.updatedAt);
             } catch (_error) {
                 // Keep showing the last successful frame on transient errors.
             }
@@ -2235,7 +2245,12 @@
         setInterval(pollOnce, POLL_INTERVAL_MS);
     }
 
-    function updateLiveTrains(trainsFromApi) {
+    function updateLiveTrains(trainsFromApi, updatedAt) {
+        // Batch freshness of the REAL telematics feed (/api/trains carries a
+        // single updatedAt for the whole snapshot; individual GPS fixes do not
+        // carry per-train timestamps). Stored so the live list can show the age
+        // honestly instead of implying every frame is current.
+        liveTrainsUpdatedAt = updatedAt || null;
         const trains = trainsFromApi
             .filter((t) => t && t.lat != null && t.lng != null && t.lineId)
             .map((t) => ({
@@ -2255,6 +2270,23 @@
         renderLiveTrains(trains);
     }
 
+    // Honest freshness for the real telematics batch. Always shows the age; the
+    // chip colour signals fresh (live) vs stale (shown as an estimate). These
+    // are observed GPS trains, so this is the age of real data, not a schedule
+    // projection. The 90s window mirrors the DataStatus contract; a small future
+    // clock skew is tolerated rather than shown as an error. Uses epoch math
+    // (Date.now vs the absolute updatedAt), not athensNow(), because this is a
+    // duration between two absolute timestamps, not a wall-clock comparison.
+    function liveBatchFreshness() {
+        const iso = liveTrainsUpdatedAt;
+        if (!iso) return { mod: "estimated", label: t("live_unknown_age") };
+        const ageSec = Math.round((Date.now() - Date.parse(iso)) / 1000);
+        if (isNaN(ageSec)) return { mod: "estimated", label: t("live_unknown_age") };
+        const human = Math.abs(ageSec) < 90 ? `${Math.max(ageSec, 0)}s` : `${Math.round(ageSec / 60)}m`;
+        const fresh = ageSec <= 90 && ageSec > -120;
+        return { mod: fresh ? "live" : "estimated", label: `${t("live")} · ${t("updated_ago", { t: human })}` };
+    }
+
     function renderLiveTrains(trains) {
         lastLiveTrains = trains;
         if (!map.hasLayer(liveTrainLayer)) liveTrainLayer.addTo(map);
@@ -2262,7 +2294,12 @@
         liveTrainMarkers.clear();
 
         if (trains.length) {
-            const suburbanHtml = trains.slice(0, 5).map((train) => {
+            // Head the real-telematics section with its batch freshness, so a
+            // stale Pi feed reads honestly as an aged estimate rather than a
+            // current live position.
+            const fresh = liveBatchFreshness();
+            const freshChip = `<div class="panel-item panel-item--live-status"><span class="src-chip src-chip--${fresh.mod}"><span class="src-chip__dot"></span>${fresh.label}</span></div>`;
+            const suburbanHtml = freshChip + trains.slice(0, 5).map((train) => {
                 const line = lineMap.get(train.lineId);
                 return `
                     <div class="panel-item" data-live-suburban>
@@ -3243,7 +3280,10 @@
         const display = [...perLine.values()].slice(0, 10);
 
         const panelHtml =
-            `<div class="panel-item"><div class="panel-item__count">${t("trains_active", { n: trains.length })}</div></div>` +
+            // These positions are schedule projections (simulateAllTrains), not
+            // observed GPS, so the count row carries an Estimated provenance chip.
+            // Never implies a live fix; the per-train sheet already explains this.
+            `<div class="panel-item panel-item--live-status"><div class="panel-item__count">${t("trains_active", { n: trains.length })}</div><span class="src-chip src-chip--estimated"><span class="src-chip__dot"></span>${t("estimated")}</span></div>` +
             display.map((train) => {
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 return `
