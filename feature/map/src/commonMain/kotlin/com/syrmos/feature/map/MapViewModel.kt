@@ -445,7 +445,12 @@ class MapViewModel(
     }
 
     private fun Frequency.matchesCurrentTime(): Boolean {
-        val (start, end) = timeRange.split("-")
+        // Guard the split: a malformed timeRange with no "-" would throw on the
+        // destructuring (before parseTime even runs). Treat it as no match.
+        val parts = timeRange.split("-")
+        if (parts.size != 2) return false
+        val start = parts[0]
+        val end = parts[1]
         val nowMinutes = currentAthensTime().hour * 60 + currentAthensTime().minute
         val startMinutes = parseTime(start).hour * 60 + parseTime(start).minute
         val endTime = parseTime(end)

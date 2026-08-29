@@ -5,6 +5,7 @@ import com.syrmos.core.domain.usecase.GetStationDetailUseCase
 import com.syrmos.core.domain.usecase.GetStationDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Line
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,7 +49,16 @@ class StationDetailViewModel(
         loadedStationId = stationId
         scope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val detail = getStationDetail.invoke(stationId).first() ?: return@launch
+            val detail = getStationDetail.invoke(stationId).first()
+            if (detail == null) {
+                // Clear the spinner and reset loadedStationId so the same station
+                // can be retried; otherwise a null detail (unknown id, data gap)
+                // left the screen spinning forever with the guard at loadStation's
+                // top blocking any re-attempt.
+                _uiState.update { it.copy(isLoading = false) }
+                loadedStationId = null
+                return@launch
+            }
 
             val suburbanIds = setOf("A1", "A2", "A3", "A4")
             _uiState.update {
@@ -79,8 +89,16 @@ class StationDetailViewModel(
         refreshJob?.cancel()
         refreshJob = scope.launch {
             while (isActive) {
-                val departures = getStationDepartures.invoke(stationId, lineIds)
-                _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
+                try {
+                    val departures = getStationDepartures.invoke(stationId, lineIds)
+                    _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Transient failure on one tick: keep the last departures and
+                    // retry next interval rather than killing the loop permanently
+                    // (which froze the countdowns and could crash on Android).
+                }
                 delay(REFRESH_INTERVAL_MS)
             }
         }
