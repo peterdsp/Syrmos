@@ -1,0 +1,113 @@
+{
+  "app": "Syrmos - Athens Rail Times",
+  "version": "$(MARKETING_VERSION)",
+  "build": "$(CURRENT_PROJECT_VERSION)",
+  "commit": "72f458ea",
+  "device": "iPhone 17",
+  "os": "iOS 26.5",
+  "captured": "2026-08-30",
+  "note": "Real Syrmos target, real UI architecture. Live OASA data where reachable; any demo fixture is labelled in-app.",
+  "screens": [
+    {
+      "path": "iPhone17/el/light/01-home.png",
+      "device": "iPhone 17",
+      "locale": "el",
+      "theme": "light",
+      "screen": "01-home",
+      "caption": "Home: first useful answer, Live + Scheduled provenance chips"
+    },
+    {
+      "path": "iPhone17/el/light/06-airport-thessaloniki.png",
+      "device": "iPhone 17",
+      "locale": "el",
+      "theme": "light",
+      "screen": "06-airport-thessaloniki",
+      "caption": "Airport SKG: Makedonia, metro+shuttle / direct bus"
+    },
+    {
+      "path": "iPhone17/en/dark/01-home.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "dark",
+      "screen": "01-home",
+      "caption": "Home: first useful answer, Live + Scheduled provenance chips"
+    },
+    {
+      "path": "iPhone17/en/dark/06-airport-thessaloniki.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "dark",
+      "screen": "06-airport-thessaloniki",
+      "caption": "Airport SKG: Makedonia, metro+shuttle / direct bus"
+    },
+    {
+      "path": "iPhone17/en/light/01-home.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "light",
+      "screen": "01-home",
+      "caption": "Home: first useful answer, Live + Scheduled provenance chips"
+    },
+    {
+      "path": "iPhone17/en/light/02-explore.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "light",
+      "screen": "02-explore",
+      "caption": "Explore: Discover/Network, honest estimate framing"
+    },
+    {
+      "path": "iPhone17/en/light/03-map.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "light",
+      "screen": "03-map",
+      "caption": "Map: live Athens network, colored lines + vehicles"
+    },
+    {
+      "path": "iPhone17/en/light/04-airport-athens.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "light",
+      "screen": "04-airport-athens",
+      "caption": "Airport ATH: Eleftherios Venizelos, direct rail + buses"
+    },
+    {
+      "path": "iPhone17/en/light/05-more.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "light",
+      "screen": "05-more",
+      "caption": "More: language, theme, live vehicles, operators"
+    },
+    {
+      "path": "iPhone17/en/light/06-airport-thessaloniki.png",
+      "device": "iPhone 17",
+      "locale": "en",
+      "theme": "light",
+      "screen": "06-airport-thessaloniki",
+      "caption": "Airport SKG: Makedonia, metro+shuttle / direct bus"
+    }
+  ],
+  "screen_count": 10,
+  "matrix": {
+    "devices": [
+      "iPhone 17"
+    ],
+    "locales_captured": [
+      "en",
+      "el"
+    ],
+    "locales_supported": [
+      "en",
+      "el",
+      "sq",
+      "it"
+    ],
+    "themes_captured": [
+      "light",
+      "dark"
+    ],
+    "note": "Representative tour. Full device/locale/theme matrix (small/Pro Max/iPad, sq/it, increased-contrast, large Dynamic Type, VoiceOver) is the documented expansion set; EN/EL x light/dark captured here."
+  }
+}
