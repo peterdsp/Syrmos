@@ -271,7 +271,7 @@ fun StationDetailScreen(
                     Text(
                         text = if (uiState.hasLoadedDepartures) {
                             when (lang) {
-                                AppLanguage.GREEK -> "Δεν υπαρχουν διαθεσιμα δρομολογια αυτη τη στιγμη. Η γραμμη ειναι κλειστη η εχει τελειωσει η σημερινη υπηρεσια."
+                                AppLanguage.GREEK -> "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία."
                                 AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme tani. Linja eshte mbyllur ose ka perfunduar sherbimi i sotem."
                                 AppLanguage.ITALIAN -> "Nessuna partenza disponibile al momento. La linea e chiusa o il servizio odierno e terminato."
                                 else -> "No departures right now. The line is closed or today's service has ended."
