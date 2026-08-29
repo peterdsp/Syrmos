@@ -7,6 +7,7 @@ import com.syrmos.core.model.transit.Region
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,9 +38,14 @@ class LinesViewModel(
 
     private fun loadLines() {
         scope.launch {
-            getLinesUseCase.getAllLines().collect { lines ->
-                _uiState.update { it.copy(lines = lines, isLoading = false) }
-            }
+            getLinesUseCase.getAllLines()
+                // Without this, a throwing lines flow (e.g. a bundled-data parse
+                // error) leaves isLoading stuck true — a permanent spinner — and
+                // propagates the exception. Clear the spinner and stop instead.
+                .catch { _uiState.update { it.copy(isLoading = false) } }
+                .collect { lines ->
+                    _uiState.update { it.copy(lines = lines, isLoading = false) }
+                }
         }
     }
 

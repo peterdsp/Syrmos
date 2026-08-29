@@ -201,26 +201,42 @@ class AssistantViewModel(
         scope.launch {
             // Online mode: try cloud Ariadne first. The Pi backend has live
             // transit data (lines, fares, alerts, frequencies) and chains
-            // three LLMs, so it gives richer answers than local parsing.
-            val cloudReply = askCloudLLM(text)
+            // three LLMs, so it gives richer answers than local parsing. A cloud
+            // FAILURE (network, timeout) must fall through to the offline path,
+            // not abort the whole turn — hence the inner try.
+            val cloudReply = try {
+                askCloudLLM(text)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
             if (cloudReply != null) {
                 _uiState.update { it.copy(messages = it.messages + cloudReply, thinking = false) }
                 return@launch
             }
             // Offline fallback: local Ariadne (rule-based parser + resolver).
-            val raw = applyDayFollowUp(text, assistantClassifier.classify(text, p.vocabulary)
-                ?: p.parse(queryNormalizer.normalize(text) ?: text), p)
-            val intent = fillFromContext(mergePendingIfApplicable(raw))
-            if (intent is AssistantIntent.NeedsClarification) {
-                pendingIntent = intent.base
-                pendingMissing = intent.missing
-            } else {
-                pendingIntent = null
-                pendingMissing = null
+            // Wrapped so a thrown use-case (e.g. an empty Flow.first()) can never
+            // leave the "thinking" indicator stuck or crash the app on Android.
+            try {
+                val raw = applyDayFollowUp(text, assistantClassifier.classify(text, p.vocabulary)
+                    ?: p.parse(queryNormalizer.normalize(text) ?: text), p)
+                val intent = fillFromContext(mergePendingIfApplicable(raw))
+                if (intent is AssistantIntent.NeedsClarification) {
+                    pendingIntent = intent.base
+                    pendingMissing = intent.missing
+                } else {
+                    pendingIntent = null
+                    pendingMissing = null
+                }
+                updateSession(intent)
+                val reply = resolve(intent)
+                _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(messages = it.messages + botMessage(outOfScopeText()), thinking = false) }
             }
-            updateSession(intent)
-            val reply = resolve(intent)
-            _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
         }
     }
 
@@ -629,7 +645,14 @@ class AssistantViewModel(
 
     private fun stationName(id: String): String {
         val st = stations.firstOrNull { it.id == id } ?: return id
-        return if (LocalizationManager.language.value == AppLanguage.GREEK) st.nameEl else st.name
+        // Guard blank nameEl (matches the Station overload): some stations have
+        // no Greek name, so falling back to `name` avoids rendering an empty
+        // station in a sentence ("Board the 21:04 from  ...").
+        return if (LocalizationManager.language.value == AppLanguage.GREEK && st.nameEl.isNotBlank()) {
+            st.nameEl
+        } else {
+            st.name
+        }
     }
 
     private fun formatClock(minutes: Int): String {
@@ -997,10 +1020,14 @@ class AssistantViewModel(
                 "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή.",
                 "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit.",
                 it = "Dimmi prima un viaggio, poi posso invertirlo per il ritorno."))
+        // updateSession() already flipped lastRoute for the ReverseTrip intent
+        // (A->B became B->A), so plan it AS-IS. Flipping again here double-flips
+        // back to the original direction, so "and back" replanned the trip the
+        // user just took instead of the return.
         return resolvePlanTrip(
             AssistantIntent.PlanTrip(
-                fromStationId = route.toStationId,
-                toStationId = route.fromStationId,
+                fromStationId = route.fromStationId,
+                toStationId = route.toStationId,
                 preference = route.preference,
             ),
         )
@@ -1517,12 +1544,16 @@ class AssistantViewModel(
      */
     private suspend fun askCloudLLM(text: String): AssistantMessage? {
         val service = ariadneChatService ?: return null
+        // The current user turn is already the last item in `messages` (ask()
+        // appends it before launching), so takeLast(10) already ends with it —
+        // do NOT append it again or the cloud gets two identical consecutive
+        // "user" turns, which degrades the reply and some backends reject.
         val history = _uiState.value.messages.takeLast(10).map { msg ->
             AriadneChatMessage(
                 role = if (msg.fromUser) "user" else "assistant",
                 text = msg.text,
             )
-        } + AriadneChatMessage(role = "user", text = text)
+        }
         val reply = service.chat(history) ?: return null
         if (!isUsableReply(reply)) return null
         return botMessage(reply)
