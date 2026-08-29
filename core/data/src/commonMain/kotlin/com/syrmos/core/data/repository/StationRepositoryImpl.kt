@@ -55,7 +55,11 @@ class StationRepositoryImpl(
         emit(
             stations.ifEmpty {
                 val normalized = query.trim().lowercase()
-                readSeedStations().filter {
+                // Defense-in-depth: never contains("") against every station (it
+                // matches all). The use-case already guards this, but keep the
+                // repo honest if called directly.
+                if (normalized.isEmpty()) emptyList()
+                else readSeedStations().filter {
                     it.name.lowercase().contains(normalized) ||
                         it.nameEl.lowercase().contains(normalized)
                 }
