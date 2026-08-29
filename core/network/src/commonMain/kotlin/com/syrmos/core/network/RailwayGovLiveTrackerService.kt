@@ -44,6 +44,12 @@ class RailwayGovLiveTrackerService(
                 val payload = json.decodeFromString<TrainsPayload>(body)
                 val trains = payload.trains
                     .asSequence()
+                    // Skip a train that has no coordinate rather than letting the
+                    // whole payload fail to parse. lat/lng are now nullable, so
+                    // one GPS-less train (just appeared, scrape glitch) no longer
+                    // throws MissingFieldException and freezes the entire live map
+                    // on the previous frame. Mirrors the web map's null guard.
+                    .filter { it.lat != null && it.lng != null }
                     .filter { lineIds.isNullOrEmpty() || it.lineId in lineIds }
                     .map { it.toDomain() }
                     .sortedWith(
@@ -79,8 +85,8 @@ class RailwayGovLiveTrackerService(
             serviceType = serviceType,
             progress = progress,
             speedKph = speed,
-            latitude = lat,
-            longitude = lng,
+            latitude = lat ?: 0.0,
+            longitude = lng ?: 0.0,
             updatedAt = "",
             course = course,
             altitude = altitude,
@@ -124,8 +130,11 @@ class RailwayGovLiveTrackerService(
         val nextStationEn: String = "",
         val delayMinutes: Int = 0,
         val serviceType: String = "",
-        val lat: Double,
-        val lng: Double,
+        // Nullable + defaulted: a train can briefly appear with no GPS fix. If
+        // these stayed required, one such row would fail the whole payload decode
+        // (they were the only non-defaulted fields) and blank the live map.
+        val lat: Double? = null,
+        val lng: Double? = null,
         val speed: Double? = null,
         val course: Double? = null,
         val altitude: Double? = null,

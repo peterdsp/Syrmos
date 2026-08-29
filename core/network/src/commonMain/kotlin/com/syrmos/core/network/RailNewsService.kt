@@ -60,7 +60,11 @@ class RailNewsService(private val httpClient: HttpClient) {
             val response = httpClient.get(NEWS_URL)
             val body = response.bodyAsText()
             val payload = json.decodeFromString<NewsPayload>(body)
-            payload.news.map { item ->
+            payload.news
+                // Skip a malformed row rather than failing the whole feed to one
+                // bad entry (id/title default to blank below).
+                .filter { it.title.isNotBlank() }
+                .map { item ->
                 RailNewsItem(
                     id = item.id,
                     title = item.title,
@@ -91,8 +95,9 @@ class RailNewsService(private val httpClient: HttpClient) {
 
     @Serializable
     private data class NewsItemPayload(
-        val id: String,
-        val title: String,
+        // Defaulted so one malformed row doesn't fail the whole news payload.
+        val id: String = "",
+        val title: String = "",
         @SerialName("titleEn") val titleEn: String = "",
         @SerialName("titleSq") val titleSq: String = "",
         @SerialName("titleIt") val titleIt: String = "",

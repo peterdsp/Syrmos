@@ -122,7 +122,11 @@ class STASYAnnouncementService(
                     serviceUntil = it.serviceUntil,
                 )
             }
-            val items = payload.announcements.map { item ->
+            val items = payload.announcements
+                // Skip a malformed row (blank title) rather than losing every
+                // announcement plus the status badge to one bad entry.
+                .filter { it.title.isNotBlank() }
+                .map { item ->
                 STASYAnnouncement(
                     id = item.id,
                     title = item.title,
@@ -170,8 +174,10 @@ class STASYAnnouncementService(
 
     @Serializable
     private data class AnnouncementItem(
-        val id: String,
-        val title: String,
+        // Defaulted so one malformed row doesn't fail the whole payload decode
+        // and take the network-wide status badge down with it (see fetchFeedOnce).
+        val id: String = "",
+        val title: String = "",
         @SerialName("titleEn") val titleEn: String = "",
         @SerialName("titleSq") val titleSq: String = "",
         @SerialName("titleIt") val titleIt: String = "",

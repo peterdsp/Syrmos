@@ -41,11 +41,18 @@ fun currentAthensDate(clock: Clock = Clock.System): LocalDate =
     athensDateTime(clock).date
 
 fun parseTime(timeString: String): LocalTime {
+    // Defensive: a string with no ":", a non-numeric part, an hour >= 48, or a
+    // minute >= 60 previously threw (IndexOutOfBounds / NumberFormat / LocalTime
+    // range). Three callers (GetNextDeparturesUseCase, HomeScreen, MapViewModel)
+    // pass schedule times unguarded, so a single malformed entry would crash the
+    // screen. Degrade gracefully instead — wrap past-midnight hours (25:10 ->
+    // 01:10, unchanged for valid input) and clamp the rest.
     val parts = timeString.split(":")
-    val hour = parts[0].toInt()
-    val minute = parts[1].toInt()
-    val normalizedHour = if (hour >= 24) hour - 24 else hour
-    return LocalTime(normalizedHour, minute)
+    val hour = parts.getOrNull(0)?.trim()?.toIntOrNull() ?: 0
+    val minute = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
+    val normalizedHour = ((hour % 24) + 24) % 24
+    val normalizedMinute = minute.coerceIn(0, 59)
+    return LocalTime(normalizedHour, normalizedMinute)
 }
 
 fun LocalTime.minutesUntil(other: LocalTime): Int {
