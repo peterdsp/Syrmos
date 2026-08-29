@@ -359,11 +359,21 @@
         let scratch = text;
         for (const entry of ordered) {
             if (foundSet.has(entry.id)) continue;
-            if (scratch.indexOf(entry.name) >= 0) {
-                found.push(entry.id);
-                foundSet.add(entry.id);
-                scratch = scratch.split(entry.name).join(' '.repeat(entry.name.length));
+            const idx = scratch.indexOf(entry.name);
+            if (idx < 0) continue;
+            // A 3-char folded name ("kat" for KAT, "fix" for Fix) matched as a raw
+            // substring resolves inside unrelated words ("kat" in "Katerini"), so
+            // for those short codes require word boundaries on both sides. Longer
+            // names keep substring matching to survive Greek inflections.
+            if (entry.name.length <= 3) {
+                const before = idx === 0 ? ' ' : scratch[idx - 1];
+                const afterIdx = idx + entry.name.length;
+                const after = afterIdx >= scratch.length ? ' ' : scratch[afterIdx];
+                if (/[\p{L}\p{N}]/u.test(before) || /[\p{L}\p{N}]/u.test(after)) continue;
             }
+            found.push(entry.id);
+            foundSet.add(entry.id);
+            scratch = scratch.split(entry.name).join(' '.repeat(entry.name.length));
         }
         // Typo fallback: only when nothing matched exactly, so a clean query
         // is never overridden. Resolves "nikea" / "nkiea" -> Nikaia.
@@ -497,7 +507,21 @@
      * Recognized: "21:30", "9 pm", "9μμ", "in 45 min", "σε 1 ώρα", etc.
      */
     function extractTargetTime(text) {
-        let m = text.match(/(\d{1,2})[:.](\d{2})/);
+        // "H:MM am/pm" MUST be tried before the bare 24h "H:MM" below, or the
+        // colon match returns first and "9:30 pm" is read as 09:30 (a silent
+        // 12-hour error that sent "arrive by 9:30 pm" trips to the morning).
+        let m = text.match(/(\d{1,2})[:.](\d{2})\s*(am|pm|μμ|πμ)/);
+        if (m) {
+            let h = parseInt(m[1], 10);
+            const mm = parseInt(m[2], 10);
+            const mark = m[3];
+            if (h >= 1 && h <= 12 && mm >= 0 && mm <= 59) {
+                if (mark === 'pm' || mark === 'μμ') { if (h < 12) h += 12; }
+                else if (h === 12) { h = 0; }
+                return { absoluteMinutes: h * 60 + mm, relativeMinutes: null };
+            }
+        }
+        m = text.match(/(\d{1,2})[:.](\d{2})/);
         if (m) {
             const h = parseInt(m[1], 10), mm = parseInt(m[2], 10);
             if (h >= 0 && h <= 23 && mm >= 0 && mm <= 59) {
@@ -541,8 +565,6 @@
         const mentionedLine = matchLine(text);
         const day = matchDay(text);
 
-        if (containsAny(text, HELP_PHRASES)) return { kind: 'help' };
-
         // Reverse-trip follow-up: a bare "and back?" / "return" / "kthimi"
         // with no newly-named station. The dispatcher flips the last route.
         if (mentionedStations.length === 0 && containsAny(text, REVERSE_PHRASES)) {
@@ -574,6 +596,16 @@
             containsAny(text, TIME_PHRASES);
 
         const weather = containsAny(text, WEATHER_WORDS);
+
+        // Help / capabilities — only when the message carries no actual transit
+        // request. HELP_PHRASES includes greetings ("hi", "hey"), so checking it
+        // before the transit branches let a greeting that merely PREFIXES a query
+        // ("hey, when's the next train?", "help me get to the airport") hijack it.
+        // A bare greeting still lands here (no transit signal present).
+        if (containsAny(text, HELP_PHRASES) && !strongTransit && !intentSignal && !weather) {
+            return { kind: 'help' };
+        }
+
         if (weather) {
             const hasToMarker = TO_MARKERS.some(function (m) { return text.indexOf(m) >= 0; });
             const planning = containsAny(text, PLAN_PHRASES) || hasToMarker || mentionedStations.length >= 2;

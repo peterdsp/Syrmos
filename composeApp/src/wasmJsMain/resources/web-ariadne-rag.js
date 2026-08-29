@@ -16,8 +16,12 @@
     var STOP = { the:1, a:1, an:1, to:1, from:1, of:1, in:1, on:1, is:1, for:1, and:1, or:1, my:1, i:1, me:1, how:1, what:1, when:1, do:1, does:1, can:1, you:1 };
 
     function tokens(s) {
-        return (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
-            .filter(function (t) { return t.length >= 3 && !STOP[t]; });
+        // Strip punctuation only (unicode-aware), NOT every non-ASCII char, or
+        // Greek and accented-Albanian queries tokenize to nothing and retrieve
+        // returns []. Keep 2-char line codes (m1, t6, a1) — they are the exact
+        // retrieval keys for the line_* chunks and were being filtered out.
+        return (s || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
+            .filter(function (t) { return (t.length >= 3 || /^[a-z]\d$/.test(t)) && !STOP[t]; });
     }
 
     // Retrieve up to k chunks scored by token overlap with title/tags/text,

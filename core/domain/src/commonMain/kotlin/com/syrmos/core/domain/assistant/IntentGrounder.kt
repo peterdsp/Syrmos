@@ -61,7 +61,13 @@ object IntentGrounder {
             "weatherat" -> AssistantIntent.WeatherAt(station)
             "wrongtrain" -> AssistantIntent.WrongTrain(station, line)
             "missedstop" -> AssistantIntent.MissedStop(station, toStation)
-            "canistillmakeit" -> AssistantIntent.CanIStillMakeIt(toStation, station)
+            // Same fallback as "traveltime": the model often fills the single
+            // `station` field for "can I still make it to X" and leaves toStation
+            // empty, which used to drop the destination into the origin slot.
+            "canistillmakeit" -> AssistantIntent.CanIStillMakeIt(
+                toStationId = toStation ?: station,
+                fromStationId = if (toStation == null) null else station,
+            )
             "help" -> AssistantIntent.Help
             "outofscope" -> AssistantIntent.OutOfScope
             else -> null
