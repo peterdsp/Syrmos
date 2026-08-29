@@ -226,7 +226,7 @@ body.dark-mode .nav-item--active {
 }
 
 .answer-hero__actions {
-    display: flex; gap: 8px;
+    display: flex; flex-wrap: wrap; gap: 8px;
 }
 
 .pill-button {
@@ -235,6 +235,11 @@ body.dark-mode .nav-item--active {
     border: none; border-radius: var(--sy-radius-pill);
     font: inherit; font-size: 13px; font-weight: 600;
     cursor: pointer;
+    /* A pill label is a single atomic unit: never wrap it, and never let a
+       flex row compress it below its content width. Rows that hold pills use
+       flex-wrap so whole pills move to the next line instead. */
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: background var(--sy-duration-fast-ms) ease, transform var(--sy-duration-fast-ms) ease;
 }
 .pill-button:active { transform: scale(.97); }
@@ -364,6 +369,11 @@ body.dark-mode .nav-item--active {
     border-radius: var(--sy-radius-pill);
     font-size: 10px; font-weight: 600;
     line-height: 1;
+    /* Status labels such as "Scheduled" or "Live" are atomic: never wrap the
+       word onto a second line, and never let a flex row compress the chip
+       below its content width (which would clip the label). */
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .src-chip__dot {
@@ -417,6 +427,11 @@ body.dark-mode .nav-item--active {
     border-radius: 9px;
     font-size: 13px; font-weight: 700;
     color: #fff;
+    /* Keep short transport codes such as M3, X95 or 24/7 atomic: never wrap
+       the text and never let the flex row compress the badge below its
+       content width. .badge-row already wraps whole badges to the next line. */
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .line-dot {
@@ -648,6 +663,8 @@ body.dark-mode .zoom-stack { background: rgba(27,32,40,.88); }
     backdrop-filter: blur(12px);
     font-size: 12px;
     color: var(--sy-text-secondary);
+    /* Keep the status label on one line; never split or clip it. */
+    white-space: nowrap;
 }
 body.dark-mode .live-status-pill {
     background: rgba(27,32,40,.88);

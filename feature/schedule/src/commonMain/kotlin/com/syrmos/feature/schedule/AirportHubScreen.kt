@@ -11,6 +11,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -214,6 +216,7 @@ fun AirportHubScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AirportHero(hub: AirportHubData, lang: AppLanguage) {
     val shape = RoundedCornerShape(28.dp)
@@ -251,11 +254,32 @@ private fun AirportHero(hub: AirportHubData, lang: AppLanguage) {
                 Text(hub.code, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            hub.pills.forEach { (label, icon) -> HeroPill(label, icon) }
-            Spacer(Modifier.weight(1f))
-            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF63E6A6)))
-            Text(airportText(lang, "Schedules", "Ωράρια", "Oraret", "Orari"), color = Color.White, style = MaterialTheme.typography.labelMedium)
+        // Mode pills wrap as complete units so a label like "M3" or "24/7" is
+        // never compressed and split across lines. The schedule-status chip
+        // sits on its own trailing line, so it never competes with the pills
+        // for width and can never clip at the card edge.
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                hub.pills.forEach { (label, icon) -> HeroPill(label, icon) }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF63E6A6)))
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    airportText(lang, "Schedules", "Ωράρια", "Oraret", "Orari"),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
         }
     }
 }
@@ -385,7 +409,14 @@ private fun HeroPill(label: String, icon: ImageVector) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(icon, null, tint = Color.White, modifier = Modifier.size(13.dp))
-        Text(label, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Text(
+            label,
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
