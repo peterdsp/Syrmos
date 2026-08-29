@@ -36,7 +36,9 @@ import sys
 import urllib.error
 import urllib.request
 
-from syrmos_admin import db as dbmod
+# NOTE: `syrmos_admin` is imported lazily inside main() so the pure planning
+# helpers (station_union / line_station_rows) and --selftest run offline on any
+# machine, with no DB package on the path.
 
 API = "https://telematics.oasa.gr/api/"
 USER_AGENT = "syrmos-oasa-watcher/1.0 (+https://syrmos.peterdsp.dev)"
@@ -104,7 +106,27 @@ def route_stops(route_code: int) -> list[dict]:
     return stops
 
 
+def station_union(outbound, inbound):
+    """Unique station rows across both directions, keyed by id, order preserved."""
+    seen = {}
+    for s in outbound + inbound:
+        if s["id"] not in seen:
+            seen[s["id"]] = s
+    return list(seen.values())
+
+
+def line_station_rows(line_id, outbound, inbound):
+    """(line_id, station_id, seq, direction) rows for BOTH canonical directions:
+    outbound = city -> Airport, inbound = Airport -> city. seq is 1-based per
+    direction. Pure, so it unit-tests offline without network or a DB."""
+    rows = [(line_id, s["id"], n + 1, "outbound") for n, s in enumerate(outbound)]
+    rows += [(line_id, s["id"], n + 1, "inbound") for n, s in enumerate(inbound)]
+    return rows
+
+
 def main() -> None:
+    from syrmos_admin import db as dbmod
+
     conn = dbmod.connect()
     dbmod.migrate(conn)
     total_stops = 0
@@ -122,12 +144,12 @@ def main() -> None:
 
         # Station rows are the union of both directions (same physical stops,
         # but a direction may serve one the other doesn't).
-        stations = {s["id"]: s for s in (outbound + inbound)}
+        stations_list = station_union(outbound, inbound)
 
         cur = conn.cursor()
         cur.execute("BEGIN")
         try:
-            for s in stations.values():
+            for s in stations_list:
                 conn.execute(
                     "INSERT INTO stations(id, name_en, name_el, lat, lng, region)"
                     " VALUES(?,?,?,?,?,?)"
@@ -148,8 +170,7 @@ def main() -> None:
                  outbound[-1]["name_en"], 70 + len(seeded_lines), REGION, "operational"),
             )
             conn.execute("DELETE FROM line_stations WHERE line_id=?", (line_id,))
-            rows = [(line_id, s["id"], n + 1, "outbound") for n, s in enumerate(outbound)]
-            rows += [(line_id, s["id"], n + 1, "inbound") for n, s in enumerate(inbound)]
+            rows = line_station_rows(line_id, outbound, inbound)
             conn.executemany(
                 "INSERT INTO line_stations(line_id, station_id, seq, direction)"
                 " VALUES(?,?,?,?)",
@@ -160,7 +181,7 @@ def main() -> None:
             cur.execute("ROLLBACK")
             raise
 
-        total_stops += len(stations)
+        total_stops += len(stations_list)
         seeded_lines.append(f"{line_id}(out {len(outbound)}/in {len(inbound)})")
         print(f"  {line_id}: outbound {len(outbound)}, inbound {len(inbound)} stops")
 
@@ -170,5 +191,45 @@ def main() -> None:
         sys.exit("no lines seeded - telematics unreachable or returned no stops")
 
 
+def run_selftest() -> None:
+    """Offline check of the pure planning logic (no network, no DB import)."""
+    out = [
+        {"id": "OASA_1", "name_en": "City"},
+        {"id": "OASA_2", "name_en": "Mid"},
+        {"id": "OASA_3", "name_en": "Airport"},
+    ]
+    inb = [
+        {"id": "OASA_3", "name_en": "Airport"},
+        {"id": "OASA_2", "name_en": "Mid"},
+        {"id": "OASA_1", "name_en": "City"},
+    ]
+
+    rows = line_station_rows("X95", out, inb)
+    dirs = {r[3] for r in rows}
+    assert dirs == {"outbound", "inbound"}, f"expected both directions, got {dirs}"
+    assert "to_airport" not in dirs, "must not use the non-canonical to_airport label"
+    assert [r for r in rows if r[3] == "outbound"] == [
+        ("X95", "OASA_1", 1, "outbound"),
+        ("X95", "OASA_2", 2, "outbound"),
+        ("X95", "OASA_3", 3, "outbound"),
+    ], "outbound (city -> Airport) order/seq wrong"
+    assert [r for r in rows if r[3] == "inbound"] == [
+        ("X95", "OASA_3", 1, "inbound"),
+        ("X95", "OASA_2", 2, "inbound"),
+        ("X95", "OASA_1", 3, "inbound"),
+    ], "inbound (Airport -> city) order/seq wrong"
+
+    union = station_union(out, inb)
+    assert [s["id"] for s in union] == ["OASA_1", "OASA_2", "OASA_3"], (
+        "station union must dedupe and preserve first-seen order"
+    )
+    assert line_station_rows("X", [], []) == [], "empty directions yield no rows"
+
+    print("seed_oasa_airport_bus_stops self-test: OK")
+
+
 if __name__ == "__main__":
-    main()
+    if "--selftest" in sys.argv:
+        run_selftest()
+    else:
+        main()
