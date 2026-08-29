@@ -542,7 +542,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
         item {
             PulseActivityRow(
                 "✓",
-                pulseText(lang, "No active issue reports", "Δεν υπαρχουν ενεργες αναφορες προβληματων", "Nuk ka raporte aktive problemesh", "Nessuna segnalazione attiva"),
+                pulseText(lang, "No active issue reports", "Δεν υπάρχουν ενεργές αναφορές προβλημάτων", "Nuk ka raporte aktive problemesh", "Nessuna segnalazione attiva"),
                 pulseText(lang, "The journey count is an estimate, not a user confirmation count.", "Ο αριθμος διαδρομων ειναι εκτιμηση, οχι αριθμος επιβεβαιωσεων χρηστων.", "Numri i udhetimeve eshte vleresim, jo numer konfirmimesh nga perdoruesit.", "Il numero di viaggi e una stima, non un conteggio di conferme utenti."),
                 pulseText(lang, "Clear", "Καθαρο", "Ne rregull", "Regolare"),
                 SyrmosColorTokens.live,

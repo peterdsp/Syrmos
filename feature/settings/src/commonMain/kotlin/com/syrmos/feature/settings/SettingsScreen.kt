@@ -104,7 +104,7 @@ fun SettingsScreen(
         if (onAriadneClick != null) {
             item {
                 SettingsSection(title = when (lang) {
-                    AppLanguage.GREEK -> "Βοηθος"
+                    AppLanguage.GREEK -> "Βοηθός"
                     AppLanguage.ALBANIAN -> "Asistent"
                     AppLanguage.ITALIAN -> "Assistente"
                     else -> "Assistant"

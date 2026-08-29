@@ -523,7 +523,7 @@ private func communityIssueList(language: AppLanguage, summary: IchnosCommunityS
     } else if let summary {
         pulseActivityRow(
             symbol: "✓",
-            title: pulseText(language, "Nothing active to show", "Δεν υπαρχει κατι ενεργο", "Nuk ka asgje aktive per te shfaqur", "Nessun elemento attivo da mostrare"),
+            title: pulseText(language, "Nothing active to show", "Δεν υπάρχει κάτι ενεργό", "Nuk ka asgjë aktive për të shfaqur", "Nessun elemento attivo da mostrare"),
             detail: summary.normalReportCount > 0
                 ? pulseText(language, "\(summary.normalReportCount) anonymous everything-OK reports remain active", "\(summary.normalReportCount) ανωνυμες αναφορες οτι ολα ειναι καλα παραμενουν ενεργες", "\(summary.normalReportCount) raporte anonime se gjithcka eshte ne rregull jane aktive", "\(summary.normalReportCount) segnalazioni anonime di tutto regolare sono attive")
                 : pulseText(language, "Be the first to report what you can see", "Γινε ο πρωτος που θα αναφερει τι βλεπει", "Raporto i pari ate qe sheh", "Segnala per primo cio che vedi"),

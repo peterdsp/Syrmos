@@ -953,7 +953,7 @@ struct DestinationDetailView: View {
 
     private var noDeparturesLabel: String {
         switch loc.language {
-        case .greek: return "Δεν υπαρχουν δρομολογια"
+        case .greek: return "Δεν υπάρχουν δρομολόγια"
         case .albanian: return "Nuk ka nisje"
         case .italian: return "Nessuna partenza"
         case .english: return "No departures"
