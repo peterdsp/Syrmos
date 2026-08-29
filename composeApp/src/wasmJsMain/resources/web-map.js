@@ -1060,13 +1060,31 @@
         const cached = localStorage.getItem("syrmos.line_geometry.v1");
         if (cached) for (const [lid, feat] of Object.entries(JSON.parse(cached))) geoCache.set(lid, feat);
     } catch (_) {}
+    // The Pi only publishes a /line-geometry override for a subset of lines.
+    // Requesting the rest fired one 404 apiece on every load (a console flood of
+    // ~15 errors) and, because this is an await-all, blocked line drawing until
+    // each 404 came back. Those lines already carry accurate bundled shapes.json
+    // geometry, so a 404 changed nothing — it just fell back to the bundle. Skip
+    // the lines the server is known to lack: identical rendering, no wasted
+    // round-trips. If the Pi later adds one, drop it from this set (bundled
+    // geometry covers it until then).
+    const REMOTE_GEOMETRY_ABSENT = new Set([
+        "DX1", "IC1", "KB1", "KP1", "PL1", "PS2", "PSB", "PU2",
+        "RG1", "TL1", "TP1", "TP2", "TP3", "TP4", "VL1",
+        // Airport shuttle buses: no OSM rail relation, so no server file and no
+        // bundled shape either — they draw from their stop list via the spline
+        // fallback, which is right for a road service.
+        "2X", "X3",
+    ]);
     const geoFetches = await Promise.all(
-        lines.map((line) =>
-            fetch(`https://api-syrmos.peterdsp.dev/line-geometry/${line.id}.geojson`)
-                .then((r) => (r.ok ? r.json() : null))
-                .catch(() => null)
-                .then((feat) => ({ id: line.id, feat }))
-        )
+        lines
+            .filter((line) => !REMOTE_GEOMETRY_ABSENT.has(line.id))
+            .map((line) =>
+                fetch(`https://api-syrmos.peterdsp.dev/line-geometry/${line.id}.geojson`)
+                    .then((r) => (r.ok ? r.json() : null))
+                    .catch(() => null)
+                    .then((feat) => ({ id: line.id, feat }))
+            )
     );
     const persist = {};
     for (const { id, feat } of geoFetches) {
