@@ -299,15 +299,23 @@ private struct AirportHeroCard: View {
                     .background(.white.opacity(0.16), in: Capsule())
             }
 
-            HStack(spacing: 10) {
-                ForEach(Array(hub.pills.enumerated()), id: \.offset) { _, pill in
-                    airportHeroPill(pill.title, pill.icon)
+            // Mode pills wrap as complete units, so a label like "M3" or "24/7"
+            // can never be compressed and split across two lines. The schedule
+            // status chip sits on its own trailing line, so it never competes
+            // with the pills for width and can never clip at the card edge.
+            VStack(alignment: .leading, spacing: 10) {
+                FlowLayout(spacing: 8) {
+                    ForEach(Array(hub.pills.enumerated()), id: \.offset) { _, pill in
+                        airportHeroPill(pill.title, pill.icon)
+                    }
                 }
-                Spacer()
                 HStack(spacing: 5) {
+                    Spacer(minLength: 0)
                     Circle().fill(Color(hex: 0x63E6A6)).frame(width: 8, height: 8)
                     Text(airportText(language, "Schedules", "Ωράρια", "Oraret", "Orari"))
                         .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .fixedSize()
                 }
             }
         }
@@ -328,9 +336,54 @@ private struct AirportHeroCard: View {
     private func airportHeroPill(_ title: String, _ icon: String) -> some View {
         Label(title, systemImage: icon)
             .font(.caption2.weight(.bold))
+            .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, 9)
             .padding(.vertical, 6)
             .background(.white.opacity(0.14), in: Capsule())
+    }
+}
+
+/// Lays out chips left to right, wrapping each one to the next line as a
+/// complete unit instead of compressing it. Keeps short transport labels such
+/// as "M3", "X95" or "24/7" atomic, so they can never be split across lines.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        let maxX = bounds.maxX
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }
 
