@@ -1,15 +1,19 @@
 package com.syrmos.feature.schedule
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,9 +57,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -484,7 +486,7 @@ private fun AirportRouteOverview(lang: AppLanguage, selectedRoute: String, dayOf
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(airportText(lang, "Airport route overview", "Επισκόπηση διαδρομών αεροδρομίου", "Pamja e linjave të aeroportit", "Panoramica percorsi aeroporto"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                if (dayOffset == 0) airportText(lang, "Route diagram for services to the terminal", "Διάγραμμα διαδρομών προς τον τερματικό σταθμό", "Skema e linjave drejt terminalit", "Schema dei percorsi verso il terminal")
+                if (dayOffset == 0) airportText(lang, "Every stop on the way to the terminal", "Κάθε στάση στη διαδρομή προς τον τερματικό", "Çdo stacion drejt terminalit", "Ogni fermata verso il terminal")
                 else airportText(lang, "Planned service for the selected day", "Προγραμματισμένη υπηρεσία για την επιλεγμένη ημέρα", "Shërbimi i planifikuar për ditën e zgjedhur", "Servizio previsto per il giorno selezionato"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -502,45 +504,89 @@ private fun AirportRouteOverview(lang: AppLanguage, selectedRoute: String, dayOf
                     }
                 }
             }
-            AirportMapCanvas(selectedRoute)
+            AirportRouteStrip(selectedRoute, lang)
+        }
+    }
+}
+
+private data class RouteStripStop(val label: String, val isAirport: Boolean, val isInterchange: Boolean)
+
+private fun airportRouteStops(route: String, lang: AppLanguage): List<RouteStripStop> {
+    val airport = airportText(lang, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto")
+    fun stop(label: String) = RouteStripStop(label, false, false)
+    fun interchange(label: String) = RouteStripStop(label, false, true)
+    val terminal = RouteStripStop(airport, true, false)
+    return when (route) {
+        // Real termini + the major airport-route interchanges (stable stops).
+        "M3" -> listOf(stop("Dimotiko Theatro"), interchange("Syntagma"), interchange("Doukissis Plakentias"), terminal)
+        "A1" -> listOf(stop("Piraeus"), interchange("Athens"), interchange("Doukissis Plakentias"), terminal)
+        "X95" -> listOf(stop("Syntagma"), terminal)
+        "X93" -> listOf(stop(airportText(lang, "Kifisos B Station", "ΚΤΕΛ Κηφισού", "Stacioni Kifisos", "Stazione Kifisos")), terminal)
+        "X96" -> listOf(stop(airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo")), terminal)
+        "X97" -> listOf(stop("Elliniko"), terminal)
+        else -> listOf(stop(airportText(lang, "City", "Πόλη", "Qyteti", "Città")), terminal)
+    }
+}
+
+private fun airportServiceNote(route: String, lang: AppLanguage): String = when (route) {
+    "M3" -> airportText(lang, "Metro Line 3, direct to the terminal", "Μετρό Γραμμή 3, απευθείας στον τερματικό", "Metro Linja 3, direkt te terminali", "Metro Linea 3, diretto al terminal")
+    "A1" -> airportText(lang, "Suburban A1, direct to the terminal", "Προαστιακός Α1, απευθείας στον τερματικό", "Suburban A1, direkt te terminali", "Suburbano A1, diretto al terminal")
+    else -> airportText(lang, "24-hour express bus. Times set by OASA.", "24ωρο λεωφορείο express. Ωράρια από τον ΟΑΣΑ.", "Autobus express 24 orë. Oraret nga OASA.", "Bus express 24 ore. Orari da OASA.")
+}
+
+@Composable
+private fun AirportRouteStrip(route: String, lang: AppLanguage) {
+    val color = airportRouteColor(route)
+    val stops = airportRouteStops(route, lang)
+    val isBus = route.startsWith("X")
+    val lineColor = if (isBus) color.copy(alpha = 0.35f) else color.copy(alpha = 0.8f)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stops.first().label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("→", color = color, fontWeight = FontWeight.Bold)
+            Text(stops.last().label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+        }
+        Surface(shape = RoundedCornerShape(16.dp), color = color.copy(alpha = 0.05f)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 10.dp), verticalAlignment = Alignment.Top) {
+                stops.forEachIndexed { index, stop ->
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Box(Modifier.fillMaxWidth().height(26.dp), contentAlignment = Alignment.Center) {
+                            Row(Modifier.fillMaxWidth().height(3.dp)) {
+                                Box(Modifier.weight(1f).fillMaxHeight().background(if (index == 0) Color.Transparent else lineColor))
+                                Box(Modifier.weight(1f).fillMaxHeight().background(if (index == stops.lastIndex) Color.Transparent else lineColor))
+                            }
+                            RouteStripDot(stop, color)
+                        }
+                        Text(
+                            stop.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (stop.isAirport) FontWeight.Bold else FontWeight.Normal,
+                            color = if (stop.isAirport) color else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(if (isBus) Icons.Filled.DirectionsBus else Icons.Filled.Train, null, tint = color, modifier = Modifier.size(14.dp))
+            Text(airportServiceNote(route, lang), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-private fun AirportMapCanvas(route: String) {
-    val color = airportRouteColor(route)
-    Box(
-        modifier = Modifier.fillMaxWidth().height(170.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(Color(0xFFDDEAF2), Color(0xFFEDE8F5)))),
-    ) {
-        Canvas(Modifier.fillMaxSize()) {
-            var x = 0f
-            while (x < size.width + 60f) {
-                drawLine(Color.White.copy(alpha = 0.55f), Offset(x, 0f), Offset(x + 58f, size.height), 1.5f)
-                x += 42f
-            }
-            var y = 18f
-            while (y < size.height) {
-                drawLine(Color.White.copy(alpha = 0.55f), Offset(0f, y), Offset(size.width, y - 18f), 1.5f)
-                y += 38f
-            }
-            val path = Path().apply {
-                moveTo(size.width * 0.13f, size.height * 0.74f)
-                cubicTo(size.width * 0.36f, size.height * 0.85f, size.width * 0.62f, size.height * 0.18f, size.width * 0.86f, size.height * 0.25f)
-            }
-            drawPath(path, color, style = Stroke(width = 7f, cap = StrokeCap.Round))
-            drawCircle(Color.White, 18f, Offset(size.width * 0.13f, size.height * 0.74f))
-            drawCircle(color, 18f, Offset(size.width * 0.86f, size.height * 0.25f), style = Stroke(width = 6f))
-            drawCircle(color, 15f, Offset(size.width * 0.56f, size.height * 0.48f))
+private fun RouteStripDot(stop: RouteStripStop, color: Color) {
+    when {
+        stop.isAirport -> Surface(shape = CircleShape, color = color, modifier = Modifier.size(24.dp)) {
+            Box(contentAlignment = Alignment.Center) { Icon(Icons.Filled.AirplanemodeActive, null, tint = Color.White, modifier = Modifier.size(13.dp)) }
         }
-        Text("S", modifier = Modifier.align(Alignment.BottomStart).padding(start = 34.dp, bottom = 35.dp), color = color, fontWeight = FontWeight.Bold)
-        Text("A", modifier = Modifier.align(Alignment.TopEnd).padding(end = 45.dp, top = 31.dp), color = color, fontWeight = FontWeight.Bold)
-        Icon(
-            if (route == "M3" || route == "A1") Icons.Filled.Train else Icons.Filled.DirectionsBus,
-            null,
-            tint = Color.White,
-            modifier = Modifier.align(Alignment.Center).size(20.dp),
+        stop.isInterchange -> Box(
+            Modifier.size(14.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface).border(3.dp, color, CircleShape),
         )
+        else -> Box(Modifier.size(11.dp).clip(CircleShape).background(color))
     }
 }
 
@@ -569,13 +615,12 @@ private fun PredictiveItinerary(lang: AppLanguage, flightMinutes: Int, departure
             )
         }
         if (metroMinutes != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                ItineraryStep(clockString(metroMinutes - 12), airportText(lang, "Leave", "Αναχώρηση", "Nisja", "Parti"), Icons.AutoMirrored.Filled.DirectionsWalk, Modifier.weight(1f))
-                Connector()
-                ItineraryStep(clockString(metroMinutes), "M3 Syntagma", Icons.Filled.Train, Modifier.weight(1f))
-                Connector()
-                ItineraryStep(clockString(metroMinutes + 43), airportText(lang, "Terminal", "Τερματικός", "Terminali", "Terminal"), Icons.Filled.AirplanemodeActive, Modifier.weight(1f))
-            }
+            ItineraryTimeline(
+                leaveTime = clockString(metroMinutes - 12),
+                boardTime = clockString(metroMinutes),
+                arriveTime = clockString(metroMinutes + 43),
+                lang = lang,
+            )
         } else {
             Text(
                 airportText(lang, "No scheduled M3 departure was found for this date. Choose another day or check official operator information.", "Δεν βρέθηκε προγραμματισμένη αναχώρηση M3 για αυτή την ημερομηνία. Επιλέξτε άλλη ημέρα ή ελέγξτε τις επίσημες πληροφορίες.", "Nuk u gjet nisje e programuar M3 për këtë datë. Zgjidh një ditë tjetër ose kontrollo informacionin zyrtar.", "Nessuna partenza M3 programmata trovata per questa data. Scegli un altro giorno o controlla le informazioni ufficiali."),
@@ -591,11 +636,39 @@ private fun PredictiveItinerary(lang: AppLanguage, flightMinutes: Int, departure
     }
 }
 
+// A connected 3-node timeline: a continuous line joins the icon centers (each
+// step is equal width, so centers land at 1/6, 1/2, 5/6) with the leg durations
+// pinned to the midpoints. Replaces the old floating 18dp dashes that read as
+// broken disconnected lines.
+@Composable
+private fun ItineraryTimeline(leaveTime: String, boardTime: String, arriveTime: String, lang: AppLanguage) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val fullWidth = maxWidth
+        Canvas(Modifier.fillMaxWidth().height(36.dp)) {
+            val y = size.height / 2f
+            drawLine(
+                SyrmosColorTokens.metroBlue.copy(alpha = 0.35f),
+                Offset(size.width / 6f, y),
+                Offset(size.width * 5f / 6f, y),
+                strokeWidth = 3.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            ItineraryStep(leaveTime, airportText(lang, "Leave", "Αναχώρηση", "Nisja", "Parti"), Icons.AutoMirrored.Filled.DirectionsWalk, Modifier.weight(1f))
+            ItineraryStep(boardTime, "M3 · Syntagma", Icons.Filled.Train, Modifier.weight(1f))
+            ItineraryStep(arriveTime, airportText(lang, "Terminal", "Τερματικός", "Terminali", "Terminal"), Icons.Filled.AirplanemodeActive, Modifier.weight(1f))
+        }
+        DurationPill("12 min", Modifier.align(Alignment.TopStart).offset(x = fullWidth / 3f - 20.dp, y = 8.dp))
+        DurationPill("43 min", Modifier.align(Alignment.TopStart).offset(x = fullWidth * 2f / 3f - 20.dp, y = 8.dp))
+    }
+}
+
 @Composable
 private fun ItineraryStep(time: String, title: String, icon: ImageVector, modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), modifier = Modifier.size(32.dp)) {
-            Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = SyrmosColorTokens.metroBlue, modifier = Modifier.size(17.dp)) }
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface, border = BorderStroke(2.dp, SyrmosColorTokens.metroBlue.copy(alpha = 0.85f)), modifier = Modifier.size(36.dp)) {
+            Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = SyrmosColorTokens.metroBlue, modifier = Modifier.size(18.dp)) }
         }
         Text(time, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
         Text(title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -603,8 +676,10 @@ private fun ItineraryStep(time: String, title: String, icon: ImageVector, modifi
 }
 
 @Composable
-private fun Connector() {
-    Box(Modifier.width(18.dp).height(2.dp).background(SyrmosColorTokens.metroBlue.copy(alpha = 0.28f)))
+private fun DurationPill(text: String, modifier: Modifier) {
+    Surface(modifier, shape = CircleShape, color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, SyrmosColorTokens.metroBlue.copy(alpha = 0.2f))) {
+        Text(text, Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = SyrmosColorTokens.metroBlue, fontWeight = FontWeight.SemiBold)
+    }
 }
 
 @Composable
