@@ -120,7 +120,7 @@ struct SyrmosSettingsView: View {
             }
             .buttonStyle(.plain)
         } header: {
-            Text(loc.language == .greek ? "Βοηθος" : loc.language == .albanian ? "Asistent" : loc.language == .italian ? "Assistente" : "Assistant")
+            Text(loc.language == .greek ? "Βοηθός" : loc.language == .albanian ? "Asistent" : loc.language == .italian ? "Assistente" : "Assistant")
         }
     }
 

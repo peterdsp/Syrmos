@@ -460,9 +460,12 @@ private struct AirportCalendarHub: View {
                         : airportText(language, "SAVED AIRPORT TRIP", "ΑΠΟΘΗΚΕΥΜΕΝΟ ΤΑΞΙΔΙ", "UDHETIM I RUAJTUR", "VIAGGIO SALVATO"))
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.secondary)
-                    Text(calendarEvent?.title ?? airportText(language, "No saved airport trip", "Δεν υπαρχει αποθηκευμενο ταξιδι", "Nuk ka udhetim te ruajtur", "Nessun viaggio salvato"))
+                    Text(calendarEvent?.title ?? airportText(language, "No saved airport trip", "Δεν υπάρχει αποθηκευμένο ταξίδι", "Nuk ka udhëtim të ruajtur", "Nessun viaggio salvato"))
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
+                        // Longer locales (EL/SQ/IT) shrink to fit one line
+                        // instead of truncating next to the time picker.
+                        .minimumScaleFactor(0.8)
                     Button(action: onConnectCalendar) {
                         Label(calendarStatusText, systemImage: calendarStatusIcon)
                             .font(.caption2)
@@ -1594,7 +1597,7 @@ private struct ExpandedRow: View {
 private struct EmptyRow: View {
     @ObservedObject private var loc = LocalizationManager.shared
     var body: some View {
-        Text(loc.language == .greek ? "Δεν υπαρχουν διαθεσιμα δρομολογια." :
+        Text(loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια." :
              loc.language == .albanian ? "Nuk ka nisje te disponueshme." :
              loc.language == .italian ? "Nessuna partenza disponibile." :
              "No departures available.")
