@@ -13,7 +13,13 @@ import com.syrmos.feature.stations.StationDetailViewModel
 import org.koin.dsl.module
 
 val featureModule = module {
-    factory {
+    // single, not factory: these tab-root ViewModels own a custom CoroutineScope
+    // with polling loops (Home's 60s connectivity probe, Map's 1s simulation +
+    // 15s/30s pollers, Lines' collector) that is never cancelled. As factories,
+    // Voyager recreating a tab's composition on every switch spun up a fresh VM
+    // and leaked the old one's loops forever. A single instance bounds that to
+    // one and keeps the tab's state across switches.
+    single {
         HomeViewModel(
             findNearestStation = get(),
             getNextDepartures = get(),
@@ -47,14 +53,14 @@ val featureModule = module {
             ariadneChatService = get(),
         )
     }
-    factory { LinesViewModel(getLinesUseCase = get()) }
+    single { LinesViewModel(getLinesUseCase = get()) }
     factory {
         LineDetailViewModel(
             getLineDetailUseCase = get(),
             liveTrackerService = get(),
         )
     }
-    factory {
+    single {
         MapViewModel(
             stationRepository = get(),
             lineRepository = get(),
