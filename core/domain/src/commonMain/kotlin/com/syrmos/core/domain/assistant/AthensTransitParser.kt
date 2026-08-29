@@ -35,9 +35,6 @@ class AthensTransitParser(
         val mentionedLine = matchLine(text)
         val day = matchDay(text)
 
-        // Help / capabilities, allowed even with no other signal.
-        if (containsAny(text, HELP_PHRASES)) return AssistantIntent.Help
-
         // Reverse-trip follow-up: a bare "and back?" / "return" / "the other
         // way" / "και πίσω" / "kthimi" with no newly-named station. The resolver
         // flips the remembered route; with an explicit new trip ("X to Y and
@@ -66,6 +63,17 @@ class AthensTransitParser(
         // is answered from cache; "weather at X" is anchored to a station;
         // "get me to X, it's raining" still goes to the routing branch.
         val weather = containsAny(text, WEATHER_WORDS)
+
+        // Help / capabilities — but ONLY when the message carries no actual
+        // transit request. HELP_PHRASES includes greetings ("hi", "hey", "γεια"),
+        // so running this before the transit branches meant a greeting that
+        // merely PREFIXES a query ("hi, when's the next train to Syntagma?",
+        // "help me get to the airport") hijacked it to the capabilities blurb. A
+        // bare greeting still lands here because no transit signal is present.
+        if (containsAny(text, HELP_PHRASES) && !strongTransit && !intentSignal && !weather) {
+            return AssistantIntent.Help
+        }
+
         if (weather) {
             // Direct weather question: no plan cue, no "to" marker, but a
             // weather word. Optionally anchored to a station the user
@@ -556,14 +564,16 @@ class AthensTransitParser(
         // Relative: "in N min" / "σε N λεπτά" / "për N minuta"
         val relMin = Regex("""(\d+)\s*(min|minute|minutes|λεπτ|minut)""").find(text)
         if (relMin != null) {
-            val n = relMin.groupValues[1].toInt()
-            if (n in 1..(24 * 60)) return TargetTime(absoluteMinutes = null, relativeMinutes = n)
+            // toIntOrNull: the (\d+) is unbounded, so a giant number ("in
+            // 99999999999 minutes") would otherwise throw NumberFormatException.
+            val n = relMin.groupValues[1].toIntOrNull()
+            if (n != null && n in 1..(24 * 60)) return TargetTime(absoluteMinutes = null, relativeMinutes = n)
         }
         // Relative: "in N hour(s)" / "σε N ώρες" / "për N orë"
         val relHr = Regex("""(\d+)\s*(hour|hours|hr|h |ωρα|ωρε|ore |orë)""").find(text)
         if (relHr != null) {
-            val n = relHr.groupValues[1].toInt()
-            if (n in 1..12) return TargetTime(absoluteMinutes = null, relativeMinutes = n * 60)
+            val n = relHr.groupValues[1].toIntOrNull()
+            if (n != null && n in 1..12) return TargetTime(absoluteMinutes = null, relativeMinutes = n * 60)
         }
 
         return null
