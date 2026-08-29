@@ -46,6 +46,7 @@ import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.Station
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
