@@ -463,16 +463,23 @@ private struct AirportRouteMapCard: View {
 
     private let routes = ["M3", "A1", "X95", "X93", "X96", "X97"]
 
+    private struct RouteStop: Identifiable {
+        let id = UUID()
+        let label: String
+        let isAirport: Bool
+        let isInterchange: Bool
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(airportText(language, "Airport route overview", "Επισκόπηση διαδρομών αεροδρομίου", "Pamja e linjave të aeroportit", "Panoramica percorsi aeroporto"))
-                        .font(.headline)
-                    Text(routeSubtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+        let stops = routeStops
+        let color = routeColor(selectedRoute)
+        return VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(airportText(language, "Airport route overview", "Επισκόπηση διαδρομών αεροδρομίου", "Pamja e linjave të aeroportit", "Panoramica percorsi aeroporto"))
+                    .font(.headline)
+                Text(routeSubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 8) {
@@ -491,41 +498,147 @@ private struct AirportRouteMapCard: View {
                 }
             }
 
-            GeometryReader { proxy in
-                ZStack {
-                    LinearGradient(
-                        colors: [Color(hex: 0xDDEAF2), Color(hex: 0xEDE8F5)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    airportMapGrid(size: proxy.size)
-                        .stroke(Color.white.opacity(0.55), lineWidth: 1)
-                    airportRoutePath(size: proxy.size)
-                        .stroke(routeColor(selectedRoute).opacity(0.85), style: StrokeStyle(lineWidth: 6, lineCap: .round))
-
-                    airportMapStop("S", x: 0.13, y: 0.74, size: proxy.size)
-                    airportMapStop("A", x: 0.86, y: 0.25, size: proxy.size)
-
-                    Image(systemName: (selectedRoute == "M3" || selectedRoute == "A1") ? "tram.fill" : "bus.fill")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
-                        .background(routeColor(selectedRoute), in: Circle())
-                        .shadow(radius: 5, y: 2)
-                        .position(x: proxy.size.width * 0.56, y: proxy.size.height * 0.48)
+            // Endpoints line: real origin -> Airport, so the strip below reads
+            // as an actual line, not a decorative squiggle.
+            if let first = stops.first, let last = stops.last, stops.count > 1 {
+                HStack(spacing: 6) {
+                    Text(first.label)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                    Image(systemName: "arrow.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(color)
+                    Text(last.label)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(color)
+                        .lineLimit(1)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
-            .frame(height: 170)
-            .accessibilityLabel(routeSubtitle)
+
+            // Real station strip. Rail routes render every stop from the line
+            // data (interchanges ringed, terminal = airplane); express buses have
+            // no per-stop data, so they show origin and terminal as a dashed hop.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach(Array(stops.enumerated()), id: \.element.id) { index, stop in
+                        stopCell(index: index, count: stops.count, stop: stop, color: color)
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+            }
+            .frame(height: 64)
+            .background(color.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            HStack(spacing: 6) {
+                Image(systemName: isBusRoute ? "bus.fill" : "tram.fill")
+                    .font(.caption2)
+                    .foregroundStyle(color)
+                Text(serviceNote)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(16)
         .glassCardBackground(cornerRadius: 22)
     }
 
+    @ViewBuilder
+    private func stopCell(index: Int, count: Int, stop: RouteStop, color: Color) -> some View {
+        VStack(spacing: 7) {
+            HStack(spacing: 0) {
+                connectorSegment(color: color, hidden: index == 0)
+                stopDot(stop, color: color)
+                connectorSegment(color: color, hidden: index == count - 1)
+            }
+            .frame(height: 26)
+            Text(stop.label)
+                .font(.system(size: 9, weight: stop.isAirport ? .bold : .regular))
+                .foregroundStyle(stop.isAirport ? color : Color.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .frame(width: 60, height: 24, alignment: .top)
+        }
+        .frame(width: 60)
+    }
+
+    private func connectorSegment(color: Color, hidden: Bool) -> some View {
+        Rectangle()
+            .fill(hidden ? Color.clear : (isBusRoute ? color.opacity(0.35) : color.opacity(0.8)))
+            .frame(height: 3)
+    }
+
+    @ViewBuilder
+    private func stopDot(_ stop: RouteStop, color: Color) -> some View {
+        if stop.isAirport {
+            Image(systemName: "airplane")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(color, in: Circle())
+        } else if stop.isInterchange {
+            Circle()
+                .fill(Color.syrmosBackground)
+                .frame(width: 13, height: 13)
+                .overlay(Circle().stroke(color, lineWidth: 3))
+        } else {
+            Circle()
+                .fill(color)
+                .frame(width: 11, height: 11)
+        }
+    }
+
+    private var isBusRoute: Bool { selectedRoute.hasPrefix("X") }
+
+    private var routeStops: [RouteStop] {
+        let airportLabel = airportText(language, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto")
+        switch selectedRoute {
+        case "M3", "A1":
+            let stations = AirportData.stations(for: selectedRoute)
+            guard !stations.isEmpty else { return [] }
+            return stations.enumerated().map { index, station in
+                let isAirport = index == stations.count - 1
+                return RouteStop(
+                    label: isAirport ? airportLabel : stationName(station),
+                    isAirport: isAirport,
+                    isInterchange: !isAirport && station.lineIds.count > 1
+                )
+            }
+        default:
+            // Express buses: no per-stop timetable, so show the city anchor and
+            // the terminal as a two-node dashed hop.
+            let origin: String
+            switch selectedRoute {
+            case "X95": origin = "Syntagma"
+            case "X93": origin = airportText(language, "Kifisos B Station", "ΚΤΕΛ Κηφισού", "Stacioni Kifisos", "Stazione Kifisos")
+            case "X96": origin = airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo")
+            case "X97": origin = "Elliniko"
+            default: origin = airportText(language, "City", "Πόλη", "Qyteti", "Città")
+            }
+            return [
+                RouteStop(label: origin, isAirport: false, isInterchange: false),
+                RouteStop(label: airportLabel, isAirport: true, isInterchange: false),
+            ]
+        }
+    }
+
+    private func stationName(_ station: AirportData.Station) -> String {
+        if language == .greek { return station.nameEl.isEmpty ? station.name : station.nameEl }
+        return station.name
+    }
+
+    private var serviceNote: String {
+        switch selectedRoute {
+        case "M3": return airportText(language, "Metro Line 3, direct to the terminal", "Μετρό Γραμμή 3, απευθείας στον τερματικό", "Metro Linja 3, direkt te terminali", "Metro Linea 3, diretto al terminal")
+        case "A1": return airportText(language, "Suburban A1, direct to the terminal", "Προαστιακός Α1, απευθείας στον τερματικό", "Suburban A1, direkt te terminali", "Suburbano A1, diretto al terminal")
+        default: return airportText(language, "24-hour express bus. Times set by OASA.", "24ωρο λεωφορείο express. Ωράρια από τον ΟΑΣΑ.", "Autobus express 24 orë. Oraret nga OASA.", "Bus express 24 ore. Orari da OASA.")
+        }
+    }
+
     private var routeSubtitle: String {
         if dayOffset == 0 {
-            return airportText(language, "Route diagram for services to the terminal", "Διάγραμμα διαδρομών προς τον τερματικό σταθμό", "Skema e linjave drejt terminalit", "Schema dei percorsi verso il terminal")
+            return airportText(language, "Every stop on the way to the terminal", "Κάθε στάση στη διαδρομή προς τον τερματικό", "Çdo stacion drejt terminalit", "Ogni fermata verso il terminal")
         }
         return airportText(language, "Planned service for the selected day", "Προγραμματισμένη υπηρεσία για την επιλεγμένη ημέρα", "Shërbimi i planifikuar për ditën e zgjedhur", "Servizio previsto per il giorno selezionato")
     }
@@ -537,38 +650,6 @@ private struct AirportRouteMapCard: View {
         case "X95", "X93", "X96", "X97": return SyrmosTokens.warning
         default: return SyrmosTokens.suburban
         }
-    }
-
-    private func airportMapGrid(size: CGSize) -> Path {
-        Path { path in
-            stride(from: CGFloat(0), through: size.width, by: 34).forEach { x in
-                path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x + 58, y: size.height))
-            }
-            stride(from: CGFloat(16), through: size.height, by: 32).forEach { y in
-                path.move(to: CGPoint(x: 0, y: y)); path.addLine(to: CGPoint(x: size.width, y: y - 18))
-            }
-        }
-    }
-
-    private func airportRoutePath(size: CGSize) -> Path {
-        Path { path in
-            path.move(to: CGPoint(x: size.width * 0.13, y: size.height * 0.74))
-            path.addCurve(
-                to: CGPoint(x: size.width * 0.86, y: size.height * 0.25),
-                control1: CGPoint(x: size.width * 0.36, y: size.height * 0.85),
-                control2: CGPoint(x: size.width * 0.62, y: size.height * 0.18)
-            )
-        }
-    }
-
-    private func airportMapStop(_ label: String, x: CGFloat, y: CGFloat, size: CGSize) -> some View {
-        Text(label)
-            .font(.caption2.bold())
-            .foregroundStyle(routeColor(selectedRoute))
-            .frame(width: 26, height: 26)
-            .background(.white, in: Circle())
-            .overlay(Circle().stroke(routeColor(selectedRoute), lineWidth: 3))
-            .position(x: size.width * x, y: size.height * y)
     }
 }
 
@@ -596,13 +677,12 @@ private struct AirportPredictiveCard: View {
             }
 
             if let metroMinutes {
-                HStack(spacing: 0) {
+                HStack(alignment: .top, spacing: 0) {
                     itineraryStep(time: airportClockString(minutes: metroMinutes - 12), title: airportText(language, "Leave", "Αναχώρηση", "Nisja", "Parti"), icon: "figure.walk")
-                    itineraryConnector
-                    itineraryStep(time: airportClockString(minutes: metroMinutes), title: "M3 Syntagma", icon: "tram.fill")
-                    itineraryConnector
+                    itineraryStep(time: airportClockString(minutes: metroMinutes), title: "M3 · Syntagma", icon: "tram.fill")
                     itineraryStep(time: airportClockString(minutes: metroMinutes + 43), title: airportText(language, "Terminal", "Τερματικός", "Terminali", "Terminal"), icon: "airplane")
                 }
+                .background(alignment: .top) { itineraryTrack }
             } else {
                 Text(airportText(
                     language,
@@ -652,20 +732,52 @@ private struct AirportPredictiveCard: View {
     }
 
     private func itineraryStep(time: String, title: String, icon: String) -> some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.caption.weight(.semibold))
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(Color.metroBlue)
-                .frame(width: 32, height: 32)
-                .background(.white.opacity(0.75), in: Circle())
+                .frame(width: 36, height: 36)
+                .background(Color.syrmosBackground, in: Circle())
+                .overlay(Circle().stroke(Color.metroBlue.opacity(0.85), lineWidth: 2))
             Text(time).font(.subheadline.bold()).monospacedDigit()
-            Text(title).font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
+            Text(title)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
     }
 
-    private var itineraryConnector: some View {
-        Rectangle().fill(Color.metroBlue.opacity(0.28)).frame(width: 22, height: 2).offset(y: -12)
+    // A continuous track joining the three node centers (each step is equal
+    // width, so centers land at 1/6, 1/2, 5/6), with the leg durations pinned
+    // to the midpoints. Replaces the old floating 22pt dashes that read as
+    // broken disconnected lines.
+    private var itineraryTrack: some View {
+        GeometryReader { geo in
+            let y: CGFloat = 18
+            ZStack {
+                Path { path in
+                    path.move(to: CGPoint(x: geo.size.width / 6, y: y))
+                    path.addLine(to: CGPoint(x: geo.size.width * 5 / 6, y: y))
+                }
+                .stroke(Color.metroBlue.opacity(0.35), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                durationChip("12 min").position(x: geo.size.width / 3, y: y)
+                durationChip("43 min").position(x: geo.size.width * 2 / 3, y: y)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func durationChip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 8, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(Color.metroBlue)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.syrmosBackground, in: Capsule())
+            .overlay(Capsule().stroke(Color.metroBlue.opacity(0.2), lineWidth: 1))
     }
 }
 
