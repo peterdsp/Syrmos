@@ -31,16 +31,18 @@
 
   var WORKSPACES = ['now', 'plan', 'explore', 'departures', 'tickets'];
 
-  // Which query keys are meaningful per workspace shape, in canonical order.
+  // Which query keys are meaningful per entry point, in canonical order. Every
+  // dynamic identifier or selection travels as a query parameter so each route
+  // is a single static entry point on GitHub Pages (/plan/, /line/, ...), never
+  // an unbounded path like /line/M3 that would need a directory per line.
   var QUERY_KEYS = {
     now: ['station'],
     plan: ['from', 'to', 'when'],
-    'explore.discover': ['region'],
-    'explore.network': ['region', 'mode'],
-    line: ['direction', 'stop'],
-    station: [],
+    explore: ['view', 'region', 'mode'],
     departures: ['station'],
     tickets: ['from', 'to', 'rider'],
+    line: ['id', 'direction', 'stop'],
+    station: ['id'],
   };
 
   function trimSlashes(p) {
@@ -65,26 +67,24 @@
     var head = (seg[0] || 'now').toLowerCase();
 
     if (head === 'line') {
-      var state = { workspace: 'explore', line: seg[1] || null };
+      var state = { workspace: 'explore', line: q.id || null };
       put(state, 'direction', q.direction);
       put(state, 'stop', q.stop);
       return state;
     }
     if (head === 'station') {
-      return { workspace: 'now', station: seg[1] || null, view: 'station' };
+      return { workspace: 'now', view: 'station', station: q.id || null };
     }
     if (head === 'explore') {
-      var mode = (seg[1] || 'discover').toLowerCase();
-      if (mode !== 'discover' && mode !== 'network') mode = 'discover';
-      var es = { workspace: 'explore', mode: mode };
+      var view = (q.view || 'discover').toLowerCase();
+      if (view !== 'discover' && view !== 'network') view = 'discover';
+      var es = { workspace: 'explore', mode: view };
       put(es, 'region', q.region);
-      if (mode === 'network') put(es, 'netMode', q.mode);
+      if (view === 'network') put(es, 'netMode', q.mode);
       return es;
     }
     if (head === 'plan') {
-      if ((seg[1] || '').toLowerCase() === 'journey' && seg[2]) {
-        return { workspace: 'plan', journey: seg[2] };
-      }
+      if (q.journey) return { workspace: 'plan', journey: q.journey };
       var ps = { workspace: 'plan' };
       put(ps, 'from', q.from); put(ps, 'to', q.to); put(ps, 'when', q.when);
       return ps;
@@ -113,28 +113,30 @@
     var keys;
 
     if (ws === 'explore' && state.line) {
-      path = '/line/' + encodeURIComponent(state.line);
+      path = '/line/';
       keys = QUERY_KEYS.line;
     } else if (ws === 'now' && state.view === 'station' && state.station) {
-      path = '/station/' + encodeURIComponent(state.station);
+      path = '/station/';
       keys = QUERY_KEYS.station;
     } else if (ws === 'plan' && state.journey) {
-      path = '/plan/journey/' + encodeURIComponent(state.journey);
-      keys = [];
-    } else if (ws === 'explore') {
-      var mode = state.mode === 'network' ? 'network' : 'discover';
-      path = '/explore/' + mode;
-      keys = QUERY_KEYS['explore.' + mode];
+      path = '/plan/';
+      keys = ['journey'];
+    } else if (ws === 'now') {
+      path = '/'; // the root document IS the Now workspace
+      keys = QUERY_KEYS.now;
     } else {
-      path = '/' + ws;
+      path = '/' + ws + '/';
       keys = QUERY_KEYS[ws] || [];
     }
 
     var qs = new URLSearchParams();
     keys.forEach(function (k) {
-      // `mode` in the network URL is sourced from state.netMode.
-      var srcKey = (ws === 'explore' && state.mode === 'network' && k === 'mode') ? 'netMode' : k;
-      var v = state[srcKey];
+      var v;
+      if (path === '/line/' && k === 'id') v = state.line;
+      else if (path === '/station/' && k === 'id') v = state.station;
+      else if (ws === 'explore' && k === 'view') v = (state.mode === 'network') ? 'network' : '';
+      else if (ws === 'explore' && k === 'mode') v = state.netMode;
+      else v = state[k];
       if (v !== undefined && v !== null && v !== '') qs.set(k, String(v));
     });
     var query = qs.toString();
@@ -188,36 +190,37 @@ if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.m
   var assert = require('assert');
   var eq = function (a, b, m) { assert.deepStrictEqual(a, b, m); };
 
-  // parse
-  eq(R.parseRoute('/now', '?station=ATH'), { workspace: 'now', station: 'ATH' });
+  // parse: workspaces are directory entry points, dynamic ids are query params
   eq(R.parseRoute('/', ''), { workspace: 'now' });
-  eq(R.parseRoute('/plan', '?from=SYNTAGMA&to=AIRPORT'), { workspace: 'plan', from: 'SYNTAGMA', to: 'AIRPORT' });
-  eq(R.parseRoute('/plan/journey/abc', ''), { workspace: 'plan', journey: 'abc' });
-  eq(R.parseRoute('/explore/network', '?region=athens&mode=metro'), { workspace: 'explore', mode: 'network', region: 'athens', netMode: 'metro' });
-  eq(R.parseRoute('/explore', ''), { workspace: 'explore', mode: 'discover' });
-  eq(R.parseRoute('/line/M3', '?direction=airport&stop=SYN'), { workspace: 'explore', line: 'M3', direction: 'airport', stop: 'SYN' });
-  eq(R.parseRoute('/station/PIRAEUS', ''), { workspace: 'now', station: 'PIRAEUS', view: 'station' });
-  eq(R.parseRoute('/departures', '?station=PIRAEUS'), { workspace: 'departures', station: 'PIRAEUS' });
-  eq(R.parseRoute('/tickets', '?from=SYNTAGMA&to=AIRPORT&rider=adult'), { workspace: 'tickets', from: 'SYNTAGMA', to: 'AIRPORT', rider: 'adult' });
-  // trailing slash + unknown head fall back to Now
   eq(R.parseRoute('/now/', '?station=ATH'), { workspace: 'now', station: 'ATH' });
+  eq(R.parseRoute('/', '?station=ATH'), { workspace: 'now', station: 'ATH' });
+  eq(R.parseRoute('/plan/', '?from=SYNTAGMA&to=AIRPORT'), { workspace: 'plan', from: 'SYNTAGMA', to: 'AIRPORT' });
+  eq(R.parseRoute('/plan/', '?journey=abc'), { workspace: 'plan', journey: 'abc' });
+  eq(R.parseRoute('/explore/', '?view=network&region=athens&mode=metro'), { workspace: 'explore', mode: 'network', region: 'athens', netMode: 'metro' });
+  eq(R.parseRoute('/explore/', ''), { workspace: 'explore', mode: 'discover' });
+  eq(R.parseRoute('/line/', '?id=M3&direction=airport&stop=SYN'), { workspace: 'explore', line: 'M3', direction: 'airport', stop: 'SYN' });
+  eq(R.parseRoute('/station/', '?id=PIRAEUS'), { workspace: 'now', view: 'station', station: 'PIRAEUS' });
+  eq(R.parseRoute('/departures/', '?station=PIRAEUS'), { workspace: 'departures', station: 'PIRAEUS' });
+  eq(R.parseRoute('/tickets/', '?from=SYNTAGMA&to=AIRPORT&rider=adult'), { workspace: 'tickets', from: 'SYNTAGMA', to: 'AIRPORT', rider: 'adult' });
+  // unknown head falls back to Now
   eq(R.parseRoute('/bogus', ''), { workspace: 'now' });
 
   // build (canonical URLs)
-  eq(R.buildRoute({ workspace: 'now', station: 'ATH' }), '/now?station=ATH');
-  eq(R.buildRoute({ workspace: 'now' }), '/now');
-  eq(R.buildRoute({ workspace: 'plan', from: 'SYNTAGMA', to: 'AIRPORT' }), '/plan?from=SYNTAGMA&to=AIRPORT');
-  eq(R.buildRoute({ workspace: 'plan', journey: 'abc' }), '/plan/journey/abc');
-  eq(R.buildRoute({ workspace: 'explore', mode: 'network', region: 'athens', netMode: 'metro' }), '/explore/network?region=athens&mode=metro');
-  eq(R.buildRoute({ workspace: 'explore', line: 'M3', direction: 'airport', stop: 'SYN' }), '/line/M3?direction=airport&stop=SYN');
-  eq(R.buildRoute({ workspace: 'now', view: 'station', station: 'PIRAEUS' }), '/station/PIRAEUS');
-  eq(R.buildRoute({ workspace: 'departures', station: 'PIRAEUS' }), '/departures?station=PIRAEUS');
-  eq(R.buildRoute({ workspace: 'tickets', from: 'SYNTAGMA', to: 'AIRPORT', rider: 'adult' }), '/tickets?from=SYNTAGMA&to=AIRPORT&rider=adult');
-  // unknown workspace falls back to Now
-  eq(R.buildRoute({ workspace: 'zzz' }), '/now');
+  eq(R.buildRoute({ workspace: 'now' }), '/');
+  eq(R.buildRoute({ workspace: 'now', station: 'ATH' }), '/?station=ATH');
+  eq(R.buildRoute({ workspace: 'plan', from: 'SYNTAGMA', to: 'AIRPORT' }), '/plan/?from=SYNTAGMA&to=AIRPORT');
+  eq(R.buildRoute({ workspace: 'plan', journey: 'abc' }), '/plan/?journey=abc');
+  eq(R.buildRoute({ workspace: 'explore', mode: 'network', region: 'athens', netMode: 'metro' }), '/explore/?view=network&region=athens&mode=metro');
+  eq(R.buildRoute({ workspace: 'explore', line: 'M3', direction: 'airport', stop: 'SYN' }), '/line/?id=M3&direction=airport&stop=SYN');
+  eq(R.buildRoute({ workspace: 'now', view: 'station', station: 'PIRAEUS' }), '/station/?id=PIRAEUS');
+  eq(R.buildRoute({ workspace: 'departures', station: 'PIRAEUS' }), '/departures/?station=PIRAEUS');
+  eq(R.buildRoute({ workspace: 'tickets', from: 'SYNTAGMA', to: 'AIRPORT', rider: 'adult' }), '/tickets/?from=SYNTAGMA&to=AIRPORT&rider=adult');
+  // unknown workspace falls back to Now (root)
+  eq(R.buildRoute({ workspace: 'zzz' }), '/');
 
   // round-trip: parse(build(x)) === x for representative states
   [
+    { workspace: 'now' },
     { workspace: 'now', station: 'ATH' },
     { workspace: 'plan', from: 'SYNTAGMA', to: 'AIRPORT' },
     { workspace: 'plan', journey: 'abc' },
