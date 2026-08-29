@@ -525,20 +525,20 @@
     });
 
     const [stations, lines, routes, servicePatterns, vehicleManifest] = await Promise.all([
-        fetch("files/seed/stations.json").then((r) => r.json()),
+        fetch("/files/seed/stations.json").then((r) => r.json()),
         // schedules-v2 is the generator's payload and the single source of truth
         // for lines. The legacy flat seed/lines.json was transcribed from
         // hardcoded Swift by a script broken since June 2026, so it carries
         // neither region nor status. Falls back to it only if the payload cannot
         // be read, so a bad deploy degrades rather than renders an empty map. See
         // docs/plans/2026-07-17-server-as-single-source-for-lines.md.
-        fetch("files/seed/schedules-v2/lines.json")
+        fetch("/files/seed/schedules-v2/lines.json")
             .then((r) => r.json())
             .then((d) => (Array.isArray(d?.lines) && d.lines.length ? d.lines : Promise.reject()))
-            .catch(() => fetch("files/seed/lines.json").then((r) => r.json())),
-        fetch("files/seed/routes.json").then((r) => r.json()),
-        fetch("files/seed/service_patterns.json").then((r) => r.json()),
-        fetch("icons/vehicles/manifest.json").then((r) => r.json()).catch(() => ({ directional_icons: [] })),
+            .catch(() => fetch("/files/seed/lines.json").then((r) => r.json())),
+        fetch("/files/seed/routes.json").then((r) => r.json()),
+        fetch("/files/seed/service_patterns.json").then((r) => r.json()),
+        fetch("/icons/vehicles/manifest.json").then((r) => r.json()).catch(() => ({ directional_icons: [] })),
     ]);
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
@@ -664,7 +664,7 @@
         for (const [sid, url] of Object.entries(apiIcons.stations)) stationIconBySid.set(sid, url);
         for (const [sid, url] of Object.entries(apiIcons.interchanges || {})) stationIconBySid.set(sid, url);
     }
-    const stationIconManifest = await fetch("icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
+    const stationIconManifest = await fetch("/icons/stations/manifest.json").then((r) => r.json()).catch(() => ({}));
     const lineToManifestDir = { M1: "metro/M1", M2: "metro/M2", M3: "metro/M3", T6: "tram/T6", T7: "tram/T7", A1: "train/P1", A2: "train/P1", A3: "train/P3", A4: "train/P2" };
     for (const route of routes) {
         const mDir = lineToManifestDir[route.line_id];
@@ -1039,7 +1039,7 @@
     //   3. Catmull-Rom spline through station coords as last-resort fallback.
     const geoCache = new Map();
     try {
-        const bundled = await fetch("./shapes.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const bundled = await fetch("/shapes.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
         if (bundled && bundled.shapes) {
             for (const [lid, shape] of Object.entries(bundled.shapes)) {
                 if (shape && Array.isArray(shape.coordinates) && shape.coordinates.length > 1) {
@@ -1874,7 +1874,7 @@
             ask.className = "search-result search-result--ariadne";
             const owl = document.createElement("img");
             owl.className = "search-result__owl";
-            owl.src = "ariadne-mark.png";
+            owl.src = "/ariadne-mark.png";
             owl.alt = "";
             owl.setAttribute("aria-hidden", "true");
             const txt = document.createElement("div");
@@ -3368,14 +3368,13 @@
     // scrolling context panel for its workspace. The map is the canvas, not a
     // nav root.
     //
-    // In-session routing only, on purpose: the live host (GitHub Pages) has no
-    // SPA fallback, so a path like /plan 404s on reload, and <base href> would
-    // break the inline SVG <use href="#ic-..."> icons. So we drive the same
-    // subscribe/active-state machinery but do NOT push path URLs yet. We still
-    // read the INITIAL workspace from the URL (so a host that later serves deep
-    // links initialises correctly). Flip URL_ROUTING to true once the host
-    // serves an SPA fallback and the built wasm loader is verified on deep
-    // paths; nothing else here needs to change.
+    // Full URL routing. The Pages build emits a static entry point per
+    // workspace (/now/, /plan/, /explore/, /departures/, /tickets/, plus /line/
+    // and /station/), each a copy of this document that returns HTTP 200 and
+    // loads assets by root-absolute path, so deep links and reloads work with
+    // no SPA fallback and no <base href> (which would break the inline SVG
+    // <use href="#ic-..."> icons). See scripts/prepare-pages-web-release.sh and
+    // docs/adr/0001-web-url-model.md.
     (function wireNavRail() {
         const nav = document.querySelector(".nav-rail");
         if (!nav || !window.SyrmosNav) return;
@@ -3395,20 +3394,18 @@
             return list ? (list.closest(".panel-card") || list) : null;
         };
 
-        // Router shape (web-router.js API) with pushState guarded off for now.
-        const URL_ROUTING = false;
-        const base = window.syrmosRouter;
-        let workspace = (base && base.current && base.current().workspace) || "now";
-        const subs = [];
-        const router = {
-            current: () => ({ workspace }),
-            navigate: (state) => {
-                workspace = (state && state.workspace) || "now";
-                if (URL_ROUTING && base) base.navigate(state);
-                subs.forEach((fn) => { try { fn({ workspace }); } catch (_) {} });
-            },
-            subscribe: (fn) => { subs.push(fn); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; },
-        };
+        // Consume the real URL router (web-router.js). Clicks push the
+        // workspace path; Back/Forward and deep-link loads flow back through
+        // subscribe(). Falls back to an in-session shim if the router is absent.
+        const router = window.syrmosRouter || (function () {
+            let workspace = "now";
+            const subs = [];
+            return {
+                current: () => ({ workspace }),
+                navigate: (state) => { workspace = (state && state.workspace) || "now"; subs.forEach((fn) => { try { fn({ workspace }); } catch (_) {} }); },
+                subscribe: (fn) => { subs.push(fn); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; },
+            };
+        })();
 
         window.SyrmosNav.wire(nav, router, {
             now() { clearSelection(); fitAthensCore(); panelTop(); },              // Athens now view
