@@ -463,6 +463,9 @@ private struct AirportCalendarHub: View {
                     Text(calendarEvent?.title ?? airportText(language, "No saved airport trip", "Δεν υπάρχει αποθηκευμένο ταξίδι", "Nuk ka udhëtim të ruajtur", "Nessun viaggio salvato"))
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
+                        // Longer locales (EL/SQ/IT) shrink to fit one line
+                        // instead of truncating next to the time picker.
+                        .minimumScaleFactor(0.8)
                     Button(action: onConnectCalendar) {
                         Label(calendarStatusText, systemImage: calendarStatusIcon)
                             .font(.caption2)

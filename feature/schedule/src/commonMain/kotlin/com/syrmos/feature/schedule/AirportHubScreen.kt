@@ -476,7 +476,9 @@ private fun CalendarHub(
                         selectedTrip?.title ?: airportText(lang, "No saved airport trip", "Δεν υπάρχει αποθηκευμένο ταξίδι", "Nuk ka udhëtim të ruajtur", "Nessun viaggio salvato"),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
+                        // Longer locales (EL/SQ/IT) wrap to a second line instead
+                        // of truncating next to the time picker.
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Row(
