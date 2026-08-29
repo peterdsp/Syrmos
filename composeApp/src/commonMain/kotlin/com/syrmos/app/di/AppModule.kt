@@ -76,7 +76,12 @@ val featureModule = module {
         )
     }
     factory { com.syrmos.core.domain.usecase.GetStationDeparturesUseCase(getNextDepartures = get(), transitPatternRepository = get()) }
-    factory { StationDetailViewModel(getStationDetail = get(), getStationDepartures = get()) }
+    // single: same leak class as the tab ViewModels — its 15s departures loop
+    // was never cancelled, so each station opened leaked another loop. A shared
+    // instance switches its single refreshJob per station (loadStation cancels
+    // the old one), so exactly one loop runs regardless of how many stations
+    // are viewed.
+    single { StationDetailViewModel(getStationDetail = get(), getStationDepartures = get()) }
 }
 
 val appModules = listOf(

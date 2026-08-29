@@ -57,12 +57,21 @@ struct SyrmosLiveActivity: Widget {
     /// trailing regions.
     @ViewBuilder
     private func countdown(_ context: ActivityViewContext<SyrmosTrackingAttributes>) -> some View {
-        if context.state.isDue {
+        if let epoch = context.state.targetEpoch {
+            // Live guard: never build Date()...pastDate — Swift's `...` traps when
+            // lower > upper. The app is backgrounded while a Live Activity runs,
+            // so isDue is not refreshed; once the target passed with isDue still
+            // false the extension hit a precondition crash. Check the epoch
+            // against now instead of the stale flag.
+            if Date().timeIntervalSince1970 < epoch {
+                Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            } else {
+                Text("now")
+            }
+        } else if context.state.isDue {
             Text("now")
-        } else if let epoch = context.state.targetEpoch {
-            Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
         } else {
             Text("\(context.state.minutesRemaining)m")
                 .contentTransition(.numericText())
@@ -141,10 +150,16 @@ private struct LockScreenView: View {
             // Big minutes, full-width row.
             HStack(alignment: .firstTextBaseline) {
                 Group {
-                    if context.state.isDue {
+                    // Live guard against Date()...pastDate (a precondition trap
+                    // once the target passes while the app is backgrounded).
+                    if let epoch = context.state.targetEpoch {
+                        if Date().timeIntervalSince1970 < epoch {
+                            Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
+                        } else {
+                            Text("Now")
+                        }
+                    } else if context.state.isDue {
                         Text("Now")
-                    } else if let epoch = context.state.targetEpoch {
-                        Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
                     } else {
                         Text("\(context.state.minutesRemaining) min").contentTransition(.numericText())
                     }
