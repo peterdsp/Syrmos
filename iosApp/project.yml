@@ -23,6 +23,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.syrmos.ios
         PRODUCT_NAME: Syrmos
         MARKETING_VERSION: "2.0.0"
-        CURRENT_PROJECT_VERSION: "127"
+        CURRENT_PROJECT_VERSION: "128"
         INFOPLIST_FILE: iosApp/Info.plist
         SWIFT_VERSION: "6.0"
