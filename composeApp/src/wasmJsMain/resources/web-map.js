@@ -3362,40 +3362,61 @@
         }
     })();
 
-    // Left nav rail: the five icons were inert placeholders from the redesign.
-    // Wire each to a real, DISTINCT action. The app is one map + one scrolling
-    // context panel, so "navigation" means framing the map and jumping the
-    // panel. Clicking also moves the active highlight.
+    // Left nav rail: five workspace roots (Now / Plan / Explore / Departures /
+    // Tickets) plus a footer "More" utility. The workspace is a real app state
+    // via web-nav.js + the Phase 0 router shape; each hook frames the one map +
+    // scrolling context panel for its workspace. The map is the canvas, not a
+    // nav root.
+    //
+    // In-session routing only, on purpose: the live host (GitHub Pages) has no
+    // SPA fallback, so a path like /plan 404s on reload, and <base href> would
+    // break the inline SVG <use href="#ic-..."> icons. So we drive the same
+    // subscribe/active-state machinery but do NOT push path URLs yet. We still
+    // read the INITIAL workspace from the URL (so a host that later serves deep
+    // links initialises correctly). Flip URL_ROUTING to true once the host
+    // serves an SPA fallback and the built wasm loader is verified on deep
+    // paths; nothing else here needs to change.
     (function wireNavRail() {
-        const items = document.querySelector(".nav-rail__items");
-        if (!items) return;
+        const nav = document.querySelector(".nav-rail");
+        if (!nav || !window.SyrmosNav) return;
         const contextRail = document.getElementById("contextRail");
         const panelTop = () => { if (contextRail) contextRail.scrollTo({ top: 0, behavior: "smooth" }); };
-        const jumpTo = (sel) => {
-            const el = document.querySelector(sel);
+        const jumpTo = (target) => {
+            const el = typeof target === "string" ? document.querySelector(target) : target;
             if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
         };
-        // Frame the ENTIRE network (all of Greece), distinct from Home's Athens core.
-        const fitAll = () => {
-            try {
-                const b = L.latLngBounds(stationNodes.map((s) => [s.latitude, s.longitude]));
-                if (b.isValid()) map.fitBounds(b.pad(0.1)); else fitAthensCore();
-            } catch (_) { fitAthensCore(); }
+        const openAriadne = () => {
+            const panel = document.getElementById("ariadnePanel");
+            const launcher = document.getElementById("ariadneLauncher");
+            if (panel && launcher && panel.classList.contains("ariadne-panel--hidden")) launcher.click();
         };
-        const actions = {
-            home() { clearSelection(); fitAthensCore(); panelTop(); },       // reset to the Athens home view
-            explore() { panelTop(); if (stationSearch) stationSearch.focus(); }, // start searching a station
-            map() { clearSelection(); fitAll(); },                           // see the whole network on the map
-            departures() { jumpTo(".departures-card"); },                    // jump to next departures + live trains
-            more() { jumpTo("#infoLinksList"); },                            // jump to useful info / links
+        const faresCard = () => {
+            const list = document.getElementById("faresList");
+            return list ? (list.closest(".panel-card") || list) : null;
         };
-        items.querySelectorAll(".nav-item").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                items.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("nav-item--active"));
-                btn.classList.add("nav-item--active");
-                const run = actions[btn.getAttribute("data-nav")];
-                if (run) run();
-            });
+
+        // Router shape (web-router.js API) with pushState guarded off for now.
+        const URL_ROUTING = false;
+        const base = window.syrmosRouter;
+        let workspace = (base && base.current && base.current().workspace) || "now";
+        const subs = [];
+        const router = {
+            current: () => ({ workspace }),
+            navigate: (state) => {
+                workspace = (state && state.workspace) || "now";
+                if (URL_ROUTING && base) base.navigate(state);
+                subs.forEach((fn) => { try { fn({ workspace }); } catch (_) {} });
+            },
+            subscribe: (fn) => { subs.push(fn); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; },
+        };
+
+        window.SyrmosNav.wire(nav, router, {
+            now() { clearSelection(); fitAthensCore(); panelTop(); },              // Athens now view
+            plan() { panelTop(); openAriadne(); },                                 // journey planning via Ariadne
+            explore() { panelTop(); if (stationSearch) stationSearch.focus(); },   // search / discover stations
+            departures() { jumpTo(".departures-card"); },                          // next departures + live trains
+            tickets() { const c = faresCard(); if (c) jumpTo(c); },                // OASA fares
+            more() { jumpTo("#infoLinksList"); },                                  // footer utility: useful info
         });
     })();
 
