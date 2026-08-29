@@ -270,6 +270,10 @@ struct ContentView: View {
             }
             await LivePositionsService.shared.refresh()
             await LiveTrainService.shared.refresh()
+            // Keep metro/tram/A dots fresh: without a re-poll each projected
+            // train expires after its travel time and the map empties within
+            // the hour (or shows nothing if launched while service was closed).
+            LivePositionsService.shared.startPolling()
             DiagnosticsCenter.shared.leaveBreadcrumb("app", "Initial live refresh done")
         }
         .onChange(of: selectedTab) { _, newTab in

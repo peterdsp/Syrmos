@@ -72,6 +72,24 @@ final class LivePositionsService: ObservableObject {
         await fetchActiveTrains()
     }
 
+    /// Re-fetch active positions on a cadence so metro / tram / A1-A4 dots stay
+    /// present. Each projected train expires after its own travelMinutes (see
+    /// TrainSimulatorService.projectTrains), so a single launch fetch empties
+    /// the map within the hour — and shows nothing at all if the app was
+    /// launched while service was closed and the feed was empty. This brings
+    /// metro/tram to parity with the auto-polling suburban feed (LiveTrainService)
+    /// and the web map, which re-projects from the schedule continuously.
+    func startPolling(intervalSeconds: UInt64 = 60) {
+        guard pollTask == nil else { return }
+        pollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: intervalSeconds * 1_000_000_000)
+                if Task.isCancelled { return }
+                await self?.refresh()
+            }
+        }
+    }
+
     private func ensureOffsets() async {
         if !offsets.isEmpty, let last = lastOffsetsFetch, Date().timeIntervalSince(last) < 3600 {
             return
