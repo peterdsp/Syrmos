@@ -161,13 +161,32 @@ class AssistantViewModel(
 
     init {
         scope.launch {
-            stations = stationRepository.getAllStations().first()
-            lines = getLinesUseCase.getOperationalLines().first()
-            parser = AthensTransitParser(AssistantVocabularyBuilder.build(stations, lines))
+            // Building the local parser needs stations + lines. If that load
+            // throws (empty Flow, bad cache, migration in progress) the composer
+            // must NOT be left permanently disabled: keep parser null (handleQuery
+            // still serves the cloud path, and degrades honestly offline) and
+            // always flip ready = true below.
+            try {
+                stations = stationRepository.getAllStations().first()
+                lines = getLinesUseCase.getOperationalLines().first()
+                parser = AthensTransitParser(AssistantVocabularyBuilder.build(stations, lines))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Local engine unavailable; the assistant stays usable via cloud.
+            }
             val nowAthens = com.syrmos.core.common.extensions.currentAthensTime()
-            val severe = weatherRepository.cached?.current?.condition?.isSevere == true
+            val severe = try {
+                weatherRepository.cached?.current?.condition?.isSevere == true
+            } catch (e: Exception) {
+                false
+            }
             val msgs = mutableListOf(greeting())
-            val alertNote = activeAlertNote()
+            val alertNote = try {
+                activeAlertNote()
+            } catch (e: Exception) {
+                null
+            }
             if (alertNote != null) msgs.add(alertNote)
             _uiState.update {
                 it.copy(
@@ -195,7 +214,9 @@ class AssistantViewModel(
     fun ask(input: String) {
         val text = input.trim()
         if (text.isEmpty()) return
-        val p = parser ?: return
+        // Do NOT gate the whole turn on a non-null parser: if the local parser
+        // failed to build at init, the cloud path can still answer. Only the
+        // offline fallback needs it, and it is checked there.
         _uiState.update {
             it.copy(messages = it.messages + userMessage(text), thinking = true)
         }
@@ -217,6 +238,24 @@ class AssistantViewModel(
                 return@launch
             }
             // Offline fallback: local Ariadne (rule-based parser + resolver).
+            // If the local parser never loaded (station/line load failed at init)
+            // AND the cloud is unreachable, be honest instead of silently
+            // dropping the message and leaving the composer looking broken.
+            val p = parser
+            if (p == null) {
+                _uiState.update {
+                    it.copy(
+                        messages = it.messages + botMessage(t(
+                            "I could not reach the assistant and my offline data has not finished loading. Please try again in a moment.",
+                            "Δεν μπόρεσα να συνδεθώ με τον βοηθό και τα δεδομένα εκτός σύνδεσης δεν έχουν φορτωθεί ακόμη. Δοκιμάστε ξανά σε λίγο.",
+                            "Nuk arrita te asistenti dhe të dhënat offline nuk kanë përfunduar ngarkimin. Provo përsëri pas pak.",
+                            it = "Non sono riuscito a raggiungere l'assistente e i dati offline non hanno finito di caricarsi. Riprova tra un momento.",
+                        )),
+                        thinking = false,
+                    )
+                }
+                return@launch
+            }
             // Wrapped so a thrown use-case (e.g. an empty Flow.first()) can never
             // leave the "thinking" indicator stuck or crash the app on Android.
             try {
