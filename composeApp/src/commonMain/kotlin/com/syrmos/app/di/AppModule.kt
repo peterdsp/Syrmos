@@ -71,6 +71,7 @@ val featureModule = module {
             livePositionsService = get(),
             stationOffsetsRepo = get(),
             scheduleSyncRepository = get(),
+            computeActiveTrains = get(),
             announcementsRepository = get(),
             lineGeometryRepository = get(),
         )

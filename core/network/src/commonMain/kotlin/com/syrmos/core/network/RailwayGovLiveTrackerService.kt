@@ -83,6 +83,8 @@ class RailwayGovLiveTrackerService(
             nextStationEn = nextStationEn.takeIf { it.isNotBlank() },
             delayMinutes = delayMinutes,
             serviceType = serviceType,
+            status = status ?: "in_service",
+            inService = inService ?: true,
             progress = progress,
             speedKph = speed,
             latitude = lat ?: 0.0,
@@ -130,6 +132,10 @@ class RailwayGovLiveTrackerService(
         val nextStationEn: String = "",
         val delayMinutes: Int = 0,
         val serviceType: String = "",
+        // Boardability flags from the Pi feed. Nullable so older payloads that
+        // omit them decode fine; toDomain() defaults them to an in-service train.
+        val status: String? = null,
+        val inService: Boolean? = null,
         // Nullable + defaulted: a train can briefly appear with no GPS fix. If
         // these stayed required, one such row would fail the whole payload decode
         // (they were the only non-defaulted fields) and blank the live map.

@@ -110,8 +110,22 @@ final class LivePositionsService: ObservableObject {
             offsets = grouped
             lastOffsetsFetch = Date()
         } catch {
-            // Keep stale offsets if we have any; otherwise the simulator
-            // will simply emit no dots until the next try, which is fine.
+            // Offline: hydrate offsets from the bundled snapshot so the client
+            // can still interpolate the projected metro/tram dots with zero
+            // network. Keeps whatever we already have if the bundle is missing.
+            if offsets.isEmpty,
+               let url = Bundle.main.url(forResource: "station-offsets", withExtension: "json", subdirectory: "seed-schedules-v2"),
+               let data = try? Data(contentsOf: url),
+               let decoded = try? JSONDecoder().decode(StationOffsetsResponse.self, from: data) {
+                var grouped: [String: [String: [OffsetStop]]] = [:]
+                for line in decoded.lines {
+                    let stops = line.stops
+                        .sorted { $0.stopSequence < $1.stopSequence }
+                        .map { OffsetStop(stationId: $0.stationId, minutesFromOrigin: Double($0.minutesFromOrigin)) }
+                    grouped[line.lineId, default: [:]][line.direction] = stops
+                }
+                offsets = grouped
+            }
         }
     }
 
@@ -148,8 +162,26 @@ final class LivePositionsService: ObservableObject {
             // it on the home offline-alive pill.
             LiveDataFreshness.shared.markLive()
         } catch {
-            // Leave the existing trains in place so animation continues
-            // smoothly through a brief network glitch.
+            // Offline (or Pi down): project metro/tram from the bundled
+            // timetable so the map still shows live-moving dots, including
+            // Saturday's 24h overnight service after midnight. Mirrors the web
+            // offline fallback; a successful poll replaces these with real
+            // positions. Suburban/national keep their own paths.
+            let projected = ScheduleProjector.activeTrains()
+            if !projected.isEmpty {
+                let athensMidnight = Date().athensStartOfDay()
+                trains = projected.map { p in
+                    Train(
+                        id: "\(p.lineId)_\(p.directionKey)_\(Int(p.originDepartureMinute * 100))",
+                        lineId: p.lineId,
+                        directionKey: p.directionKey,
+                        originDepartureEpoch: athensMidnight.timeIntervalSince1970 + p.originDepartureMinute * 60,
+                        totalTravelMinutes: p.totalTravelMinutes,
+                        serviceType: p.serviceType
+                    )
+                }
+            }
+            // else: keep existing trains so a brief glitch animates smoothly.
         }
     }
 }

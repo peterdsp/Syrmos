@@ -801,6 +801,11 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
         let scheduleStatus: String?
         let trainId: String?
         let liveStream: LiveStreamInfo?
+        // Honest service status from the server (vehicle_status.py). Optional so
+        // an older Pi that omits them still decodes; defaults treat a vehicle as
+        // a normal boardable service.
+        let status: String?
+        let inService: Bool?
     }
 
     init() {
@@ -865,7 +870,9 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     scheduledArrival: t.scheduledArrival,
                     scheduleStatus: t.scheduleStatus,
                     trainId: t.trainId,
-                    liveStreamUrl: t.liveStream?.playlistUrl
+                    liveStreamUrl: t.liveStream?.playlistUrl,
+                    status: t.status ?? "in_service",
+                    inService: t.inService ?? true
                 )
             }
             let trainCount = parsed.count
@@ -910,6 +917,11 @@ struct LiveTrain: Identifiable {
     let scheduleStatus: String?
     let trainId: String?
     let liveStreamUrl: String?
+    // Honest service status: "in_service" | "position_only" | "parked_yard" |
+    // "not_in_service". Parked/yard vehicles are withheld server-side, so a
+    // non-boardable train that still reaches the client is "position_only".
+    var status: String = "in_service"
+    var inService: Bool = true
 }
 
 struct MapStationNode: Identifiable {
