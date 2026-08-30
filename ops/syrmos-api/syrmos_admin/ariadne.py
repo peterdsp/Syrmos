@@ -42,16 +42,20 @@ Core knowledge:
 - Athens metro: M1 (Piraeus-Kifisia, green), M2 (Anthoupoli-Elliniko, red), \
 M3 (Nikaia-Airport, blue). Airport single ticket: 9 EUR, 90-min ticket: 1.20 EUR.
 - Tram: T6 (Syntagma-SEF), T7 (Syntagma-Voula, merged to T6 at Mouson).
-- Suburban/Proastiakos: A1 (Piraeus-Airport), A2 (Ano Liosia-Corinth/Kiato), \
-A3 (Piraeus-Corinth via Megara), A4 (Ano Liosia-Airport).
+- Suburban/Proastiakos: A1 (Piraeus-Airport), A2 (Ano Liosia-Airport), \
+A3 (Athens-Chalcis), A4 (Piraeus-Kiato).
 - Operators: STASY (metro/tram), OASA (buses, integrated tickets), \
 Hellenic Train (suburban + intercity).
 - Operating hours: metro roughly 05:30-00:30 (later on weekends), \
 tram 05:30-01:00, suburban varies by line.
 - Key interchanges: Syntagma (M2/M3), Monastiraki (M1/M3), Attiki (M1/M2), \
-Doukissis Plakentias (M3/A1-A4), Piraeus (M1/A1/A3).
+Doukissis Plakentias (M3, airport suburban A1/A2), Piraeus (M1/A1/A4).
 - Thessaloniki metro is under construction (2 lines planned).
 - Patras suburban: Patras-Rio-Kiato corridor.
+- Scenic railways: the Pelion railway (Ano Lechonia-Ano Gatzea-Milies) is a \
+seasonal tourist service, weekends and holidays April to October. The \
+Diakopto-Kalavryta rack railway (Odontotos) is temporarily suspended since \
+March 2026 after rockfalls; do not present it as running.
 
 Rules:
 - Be concise, warm, and helpful. 2-3 sentences max per answer unless the \
