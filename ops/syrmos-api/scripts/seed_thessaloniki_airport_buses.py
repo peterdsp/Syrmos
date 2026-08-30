@@ -22,7 +22,7 @@ import sqlite3
 from syrmos_admin import db as dbmod
 
 REGION = "thessaloniki"
-BUS_COLOR = "#5B6770"
+BUS_COLOR = "#0E7490"
 
 # Makedonia Airport (SKG) terminal-front bus stop.
 AIRPORT = ("THS_AIR", "Makedonia Airport", "Αεροδρόμιο «Μακεδονία»", 40.51972, 22.97083)
