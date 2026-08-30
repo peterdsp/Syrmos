@@ -457,6 +457,9 @@
             delay: { en: "Delay", el: "Καθυστέρηση", sq: "Vonesa", it: "Ritardo" },
             onTime: { en: "On time", el: "Στην ώρα του", sq: "Në orar", it: "In orario" },
             minutes: { en: "min", el: "λεπτά", sq: "min", it: "min" },
+            speed: { en: "Speed", el: "Ταχύτητα", sq: "Shpejtësia", it: "Velocità" },
+            status: { en: "Status", el: "Κατάσταση", sq: "Statusi", it: "Stato" },
+            positionOnly: { en: "Position only, not in service", el: "Μόνο θέση, εκτός υπηρεσίας", sq: "Vetëm pozicioni, jashtë shërbimit", it: "Solo posizione, fuori servizio" },
         };
         return copy[key]?.[currentLang] || copy[key]?.en || key;
     }
@@ -508,11 +511,27 @@
             </div>`;
 
         if (isLive) {
-            const delay = Number(train.delay || 0);
-            const delayValue = delay > 0
-                ? `${delay} ${vehicleCopy("minutes")}`
-                : vehicleCopy("onTime");
-            trainSheetDelay.innerHTML = `<div><strong>${escapeHtml(vehicleCopy("delay"))}</strong><span>${escapeHtml(delayValue)}</span></div>`;
+            // A vehicle the feed could not assign to a passenger route (status
+            // "position_only") is a real GPS dot but NOT a boardable service, so
+            // never show it as "On time" / delayed. Parked/yard vehicles are
+            // withheld upstream and never reach this sheet.
+            const notInService = train.inService === false || train.status === "position_only";
+            const speedText = train.speed != null ? `${Math.round(Number(train.speed))} km/h` : null;
+            const speedRow = speedText
+                ? `<div class="meta-chip"><strong>${escapeHtml(vehicleCopy("speed"))}</strong><span>${escapeHtml(speedText)}</span></div>`
+                : "";
+            if (notInService) {
+                trainSheetDelay.innerHTML =
+                    `<div class="meta-chip"><strong>${escapeHtml(vehicleCopy("status"))}</strong>` +
+                    `<span>${escapeHtml(vehicleCopy("positionOnly"))}</span></div>${speedRow}`;
+            } else {
+                const delay = Number(train.delay || 0);
+                const delayValue = delay > 0
+                    ? `${delay} ${vehicleCopy("minutes")}`
+                    : vehicleCopy("onTime");
+                trainSheetDelay.innerHTML =
+                    `<div><strong>${escapeHtml(vehicleCopy("delay"))}</strong><span>${escapeHtml(delayValue)}</span></div>${speedRow}`;
+            }
         } else {
             const percent = Math.round(Math.max(0, Math.min(1, Number(train.progress || 0))) * 100);
             trainSheetDelay.innerHTML = `
@@ -1511,13 +1530,34 @@
         const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
         const holidayToday = resolveHolidayDayType(nowDate);
         const todayDt = dayTypeFor(nowDate, holidayToday);
-        const descriptors = [[todayDt, 0]];
-        if (nowMinutes < 4 * 60) {
+        // bands starting before 05:00 are the overnight tail of the previous
+        // service day (matches NEXT_DAY_EXTENSION_CUTOFF_MIN in the Pi projector).
+        const nextDayExtensionCutoff = 5 * 60;
+        const descriptors = [[todayDt, 0, false]];
+        if (nowMinutes < 6 * 60) {
             const yesterday = new Date(nowDate);
             yesterday.setDate(nowDate.getDate() - 1);
-            descriptors.push([dayTypeFor(yesterday, null), -24 * 60]);
+            const yesterdayDt = dayTypeFor(yesterday, null);
+            // Yesterday's late bands that wrap past midnight (M2 sat 22:00 → 00:20).
+            descriptors.push([yesterdayDt, -24 * 60, false]);
+            // Overnight continuation: Saturday 24h service (M2/M3 city, T6, T7)
+            // is tagged on the 'sat' day-type as e.g. 00:20 → 05:30
+            // saturday_overnight_24_7, but literally runs on Sunday's clock. Project
+            // yesterday's < 05:00 bands at TODAY's clock so those trains still show
+            // at 01:53 Sunday. Without this the web fallback went dark overnight
+            // even though the service runs all night. Mirrors the iOS / KMP / Pi
+            // projector's yesterday-shift-0 nextDayOnly descriptor.
+            if (yesterdayDt !== todayDt) {
+                descriptors.push([yesterdayDt, 0, true]);
+            }
         }
-        for (const [dt, shift] of descriptors) {
+        // Collect every descriptor's slots first, then sort by minutesAway and
+        // take the soonest `limit`. Appending per-descriptor and stopping at the
+        // limit would let today's far-future morning trains (05:30, hours away)
+        // crowd out the overnight-extension trains that are minutes away at 01:53
+        // Sunday. Mirrors the Pi projector, which sorts line_out before slicing.
+        const collected = [];
+        for (const [dt, shift, nextDayOnly] of descriptors) {
             // Verify the line is actually open on this day-type. If schedule_rules
             // says closed (no rule for this dt), we don't project.
             const rule = bundle.rules.find((r) => r.dayType === dt);
@@ -1536,18 +1576,39 @@
             // the iOS / Pi projector so downstream stations still emit
             // after the terminus's last slot leaves.
             const effectiveNow = nowMinutes - shift;
-            if (closeMin != null && openMin != null && !rule.is247) {
+            // The nextDayOnly extension deliberately runs BEFORE the day's open
+            // time (it is the overnight tail), so skip the close-time gate for it
+            // and only reject fully-past bands per-band below.
+            if (!nextDayOnly && closeMin != null && openMin != null && !rule.is247) {
                 const effectiveClose = closeMin <= openMin ? closeMin + 24 * 60 : closeMin;
                 if (effectiveNow > effectiveClose + 120) continue;
             }
             const bands = bundle.bands
-                .filter((b) => b.dayType === dt)
+                .filter((b) => {
+                    if (b.dayType !== dt) return false;
+                    // The extension pass carries ONLY the overnight bands (< 05:00);
+                    // everything later that day belongs to the -24h wrap / today pass.
+                    if (nextDayOnly) {
+                        const rs = minutesOfDay(b.timeStart);
+                        return rs != null && rs < nextDayExtensionCutoff;
+                    }
+                    return true;
+                })
                 .sort((a, b) => (minutesOfDay(a.timeStart) ?? 0) - (minutesOfDay(b.timeStart) ?? 0));
             for (const band of bands) {
                 const direction = lineIdForLabel === "M3_AIR" ? "Airport" : null;
-                projectBand(band, shift, nowMinutes, lineIdForLabel, direction, limit - out.length, out);
-                if (out.length >= limit) return;
+                projectBand(band, shift, nowMinutes, lineIdForLabel, direction, limit, collected);
             }
+        }
+        // Soonest first, then drop duplicate minutes that overlapping bands or
+        // descriptors can emit for the same physical train, then take `limit`.
+        collected.sort((a, b) => a.minutesAway - b.minutesAway);
+        const seenMinutes = new Set();
+        for (const dep of collected) {
+            if (seenMinutes.has(dep.timeMinutes)) continue;
+            seenMinutes.add(dep.timeMinutes);
+            out.push(dep);
+            if (out.length >= limit) return;
         }
     }
     /// PDF-grounded next-departures path. For any suburban station call
@@ -2261,7 +2322,14 @@
                 destination: t.destination || "",
                 nextStation: t.nextStation || "",
                 delay: t.delayMinutes || 0,
-                speed: null,
+                // Keep the real GPS speed (the feed carries it) so the sheet can
+                // show it and so a 0 km/h vehicle is never implied to be moving.
+                speed: t.speed != null ? t.speed : null,
+                // Honest service status from the server (see vehicle_status.py).
+                // Older servers omit it; default to a boardable service so we
+                // never wrongly grey out a normal train.
+                status: t.status || "in_service",
+                inService: t.inService !== false,
                 lat: t.lat,
                 lng: t.lng,
                 timestamp: "",

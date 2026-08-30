@@ -34,6 +34,10 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from syrmos_admin.vehicle_status import annotate as annotate_status  # noqa: E402
+from syrmos_admin.vehicle_status import show_on_passenger_map  # noqa: E402
+
 SSE_URL = "https://railway.gov.gr/api/train-stream"
 STREAM_URL_TPL = "https://railway.gov.gr/api/public/trains/{train_id}/stream"
 USER_AGENT = "syrmos-daemon/1.0 (+https://syrmos.peterdsp.dev)"
@@ -199,10 +203,14 @@ def build_train(pos: dict) -> dict:
     return train
 
 
-def write_trains_json(trains: list[dict]) -> None:
+def write_trains_json(trains: list[dict], withheld: int = 0) -> None:
     payload = {
         "updatedAt": datetime.now(timezone.utc).isoformat(),
         "count": len(trains),
+        # How many vehicles were withheld from the passenger map as parked/yard
+        # or unassigned-stationary. Surfaced (not silently dropped) so the count
+        # is auditable and a future "show all vehicles" mode can explain it.
+        "withheldOutOfService": withheld,
         "trains": trains,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -264,10 +272,21 @@ def stream_loop() -> None:
                                 continue
 
                             trains = []
+                            withheld = 0
                             for pos in positions:
                                 if is_freight(pos):
                                     continue
-                                trains.append(build_train(pos))
+                                t = annotate_status(build_train(pos))
+                                # Withhold parked/yard and unassigned-stationary
+                                # vehicles from the default passenger map so a
+                                # train sitting in a depot at 0 km/h is never
+                                # shown as a boardable service. Moving vehicles
+                                # without a route assignment stay as
+                                # status="position_only" for the client to style.
+                                if not show_on_passenger_map(t["status"]):
+                                    withheld += 1
+                                    continue
+                                trains.append(t)
 
                             now = time.monotonic()
                             if CHECK_STREAMS and (now - last_stream_check) > 120:
@@ -284,7 +303,7 @@ def stream_loop() -> None:
                                 if info:
                                     t["liveStream"] = info
 
-                            write_trains_json(trains)
+                            write_trains_json(trains, withheld=withheld)
                 else:
                     buf.append(line)
 

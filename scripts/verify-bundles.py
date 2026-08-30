@@ -17,6 +17,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from seed_overnight import SATURDAY_24H_OVERNIGHT, overnight_gap  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 
 BUNDLES = [
@@ -132,6 +135,17 @@ def check_bundle(root: Path) -> list[str]:
             add(f"{lid}.json has no bands")
         if not rules:
             add(f"{lid}.json has no rules")
+        # 24h Saturday lines (M2/M3 city, T6, T7) must have a CONTINUOUS overnight
+        # band into the 05:30 daytime handover. A truncated overnight (the live
+        # defect: M3 died at 02:00, trams at 01:40) blanks the offline map/
+        # departures after midnight even though the service runs all night.
+        if lid in SATURDAY_24H_OVERNIGHT:
+            gaps = overnight_gap(bands)
+            if gaps:
+                pretty = ", ".join(
+                    f"{g[0]//60:02d}:{g[0]%60:02d}-{g[1]//60:02d}:{g[1]%60:02d}" for g in gaps
+                )
+                add(f"{lid}.json Saturday overnight has coverage gap(s): {pretty}")
 
     return problems
 
