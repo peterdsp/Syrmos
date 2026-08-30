@@ -10,6 +10,7 @@ import com.syrmos.core.data.seed.SeedServicePattern
 import com.syrmos.core.common.extensions.currentAthensDayOfWeek
 import com.syrmos.core.common.extensions.currentAthensTime
 import com.syrmos.core.common.extensions.parseTime
+import com.syrmos.core.domain.usecase.ComputeActiveTrainsFromBandsUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.model.schedule.DayType
 import com.syrmos.core.model.schedule.Frequency
@@ -75,6 +76,7 @@ class MapViewModel(
     private val livePositionsService: SyrmosLivePositionsService,
     private val stationOffsetsRepo: StationOffsetsRepository,
     private val scheduleSyncRepository: com.syrmos.core.data.sync.ScheduleSyncRepository,
+    private val computeActiveTrains: ComputeActiveTrainsFromBandsUseCase,
     private val announcementsRepository: AnnouncementsRepository,
     private val lineGeometryRepository: LineGeometryRepositoryImpl,
 ) {
@@ -294,7 +296,7 @@ class MapViewModel(
                     offsetsMap = bundledOffsets()
                 }
                 val active = livePositionsService.fetchActiveTrains(targetLines)
-                if (active != null) {
+                if (active != null && active.trains.isNotEmpty()) {
                     val generatedAtEpoch = runCatching {
                         Instant.parse(active.generatedAt).epochSeconds
                     }.getOrElse {
@@ -304,6 +306,18 @@ class MapViewModel(
                         trains = active.trains,
                         offsets = offsetsMap,
                         generatedAtEpochSeconds = generatedAtEpoch,
+                    )
+                } else {
+                    // Offline or empty live feed: project the metro/tram trains
+                    // running right now from the bundled frequency bands so the
+                    // map keeps showing moving dots. generatedAt = Athens now so
+                    // TrainSimulator's origin-epoch recovery advances each dot by
+                    // wall clock. When service is closed the projection is empty,
+                    // which correctly clears the dots.
+                    livePositionsSnapshot = LivePositionsSnapshot(
+                        trains = computeActiveTrains.invoke(),
+                        offsets = offsetsMap,
+                        generatedAtEpochSeconds = kotlinx.datetime.Clock.System.now().epochSeconds,
                     )
                 }
                 delay(15_000)
