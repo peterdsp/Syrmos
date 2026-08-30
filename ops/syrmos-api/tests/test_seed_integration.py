@@ -211,6 +211,61 @@ class SeedIntegrationTest(unittest.TestCase):
         self.assertTrue(rows, "departures must not be empty at Sun 01:53")
         self.assertEqual(rows[0]["lineId"], "M2")
 
+    # --- whole-network continuity: no intra-service coverage gap on ANY line ---
+    def test_no_intra_service_coverage_gaps(self):
+        """Every line x day-type must have continuous band coverage across its
+        service window (open->close, or the full 24h for a 24/7 rule). This is
+        the general guard the Saturday-overnight defect was a special case of:
+        a truncated band that leaves a hole during declared service hours."""
+        def mins(s):
+            try:
+                h, m = s.split(":")
+                return int(h) * 60 + int(m)
+            except (ValueError, AttributeError):
+                return None
+        line_ids = [r["id"] for r in self.conn.execute("SELECT id FROM lines ORDER BY sort_order")]
+        problems = []
+        for lid in line_ids:
+            rules = {r["day_type"]: r for r in self.conn.execute(
+                "SELECT day_type, open_time, close_time, is_24_7 FROM schedule_rules WHERE line_id=?", (lid,))}
+            by_dt: dict[str, list] = {}
+            for b in self.conn.execute(
+                "SELECT day_type, time_start, time_end FROM frequency_bands WHERE line_id=?", (lid,)):
+                by_dt.setdefault(b["day_type"], []).append(b)
+            for dt, bl in by_dt.items():
+                covered = [False] * 1440
+                for b in bl:
+                    s, e = mins(b["time_start"]), mins(b["time_end"])
+                    if s is None or e is None:
+                        continue
+                    if e <= s:
+                        e += 24 * 60
+                    for t in range(s, e):
+                        covered[t % 1440] = True
+                rule = rules.get(dt)
+                if rule and not rule["is_24_7"]:
+                    o, c = mins(rule["open_time"]), mins(rule["close_time"])
+                    if o is None or c is None:
+                        continue
+                    a, z = o, (c if c > o else c + 24 * 60)
+                else:
+                    starts = [mins(b["time_start"]) for b in bl if mins(b["time_start"]) is not None]
+                    if not starts:
+                        continue
+                    a = min(starts)
+                    z = a + 24 * 60
+                t = a
+                while t < z:
+                    if not covered[t % 1440]:
+                        st = t
+                        while t < z and not covered[t % 1440]:
+                            t += 1
+                        if t - st >= 2:  # ignore sub-2-minute rounding slivers
+                            problems.append(f"{lid}/{dt} {st % 1440//60:02d}:{st % 1440 % 60:02d}-{t % 1440//60:02d}:{t % 1440 % 60:02d}")
+                    else:
+                        t += 1
+        self.assertEqual(problems, [], f"intra-service coverage gaps: {problems}")
+
     # --- provenance recorded in the DB (migration 0028) ---
     def test_provenance_recorded(self):
         meta = {r["key"]: r["value"] for r in self.conn.execute(
