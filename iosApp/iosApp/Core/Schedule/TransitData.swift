@@ -15,11 +15,23 @@ struct TransitLine: Identifiable {
     var region: TransitRegion = .athens
     var status: TransitLineStatus = .operational
 
-    /// A line that does not run must never produce a departure, a train, a
-    /// last-train answer or a track-picker entry. It still renders on the map,
-    /// greyed, because the track is real and hiding it would be its own kind of
-    /// lie. Check this, not the id.
-    var isOperational: Bool { status == .operational }
+    /// A line that carries scheduled service and may therefore produce a
+    /// departure, a train, a last-train answer or a track-picker entry. Seasonal
+    /// lines (the Pelion railway) count as operational: they are real boardable
+    /// services whose own dated trips gate them to the days they run. Only the
+    /// built-but-closed states are excluded. Check this, not the id.
+    var isOperational: Bool { status == .operational || status == .seasonal }
+
+    /// Track that exists but carries no service right now: never opened
+    /// (`underConstruction`) or a real line temporarily halted (`suspended`).
+    /// Drawn greyed but labelled, so it is never mistaken for a line in service.
+    var isBuiltButClosed: Bool { status == .underConstruction || status == .suspended }
+
+    /// A real line temporarily not running (rockfalls, works).
+    var isSuspended: Bool { status == .suspended }
+
+    /// Runs only part of the year / on some day-types (Pelion railway).
+    var isSeasonal: Bool { status == .seasonal }
 }
 
 /// The network a line belongs to.
@@ -49,6 +61,13 @@ enum TransitRegion: String {
 enum TransitLineStatus: String {
     case operational
     case underConstruction = "under_construction"
+    /// A real line that ran and is temporarily halted (Diakopto-Kalavryta rack
+    /// railway, suspended 13 March 2026 after rockfalls). Greyed but labelled
+    /// "suspended", never "under construction".
+    case suspended
+    /// Runs only part of the year and on some day-types (Pelion railway: weekends
+    /// and holidays, April to October). Real and boardable in season.
+    case seasonal
 
     init(raw: String?) {
         self = TransitLineStatus(rawValue: (raw ?? "").lowercased()) ?? .operational

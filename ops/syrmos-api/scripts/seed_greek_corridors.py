@@ -240,7 +240,13 @@ MODE = {"PSB": "bus", "KB1": "bus", "VL1": "bus", "DX1": "bus", "KP1": "bus", "T
 
 # Line status; defaults to operational. Suspended/not-yet-open lines render greyed
 # with no departures (same treatment as Thessaloniki TM2).
-STATUS = {"DK1": "under_construction"}  # Diakopto-Kalavryta rack railway, suspended 13 Mar 2026
+# DK1: the Diakopto-Kalavryta rack railway ran for 130 years and was suspended on
+# 13 Mar 2026 after Vouraikos-gorge rockfalls, so it is "suspended", not
+# "under_construction" (which would falsely imply it never opened).
+# PL1: the Pelion railway is a seasonal tourist service (weekends + holidays,
+# April to October); "seasonal" lets clients label it honestly and withhold a
+# confident live countdown out of season.
+STATUS = {"DK1": "suspended", "PL1": "seasonal"}
 
 # --- lines: id -> (name_en, name_el, color, term_a, term_b, sort, region) --
 LINES = {
