@@ -22,6 +22,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from . import db as dbmod
+from .schedule_invariants import ensure_saturday_overnight
 
 URL = "https://www.oasa.gr/en/24mmm/"
 USER_AGENT = (
@@ -187,18 +188,33 @@ def apply_bands(conn: sqlite3.Connection, bands: Iterable[Band]) -> int:
 
 
 def run_once() -> int:
-    """Scrape once. Returns rows written. Logs the run regardless of outcome."""
+    """Scrape once. Returns rows written. Logs the run regardless of outcome.
+
+    Whatever the OASA page yields (or if it is unreachable / unparseable), the
+    24h Saturday overnight coverage is guaranteed afterwards via
+    ensure_saturday_overnight, so a dropped 02:00->05:30 continuation row or a
+    failed fetch can never leave the live map dark overnight. The frequencies it
+    fills are the official 24mmm values, not invented numbers."""
     with dbmod.connect() as conn:
         try:
             html = fetch_html()
             bands = parse(html)
             n = apply_bands(conn, bands)
+            healed = ensure_saturday_overnight(conn)
+            note = f"self-healed overnight: {','.join(healed)}" if healed else None
             conn.execute(
-                "INSERT INTO scrape_log(source, ok, rows_written) VALUES('oasa_24mmm', 1, ?)",
-                (n,),
+                "INSERT INTO scrape_log(source, ok, rows_written, error)"
+                " VALUES('oasa_24mmm', 1, ?, ?)",
+                (n, note),
             )
             return n
         except (URLError, ValueError, RuntimeError) as e:
+            # Even on failure, keep the invariant: the overnight band must survive
+            # an unreachable page so the weekend all-night map stays populated.
+            try:
+                ensure_saturday_overnight(conn)
+            except sqlite3.Error:
+                pass
             conn.execute(
                 "INSERT INTO scrape_log(source, ok, rows_written, error) VALUES('oasa_24mmm', 0, 0, ?)",
                 (str(e),),

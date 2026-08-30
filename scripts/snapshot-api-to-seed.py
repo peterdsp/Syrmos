@@ -24,6 +24,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from seed_overnight import ensure_overnight_continuity  # noqa: E402
+
 BASE = "https://api-syrmos.peterdsp.dev"
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -93,6 +96,12 @@ def main() -> None:
     bundles: dict[str, dict] = {}
     for lid in line_ids:
         bundles[lid] = fetch(f"/api/schedules/{lid}")
+        # Guarantee the 24h Saturday overnight band is continuous before baking it
+        # into the offline seed. If the live API is momentarily stale (a partial
+        # 24mmm scrape dropped the 02:00->05:30 continuation), this keeps the
+        # bundled fallback from shipping a dark overnight map. See seed_overnight.
+        if ensure_overnight_continuity(bundles[lid]):
+            print(f"  NOTE: healed {lid} Saturday overnight band before bundling")
         print(f"  fetched {lid}: {len(bundles[lid]['bands'])} bands, {len(bundles[lid]['rules'])} rules")
 
     # OSM route shapes from /line-geometry/{id}.geojson. The API is the
