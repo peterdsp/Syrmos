@@ -5,6 +5,7 @@ import com.syrmos.core.domain.live.LiveArrivalsProvider
 import com.syrmos.core.domain.live.LiveArrivalsRouter
 import com.syrmos.core.domain.live.OasaLiveArrivalsProvider
 import com.syrmos.core.domain.live.StasyLiveArrivalsProvider
+import com.syrmos.core.domain.usecase.ComputeActiveTrainsFromBandsUseCase
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
@@ -21,6 +22,7 @@ val domainModule = module {
     factory { GetLineDetailUseCase(lineRepository = get(), stationRepository = get(), scheduleRepository = get()) }
     factory { GetStationDetailUseCase(stationRepository = get(), lineRepository = get()) }
     factory { ComputeDeparturesFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
+    factory { ComputeActiveTrainsFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
     factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get()) }
     factory { GetLastTrainUseCase(bandProjector = get()) }
     factory { SearchStationsUseCase(stationRepository = get()) }

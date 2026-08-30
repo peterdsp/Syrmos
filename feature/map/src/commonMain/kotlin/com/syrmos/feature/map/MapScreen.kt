@@ -985,47 +985,78 @@ private fun TrainDetailCard(
             }
 
             // Status row
+            //
+            // A vehicle the upstream feed could not assign to a passenger route
+            // (status "position_only" / inService false) is a real GPS dot but
+            // NOT a boardable service, so it must never read as "On time" /
+            // delayed. Assigned trains (A1-A4 / IC) keep the normal delay chip.
+            // Mirrors the web map's bottom-sheet notInService branch.
+            val notInService = !train.inService || train.status == "position_only"
             Row(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
                     shape = RoundedCornerShape(999.dp),
-                    color = if (train.delayMinutes > 0)
-                        SyrmosColorTokens.disruption.copy(alpha = 0.12f)
-                    else
-                        SyrmosColorTokens.live.copy(alpha = 0.12f),
+                    color = when {
+                        notInService -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        train.delayMinutes > 0 -> SyrmosColorTokens.disruption.copy(alpha = 0.12f)
+                        else -> SyrmosColorTokens.live.copy(alpha = 0.12f)
+                    },
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        if (train.delayMinutes > 0) {
-                            Icon(
-                                imageVector = Icons.Filled.Warning,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = SyrmosColorTokens.disruption,
-                            )
-                            Text(
-                                text = "+${train.delayMinutes} ${vehicleText(lang, "min", "λεπ", "min", "min")}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SyrmosColorTokens.disruption,
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .background(SyrmosColorTokens.live, CircleShape),
-                            )
-                            Text(
-                                text = vehicleText(lang, "On time", "Στην ώρα του", "Në orar", "In orario"),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SyrmosColorTokens.live,
-                            )
+                        when {
+                            notInService -> {
+                                Icon(
+                                    imageVector = Icons.Filled.Info,
+                                    contentDescription = vehicleText(lang, "Status", "Κατάσταση", "Statusi", "Stato"),
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = vehicleText(
+                                        lang,
+                                        "Position only, not in service",
+                                        "Μόνο θέση, εκτός υπηρεσίας",
+                                        "Vetëm pozicioni, jashtë shërbimit",
+                                        "Solo posizione, fuori servizio",
+                                    ),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            train.delayMinutes > 0 -> {
+                                Icon(
+                                    imageVector = Icons.Filled.Warning,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = SyrmosColorTokens.disruption,
+                                )
+                                Text(
+                                    text = "+${train.delayMinutes} ${vehicleText(lang, "min", "λεπ", "min", "min")}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SyrmosColorTokens.disruption,
+                                )
+                            }
+                            else -> {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(SyrmosColorTokens.live, CircleShape),
+                                )
+                                Text(
+                                    text = vehicleText(lang, "On time", "Στην ώρα του", "Në orar", "In orario"),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SyrmosColorTokens.live,
+                                )
+                            }
                         }
                     }
                 }

@@ -2121,7 +2121,26 @@ struct TrainDetailSheet: View {
 
     private var statusSection: some View {
         HStack(spacing: 10) {
-            if train.delayMinutes > 0 {
+            if !train.inService || train.status == "position_only" {
+                // A live GPS position with no passenger-route assignment: real
+                // dot, but NOT a boardable service, so never show "On time".
+                // (Parked/yard vehicles are withheld server-side.)
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.caption)
+                    Text(mapLocalized(loc.language,
+                                      "Position only, not in service",
+                                      "Μόνο θέση, εκτός υπηρεσίας",
+                                      "Vetëm pozicioni, jashtë shërbimit",
+                                      "Solo posizione, fuori servizio"))
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(Capsule())
+            } else if train.delayMinutes > 0 {
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.caption)

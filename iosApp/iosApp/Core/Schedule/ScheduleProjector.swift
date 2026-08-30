@@ -836,6 +836,124 @@ enum ScheduleProjector {
         return "regular"
     }
 
+    // MARK: - Offline active-trains projection (map moving dots)
+
+    /// One projected in-transit train, in the shape LivePositionsService maps
+    /// to a map dot. originDepartureMinute is minute-of-clock vs Athens midnight
+    /// (can be negative for a train that left before midnight).
+    struct ActiveTrainProjection {
+        let lineId: String
+        let directionKey: String
+        let originDepartureMinute: Double
+        let totalTravelMinutes: Int
+        let serviceType: String
+    }
+
+    /// Metro + tram lines we project client-side. Band-based; suburban/national
+    /// are trip-based (NationalVehicleProjector) and get real GPS online.
+    static let offlineProjectedLines = ["M1", "M2", "M3", "T6", "T7"]
+
+    /// Client-side active-trains projection from the bundled frequency bands,
+    /// mirroring the Pi projector.active_trains and the web
+    /// computeActiveTrainsFromBundle. This is the OFFLINE (and pre-first-fetch)
+    /// source for the map's moving metro/tram dots: every train currently
+    /// somewhere on its line, including Saturday's 24h overnight service after
+    /// midnight. Online, /api/live-positions replaces this.
+    static func activeTrains(now: Date = Date()) -> [ActiveTrainProjection] {
+        let bundles = SyrmosSchedulesStore.shared.service.bundles
+        if bundles.isEmpty { return [] }
+        let offsetsStore = SyrmosStationOffsetsStore.shared
+
+        let athens = TimeZone(identifier: "Europe/Athens")!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = athens
+        let comp = cal.dateComponents([.month, .day, .hour, .minute, .second, .weekday], from: now)
+        let weekday = comp.weekday ?? 1
+        let nowMinutes = Double(comp.hour ?? 0) * 60 + Double(comp.minute ?? 0) + Double(comp.second ?? 0) / 60.0
+        let holiday = resolveHolidayDayType(month: comp.month ?? 1, day: comp.day ?? 1)
+        let cutoff = 5 * 60
+        let todayDayType = dayType(for: weekday, holiday: holiday)
+
+        struct Descriptor { let dt: String; let shift: Int; let nextDayOnly: Bool }
+        var descriptors: [Descriptor] = [Descriptor(dt: todayDayType, shift: 0, nextDayOnly: false)]
+        if nowMinutes < 6 * 60 {
+            let yesterdayWeekday = weekday == 1 ? 7 : weekday - 1
+            let yesterdayDayType = dayType(for: yesterdayWeekday, holiday: nil)
+            descriptors.append(Descriptor(dt: yesterdayDayType, shift: -24 * 60, nextDayOnly: false))
+            if yesterdayDayType != todayDayType {
+                descriptors.append(Descriptor(dt: yesterdayDayType, shift: 0, nextDayOnly: true))
+            }
+        }
+
+        var out: [ActiveTrainProjection] = []
+        var seen = Set<String>()
+        for lineId in offlineProjectedLines {
+            guard let bundle = bundles[lineId] else { continue }
+            for descriptor in descriptors {
+                let dt = descriptor.dt
+                let shift = descriptor.shift
+                guard let rule = bundle.rules.first(where: { $0.dayType == dt }) else { continue }
+                let openMin = minutesOfDay(rule.openTime)
+                let closeMin = minutesOfDay(rule.closeTime)
+                if !rule.is247, let openM = openMin, let closeM = closeMin {
+                    let bandMaxEnd = bundle.bands
+                        .filter { $0.dayType == dt }
+                        .compactMap { band -> Int? in
+                            guard let rs = minutesOfDay(band.timeStart),
+                                  let re = minutesOfDay(band.timeEnd) else { return nil }
+                            return re + (re < rs ? 24 * 60 : 0)
+                        }
+                        .max() ?? closeM
+                    let ruleClose = closeM <= openM ? closeM + 24 * 60 : closeM
+                    let effectiveClose = max(ruleClose, bandMaxEnd)
+                    let effectiveNow = nowMinutes - Double(shift)
+                    let tooEarly = !descriptor.nextDayOnly && effectiveNow < Double(openM) - 120
+                    if tooEarly || effectiveNow > Double(effectiveClose) + 120 { continue }
+                }
+                for band in bundle.bands where band.dayType == dt {
+                    guard let rawStart = minutesOfDay(band.timeStart) else { continue }
+                    if descriptor.nextDayOnly {
+                        if rawStart >= cutoff { continue }
+                    } else if shift == 0, !rule.is247, let openM = openMin,
+                              rawStart < openM, rawStart < cutoff {
+                        continue
+                    }
+                    guard let rawEnd = minutesOfDay(band.timeEnd), band.headwayMinutes > 0 else { continue }
+                    let start = Double(rawStart + shift)
+                    let end = Double(rawEnd + shift + (rawEnd < rawStart ? 24 * 60 : 0))
+                    if end < start { continue }
+                    let headway = band.headwayMinutes
+                    let serviceType = serviceTypeLabel(for: lineId, label: band.label)
+                    for directionKey in ["outbound", "inbound"] {
+                        let travel = offsetsStore.stops(lineId: lineId, direction: directionKey)
+                            .map { $0.minutesFromOrigin }.max() ?? 0
+                        if travel <= 0 { continue }
+                        let earliest = max(start, nowMinutes - Double(travel))
+                        let skips = max(0, Int((earliest - start) / headway))
+                        var slot = start + Double(skips) * headway
+                        while slot <= end && slot <= nowMinutes + 0.5 {
+                            let elapsed = nowMinutes - slot
+                            if elapsed >= 0 && elapsed <= Double(travel) {
+                                let key = "\(lineId)|\(directionKey)|\(Int(slot.rounded()))"
+                                if !seen.contains(key) {
+                                    seen.insert(key)
+                                    out.append(ActiveTrainProjection(
+                                        lineId: lineId,
+                                        directionKey: directionKey,
+                                        originDepartureMinute: slot,
+                                        totalTravelMinutes: travel,
+                                        serviceType: serviceType))
+                                }
+                            }
+                            slot += headway
+                        }
+                    }
+                }
+            }
+        }
+        return out
+    }
+
     // MARK: - Scheduled trip projection (non-Athens lines)
 
     private static func projectScheduledTrips(

@@ -2829,35 +2829,155 @@
     let livePositionsSnapshot = null;
     let stationOffsetsByLineDirection = null;
 
+    function parseStationOffsets(data) {
+        const map = new Map();
+        for (const line of data.lines || []) {
+            const stops = (line.stops || []).slice().sort((a, b) => a.stopSequence - b.stopSequence);
+            map.set(`${line.lineId}|${line.direction}`, stops);
+        }
+        return map;
+    }
+
     async function loadStationOffsets() {
+        // Online: the Pi's /api/station-offsets. Offline: the bundled snapshot,
+        // so the client can interpolate metro/tram positions with zero network.
         try {
             const r = await fetch("https://api-syrmos.peterdsp.dev/api/station-offsets");
-            const data = await r.json();
-            const map = new Map();
-            for (const line of data.lines || []) {
-                const stops = (line.stops || []).slice().sort((a, b) => a.stopSequence - b.stopSequence);
-                map.set(`${line.lineId}|${line.direction}`, stops);
-            }
-            stationOffsetsByLineDirection = map;
+            stationOffsetsByLineDirection = parseStationOffsets(await r.json());
+            return;
+        } catch (_) {}
+        try {
+            const r = await fetch("/files/seed/schedules-v2/station-offsets.json");
+            stationOffsetsByLineDirection = parseStationOffsets(await r.json());
         } catch (_) {}
     }
 
+    // Total leg runtime (max minutes-from-origin) for a line/direction, from the
+    // station offsets. Used as the server's _total_travel_minutes equivalent so
+    // the offline projection knows when a train has reached its terminus.
+    function offlineTotalTravel(lineId, directionKey) {
+        if (!stationOffsetsByLineDirection) return 0;
+        const stops = stationOffsetsByLineDirection.get(`${lineId}|${directionKey}`);
+        if (!stops || !stops.length) return 0;
+        let m = 0;
+        for (const s of stops) if ((s.minutesFromOrigin || 0) > m) m = s.minutesFromOrigin;
+        return m;
+    }
+
+    // Client-side active-trains projection from the bundled frequency bands.
+    // This is the offline (and pre-first-fetch) equivalent of the Pi's
+    // projector.active_trains: it enumerates every metro/tram train currently
+    // somewhere on its line so the map shows live-moving dots with NO network,
+    // including Saturday's 24h overnight service after midnight. Online, the API
+    // snapshot replaces this and additionally carries real suburban/national GPS.
+    // Mirrors the descriptor stack + slot maths of the Pi projector exactly.
+    const OFFLINE_PROJECTED_LINES = ["M1", "M2", "M3", "T6", "T7"];
+    function computeActiveTrainsFromBundle(nowDate) {
+        if (!apiSchedules || apiSchedules.size === 0 || !stationOffsetsByLineDirection) return [];
+        const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes() + nowDate.getSeconds() / 60;
+        const cutoff = 5 * 60;
+        const todayDt = dayTypeFor(nowDate, resolveHolidayDayType(nowDate));
+        const yesterday = new Date(nowDate);
+        yesterday.setDate(nowDate.getDate() - 1);
+        const yesterdayDt = dayTypeFor(yesterday, null);
+        const out = [];
+        const seen = new Set();
+        for (const lineId of OFFLINE_PROJECTED_LINES) {
+            const bundle = apiSchedules.get(lineId);
+            if (!bundle || !bundle.bands || !bundle.rules) continue;
+            const descriptors = [[todayDt, 0, false], [yesterdayDt, -24 * 60, false]];
+            if (nowMinutes < 6 * 60 && yesterdayDt !== todayDt) descriptors.push([yesterdayDt, 0, true]);
+            for (const [dt, shift, nextDayOnly] of descriptors) {
+                const rule = bundle.rules.find((r) => r.dayType === dt);
+                if (!rule) continue;
+                const openMin = minutesOfDay(rule.openTime);
+                const closeMin = minutesOfDay(rule.closeTime);
+                if (!rule.is247 && openMin != null && closeMin != null) {
+                    let ruleClose = closeMin <= openMin ? closeMin + 24 * 60 : closeMin;
+                    let bandMaxEnd = ruleClose;
+                    for (const b of bundle.bands) {
+                        if (b.dayType !== dt) continue;
+                        const bs = minutesOfDay(b.timeStart), be = minutesOfDay(b.timeEnd);
+                        if (bs == null || be == null) continue;
+                        const end = be + (be < bs ? 24 * 60 : 0);
+                        if (end > bandMaxEnd) bandMaxEnd = end;
+                    }
+                    const effClose = Math.max(ruleClose, bandMaxEnd);
+                    const effNow = nowMinutes - shift;
+                    const tooEarly = !nextDayOnly && effNow < openMin - 120;
+                    if (tooEarly || effNow > effClose + 120) continue;
+                }
+                for (const band of bundle.bands) {
+                    if (band.dayType !== dt) continue;
+                    const rawStart = minutesOfDay(band.timeStart);
+                    if (nextDayOnly) {
+                        if (rawStart == null || rawStart >= cutoff) continue;
+                    } else if (shift === 0 && !rule.is247) {
+                        if (rawStart != null && openMin != null && rawStart < openMin && rawStart < cutoff) continue;
+                    }
+                    const rawEnd = minutesOfDay(band.timeEnd);
+                    const hw = band.headwayMinutes;
+                    if (rawStart == null || rawEnd == null || !(hw > 0)) continue;
+                    const start = rawStart + shift;
+                    const end = rawEnd + shift + (rawEnd < rawStart ? 24 * 60 : 0);
+                    if (end < start) continue;
+                    const serviceType = /late|overnight/i.test(band.label || "") ? "late_night" : "regular";
+                    for (const directionKey of ["outbound", "inbound"]) {
+                        const travel = offlineTotalTravel(lineId, directionKey);
+                        if (travel <= 0) continue;
+                        const earliest = Math.max(start, nowMinutes - travel);
+                        const skips = Math.max(0, Math.floor((earliest - start) / hw));
+                        let slot = start + skips * hw;
+                        while (slot <= end && slot <= nowMinutes + 0.5) {
+                            const elapsed = nowMinutes - slot;
+                            if (elapsed >= 0 && elapsed <= travel) {
+                                const key = `${lineId}|${directionKey}|${Math.round(slot)}`;
+                                if (!seen.has(key)) {
+                                    seen.add(key);
+                                    out.push({
+                                        lineId, directionKey,
+                                        originDepartureMinute: slot,
+                                        elapsedMinutes: elapsed,
+                                        totalTravelMinutes: travel,
+                                        serviceType,
+                                    });
+                                }
+                            }
+                            slot += hw;
+                        }
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
     async function pollLivePositions() {
-        // Metro + tram + Athens suburban A1-A4. The Pi projects all of these on
-        // /api/live-positions (online), and each has bundled station-offsets so the
-        // client interpolates them identically when offline. National + bus lines
-        // are handled by the schedule projector below (no offsets on the Pi yet).
+        // Metro + tram + Athens suburban A1-A4. Online the Pi projects all of these
+        // on /api/live-positions (and overlays real suburban/national GPS via
+        // /api/trains). Offline we project metro/tram CLIENT-side from the bundled
+        // bands + offsets so the map still shows live-moving dots (incl. Saturday
+        // 24h overnight) with zero network. National + bus lines are handled by the
+        // schedule projector below.
         const PROJECTED = "M1,M2,M3,M3_AIR,T6,T7,A1,A2,A3,A4";
+        function applyOfflineFallback() {
+            const trains = computeActiveTrainsFromBundle(athensNow());
+            livePositionsSnapshot = { trains, generatedAtEpochSeconds: Date.now() / 1000 };
+        }
         async function tick() {
             try {
                 const r = await fetch(`https://api-syrmos.peterdsp.dev/api/live-positions?lineIds=${PROJECTED}`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const data = await r.json();
                 const generatedAtEpoch = Date.parse(data.generatedAt) / 1000;
                 livePositionsSnapshot = {
                     trains: data.trains || [],
                     generatedAtEpochSeconds: isNaN(generatedAtEpoch) ? Date.now() / 1000 : generatedAtEpoch,
                 };
-            } catch (_) {}
+            } catch (_) {
+                // Offline (or the Pi is down): project from the bundled timetable.
+                applyOfflineFallback();
+            }
         }
         await loadStationOffsets();
         await tick();

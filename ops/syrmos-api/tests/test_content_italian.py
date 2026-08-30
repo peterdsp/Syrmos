@@ -49,7 +49,9 @@ def make_conn() -> sqlite3.Connection:
             affected_lines TEXT NOT NULL,
             severity TEXT NOT NULL,
             valid_from TEXT,
-            valid_until TEXT
+            valid_until TEXT,
+            affected_station_ids TEXT,
+            service_until_time TEXT
         );
         CREATE TABLE rail_news (
             id TEXT PRIMARY KEY,
@@ -124,12 +126,13 @@ class ItalianContentPayloadTest(unittest.TestCase):
             ("alert", "Ρύθμιση", "Traffic change", "Ndryshim", "Modifica al servizio", "21:40", "2026-08-05T10:00:00Z"),
         )
         conn.execute(
-            "INSERT INTO announcements VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO announcements VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 "alert-1", "Καθυστέρηση", "Delay", "Vonesë", "Ritardo",
                 "Λεπτομέρειες", "Details", "Detaje", "Dettagli",
                 "https://example.com", "2099-08-05", "serviceAlert", 0,
                 '["M3"]', "warning", "2099-08-05", "2099-08-06",
+                '[]', None,
             ),
         )
 
@@ -167,19 +170,21 @@ class ItalianContentPayloadTest(unittest.TestCase):
     def test_hellenic_train_alert_refresh_prunes_only_stale_operator_alerts(self):
         conn = make_conn()
         conn.execute(
-            "INSERT INTO announcements VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO announcements VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 "ht-alert-stale", "Παλιό", "Old", "Vjetër", "Vecchio",
                 "", "", "", "", "https://example.com", "2026-08-01",
                 "serviceAlert", 0, "[]", "warning", "2026-08-01", None,
+                "[]", None,
             ),
         )
         conn.execute(
-            "INSERT INTO announcements VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO announcements VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 "stasy-current", "Τρέχον", "Current", "Aktual", "Attuale",
                 "", "", "", "", "https://example.com", "2026-08-01",
                 "serviceAlert", 0, "[]", "warning", "2026-08-01", None,
+                "[]", None,
             ),
         )
         conn.commit()
