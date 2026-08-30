@@ -372,6 +372,31 @@ body.dark-mode .nav-item--active {
     text-align: center;
 }
 
+/* Honest service-state card: seasonal / suspended / under-construction stations
+   whose sheet has no live departure but a real, explainable reason. Reads as a
+   calm note, never an error. A left accent bar colour-codes the state. */
+.departure-empty--service {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--sy-surface-2, rgba(148, 163, 184, 0.10));
+    border: 1px solid var(--sy-border, rgba(148, 163, 184, 0.22));
+    border-left: 3px solid var(--sy-text-secondary);
+}
+.departure-empty--seasonal { border-left-color: #0D9488; }
+.departure-empty--suspended { border-left-color: #DC2626; }
+.departure-empty--construction { border-left-color: #B8860B; }
+.service-state__icon { font-size: 22px; line-height: 1.1; flex: 0 0 auto; }
+.service-state__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.service-state__title {
+    font-size: 14px; font-weight: 700; color: var(--sy-text-primary);
+}
+.service-state__line { font-size: 12px; font-weight: 600; color: var(--sy-text-secondary); }
+.service-state__note { font-size: 13px; color: var(--sy-text-secondary); line-height: 1.4; }
+
 /* A panel row that pairs a title/count with a provenance chip on the right. */
 .panel-item--live-status {
     display: flex; align-items: center; justify-content: space-between;

@@ -61,6 +61,14 @@
             lines_at_this_station: "Lines at this station",
             next_departures: "Next departures",
             no_departures: "No departures available for this station right now.",
+            svc_suspended: "Service temporarily suspended",
+            svc_suspended_note: "This line is not running right now.",
+            svc_seasonal: "Seasonal service",
+            svc_seasonal_note: "Runs on selected days and seasons. Nothing is scheduled from here right now.",
+            svc_construction: "Not yet open",
+            svc_construction_note: "The track is built but not yet in passenger service.",
+            svc_next_today: "Next departure today at {time}",
+            svc_towards: "towards",
             get_directions: "Get directions",
             now: "Now",
             hero_next: "Next departure",
@@ -140,6 +148,14 @@
             lines_at_this_station: "Γραμμές αυτού του σταθμού",
             next_departures: "Επόμενα δρομολόγια",
             no_departures: "Δεν υπάρχουν διαθέσιμα δρομολόγια για αυτόν τον σταθμό αυτή τη στιγμή.",
+            svc_suspended: "Προσωρινή αναστολή δρομολογίων",
+            svc_suspended_note: "Αυτή η γραμμή δεν λειτουργεί αυτή τη στιγμή.",
+            svc_seasonal: "Εποχικό δρομολόγιο",
+            svc_seasonal_note: "Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή.",
+            svc_construction: "Δεν λειτουργεί ακόμη",
+            svc_construction_note: "Η γραμμή έχει κατασκευαστεί αλλά δεν έχει τεθεί ακόμη σε επιβατική λειτουργία.",
+            svc_next_today: "Επόμενη αναχώρηση σήμερα στις {time}",
+            svc_towards: "προς",
             get_directions: "Οδηγίες",
             now: "Τώρα",
             hero_next: "Επόμενη αναχώρηση",
@@ -219,6 +235,14 @@
             lines_at_this_station: "Linjat në këtë stacion",
             next_departures: "Nisjet e ardhshme",
             no_departures: "Nuk ka nisje në dispozicion për këtë stacion në këtë moment.",
+            svc_suspended: "Shërbimi përkohësisht i pezulluar",
+            svc_suspended_note: "Kjo linjë nuk është në punë për momentin.",
+            svc_seasonal: "Shërbim sezonal",
+            svc_seasonal_note: "Funksionon në ditë dhe stinë të zgjedhura. Asgjë nuk është planifikuar nga këtu për momentin.",
+            svc_construction: "Ende jo e hapur",
+            svc_construction_note: "Hekurudha është ndërtuar por ende nuk është në shërbim për pasagjerë.",
+            svc_next_today: "Nisja e radhës sot në {time}",
+            svc_towards: "drejt",
             get_directions: "Udhëzime",
             now: "Tani",
             hero_next: "Nisja e radhës",
@@ -298,6 +322,14 @@
             lines_at_this_station: "Linee in questa stazione",
             next_departures: "Prossime partenze",
             no_departures: "Nessuna partenza disponibile per questa stazione al momento.",
+            svc_suspended: "Servizio temporaneamente sospeso",
+            svc_suspended_note: "Questa linea non è in servizio in questo momento.",
+            svc_seasonal: "Servizio stagionale",
+            svc_seasonal_note: "Attivo in giorni e stagioni selezionati. Al momento non è prevista alcuna partenza da qui.",
+            svc_construction: "Non ancora in servizio",
+            svc_construction_note: "Il binario è costruito ma non ancora in servizio passeggeri.",
+            svc_next_today: "Prossima partenza oggi alle {time}",
+            svc_towards: "verso",
             get_directions: "Indicazioni",
             now: "Ora",
             hero_next: "Prossima partenza",
@@ -586,11 +618,22 @@
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
 
-    // A line that is built but not open still renders, greyed, because the track
-    // is real and hiding it would be its own kind of lie. What must never exist is
-    // a train on it, or a departure from it. Default to operational so an older
-    // payload without the field behaves exactly as today.
-    const isOperational = (line) => (line?.status ?? "operational") !== "under_construction";
+    // Track that carries no service right now still renders, greyed, because it is
+    // real and hiding it would be its own kind of lie. What must never exist is a
+    // train on it, or a confident departure from it. Two honest built-but-closed
+    // states: `under_construction` (never opened) and `suspended` (a real line
+    // temporarily halted, e.g. the Odontotos rack railway after the March 2026
+    // rockfalls). `seasonal` (the Pelion railway) is NOT closed: it is a real
+    // boardable line whose own dated trips gate it to the days it runs, so it
+    // counts as operational and draws in colour. Default to operational so an
+    // older payload without the field behaves exactly as today.
+    const isBuiltButClosed = (line) => {
+        const s = line?.status ?? "operational";
+        return s === "under_construction" || s === "suspended";
+    };
+    const isSuspended = (line) => (line?.status ?? "") === "suspended";
+    const isSeasonal = (line) => (line?.status ?? "") === "seasonal";
+    const isOperational = (line) => !isBuiltButClosed(line);
     const operationalLines = lines.filter(isOperational);
 
     const vehicleIconMap = new Map();
@@ -1173,24 +1216,25 @@
     for (const line of lines) {
         const ld = lineDisplayById.get(line.id);
         const feat = geoCache.get(line.id);
-        // A line that is built but not open still draws, because the track is
-        // real, but it reads as inert: muted grey, thinner, dashed and semi
-        // transparent, so it can never be mistaken for a line in service. It
-        // carries no trains and no departures either (handled above).
-        const underConstruction = !isOperational(line);
+        // Track that is built but not open (under construction OR temporarily
+        // suspended) still draws, because it is real, but it reads as inert: muted
+        // grey, thinner, dashed and semi transparent, so it can never be mistaken
+        // for a line in service. It carries no trains and no departures either
+        // (handled above). Seasonal lines are NOT greyed: they draw in colour.
+        const builtButClosed = isBuiltButClosed(line);
         // A rail-replacement bus draws dashed in its own colour, so it reads as
         // "a bus stands in here" without ever looking like a rail line.
         const isBus = line.type === "bus";
-        const strokeColor = underConstruction ? MAP_TOKENS.greyedColor : (ld?.strokeColor || line.color);
+        const strokeColor = builtButClosed ? MAP_TOKENS.greyedColor : (ld?.strokeColor || line.color);
         const isNarrow = line.type === "suburban" || line.type === "scenic" || isBus;
-        const strokeWeight = underConstruction ? 3 : (ld?.strokeWeight ?? (isNarrow ? 4 : 5));
+        const strokeWeight = builtButClosed ? 3 : (ld?.strokeWeight ?? (isNarrow ? 4 : 5));
         const polylineOpts = {
             color: strokeColor,
             weight: strokeWeight,
-            opacity: underConstruction ? 0.55 : 0.9,
+            opacity: builtButClosed ? 0.55 : 0.9,
             lineCap: "round",
             lineJoin: "round",
-            dashArray: underConstruction ? MAP_TOKENS.greyedDash : (isBus ? MAP_TOKENS.busDash : (ld?.strokeDash || null)),
+            dashArray: builtButClosed ? MAP_TOKENS.greyedDash : (isBus ? MAP_TOKENS.busDash : (ld?.strokeDash || null)),
         };
         if (feat && feat.geometry) {
             // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
@@ -1679,6 +1723,10 @@
             if (minutesAway < 0) minutesAway += 24 * 60;
             if (minutesAway > 240) continue;
             const last = train.stops[train.stops.length - 1];
+            // If the wanted station IS this train's final stop, this row is an
+            // ARRIVAL, not a departure. Showing it as a departure "to <this very
+            // station>" (the Ano Lechonia / Milies bug) is nonsense, so drop it.
+            if (wantedNames.has(last.stationNameEn) || wantedNames.has(last.stationNameEl)) continue;
             const line = lineMap.get(train.lineId);
             // Track that is built but not open carries no service, so it can have
             // no departures, however the feed or the projector might describe it.
@@ -1813,13 +1861,97 @@
         }
     }
 
+    // Honest service-state for a station whose live/scheduled departures are
+    // empty. A seasonal or suspended line must never look like a plain "no
+    // departures right now" glitch: it has a real, explainable reason, so the
+    // empty sheet becomes useful instead of alarming.
+    function stationServiceState(station) {
+        const stLines = (station.lineIds || [])
+            .map((id) => lineMap.get(id))
+            .filter(Boolean);
+        if (!stLines.length) return null;
+        // Suspended / under construction only win when NO line here is live,
+        // so an interchange that also carries a running line stays a normal sheet.
+        if (stLines.every((l) => !isOperational(l))) {
+            const suspended = stLines.find((l) => isSuspended(l));
+            if (suspended) return { kind: "suspended", line: suspended };
+            const construction = stLines.find((l) => (l.status || "") === "under_construction");
+            if (construction) return { kind: "construction", line: construction };
+        }
+        // Seasonal: real service, just not every day/month.
+        const seasonal = stLines.find((l) => isSeasonal(l));
+        if (seasonal) return { kind: "seasonal", line: seasonal, station };
+        return null;
+    }
+
+    // The soonest departure TODAY from this station on a seasonal line, or null.
+    // Honest by construction: it only reports a train whose dayType (and any
+    // validDates) match today and whose time is still ahead, never a guess rolled
+    // days forward. Destination comes from the trip direction + line terminals.
+    function nextSeasonalDepartureToday(line, station) {
+        const bundle = apiSchedules && apiSchedules.get(line.id);
+        if (!bundle || !Array.isArray(bundle.trips)) return null;
+        const now = athensNow();
+        const today = dayTypeFor(now, resolveHolidayDayType(now));
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const isoToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const wanted = new Set(station.stationIds && station.stationIds.length ? station.stationIds : [station.id]);
+        let best = null;
+        for (const trip of bundle.trips) {
+            const td = (trip.dayType || "").toLowerCase();
+            if (td && td !== today) continue;
+            if (trip.validDates && !trip.validDates.split(",").includes(isoToday)) continue;
+            const stop = (trip.stops || []).find((s) => wanted.has(s.stationId));
+            if (!stop || !stop.departureTime) continue;
+            const [h, m] = stop.departureTime.split(":").map((n) => parseInt(n, 10));
+            if (Number.isNaN(h)) continue;
+            const depMin = h * 60 + m;
+            if (depMin < nowMin) continue; // already left today
+            const dest = (trip.direction === "inbound" ? line.terminalA : line.terminalB) || "";
+            if (!best || depMin < best.depMin) best = { depMin, time: stop.departureTime, dest };
+        }
+        return best;
+    }
+
+    function serviceStateCardHtml(state) {
+        const icon = state.kind === "suspended" ? "⛔"
+            : state.kind === "construction" ? "🚧" : "🌿";
+        const title = state.kind === "suspended" ? t("svc_suspended")
+            : state.kind === "construction" ? t("svc_construction") : t("svc_seasonal");
+        let note = state.kind === "suspended" ? t("svc_suspended_note")
+            : state.kind === "construction" ? t("svc_construction_note") : t("svc_seasonal_note");
+        // Seasonal AND running today -> replace the generic note with the real
+        // next departure ("Next departure today at 10:00 towards Milies").
+        if (state.kind === "seasonal") {
+            const next = nextSeasonalDepartureToday(state.line, state.station);
+            if (next) {
+                // Plain text here; serviceStateCardHtml escapes `note` once below.
+                const towards = next.dest ? ` ${t("svc_towards")} ${next.dest}` : "";
+                note = `${t("svc_next_today").replace("{time}", next.time)}${towards}.`;
+            }
+        }
+        const lineName = state.line && state.line.name ? escapeHtml(state.line.name) : "";
+        return `
+            <div class="departure-empty departure-empty--service departure-empty--${state.kind}" role="note">
+                <div class="service-state__icon" aria-hidden="true">${icon}</div>
+                <div class="service-state__text">
+                    <div class="service-state__title">${escapeHtml(title)}</div>
+                    ${lineName ? `<div class="service-state__line">${lineName}</div>` : ""}
+                    <div class="service-state__note">${escapeHtml(note)}</div>
+                </div>
+            </div>`;
+    }
+
     async function renderDepartures(station) {
         const apiDepartures = await fetchApiDepartures(station);
         const departures = (apiDepartures && apiDepartures.length)
             ? apiDepartures
             : buildStationDepartures(station);
         if (!departures.length) {
-            stationDepartures.innerHTML = `<div class="departure-empty">${t("no_departures")}</div>`;
+            const svc = stationServiceState(station);
+            stationDepartures.innerHTML = svc
+                ? serviceStateCardHtml(svc)
+                : `<div class="departure-empty">${t("no_departures")}</div>`;
             if (contextDepartures) contextDepartures.innerHTML = stationDepartures.innerHTML;
             return;
         }
@@ -3309,7 +3441,7 @@
                 const suburban = line.id === "A1" || line.id === "A2" || line.id === "A3" || line.id === "A4";
                 if (!suburban || snapshotHasLine(line.id)) continue;
             }
-            if ((line.status || "operational") === "under_construction") continue;
+            if (isBuiltButClosed(line)) continue;
             const bundle = apiSchedules.get(line.id);
             if (!bundle || !Array.isArray(bundle.trips)) continue;
             for (const trip of bundle.trips) {
