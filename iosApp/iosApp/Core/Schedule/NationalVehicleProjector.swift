@@ -25,11 +25,14 @@ import CoreLocation
 final class NationalVehicleProjector: @unchecked Sendable {
     static let shared = NationalVehicleProjector()
 
-    /// Lines already served by the live feed / offsets projector. These are
-    /// projected by `TrainSimulatorService.projectTrains` and must not be
-    /// double-projected here.
+    /// Metro/tram lines projected from the band grid + offsets by
+    /// `TrainSimulatorService.projectTrains`; they carry no `trips[]` and must
+    /// never be trip-projected here. Athens suburban A1-A4 ARE projected here
+    /// now (from their bundled trips) so they still appear on the map offline;
+    /// online the map dedupes them per line against the real-GPS LiveTrainService
+    /// feed (MapView `coveredLines`), so there is never a double marker.
     private static let liveFeedLineIds: Set<String> = [
-        "M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4",
+        "M1", "M2", "M3", "M3_AIR", "T6", "T7",
     ]
 
     private struct Trip: Decodable {
@@ -105,19 +108,26 @@ final class NationalVehicleProjector: @unchecked Sendable {
     }
 
     private func projectTrip(_ trip: Trip, line: TransitLine, nowMinutes: Int, nowEpoch: TimeInterval) -> SimulatedTrain? {
-        let stops = trip.stops.sorted { $0.stopSequence < $1.stopSequence }
-        guard stops.count >= 2 else { return nil }
+        guard trip.stops.count >= 2 else { return nil }
 
-        // Absolute minute of each stop, unwrapped past midnight so a train that
-        // departs 23:50 and arrives 01:10 has monotonically increasing times.
-        var mins: [Int] = []
-        var prev = Int.min
-        for s in stops {
-            guard var m = Self.minutesOfDay(s.departureTime) else { return nil }
-            if prev != Int.min { while m < prev { m += 1440 } }
-            mins.append(m)
-            prev = m
+        // Pair each stop with its minute-of-day in CHRONOLOGICAL order. The seed
+        // stores stops in canonical (outbound) stop_sequence order, so an INBOUND
+        // trip runs time-descending; sorting by stop_sequence + unwrapping would
+        // corrupt it. Instead: if the trip spans > 12h it genuinely crosses
+        // midnight, so pre-05:00 stops belong to the next day (+24h); then sort by
+        // time. Mirrors the Pi projector._project_scheduled_trip_active and the
+        // web chronologicalStops.
+        var paired: [(stop: Trip.Stop, m: Int)] = []
+        for s in trip.stops {
+            guard let m = Self.minutesOfDay(s.departureTime) else { return nil }
+            paired.append((s, m))
         }
+        if let mx = paired.map(\.m).max(), let mn = paired.map(\.m).min(), mx - mn > 12 * 60 {
+            paired = paired.map { $0.m < 5 * 60 ? (stop: $0.stop, m: $0.m + 1440) : $0 }
+        }
+        paired.sort { $0.m < $1.m }
+        let stops = paired.map(\.stop)
+        let mins = paired.map(\.m)
 
         let originMin = mins[0]
         let lastMin = mins[mins.count - 1]
