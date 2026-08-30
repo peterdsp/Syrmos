@@ -137,9 +137,13 @@ fun simulateTrains(
 }
 
 
-/// Metro/tram/M3_AIR/suburban-A1-A4 come from the offsets-based [simulateTrains].
-private val LIVE_POSITION_LINES =
-    setOf("M1", "M2", "M3", "M3_AIR", "T6", "T7", "A1", "A2", "A3", "A4")
+/// Metro/tram + M3_AIR come from the offsets-based [simulateTrains] (band grid,
+/// online OR offline); they carry no trips[] and are never trip-projected here.
+/// Athens suburban A1-A4 ARE trip-projected here (from bundled trips) so they
+/// still appear on the map offline; online the MapViewModel dedupes them per
+/// line against the real-GPS liveTrains feed, so there is never a double marker.
+private val BAND_PROJECTED_LINES =
+    setOf("M1", "M2", "M3", "M3_AIR", "T6", "T7")
 
 /// Project moving vehicles for NATIONAL rail + rail-replacement BUS lines, which
 /// have no live-position feed and no station-offsets on the Pi. For every trip
@@ -167,31 +171,42 @@ fun projectScheduledTrains(
         geometry.mapValues { (_, poly) -> poly to VehicleInterpolation.buildDistanceTable(poly) }
 
     for (line in lineById.values) {
-        if (line.id in LIVE_POSITION_LINES) continue
+        if (line.id in BAND_PROJECTED_LINES) continue
         val bundle = bundles[line.id] ?: continue
         for (trip in bundle.trips) {
             // dayType is authoritative; an empty dayType runs every day.
             val td = trip.dayType.lowercase()
             if (td.isNotEmpty() && td != today) continue
-            val stops = trip.stops
-            if (stops.size < 2) continue
-            val times = stops.map { toMinutesOfDay(it.departureTime) }
-            if (times.any { it == null }) continue
-            val t = times.map { it!! }
-            // Skip trips that wrap past midnight (non-monotonic) - rare on these lines.
-            var monotonic = true
-            for (i in 1 until t.size) if (t[i] < t[i - 1]) { monotonic = false; break }
-            if (!monotonic) continue
-            if (nowMinutes < t.first() || nowMinutes > t.last()) continue
+            val rawStops = trip.stops
+            if (rawStops.size < 2) continue
+            // Chronological stop order. The seed stores stops in canonical
+            // (outbound) stop_sequence order, so INBOUND trips run time-descending
+            // and a naive monotonic check silently drops them. If the trip spans
+            // > 12h it genuinely crosses midnight, so pre-05:00 stops belong to the
+            // next day (+24h); then sort by time. Mirrors the Pi
+            // scheduled_trip_active and the web chronologicalStops.
+            val paired0 = rawStops.map { it to toMinutesOfDay(it.departureTime) }
+            if (paired0.any { it.second == null }) continue
+            var paired = paired0.map { it.first to it.second!! }
+            if (paired.maxOf { it.second } - paired.minOf { it.second } > 12 * 60) {
+                paired = paired.map { if (it.second < 5 * 60) it.first to (it.second + 1440) else it }
+            }
+            paired = paired.sortedBy { it.second }
+            val stops = paired.map { it.first }
+            val t = paired.map { it.second }
+            // Membership: try today's clock, and now+1440 for an after-midnight leg.
+            var nm = nowMinutes
+            if (nm < t.first() && nm + 1440 <= t.last()) nm += 1440.0
+            if (nm < t.first() || nm > t.last()) continue
 
             var seg = 0
             for (i in 0 until stops.size - 1) {
-                if (t[i] <= nowMinutes && nowMinutes < t[i + 1]) { seg = i; break }
+                if (t[i] <= nm && nm < t[i + 1]) { seg = i; break }
             }
             val from = stationById[stops[seg].stationId] ?: continue
             val to = stationById[stops[seg + 1].stationId] ?: continue
             val dur = (t[seg + 1] - t[seg]).toDouble()
-            val linearFrac = if (dur > 0) ((nowMinutes - t[seg]) / dur).coerceIn(0.0, 1.0) else 0.0
+            val linearFrac = if (dur > 0) ((nm - t[seg]) / dur).coerceIn(0.0, 1.0) else 0.0
             val frac = stationAwareEase(linearFrac)
             val pos = geoTables[line.id]?.takeIf { it.first.size >= 2 }?.let { (poly, table) ->
                 VehicleInterpolation.positionBetween(
