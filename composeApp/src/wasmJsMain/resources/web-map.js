@@ -79,6 +79,10 @@
             check_operator: "Check operator",
             unknown: "unknown",
             next: "next",
+            near: "Near",
+            track: "Track",
+            the_station: "Station",
+            open_details: "Open details",
             reduced: "Reduced",
             verify_on: "Verify on {op} ↗",
             ask_ariadne: "Ask Ariadne",
@@ -154,6 +158,10 @@
             check_operator: "Δείτε πάροχο",
             unknown: "άγνωστο",
             next: "επόμενος",
+            near: "Κοντά σε",
+            track: "Παρακολούθηση",
+            the_station: "Σταθμός",
+            open_details: "Άνοιγμα λεπτομερειών",
             reduced: "Μειωμένο",
             verify_on: "Επιβεβαίωση στο {op} ↗",
             ask_ariadne: "Ρώτα την Αριάδνη",
@@ -229,6 +237,10 @@
             check_operator: "Kontrolloni operatorin",
             unknown: "i panjohur",
             next: "tjetër",
+            near: "Pranë",
+            track: "Ndiq",
+            the_station: "Stacioni",
+            open_details: "Hap detajet",
             reduced: "Me zbritje",
             verify_on: "Verifiko në {op} ↗",
             ask_ariadne: "Pyet Ariadnen",
@@ -304,6 +316,10 @@
             check_operator: "Verifica operatore",
             unknown: "sconosciuto",
             next: "prossimo",
+            near: "Vicino a",
+            track: "Segui",
+            the_station: "Stazione",
+            open_details: "Apri i dettagli",
             reduced: "Ridotto",
             verify_on: "Verifica su {op} ↗",
             ask_ariadne: "Chiedi ad Ariadne",
@@ -709,6 +725,36 @@
     }
 
     const liveTrainList = document.getElementById("liveTrainList");
+    // Delegated tap/keyboard handling for the Home "Live trains" panel. Both the
+    // real-GPS suburban rows and the schedule-projected rows are tappable and open
+    // the SAME shared vehicle sheet as tapping the vehicle on the map. Delegation
+    // (one listener on the container) survives the innerHTML re-renders the two
+    // panel writers do, so every row stays interactive.
+    let lastSimPanelTrains = [];
+    function _openTrainRow(row) {
+        const id = row.getAttribute("data-train-id");
+        const kind = row.getAttribute("data-train-kind") || "simulated";
+        const list = kind === "live" ? (lastLiveTrains || []) : (lastSimPanelTrains || []);
+        const train = list.find((c) => String(c.id) === id);
+        if (!train) return;
+        // Open the SAME shared vehicle sheet as tapping the vehicle on the map
+        // (which does not fly the map either — the sheet carries a "Show on map"
+        // action). Guarded so a row with a bad coord can never crash the sheet.
+        try {
+            showTrainSheet(kind, train);
+        } catch (_) { /* keep the panel interactive even if one sheet fails */ }
+    }
+    if (liveTrainList) {
+        liveTrainList.addEventListener("click", (e) => {
+            const row = e.target.closest("[data-train-id]");
+            if (row) _openTrainRow(row);
+        });
+        liveTrainList.addEventListener("keydown", (e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            const row = e.target.closest("[data-train-id]");
+            if (row) { e.preventDefault(); _openTrainRow(row); }
+        });
+    }
     const nearbyStationList = document.getElementById("nearbyStationList");
     const popularStationList = document.getElementById("popularStationList");
     const faresList = document.getElementById("faresList");
@@ -2367,12 +2413,19 @@
             // current live position.
             const fresh = liveBatchFreshness();
             const freshChip = `<div class="panel-item panel-item--live-status"><span class="src-chip src-chip--${fresh.mod}"><span class="src-chip__dot"></span>${fresh.label}</span></div>`;
+            const toWord = currentLang === "el" ? "προς" : currentLang === "sq" ? "drejt" : currentLang === "it" ? "verso" : "to";
             const suburbanHtml = freshChip + trains.slice(0, 5).map((train) => {
                 const line = lineMap.get(train.lineId);
+                const title = `${line ? line.name : train.lineId} ${train.trainNumber}`;
+                const meta = `${train.origin || t("live")} ${toWord} ${train.destination || t("unknown")}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}`;
+                // Tappable row -> shared vehicle sheet (same as tapping on the map).
                 return `
-                    <div class="panel-item" data-live-suburban>
-                        <div class="panel-item__title">🚆 ${line ? line.name : train.lineId} ${train.trainNumber}</div>
-                        <div class="panel-item__meta">${train.origin || t("live")} ${currentLang === "el" ? "προς" : currentLang === "sq" ? "drejt" : "to"} ${train.destination || t("unknown")}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}</div>
+                    <div class="panel-item panel-item--tappable" data-live-suburban data-train-id="${train.id}" data-train-kind="live" role="button" tabindex="0" aria-label="${escapeHtml(`${title}. ${meta}. ${t("open_details")}`)}">
+                        <div class="panel-item__body">
+                            <div class="panel-item__title">🚆 ${escapeHtml(title)}</div>
+                            <div class="panel-item__meta">${escapeHtml(meta)}</div>
+                        </div>
+                        <span class="panel-item__chevron" aria-hidden="true">›</span>
                     </div>
                 `;
             }).join("");
@@ -2710,6 +2763,21 @@
             if (heroMeta) heroMeta.textContent = then ? `${t("then")} ${then}` : "";
             if (heroLive) heroLive.style.display = srcConf === "live" ? "" : "none";
         }
+
+        // Wire the answer-hero action buttons (were dead + showed raw i18n keys).
+        // Both resolve to the current answer-hero station; "Station" opens its
+        // detail sheet, "Track" opens it focused on the map (live view). Guarded
+        // so a tap before data loads is a harmless no-op, not a crash.
+        const heroStationBtn = document.getElementById("heroStation");
+        const heroTrackBtn = document.getElementById("heroTrack");
+        if (heroStationBtn) heroStationBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (data && data.station) selectStation(data.station.id, true);
+        });
+        if (heroTrackBtn) heroTrackBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (data && data.station) selectStation(data.station.id, true);
+        });
 
         refreshData();
         tick();
@@ -3505,6 +3573,9 @@
             if (!perLine.has(key)) perLine.set(key, train);
         }
         const display = [...perLine.values()].slice(0, 10);
+        // Stored so the delegated liveTrainList handler can resolve a tapped row
+        // back to its train and open the shared vehicle sheet.
+        lastSimPanelTrains = display;
 
         const panelHtml =
             // These positions are schedule projections (simulateAllTrains), not
@@ -3513,27 +3584,20 @@
             `<div class="panel-item panel-item--live-status"><div class="panel-item__count">${t("trains_active", { n: trains.length })}</div><span class="src-chip src-chip--estimated"><span class="src-chip__dot"></span>${t("estimated")}</span></div>` +
             display.map((train) => {
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
+                const title = `${train.line.name} → ${train.destination}`;
+                const meta = `${t("near")} ${train.fromStation} · ${t("next")}: ${train.toStation}`;
                 return `
-                    <div class="panel-item" data-train-id="${train.id}" data-train-lat="${train.lat}" data-train-lng="${train.lng}">
-                        <div class="panel-item__title">${icon} ${train.line.name} → ${train.destination}</div>
-                        <div class="panel-item__meta">Near ${train.fromStation} · Next: ${train.toStation}</div>
+                    <div class="panel-item panel-item--tappable" data-train-id="${train.id}" data-train-kind="simulated" role="button" tabindex="0" aria-label="${escapeHtml(`${title}. ${meta}. ${t("open_details")}`)}">
+                        <div class="panel-item__body">
+                            <div class="panel-item__title">${icon} ${escapeHtml(title)}</div>
+                            <div class="panel-item__meta">${escapeHtml(meta)}</div>
+                        </div>
+                        <span class="panel-item__chevron" aria-hidden="true">›</span>
                     </div>
                 `;
             }).join("");
 
         liveTrainList.innerHTML = panelHtml;
-
-        liveTrainList.querySelectorAll("[data-train-id]").forEach((el) => {
-            el.addEventListener("click", () => {
-                const train = trains.find((candidate) => candidate.id === el.getAttribute("data-train-id"));
-                const lat = parseFloat(el.getAttribute("data-train-lat"));
-                const lng = parseFloat(el.getAttribute("data-train-lng"));
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.45 });
-                }
-                if (train) showTrainSheet("simulated", train);
-            });
-        });
     }
 
     // OASA airport bus positions on the map.

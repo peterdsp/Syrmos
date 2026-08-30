@@ -505,6 +505,22 @@ body.dark-mode .nav-item--active {
     margin-left: 8px; flex-shrink: 0;
 }
 
+/* Tappable Home "Live trains" rows -> shared vehicle sheet. Title + meta stack
+   in a body column with a chevron affordance; clear pressed + focus states. */
+.panel-item--tappable { justify-content: space-between; gap: 8px; }
+.panel-item--tappable:active { background: var(--sy-background-subtle); transform: scale(0.99); }
+.panel-item--tappable:focus-visible { outline: 2px solid var(--sy-accent, #2563eb); outline-offset: 1px; }
+.panel-item__body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.panel-item--tappable .panel-item__title { flex: none; }
+.panel-item--tappable .panel-item__meta {
+    margin-left: 0; flex: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.panel-item__chevron {
+    flex-shrink: 0; font-size: 18px; line-height: 1;
+    color: var(--sy-text-secondary); opacity: 0.55;
+}
+
 .panel-item__count {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 22px; height: 18px;
