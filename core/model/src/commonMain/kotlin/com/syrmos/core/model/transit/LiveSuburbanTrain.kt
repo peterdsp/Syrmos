@@ -30,4 +30,10 @@ data class LiveSuburbanTrain(
     val scheduleStatus: String? = null,
     val trainId: String? = null,
     val liveStreamUrl: String? = null,
+    // Honest boardability signal from the feed. A vehicle the upstream feed
+    // could not assign to a passenger route is a real GPS dot but NOT a
+    // boardable service, so the UI must not label it "On time" / delayed.
+    // Defaults keep older feed rows (and any existing callers) backward-safe.
+    val status: String = "in_service",
+    val inService: Boolean = true,
 )
