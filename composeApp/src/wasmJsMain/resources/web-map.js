@@ -3197,14 +3197,44 @@
     // the clock lands in and interpolate along the line's track. This is the "else
     // interpolate from the timetable" path; if the Pi ever serves their live
     // positions it flows through connectLiveTrainStream and wins per line.
+    // Pair each stop with its minute-of-day in CHRONOLOGICAL order. The seed
+    // stores stops in canonical (outbound) stop_sequence order, so an INBOUND
+    // trip's departureTimes run high->low and a naive monotonic check would drop
+    // it. Sort by time; and if the whole trip spans > 12h it genuinely crosses
+    // midnight, so early-morning stops (< 05:00) belong to the next day (+24h).
+    // Mirrors the Pi projector._project_scheduled_trip_active. Returns null if
+    // any time is unparseable.
+    function chronologicalStops(stops) {
+        const arr = stops.map((s) => ({ s, m: minutesOfDay(s.departureTime) }));
+        if (arr.some((x) => x.m == null)) return null;
+        const mins = arr.map((x) => x.m);
+        if (Math.max(...mins) - Math.min(...mins) > 12 * 60) {
+            for (const x of arr) if (x.m < 5 * 60) x.m += 24 * 60;
+        }
+        arr.sort((a, b) => a.m - b.m);
+        return arr;
+    }
+
     function projectScheduledTrains() {
         if (!apiSchedules || apiSchedules.size === 0) return [];
         const out = [];
         const now = athensNow();
         const today = dayTypeFor(now, resolveHolidayDayType(now));
         const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+        const snapshotHasLine = (id) =>
+            !!(livePositionsSnapshot && livePositionsSnapshot.trains &&
+               livePositionsSnapshot.trains.some((t) => t.lineId === id));
         for (const line of lines) {
-            if (LIVE_POSITION_LINES.has(line.id)) continue;          // handled above
+            if (LIVE_POSITION_LINES.has(line.id)) {
+                // Metro/tram (M1/M2/M3/M3_AIR/T6/T7) are always drawn by
+                // simulateAllTrains (online feed OR offline band projection).
+                // Suburban A1-A4 are drawn there too WHEN the live snapshot
+                // carries them (online); OFFLINE the snapshot lacks them, so
+                // project A1-A4 from the bundled trips here so they still appear
+                // with zero network. Gated on snapshot coverage to never double-draw.
+                const suburban = line.id === "A1" || line.id === "A2" || line.id === "A3" || line.id === "A4";
+                if (!suburban || snapshotHasLine(line.id)) continue;
+            }
             if ((line.status || "operational") === "under_construction") continue;
             const bundle = apiSchedules.get(line.id);
             if (!bundle || !Array.isArray(bundle.trips)) continue;
@@ -3222,24 +3252,27 @@
                 }
                 const stops = trip.stops;
                 if (!Array.isArray(stops) || stops.length < 2) continue;
-                const times = stops.map((s) => minutesOfDay(s.departureTime));
-                if (times.some((t) => t == null)) continue;
-                // Skip trips that wrap past midnight (non-monotonic) - rare on these lines.
-                let monotonic = true;
-                for (let i = 1; i < times.length; i++) if (times[i] < times[i - 1]) { monotonic = false; break; }
-                if (!monotonic) continue;
-                if (nowMin < times[0] || nowMin > times[times.length - 1]) continue;
+                const chrono = chronologicalStops(stops);
+                if (!chrono || chrono.length < 2) continue;
+                const first = chrono[0].m;
+                const last = chrono[chrono.length - 1].m;
+                // A midnight-crossing trip's window can sit in the 24-30h range
+                // while the wall clock is small (e.g. 00:20); shift now forward a
+                // day to test membership.
+                let nm = nowMin;
+                if (nm < first && nm + 24 * 60 <= last) nm += 24 * 60;
+                if (nm < first || nm > last) continue;
                 let seg = 0;
-                for (let i = 0; i < stops.length - 1; i++) {
-                    if (times[i] <= nowMin && nowMin < times[i + 1]) { seg = i; break; }
+                for (let i = 0; i < chrono.length - 1; i++) {
+                    if (chrono[i].m <= nm && nm < chrono[i + 1].m) { seg = i; break; }
                 }
-                const from = stationMap.get(stops[seg].stationId);
-                const to = stationMap.get(stops[seg + 1].stationId);
+                const from = stationMap.get(chrono[seg].s.stationId);
+                const to = stationMap.get(chrono[seg + 1].s.stationId);
                 if (!from || !to) continue;
-                const dur = times[seg + 1] - times[seg];
-                const frac = dur > 0 ? stationAwareEase(Math.min(Math.max((nowMin - times[seg]) / dur, 0), 1)) : 0;
+                const dur = chrono[seg + 1].m - chrono[seg].m;
+                const frac = dur > 0 ? stationAwareEase(Math.min(Math.max((nm - chrono[seg].m) / dur, 0), 1)) : 0;
                 const [lat, lng] = trainPosition(line.id, from, to, frac);
-                const dest = stationMap.get(stops[stops.length - 1].stationId);
+                const dest = stationMap.get(chrono[chrono.length - 1].s.stationId);
                 out.push({
                     id: `${line.id}_${trip.trainNo || seg}_${trip.direction || ""}`,
                     line,
