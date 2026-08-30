@@ -1743,7 +1743,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         /// fixed GPS pin, so a suburban train reported off any drawn line — e.g.
         /// the generic "P" Proastiakos, which has no single polyline to snap to —
         /// looks intentional instead of a capsule stranded off the track.
-        static func liveTrainRingImage(color: UIColor) -> UIImage {
+        static func liveTrainRingImage(color: UIColor, muted: Bool = false) -> UIImage {
             let core: CGFloat = 16
             let ring: CGFloat = 28
             let pad: CGFloat = 5
@@ -1754,13 +1754,16 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 let c = canvas / 2
                 let ringPath = UIBezierPath(ovalIn: CGRect(x: c - ring / 2, y: c - ring / 2, width: ring, height: ring))
                 ringPath.lineWidth = 2.5
-                color.withAlphaComponent(0.30).setStroke(); ringPath.stroke()
-                cg.setShadow(offset: CGSize(width: 0, height: 2), blur: 6, color: UIColor(white: 0.08, alpha: 0.3).cgColor)
+                // Muted = a non-boardable "position only" vehicle: fainter ring,
+                // faded core, softer border, so it reads as secondary (matches
+                // the web marker + the detail sheet).
+                color.withAlphaComponent(muted ? 0.18 : 0.30).setStroke(); ringPath.stroke()
+                cg.setShadow(offset: CGSize(width: 0, height: 2), blur: 6, color: UIColor(white: 0.08, alpha: muted ? 0.15 : 0.3).cgColor)
                 let coreRect = CGRect(x: c - core / 2, y: c - core / 2, width: core, height: core)
-                color.setFill(); UIBezierPath(ovalIn: coreRect).fill()
+                color.withAlphaComponent(muted ? 0.55 : 1.0).setFill(); UIBezierPath(ovalIn: coreRect).fill()
                 cg.setShadow(offset: .zero, blur: 0, color: nil)
                 let border = UIBezierPath(ovalIn: coreRect.insetBy(dx: 1, dy: 1))
-                border.lineWidth = 2; UIColor.white.setStroke(); border.stroke()
+                border.lineWidth = 2; UIColor.white.withAlphaComponent(muted ? 0.7 : 1.0).setStroke(); border.stroke()
             }
         }
 
@@ -1773,8 +1776,14 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 let color = UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
                 return Self.capsuleTrainImage(color: color, bearing: t.bearing)
             case .live(let t):
-                let color = UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
-                return Self.liveTrainRingImage(color: color)
+                // A "position only" / not-in-service live vehicle is a real GPS
+                // dot but NOT boardable, so draw it de-emphasized (grey, faded)
+                // to match its detail sheet. Assigned trains keep the line colour.
+                let notInService = !t.inService || t.status == "position_only"
+                let color = notInService
+                    ? UIColor(red: 0.61, green: 0.64, blue: 0.69, alpha: 1.0)   // ~#9CA3AF, matches web
+                    : UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
+                return Self.liveTrainRingImage(color: color, muted: notInService)
             }
         }
     }

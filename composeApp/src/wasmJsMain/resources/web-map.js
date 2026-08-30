@@ -2397,17 +2397,23 @@
 
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
-            const lineColor = line ? line.color : "#7C4DFF";
+            // A vehicle the feed could not assign to a passenger route
+            // (status "position_only" / inService false) is a real GPS dot but
+            // NOT a boardable service. Draw it de-emphasized (grey, no pulse,
+            // faded) so it never reads as a normal boardable train, matching the
+            // detail sheet. Parked/yard vehicles are withheld server-side.
+            const notInService = train.inService === false || train.status === "position_only";
+            const lineColor = notInService ? "#9CA3AF" : (line ? line.color : "#7C4DFF");
             // Custom divIcon so suburban trains are clearly distinguishable
             // from simulated metro/tram dots: pulsing ring + line-id badge.
             const icon = L.divIcon({
-                className: "live-train-marker",
+                className: notInService ? "live-train-marker live-train-marker--muted" : "live-train-marker",
                 html: `
-                    <span class="live-train-marker__pulse" style="border-color:${lineColor}"></span>
-                    <span class="live-train-marker__core" style="background:${lineColor}">
-                        <span class="live-train-marker__glyph">🚆</span>
+                    ${notInService ? "" : `<span class="live-train-marker__pulse" style="border-color:${lineColor}"></span>`}
+                    <span class="live-train-marker__core" style="background:${lineColor}${notInService ? ";opacity:0.55" : ""}">
+                        <span class="live-train-marker__glyph">${notInService ? "⏸" : "🚆"}</span>
                     </span>
-                    <span class="live-train-marker__badge" style="background:${lineColor}">${train.lineId}</span>
+                    <span class="live-train-marker__badge" style="background:${lineColor}${notInService ? ";opacity:0.7" : ""}">${train.lineId}</span>
                 `,
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
@@ -2419,7 +2425,7 @@
             const marker = L.marker([train.lat, train.lng], {
                 icon,
                 keyboard: false,
-                zIndexOffset: 1000,
+                zIndexOffset: notInService ? 400 : 1000,
             }).addTo(liveTrainLayer);
             marker.bindTooltip(
                 `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
