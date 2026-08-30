@@ -525,19 +525,24 @@ internal actual fun PlatformMapView(
         }
 
         uiState.liveTrains.forEach { train ->
-            val color = uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
-                ?: 0xFF7C4DFF.toInt()
+            // A "position only" / not-in-service live vehicle is a real GPS dot
+            // but NOT boardable, so draw it de-emphasized (grey, faded) to match
+            // its detail card. Assigned trains keep the line colour.
+            val notInService = !train.inService || train.status == "position_only"
+            val color = if (notInService) 0xFF9CA3AF.toInt()
+                else uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
+                    ?: 0xFF7C4DFF.toInt()
             val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
                 existing.position = snappedPos
-                existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
+                existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId, muted = notInService)
             } else {
                 val trainId = train.id
                 val marker = Marker(mapView).apply {
                     position = snappedPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId)
+                    icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId, muted = notInService)
                     title = "${train.lineId} ${train.trainNumber}"
                     setOnMarkerClickListener { _, _ ->
                         onTrainSelected(trainId)
@@ -825,11 +830,19 @@ private fun buildAirportTrainBitmap(res: android.content.res.Resources): android
     return BitmapDrawable(res, bitmap)
 }
 
-private fun buildLiveTrainBitmap(res: android.content.res.Resources, color: Int, lineId: String): android.graphics.drawable.Drawable {
+private fun buildLiveTrainBitmap(
+    res: android.content.res.Resources,
+    color: Int,
+    lineId: String,
+    muted: Boolean = false,
+): android.graphics.drawable.Drawable {
     // Bigger marker with halo, line-color core, and a line-id badge underneath
     // so suburban trains stand out clearly against the simulated metro/tram
     // dots. Static (no animation here — osmdroid markers don't redraw on tick)
     // but the size + badge already deliver the visibility the user asked for.
+    // `muted` = a non-boardable "position only" vehicle: faded core/halo/badge
+    // (and the caller passes a grey colour) so it reads as secondary, matching
+    // the web/iOS markers + the detail card.
     val width = 88
     val height = 116
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -837,17 +850,19 @@ private fun buildLiveTrainBitmap(res: android.content.res.Resources, color: Int,
     val cx = width / 2f
     val cy = 44f
 
-    val haloColor = (color and 0x00FFFFFF) or 0x33000000
+    val coreAlpha = if (muted) 140 else 255
+    val badgeAlpha = if (muted) 180 else 255
+    val haloColor = (color and 0x00FFFFFF) or (if (muted) 0x1A000000 else 0x33000000)
     val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = haloColor }
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-    val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() }
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; this.alpha = coreAlpha }
+    val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt(); this.alpha = if (muted) 190 else 255 }
     val badgeText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = 0xFFFFFFFF.toInt()
         this.textSize = 22f
         this.isFakeBoldText = true
         this.textAlign = Paint.Align.CENTER
     }
-    val badge = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+    val badge = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; this.alpha = badgeAlpha }
 
     canvas.drawCircle(cx, cy, 36f, halo)
     canvas.drawCircle(cx, cy, 24f, fill)
