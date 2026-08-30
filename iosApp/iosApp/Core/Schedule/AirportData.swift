@@ -265,7 +265,7 @@ struct AirportHub: Identifiable {
                 id: "bus1x",
                 mode: .bus,
                 badge: "1X / 1N",
-                colorHex: 0x5B6770,
+                colorHex: 0x0E7490,
                 title: AirportL10n(
                     en: "Direct airport bus",
                     el: "Απευθείας λεωφορείο αεροδρομίου",
@@ -283,7 +283,7 @@ struct AirportHub: Identifiable {
                 id: "bus79",
                 mode: .bus,
                 badge: "79",
-                colorHex: 0x5B6770,
+                colorHex: 0x0E7490,
                 title: AirportL10n(
                     en: "Bus 79",
                     el: "Λεωφορείο 79",
