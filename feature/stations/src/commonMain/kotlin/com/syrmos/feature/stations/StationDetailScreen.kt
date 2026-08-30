@@ -270,7 +270,12 @@ fun StationDetailScreen(
                 item {
                     Text(
                         text = if (uiState.hasLoadedDepartures) {
-                            when (lang) {
+                            // Honest line-state reason first (suspended / seasonal /
+                            // under construction), mirroring the web station sheet;
+                            // otherwise the generic "nothing right now" message.
+                            stationServiceState(uiState.connectingLines)
+                                ?.let { serviceStateMessage(it, lang) }
+                                ?: when (lang) {
                                 AppLanguage.GREEK -> "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία."
                                 AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme tani. Linja eshte mbyllur ose ka perfunduar sherbimi i sotem."
                                 AppLanguage.ITALIAN -> "Nessuna partenza disponibile al momento. La linea e chiusa o il servizio odierno e terminato."
@@ -474,4 +479,46 @@ private fun lineIdToColor(lineId: String): LineColor = when {
     lineId.startsWith("T") -> LineColor.TRAM_ORANGE
     lineId.startsWith("P") || lineId.startsWith("A") -> LineColor.SUBURBAN_PURPLE
     else -> LineColor.BLUE
+}
+
+/**
+ * Honest reason a station's departures are empty, when the reason is a line state
+ * rather than a plain "nothing right now". Mirrors the web station sheet and the
+ * iOS StationDetailView: a suspended or seasonal line must not read as a glitch.
+ */
+private enum class StationServiceState { SUSPENDED, CONSTRUCTION, SEASONAL }
+
+private fun stationServiceState(lines: List<Line>): StationServiceState? {
+    if (lines.isEmpty()) return null
+    // Suspended / under construction only when NO line here is live, so an
+    // interchange that also carries a running line stays a normal sheet.
+    if (lines.all { !it.isOperational }) {
+        if (lines.any { it.isSuspended }) return StationServiceState.SUSPENDED
+        // Reaching here with no suspended line means any built-but-closed line
+        // is under construction.
+        if (lines.any { it.isBuiltButClosed }) return StationServiceState.CONSTRUCTION
+    }
+    if (lines.any { it.isSeasonal }) return StationServiceState.SEASONAL
+    return null
+}
+
+private fun serviceStateMessage(state: StationServiceState, lang: AppLanguage): String = when (state) {
+    StationServiceState.SUSPENDED -> when (lang) {
+        AppLanguage.GREEK -> "Προσωρινή αναστολή δρομολογίων. Αυτή η γραμμή δεν λειτουργεί αυτή τη στιγμή."
+        AppLanguage.ALBANIAN -> "Sherbimi perkohesisht i pezulluar. Kjo linje nuk eshte ne pune per momentin."
+        AppLanguage.ITALIAN -> "Servizio temporaneamente sospeso. Questa linea non e in servizio in questo momento."
+        else -> "Service temporarily suspended. This line is not running right now."
+    }
+    StationServiceState.CONSTRUCTION -> when (lang) {
+        AppLanguage.GREEK -> "Δεν λειτουργεί ακόμη. Η γραμμή έχει κατασκευαστεί αλλά δεν έχει τεθεί σε επιβατική λειτουργία."
+        AppLanguage.ALBANIAN -> "Ende jo e hapur. Hekurudha eshte ndertuar por ende nuk eshte ne sherbim per pasagjere."
+        AppLanguage.ITALIAN -> "Non ancora in servizio. Il binario e costruito ma non ancora in servizio passeggeri."
+        else -> "Not yet open. The track is built but not yet in passenger service."
+    }
+    StationServiceState.SEASONAL -> when (lang) {
+        AppLanguage.GREEK -> "Εποχικό δρομολόγιο. Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή."
+        AppLanguage.ALBANIAN -> "Sherbim sezonal. Funksionon ne dite dhe stine te zgjedhura. Asgje nuk eshte planifikuar nga ketu per momentin."
+        AppLanguage.ITALIAN -> "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non e prevista alcuna partenza da qui."
+        else -> "Seasonal service. Runs on selected days and seasons. Nothing is scheduled from here right now."
+    }
 }

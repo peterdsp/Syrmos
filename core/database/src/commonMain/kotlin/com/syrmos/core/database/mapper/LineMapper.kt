@@ -38,5 +38,7 @@ fun Line.toEntity(): Line_entity = Line_entity(
     status = when (status) {
         LineStatus.OPERATIONAL -> "operational"
         LineStatus.UNDER_CONSTRUCTION -> "under_construction"
+        LineStatus.SUSPENDED -> "suspended"
+        LineStatus.SEASONAL -> "seasonal"
     },
 )

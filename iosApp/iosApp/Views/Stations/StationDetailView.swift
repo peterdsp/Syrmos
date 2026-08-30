@@ -124,10 +124,11 @@ struct StationDetailView: View {
             Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : loc.language == .italian ? "Prossime partenze" : "Next Departures") {
                 if departures.isEmpty && !(isNonAthensRegion && apiFailed) {
                     Text(hasLoadedOnce
-                         ? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
+                         ? (stationServiceState.map(serviceStateMessage)
+                            ?? (loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία." :
                             loc.language == .albanian ? "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm." :
                             loc.language == .italian ? "Nessuna partenza al momento. La linea e chiusa o il servizio di oggi e terminato." :
-                            "No departures right now. The line is closed or today's service has ended.")
+                            "No departures right now. The line is closed or today's service has ended."))
                          : (loc.language == .greek ? "Φόρτωση δρομολογίων..." :
                             loc.language == .albanian ? "Duke ngarkuar oraret..." :
                             loc.language == .italian ? "Caricamento partenze..." :
@@ -231,6 +232,48 @@ struct StationDetailView: View {
 
     private var isSuburbanStation: Bool {
         station.lineIds.contains { ["A1", "A2", "A3", "A4"].contains($0) }
+    }
+
+    /// Honest reason a station's departures are empty, when the reason is a line
+    /// state rather than a plain "nothing right now". Mirrors the web station
+    /// sheet: a suspended or seasonal line must not read as a generic glitch.
+    private enum StationServiceState { case suspended, construction, seasonal }
+    private var stationServiceState: StationServiceState? {
+        let lines = station.lineIds.compactMap { SyrmosData.line(for: $0) }
+        guard !lines.isEmpty else { return nil }
+        // Suspended / under construction only when NO line here is live, so an
+        // interchange that also carries a running line stays a normal sheet.
+        if lines.allSatisfy({ !$0.isOperational }) {
+            if lines.contains(where: { $0.isSuspended }) { return .suspended }
+            if lines.contains(where: { $0.status == .underConstruction }) { return .construction }
+        }
+        if lines.contains(where: { $0.isSeasonal }) { return .seasonal }
+        return nil
+    }
+    private func serviceStateMessage(_ state: StationServiceState) -> String {
+        switch state {
+        case .suspended:
+            switch loc.language {
+            case .greek: return "Προσωρινή αναστολή δρομολογίων. Αυτή η γραμμή δεν λειτουργεί αυτή τη στιγμή."
+            case .albanian: return "Shërbimi përkohësisht i pezulluar. Kjo linjë nuk është në punë për momentin."
+            case .italian: return "Servizio temporaneamente sospeso. Questa linea non e in servizio in questo momento."
+            default: return "Service temporarily suspended. This line is not running right now."
+            }
+        case .construction:
+            switch loc.language {
+            case .greek: return "Δεν λειτουργεί ακόμη. Η γραμμή έχει κατασκευαστεί αλλά δεν έχει τεθεί σε επιβατική λειτουργία."
+            case .albanian: return "Ende jo e hapur. Hekurudha eshte ndertuar por ende nuk eshte ne sherbim per pasagjere."
+            case .italian: return "Non ancora in servizio. Il binario e costruito ma non ancora in servizio passeggeri."
+            default: return "Not yet open. The track is built but not yet in passenger service."
+            }
+        case .seasonal:
+            switch loc.language {
+            case .greek: return "Εποχικό δρομολόγιο. Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή."
+            case .albanian: return "Sherbim sezonal. Funksionon ne dite dhe stine te zgjedhura. Asgje nuk eshte planifikuar nga ketu per momentin."
+            case .italian: return "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non e prevista alcuna partenza da qui."
+            default: return "Seasonal service. Runs on selected days and seasons. Nothing is scheduled from here right now."
+            }
+        }
     }
 
     private var stationRegion: TransitRegion {
