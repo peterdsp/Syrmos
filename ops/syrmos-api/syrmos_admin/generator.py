@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from . import db as dbmod
+from . import schedule_invariants
 
 DEFAULT_OUT = Path(os.environ.get(
     "SYRMOS_API_OUT_DIR",
@@ -1108,6 +1109,9 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "stationOffsetsHash": station_offsets_hash,
             "announcementsHash": announcements_hash,
             "newsHash": news_hash,
+            # Provenance for the 24h Saturday overnight service so clients can
+            # surface "Operating all night" with a source + verification date.
+            "overnightService": schedule_invariants.provenance(),
         }
         manifest_hash = _atomic_write_json(out_dir / "schedules-manifest.json", manifest_payload)
 

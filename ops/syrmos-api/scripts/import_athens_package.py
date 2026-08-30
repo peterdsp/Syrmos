@@ -26,6 +26,7 @@ from typing import Iterable
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from syrmos_admin import db as dbmod  # noqa: E402
+from syrmos_admin.schedule_invariants import ensure_saturday_overnight  # noqa: E402
 
 PACKAGE_DIR = Path(os.environ.get(
     "SYRMOS_PACKAGE_DIR",
@@ -83,7 +84,7 @@ WEEKLY_HOURS = [
     # Anthoupoli 01:43, Elliniko 01:40 → close 01:43. Sat 24-hour.
     ("M2", "mon_thu", "05:30", "00:06", 0, None),
     ("M2", "fri",     "05:30", "01:43", 0, "Friday late extension: last Anthoupoli 01:43"),
-    ("M2", "sat",     "05:30", "05:28", 0, "Saturday 24h: city service extends overnight into Sunday 05:30"),
+    ("M2", "sat",     "05:30", "05:28", 0, "Saturday 24h: city service extends overnight into Sunday 05:30 (OASA 24mmm https://www.oasa.gr/en/24mmm/, verified 2026-08-30)"),
     ("M2", "sun",     "05:30", "00:06", 0, None),
 
     # M3 — city service (Dim. Theatro / Doukissis Plakentias). Last origin
@@ -91,7 +92,7 @@ WEEKLY_HOURS = [
     # DPL 01:38 → close 01:38. Sat 24-hour (city only).
     ("M3", "mon_thu", "05:30", "00:01", 0, "City service; airport branch closes earlier (M3_AIR)"),
     ("M3", "fri",     "05:30", "01:38", 0, "Friday late extension: last DPL→DT 01:38"),
-    ("M3", "sat",     "05:30", "05:28", 0, "Saturday 24h: city service extends overnight into Sunday 05:30"),
+    ("M3", "sat",     "05:30", "05:28", 0, "Saturday 24h: city service extends overnight into Sunday 05:30; airport branch excluded (OASA 24mmm https://www.oasa.gr/en/24mmm/, verified 2026-08-30)"),
     ("M3", "sun",     "05:30", "00:01", 0, None),
 
     # M3_AIR — full airport route (Dim Theatro <-> Airport, 65 min). Excluded
@@ -112,12 +113,12 @@ WEEKLY_HOURS = [
     # Sat 24-hour.
     ("T6", "mon_thu", "05:30", "00:50", 0, None),
     ("T6", "fri",     "05:30", "01:40", 0, None),
-    ("T6", "sat",     "05:30", "05:28", 0, "Saturday 24h: tram extends overnight into Sunday 05:30"),
+    ("T6", "sat",     "05:30", "05:28", 0, "Saturday 24h: tram extends overnight into Sunday 05:30 (OASA 24mmm https://www.oasa.gr/en/24mmm/, verified 2026-08-30)"),
     ("T6", "sun",     "05:30", "00:50", 0, None),
 
     ("T7", "mon_thu", "05:30", "00:40", 0, None),
     ("T7", "fri",     "05:30", "01:50", 0, None),
-    ("T7", "sat",     "05:30", "05:28", 0, "Saturday 24h: tram extends overnight into Sunday 05:30"),
+    ("T7", "sat",     "05:30", "05:28", 0, "Saturday 24h: tram extends overnight into Sunday 05:30 (OASA 24mmm https://www.oasa.gr/en/24mmm/, verified 2026-08-30)"),
     ("T7", "sun",     "05:30", "00:40", 0, None),
 
     # Suburban / Hellenic Train. Source PDFs in assets/hellenic-train-timetables/
@@ -662,6 +663,11 @@ def apply(conn, dry_run: bool) -> dict:
             "INSERT INTO holiday_rules(name,date_pattern,day_type,notes) VALUES(?,?,?,?)",
             HOLIDAY_RULES,
         )
+
+        # Belt-and-suspenders: guarantee the continuous 24h Saturday overnight
+        # bands even if the FREQUENCY_BANDS table above is ever edited to drop
+        # them. Normally a no-op because the seed already ships them.
+        ensure_saturday_overnight(conn)
 
         cur.execute(
             "UPDATE meta SET value=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE key='updated_at'"
