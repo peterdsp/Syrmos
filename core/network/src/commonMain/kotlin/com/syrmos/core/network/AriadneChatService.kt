@@ -27,8 +27,7 @@ class AriadneChatService(
                 setBody(json.encodeToString(AriadneChatRequest.serializer(), payload))
             }
             val body = response.bodyAsText()
-            val result = json.decodeFromString<AriadneChatResponse>(body)
-            if (result.ok) result.reply else null
+            json.decodeFromString<AriadneChatResponse>(body).cloudReplyOrNull()
         } catch (_: Exception) {
             null
         }
@@ -56,7 +55,21 @@ private data class AriadneChatRequest(
 )
 
 @Serializable
-private data class AriadneChatResponse(
+internal data class AriadneChatResponse(
     val reply: String = "",
     val ok: Boolean = false,
+    /** "offline" when the server's own cloud LLMs are down: not a real answer. */
+    val provider: String = "",
 )
+
+/**
+ * The cloud reply to surface, or null to fall through to the local engine.
+ *
+ * The server answers `ok=true` with `provider="offline"` and a canned
+ * "I can't reach my brain right now" message whenever its OWN cloud LLM providers
+ * are unreachable (which, on the current Pi, is every call). Returning that would
+ * shadow the fully-capable local grounded engine, so an offline-provider reply is
+ * treated as no cloud answer.
+ */
+internal fun AriadneChatResponse.cloudReplyOrNull(): String? =
+    if (ok && provider != "offline") reply else null

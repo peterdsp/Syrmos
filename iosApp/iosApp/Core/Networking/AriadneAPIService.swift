@@ -8,6 +8,19 @@ struct AriadneChatMessage: Codable {
 struct AriadneChatResponse: Codable {
     let reply: String
     let ok: Bool
+    /// "offline" when the server's own cloud LLMs are down: not a real answer.
+    /// Optional so a server build that omits the key still decodes (a default
+    /// value would not stop Swift's synthesized Codable throwing on a missing key).
+    let provider: String?
+
+    /// The cloud reply to surface, or nil to fall through to the local engine.
+    /// The server answers ok=true with provider="offline" and a canned "I can't
+    /// reach my brain" message whenever its cloud providers are unreachable
+    /// (every call, on the current Pi). Surfacing it would shadow the capable
+    /// local grounded engine, so an offline-provider reply counts as no answer.
+    var cloudReplyOrNull: String? {
+        (ok && provider != "offline") ? reply : nil
+    }
 }
 
 @MainActor
@@ -39,7 +52,7 @@ final class AriadneAPIService {
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
             let decoded = try JSONDecoder().decode(AriadneChatResponse.self, from: data)
-            return decoded.ok ? decoded.reply : nil
+            return decoded.cloudReplyOrNull
         } catch {
             return nil
         }
