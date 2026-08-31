@@ -40,9 +40,11 @@ class AriadneChatService(
         messages: List<AriadneChatMessage>,
         isUsable: (String) -> Boolean = { true },
     ): String? {
-        // Breaker open from a recent failure: go straight to the local engine.
-        if (breaker.isOpen()) return null
-        return try {
+        // Single-flight + breaker: fall back to local when the breaker is open OR a
+        // cloud attempt is already in flight, so a burst of questions during an
+        // outage cannot each wait out the timeout.
+        if (!breaker.tryAcquire()) return null
+        try {
             val payload = AriadneChatRequest(
                 messages = messages.map {
                     AriadneChatMessagePayload(role = it.role, text = it.text)
@@ -65,21 +67,23 @@ class AriadneChatService(
             }
             val body = response.bodyAsText()
             val reply = json.decodeFromString<AriadneChatResponse>(body).cloudReplyOrNull()
-            if (reply != null && isUsable(reply)) {
+            return if (reply != null && isUsable(reply)) {
                 breaker.recordSuccess() // a real, surfaced reply clears the breaker
                 reply
             } else {
                 // ok=false, provider=offline, or an unusable reply: cloud not useful.
-                breaker.recordFailure()
+                breaker.recordOutage()
                 null
             }
         } catch (e: CancellationException) {
             // A cancelled turn (screen closed, superseded query) is NOT an outage:
-            // let it propagate without tripping the breaker for later questions.
+            // release the slot (finally) and propagate without opening the breaker.
             throw e
         } catch (_: Exception) {
-            breaker.recordFailure() // network error / timeout: cloud unreachable now
-            null
+            breaker.recordOutage() // network error / timeout: cloud unreachable now
+            return null
+        } finally {
+            breaker.release() // always free the single-flight slot
         }
     }
 

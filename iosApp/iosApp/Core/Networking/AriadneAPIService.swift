@@ -42,6 +42,10 @@ final class AriadneAPIService {
     private let clock = ContinuousClock()
     private var cloudDownUntil: ContinuousClock.Instant?
     private let breakerCooldown: Duration = .seconds(30)
+    /// Single-flight guard: only one cloud attempt at a time. @MainActor-confined,
+    /// observed consistently across the awaited request, so a burst of questions
+    /// during an outage does not each wait out the timeout.
+    private var requestInFlight = false
 
     private init() {
         let config = URLSessionConfiguration.default
@@ -73,10 +77,15 @@ final class AriadneAPIService {
         // No network path at all: skip the cloud entirely so the caller uses the
         // local engine with no delay (NWPathMonitor is the fast, offline hint).
         guard isOnline else { return nil }
+        // Single-flight: another cloud attempt is already running, so fall back
+        // rather than pile on (a burst during an outage would each wait the timeout).
+        if requestInFlight { return nil }
         // Circuit breaker open from a recent failure: go straight to local. The
         // first question after the cooldown still tries the cloud with the full
         // budget, so a viable-but-slow network is never downgraded.
         if let until = cloudDownUntil, clock.now < until { return nil }
+        requestInFlight = true
+        defer { requestInFlight = false } // always free the slot (success/fail/cancel)
         guard let url = URL(string: "\(baseURL)/api/ariadne/chat") else { return nil }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
