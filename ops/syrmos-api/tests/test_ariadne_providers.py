@@ -193,10 +193,11 @@ class ChatAsyncTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_returns_first_successful_provider(self):
         from syrmos_admin import ariadne
+        ap.breaker_reset_all()
         chain = [self._Stub("a", False), self._Stub("b", True), self._Stub("c", True)]
         with mock.patch.object(ariadne.providers, "build_chain", lambda: chain), \
                 mock.patch.object(ariadne.providers, "get_client", lambda: None), \
-                mock.patch.object(ariadne, "_get_transit_context", lambda: None):
+                mock.patch.object(ariadne, "_get_transit_sections", lambda: []):
             out = await ariadne.chat_async([{"role": "user", "text": "hi"}])
         self.assertEqual(out["provider"], "b")
         self.assertEqual(out["reply"], "hi from b")
@@ -204,10 +205,11 @@ class ChatAsyncTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_all_fail_falls_back_offline(self):
         from syrmos_admin import ariadne
+        ap.breaker_reset_all()
         chain = [self._Stub("a", False), self._Stub("b", False)]
         with mock.patch.object(ariadne.providers, "build_chain", lambda: chain), \
                 mock.patch.object(ariadne.providers, "get_client", lambda: None), \
-                mock.patch.object(ariadne, "_get_transit_context", lambda: None):
+                mock.patch.object(ariadne, "_get_transit_sections", lambda: []):
             out = await ariadne.chat_async([{"role": "user", "text": "are you serious"}])
         self.assertEqual(out["provider"], "offline")
         self.assertIn("brain", out["reply"].lower())
@@ -279,15 +281,16 @@ class RedactionInErrorTest(unittest.IsolatedAsyncioTestCase):
 class GroundingTest(unittest.TestCase):
     def test_no_context_still_carries_abstention(self):
         from syrmos_admin import ariadne
-        with mock.patch.object(ariadne, "_get_transit_context", lambda: None):
-            text = ariadne._system_text()
+        with mock.patch.object(ariadne, "_get_transit_sections", lambda: []):
+            text = ariadne._system_text("when is the next train")
         self.assertIn("Live Syrmos transit data is unavailable", text)
         self.assertIn("hellenictrain.gr", text)
 
     def test_with_context_includes_grounding_and_facts(self):
         from syrmos_admin import ariadne
-        with mock.patch.object(ariadne, "_get_transit_context", lambda: "Active lines:\n- M1"):
-            text = ariadne._system_text()
+        with mock.patch.object(ariadne, "_get_transit_sections",
+                               lambda: [("lines", "Active lines:\n- M1")]):
+            text = ariadne._system_text("how do I get around")
         self.assertIn("Use ONLY these", text)
         self.assertIn("Active lines", text)
 
@@ -304,11 +307,12 @@ class ChainDeadlineTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_deadline_forces_offline(self):
         from syrmos_admin import ariadne
+        ap.breaker_reset_all()
         with mock.patch.object(ariadne.providers, "build_chain", lambda: [self._SlowStub()]), \
                 mock.patch.object(ariadne.providers, "get_client", lambda: None), \
                 mock.patch.object(ariadne.providers, "CHAIN_DEADLINE", 0.2), \
                 mock.patch.object(ariadne.providers, "MIN_ATTEMPT_BUDGET", 0.05), \
-                mock.patch.object(ariadne, "_get_transit_context", lambda: None):
+                mock.patch.object(ariadne, "_get_transit_sections", lambda: []):
             out = await ariadne.chat_async([{"role": "user", "text": "hi"}])
         self.assertEqual(out["provider"], "offline")
 
@@ -363,18 +367,18 @@ class GroundingDeadlineTest(unittest.IsolatedAsyncioTestCase):
     async def test_slow_grounding_is_bounded_and_falls_back(self):
         from syrmos_admin import ariadne
 
-        def slow_ctx():
+        def slow_sections():
             import time as _t
             _t.sleep(1.5)  # simulate a locked/slow DB, off the event loop
-            return "Active lines:\n- M1"
+            return [("lines", "Active lines:\n- M1")]
 
         loop = asyncio.get_event_loop()
-        with mock.patch.object(ariadne, "_get_transit_context", slow_ctx):
+        with mock.patch.object(ariadne, "_get_transit_sections", slow_sections):
             deadline = loop.time() + 0.2
             start = loop.time()
-            text = await ariadne._build_system_text(deadline, loop)
+            text = await ariadne._build_system_text(deadline, loop, "how do I get there")
             elapsed = loop.time() - start
-        self.assertLess(elapsed, 1.0)  # did not wait the full 5s
+        self.assertLess(elapsed, 1.0)  # did not wait the full 1.5s
         self.assertIn("Live Syrmos transit data is unavailable", text)
 
 
@@ -404,6 +408,84 @@ class RateLimitTest(unittest.IsolatedAsyncioTestCase):
             appmod._ariadne_global.clear()
             results = [await appmod._ariadne_rate_ok(f"client-{i}") for i in range(4)]
         self.assertEqual(results, [True, True, True, False])
+
+
+class CircuitBreakerTest(unittest.TestCase):
+    def setUp(self):
+        ap.breaker_reset_all()
+
+    def test_opens_after_threshold_expensive_failures(self):
+        with mock.patch.object(ap, "CB_THRESHOLD", 3), \
+                mock.patch.object(ap, "CB_COOLDOWN", 30.0):
+            self.assertTrue(ap.breaker_allows("groq", 0.0))
+            ap.breaker_record("groq", False, "timeout", 1.0)
+            ap.breaker_record("groq", False, "timeout", 2.0)
+            self.assertTrue(ap.breaker_allows("groq", 2.0))   # not open yet
+            ap.breaker_record("groq", False, "timeout", 3.0)  # 3rd -> open
+            self.assertFalse(ap.breaker_allows("groq", 3.0))
+            self.assertFalse(ap.breaker_allows("groq", 32.9))  # still cooling down
+            self.assertTrue(ap.breaker_allows("groq", 33.1))   # cooldown elapsed
+
+    def test_success_closes_the_breaker(self):
+        with mock.patch.object(ap, "CB_THRESHOLD", 2):
+            ap.breaker_record("cf", False, "server", 1.0)
+            ap.breaker_record("cf", False, "server", 2.0)  # open
+            self.assertFalse(ap.breaker_allows("cf", 2.0))
+            ap.breaker_record("cf", True, None, 3.0)        # success closes it
+            self.assertTrue(ap.breaker_allows("cf", 3.0))
+
+    def test_config_failures_never_trip(self):
+        with mock.patch.object(ap, "CB_THRESHOLD", 2):
+            for t in range(5):
+                ap.breaker_record("groq", False, "config", float(t))
+            self.assertTrue(ap.breaker_allows("groq", 10.0))  # a 403 must not open it
+
+
+_SECTIONS = [
+    ("lines", "Active lines:\n- M1"),
+    ("stasy", "STASY service: ok."),
+    ("announcements", "Active announcements:\n- none"),
+    ("fares", "Current fares:\n- 90min: EUR 1.20"),
+    ("hours", "Operating hours:\n- M1 (weekday): 05:30-00:30"),
+    ("frequencies", "Current frequencies:\n- M1: every 4 min"),
+    ("news", "Recent rail news:\n- something happened"),
+]
+
+
+class ContextSelectionTest(unittest.TestCase):
+    def _ctx(self, query, **kw):
+        from syrmos_admin import ariadne
+        return ariadne._select_context(_SECTIONS, query, **kw)
+
+    def test_fare_query_includes_fares_not_news_or_hours(self):
+        ctx = self._ctx("how much is a ticket to the airport")
+        self.assertIn("Current fares", ctx)
+        self.assertIn("Active lines", ctx)          # always
+        self.assertIn("Active announcements", ctx)  # always
+        self.assertNotIn("Recent rail news", ctx)
+        self.assertNotIn("Operating hours", ctx)
+
+    def test_schedule_query_includes_hours_and_frequencies(self):
+        ctx = self._ctx("what time do trains run and how often")
+        self.assertIn("Operating hours", ctx)
+        self.assertIn("Current frequencies", ctx)
+
+    def test_generic_query_gets_only_always_sections(self):
+        ctx = self._ctx("hello there owl")
+        self.assertIn("Active lines", ctx)
+        self.assertIn("Active announcements", ctx)
+        self.assertNotIn("Current fares", ctx)
+        self.assertNotIn("Recent rail news", ctx)
+
+    def test_total_is_capped(self):
+        from syrmos_admin import ariadne
+        big = [("lines", "L" * 5000), ("fares", "F" * 5000)]
+        ctx = ariadne._select_context(big, "ticket price", max_chars=1000)
+        self.assertLessEqual(len(ctx), 1000)
+
+    def test_empty_sections_returns_none(self):
+        from syrmos_admin import ariadne
+        self.assertIsNone(ariadne._select_context([], "anything"))
 
 
 if __name__ == "__main__":

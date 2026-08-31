@@ -398,6 +398,61 @@ def build_chain() -> list[OpenAICompatibleProvider]:
     return chain
 
 
+# --- Per-provider circuit breaker -------------------------------------------
+# After CB_THRESHOLD consecutive expensive failures (timeout / 5xx / network /
+# rate limit) a provider is skipped for CB_COOLDOWN seconds, so a sustained
+# outage costs one timeout per cooldown instead of one per request. Cheap or
+# persistent failures (config 401/403, empty, protocol) never trip it, so
+# enabling a blocked model recovers on the very next request. Single worker,
+# cooperative single thread; `now` is passed in for deterministic tests.
+CB_THRESHOLD = _i("ARIADNE_CB_THRESHOLD", 3)
+CB_COOLDOWN = _f("ARIADNE_CB_COOLDOWN", 30.0)
+_CB_TRIP_KINDS = frozenset({"timeout", "network", "server", "rate_limit"})
+
+
+class _Breaker:
+    __slots__ = ("failures", "opened_until")
+
+    def __init__(self) -> None:
+        self.failures = 0
+        self.opened_until = 0.0
+
+
+_breakers: dict[str, _Breaker] = {}
+
+
+def _breaker(name: str) -> _Breaker:
+    b = _breakers.get(name)
+    if b is None:
+        b = _breakers[name] = _Breaker()
+    return b
+
+
+def breaker_allows(name: str, now: float) -> bool:
+    """False while the provider's breaker is open (still in cooldown)."""
+    return now >= _breaker(name).opened_until
+
+
+def breaker_record(name: str, ok: bool, error_kind: str | None, now: float) -> None:
+    """Update a provider's breaker after an attempt. Success closes it; an
+    expensive-failure streak opens it for the cooldown; cheap or persistent
+    failures (config/empty/protocol) leave it unchanged so recovery is
+    immediate once the underlying misconfiguration is fixed."""
+    b = _breaker(name)
+    if ok:
+        b.failures = 0
+        b.opened_until = 0.0
+    elif error_kind in _CB_TRIP_KINDS:
+        b.failures += 1
+        if b.failures >= CB_THRESHOLD:
+            b.opened_until = now + CB_COOLDOWN
+
+
+def breaker_reset_all() -> None:
+    """Test helper: clear all breaker state."""
+    _breakers.clear()
+
+
 def log_attempt(attempt: int, result: ProviderResult) -> None:
     """Structured, prompt-free record of one provider attempt.
 

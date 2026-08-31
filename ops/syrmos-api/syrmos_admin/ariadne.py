@@ -12,6 +12,7 @@ returned so the endpoint always responds.
 from __future__ import annotations
 
 import asyncio
+import os
 import sqlite3
 
 from . import ariadne_providers as providers
@@ -82,15 +83,32 @@ GROUNDING_NO_CONTEXT = (
     "lines exist and how the network connects is still fine.\n"
 )
 
+# Grounded context is trimmed to the sections relevant to the question and
+# capped, so the full DB dump never blows a provider's per-minute token budget
+# (Groq free is 8K TPM). Lines, service status, and announcements are always
+# included (routing and disruptions matter for any question); other sections
+# are added only when the question mentions them.
+MAX_CONTEXT_CHARS = int(os.environ.get("ARIADNE_MAX_CONTEXT_CHARS", "2500"))
+_ALWAYS_CONTEXT = ("lines", "stasy", "announcements")
+_CONTEXT_KEYWORDS = {
+    "fares": ["fare", "ticket", "price", "cost", "euro", "€", "τιμ", "εισιτ",
+              "κοστ", "κόστ", "çmim", "bilet"],
+    "hours": ["hour", "open", "clos", "time", "when", "schedule", "depart",
+              "ωρα", "ώρα", "ωράρ", "πότε", "δρομολ", "orar"],
+    "frequencies": ["how often", "frequen", "every", "headway", "wait",
+                    "συχνότ", "κάθε", "αναμον"],
+    "news": ["news", "νέα", "ειδήσ", "lajm"],
+}
 
-def _get_transit_context() -> str | None:
-    """Pull live transit data from the DB so the LLM answers from real info."""
+
+def _get_transit_sections() -> list[tuple[str, str]]:
+    """Pull live transit data from the DB as labelled sections so the caller
+    can include only the relevant ones. Returns ``[(name, text), ...]``."""
+    sections: list[tuple[str, str]] = []
     try:
         conn = dbmod.connect()
         dbmod.migrate(conn)
-        parts = []
 
-        # Active lines with terminals
         try:
             rows = conn.execute(
                 "SELECT id, name_en, terminal_a, terminal_b, mode, status"
@@ -98,21 +116,19 @@ def _get_transit_context() -> str | None:
             ).fetchall()
             if rows:
                 lines = [f"- {r[0]}: {r[1]} ({r[4]}, {r[2]} to {r[3]}, {r[5]})" for r in rows]
-                parts.append("Active lines:\n" + "\n".join(lines))
+                sections.append(("lines", "Active lines:\n" + "\n".join(lines)))
         except sqlite3.OperationalError:
             pass
 
-        # STASY service status
         try:
             row = conn.execute(
                 "SELECT status, raw_message_en FROM stasy_status LIMIT 1"
             ).fetchone()
             if row:
-                parts.append(f"STASY service: {row[0]}. {row[1] or ''}")
+                sections.append(("stasy", f"STASY service: {row[0]}. {row[1] or ''}"))
         except sqlite3.OperationalError:
             pass
 
-        # Announcements (alerts, disruptions)
         try:
             rows = conn.execute(
                 "SELECT title_en, summary_en, severity, affected_lines"
@@ -127,11 +143,10 @@ def _get_transit_context() -> str | None:
                     if r[3]:
                         line += f" [lines: {r[3]}]"
                     alerts.append(line)
-                parts.append("Active announcements:\n" + "\n".join(alerts))
+                sections.append(("announcements", "Active announcements:\n" + "\n".join(alerts)))
         except sqlite3.OperationalError:
             pass
 
-        # Fare products
         try:
             rows = conn.execute(
                 "SELECT title_en, full_price_eur, validity FROM fare_products"
@@ -139,11 +154,10 @@ def _get_transit_context() -> str | None:
             ).fetchall()
             if rows:
                 fares = [f"- {r[0]}: EUR {r[1]}" + (f" ({r[2]})" if r[2] else "") for r in rows]
-                parts.append("Current fares:\n" + "\n".join(fares))
+                sections.append(("fares", "Current fares:\n" + "\n".join(fares)))
         except sqlite3.OperationalError:
             pass
 
-        # Operating hours (schedule rules)
         try:
             rows = conn.execute(
                 "SELECT line_id, day_type, open_time, close_time, notes"
@@ -151,11 +165,10 @@ def _get_transit_context() -> str | None:
             ).fetchall()
             if rows:
                 hours = [f"- {r[0]} ({r[1]}): {r[2]}-{r[3]}" + (f" ({r[4]})" if r[4] else "") for r in rows]
-                parts.append("Operating hours:\n" + "\n".join(hours))
+                sections.append(("hours", "Operating hours:\n" + "\n".join(hours)))
         except sqlite3.OperationalError:
             pass
 
-        # Current frequency bands
         try:
             from datetime import datetime, timezone, timedelta
             athens_tz = timezone(timedelta(hours=3))
@@ -169,11 +182,10 @@ def _get_transit_context() -> str | None:
             ).fetchall()
             if rows:
                 freqs = [f"- {r[0]} ({r[1]}): every {r[2]} min" + (f" ({r[3]})" if r[3] else "") for r in rows]
-                parts.append(f"Current frequencies (Athens time {now_hour}):\n" + "\n".join(freqs))
+                sections.append(("frequencies", f"Current frequencies (Athens time {now_hour}):\n" + "\n".join(freqs)))
         except (sqlite3.OperationalError, Exception):
             pass
 
-        # Recent rail news
         try:
             rows = conn.execute(
                 "SELECT title_en, summary_en FROM rail_news"
@@ -181,25 +193,53 @@ def _get_transit_context() -> str | None:
             ).fetchall()
             if rows:
                 news = [f"- {r[0]}" + (f": {r[1][:120]}" if r[1] else "") for r in rows]
-                parts.append("Recent rail news:\n" + "\n".join(news))
+                sections.append(("news", "Recent rail news:\n" + "\n".join(news)))
         except sqlite3.OperationalError:
             pass
 
         conn.close()
-        return "\n\n".join(parts) if parts else None
     except Exception:
+        return []
+    return sections
+
+
+def _select_context(
+    sections: list[tuple[str, str]],
+    query: str,
+    max_chars: int = MAX_CONTEXT_CHARS,
+) -> str | None:
+    """Pick the always-included sections plus any the question asks about, then
+    cap the total size so the grounded context never blows a per-minute token
+    budget."""
+    ql = (query or "").lower()
+    wanted = set(_ALWAYS_CONTEXT)
+    for name, keywords in _CONTEXT_KEYWORDS.items():
+        if any(k in ql for k in keywords):
+            wanted.add(name)
+    chosen = [text for name, text in sections if name in wanted]
+    if not chosen:
         return None
+    out: list[str] = []
+    total = 0
+    for text in chosen:
+        if total >= max_chars:
+            break
+        if total + len(text) > max_chars:
+            text = text[: max_chars - total]
+        out.append(text)
+        total += len(text)
+    return "\n\n".join(out) if out else None
 
 
-def _system_text() -> str:
+def _system_text(query: str) -> str:
     """System prompt plus the grounding contract.
 
-    The abstention contract is always present. When live DB facts are
-    available they are appended under it; when they are not, an explicit
-    "no live data" note keeps the model from presenting the prompt's
-    baseline figures as current.
+    The abstention contract is always present. When live DB facts relevant to
+    the question are available they are appended under it; when they are not,
+    an explicit "no live data" note keeps the model from presenting the
+    prompt's baseline figures as current.
     """
-    transit_ctx = _get_transit_context()
+    transit_ctx = _select_context(_get_transit_sections(), query)
     if transit_ctx:
         return SYSTEM_PROMPT + GROUNDING + transit_ctx
     return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
@@ -214,7 +254,17 @@ def _to_openai_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
     return out
 
 
-async def _build_system_text(deadline: float, loop: asyncio.AbstractEventLoop) -> str:
+def _latest_user_text(messages: list[dict[str, str]]) -> str:
+    """The most recent user turn, used to pick the relevant grounded context."""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            return msg.get("text", "") or ""
+    return messages[-1].get("text", "") if messages else ""
+
+
+async def _build_system_text(
+    deadline: float, loop: asyncio.AbstractEventLoop, query: str,
+) -> str:
     """Assemble the grounded system prompt without blocking the event loop.
 
     _system_text() does synchronous SQLite connect/migrate/query work, so run
@@ -226,7 +276,7 @@ async def _build_system_text(deadline: float, loop: asyncio.AbstractEventLoop) -
     remaining = deadline - loop.time()
     try:
         return await asyncio.wait_for(
-            asyncio.to_thread(_system_text), timeout=max(0.1, remaining),
+            asyncio.to_thread(_system_text, query), timeout=max(0.1, remaining),
         )
     except asyncio.TimeoutError:
         return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
@@ -238,20 +288,29 @@ async def chat_async(messages: list[dict[str, str]]) -> dict:
     """Run the provider chain, returning the first grounded reply.
 
     Providers are tried in configured order (Groq, Cloudflare, local
-    llama.cpp, optional extra). Each attempt is logged with provider,
-    status, latency, and token counts, but never the prompt text. If every
-    configured provider fails, fall back to a deterministic offline reply so
-    the endpoint always answers.
+    llama.cpp, optional extra). A per-provider circuit breaker skips a
+    provider that is mid-outage so the chain fails over fast instead of
+    paying its timeout on every request. The whole chain is bounded by
+    CHAIN_DEADLINE, and grounding runs off the event loop within that budget.
+    Each attempt is logged with provider, status, latency, and token counts,
+    never the prompt text. If every provider fails, fall back to a
+    deterministic offline reply so the endpoint always answers.
     """
     loop = asyncio.get_event_loop()
     deadline = loop.time() + providers.CHAIN_DEADLINE
     oai_messages = _to_openai_messages(messages)
-    system_text = await _build_system_text(deadline, loop)
+    system_text = await _build_system_text(deadline, loop, _latest_user_text(messages))
     client = providers.get_client()
     for attempt, provider in enumerate(providers.build_chain(), 1):
         remaining = deadline - loop.time()
         if remaining < providers.MIN_ATTEMPT_BUDGET:
             break
+        if not providers.breaker_allows(provider.name, loop.time()):
+            providers.log_attempt(attempt, providers.ProviderResult(
+                provider.name, provider.model, False,
+                error_kind="circuit_open", error_detail="breaker open",
+            ))
+            continue
         try:
             result = await asyncio.wait_for(
                 provider.complete(client, system_text, oai_messages, remaining),
@@ -267,6 +326,7 @@ async def chat_async(messages: list[dict[str, str]]) -> dict:
                 provider.name, provider.model, False,
                 error_kind="network", error_detail=repr(exc)[:200],
             )
+        providers.breaker_record(provider.name, result.ok, result.error_kind, loop.time())
         providers.log_attempt(attempt, result)
         if result.ok:
             return {
