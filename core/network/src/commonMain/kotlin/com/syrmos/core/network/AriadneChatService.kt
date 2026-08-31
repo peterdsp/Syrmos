@@ -1,6 +1,7 @@
 package com.syrmos.core.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -23,6 +24,19 @@ class AriadneChatService(
                 }
             )
             val response = httpClient.post(CHAT_URL) {
+                // Reachability guard without a platform network API: a SHORT connect
+                // timeout means an unreachable Pi (or an offline device) drops to the
+                // local grounded engine in a few seconds instead of blocking on the
+                // shared client's 15 s connect. The request timeout stays long so the
+                // server's multi-LLM chain still has time to answer when reachable.
+                timeout {
+                    connectTimeoutMillis = 3_500
+                    // Above the server's nginx 30 s read cap (the backend tries up
+                    // to three LLM providers in sequence and emits nothing until
+                    // one answers), so a valid-but-slow reply is received, not cut.
+                    requestTimeoutMillis = 33_000
+                    socketTimeoutMillis = 33_000
+                }
                 contentType(ContentType.Application.Json)
                 setBody(json.encodeToString(AriadneChatRequest.serializer(), payload))
             }
