@@ -1594,8 +1594,11 @@ class AssistantViewModel(
                 text = msg.text,
             )
         }
-        val reply = service.chat(history) ?: return null
-        if (!isUsableReply(reply)) return null
+        // Pass the usability filter INTO the service so the circuit breaker's
+        // success/failure reflects a reply we would actually surface: a junk reply
+        // from a degraded provider trips the breaker instead of being silently
+        // discarded here while the cloud keeps getting retried.
+        val reply = service.chat(history) { isUsableReply(it) } ?: return null
         return botMessage(reply)
     }
 

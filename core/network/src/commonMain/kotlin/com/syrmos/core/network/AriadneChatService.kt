@@ -7,6 +7,8 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -16,24 +18,47 @@ class AriadneChatService(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun chat(messages: List<AriadneChatMessage>): String? {
-        return try {
+    // Circuit breaker. After a cloud turn fails to produce a usable reply, whether
+    // by a network error / timeout or by an offline-provider response, skip the
+    // cloud for a short cooldown so the next questions during the same outage
+    // answer instantly from the local grounded engine instead of each waiting out
+    // the ~33 s timeout. The first question after the cooldown retries the cloud
+    // with its full budget, so a viable-but-slow network is never downgraded. This
+    // is preferred over a /healthz preflight because /healthz cannot see that the
+    // server's LLM providers are down (its real failure mode) and would add a
+    // round trip to every question without preventing that stall.
+    private val breaker = CloudCircuitBreaker(cooldown = COOLDOWN)
+
+    /**
+     * @param isUsable decides whether a decoded reply is worth surfacing (the
+     *   caller's short/blank/leaked-reasoning filter). The breaker outcome is tied
+     *   to THIS, not to a bare `ok=true`: a reply the caller would discard counts
+     *   as a failure, so a degraded provider that returns junk trips the breaker
+     *   instead of making every question pay the full round trip.
+     */
+    suspend fun chat(
+        messages: List<AriadneChatMessage>,
+        isUsable: (String) -> Boolean = { true },
+    ): String? {
+        // Single-flight + breaker: fall back to local when the breaker is open OR a
+        // cloud attempt is already in flight, so a burst of questions during an
+        // outage cannot each wait out the timeout.
+        if (!breaker.tryAcquire()) return null
+        try {
             val payload = AriadneChatRequest(
                 messages = messages.map {
                     AriadneChatMessagePayload(role = it.role, text = it.text)
                 }
             )
             val response = httpClient.post(CHAT_URL) {
-                // Reachability guard without a platform network API: a SHORT connect
-                // timeout means an unreachable Pi (or an offline device) drops to the
-                // local grounded engine in a few seconds instead of blocking on the
-                // shared client's 15 s connect. The request timeout stays long so the
-                // server's multi-LLM chain still has time to answer when reachable.
+                // A SHORT connect timeout drops an unreachable Pi (or an offline
+                // device) to the local engine in a few seconds instead of blocking
+                // on the shared client's 15 s connect. The request timeout stays
+                // above the server's nginx 30 s read cap (the backend tries up to
+                // three LLM providers in sequence and emits nothing until one
+                // answers), so a valid-but-slow reply is received, not cut.
                 timeout {
                     connectTimeoutMillis = 3_500
-                    // Above the server's nginx 30 s read cap (the backend tries up
-                    // to three LLM providers in sequence and emits nothing until
-                    // one answers), so a valid-but-slow reply is received, not cut.
                     requestTimeoutMillis = 33_000
                     socketTimeoutMillis = 33_000
                 }
@@ -41,14 +66,30 @@ class AriadneChatService(
                 setBody(json.encodeToString(AriadneChatRequest.serializer(), payload))
             }
             val body = response.bodyAsText()
-            json.decodeFromString<AriadneChatResponse>(body).cloudReplyOrNull()
+            val reply = json.decodeFromString<AriadneChatResponse>(body).cloudReplyOrNull()
+            return if (reply != null && isUsable(reply)) {
+                breaker.recordSuccess() // a real, surfaced reply clears the breaker
+                reply
+            } else {
+                // ok=false, provider=offline, or an unusable reply: cloud not useful.
+                breaker.recordOutage()
+                null
+            }
+        } catch (e: CancellationException) {
+            // A cancelled turn (screen closed, superseded query) is NOT an outage:
+            // release the slot (finally) and propagate without opening the breaker.
+            throw e
         } catch (_: Exception) {
-            null
+            breaker.recordOutage() // network error / timeout: cloud unreachable now
+            return null
+        } finally {
+            breaker.release() // always free the single-flight slot
         }
     }
 
     private companion object {
         private const val CHAT_URL = "https://api-syrmos.peterdsp.dev/api/ariadne/chat"
+        private val COOLDOWN = 30.seconds
     }
 }
 

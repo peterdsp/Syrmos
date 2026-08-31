@@ -33,6 +33,19 @@ final class AriadneAPIService {
     /// Optimistic until the monitor's first update, so the very first turn still
     /// tries the cloud (and falls back on failure) rather than being pinned offline.
     private var isOnline = true
+    /// Circuit breaker: set after a cloud turn fails to produce a usable reply, so
+    /// the next questions during the same outage answer instantly from the local
+    /// engine instead of each waiting out the ~33 s timeout. Uses ContinuousClock
+    /// (monotonic uptime), NOT Date, so a wall-clock correction can neither extend
+    /// the outage window nor reopen the cloud early. @MainActor-confined, matching
+    /// the KMP breaker's single-thread contract.
+    private let clock = ContinuousClock()
+    private var cloudDownUntil: ContinuousClock.Instant?
+    private let breakerCooldown: Duration = .seconds(30)
+    /// Single-flight guard: only one cloud attempt at a time. @MainActor-confined,
+    /// observed consistently across the awaited request, so a burst of questions
+    /// during an outage does not each wait out the timeout.
+    private var requestInFlight = false
 
     private init() {
         let config = URLSessionConfiguration.default
@@ -55,10 +68,24 @@ final class AriadneAPIService {
         pathMonitor.start(queue: DispatchQueue(label: "ariadne.reachability"))
     }
 
-    func chat(messages: [AriadneChatMessage]) async -> String? {
-        // No network: skip the cloud entirely so the caller uses the local engine
-        // with no delay, instead of blocking on a doomed request.
+    /// - Parameter isUsable: whether a decoded reply is worth surfacing (the
+    ///   caller's short/blank/leaked-reasoning filter). The breaker outcome is tied
+    ///   to this, so a junk reply from a degraded provider trips the breaker
+    ///   instead of making every question pay the full round trip.
+    func chat(messages: [AriadneChatMessage],
+              isUsable: (String) -> Bool = { _ in true }) async -> String? {
+        // No network path at all: skip the cloud entirely so the caller uses the
+        // local engine with no delay (NWPathMonitor is the fast, offline hint).
         guard isOnline else { return nil }
+        // Single-flight: another cloud attempt is already running, so fall back
+        // rather than pile on (a burst during an outage would each wait the timeout).
+        if requestInFlight { return nil }
+        // Circuit breaker open from a recent failure: go straight to local. The
+        // first question after the cooldown still tries the cloud with the full
+        // budget, so a viable-but-slow network is never downgraded.
+        if let until = cloudDownUntil, clock.now < until { return nil }
+        requestInFlight = true
+        defer { requestInFlight = false } // always free the slot (success/fail/cancel)
         guard let url = URL(string: "\(baseURL)/api/ariadne/chat") else { return nil }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -72,11 +99,28 @@ final class AriadneAPIService {
 
         do {
             let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                tripBreaker()
+                return nil
+            }
             let decoded = try JSONDecoder().decode(AriadneChatResponse.self, from: data)
-            return decoded.cloudReplyOrNull
+            if let reply = decoded.cloudReplyOrNull, isUsable(reply) {
+                cloudDownUntil = nil // a real, surfaced reply clears the breaker
+                return reply
+            }
+            tripBreaker() // ok=false, provider=offline, or an unusable reply
+            return nil
+        } catch is CancellationError {
+            return nil // a cancelled turn is not an outage: do not trip the breaker
+        } catch let error as URLError where error.code == .cancelled {
+            return nil
         } catch {
+            tripBreaker() // network error / timeout: cloud unreachable now
             return nil
         }
+    }
+
+    private func tripBreaker() {
+        cloudDownUntil = clock.now.advanced(by: breakerCooldown)
     }
 }
