@@ -10,9 +10,11 @@ Run: uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8091
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 import pathlib
 import re
+import time
 import datetime as _dt
 from contextlib import contextmanager
 from html import escape as _html_escape
@@ -1064,7 +1066,37 @@ def _trigger_seed_refresh() -> None:
 # limiting belongs in nginx (follow-up).
 _ARIADNE_MAX_INPUT_CHARS = int(os.environ.get("ARIADNE_MAX_INPUT_CHARS", "6000"))
 _ARIADNE_MAX_CONCURRENCY = int(os.environ.get("ARIADNE_MAX_CONCURRENCY", "6"))
+_ARIADNE_RATE_PER_MIN = int(os.environ.get("ARIADNE_RATE_PER_MIN", "20"))
 _ariadne_sem = asyncio.Semaphore(_ARIADNE_MAX_CONCURRENCY)
+_ariadne_hits: dict[str, list[float]] = {}
+_ariadne_rate_lock = asyncio.Lock()
+
+
+def _ariadne_client_key(request: Request) -> str:
+    """Ephemeral, hashed client identity for rate limiting. Prefers the true
+    client IP behind Cloudflare; the raw IP is never stored or logged."""
+    ip = (
+        request.headers.get("cf-connecting-ip")
+        or request.headers.get("x-real-ip")
+        or (request.client.host if request.client else "unknown")
+    )
+    return hashlib.sha256(ip.encode("utf-8", "ignore")).hexdigest()[:16]
+
+
+async def _ariadne_rate_ok(key: str) -> bool:
+    """Sliding 60s per-client window, in-memory and ephemeral. Bounds sustained
+    single-client abuse; a stronger edge rate limit belongs at Cloudflare."""
+    now = time.monotonic()
+    async with _ariadne_rate_lock:
+        window = [t for t in _ariadne_hits.get(key, ()) if now - t < 60.0]
+        allowed = len(window) < _ARIADNE_RATE_PER_MIN
+        if allowed:
+            window.append(now)
+        _ariadne_hits[key] = window
+        if len(_ariadne_hits) > 4096:  # opportunistic sweep, keep the map bounded
+            for stale in [k for k, v in _ariadne_hits.items() if not v or now - max(v) >= 60.0]:
+                _ariadne_hits.pop(stale, None)
+        return allowed
 
 
 @app.post("/api/ariadne/chat")
@@ -1084,6 +1116,8 @@ async def api_ariadne_chat(request: Request) -> JSONResponse:
     total_chars = sum(len(str(m.get("text", ""))) for m in messages if isinstance(m, dict))
     if total_chars > _ARIADNE_MAX_INPUT_CHARS:
         raise HTTPException(status_code=413, detail="input too large")
+    if not await _ariadne_rate_ok(_ariadne_client_key(request)):
+        raise HTTPException(status_code=429, detail="rate limit, slow down")
     try:
         await asyncio.wait_for(_ariadne_sem.acquire(), timeout=1.0)
     except asyncio.TimeoutError:

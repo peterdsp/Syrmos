@@ -214,6 +214,26 @@ def _to_openai_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
     return out
 
 
+async def _build_system_text(deadline: float, loop: asyncio.AbstractEventLoop) -> str:
+    """Assemble the grounded system prompt without blocking the event loop.
+
+    _system_text() does synchronous SQLite connect/migrate/query work, so run
+    it in a worker thread and bound it by the remaining chain budget. If it is
+    slow (DB lock, migration) or errors, fall back to the no-context
+    abstention prompt so grounding can never blow the deadline or stall the
+    loop.
+    """
+    remaining = deadline - loop.time()
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_system_text), timeout=max(0.1, remaining),
+        )
+    except asyncio.TimeoutError:
+        return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
+    except Exception:  # noqa: BLE001 - grounding must never break the reply
+        return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
+
+
 async def chat_async(messages: list[dict[str, str]]) -> dict:
     """Run the provider chain, returning the first grounded reply.
 
@@ -223,11 +243,11 @@ async def chat_async(messages: list[dict[str, str]]) -> dict:
     configured provider fails, fall back to a deterministic offline reply so
     the endpoint always answers.
     """
-    system_text = _system_text()
-    oai_messages = _to_openai_messages(messages)
-    client = providers.get_client()
     loop = asyncio.get_event_loop()
     deadline = loop.time() + providers.CHAIN_DEADLINE
+    oai_messages = _to_openai_messages(messages)
+    system_text = await _build_system_text(deadline, loop)
+    client = providers.get_client()
     for attempt, provider in enumerate(providers.build_chain(), 1):
         remaining = deadline - loop.time()
         if remaining < providers.MIN_ATTEMPT_BUDGET:

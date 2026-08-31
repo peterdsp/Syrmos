@@ -56,6 +56,10 @@ MIN_ATTEMPT_BUDGET = _f("ARIADNE_MIN_ATTEMPT_BUDGET", 1.0)
 TEMPERATURE = _f("ARIADNE_TEMPERATURE", 0.2)
 MAX_TOKENS = _i("ARIADNE_MAX_TOKENS", 400)
 LOCAL_MAX_TOKENS = _i("ARIADNE_LOCAL_MAX_TOKENS", 160)
+# When off (default), only the stable structured error fields are logged, not
+# the raw provider body, so an echoed prompt/PII cannot be persisted. Set to
+# "1" in a non-production environment to capture full bodies for debugging.
+LOG_RAW_BODIES = os.environ.get("ARIADNE_LOG_RAW_BODIES", "") == "1"
 
 _client: httpx.AsyncClient | None = None
 
@@ -104,6 +108,37 @@ def _redact(text: str) -> str:
     for pat in _SECRET_PATTERNS:
         out = pat.sub("[REDACTED]", out)
     return out
+
+
+def _error_summary(resp: httpx.Response) -> str:
+    """Diagnostic summary of a non-200 body without logging it wholesale.
+
+    OpenAI-compatible and Cloudflare errors carry a stable ``error.code`` /
+    ``error.message`` (or ``errors[]``); those are the allowlisted fields we
+    log (still redacted). Arbitrary or non-JSON bodies, which could echo a
+    prompt or PII, are suppressed unless ARIADNE_LOG_RAW_BODIES is set.
+    """
+    try:
+        data = resp.json()
+    except ValueError:
+        data = None
+    if isinstance(data, dict):
+        err = data.get("error")
+        if isinstance(err, dict):
+            parts = [str(err.get(k)) for k in ("code", "message") if err.get(k)]
+            if parts:
+                return _redact(" ".join(parts))[:300]
+        if isinstance(err, str) and err:
+            return _redact(err)[:300]
+        errs = data.get("errors")
+        if isinstance(errs, list) and errs and isinstance(errs[0], dict):
+            e0 = errs[0]
+            parts = [str(e0.get(k)) for k in ("code", "message") if e0.get(k)]
+            if parts:
+                return _redact(" ".join(parts))[:300]
+    if LOG_RAW_BODIES:
+        return _redact(resp.text[:300])
+    return "unstructured error body suppressed"
 
 
 @dataclass
@@ -206,7 +241,7 @@ class OpenAICompatibleProvider:
             return ProviderResult(
                 self.name, self.model, False, status=resp.status_code,
                 latency_ms=latency, error_kind=_classify(resp.status_code),
-                error_detail=_redact(resp.text[:300]),
+                error_detail=_error_summary(resp),
             )
         try:
             data = resp.json()

@@ -6,6 +6,7 @@ correctly (success, config error, rate limit, server error, timeout,
 network, empty) and that the chain fails over and finally falls back to a
 deterministic offline reply.
 """
+import asyncio
 import os
 import unittest
 from unittest import mock
@@ -257,16 +258,18 @@ class RedactUnitTest(unittest.TestCase):
 
 
 class RedactionInErrorTest(unittest.IsolatedAsyncioTestCase):
-    async def test_error_body_secrets_are_redacted(self):
-        leaky = "rejected: Authorization Bearer gsk_supersecretkey1234567890 invalid"
-
+    async def test_structured_error_message_secrets_redacted(self):
+        # A provider echoes a key inside its structured error message; the
+        # human-readable part survives as diagnosis but the key is redacted.
         async def handler(request):
-            return httpx.Response(400, text=leaky)
+            return httpx.Response(400, json={"error": {
+                "message": "bad key gsk_supersecretkey1234567890 rejected"}})
 
         r = await PROVIDER.complete(_client(handler), SYS, MSGS)
         self.assertFalse(r.ok)
         self.assertNotIn("gsk_supersecretkey1234567890", r.error_detail)
         self.assertIn("[REDACTED]", r.error_detail)
+        self.assertIn("rejected", r.error_detail)
 
 
 class GroundingTest(unittest.TestCase):
@@ -304,6 +307,75 @@ class ChainDeadlineTest(unittest.IsolatedAsyncioTestCase):
                 mock.patch.object(ariadne, "_get_transit_context", lambda: None):
             out = await ariadne.chat_async([{"role": "user", "text": "hi"}])
         self.assertEqual(out["provider"], "offline")
+
+
+class ErrorSummaryTest(unittest.IsolatedAsyncioTestCase):
+    """Only stable structured error fields are logged; arbitrary bodies that
+    could echo a prompt or PII are suppressed by default."""
+
+    async def _detail(self, status, **kw):
+        async def handler(request):
+            return httpx.Response(status, **kw)
+        r = await PROVIDER.complete(_client(handler), SYS, MSGS)
+        return r.error_detail
+
+    async def test_openai_error_message_kept(self):
+        detail = await self._detail(403, json={"error": {
+            "code": "model_permission_blocked_org",
+            "message": "The model is blocked at the organization level",
+        }})
+        self.assertIn("blocked at the organization level", detail)
+        self.assertIn("model_permission_blocked_org", detail)
+
+    async def test_cloudflare_errors_list_kept(self):
+        detail = await self._detail(400, json={"errors": [{"code": 7000, "message": "No route for that URI"}]})
+        self.assertIn("No route", detail)
+
+    async def test_plaintext_body_with_pii_suppressed(self):
+        detail = await self._detail(400, text="user email a@b.com password hunter2 rejected")
+        self.assertNotIn("a@b.com", detail)
+        self.assertNotIn("hunter2", detail)
+        self.assertEqual(detail, "unstructured error body suppressed")
+
+    async def test_json_without_error_shape_suppressed(self):
+        detail = await self._detail(400, json={"detail": "contact a@b.com"})
+        self.assertNotIn("a@b.com", detail)
+
+
+class GroundingDeadlineTest(unittest.IsolatedAsyncioTestCase):
+    async def test_slow_grounding_is_bounded_and_falls_back(self):
+        from syrmos_admin import ariadne
+
+        def slow_ctx():
+            import time as _t
+            _t.sleep(1.5)  # simulate a locked/slow DB, off the event loop
+            return "Active lines:\n- M1"
+
+        loop = asyncio.get_event_loop()
+        with mock.patch.object(ariadne, "_get_transit_context", slow_ctx):
+            deadline = loop.time() + 0.2
+            start = loop.time()
+            text = await ariadne._build_system_text(deadline, loop)
+            elapsed = loop.time() - start
+        self.assertLess(elapsed, 1.0)  # did not wait the full 5s
+        self.assertIn("Live Syrmos transit data is unavailable", text)
+
+
+class RateLimitTest(unittest.IsolatedAsyncioTestCase):
+    async def test_allows_up_to_limit_then_blocks(self):
+        from syrmos_admin import app as appmod
+        with mock.patch.object(appmod, "_ARIADNE_RATE_PER_MIN", 3):
+            appmod._ariadne_hits.clear()
+            results = [await appmod._ariadne_rate_ok("client-abc") for _ in range(4)]
+        self.assertEqual(results, [True, True, True, False])
+
+    async def test_separate_clients_are_independent(self):
+        from syrmos_admin import app as appmod
+        with mock.patch.object(appmod, "_ARIADNE_RATE_PER_MIN", 1):
+            appmod._ariadne_hits.clear()
+            self.assertTrue(await appmod._ariadne_rate_ok("client-a"))
+            self.assertTrue(await appmod._ariadne_rate_ok("client-b"))
+            self.assertFalse(await appmod._ariadne_rate_ok("client-a"))
 
 
 if __name__ == "__main__":
