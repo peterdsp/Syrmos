@@ -31,8 +31,11 @@ class AriadneChatService(
                 // server's multi-LLM chain still has time to answer when reachable.
                 timeout {
                     connectTimeoutMillis = 3_500
-                    requestTimeoutMillis = 30_000
-                    socketTimeoutMillis = 30_000
+                    // Above the server's nginx 30 s read cap (the backend tries up
+                    // to three LLM providers in sequence and emits nothing until
+                    // one answers), so a valid-but-slow reply is received, not cut.
+                    requestTimeoutMillis = 33_000
+                    socketTimeoutMillis = 33_000
                 }
                 contentType(ContentType.Application.Json)
                 setBody(json.encodeToString(AriadneChatRequest.serializer(), payload))

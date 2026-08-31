@@ -36,8 +36,13 @@ final class AriadneAPIService {
 
     private init() {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 20
-        config.timeoutIntervalForResource = 25
+        // The backend emits no bytes while it tries up to three LLM providers in
+        // sequence, and nginx caps that at a 30 s read timeout. Keep the client
+        // ceilings just above 30 s so a valid-but-slow reply is received rather
+        // than truncated; the NWPathMonitor guard (not a short timeout) is what
+        // handles the offline/unreachable case.
+        config.timeoutIntervalForRequest = 33
+        config.timeoutIntervalForResource = 35
         // Do not sit and wait for a network to appear; fail so we can fall back.
         config.waitsForConnectivity = false
         session = URLSession(configuration: config)

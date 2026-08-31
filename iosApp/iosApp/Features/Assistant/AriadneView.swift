@@ -411,6 +411,20 @@ private struct AriadneModelBanner: View {
                 Button(retryText) { Task { await store.download() } }
                     .font(.caption.weight(.semibold))
             }
+        case .verifying:
+            card {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text(verifyingText).font(.caption.weight(.medium))
+                }
+            }
+        case .insufficientStorage:
+            card {
+                Text(storageTitle).font(.subheadline.weight(.bold))
+                Text(storageText).font(.caption).foregroundStyle(.secondary)
+                Button(retryText) { Task { await store.download() } }
+                    .font(.caption.weight(.semibold))
+            }
         case .notDownloaded:
             card {
                 Text(title).font(.subheadline.weight(.bold))
@@ -443,6 +457,30 @@ private struct AriadneModelBanner: View {
         case .albanian: return "Shkarko një AI në pajisje (~1.1 GB, një herë) për fjalë më të lira. Punon offline më pas."
         case .italian: return "Scarica un AI sul dispositivo (~1.1 GB, una volta) per un linguaggio più libero. Funziona offline dopo."
         case .english: return "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
+        }
+    }
+    private var verifyingText: String {
+        switch loc.language {
+        case .greek: return "Επαλήθευση μοντέλου..."
+        case .albanian: return "Po verifikohet modeli..."
+        case .italian: return "Verifica del modello..."
+        case .english: return "Verifying model..."
+        }
+    }
+    private var storageTitle: String {
+        switch loc.language {
+        case .greek: return "Δεν υπάρχει αρκετός χώρος"
+        case .albanian: return "Nuk ka hapësirë të mjaftueshme"
+        case .italian: return "Spazio insufficiente"
+        case .english: return "Not enough space"
+        }
+    }
+    private var storageText: String {
+        switch loc.language {
+        case .greek: return "Το μοντέλο χρειάζεται ~1.1 GB. Ελευθέρωσε χώρο και δοκίμασε ξανά."
+        case .albanian: return "Modeli kërkon ~1.1 GB. Liro pak hapësirë dhe provo sërish."
+        case .italian: return "Il modello richiede ~1.1 GB. Libera spazio e riprova."
+        case .english: return "The model needs ~1.1 GB. Free up some space and try again."
         }
     }
     private func downloadingText(_ pct: Int) -> String {
