@@ -44,6 +44,12 @@
             show_vehicles: "Show vehicles",
             hide_vehicles: "Hide vehicles",
             live_trains: "Live trains",
+            legend_title: "Legend",
+            legend_active: "In service",
+            legend_bus: "Bus / shuttle",
+            legend_closed: "Suspended or under construction",
+            legend_live: "Live vehicle",
+            legend_parked: "Parked / not in service",
             trains_active: "{n} trains active",
             nearby_stations: "Nearby stations",
             popular_stations: "Popular stations",
@@ -107,6 +113,7 @@
             search_ask_ariadne: "Ask Ariadne",
             ariadne_open_map: "Opening {station} on the map.",
             ariadne_open_alerts: "Showing service alerts.",
+            ariadne_open_link: "Open",
             ariadne_open_route: "Opening directions from {from} to {to}.",
             ariadne_eta_locating: "Getting your location to estimate the trip to {station}…",
             ariadne_eta_ask_origin: "I couldn't get your location. Which station are you starting from?",
@@ -131,6 +138,12 @@
             show_vehicles: "Εμφάνιση οχημάτων",
             hide_vehicles: "Απόκρυψη οχημάτων",
             live_trains: "Ζωντανά τρένα",
+            legend_title: "Υπόμνημα",
+            legend_active: "Σε λειτουργία",
+            legend_bus: "Λεωφορείο / σατλ",
+            legend_closed: "Σε αναστολή ή υπό κατασκευή",
+            legend_live: "Ζωντανό όχημα",
+            legend_parked: "Σταθμευμένο / εκτός λειτουργίας",
             trains_active: "{n} ενεργά τρένα",
             nearby_stations: "Κοντινοί σταθμοί",
             popular_stations: "Δημοφιλείς σταθμοί",
@@ -194,6 +207,7 @@
             search_ask_ariadne: "Ρώτησε την Αριάδνη",
             ariadne_open_map: "Άνοιγμα του {station} στον χάρτη.",
             ariadne_open_alerts: "Εμφάνιση ειδοποιήσεων.",
+            ariadne_open_link: "Άνοιγμα",
             ariadne_open_route: "Άνοιγμα διαδρομής από {from} προς {to}.",
             ariadne_eta_locating: "Εντοπίζω την τοποθεσία σου για τον χρόνο προς {station}…",
             ariadne_eta_ask_origin: "Δεν βρήκα την τοποθεσία σου. Από ποιον σταθμό ξεκινάς;",
@@ -218,6 +232,12 @@
             show_vehicles: "Shfaq mjetet",
             hide_vehicles: "Fshih mjetet",
             live_trains: "Trenat aktiv",
+            legend_title: "Legjenda",
+            legend_active: "Në shërbim",
+            legend_bus: "Autobus / satël",
+            legend_closed: "I pezulluar ose në ndërtim",
+            legend_live: "Automjet i drejtpërdrejtë",
+            legend_parked: "I parkuar / jashtë shërbimit",
             trains_active: "{n} trena aktiv",
             nearby_stations: "Stacionet pranë",
             popular_stations: "Stacionet kryesore",
@@ -281,6 +301,7 @@
             search_ask_ariadne: "Pyet Ariadnen",
             ariadne_open_map: "Po hap {station} në hartë.",
             ariadne_open_alerts: "Po tregoj njoftimet.",
+            ariadne_open_link: "Hap",
             ariadne_open_route: "Po hap udhëzimet nga {from} te {to}.",
             ariadne_eta_locating: "Po marr vendndodhjen tënde për kohën te {station}…",
             ariadne_eta_ask_origin: "S'e mora dot vendndodhjen. Nga cili stacion po nisesh?",
@@ -305,6 +326,12 @@
             show_vehicles: "Mostra veicoli",
             hide_vehicles: "Nascondi veicoli",
             live_trains: "Treni in tempo reale",
+            legend_title: "Legenda",
+            legend_active: "In servizio",
+            legend_bus: "Autobus / navetta",
+            legend_closed: "Sospeso o in costruzione",
+            legend_live: "Veicolo in tempo reale",
+            legend_parked: "Fermo / non in servizio",
             trains_active: "{n} treni attivi",
             nearby_stations: "Stazioni vicine",
             popular_stations: "Stazioni principali",
@@ -368,6 +395,7 @@
             search_ask_ariadne: "Chiedi ad Ariadne",
             ariadne_open_map: "Apro {station} sulla mappa.",
             ariadne_open_alerts: "Mostro gli avvisi di servizio.",
+            ariadne_open_link: "Apri",
             ariadne_open_route: "Apro le indicazioni da {from} a {to}.",
             ariadne_eta_locating: "Ottengo la tua posizione per stimare il viaggio verso {station}...",
             ariadne_eta_ask_origin: "Non ho potuto ottenere la tua posizione. Da quale stazione parti?",
@@ -796,6 +824,20 @@
             if (e.key !== "Enter" && e.key !== " ") return;
             const row = e.target.closest("[data-train-id]");
             if (row) { e.preventDefault(); _openTrainRow(row); }
+        });
+    }
+
+    // Map legend: explains the line-state styling (a solid line is in service, a
+    // dashed one is a bus, a grey dashed one is suspended or under construction)
+    // so the grey track from the seasonal/suspended work is never "unexplained".
+    const mapLegendToggle = document.getElementById("mapLegendToggle");
+    const mapLegendBody = document.getElementById("mapLegendBody");
+    if (mapLegendToggle && mapLegendBody) {
+        mapLegendToggle.addEventListener("click", () => {
+            const willOpen = mapLegendBody.hasAttribute("hidden");
+            if (willOpen) mapLegendBody.removeAttribute("hidden");
+            else mapLegendBody.setAttribute("hidden", "");
+            mapLegendToggle.setAttribute("aria-expanded", String(willOpen));
         });
     }
     const nearbyStationList = document.getElementById("nearbyStationList");
@@ -4330,6 +4372,21 @@
             return el;
         }
 
+        // A tappable external link inside an Ariadne reply (directions, official
+        // alerts). Opening on the user's tap is a real gesture, so it is never
+        // popup-blocked the way a script-timed window.open is.
+        function appendActionLink(el, link) {
+            if (!link || !link.href) return;
+            const a = document.createElement("a");
+            a.className = "ariadne-msg__link";
+            a.href = link.href;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = link.label || link.href;
+            el.appendChild(a);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
         function openPanel() {
             panel.classList.remove("ariadne-panel--hidden");
             panel.setAttribute("aria-hidden", "false");
@@ -4675,10 +4732,13 @@
                     }
                     return { text: t("ariadne_no_station") };
                 case "alerts": {
+                    // A tappable link, NOT an auto-fired window.open: the reply is
+                    // rendered after async work, so a popup opened then is blocked.
+                    // The user's tap on the link is a gesture the browser allows.
                     return {
                         text: t("ariadne_open_alerts"),
                         sourceConf: "live",
-                        act: () => window.open("https://www.stasy.gr/en/news/", "_blank", "noopener"),
+                        link: { href: "https://www.stasy.gr/en/news/", label: t("ariadne_open_link") },
                     };
                 }
                 case "plan": {
@@ -4692,7 +4752,7 @@
                             to: stationName(to.id),
                         }),
                         sourceConf: "offline",
-                        act: () => window.open(url, "_blank", "noopener"),
+                        link: { href: url, label: t("ariadne_open_link") },
                     };
                 }
                 case "travelTime": {
@@ -4705,7 +4765,7 @@
                         return {
                             text: t("ariadne_open_route", { from: stationName(from.id), to: stationName(to.id) }),
                             sourceConf: "offline",
-                            act: () => window.open(url, "_blank", "noopener"),
+                            link: { href: url, label: t("ariadne_open_link") },
                         };
                     }
                     // No named origin: use the browser location, else ask.
@@ -5018,7 +5078,11 @@
                     return;
                 }
                 const reply = respond(finalIntent);
-                appendMessage(reply.text, "assistant", reply.sourceConf);
+                const replyEl = appendMessage(reply.text, "assistant", reply.sourceConf);
+                // A link is a tappable affordance (opens on the user's gesture, so
+                // never popup-blocked). An `act` is internal navigation (open a
+                // station, focus the map) that needs no gesture, so it still fires.
+                if (reply.link && replyEl) appendActionLink(replyEl, reply.link);
                 if (reply.departuresFor) {
                     departuresSummary(reply.departuresFor).then((summary) => {
                         if (summary) appendMessage(summary, "assistant", "scheduled");

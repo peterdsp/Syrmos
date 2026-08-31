@@ -612,7 +612,51 @@ body.dark-mode .nav-item--active {
 .map-chrome--tl { top: 16px; left: 16px; gap: 6px; }
 .map-chrome--tr { top: 16px; right: 16px; gap: 8px; align-items: center; }
 .map-chrome--br { bottom: 24px; right: 16px; flex-direction: column; gap: 8px; align-items: flex-end; }
-.map-chrome--bl { bottom: 24px; left: 16px; }
+.map-chrome--bl { bottom: 24px; left: 16px; flex-direction: column; gap: 8px; align-items: flex-start; }
+
+/* Map legend: a collapsible key for the line-state styling. */
+.map-legend {
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
+}
+.map-legend__toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 30px; padding: 0 12px;
+    border: 1px solid var(--sy-border-subtle);
+    border-radius: var(--sy-radius-pill);
+    background: var(--sy-background-raised);
+    color: var(--sy-text-secondary);
+    font: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+.map-legend__toggle:hover { color: var(--sy-text-primary); }
+.map-legend__toggle:focus-visible { outline: 2px solid var(--sy-accent); outline-offset: 2px; }
+.map-legend__icon { font-size: 14px; line-height: 1; }
+.map-legend__body {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--sy-border-subtle);
+    border-radius: var(--sy-radius-md);
+    background: var(--sy-background-raised);
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    max-width: 240px;
+}
+.map-legend__body[hidden] { display: none; }
+.legend-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--sy-text-primary);
+}
+.legend-swatch { flex: 0 0 auto; width: 26px; height: 12px; display: inline-block; }
+/* A solid line = in service; dashed = bus; grey dashed = built but not running.
+   These mirror the polyline styling in web-map.js (MAP_TOKENS.greyedColor / dashes). */
+.legend-swatch--line { border-top: 3px solid var(--sy-accent); height: 3px; align-self: center; }
+.legend-swatch--bus { border-top: 3px dashed var(--sy-accent); height: 3px; align-self: center; }
+.legend-swatch--closed { border-top: 3px dashed #94a3b8; height: 3px; align-self: center; opacity: .7; }
+.legend-swatch--live, .legend-swatch--parked {
+    width: 12px; height: 12px; border-radius: 50%;
+}
+.legend-swatch--live { background: var(--sy-accent); box-shadow: 0 0 0 3px rgba(20,102,184,.25); }
+.legend-swatch--parked { background: #9CA3AF; opacity: .6; }
 
 /* Region Chips */
 .region-chip {
@@ -1305,6 +1349,27 @@ body.dark-mode .live-status-pill {
     color: var(--sy-text-primary);
     border-bottom-left-radius: 4px;
 }
+
+/* Tappable action link inside an Ariadne reply (directions, official alerts).
+   Rendered as a pill the user taps, so the browser treats the open as a user
+   gesture and never popup-blocks it. */
+.ariadne-msg__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding: 5px 12px;
+    border-radius: var(--sy-radius-pill);
+    background: var(--sy-accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    width: fit-content;
+}
+.ariadne-msg__link::after { content: "↗"; font-weight: 400; }
+.ariadne-msg__link:hover { background: var(--sy-accent-strong); }
+.ariadne-msg__link:focus-visible { outline: 2px solid var(--sy-accent); outline-offset: 2px; }
 
 .ariadne-panel__composer {
     display: flex; gap: 8px;
