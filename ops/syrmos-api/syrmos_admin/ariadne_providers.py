@@ -398,6 +398,84 @@ def build_chain() -> list[OpenAICompatibleProvider]:
     return chain
 
 
+# --- Per-provider circuit breaker -------------------------------------------
+# After CB_THRESHOLD consecutive expensive failures (timeout / 5xx / network /
+# rate limit) a provider is skipped for CB_COOLDOWN seconds, so a sustained
+# outage costs one timeout per cooldown instead of one per request. Cheap or
+# persistent failures (config 401/403, empty, protocol) never trip it, so
+# enabling a blocked model recovers on the very next request. Single worker,
+# cooperative single thread; `now` is passed in for deterministic tests.
+CB_THRESHOLD = _i("ARIADNE_CB_THRESHOLD", 3)
+CB_COOLDOWN = _f("ARIADNE_CB_COOLDOWN", 30.0)
+_CB_TRIP_KINDS = frozenset({"timeout", "network", "server", "rate_limit"})
+
+
+class _Breaker:
+    __slots__ = ("failures", "opened_until", "probing")
+
+    def __init__(self) -> None:
+        self.failures = 0
+        self.opened_until = 0.0
+        self.probing = False
+
+
+_breakers: dict[str, _Breaker] = {}
+
+
+def _breaker(name: str) -> _Breaker:
+    b = _breakers.get(name)
+    if b is None:
+        b = _breakers[name] = _Breaker()
+    return b
+
+
+def breaker_allows(name: str, now: float) -> bool:
+    """Whether this request may call the provider now.
+
+    Closed: always yes. Open (cooling down): no. Half-open (cooldown elapsed):
+    exactly one caller is granted the probe and claims ownership; concurrent
+    callers are refused until the probe reports back, so an outage does not
+    draw a thundering herd of probes. The check-and-claim is atomic under the
+    single-threaded cooperative loop (no await in between), and the caller is
+    contracted to always follow a True with breaker_record so the claim is
+    released.
+    """
+    b = _breaker(name)
+    if b.opened_until == 0.0:
+        return True
+    if now < b.opened_until:
+        return False
+    if b.probing:
+        return False
+    b.probing = True
+    return True
+
+
+def breaker_record(name: str, ok: bool, error_kind: str | None, now: float) -> None:
+    """Update a provider's breaker after an attempt. Success closes it; an
+    expensive failure re-opens it (immediately if it was a half-open probe,
+    otherwise once the failure streak hits the threshold); cheap or persistent
+    failures (config/empty/protocol) only release the probe claim, so recovery
+    is immediate once the underlying misconfiguration is fixed."""
+    b = _breaker(name)
+    b.probing = False
+    if ok:
+        b.failures = 0
+        b.opened_until = 0.0
+    elif error_kind in _CB_TRIP_KINDS:
+        if b.opened_until > 0.0:  # a half-open probe failed: re-open at once
+            b.opened_until = now + CB_COOLDOWN
+        else:
+            b.failures += 1
+            if b.failures >= CB_THRESHOLD:
+                b.opened_until = now + CB_COOLDOWN
+
+
+def breaker_reset_all() -> None:
+    """Test helper: clear all breaker state."""
+    _breakers.clear()
+
+
 def log_attempt(attempt: int, result: ProviderResult) -> None:
     """Structured, prompt-free record of one provider attempt.
 
