@@ -44,6 +44,12 @@
             show_vehicles: "Show vehicles",
             hide_vehicles: "Hide vehicles",
             live_trains: "Live trains",
+            legend_title: "Legend",
+            legend_active: "In service",
+            legend_bus: "Bus / shuttle",
+            legend_closed: "Suspended or under construction",
+            legend_live: "Live vehicle",
+            legend_parked: "Parked / not in service",
             trains_active: "{n} trains active",
             nearby_stations: "Nearby stations",
             popular_stations: "Popular stations",
@@ -132,6 +138,12 @@
             show_vehicles: "Εμφάνιση οχημάτων",
             hide_vehicles: "Απόκρυψη οχημάτων",
             live_trains: "Ζωντανά τρένα",
+            legend_title: "Υπόμνημα",
+            legend_active: "Σε λειτουργία",
+            legend_bus: "Λεωφορείο / σατλ",
+            legend_closed: "Σε αναστολή ή υπό κατασκευή",
+            legend_live: "Ζωντανό όχημα",
+            legend_parked: "Σταθμευμένο / εκτός λειτουργίας",
             trains_active: "{n} ενεργά τρένα",
             nearby_stations: "Κοντινοί σταθμοί",
             popular_stations: "Δημοφιλείς σταθμοί",
@@ -220,6 +232,12 @@
             show_vehicles: "Shfaq mjetet",
             hide_vehicles: "Fshih mjetet",
             live_trains: "Trenat aktiv",
+            legend_title: "Legjenda",
+            legend_active: "Në shërbim",
+            legend_bus: "Autobus / satël",
+            legend_closed: "I pezulluar ose në ndërtim",
+            legend_live: "Automjet i drejtpërdrejtë",
+            legend_parked: "I parkuar / jashtë shërbimit",
             trains_active: "{n} trena aktiv",
             nearby_stations: "Stacionet pranë",
             popular_stations: "Stacionet kryesore",
@@ -308,6 +326,12 @@
             show_vehicles: "Mostra veicoli",
             hide_vehicles: "Nascondi veicoli",
             live_trains: "Treni in tempo reale",
+            legend_title: "Legenda",
+            legend_active: "In servizio",
+            legend_bus: "Autobus / navetta",
+            legend_closed: "Sospeso o in costruzione",
+            legend_live: "Veicolo in tempo reale",
+            legend_parked: "Fermo / non in servizio",
             trains_active: "{n} treni attivi",
             nearby_stations: "Stazioni vicine",
             popular_stations: "Stazioni principali",
@@ -800,6 +824,20 @@
             if (e.key !== "Enter" && e.key !== " ") return;
             const row = e.target.closest("[data-train-id]");
             if (row) { e.preventDefault(); _openTrainRow(row); }
+        });
+    }
+
+    // Map legend: explains the line-state styling (a solid line is in service, a
+    // dashed one is a bus, a grey dashed one is suspended or under construction)
+    // so the grey track from the seasonal/suspended work is never "unexplained".
+    const mapLegendToggle = document.getElementById("mapLegendToggle");
+    const mapLegendBody = document.getElementById("mapLegendBody");
+    if (mapLegendToggle && mapLegendBody) {
+        mapLegendToggle.addEventListener("click", () => {
+            const willOpen = mapLegendBody.hasAttribute("hidden");
+            if (willOpen) mapLegendBody.removeAttribute("hidden");
+            else mapLegendBody.setAttribute("hidden", "");
+            mapLegendToggle.setAttribute("aria-expanded", String(willOpen));
         });
     }
     const nearbyStationList = document.getElementById("nearbyStationList");
