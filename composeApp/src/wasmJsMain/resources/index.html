@@ -362,8 +362,38 @@
             </button>
         </div>
 
-        <!-- Map chrome: bottom-left live-status pill -->
+        <!-- Map chrome: bottom-left legend + live-status pill -->
         <div class="map-chrome map-chrome--bl">
+            <div class="map-legend" id="mapLegend">
+                <button class="map-legend__toggle" id="mapLegendToggle" type="button"
+                        aria-expanded="false" aria-controls="mapLegendBody">
+                    <span class="map-legend__icon" aria-hidden="true">≡</span>
+                    <span data-i18n="legend_title">Legend</span>
+                </button>
+                <div class="map-legend__body" id="mapLegendBody" role="group"
+                     aria-label="Map legend" hidden>
+                    <div class="legend-row">
+                        <span class="legend-swatch legend-swatch--line"></span>
+                        <span data-i18n="legend_active">In service</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="legend-swatch legend-swatch--bus"></span>
+                        <span data-i18n="legend_bus">Bus / shuttle</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="legend-swatch legend-swatch--closed"></span>
+                        <span data-i18n="legend_closed">Suspended / under construction</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="legend-swatch legend-swatch--live"></span>
+                        <span data-i18n="legend_live">Live vehicle</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="legend-swatch legend-swatch--parked"></span>
+                        <span data-i18n="legend_parked">Parked / not in service</span>
+                    </div>
+                </div>
+            </div>
             <div class="live-status-pill" id="liveStatusPill">
                 <span class="live-status-pill__dot"></span>
                 <span id="liveStatusText" data-i18n="live_trains">Live trains</span>
