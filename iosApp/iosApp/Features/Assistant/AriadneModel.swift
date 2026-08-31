@@ -1386,10 +1386,16 @@ final class AriadneModel: ObservableObject {
             ))
         }
         chatHistory.append(AriadneChatMessage(role: "user", text: text))
-        guard let reply = await AriadneAPIService.shared.chat(messages: chatHistory) else {
+        // Pass the usability filter into the service so the circuit breaker's
+        // outcome reflects a reply we actually surface (a junk reply from a
+        // degraded provider trips the breaker instead of being discarded here
+        // while the cloud keeps getting retried).
+        guard let reply = await AriadneAPIService.shared.chat(
+            messages: chatHistory,
+            isUsable: Self.isUsableReply
+        ) else {
             return nil
         }
-        guard Self.isUsableReply(reply) else { return nil }
         return bot(reply)
     }
 

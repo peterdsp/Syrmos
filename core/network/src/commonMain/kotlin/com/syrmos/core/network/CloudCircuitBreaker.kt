@@ -17,6 +17,15 @@ import kotlin.time.TimeSource
  * outage answer instantly from the local engine instead of each waiting out the
  * full request timeout. The first question after the cooldown retries with the
  * full budget, so a viable-but-slow network is never downgraded.
+ *
+ * Confinement: this holds plain mutable state and is NOT thread-safe. Its callers
+ * confine it to a single thread, which is what makes that safe: the Android
+ * assistant drives it from its Main-dispatched scope and the iOS one is
+ * `@MainActor`, so every isOpen / recordFailure / recordSuccess runs on the same
+ * thread with no data race. It does not enforce single-flight, so two questions
+ * fired in the same instant at the cooldown boundary could each retry once; that
+ * is harmless (both run on the confining thread and cost at most one extra cloud
+ * attempt before falling back).
  */
 internal class CloudCircuitBreaker(
     private val cooldown: Duration,

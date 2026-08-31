@@ -7,6 +7,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -28,7 +29,17 @@ class AriadneChatService(
     // round trip to every question without preventing that stall.
     private val breaker = CloudCircuitBreaker(cooldown = COOLDOWN)
 
-    suspend fun chat(messages: List<AriadneChatMessage>): String? {
+    /**
+     * @param isUsable decides whether a decoded reply is worth surfacing (the
+     *   caller's short/blank/leaked-reasoning filter). The breaker outcome is tied
+     *   to THIS, not to a bare `ok=true`: a reply the caller would discard counts
+     *   as a failure, so a degraded provider that returns junk trips the breaker
+     *   instead of making every question pay the full round trip.
+     */
+    suspend fun chat(
+        messages: List<AriadneChatMessage>,
+        isUsable: (String) -> Boolean = { true },
+    ): String? {
         // Breaker open from a recent failure: go straight to the local engine.
         if (breaker.isOpen()) return null
         return try {
@@ -54,9 +65,18 @@ class AriadneChatService(
             }
             val body = response.bodyAsText()
             val reply = json.decodeFromString<AriadneChatResponse>(body).cloudReplyOrNull()
-            if (reply == null) breaker.recordFailure() // ok=false or provider=offline
-            else breaker.recordSuccess()               // a real reply clears the breaker
-            reply
+            if (reply != null && isUsable(reply)) {
+                breaker.recordSuccess() // a real, surfaced reply clears the breaker
+                reply
+            } else {
+                // ok=false, provider=offline, or an unusable reply: cloud not useful.
+                breaker.recordFailure()
+                null
+            }
+        } catch (e: CancellationException) {
+            // A cancelled turn (screen closed, superseded query) is NOT an outage:
+            // let it propagate without tripping the breaker for later questions.
+            throw e
         } catch (_: Exception) {
             breaker.recordFailure() // network error / timeout: cloud unreachable now
             null
