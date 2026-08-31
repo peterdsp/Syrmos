@@ -440,6 +440,26 @@ class CircuitBreakerTest(unittest.TestCase):
                 ap.breaker_record("groq", False, "config", float(t))
             self.assertTrue(ap.breaker_allows("groq", 10.0))  # a 403 must not open it
 
+    def test_half_open_allows_only_a_single_probe(self):
+        with mock.patch.object(ap, "CB_THRESHOLD", 1), \
+                mock.patch.object(ap, "CB_COOLDOWN", 10.0):
+            ap.breaker_record("groq", False, "timeout", 0.0)   # open until 10
+            self.assertFalse(ap.breaker_allows("groq", 5.0))    # cooling down
+            self.assertTrue(ap.breaker_allows("groq", 11.0))    # this caller owns the probe
+            self.assertFalse(ap.breaker_allows("groq", 11.0))   # concurrent caller refused
+            ap.breaker_record("groq", False, "timeout", 11.0)   # probe failed -> re-open
+            self.assertFalse(ap.breaker_allows("groq", 12.0))   # open again
+            self.assertTrue(ap.breaker_allows("groq", 22.0))    # next probe after cooldown
+
+    def test_half_open_probe_success_closes(self):
+        with mock.patch.object(ap, "CB_THRESHOLD", 1), \
+                mock.patch.object(ap, "CB_COOLDOWN", 10.0):
+            ap.breaker_record("cf", False, "server", 0.0)       # open until 10
+            self.assertTrue(ap.breaker_allows("cf", 11.0))      # probe
+            ap.breaker_record("cf", True, None, 11.0)           # success -> closed
+            self.assertTrue(ap.breaker_allows("cf", 11.0))      # closed: all callers allowed
+            self.assertTrue(ap.breaker_allows("cf", 11.0))
+
 
 _SECTIONS = [
     ("lines", "Active lines:\n- M1"),
@@ -486,6 +506,17 @@ class ContextSelectionTest(unittest.TestCase):
     def test_empty_sections_returns_none(self):
         from syrmos_admin import ariadne
         self.assertIsNone(ariadne._select_context([], "anything"))
+
+    def test_disruptions_survive_cap_when_lines_is_huge(self):
+        from syrmos_admin import ariadne
+        secs = [
+            ("lines", "L" * 5000),
+            ("announcements", "Active announcements:\n- STRIKE [lines: M1,M2]"),
+        ]
+        ctx = ariadne._select_context(secs, "how do I get to work", max_chars=1000)
+        self.assertIn("STRIKE", ctx)          # disruption kept
+        self.assertIn("M1,M2", ctx)           # affected-line metadata not truncated
+        self.assertLessEqual(len(ctx), 1000)
 
 
 if __name__ == "__main__":

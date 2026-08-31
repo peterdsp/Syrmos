@@ -203,6 +203,12 @@ def _get_transit_sections() -> list[tuple[str, str]]:
     return sections
 
 
+# Cap priority: safety/disruption sections first so they are never dropped or
+# truncated by the size cap, then the query-relevant sections, then the bulky
+# line list last.
+_CONTEXT_PRIORITY = ("announcements", "stasy", "fares", "hours", "frequencies", "news", "lines")
+
+
 def _select_context(
     sections: list[tuple[str, str]],
     query: str,
@@ -210,24 +216,28 @@ def _select_context(
 ) -> str | None:
     """Pick the always-included sections plus any the question asks about, then
     cap the total size so the grounded context never blows a per-minute token
-    budget."""
+    budget. Disruption/status sections are ordered first so the cap never drops
+    a safety-relevant announcement in favour of the bulky line list."""
     ql = (query or "").lower()
     wanted = set(_ALWAYS_CONTEXT)
     for name, keywords in _CONTEXT_KEYWORDS.items():
         if any(k in ql for k in keywords):
             wanted.add(name)
-    chosen = [text for name, text in sections if name in wanted]
-    if not chosen:
+    by_name = {name: text for name, text in sections}
+    ordered = [(n, by_name[n]) for n in _CONTEXT_PRIORITY if n in wanted and n in by_name]
+    if not ordered:
         return None
     out: list[str] = []
     total = 0
-    for text in chosen:
-        if total >= max_chars:
+    for _name, text in ordered:
+        sep = 2 if out else 0  # the "\n\n" join separator counts toward the cap
+        if total + sep >= max_chars:
             break
-        if total + len(text) > max_chars:
-            text = text[: max_chars - total]
+        avail = max_chars - total - sep
+        if len(text) > avail:
+            text = text[:avail]
         out.append(text)
-        total += len(text)
+        total += sep + len(text)
     return "\n\n".join(out) if out else None
 
 
