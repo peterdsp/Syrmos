@@ -158,6 +158,23 @@ class BuildChainTest(unittest.TestCase):
         self.assertIn("accounts/acc/ai/v1", chain[1].base_url)
         self.assertEqual(chain[2].read_timeout, ap.LOCAL_READ_TIMEOUT)
 
+    def test_hosted_http_override_is_skipped(self):
+        os.environ["GROQ_API_KEY"] = "gsk_x"
+        os.environ["ARIADNE_GROQ_BASE_URL"] = "http://insecure.example/v1"
+        self.assertEqual(ap.build_chain(), [])  # plaintext hosted -> refused
+
+    def test_hosted_https_is_kept(self):
+        os.environ["GROQ_API_KEY"] = "gsk_x"
+        self.assertEqual([p.name for p in ap.build_chain()], ["groq"])
+
+    def test_local_loopback_http_allowed(self):
+        os.environ["ARIADNE_LOCAL_BASE_URL"] = "http://127.0.0.1:8081/v1"
+        self.assertEqual([p.name for p in ap.build_chain()], ["local"])
+
+    def test_local_non_loopback_http_skipped(self):
+        os.environ["ARIADNE_LOCAL_BASE_URL"] = "http://evil.example/v1"
+        self.assertEqual(ap.build_chain(), [])
+
 
 class ChatAsyncTest(unittest.IsolatedAsyncioTestCase):
     class _Stub:
@@ -166,7 +183,7 @@ class ChatAsyncTest(unittest.IsolatedAsyncioTestCase):
             self.model = name + "-model"
             self._ok = ok
 
-        async def complete(self, client, system_text, messages):
+        async def complete(self, client, system_text, messages, timeout_override=None):
             return ap.ProviderResult(
                 self.name, self.model, self._ok,
                 text=("hi from " + self.name) if self._ok else "",
@@ -193,6 +210,100 @@ class ChatAsyncTest(unittest.IsolatedAsyncioTestCase):
             out = await ariadne.chat_async([{"role": "user", "text": "are you serious"}])
         self.assertEqual(out["provider"], "offline")
         self.assertIn("brain", out["reply"].lower())
+
+
+class MalformedResponseTest(unittest.IsolatedAsyncioTestCase):
+    """A 200 with an unexpected shape must degrade to a failed attempt, never
+    raise out of complete() and abort the chain."""
+
+    async def _complete(self, payload):
+        async def handler(request):
+            return httpx.Response(200, json=payload)
+        return await PROVIDER.complete(_client(handler), SYS, MSGS)
+
+    async def test_non_object_root(self):
+        r = await self._complete(["not", "an", "object"])
+        self.assertFalse(r.ok)
+
+    async def test_choices_not_a_list(self):
+        r = await self._complete({"choices": "nope"})
+        self.assertFalse(r.ok)
+
+    async def test_choice_not_a_dict(self):
+        r = await self._complete({"choices": ["oops"]})
+        self.assertFalse(r.ok)
+
+    async def test_content_not_a_string(self):
+        r = await self._complete({"choices": [{"message": {"content": {"x": 1}}}]})
+        self.assertFalse(r.ok)
+
+    async def test_bad_usage_does_not_crash_a_good_reply(self):
+        r = await self._complete({"choices": [{"message": {"content": "M3."}}], "usage": [1, 2]})
+        self.assertTrue(r.ok)
+        self.assertEqual(r.text, "M3.")
+        self.assertIsNone(r.prompt_tokens)
+
+
+class RedactUnitTest(unittest.TestCase):
+    def test_masks_bearer_and_key_shapes(self):
+        s = ap._redact("Bearer gsk_abcdefghijklmnop then AIzaSy0123456789abcdefghij and sk-abcdefzz")
+        self.assertNotIn("gsk_abcdefghijklmnop", s)
+        self.assertNotIn("AIzaSy0123456789", s)
+        self.assertIn("[REDACTED]", s)
+
+    def test_keeps_plain_diagnostic_text(self):
+        s = ap._redact("The model is blocked at the organization level")
+        self.assertEqual(s, "The model is blocked at the organization level")
+
+
+class RedactionInErrorTest(unittest.IsolatedAsyncioTestCase):
+    async def test_error_body_secrets_are_redacted(self):
+        leaky = "rejected: Authorization Bearer gsk_supersecretkey1234567890 invalid"
+
+        async def handler(request):
+            return httpx.Response(400, text=leaky)
+
+        r = await PROVIDER.complete(_client(handler), SYS, MSGS)
+        self.assertFalse(r.ok)
+        self.assertNotIn("gsk_supersecretkey1234567890", r.error_detail)
+        self.assertIn("[REDACTED]", r.error_detail)
+
+
+class GroundingTest(unittest.TestCase):
+    def test_no_context_still_carries_abstention(self):
+        from syrmos_admin import ariadne
+        with mock.patch.object(ariadne, "_get_transit_context", lambda: None):
+            text = ariadne._system_text()
+        self.assertIn("Live Syrmos transit data is unavailable", text)
+        self.assertIn("hellenictrain.gr", text)
+
+    def test_with_context_includes_grounding_and_facts(self):
+        from syrmos_admin import ariadne
+        with mock.patch.object(ariadne, "_get_transit_context", lambda: "Active lines:\n- M1"):
+            text = ariadne._system_text()
+        self.assertIn("Use ONLY these", text)
+        self.assertIn("Active lines", text)
+
+
+class ChainDeadlineTest(unittest.IsolatedAsyncioTestCase):
+    class _SlowStub:
+        name = "slow"
+        model = "slow"
+
+        async def complete(self, client, system_text, messages, timeout_override=None):
+            import asyncio
+            await asyncio.sleep(5)  # far longer than the (patched) deadline
+            return ap.ProviderResult("slow", "slow", True, text="too late")
+
+    async def test_deadline_forces_offline(self):
+        from syrmos_admin import ariadne
+        with mock.patch.object(ariadne.providers, "build_chain", lambda: [self._SlowStub()]), \
+                mock.patch.object(ariadne.providers, "get_client", lambda: None), \
+                mock.patch.object(ariadne.providers, "CHAIN_DEADLINE", 0.2), \
+                mock.patch.object(ariadne.providers, "MIN_ATTEMPT_BUDGET", 0.05), \
+                mock.patch.object(ariadne, "_get_transit_context", lambda: None):
+            out = await ariadne.chat_async([{"role": "user", "text": "hi"}])
+        self.assertEqual(out["provider"], "offline")
 
 
 if __name__ == "__main__":

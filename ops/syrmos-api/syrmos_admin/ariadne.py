@@ -11,6 +11,7 @@ returned so the endpoint always responds.
 """
 from __future__ import annotations
 
+import asyncio
 import sqlite3
 
 from . import ariadne_providers as providers
@@ -67,6 +68,18 @@ GROUNDING = (
     "facts below do not answer the question, say that Syrmos does not "
     "currently have enough information and point the rider to the app's "
     "planner, rather than making something up.\n\n"
+)
+
+# Used when the live DB context cannot be loaded. Keeps the abstention
+# contract in force so the model does not present the prompt's baseline
+# figures (fares, hours) as if they were current.
+GROUNDING_NO_CONTEXT = (
+    "\n\nLive Syrmos transit data is unavailable right now. Do not state "
+    "specific current departure times, fares, or service disruptions, and do "
+    "not present any figures above as if they were live. For anything "
+    "time-sensitive, tell the rider to check the app's planner or the "
+    "official operator (hellenictrain.gr, OASA). General guidance about which "
+    "lines exist and how the network connects is still fine.\n"
 )
 
 
@@ -179,11 +192,17 @@ def _get_transit_context() -> str | None:
 
 
 def _system_text() -> str:
-    """System prompt plus the grounding contract and live transit facts."""
+    """System prompt plus the grounding contract.
+
+    The abstention contract is always present. When live DB facts are
+    available they are appended under it; when they are not, an explicit
+    "no live data" note keeps the model from presenting the prompt's
+    baseline figures as current.
+    """
     transit_ctx = _get_transit_context()
     if transit_ctx:
         return SYSTEM_PROMPT + GROUNDING + transit_ctx
-    return SYSTEM_PROMPT
+    return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
 
 
 def _to_openai_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -207,8 +226,27 @@ async def chat_async(messages: list[dict[str, str]]) -> dict:
     system_text = _system_text()
     oai_messages = _to_openai_messages(messages)
     client = providers.get_client()
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + providers.CHAIN_DEADLINE
     for attempt, provider in enumerate(providers.build_chain(), 1):
-        result = await provider.complete(client, system_text, oai_messages)
+        remaining = deadline - loop.time()
+        if remaining < providers.MIN_ATTEMPT_BUDGET:
+            break
+        try:
+            result = await asyncio.wait_for(
+                provider.complete(client, system_text, oai_messages, remaining),
+                timeout=remaining,
+            )
+        except asyncio.TimeoutError:
+            result = providers.ProviderResult(
+                provider.name, provider.model, False,
+                error_kind="timeout", error_detail="chain deadline reached",
+            )
+        except Exception as exc:  # noqa: BLE001 - contain, never abort the chain
+            result = providers.ProviderResult(
+                provider.name, provider.model, False,
+                error_kind="network", error_detail=repr(exc)[:200],
+            )
         providers.log_attempt(attempt, result)
         if result.ok:
             return {

@@ -9,6 +9,7 @@ Run: uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8091
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import pathlib
 import re
@@ -1057,7 +1058,14 @@ def _trigger_seed_refresh() -> None:
         pass
 
 
-# Ariadne chat (unauthenticated, rate-limited by upstream provider quotas)
+# Ariadne chat (unauthenticated). Admission control below caps total input
+# size and bounds concurrent in-flight chats so the public endpoint cannot
+# exhaust the Pi, the httpx pool, or upstream provider quotas. Per-IP rate
+# limiting belongs in nginx (follow-up).
+_ARIADNE_MAX_INPUT_CHARS = int(os.environ.get("ARIADNE_MAX_INPUT_CHARS", "6000"))
+_ARIADNE_MAX_CONCURRENCY = int(os.environ.get("ARIADNE_MAX_CONCURRENCY", "6"))
+_ariadne_sem = asyncio.Semaphore(_ARIADNE_MAX_CONCURRENCY)
+
 
 @app.post("/api/ariadne/chat")
 async def api_ariadne_chat(request: Request) -> JSONResponse:
@@ -1073,13 +1081,29 @@ async def api_ariadne_chat(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="messages array required")
     if len(messages) > 20:
         messages = messages[-20:]
-    result = await ariadne_mod.chat_async(messages)
+    total_chars = sum(len(str(m.get("text", ""))) for m in messages if isinstance(m, dict))
+    if total_chars > _ARIADNE_MAX_INPUT_CHARS:
+        raise HTTPException(status_code=413, detail="input too large")
+    try:
+        await asyncio.wait_for(_ariadne_sem.acquire(), timeout=1.0)
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=503, detail="assistant busy, retry shortly") from None
+    try:
+        result = await ariadne_mod.chat_async(messages)
+    finally:
+        _ariadne_sem.release()
     return JSONResponse({
         "reply": result["reply"],
         "ok": True,
         "provider": result["provider"],
         "model": result.get("model"),
     })
+
+
+@app.on_event("shutdown")
+async def _ariadne_shutdown() -> None:
+    """Close the shared Ariadne httpx client on shutdown."""
+    await ariadne_mod.providers.aclose_client()
 
 
 # Health (unauthenticated)
