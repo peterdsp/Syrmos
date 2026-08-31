@@ -256,11 +256,16 @@ class RedactUnitTest(unittest.TestCase):
         s = ap._redact("The model is blocked at the organization level")
         self.assertEqual(s, "The model is blocked at the organization level")
 
+    def test_masks_hyphenated_openai_key(self):
+        s = ap._redact("token sk-proj-abcdefghijklmnopqrstuvwxyz1234567890 end")
+        self.assertNotIn("sk-proj-abcdefghijklmnopqrstuvwxyz1234567890", s)
+        self.assertIn("[REDACTED]", s)
+
 
 class RedactionInErrorTest(unittest.IsolatedAsyncioTestCase):
-    async def test_structured_error_message_secrets_redacted(self):
-        # A provider echoes a key inside its structured error message; the
-        # human-readable part survives as diagnosis but the key is redacted.
+    async def test_secret_in_message_is_not_logged(self):
+        # A provider echoes a key in its free-form message; with code-only
+        # logging the whole message (and the key) is dropped, not just masked.
         async def handler(request):
             return httpx.Response(400, json={"error": {
                 "message": "bad key gsk_supersecretkey1234567890 rejected"}})
@@ -268,8 +273,7 @@ class RedactionInErrorTest(unittest.IsolatedAsyncioTestCase):
         r = await PROVIDER.complete(_client(handler), SYS, MSGS)
         self.assertFalse(r.ok)
         self.assertNotIn("gsk_supersecretkey1234567890", r.error_detail)
-        self.assertIn("[REDACTED]", r.error_detail)
-        self.assertIn("rejected", r.error_detail)
+        self.assertEqual(r.error_detail, "error body suppressed")
 
 
 class GroundingTest(unittest.TestCase):
@@ -310,8 +314,8 @@ class ChainDeadlineTest(unittest.IsolatedAsyncioTestCase):
 
 
 class ErrorSummaryTest(unittest.IsolatedAsyncioTestCase):
-    """Only stable structured error fields are logged; arbitrary bodies that
-    could echo a prompt or PII are suppressed by default."""
+    """Only the provider's stable error code is logged; free-form messages and
+    arbitrary bodies (which can echo prompt text or PII) are suppressed."""
 
     async def _detail(self, status, **kw):
         async def handler(request):
@@ -319,27 +323,40 @@ class ErrorSummaryTest(unittest.IsolatedAsyncioTestCase):
         r = await PROVIDER.complete(_client(handler), SYS, MSGS)
         return r.error_detail
 
-    async def test_openai_error_message_kept(self):
+    async def test_only_code_logged_not_message(self):
         detail = await self._detail(403, json={"error": {
             "code": "model_permission_blocked_org",
-            "message": "The model is blocked at the organization level",
+            "message": "user a@b.com sent this exact prompt",
         }})
-        self.assertIn("blocked at the organization level", detail)
-        self.assertIn("model_permission_blocked_org", detail)
+        self.assertEqual(detail, "code=model_permission_blocked_org")
+        self.assertNotIn("a@b.com", detail)
+        self.assertNotIn("prompt", detail)
 
-    async def test_cloudflare_errors_list_kept(self):
+    async def test_cloudflare_numeric_code_logged(self):
         detail = await self._detail(400, json={"errors": [{"code": 7000, "message": "No route for that URI"}]})
-        self.assertIn("No route", detail)
+        self.assertEqual(detail, "code=7000")
+        self.assertNotIn("No route", detail)
 
-    async def test_plaintext_body_with_pii_suppressed(self):
+    async def test_message_only_error_suppressed(self):
+        detail = await self._detail(400, json={"error": {"message": "email a@b.com in the prompt"}})
+        self.assertNotIn("a@b.com", detail)
+        self.assertEqual(detail, "error body suppressed")
+
+    async def test_unsafe_code_shape_rejected(self):
+        detail = await self._detail(400, json={"error": {"code": "contains spaces and a@b.com"}})
+        self.assertNotIn("a@b.com", detail)
+        self.assertEqual(detail, "error body suppressed")
+
+    async def test_plaintext_body_suppressed(self):
         detail = await self._detail(400, text="user email a@b.com password hunter2 rejected")
         self.assertNotIn("a@b.com", detail)
         self.assertNotIn("hunter2", detail)
-        self.assertEqual(detail, "unstructured error body suppressed")
+        self.assertEqual(detail, "error body suppressed")
 
     async def test_json_without_error_shape_suppressed(self):
         detail = await self._detail(400, json={"detail": "contact a@b.com"})
         self.assertNotIn("a@b.com", detail)
+        self.assertEqual(detail, "error body suppressed")
 
 
 class GroundingDeadlineTest(unittest.IsolatedAsyncioTestCase):
@@ -366,6 +383,7 @@ class RateLimitTest(unittest.IsolatedAsyncioTestCase):
         from syrmos_admin import app as appmod
         with mock.patch.object(appmod, "_ARIADNE_RATE_PER_MIN", 3):
             appmod._ariadne_hits.clear()
+            appmod._ariadne_global.clear()
             results = [await appmod._ariadne_rate_ok("client-abc") for _ in range(4)]
         self.assertEqual(results, [True, True, True, False])
 
@@ -373,9 +391,19 @@ class RateLimitTest(unittest.IsolatedAsyncioTestCase):
         from syrmos_admin import app as appmod
         with mock.patch.object(appmod, "_ARIADNE_RATE_PER_MIN", 1):
             appmod._ariadne_hits.clear()
+            appmod._ariadne_global.clear()
             self.assertTrue(await appmod._ariadne_rate_ok("client-a"))
             self.assertTrue(await appmod._ariadne_rate_ok("client-b"))
             self.assertFalse(await appmod._ariadne_rate_ok("client-a"))
+
+    async def test_global_ceiling_blocks_across_distinct_clients(self):
+        from syrmos_admin import app as appmod
+        with mock.patch.object(appmod, "_ARIADNE_RATE_PER_MIN", 100), \
+                mock.patch.object(appmod, "_ARIADNE_GLOBAL_PER_MIN", 3):
+            appmod._ariadne_hits.clear()
+            appmod._ariadne_global.clear()
+            results = [await appmod._ariadne_rate_ok(f"client-{i}") for i in range(4)]
+        self.assertEqual(results, [True, True, True, False])
 
 
 if __name__ == "__main__":

@@ -90,7 +90,7 @@ async def aclose_client() -> None:
 _SECRET_PATTERNS = [
     re.compile(r"(?i)bearer\s+[A-Za-z0-9._\-]+"),
     re.compile(r"\bgsk_[A-Za-z0-9]+"),
-    re.compile(r"\bsk-[A-Za-z0-9]+"),
+    re.compile(r"\bsk-[A-Za-z0-9\-]+"),
     re.compile(r"\bAIza[0-9A-Za-z._\-]+"),
     re.compile(r"\bAQ\.[A-Za-z0-9._\-]+"),
     re.compile(r"\b[A-Za-z0-9._\-]{40,}\b"),
@@ -110,35 +110,47 @@ def _redact(text: str) -> str:
     return out
 
 
-def _error_summary(resp: httpx.Response) -> str:
-    """Diagnostic summary of a non-200 body without logging it wholesale.
+_SAFE_CODE = re.compile(r"^[A-Za-z0-9_.\-]{1,64}$")
 
-    OpenAI-compatible and Cloudflare errors carry a stable ``error.code`` /
-    ``error.message`` (or ``errors[]``); those are the allowlisted fields we
-    log (still redacted). Arbitrary or non-JSON bodies, which could echo a
-    prompt or PII, are suppressed unless ARIADNE_LOG_RAW_BODIES is set.
-    """
+
+def _extract_error_code(resp: httpx.Response) -> str | None:
+    """The provider's stable error code, if present and shaped like a safe
+    enum token. Codes are provider-defined identifiers (``model_not_found``,
+    ``PAYMENT_METHOD_REQUIRED``, ``7000``), not free-form text, so they are
+    safe to log; anything containing spaces, ``@``, or other free-form
+    content is rejected."""
     try:
         data = resp.json()
     except ValueError:
-        data = None
-    if isinstance(data, dict):
-        err = data.get("error")
-        if isinstance(err, dict):
-            parts = [str(err.get(k)) for k in ("code", "message") if err.get(k)]
-            if parts:
-                return _redact(" ".join(parts))[:300]
-        if isinstance(err, str) and err:
-            return _redact(err)[:300]
-        errs = data.get("errors")
-        if isinstance(errs, list) and errs and isinstance(errs[0], dict):
-            e0 = errs[0]
-            parts = [str(e0.get(k)) for k in ("code", "message") if e0.get(k)]
-            if parts:
-                return _redact(" ".join(parts))[:300]
+        return None
+    if not isinstance(data, dict):
+        return None
+    containers = [data.get("error")]
+    errs = data.get("errors")
+    if isinstance(errs, list) and errs:
+        containers.append(errs[0])
+    for container in containers:
+        if isinstance(container, dict):
+            code = container.get("code")
+            if code is not None and _SAFE_CODE.match(str(code)):
+                return str(code)
+    return None
+
+
+def _error_summary(resp: httpx.Response) -> str:
+    """Non-free-form diagnostic for a non-200.
+
+    Logs only the provider's stable error code (a safe enum token). The
+    provider-supplied free-form message and the raw body are never logged,
+    since they are provider-controlled and can echo prompt text or PII,
+    unless ARIADNE_LOG_RAW_BODIES is explicitly set for debugging.
+    """
+    code = _extract_error_code(resp)
+    if code:
+        return f"code={code}"
     if LOG_RAW_BODIES:
         return _redact(resp.text[:300])
-    return "unstructured error body suppressed"
+    return "error body suppressed"
 
 
 @dataclass

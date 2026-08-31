@@ -1067,8 +1067,11 @@ def _trigger_seed_refresh() -> None:
 _ARIADNE_MAX_INPUT_CHARS = int(os.environ.get("ARIADNE_MAX_INPUT_CHARS", "6000"))
 _ARIADNE_MAX_CONCURRENCY = int(os.environ.get("ARIADNE_MAX_CONCURRENCY", "6"))
 _ARIADNE_RATE_PER_MIN = int(os.environ.get("ARIADNE_RATE_PER_MIN", "20"))
+_ARIADNE_GLOBAL_PER_MIN = int(os.environ.get("ARIADNE_GLOBAL_PER_MIN", "120"))
+_ARIADNE_RATE_MAX_KEYS = int(os.environ.get("ARIADNE_RATE_MAX_KEYS", "8192"))
 _ariadne_sem = asyncio.Semaphore(_ARIADNE_MAX_CONCURRENCY)
 _ariadne_hits: dict[str, list[float]] = {}
+_ariadne_global: list[float] = []
 _ariadne_rate_lock = asyncio.Lock()
 
 
@@ -1084,19 +1087,30 @@ def _ariadne_client_key(request: Request) -> str:
 
 
 async def _ariadne_rate_ok(key: str) -> bool:
-    """Sliding 60s per-client window, in-memory and ephemeral. Bounds sustained
-    single-client abuse; a stronger edge rate limit belongs at Cloudflare."""
+    """Admission for one request: a global 60s ceiling across all clients plus
+    a per-client 60s window, with the per-client map hard-capped so a flood of
+    distinct keys cannot grow memory without bound. In-memory, ephemeral,
+    single worker; a stronger edge limit still belongs at Cloudflare."""
     now = time.monotonic()
     async with _ariadne_rate_lock:
+        _ariadne_global[:] = [t for t in _ariadne_global if now - t < 60.0]
+        if len(_ariadne_global) >= _ARIADNE_GLOBAL_PER_MIN:
+            return False
         window = [t for t in _ariadne_hits.get(key, ()) if now - t < 60.0]
-        allowed = len(window) < _ARIADNE_RATE_PER_MIN
-        if allowed:
-            window.append(now)
+        if len(window) >= _ARIADNE_RATE_PER_MIN:
+            _ariadne_hits[key] = window
+            return False
+        window.append(now)
         _ariadne_hits[key] = window
-        if len(_ariadne_hits) > 4096:  # opportunistic sweep, keep the map bounded
+        _ariadne_global.append(now)
+        if len(_ariadne_hits) > _ARIADNE_RATE_MAX_KEYS:
             for stale in [k for k, v in _ariadne_hits.items() if not v or now - max(v) >= 60.0]:
                 _ariadne_hits.pop(stale, None)
-        return allowed
+            if len(_ariadne_hits) > _ARIADNE_RATE_MAX_KEYS:  # hard cap: evict oldest-active
+                overflow = len(_ariadne_hits) - _ARIADNE_RATE_MAX_KEYS
+                for k, _v in sorted(_ariadne_hits.items(), key=lambda kv: max(kv[1]))[:overflow]:
+                    _ariadne_hits.pop(k, None)
+        return True
 
 
 @app.post("/api/ariadne/chat")
