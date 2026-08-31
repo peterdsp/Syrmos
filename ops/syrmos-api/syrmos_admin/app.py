@@ -9,9 +9,12 @@ Run: uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8091
 """
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import os
 import pathlib
 import re
+import time
 import datetime as _dt
 from contextlib import contextmanager
 from html import escape as _html_escape
@@ -1057,7 +1060,58 @@ def _trigger_seed_refresh() -> None:
         pass
 
 
-# Ariadne chat (unauthenticated, rate-limited by Gemini quota)
+# Ariadne chat (unauthenticated). Admission control below caps total input
+# size and bounds concurrent in-flight chats so the public endpoint cannot
+# exhaust the Pi, the httpx pool, or upstream provider quotas. Per-IP rate
+# limiting belongs in nginx (follow-up).
+_ARIADNE_MAX_INPUT_CHARS = int(os.environ.get("ARIADNE_MAX_INPUT_CHARS", "6000"))
+_ARIADNE_MAX_CONCURRENCY = int(os.environ.get("ARIADNE_MAX_CONCURRENCY", "6"))
+_ARIADNE_RATE_PER_MIN = int(os.environ.get("ARIADNE_RATE_PER_MIN", "20"))
+_ARIADNE_GLOBAL_PER_MIN = int(os.environ.get("ARIADNE_GLOBAL_PER_MIN", "120"))
+_ARIADNE_RATE_MAX_KEYS = int(os.environ.get("ARIADNE_RATE_MAX_KEYS", "8192"))
+_ariadne_sem = asyncio.Semaphore(_ARIADNE_MAX_CONCURRENCY)
+_ariadne_hits: dict[str, list[float]] = {}
+_ariadne_global: list[float] = []
+_ariadne_rate_lock = asyncio.Lock()
+
+
+def _ariadne_client_key(request: Request) -> str:
+    """Ephemeral, hashed client identity for rate limiting. Prefers the true
+    client IP behind Cloudflare; the raw IP is never stored or logged."""
+    ip = (
+        request.headers.get("cf-connecting-ip")
+        or request.headers.get("x-real-ip")
+        or (request.client.host if request.client else "unknown")
+    )
+    return hashlib.sha256(ip.encode("utf-8", "ignore")).hexdigest()[:16]
+
+
+async def _ariadne_rate_ok(key: str) -> bool:
+    """Admission for one request: a global 60s ceiling across all clients plus
+    a per-client 60s window, with the per-client map hard-capped so a flood of
+    distinct keys cannot grow memory without bound. In-memory, ephemeral,
+    single worker; a stronger edge limit still belongs at Cloudflare."""
+    now = time.monotonic()
+    async with _ariadne_rate_lock:
+        _ariadne_global[:] = [t for t in _ariadne_global if now - t < 60.0]
+        if len(_ariadne_global) >= _ARIADNE_GLOBAL_PER_MIN:
+            return False
+        window = [t for t in _ariadne_hits.get(key, ()) if now - t < 60.0]
+        if len(window) >= _ARIADNE_RATE_PER_MIN:
+            _ariadne_hits[key] = window
+            return False
+        window.append(now)
+        _ariadne_hits[key] = window
+        _ariadne_global.append(now)
+        if len(_ariadne_hits) > _ARIADNE_RATE_MAX_KEYS:
+            for stale in [k for k, v in _ariadne_hits.items() if not v or now - max(v) >= 60.0]:
+                _ariadne_hits.pop(stale, None)
+            if len(_ariadne_hits) > _ARIADNE_RATE_MAX_KEYS:  # hard cap: evict oldest-active
+                overflow = len(_ariadne_hits) - _ARIADNE_RATE_MAX_KEYS
+                for k, _v in sorted(_ariadne_hits.items(), key=lambda kv: max(kv[1]))[:overflow]:
+                    _ariadne_hits.pop(k, None)
+        return True
+
 
 @app.post("/api/ariadne/chat")
 async def api_ariadne_chat(request: Request) -> JSONResponse:
@@ -1073,8 +1127,31 @@ async def api_ariadne_chat(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="messages array required")
     if len(messages) > 20:
         messages = messages[-20:]
-    result = ariadne_mod.chat(messages)
-    return JSONResponse({"reply": result["reply"], "ok": True, "provider": result["provider"]})
+    total_chars = sum(len(str(m.get("text", ""))) for m in messages if isinstance(m, dict))
+    if total_chars > _ARIADNE_MAX_INPUT_CHARS:
+        raise HTTPException(status_code=413, detail="input too large")
+    if not await _ariadne_rate_ok(_ariadne_client_key(request)):
+        raise HTTPException(status_code=429, detail="rate limit, slow down")
+    try:
+        await asyncio.wait_for(_ariadne_sem.acquire(), timeout=1.0)
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=503, detail="assistant busy, retry shortly") from None
+    try:
+        result = await ariadne_mod.chat_async(messages)
+    finally:
+        _ariadne_sem.release()
+    return JSONResponse({
+        "reply": result["reply"],
+        "ok": True,
+        "provider": result["provider"],
+        "model": result.get("model"),
+    })
+
+
+@app.on_event("shutdown")
+async def _ariadne_shutdown() -> None:
+    """Close the shared Ariadne httpx client on shutdown."""
+    await ariadne_mod.providers.aclose_client()
 
 
 # Health (unauthenticated)
