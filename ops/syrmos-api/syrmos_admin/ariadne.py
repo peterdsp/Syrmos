@@ -1,48 +1,21 @@
-"""Ariadne cloud LLM backend.
+"""Ariadne assistant backend.
 
-Proxies user messages to Google Gemini Flash for the Ariadne assistant,
-unified across iOS, Android, and web. The system prompt includes Athens
-transit knowledge so answers are grounded in real data.
-
-Requires GEMINI_API_KEY env var. Falls back to a polite "offline only"
-response when the key is missing or the API is unreachable.
+Turns user messages into grounded, natural-language transit answers by
+calling a chain of OpenAI-compatible LLM providers (see ariadne_providers).
+The providers are the language layer only: schedules, departures, fares,
+station names, and disruptions come from the Syrmos database and are passed
+to the model as authoritative context. The model must not invent those
+facts and must abstain when the supplied context does not answer the
+question. If no provider is reachable, a deterministic offline reply is
+returned so the endpoint always responds.
 """
 from __future__ import annotations
 
-import json
-import logging
-import os
+import asyncio
 import sqlite3
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
+from . import ariadne_providers as providers
 from . import db as dbmod
-
-logger = logging.getLogger("syrmos.ariadne")
-
-
-def _err_body(e: HTTPError) -> str:
-    """Short, key-free error body from a provider HTTPError (for logging)."""
-    try:
-        return e.read().decode("utf-8", "replace")[:300]
-    except Exception:
-        return "<no body>"
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-flash-latest"
-GEMINI_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-)
-
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_MODEL = "openai/gpt-oss-120b"
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-SAMBANOVA_API_KEY = os.environ.get("SAMBANOVA_API_KEY", "")
-SAMBANOVA_MODEL = "Meta-Llama-3.3-70B-Instruct"
-SAMBANOVA_URL = "https://api.sambanova.ai/v1/chat/completions"
-
-TIMEOUT_SECONDS = 15
 
 SYSTEM_PROMPT = """\
 You are Ariadne, the built-in transit assistant for Syrmos, an Athens public \
@@ -85,29 +58,29 @@ or stations."
 - Keep a friendly tone. Your mascot is an owl.
 """
 
+# Prepended to the live DB context. Makes the grounding contract explicit so
+# the model treats the supplied facts as the only source of truth for
+# schedules/fares/stations/disruptions and abstains rather than guessing.
+GROUNDING = (
+    "\n\nAuthoritative Syrmos transit facts follow. Use ONLY these for any "
+    "claim about schedules, departure times, fares, station names, routes, "
+    "or service disruptions, and do not invent or guess such facts. If the "
+    "facts below do not answer the question, say that Syrmos does not "
+    "currently have enough information and point the rider to the app's "
+    "planner, rather than making something up.\n\n"
+)
 
-def _build_request_body(
-    messages: list[dict[str, str]],
-    transit_context: str | None = None,
-) -> dict:
-    system_text = SYSTEM_PROMPT
-    if transit_context:
-        system_text += f"\n\nCurrent transit context:\n{transit_context}"
-
-    contents = []
-    for msg in messages:
-        role = "user" if msg.get("role") == "user" else "model"
-        contents.append({"role": role, "parts": [{"text": msg["text"]}]})
-
-    return {
-        "system_instruction": {"parts": [{"text": system_text}]},
-        "contents": contents,
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 300,
-            "topP": 0.9,
-        },
-    }
+# Used when the live DB context cannot be loaded. Keeps the abstention
+# contract in force so the model does not present the prompt's baseline
+# figures (fares, hours) as if they were current.
+GROUNDING_NO_CONTEXT = (
+    "\n\nLive Syrmos transit data is unavailable right now. Do not state "
+    "specific current departure times, fares, or service disruptions, and do "
+    "not present any figures above as if they were live. For anything "
+    "time-sensitive, tell the rider to check the app's planner or the "
+    "official operator (hellenictrain.gr, OASA). General guidance about which "
+    "lines exist and how the network connects is still fine.\n"
+)
 
 
 def _get_transit_context() -> str | None:
@@ -218,140 +191,89 @@ def _get_transit_context() -> str | None:
         return None
 
 
-def _call_gemini(
-    messages: list[dict[str, str]], transit_ctx: str | None,
-) -> str | None:
-    """Try Gemini. Returns reply text or None on failure."""
-    if not GEMINI_API_KEY:
-        return None
-    body = _build_request_body(messages, transit_ctx)
-    req = Request(
-        GEMINI_URL,
-        data=json.dumps(body).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "X-goog-api-key": GEMINI_API_KEY,
-            "User-Agent": "Syrmos-Ariadne/1.0",
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
-            result = json.loads(resp.read())
-        candidates = result.get("candidates", [])
-        if candidates:
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if parts:
-                return parts[0].get("text", "").strip()
-        logger.warning("gemini: HTTP 200 but no usable candidates (blocked/empty)")
-    except HTTPError as e:
-        logger.warning("gemini HTTP %s: %s", e.code, _err_body(e))
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError) as e:
-        logger.warning("gemini call failed: %r", e)
-    return None
+def _system_text() -> str:
+    """System prompt plus the grounding contract.
 
-
-def _call_groq(
-    messages: list[dict[str, str]], transit_ctx: str | None,
-) -> str | None:
-    """Try Groq (Llama). Returns reply text or None on failure."""
-    if not GROQ_API_KEY:
-        return None
-    system_text = SYSTEM_PROMPT
-    if transit_ctx:
-        system_text += f"\n\nCurrent transit context:\n{transit_ctx}"
-    oai_messages = [{"role": "system", "content": system_text}]
-    for msg in messages:
-        role = "user" if msg.get("role") == "user" else "assistant"
-        oai_messages.append({"role": role, "content": msg["text"]})
-    body = {
-        "model": GROQ_MODEL,
-        "messages": oai_messages,
-        "temperature": 0.7,
-        "max_tokens": 300,
-    }
-    req = Request(
-        GROQ_URL,
-        data=json.dumps(body).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "User-Agent": "Syrmos-Ariadne/1.0",
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
-            result = json.loads(resp.read())
-        choices = result.get("choices", [])
-        if choices:
-            return choices[0].get("message", {}).get("content", "").strip()
-    except HTTPError as e:
-        logger.warning("groq HTTP %s: %s", e.code, _err_body(e))
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError) as e:
-        logger.warning("groq call failed: %r", e)
-    return None
-
-
-def _call_sambanova(
-    messages: list[dict[str, str]], transit_ctx: str | None,
-) -> str | None:
-    """Try SambaNova (Llama 3.3 70B). Returns reply text or None on failure."""
-    if not SAMBANOVA_API_KEY:
-        return None
-    system_text = SYSTEM_PROMPT
-    if transit_ctx:
-        system_text += f"\n\nCurrent transit context:\n{transit_ctx}"
-    oai_messages = [{"role": "system", "content": system_text}]
-    for msg in messages:
-        role = "user" if msg.get("role") == "user" else "assistant"
-        oai_messages.append({"role": role, "content": msg["text"]})
-    body = {
-        "model": SAMBANOVA_MODEL,
-        "messages": oai_messages,
-        "temperature": 0.7,
-        "max_tokens": 300,
-    }
-    req = Request(
-        SAMBANOVA_URL,
-        data=json.dumps(body).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {SAMBANOVA_API_KEY}",
-            "User-Agent": "Syrmos-Ariadne/1.0",
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
-            result = json.loads(resp.read())
-        choices = result.get("choices", [])
-        if choices:
-            return choices[0].get("message", {}).get("content", "").strip()
-    except HTTPError as e:
-        logger.warning("sambanova HTTP %s: %s", e.code, _err_body(e))
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError) as e:
-        logger.warning("sambanova call failed: %r", e)
-    return None
-
-
-def chat(messages: list[dict[str, str]]) -> dict:
-    """Try providers in order of current reachability, then offline.
-
-    Groq is first because it is the working free tier right now. Gemini
-    stays as a fallback for when a valid AI Studio API key is in place
-    (an OAuth token in X-goog-api-key hangs instead of answering).
+    The abstention contract is always present. When live DB facts are
+    available they are appended under it; when they are not, an explicit
+    "no live data" note keeps the model from presenting the prompt's
+    baseline figures as current.
     """
     transit_ctx = _get_transit_context()
-    reply = _call_groq(messages, transit_ctx)
-    if reply:
-        return {"reply": reply, "provider": "groq"}
-    reply = _call_gemini(messages, transit_ctx)
-    if reply:
-        return {"reply": reply, "provider": "gemini"}
-    reply = _call_sambanova(messages, transit_ctx)
-    if reply:
-        return {"reply": reply, "provider": "sambanova"}
+    if transit_ctx:
+        return SYSTEM_PROMPT + GROUNDING + transit_ctx
+    return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
+
+
+def _to_openai_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Map Syrmos {role, text} turns to OpenAI {role, content} messages."""
+    out: list[dict[str, str]] = []
+    for msg in messages:
+        role = "user" if msg.get("role") == "user" else "assistant"
+        out.append({"role": role, "content": msg.get("text", "")})
+    return out
+
+
+async def _build_system_text(deadline: float, loop: asyncio.AbstractEventLoop) -> str:
+    """Assemble the grounded system prompt without blocking the event loop.
+
+    _system_text() does synchronous SQLite connect/migrate/query work, so run
+    it in a worker thread and bound it by the remaining chain budget. If it is
+    slow (DB lock, migration) or errors, fall back to the no-context
+    abstention prompt so grounding can never blow the deadline or stall the
+    loop.
+    """
+    remaining = deadline - loop.time()
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_system_text), timeout=max(0.1, remaining),
+        )
+    except asyncio.TimeoutError:
+        return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
+    except Exception:  # noqa: BLE001 - grounding must never break the reply
+        return SYSTEM_PROMPT + GROUNDING_NO_CONTEXT
+
+
+async def chat_async(messages: list[dict[str, str]]) -> dict:
+    """Run the provider chain, returning the first grounded reply.
+
+    Providers are tried in configured order (Groq, Cloudflare, local
+    llama.cpp, optional extra). Each attempt is logged with provider,
+    status, latency, and token counts, but never the prompt text. If every
+    configured provider fails, fall back to a deterministic offline reply so
+    the endpoint always answers.
+    """
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + providers.CHAIN_DEADLINE
+    oai_messages = _to_openai_messages(messages)
+    system_text = await _build_system_text(deadline, loop)
+    client = providers.get_client()
+    for attempt, provider in enumerate(providers.build_chain(), 1):
+        remaining = deadline - loop.time()
+        if remaining < providers.MIN_ATTEMPT_BUDGET:
+            break
+        try:
+            result = await asyncio.wait_for(
+                provider.complete(client, system_text, oai_messages, remaining),
+                timeout=remaining,
+            )
+        except asyncio.TimeoutError:
+            result = providers.ProviderResult(
+                provider.name, provider.model, False,
+                error_kind="timeout", error_detail="chain deadline reached",
+            )
+        except Exception as exc:  # noqa: BLE001 - contain, never abort the chain
+            result = providers.ProviderResult(
+                provider.name, provider.model, False,
+                error_kind="network", error_detail=repr(exc)[:200],
+            )
+        providers.log_attempt(attempt, result)
+        if result.ok:
+            return {
+                "reply": result.text,
+                "provider": provider.name,
+                "model": provider.model,
+            }
     return {"reply": _offline_fallback(messages), "provider": "offline"}
 
 
