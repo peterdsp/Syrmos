@@ -23,6 +23,14 @@ struct AriadneView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 8)
 
+                    // On-device model control: offers the ~1.1 GB GGUF download,
+                    // shows progress, and hides itself once ready. Without this the
+                    // download was unreachable, so AriadneGuided's on-device clever
+                    // tier (LlamaSession) never had a model to load.
+                    AriadneModelBanner()
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: 12) {
