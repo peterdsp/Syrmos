@@ -883,19 +883,27 @@
     /// data layer ship partial translations without breaking renders.
     function pickLocalised(obj, baseKey) {
         if (!obj) return "";
-        const en = obj[baseKey + "En"];
-        const el = obj[baseKey + "El"];
-        const sq = obj[baseKey + "Sq"];
-        if (currentLang === "el" && el) return el;
-        if (currentLang === "sq" && sq) return sq;
-        return en || el || sq || "";
+        // English lives either at `${baseKey}En` (title, summary, url) or the bare
+        // `${baseKey}` (validity) depending on the field, so accept both.
+        const en = obj[baseKey + "En"] || obj[baseKey] || "";
+        const el = obj[baseKey + "El"] || "";
+        const sq = obj[baseKey + "Sq"] || "";
+        const it = obj[baseKey + "It"] || "";
+        // Fall back ONLY to English, never to another localized language, so an
+        // EN (or EL/IT) UI never leaks Albanian when a field is untranslated.
+        if (currentLang === "el") return el || en;
+        if (currentLang === "sq") return sq || en;
+        if (currentLang === "it") return it || en;
+        return en;
     }
 
     function pickLocalisedBullet(b) {
         if (!b) return "";
-        if (currentLang === "el" && b.el) return b.el;
-        if (currentLang === "sq" && b.sq) return b.sq;
-        return b.en || b.el || b.sq || "";
+        const en = b.en || b.text || "";
+        if (currentLang === "el") return b.el || en;
+        if (currentLang === "sq") return b.sq || en;
+        if (currentLang === "it") return b.it || en;
+        return en;
     }
 
     // Cache the last /api/fares payload so we can re-render fares and
@@ -4254,9 +4262,11 @@
                     left: auto; right: 16px; top: 64px; bottom: auto;
                 }
                 .ariadne-panel {
-                    left: auto; right: 16px; bottom: 16px; top: auto;
+                    /* Sit above the bottom-right zoom/locate stack (~150px tall)
+                       so the panel never covers those controls. */
+                    left: auto; right: 16px; bottom: 168px; top: auto;
                     width: min(380px, calc(100vw - 32px));
-                    max-height: min(560px, calc(100vh - 32px));
+                    max-height: min(560px, calc(100dvh - 200px));
                 }
             }
         `;
@@ -4270,11 +4280,12 @@
         const form = document.getElementById("ariadneForm");
         const input = document.getElementById("ariadneInput");
 
-        // On-demand "clever" brain. The ~1.1 GB model is never bundled and never
-        // auto-downloaded; the user opts in here. Once downloaded the browser
-        // caches it (OPFS), so later visits are instant and offline. Until then,
-        // and if the user never opts in, the deterministic rule parser answers.
-        if (brainBtn) {
+        // The web's brain is the server cloud (askCloudAriadne) — no download from
+        // the user. The old on-device 1.1 GB wllama download UI is removed: hide
+        // the button and never wire the download/progress. (The legacy block is
+        // kept out with `if (false)` rather than a large deletion.)
+        if (brainBtn) brainBtn.style.display = "none";
+        if (false && brainBtn) {
             const llm = window.AriadneLLM;
             if (!llm) {
                 brainBtn.style.display = "none";
@@ -4387,10 +4398,44 @@
             messages.scrollTop = messages.scrollHeight;
         }
 
+        // The real generative brain: the server's /api/ariadne/chat (the same
+        // endpoint the mobile apps use, which chains Gemini/Groq/SambaNova). No
+        // download is required; the web uses it the moment it loads. Returns null
+        // when the server cannot answer (unreachable, or provider=offline because
+        // the LLM API keys are not configured on the Pi), so the caller falls back
+        // to the deterministic reply.
+        async function askCloudAriadne(userText) {
+            try {
+                const resp = await fetch("https://api-syrmos.peterdsp.dev/api/ariadne/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        messages: [{ role: "user", text: userText }],
+                        lang: currentLang,
+                    }),
+                });
+                if (!resp.ok) return null;
+                const data = await resp.json();
+                if (!data || !data.ok || data.provider === "offline") return null;
+                const reply = (data.reply || "").trim();
+                return reply.length >= 8 ? reply : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
         function openPanel() {
             panel.classList.remove("ariadne-panel--hidden");
             panel.setAttribute("aria-hidden", "false");
             launcher.style.display = "none";
+            // Move the bottom-right map controls (zoom, locate) out from under the
+            // chat panel while it is open. Inline style so it reliably wins the
+            // cascade; only on wide viewports (on phones the panel and controls do
+            // not share the corner). Restored in closePanel.
+            // Slide the bottom-right controls left of the panel via the CSS rule
+            // keyed on this class (see .ariadne-open .map-chrome--br). Class-based
+            // so it survives the map re-creating the control node.
+            document.body.classList.add("ariadne-open");
             if (!messages.dataset.greeted) {
                 appendMessage(t("ariadne_greeting"), "assistant");
                 messages.dataset.greeted = "1";
@@ -4402,6 +4447,7 @@
             panel.classList.add("ariadne-panel--hidden");
             panel.setAttribute("aria-hidden", "true");
             launcher.style.display = "";
+            document.body.classList.remove("ariadne-open");
         }
 
         function stationName(id) {
@@ -5091,27 +5137,18 @@
                 if (reply.act) setTimeout(reply.act, 400);
             };
 
-            // Clever tier: when the deterministic parser can't place the message
-            // and the on-device model is downloaded + ready, let the LLM re-read
-            // it, then ground its guess back through the SAME parser (it only
-            // picks an intent + quotes a station; parse() does the grounding).
-            const llm = window.AriadneLLM;
-            const A = window.SyrmosAriadne;
-            if (intent.kind === "outOfScope" && llm && llm.status && llm.status() === "ready" && A.buildClassificationPrompt) {
+            // Free-form tier: when the deterministic parser can't place the
+            // message, ask the server's cloud brain (the same /api/ariadne/chat the
+            // mobile apps use, which chains the LLM providers). This needs NO
+            // download from the user; the web works the moment it loads. If the
+            // cloud is unreachable or reports provider=offline, fall back to the
+            // deterministic out-of-scope reply (did-you-mean / capability nudge).
+            if (intent.kind === "outOfScope") {
                 const thinking = appendMessage("…", "assistant");
-                llm.classify(A.buildClassificationPrompt(value)).then((json) => {
+                askCloudAriadne(value).then((cloudReply) => {
                     if (thinking) thinking.remove();
-                    const q = A.cleverQueryFromJson(json);
-                    const clever = q ? A.parse(q) : null;
-                    if (clever && clever.kind !== "outOfScope") {
-                        if (clever.kind === "needsClarification") {
-                            pendingIntent = clever.base;
-                            pendingMissing = clever.missing;
-                        }
-                        deliver(clever);
-                    } else {
-                        deliver(intent);
-                    }
+                    if (cloudReply) appendMessage(cloudReply, "assistant", "live");
+                    else deliver(intent);
                 }).catch(() => { if (thinking) thinking.remove(); deliver(intent); });
             } else {
                 deliver(intent);
