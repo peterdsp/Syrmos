@@ -1,4 +1,5 @@
 import Foundation
+import Network
 
 struct AriadneChatMessage: Codable {
     let role: String
@@ -28,15 +29,36 @@ final class AriadneAPIService {
     static let shared = AriadneAPIService()
     private let baseURL = "https://api-syrmos.peterdsp.dev"
     private let session: URLSession
+    private let pathMonitor = NWPathMonitor()
+    /// Optimistic until the monitor's first update, so the very first turn still
+    /// tries the cloud (and falls back on failure) rather than being pinned offline.
+    private var isOnline = true
 
     private init() {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 20
-        config.timeoutIntervalForResource = 25
+        // The backend emits no bytes while it tries up to three LLM providers in
+        // sequence, and nginx caps that at a 30 s read timeout. Keep the client
+        // ceilings just above 30 s so a valid-but-slow reply is received rather
+        // than truncated; the NWPathMonitor guard (not a short timeout) is what
+        // handles the offline/unreachable case.
+        config.timeoutIntervalForRequest = 33
+        config.timeoutIntervalForResource = 35
+        // Do not sit and wait for a network to appear; fail so we can fall back.
+        config.waitsForConnectivity = false
         session = URLSession(configuration: config)
+        // Reachability guard: track connectivity so an offline device drops to the
+        // local grounded engine instantly instead of waiting out the request timeout.
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
+            Task { @MainActor in self?.isOnline = online }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "ariadne.reachability"))
     }
 
     func chat(messages: [AriadneChatMessage]) async -> String? {
+        // No network: skip the cloud entirely so the caller uses the local engine
+        // with no delay, instead of blocking on a doomed request.
+        guard isOnline else { return nil }
         guard let url = URL(string: "\(baseURL)/api/ariadne/chat") else { return nil }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
