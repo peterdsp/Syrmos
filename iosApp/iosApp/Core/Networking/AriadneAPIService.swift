@@ -33,6 +33,11 @@ final class AriadneAPIService {
     /// Optimistic until the monitor's first update, so the very first turn still
     /// tries the cloud (and falls back on failure) rather than being pinned offline.
     private var isOnline = true
+    /// Circuit breaker: set after a cloud turn fails to produce a usable reply, so
+    /// the next questions during the same outage answer instantly from the local
+    /// engine instead of each waiting out the ~33 s timeout.
+    private var cloudDownUntil: Date?
+    private let breakerCooldown: TimeInterval = 30
 
     private init() {
         let config = URLSessionConfiguration.default
@@ -59,11 +64,10 @@ final class AriadneAPIService {
         // No network path at all: skip the cloud entirely so the caller uses the
         // local engine with no delay (NWPathMonitor is the fast, offline hint).
         guard isOnline else { return nil }
-        // Endpoint probe: a network path can exist yet the API be unreachable
-        // (captive Wi-Fi, blackholed host, dead tunnel). A ~2.5 s GET /healthz
-        // confirms the server actually answers before committing to the long,
-        // silent chat request; otherwise fall through to the local engine.
-        guard await isEndpointReachable() else { return nil }
+        // Circuit breaker open from a recent failure: go straight to local. The
+        // first question after the cooldown still tries the cloud with the full
+        // budget, so a viable-but-slow network is never downgraded.
+        if let until = cloudDownUntil, until > Date() { return nil }
         guard let url = URL(string: "\(baseURL)/api/ariadne/chat") else { return nil }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -77,28 +81,24 @@ final class AriadneAPIService {
 
         do {
             let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                tripBreaker()
+                return nil
+            }
             let decoded = try JSONDecoder().decode(AriadneChatResponse.self, from: data)
-            return decoded.cloudReplyOrNull
+            if let reply = decoded.cloudReplyOrNull {
+                cloudDownUntil = nil // a real reply clears the breaker
+                return reply
+            }
+            tripBreaker() // ok=false or provider=offline: cloud not useful now
+            return nil
         } catch {
+            tripBreaker() // network error / timeout: cloud unreachable now
             return nil
         }
     }
 
-    /// Fast GET /healthz to confirm the API actually answers. Upgrades the
-    /// NWPathMonitor hint into true endpoint reachability: a satisfied path does
-    /// not prove the host/DNS/tunnel is alive, so a ~2.5 s probe fails fast on a
-    /// captive portal or blackholed server and lets the caller use the local engine.
-    private func isEndpointReachable() async -> Bool {
-        guard let url = URL(string: "\(baseURL)/healthz") else { return false }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 2.5
-        do {
-            let (_, response) = try await session.data(for: request)
-            return (response as? HTTPURLResponse)?.statusCode == 200
-        } catch {
-            return false
-        }
+    private func tripBreaker() {
+        cloudDownUntil = Date().addingTimeInterval(breakerCooldown)
     }
 }
