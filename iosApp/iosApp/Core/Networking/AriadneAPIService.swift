@@ -56,9 +56,14 @@ final class AriadneAPIService {
     }
 
     func chat(messages: [AriadneChatMessage]) async -> String? {
-        // No network: skip the cloud entirely so the caller uses the local engine
-        // with no delay, instead of blocking on a doomed request.
+        // No network path at all: skip the cloud entirely so the caller uses the
+        // local engine with no delay (NWPathMonitor is the fast, offline hint).
         guard isOnline else { return nil }
+        // Endpoint probe: a network path can exist yet the API be unreachable
+        // (captive Wi-Fi, blackholed host, dead tunnel). A ~2.5 s GET /healthz
+        // confirms the server actually answers before committing to the long,
+        // silent chat request; otherwise fall through to the local engine.
+        guard await isEndpointReachable() else { return nil }
         guard let url = URL(string: "\(baseURL)/api/ariadne/chat") else { return nil }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -77,6 +82,23 @@ final class AriadneAPIService {
             return decoded.cloudReplyOrNull
         } catch {
             return nil
+        }
+    }
+
+    /// Fast GET /healthz to confirm the API actually answers. Upgrades the
+    /// NWPathMonitor hint into true endpoint reachability: a satisfied path does
+    /// not prove the host/DNS/tunnel is alive, so a ~2.5 s probe fails fast on a
+    /// captive portal or blackholed server and lets the caller use the local engine.
+    private func isEndpointReachable() async -> Bool {
+        guard let url = URL(string: "\(baseURL)/healthz") else { return false }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 2.5
+        do {
+            let (_, response) = try await session.data(for: request)
+            return (response as? HTTPURLResponse)?.statusCode == 200
+        } catch {
+            return false
         }
     }
 }
