@@ -10,12 +10,23 @@ response when the key is missing or the API is unreachable.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sqlite3
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from . import db as dbmod
+
+logger = logging.getLogger("syrmos.ariadne")
+
+
+def _err_body(e: HTTPError) -> str:
+    """Short, key-free error body from a provider HTTPError (for logging)."""
+    try:
+        return e.read().decode("utf-8", "replace")[:300]
+    except Exception:
+        return "<no body>"
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-flash-latest"
@@ -24,7 +35,7 @@ GEMINI_URL = (
 )
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_MODEL = "openai/gpt-oss-120b"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 SAMBANOVA_API_KEY = os.environ.get("SAMBANOVA_API_KEY", "")
@@ -232,8 +243,11 @@ def _call_gemini(
             parts = candidates[0].get("content", {}).get("parts", [])
             if parts:
                 return parts[0].get("text", "").strip()
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError):
-        pass
+        logger.warning("gemini: HTTP 200 but no usable candidates (blocked/empty)")
+    except HTTPError as e:
+        logger.warning("gemini HTTP %s: %s", e.code, _err_body(e))
+    except (URLError, TimeoutError, json.JSONDecodeError, KeyError) as e:
+        logger.warning("gemini call failed: %r", e)
     return None
 
 
@@ -272,8 +286,10 @@ def _call_groq(
         choices = result.get("choices", [])
         if choices:
             return choices[0].get("message", {}).get("content", "").strip()
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError):
-        pass
+    except HTTPError as e:
+        logger.warning("groq HTTP %s: %s", e.code, _err_body(e))
+    except (URLError, TimeoutError, json.JSONDecodeError, KeyError) as e:
+        logger.warning("groq call failed: %r", e)
     return None
 
 
@@ -312,20 +328,27 @@ def _call_sambanova(
         choices = result.get("choices", [])
         if choices:
             return choices[0].get("message", {}).get("content", "").strip()
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError):
-        pass
+    except HTTPError as e:
+        logger.warning("sambanova HTTP %s: %s", e.code, _err_body(e))
+    except (URLError, TimeoutError, json.JSONDecodeError, KeyError) as e:
+        logger.warning("sambanova call failed: %r", e)
     return None
 
 
 def chat(messages: list[dict[str, str]]) -> dict:
-    """Try Gemini, fall back to Groq, then Cerebras, then offline."""
+    """Try providers in order of current reachability, then offline.
+
+    Groq is first because it is the working free tier right now. Gemini
+    stays as a fallback for when a valid AI Studio API key is in place
+    (an OAuth token in X-goog-api-key hangs instead of answering).
+    """
     transit_ctx = _get_transit_context()
-    reply = _call_gemini(messages, transit_ctx)
-    if reply:
-        return {"reply": reply, "provider": "gemini"}
     reply = _call_groq(messages, transit_ctx)
     if reply:
         return {"reply": reply, "provider": "groq"}
+    reply = _call_gemini(messages, transit_ctx)
+    if reply:
+        return {"reply": reply, "provider": "gemini"}
     reply = _call_sambanova(messages, transit_ctx)
     if reply:
         return {"reply": reply, "provider": "sambanova"}
