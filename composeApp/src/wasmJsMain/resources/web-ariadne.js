@@ -435,8 +435,16 @@
                 if (Math.abs(word.length - tok.length) > 3) continue;
                 const dist = editDistance(tok, word);
                 const maxLen = Math.max(tok.length, word.length);
-                const accept = dist <= 2 ||
-                    (dist === 3 && tok.charAt(0) === word.charAt(0) && maxLen >= 6);
+                // Strict: accept only a hit that is clearly the SAME word with a
+                // typo, not a coincidental overlap. Otherwise arbitrary input
+                // ("test", "serious", "this") matched a station ("Mesi", "Serres",
+                // "Martiou") and got answered as a departures query instead of
+                // falling through to the cloud brain. Long words tolerate 2 edits
+                // but must share the first letter; medium words only 1; short
+                // words (< 5 chars) get no fuzzy matching at all.
+                const accept =
+                    (maxLen >= 7 && dist <= 2 && tok.charAt(0) === word.charAt(0)) ||
+                    (maxLen >= 5 && dist <= 1);
                 if (!accept) continue;
                 if (best === null || dist < best.dist) {
                     best = { id: entry.id, dist: dist };

@@ -611,6 +611,8 @@ body.dark-mode .nav-item--active {
 
 .map-chrome--tl { top: 16px; left: 16px; gap: 6px; }
 .map-chrome--tr { top: 16px; right: 16px; gap: 8px; align-items: center; }
+/* The Ariadne chat panel sits ABOVE this control stack (panel bottom:168px) so
+   it never covers the zoom/locate controls. */
 .map-chrome--br { bottom: 24px; right: 16px; flex-direction: column; gap: 8px; align-items: flex-end; }
 .map-chrome--bl { bottom: 24px; left: 16px; flex-direction: column; gap: 8px; align-items: flex-start; }
 
