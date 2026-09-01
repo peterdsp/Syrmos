@@ -299,14 +299,21 @@ internal actual fun PlatformMapView(
             val lineStations = uiState.lineStations[line.id].orEmpty()
             if (lineStations.size < 2) return@forEach
 
-            // Prefer real OSM track geometry over a spline through station
-            // points so the Piraeus loop, M3 airport branch and suburban
-            // curves render accurately.
+            // Buses draw straight segments through their actual ordered stops,
+            // chosen BEFORE any bundled OSM shape. A bus shape can cover only
+            // part of the route (the Patras University loop shape omits its
+            // western stops, stranding those markers), and a spline overshoots
+            // on tight loops. Straight segments connect every stop; the stops
+            // are correctly ordered because DataSeeder seeds station_line rows
+            // for routes.json-absent lines from the nested lines.json stations.
+            // Rail/tram still prefer real OSM track geometry so the Piraeus
+            // loop, M3 airport branch and suburban curves render accurately.
             val osmShape = routeShapes[line.id]
-            val smoothed: List<GeoPoint> = if (osmShape != null && osmShape.size >= 2) {
-                osmShape
-            } else {
-                catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
+            val smoothed: List<GeoPoint> = when {
+                line.type == LineType.BUS ->
+                    lineStations.map { GeoPoint(it.latitude, it.longitude) }
+                osmShape != null && osmShape.size >= 2 -> osmShape
+                else -> catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
             }
             val override = displayOverrides[line.id]
             // A line that is built but not open still draws, because the track is

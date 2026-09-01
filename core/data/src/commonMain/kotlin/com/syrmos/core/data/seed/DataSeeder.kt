@@ -90,6 +90,41 @@ class DataSeeder(
                 }
             }
 
+            // Lines absent from routes.json (most buses: VL1, DX1, KP1, TL1,
+            // PU1/PU2, X3/2X, ...) would otherwise have no ordered station_line
+            // rows, so getStationsOnLine falls back to the globally-ordered
+            // stations.json, giving their stops a wrong, backtracking order, or
+            // none at all (X3/2X stops live only in the nested lines.json).
+            // Seed their ordering from the nested lines.json stations, inserting
+            // any station that exists only there.
+            val routeLineIds = routes.mapTo(mutableSetOf()) { it.lineId }
+            val knownStationIds = stations.mapTo(mutableSetOf()) { it.id }
+            lines.forEach { line ->
+                nestedStationOrder(line, routeLineIds).forEachIndexed { position, s ->
+                    if (s.id !in knownStationIds) {
+                        database.syrmosDatabaseQueries.insertStation(
+                            id = s.id,
+                            name = s.name,
+                            name_el = s.nameEl,
+                            name_sq = null,
+                            latitude = s.lat,
+                            longitude = s.lng,
+                            is_interchange = 0L,
+                            accessibility = if (s.accessibility) 1L else 0L,
+                            zone = s.zone.toLong(),
+                            region = s.region,
+                            source_confidence = "scheduled",
+                        )
+                        knownStationIds.add(s.id)
+                    }
+                    database.syrmosDatabaseQueries.insertStationLine(
+                        station_id = s.id,
+                        line_id = line.id,
+                        position_on_line = position.toLong(),
+                    )
+                }
+            }
+
             transfers.forEach { transfer ->
                 database.syrmosDatabaseQueries.insertTransfer(
                     station_id = transfer.stationId,
@@ -211,9 +246,39 @@ class DataSeeder(
     }
 
     companion object {
-        // Bumped to 6: national rail + rail-replacement-bus trips are now
-        // expanded into schedule_entity for offline departures. Without a bump
-        // an existing install keeps its old rows and never sees them.
-        const val SEED_VERSION = "9"
+        // Bumped to 10: lines absent from routes.json (most buses) now get
+        // ordered station_line rows seeded from the nested lines.json stations,
+        // so their map geometry follows the real stop order. Without a bump an
+        // existing install keeps its old rows and the buses stay mis-ordered.
+        const val SEED_VERSION = "10"
+
+        /**
+         * The ordered nested stations to seed into station_line_entity for a
+         * line that is ABSENT from routes.json. routes.json only lists 21 of the
+         * 33 lines; the rest (most buses: VL1, DX1, KP1, TL1, PU1/PU2, X3/2X, the
+         * Thessaloniki airport links, ...) would otherwise have no ordered
+         * station_line rows, so getStationsOnLine falls back to the globally
+         * ordered stations.json and the route draws as a backtracking zig-zag or,
+         * for lines whose stops exist only here (X3/2X), draws nothing. Returns
+         * empty for a line already in routes.json (the routes loop seeds it) so a
+         * stop is never double-inserted or reordered.
+         */
+        internal fun nestedStationOrder(
+            line: SeedLine,
+            routeLineIds: Set<String>,
+        ): List<SeedLineStation> =
+            if (line.id in routeLineIds) emptyList() else line.stations
+
+        /**
+         * The final ordered station ids the map will draw for [line] via
+         * getStationsOnLine: routes.json order when present, else the nested
+         * lines.json order. Every drawable line (in particular every bus) must
+         * resolve to at least two ordered stops or its polyline degenerates.
+         */
+        internal fun resolveOrderedStationIds(
+            line: SeedLine,
+            routesByLine: Map<String, List<String>>,
+        ): List<String> =
+            routesByLine[line.id] ?: line.stations.map { it.id }
     }
 }
