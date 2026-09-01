@@ -416,7 +416,7 @@ def _last_train_overrides(
     try:
         rows = conn.execute(
             "SELECT lte.direction AS direction, lte.time AS time,"
-            " lte.end_station_id AS end_station_id, s.name AS end_name"
+            " lte.end_station_id AS end_station_id, s.name_en AS end_name"
             " FROM last_train_endpoints lte"
             " LEFT JOIN stations s ON s.id = lte.end_station_id"
             " WHERE lte.line_id=? AND lte.day_type=? AND lte.from_station_id=?"
@@ -424,8 +424,12 @@ def _last_train_overrides(
             (line_id, day_type, station_id),
         ).fetchall()
     except sqlite3.OperationalError:
-        # Pi hasn't applied migration 0017 (or has no stations table): no
-        # override, keep the line terminal. Mirrors generator.py's guard.
+        # Only the last_train_endpoints table is optional (Pi without migration
+        # 0017): keep the line terminal, mirroring generator.py's guard. The
+        # stations columns (name_en/name_el, migration 0001) always exist, so a
+        # column error here would be a real bug, not a graceful-degrade case -
+        # the projector test fixture mirrors the production schema so a wrong
+        # column name fails the tests instead of silently returning {}.
         return {}
     result: dict[str, list[tuple[int, str]]] = {}
     for r in rows:
