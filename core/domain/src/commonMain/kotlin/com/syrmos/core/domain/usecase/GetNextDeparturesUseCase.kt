@@ -122,6 +122,9 @@ class GetNextDeparturesUseCase(
             direction = direction,
             dayType = dayType,
             currentTime = currentTimeString,
+            // Athens ISO date so a date-scoped seasonal trip is hidden off its
+            // valid dates; kotlinx LocalDate.toString() is yyyy-MM-dd.
+            today = currentAthensDate().toString(),
             limit = limit,
         ).map { departures ->
             departures.map { departure ->
