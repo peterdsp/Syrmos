@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 
 /**
@@ -34,14 +36,22 @@ class ScheduleSyncRepository(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    // Serializes the whole cache state transition (hydrate + each refresh's
+    // snapshot -> fetch -> commit). Without it two concurrent refreshes (e.g. a
+    // cold-start sync overlapping a Settings "Check now") each snapshot the
+    // bundle map, fetch different lines, and clobber each other on commit,
+    // marking a stale line as fresh. Not reentrant, so guarded methods never
+    // call one another under the lock.
+    private val mutex = Mutex()
+
     /**
      * Hydrate the in-memory cache from the bundled snapshot (`files/seed/schedules-v2/`).
      * Generated at build time by `scripts/snapshot-api-to-seed.py`. Safe to call multiple
      * times — only loads if the cache is currently empty so a live refresh isn't clobbered.
      */
-    suspend fun hydrateFromBundleIfNeeded() {
-        if (_lineBundles.value.isNotEmpty()) return
-        val reader = resourceReader ?: return
+    suspend fun hydrateFromBundleIfNeeded(): Unit = mutex.withLock {
+        if (_lineBundles.value.isNotEmpty()) return@withLock
+        val reader = resourceReader ?: return@withLock
         // Metro/tram/suburban + Thessaloniki + national rail + rail-replacement
         // buses. The national/bus bundles carry per-trip timetables that the map's
         // schedule projector interpolates into moving vehicles.
@@ -71,6 +81,10 @@ class ScheduleSyncRepository(
             val manifest = json.decodeFromString<Manifest>(manifestBody)
             _manifest.value = manifest
             _scheduleVersion.value = manifest.version
+            // The cached bundles are exactly the snapshot the bundled manifest
+            // describes, so their hashes start as the bundled manifest's hashes.
+            // A server line whose hash later differs from this is what we re-fetch.
+            lineHashes = manifest.perLineHashes
         }
     }
 
@@ -83,6 +97,14 @@ class ScheduleSyncRepository(
     private val _lineBundles = MutableStateFlow<Map<String, LineSchedule>>(emptyMap())
     val lineBundles: StateFlow<Map<String, LineSchedule>> = _lineBundles.asStateFlow()
 
+    // The per-line content hashes the CACHED bundles correspond to: seeded from
+    // the bundled manifest on hydrate, updated as lines are re-fetched, and
+    // compared against the server manifest to decide what changed. Without a
+    // stored hash the old filter compared the server hash to itself (always
+    // equal), so a changed line was never pulled and Android could not update a
+    // timetable without an app release.
+    private var lineHashes: Map<String, String> = emptyMap()
+
     private val _lastSyncAt = MutableStateFlow<Instant?>(null)
     val lastSyncAt: StateFlow<Instant?> = _lastSyncAt.asStateFlow()
 
@@ -93,9 +115,16 @@ class ScheduleSyncRepository(
      * Returns true when at least one line was refreshed, false otherwise
      * (no network, server unreachable, or nothing changed).
      */
-    suspend fun refresh(): RefreshOutcome {
+    suspend fun refresh(): RefreshOutcome = mutex.withLock {
         _isRefreshing.value = true
         try {
+            doRefresh()
+        } finally {
+            _isRefreshing.value = false
+        }
+    }
+
+    private suspend fun doRefresh(): RefreshOutcome {
         val previousEtag = _manifest.value?.etag
         val result = schedulesService.fetchManifest(previousEtag).firstOrNull()
             ?: return RefreshOutcome.Failure("no result")
@@ -116,29 +145,35 @@ class ScheduleSyncRepository(
                     return RefreshOutcome.UpToDate
                 }
                 val current = _lineBundles.value.toMutableMap()
-                val toFetch = manifest.perLineHashes.entries
-                    .filter { (lid, hash) ->
-                        // Re-fetch when first time, hash changed, or bundle missing.
-                        current[lid]?.let { _ -> manifest.perLineHashes[lid] != hash } ?: true
-                    }
+                val toFetch = linesToFetch(
+                    cachedLineIds = current.keys,
+                    storedHashes = lineHashes,
+                    manifestHashes = manifest.perLineHashes,
+                )
 
-                var refreshed = 0
-                for ((lineId, _) in toFetch) {
+                val fetched = mutableSetOf<String>()
+                for (lineId in toFetch) {
                     val bundle = schedulesService.fetchLineBundle(lineId).firstOrNull()
                     if (bundle != null) {
                         current[lineId] = bundle
-                        refreshed++
+                        fetched += lineId
                     }
                 }
-                _manifest.value = manifest
-                _scheduleVersion.value = manifest.version
+                lineHashes = hashesAfterFetch(lineHashes, manifest.perLineHashes, fetched)
                 _lineBundles.value = current
                 _lastSyncAt.value = Clock.System.now()
-                RefreshOutcome.Refreshed(refreshed)
+                // Only advance the cached manifest/etag when every attempted line
+                // landed. On a partial failure keep the previous manifest so the
+                // next refresh re-runs the per-line diff via the Fresh path: our
+                // stored etag stays behind the server's, so a 304 / etag-equal
+                // short-circuit can never strand the still-stale line until the
+                // server happens to publish another manifest.
+                if (shouldAdvanceManifest(toFetch, fetched)) {
+                    _manifest.value = manifest
+                    _scheduleVersion.value = manifest.version
+                }
+                RefreshOutcome.Refreshed(fetched.size)
             }
-        }
-        } finally {
-            _isRefreshing.value = false
         }
     }
 
@@ -147,5 +182,50 @@ class ScheduleSyncRepository(
         data class Refreshed(val linesRefreshed: Int) : RefreshOutcome
         data object Skipped : RefreshOutcome
         data class Failure(val reason: String) : RefreshOutcome
+    }
+
+    companion object {
+        /**
+         * Which line ids must be pulled from the server: every line missing from
+         * the cache, plus every line whose cached content hash differs from the
+         * server manifest's hash. The previous inline filter compared
+         * `manifest.perLineHashes[lid]` to that same entry's value (always
+         * equal), so a changed line was never fetched and, with all lines
+         * pre-hydrated from the bundle, nothing was ever fetched at all.
+         */
+        internal fun linesToFetch(
+            cachedLineIds: Set<String>,
+            storedHashes: Map<String, String>,
+            manifestHashes: Map<String, String>,
+        ): List<String> =
+            manifestHashes.entries
+                .filter { (lid, serverHash) -> lid !in cachedLineIds || storedHashes[lid] != serverHash }
+                .map { it.key }
+
+        /**
+         * The stored per-line hashes after a fetch round: a line that fetched
+         * successfully takes the server hash; a line that failed (not in
+         * [fetchedLineIds]) keeps its previous hash so the next [linesToFetch]
+         * still reports it as stale and retries it.
+         */
+        internal fun hashesAfterFetch(
+            storedHashes: Map<String, String>,
+            manifestHashes: Map<String, String>,
+            fetchedLineIds: Set<String>,
+        ): Map<String, String> =
+            storedHashes.toMutableMap().apply {
+                fetchedLineIds.forEach { lid -> manifestHashes[lid]?.let { this[lid] = it } }
+            }
+
+        /**
+         * Advance the cached manifest/etag only when every attempted line landed
+         * (an empty attempt list counts as success). On a partial failure the
+         * manifest must stay behind so the next refresh re-runs the diff instead
+         * of short-circuiting on an advanced etag and stranding the stale line.
+         */
+        internal fun shouldAdvanceManifest(
+            attemptedLineIds: List<String>,
+            fetchedLineIds: Set<String>,
+        ): Boolean = attemptedLineIds.all { it in fetchedLineIds }
     }
 }
