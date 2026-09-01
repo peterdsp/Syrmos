@@ -52,6 +52,7 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
             alertBanner = alertBanner,
             lineDisruptions = lineDisruptions,
             onBack = { navigator.pop() },
+            onOpenLine = { lineId -> navigator.push(LineDetailScreenRoute(lineId)) },
         )
     }
 }

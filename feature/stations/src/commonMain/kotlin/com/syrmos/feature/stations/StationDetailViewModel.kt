@@ -1,5 +1,7 @@
 package com.syrmos.feature.stations
 
+import com.syrmos.core.domain.interchange.InterchangeTarget
+import com.syrmos.core.domain.usecase.GetInterchangeTargetsUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.GetStationDetailUseCase
 import com.syrmos.core.domain.usecase.GetStationDeparturesUseCase
@@ -25,6 +27,9 @@ data class StationDetailUiState(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val connectingLines: List<Line> = emptyList(),
+    // Actionable transfers: the operational, scheduled lines serving this hub by
+    // proximity, each with the station id to open on that line (nearest first).
+    val interchangeTargets: List<InterchangeTarget> = emptyList(),
     val lineIds: List<String> = emptyList(),
     val isInterchange: Boolean = false,
     val isSuburban: Boolean = false,
@@ -36,6 +41,7 @@ data class StationDetailUiState(
 class StationDetailViewModel(
     private val getStationDetail: GetStationDetailUseCase,
     private val getStationDepartures: GetStationDeparturesUseCase,
+    private val getInterchangeTargets: GetInterchangeTargetsUseCase,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(StationDetailUiState())
@@ -68,11 +74,22 @@ class StationDetailViewModel(
                     latitude = detail.station.latitude,
                     longitude = detail.station.longitude,
                     connectingLines = detail.connectingLines,
+                    // Cleared here, then filled by the proximity resolver below, so
+                    // a previous station's transfers never flash on the new screen.
+                    interchangeTargets = emptyList(),
                     lineIds = detail.station.lineIds,
                     isInterchange = detail.station.isInterchange,
                     isSuburban = detail.station.lineIds.any { id -> id in suburbanIds },
                     isLoading = false,
                 )
+            }
+
+            // Proximity transfers are static for the session, so resolve once per
+            // load (not in the 15s departures loop). Guard against a race where the
+            // user has already navigated to another station.
+            val targets = getInterchangeTargets.invoke(detail.station)
+            if (loadedStationId == stationId) {
+                _uiState.update { it.copy(interchangeTargets = targets) }
             }
 
             startRefreshLoop(stationId, detail.station.lineIds)
