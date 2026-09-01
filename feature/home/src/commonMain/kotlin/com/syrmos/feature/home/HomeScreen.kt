@@ -110,6 +110,7 @@ fun HomeScreen(
     onLineClick: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
     onMapClick: () -> Unit = {},
+    onEnableLocation: () -> Unit = {},
     scrollToWeatherRequest: Int = 0,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -376,6 +377,11 @@ fun HomeScreen(
                     onStationClick = onStationClick,
                 )
             }
+        } else {
+            // Nearby needs a location. Instead of collapsing the section
+            // silently, offer an actionable CTA that (re)requests permission,
+            // mirroring the iOS HomeView "Near me" enable-location card.
+            item { NearbyLocationCta(lang = lang, onEnableLocation = onEnableLocation) }
         }
 
         val realTrains = uiState.liveTrains.filter { !it.origin.isNullOrEmpty() && !it.destination.isNullOrEmpty() }
@@ -1344,6 +1350,40 @@ private fun SectionTitle(text: String) {
         // Heading semantics so TalkBack can jump between Home sections.
         modifier = Modifier.semantics { heading() },
     )
+}
+
+/**
+ * Shown in place of the nearby-stations section when there is no location, so
+ * the user can actually enable it instead of the section silently collapsing.
+ * Mirrors the iOS HomeView "Near me" enable-location card.
+ */
+@Composable
+private fun NearbyLocationCta(lang: AppLanguage, onEnableLocation: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onEnableLocation() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = L.ENABLE_LOCATION_FOR_NEXT.text(lang),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = L.ONBOARD_LOCATION_CTA.text(lang),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
 }
 
 @Composable
