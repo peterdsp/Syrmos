@@ -106,56 +106,250 @@ Five more parity fixes landed and were verified this phase:
   and the iOS test step now genuinely gates (the `sed E` typo + `|| echo`
   swallow are fixed).
 
-Parity ledger now: 18 fixed, 2 partial, 5 backlog, 1 intentional (see
-cross-platform-parity.json). Remaining backlog is either a product-policy call
-(#9 departures source, #11 confidence), an external/Pi dependency (#10 live
-arrivals + airport-bus timetables), a documented deferral (#12 lastTrains -
-central departures-path blast radius too high for GA; fast-follow), or #14
-settings recents/digest.
+Parity ledger after the first deep-QA pass: 18 fixed, 2 partial, 5 backlog, 1
+intentional. A second round (below) reopened every remaining item.
+
+## Second deep-QA round (release candidate 0591afee)
+
+The first round's conclusion was reopened and every partial/backlog item
+re-examined individually rather than bulk-deferred. Outcomes:
+
+- **#12 short-turn destinations (data correctness), FIXED server-side (PR #80).**
+  The server projector (`project_next_departures`, the single source of truth
+  both server-first clients render) never applied the scraped
+  `last_train_endpoints` short-turn override, so Android + Web showed the line
+  terminal (e.g. "Kifissia") for the last train that actually short-turns to
+  Omonia. iOS was already correct via its synced bundle. Fixed at the source: the
+  server now rewrites the destination for matching short-turn slots; Android + Web
+  inherit it with no client change. 5 new projector tests; full server suite 83/83
+  (only a pre-existing httpx-import module skipped). Deploy-gated on the Pi
+  applying migration 0017 + the scraper; a verified no-op until then, and offline
+  every platform shows the terminal (the seed ships zero short-turn rows), so
+  there is no divergence there.
+- **#14 dead morning-digest toggle, FIXED (PR #81).** The Android toggle only
+  persisted `notif_morning_digest` with no consumer. Hidden for GA (satisfies the
+  ledger's "wired or hidden" criterion); verified on the emulator (section now
+  ends at Nearby station alerts, no gap, no crash).
+- **#7 reconnect refresh, FIXED (PR #82).** Added `ConnectivityObserver` calling
+  `LiveDataFreshness.requestRetry()` on network `onAvailable`, mirroring the iOS
+  `NWPathMonitor`. Verified on the emulator with a temporary log (removed before
+  commit): fires on an airplane-off reconnect and drives the home probe, no crash.
+- **#9 / #11 (source policy / confidence): stay BACKLOG, justified.** #9 is a
+  genuine product decision (iOS is local-first for Athens, Android + Web are
+  server-first; the reference and Web disagree, so no canonical answer is derivable
+  from behaviour). #11 is unanimous for the server tier (SCHEDULED); only the
+  offline label is a design call. Neither is a correctness defect.
+- **#10 (live-arrivals router): stays BACKLOG, external + tied to #9.** Router and
+  providers are built and Koin-registered but nothing consumes the router; the one
+  real provider (OASA) depends on the Pi endpoint serving X93-97. Deliberately not
+  wired for GA.
+- **#13 (airport strings): stays PARTIAL, lowest-priority polish.** Most hardcodes
+  are shared with iOS (not a divergence); the one Android-only gap (M3/A1
+  route-strip names) is partly a seed data gap (M3_DIM / M3_DOY have `nameEl=null`,
+  so iOS is English there too).
+- **#21 (map motion): confirmed INTENTIONAL.** CADisplayLink vs per-tick is an
+  engine-only difference; both interpolate the same positions at the same
+  wall-clock, so user-visible behaviour is equivalent.
+
+Adversarial review pass over the new changes (#12 server override, #7 observer,
+#14 removal) and their interactions with `/api/lines` refresh, persistence,
+station-line membership, projections, offline cache and reconnect. It caught two
+real defects that compiled and passed happy-path tests, both now fixed with
+regression tests:
+
+- **HIGH (self-introduced in #80): #12 was a silent no-op in production.** The
+  override query selected `s.name`, but the production `stations` table has
+  `name_en` / `name_el` and no `name` column, so the query raised
+  `OperationalError`, which the table-absent guard swallowed, and every call
+  returned `{}`. It passed CI only because the test fixture used a fake
+  `stations(id, name)` schema. **PR #83** switches to `s.name_en` and rebuilds
+  the fixture to mirror production, so a wrong column now fails the tests
+  (verified: reverting to `s.name` fails the short-turn test).
+- **MEDIUM (pre-existing in the #16 overlay): `/api/lines` membership position
+  collision.** A novel stop attaching to a seeded line used its payload index as
+  `position_on_line`; a mid-line insert collided with a seeded stop and made
+  `ORDER BY position_on_line` nondeterministic, persisted across relaunch. **PR
+  #84** parks overlay-added stops past every seeded position (collision-free).
+
+The #7 connectivity observer and the #14 toggle removal were reviewed clean.
+Flagged for the Pi owner (not a client bug): the client's
+`line3AirportOnlyStations` matches the bundled seed, but the server projector
+uses different ids (`M3_PEK`/`M3_KRP` vs the seed's `M3_PEA`/`M3_KO2`) for
+Peania-Kantza / Koropi; reconcile Pi vs seed station ids so a client `station_id`
+always resolves server-side.
+
+Restart/persistence QA on the emulator: online launch -> populate -> kill ->
+airplane on -> relaunch offline (cached news + network status + living map +
+language + last tab all persist, no crash) -> reconnect (observer fires, probe
+runs, no crash, no state corruption).
+
+Signed/packaged artifacts:
+
+- **Android SIGNED ARTIFACT VERIFIED (local, throwaway key).** `bundleRelease`
+  + `assembleRelease` with a disposable keystore (the production keystore is a CI
+  secret and was never touched) produced a 15.7 MB AAB + 13.2 MB APK: package
+  `com.syrmos.android`, versionName 2.0.0, versionCode 223, R8 minify + resource
+  shrink ran, apksigner-verified, zipalign ALIGNED, 4 ABIs. `PLAY UPLOAD` stays
+  CI-only.
+- **iOS ARCHIVE VERIFIED; IPA export BLOCKED-EXTERNAL.** Release device archive
+  succeeded, `CFBundleIdentifier=com.syrmosApp.ios`, `CFBundleShortVersionString`
+  2.0.0, `CFBundleVersion` 138. `exportArchive` fails locally with "No Team Found"
+  (no signing identity in the sandbox); the signed IPA / App Store validation /
+  TestFlight upload happen in CI with the `IOS_*` / `ASC_*` secrets.
+  Note: the archived app has no `PrivacyInfo.xcprivacy` (no privacy manifest in
+  the iOS source tree); see the pre-submission section below.
+
+## Pre-submission: iOS privacy manifest (ITMS-91053)
+
+Real finding from the deep QA (researched against Apple's current required-reason
+API rules). The iOS app ships no `PrivacyInfo.xcprivacy`, but it uses two
+required-reason API categories, so App Store Connect will emit **ITMS-91053
+(missing API declaration)** on the 2.0.0 upload. Confirmed from the code:
+
+- **UserDefaults** in 20 Swift files (settings, notification prefs, recents) ->
+  category `NSPrivacyAccessedAPICategoryUserDefaults`, reason **CA92.1** (info
+  accessible only to the app itself).
+- **Disk space** in `iosApp/iosApp/Features/Assistant/AriadneModelStore.swift`
+  (free-space check before the Ariadne model download) -> category
+  `NSPrivacyAccessedAPICategoryDiskSpace`, reason **E174.1** (check sufficient
+  space before writing files).
+
+No tracking: the "analytics/tracking" keyword hits are false positives
+("sentry" inside `SyrmosEntry`, "adjust" inside `contentInsetAdjustmentBehavior`).
+Egress is functional-only (Open-Meteo weather, the Ariadne model on Hugging Face,
+ArcGIS map tiles, transit operators, the app's own Pi). No IDFA / ATT / ad SDK.
+So `NSPrivacyTracking` is `false` and there are no tracking domains.
+
+Not fixed in-repo because the Xcode project is hand-maintained pbxproj (no
+XcodeGen in the environment) and the signed upload cannot be validated from the
+sandbox; adding the manifest is a ~5-minute Xcode step at submission
+(File > New > App Privacy File, add to the Syrmos app target). Ready content:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>NSPrivacyTracking</key><false/>
+  <key>NSPrivacyTrackingDomains</key><array/>
+  <key>NSPrivacyCollectedDataTypes</key><array/>
+  <key>NSPrivacyAccessedAPITypes</key><array>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key><array><string>CA92.1</string></array>
+    </dict>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key><array><string>E174.1</string></array>
+    </dict>
+  </array>
+</dict></plist>
+```
+
+`NSPrivacyCollectedDataTypes` is left empty because nearest-station lookup is
+on-device and no first- or third-party SDK collects data linked to the user; the
+developer should confirm this matches the App Store Connect privacy label before
+upload. This is a warning-class item and does not block the archive or the
+candidate; it is a submission-time checklist entry.
+
+## Final release evidence (tied to the exact commit)
+
+```
+Syrmos 2.0.0 Release Candidate
+
+Commit:        0591afee  (master; #79 -> #80 -> #81 -> #82 -> #83 -> #84)
+
+Web:
+  deployment SHA:  0591afee (GitHub Pages; web sources unchanged since 30912fe0)
+  production URL:  https://syrmos.peterdsp.dev
+  runtime QA:      VERIFIED (load, search, station detail, departures, live feed
+                   "updated 8s ago", map, mobile-responsive, EL localization)
+  console:         0 errors
+  network:         all 200 (JS bundles, seed JSON, shapes, icons)
+
+iOS:
+  versionName:     2.0.0
+  build:           138
+  tests:           VERIFIED (iosAppTests 132/0 on 30912fe0; no iOS-Swift change since)
+  archive:         ARCHIVE VERIFIED (Release, device, 2.0.0/138, bundle id ok)
+  IPA:             BLOCKED-EXTERNAL (needs signing identity; done in CI)
+  runtime:         VERIFIED (simulator: Airport tap-through to Station Detail)
+  accessibility:   VERIFIED (accessibilityElement combine + label on departures)
+  privacy manifest: UNVERIFIED (no .xcprivacy present; review before submission)
+
+Android:
+  versionName:     2.0.0
+  versionCode:     223
+  tests:           VERIFIED (KMP unit suite 356/0/0 local on 0591afee; CI green)
+  APK (debug):     BUILD VERIFIED (final 0591afee; installed + smoke-tested, no crash)
+  AAB (release):   SIGNED ARTIFACT VERIFIED (throwaway key; contents validated)
+  signing:         CONFIG VERIFIED (prod keystore is a CI secret; PLAY UPLOAD CI-only)
+  runtime:         VERIFIED (emulator: launch, home, settings/no-digest, airport
+                   +tap-through, station detail+interchange, map+vehicles, search,
+                   offline+news-cache, reconnect, localization, overnight boundary)
+  accessibility:   VERIFIED (departure row merged for TalkBack; content-desc checked)
+
+Parity (see cross-platform-parity.json):
+  fixed:        21
+  partial:      1   (#13 airport strings; partly a seed nameEl data gap)
+  intentional:  1   (#21 map motion engine difference; behaviour-equivalent)
+  backlog:      3   (#9, #11 product decisions; #10 external/Pi)
+  unverified:   0 engineering P0/P1
+```
 
 ## Release gate
 
 ```
 SYRMOS 2.0.0 RELEASE GATE
 Deadline: 2026-09-02 10:00 Europe/Athens
+Release candidate: master 0591afee
 
 WEB
   Production build:      PASS
   Production deployed:   PASS (https://syrmos.peterdsp.dev)
-  Production smoke test: PASS (0 console errors, live data, map, interaction)
-  API connectivity:      PASS (live Pi feed, 45 trains)
+  Production smoke test: PASS (0 console errors, live feed, map, search, mobile)
+  API connectivity:      PASS (live Pi feed; all requests 200)
 
 iOS
   2.0.0 version:         PASS (marketing 2.0.0, build 138)
-  Release build:         PASS (device archive, stamped 138/2.0.0)
-  Tests:                 PASS (iosAppTests 132/0 local)
+  Release build:         ARCHIVE VERIFIED (device archive, stamped 138/2.0.0)
+  Tests:                 PASS (iosAppTests 132/0 local; no iOS change since)
+  IPA export:            BLOCKED-EXTERNAL (signing identity, done in CI)
+  Privacy manifest:      UNVERIFIED (no .xcprivacy; review before submission)
   Production candidate:  READY
   Publish:               BLOCKED-EXTERNAL (signing creds + v2.0.0 tag push)
 
 ANDROID
   2.0.0 version:         PASS (versionName 2.0.0, versionCode 223)
-  Release config:        PASS (sign + minify + shrink + native-lib gate)
-  Tests:                 PASS (KMP/Android unit tests, local + CI)
-  Runtime QA:            VERIFIED (emulator: launch, home, map+vehicles, airport
-                         +tap-through, station detail+interchange, search,
-                         offline+news-cache, localization; no crashes)
+  Release config:        CONFIG VERIFIED (sign + minify + shrink + 16 KB align)
+  Release artifact:      SIGNED ARTIFACT VERIFIED (throwaway key; AAB+APK contents)
+  Tests:                 PASS (KMP unit suite 356/0/0 local; CI green)
+  Runtime QA:            VERIFIED (emulator, final 0591afee: launch, home,
+                         settings/no-digest, map+vehicles, airport+tap-through,
+                         station detail+interchange, search, offline+news-cache,
+                         reconnect, localization; no crashes)
+  Persistence QA:        VERIFIED (kill + offline relaunch + reconnect, no corruption)
   Production candidate:  READY (signed AAB builds in CI on tag)
   Publish:               BLOCKED-EXTERNAL (keystore + Play JSON + v2.0.0 tag push)
 
 CROSS-PLATFORM
-  Core feature parity:   PASS (18 fixed / 2 partial / 5 backlog / 1 intentional)
-  Localization:          PASS (EN/EL/SQ/IT; Greek UI verified on device)
+  Core feature parity:   PASS (21 fixed / 1 partial / 3 backlog / 1 intentional)
+  Data correctness:      PASS (#12 short-turn override fixed server-side)
+  Localization:          PASS (EN/EL/SQ/IT; Greek UI verified on device + web)
   Accessibility:         PASS (departure rows merged for TalkBack + headings)
   Offline mode:          VERIFIED (news cache persists, living map projects, no crash)
-  API/data correctness:  PASS (shared projector, resilient decode, overlay-only lines)
-  Critical regression:   PASS (iOS 132 + KMP suite + web build green; iOS tests now gate)
+  Reconnect:             VERIFIED (Android observer drives an immediate refresh)
+  Critical regression:   PASS (iOS 132 + KMP 356 + web build green; adversarial
+                         pass caught + fixed a HIGH #12 no-op and a MEDIUM overlay
+                         collision, both now regression-tested)
 
 BLOCKERS
   P0 (engineering): 0
   P1 (engineering): 0
-  External:         iOS + Android store publish (signing creds + v2.0.0 tag)
+  External:         iOS + Android store publish (signing creds + v2.0.0 tag);
+                    #12 takes effect on Pi deploy of migration 0017 + scraper
 
 FINAL STATUS:
-  Web 2.0.0: LIVE. iOS + Android 2.0.0: PRODUCTION CANDIDATES VALIDATED AND
-  READY FOR SUBMISSION. Remaining action is the human-gated v2.0.0 tag push.
+  Web 2.0.0: LIVE. iOS + Android 2.0.0: PRODUCTION CANDIDATES VALIDATED AND READY
+  FOR SUBMISSION at master 0591afee. Remaining action is the human-gated v2.0.0
+  tag push (starts the signed store uploads).
 ```
