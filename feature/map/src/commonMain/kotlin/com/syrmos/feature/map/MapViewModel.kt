@@ -281,6 +281,9 @@ class MapViewModel(
                         today = scheduleDayTypeString(),
                         nowMinutes = now.hour * 60 + now.minute + now.second / 60.0,
                         geometry = geometry,
+                        // Athens ISO date so a date-scoped seasonal vehicle is
+                        // projected only on the dates it runs.
+                        todayIso = currentAthensDate().toString(),
                     ).filter { it.lineId !in coveredByLive }
                     val visibleTrains = filtered + projected
                     _uiState.update { current ->

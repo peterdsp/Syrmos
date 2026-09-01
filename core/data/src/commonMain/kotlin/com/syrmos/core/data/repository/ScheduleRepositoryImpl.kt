@@ -17,6 +17,7 @@ class ScheduleRepositoryImpl(
         direction: Direction,
         dayType: DayType,
         currentTime: String,
+        today: String,
         limit: Int = 5,
     ): Flow<List<Departure>> = flow {
         val departures = database.syrmosDatabaseQueries.getNextDepartures(
@@ -25,7 +26,8 @@ class ScheduleRepositoryImpl(
             direction = direction.name.lowercase(),
             day_type = dayType.name.lowercase(),
             departure_time = currentTime,
-            value_ = limit.toLong(),
+            today = today,
+            limit = limit.toLong(),
         ).executeAsList().map { row ->
             Departure(time = row.departure_time, notes = row.notes)
         }

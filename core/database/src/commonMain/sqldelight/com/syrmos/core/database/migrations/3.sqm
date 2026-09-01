@@ -1,0 +1,11 @@
+-- Schema 3 -> 4: valid_dates on schedule rows for date-scoped trips.
+--
+-- Nullable with no default (NULL = runs on every date matching its day_type),
+-- so every existing schedule row keeps today's behaviour after the upgrade.
+-- Only date-scoped seasonal trips (e.g. the Pelion railway PL1, which runs on
+-- specific dates) populate it; getNextDepartures hides such a row on days its
+-- comma-separated ISO list does not include. Without this column the first query
+-- referencing valid_dates would crash with "no such column" on an upgraded
+-- install, so the migration must ship with the .sq change.
+
+ALTER TABLE schedule_entity ADD COLUMN valid_dates TEXT;

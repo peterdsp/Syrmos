@@ -8,6 +8,7 @@ import com.syrmos.core.model.transit.LineStatus
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.SyrmosLivePositionsService
+import com.syrmos.core.network.SyrmosSchedulesService
 import kotlinx.datetime.Clock
 import kotlin.math.abs
 import kotlin.test.Test
@@ -419,5 +420,127 @@ class TrainSimulatorTest {
             nearest,
         )
         assertTrue(offTrack < 50.0, "geometry train must lie on the track, off by ${offTrack}m")
+    }
+
+    // --- validDates (date-scoped seasonal trips) --------------------------
+    //
+    // A trip may carry a comma-separated list of ISO dates it actually runs on
+    // (seasonal services like the Pelion railway PL1). projectScheduledTrains
+    // must hide its vehicle on any other date, matching the offline
+    // getNextDepartures SQL filter and the iOS ScheduleProjector. An
+    // unrestricted trip (null/blank validDates) always runs, and an unknown
+    // todayIso ("") disables the filter so a missing date never blanks the map.
+
+    private val pelionLine = Line(
+        id = "PL1",
+        name = "Pelion Railway",
+        nameEl = "Τρενάκι Πηλίου",
+        type = LineType.SUBURBAN,
+        color = LineColor.SUBURBAN_PURPLE,
+        terminalA = "Ano Lechonia",
+        terminalB = "Milies",
+        stationCount = 2,
+    )
+    private val pelionStationA = Station(
+        id = "PL1_A", name = "Ano Lechonia", nameEl = "Άνω Λεχώνια",
+        latitude = 39.33, longitude = 23.03, lineIds = listOf("PL1"),
+    )
+    private val pelionStationB = Station(
+        id = "PL1_B", name = "Milies", nameEl = "Μηλιές",
+        latitude = 39.33, longitude = 23.15, lineIds = listOf("PL1"),
+    )
+    private val pelionStations = mapOf("PL1" to listOf(pelionStationA, pelionStationB))
+
+    // dayType is left empty so the trip runs on every weekday, isolating the
+    // validDates branch as the only thing that can drop it.
+    private fun pelionBundle(validDates: String?) = mapOf(
+        "PL1" to SyrmosSchedulesService.LineSchedule(
+            lineId = "PL1",
+            trips = listOf(
+                SyrmosSchedulesService.TripEntry(
+                    trainNo = "1",
+                    dayType = "",
+                    direction = "outbound",
+                    validDates = validDates,
+                    stops = listOf(
+                        SyrmosSchedulesService.TripStop("PL1_A", 1, "10:00"),
+                        SyrmosSchedulesService.TripStop("PL1_B", 2, "10:20"),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    // 10:10 Athens, squarely inside the 10:00 -> 10:20 trip window.
+    private val pelionNowMinutes = 10.0 * 60 + 10
+
+    @Test
+    fun projectsDatedTripOnItsValidDate() {
+        val result = projectScheduledTrains(
+            lines = listOf(pelionLine),
+            lineStations = pelionStations,
+            bundles = pelionBundle(validDates = "2026-09-01"),
+            today = "",
+            nowMinutes = pelionNowMinutes,
+            todayIso = "2026-09-01",
+        )
+        assertEquals(1, result.size, "Dated trip must project on a date listed in validDates")
+        assertEquals("PL1", result.first().lineId)
+    }
+
+    @Test
+    fun hidesDatedTripOffItsValidDate() {
+        val result = projectScheduledTrains(
+            lines = listOf(pelionLine),
+            lineStations = pelionStations,
+            bundles = pelionBundle(validDates = "2026-09-01,2026-09-08"),
+            today = "",
+            nowMinutes = pelionNowMinutes,
+            todayIso = "2026-09-02",
+        )
+        assertTrue(result.isEmpty(), "Dated trip must be hidden on a date absent from validDates")
+    }
+
+    @Test
+    fun datedTripMatchesWholeTokenNotSubstring() {
+        // "2026-09-01" must not match by being a substring of a longer token.
+        // Comma-boundary matching (mirrored in the SQL) rejects it.
+        val result = projectScheduledTrains(
+            lines = listOf(pelionLine),
+            lineStations = pelionStations,
+            bundles = pelionBundle(validDates = "2026-09-011,2026-09-08"),
+            today = "",
+            nowMinutes = pelionNowMinutes,
+            todayIso = "2026-09-01",
+        )
+        assertTrue(result.isEmpty(), "todayIso must match a whole date token, never a substring")
+    }
+
+    @Test
+    fun unrestrictedTripRunsOnAnyDate() {
+        val result = projectScheduledTrains(
+            lines = listOf(pelionLine),
+            lineStations = pelionStations,
+            bundles = pelionBundle(validDates = null),
+            today = "",
+            nowMinutes = pelionNowMinutes,
+            todayIso = "2026-09-02",
+        )
+        assertEquals(1, result.size, "A trip with no validDates must run on every matching day")
+    }
+
+    @Test
+    fun unknownTodayIsoDoesNotHideDatedTrip() {
+        // todayIso is empty when the date is unknown; the filter must be a no-op
+        // then so we never blank the map for a missing date.
+        val result = projectScheduledTrains(
+            lines = listOf(pelionLine),
+            lineStations = pelionStations,
+            bundles = pelionBundle(validDates = "2026-09-01"),
+            today = "",
+            nowMinutes = pelionNowMinutes,
+            todayIso = "",
+        )
+        assertEquals(1, result.size, "Empty todayIso must disable the validDates filter")
     }
 }

@@ -152,6 +152,12 @@ class SyrmosSchedulesService(
         @SerialName("dayType") val dayType: String = "",
         @SerialName("direction") val direction: String = "",
         @SerialName("serviceLabel") val serviceLabel: String = "",
+        // Comma-separated ISO dates (yyyy-MM-dd) this dated trip runs on; null or
+        // blank means it runs on every date matching its dayType. Date-scoped
+        // seasonal services (e.g. the Pelion railway PL1) set it. iOS honors it in
+        // ScheduleProjector; it was being dropped on Android, so such trips showed
+        // on the wrong days.
+        @SerialName("validDates") val validDates: String? = null,
         val stops: List<TripStop> = emptyList(),
     )
 
