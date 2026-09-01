@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
@@ -49,8 +51,21 @@ fun DepartureCard(
     disruptionSeverity: AlertSeverity? = null,
 ) {
     val vehicleResource = lineId?.let { VehicleIcons.resourceFor(it, direction, isAirport) }
+    // One compound accessibility label so TalkBack announces the row as a single
+    // sentence (line, destination, minutes, time) instead of reading each field
+    // separately. Mirrors the iOS StationDetailView `accessibilityElement(.combine)`
+    // + `accessibilityLabel`. The card is non-interactive, so clearing child
+    // semantics loses no role.
+    val a11yLabel = when (language) {
+        AppLanguage.GREEK -> "$lineName προς $direction, σε $minutesAway λεπτά, στις $departureTime"
+        AppLanguage.ALBANIAN -> "$lineName drejt $direction, për $minutesAway minuta, në $departureTime"
+        AppLanguage.ITALIAN -> "$lineName verso $direction, tra $minutesAway minuti, alle $departureTime"
+        else -> "$lineName towards $direction, in $minutesAway minutes, at $departureTime"
+    }
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics { contentDescription = a11yLabel },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
