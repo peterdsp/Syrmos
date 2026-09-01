@@ -72,4 +72,44 @@ class ScheduleSyncRepositoryTest {
         ).toSet()
         assertEquals(setOf("M2", "M3"), toFetch, "changed M2 + new M3, but not unchanged M1")
     }
+
+    // --- partial-failure retry (the stranding Codex flagged) ---
+
+    @Test
+    fun aFailedLineKeepsItsStaleHashAndIsRetriedNextRound() {
+        val server = mapOf("M1" to "new", "M2" to "b")
+        val stored = mapOf("M1" to "old", "M2" to "b")
+        val attempted = ScheduleSyncRepository.linesToFetch(setOf("M1", "M2"), stored, server)
+        assertEquals(listOf("M1"), attempted)
+
+        // M1 fetch failed this round (fetched is empty).
+        val after = ScheduleSyncRepository.hashesAfterFetch(stored, server, fetchedLineIds = emptySet())
+        assertEquals("old", after["M1"], "a failed line must keep its stale hash")
+
+        // Next round still reports M1 as needing a fetch (not stranded).
+        val retry = ScheduleSyncRepository.linesToFetch(setOf("M1", "M2"), after, server)
+        assertEquals(listOf("M1"), retry)
+    }
+
+    @Test
+    fun aSucceededLineTakesTheServerHashAndIsNotRefetched() {
+        val server = mapOf("M1" to "new")
+        val stored = mapOf("M1" to "old")
+        val after = ScheduleSyncRepository.hashesAfterFetch(stored, server, fetchedLineIds = setOf("M1"))
+        assertEquals("new", after["M1"])
+        assertTrue(ScheduleSyncRepository.linesToFetch(setOf("M1"), after, server).isEmpty())
+    }
+
+    @Test
+    fun manifestAdvancesOnlyWhenEveryAttemptedLineLanded() {
+        assertTrue(
+            ScheduleSyncRepository.shouldAdvanceManifest(emptyList(), emptySet()),
+            "nothing to fetch counts as success",
+        )
+        assertTrue(ScheduleSyncRepository.shouldAdvanceManifest(listOf("M1"), setOf("M1")))
+        assertTrue(
+            !ScheduleSyncRepository.shouldAdvanceManifest(listOf("M1", "M2"), setOf("M1")),
+            "a partial failure must not advance the manifest",
+        )
+    }
 }

@@ -134,22 +134,28 @@ class ScheduleSyncRepository(
                     manifestHashes = manifest.perLineHashes,
                 )
 
-                val newHashes = lineHashes.toMutableMap()
-                var refreshed = 0
+                val fetched = mutableSetOf<String>()
                 for (lineId in toFetch) {
                     val bundle = schedulesService.fetchLineBundle(lineId).firstOrNull()
                     if (bundle != null) {
                         current[lineId] = bundle
-                        manifest.perLineHashes[lineId]?.let { newHashes[lineId] = it }
-                        refreshed++
+                        fetched += lineId
                     }
                 }
-                lineHashes = newHashes
-                _manifest.value = manifest
-                _scheduleVersion.value = manifest.version
+                lineHashes = hashesAfterFetch(lineHashes, manifest.perLineHashes, fetched)
                 _lineBundles.value = current
                 _lastSyncAt.value = Clock.System.now()
-                RefreshOutcome.Refreshed(refreshed)
+                // Only advance the cached manifest/etag when every attempted line
+                // landed. On a partial failure keep the previous manifest so the
+                // next refresh re-runs the per-line diff via the Fresh path: our
+                // stored etag stays behind the server's, so a 304 / etag-equal
+                // short-circuit can never strand the still-stale line until the
+                // server happens to publish another manifest.
+                if (shouldAdvanceManifest(toFetch, fetched)) {
+                    _manifest.value = manifest
+                    _scheduleVersion.value = manifest.version
+                }
+                RefreshOutcome.Refreshed(fetched.size)
             }
         }
         } finally {
@@ -181,5 +187,31 @@ class ScheduleSyncRepository(
             manifestHashes.entries
                 .filter { (lid, serverHash) -> lid !in cachedLineIds || storedHashes[lid] != serverHash }
                 .map { it.key }
+
+        /**
+         * The stored per-line hashes after a fetch round: a line that fetched
+         * successfully takes the server hash; a line that failed (not in
+         * [fetchedLineIds]) keeps its previous hash so the next [linesToFetch]
+         * still reports it as stale and retries it.
+         */
+        internal fun hashesAfterFetch(
+            storedHashes: Map<String, String>,
+            manifestHashes: Map<String, String>,
+            fetchedLineIds: Set<String>,
+        ): Map<String, String> =
+            storedHashes.toMutableMap().apply {
+                fetchedLineIds.forEach { lid -> manifestHashes[lid]?.let { this[lid] = it } }
+            }
+
+        /**
+         * Advance the cached manifest/etag only when every attempted line landed
+         * (an empty attempt list counts as success). On a partial failure the
+         * manifest must stay behind so the next refresh re-runs the diff instead
+         * of short-circuiting on an advanced etag and stranding the stale line.
+         */
+        internal fun shouldAdvanceManifest(
+            attemptedLineIds: List<String>,
+            fetchedLineIds: Set<String>,
+        ): Boolean = attemptedLineIds.all { it in fetchedLineIds }
     }
 }
