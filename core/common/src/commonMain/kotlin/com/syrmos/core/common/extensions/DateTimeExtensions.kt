@@ -1,31 +1,23 @@
 package com.syrmos.core.common.extensions
 
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
-private fun athensDateTime(clock: Clock): LocalDateTime {
-    val instant = clock.now()
-    val utc = instant.toLocalDateTime(TimeZone.UTC)
-    val lastSundayOfMarch = 31 - ((LocalDate(utc.year, 3, 31).dayOfWeek.ordinal + 1) % 7)
-    val lastSundayOfOctober = 31 - ((LocalDate(utc.year, 10, 31).dayOfWeek.ordinal + 1) % 7)
-    val daylightSaving = when (utc.monthNumber) {
-        in 4..9 -> true
-        3 -> utc.dayOfMonth > lastSundayOfMarch ||
-            (utc.dayOfMonth == lastSundayOfMarch && utc.time >= LocalTime(1, 0))
-        10 -> utc.dayOfMonth < lastSundayOfOctober ||
-            (utc.dayOfMonth == lastSundayOfOctober && utc.time < LocalTime(1, 0))
-        else -> false
-    }
-    val offsetHours = if (daylightSaving) 3 else 2
-    return instant.plus(offsetHours, DateTimeUnit.HOUR).toLocalDateTime(TimeZone.UTC)
-}
+// The IANA tz database is the single source of DST truth, shared with the band
+// projector (ComputeDeparturesFromBandsUseCase also resolves this zone). It
+// replaces a hand-rolled last-Sunday-of-March/October calculation that risked
+// drift around the transition hour and was a second, divergent mechanism.
+// Available on every target the app builds (the web/wasmJs build already
+// resolves this same zone).
+private val athensZone = TimeZone.of("Europe/Athens")
+
+private fun athensDateTime(clock: Clock): LocalDateTime =
+    clock.now().toLocalDateTime(athensZone)
 
 // All three read the clock through an injectable [Clock] that defaults to
 // Clock.System, so production is unchanged but tests can pin "now" to a fixed
