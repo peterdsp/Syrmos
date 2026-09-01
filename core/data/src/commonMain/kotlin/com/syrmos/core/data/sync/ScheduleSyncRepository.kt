@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 
 /**
@@ -34,14 +36,22 @@ class ScheduleSyncRepository(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    // Serializes the whole cache state transition (hydrate + each refresh's
+    // snapshot -> fetch -> commit). Without it two concurrent refreshes (e.g. a
+    // cold-start sync overlapping a Settings "Check now") each snapshot the
+    // bundle map, fetch different lines, and clobber each other on commit,
+    // marking a stale line as fresh. Not reentrant, so guarded methods never
+    // call one another under the lock.
+    private val mutex = Mutex()
+
     /**
      * Hydrate the in-memory cache from the bundled snapshot (`files/seed/schedules-v2/`).
      * Generated at build time by `scripts/snapshot-api-to-seed.py`. Safe to call multiple
      * times — only loads if the cache is currently empty so a live refresh isn't clobbered.
      */
-    suspend fun hydrateFromBundleIfNeeded() {
-        if (_lineBundles.value.isNotEmpty()) return
-        val reader = resourceReader ?: return
+    suspend fun hydrateFromBundleIfNeeded(): Unit = mutex.withLock {
+        if (_lineBundles.value.isNotEmpty()) return@withLock
+        val reader = resourceReader ?: return@withLock
         // Metro/tram/suburban + Thessaloniki + national rail + rail-replacement
         // buses. The national/bus bundles carry per-trip timetables that the map's
         // schedule projector interpolates into moving vehicles.
@@ -105,9 +115,16 @@ class ScheduleSyncRepository(
      * Returns true when at least one line was refreshed, false otherwise
      * (no network, server unreachable, or nothing changed).
      */
-    suspend fun refresh(): RefreshOutcome {
+    suspend fun refresh(): RefreshOutcome = mutex.withLock {
         _isRefreshing.value = true
         try {
+            doRefresh()
+        } finally {
+            _isRefreshing.value = false
+        }
+    }
+
+    private suspend fun doRefresh(): RefreshOutcome {
         val previousEtag = _manifest.value?.etag
         val result = schedulesService.fetchManifest(previousEtag).firstOrNull()
             ?: return RefreshOutcome.Failure("no result")
@@ -157,9 +174,6 @@ class ScheduleSyncRepository(
                 }
                 RefreshOutcome.Refreshed(fetched.size)
             }
-        }
-        } finally {
-            _isRefreshing.value = false
         }
     }
 
