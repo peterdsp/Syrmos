@@ -268,6 +268,11 @@ DELETE FROM frequency_entity;
 deleteAllStationLines:
 DELETE FROM station_line_entity;
 
+-- Clear one line's memberships so a refresh can replace them atomically,
+-- dropping stops the server removed or re-keyed upstream.
+deleteStationLinesForLine:
+DELETE FROM station_line_entity WHERE line_id = ?;
+
 deleteAllTransfers:
 DELETE FROM transfer_entity;
 

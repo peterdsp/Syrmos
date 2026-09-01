@@ -60,30 +60,37 @@ class LinesRefresher(
                     status = line.status,
                 )
 
-                line.stations.forEachIndexed { index, station ->
-                    if (station.id !in knownStationIds) {
-                        database.syrmosDatabaseQueries.insertStation(
-                            id = station.id,
-                            name = station.name,
-                            name_el = station.nameEl,
-                            name_sq = null,
-                            latitude = station.lat,
-                            longitude = station.lng,
-                            is_interchange = 0L,
-                            accessibility = 0L,
-                            zone = 1L,
-                            region = line.region,
-                            source_confidence = "scheduled",
+                // Replace this line's membership set atomically: clear its
+                // existing station_line rows first, so a stop removed or re-keyed
+                // upstream cannot linger as a stale (station_id, line_id) row that
+                // would feed a wrong stop to the interchange resolver. Guarded by a
+                // non-empty payload so a line the server returned without stops is
+                // never blanked. INSERT OR REPLACE alone could not delete a row the
+                // server no longer sends.
+                if (line.stations.isNotEmpty()) {
+                    database.syrmosDatabaseQueries.deleteStationLinesForLine(line.id)
+                    line.stations.forEachIndexed { index, station ->
+                        if (station.id !in knownStationIds) {
+                            database.syrmosDatabaseQueries.insertStation(
+                                id = station.id,
+                                name = station.name,
+                                name_el = station.nameEl,
+                                name_sq = null,
+                                latitude = station.lat,
+                                longitude = station.lng,
+                                is_interchange = 0L,
+                                accessibility = 0L,
+                                zone = 1L,
+                                region = line.region,
+                                source_confidence = "scheduled",
+                            )
+                        }
+                        database.syrmosDatabaseQueries.insertStationLine(
+                            station_id = station.id,
+                            line_id = line.id,
+                            position_on_line = index.toLong(),
                         )
                     }
-                    // Station-line ordering is authored on the server, so always
-                    // re-sync the position. INSERT OR REPLACE is composite-keyed
-                    // on (station_id, line_id) so this updates in place.
-                    database.syrmosDatabaseQueries.insertStationLine(
-                        station_id = station.id,
-                        line_id = line.id,
-                        position_on_line = index.toLong(),
-                    )
                 }
             }
         }
