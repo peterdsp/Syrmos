@@ -63,6 +63,8 @@ data class HomeUiState(
     val railNews: List<RailNewsItem> = emptyList(),
     val serviceStatus: STASYServiceStatus? = null,
     val isLoading: Boolean = false,
+    /** True while a user-initiated pull-to-refresh is in flight (drives the spinner). */
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 
@@ -200,6 +202,21 @@ class HomeViewModel(
     fun refreshAnnouncements() {
         scope.launch {
             runCatching { announcementsRepository.refresh() }
+        }
+    }
+
+    /**
+     * User-initiated pull-to-refresh (iOS parity with Home's `.refreshable`).
+     * Re-pulls announcements and nudges live-data freshness so an offline->online
+     * transition recovers immediately instead of waiting for the 60s poll. Toggles
+     * [HomeUiState.isRefreshing] so the pull spinner shows for the duration.
+     */
+    fun refresh() {
+        scope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            runCatching { announcementsRepository.refresh() }
+            LiveDataFreshness.requestRetry()
+            _uiState.update { it.copy(isRefreshing = false) }
         }
     }
 
