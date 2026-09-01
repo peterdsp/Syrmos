@@ -2,6 +2,8 @@ package com.syrmos.app.tab
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -22,6 +24,7 @@ import com.syrmos.app.screen.LineDetailScreenRoute
 import com.syrmos.app.screen.StationDetailScreenRoute
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.app.platform.requestLocationPermission
 import com.syrmos.app.platform.requestUserLocation
 import com.syrmos.feature.home.HomeScreen
 import com.syrmos.feature.home.HomeViewModel
@@ -51,6 +54,7 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
         val navigator = LocalNavigator.currentOrThrow
         val tabNavigator = LocalTabNavigator.current
         val viewModel = koinInject<HomeViewModel>()
+        val scope = rememberCoroutineScope()
         var scrollToWeatherRequest by remember { mutableIntStateOf(0) }
 
         LaunchedEffect(Unit) {
@@ -89,6 +93,15 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
                 navigator.push(LineDetailScreenRoute(lineId))
             },
             onMapClick = { tabNavigator.current = MapTab },
+            onEnableLocation = {
+                scope.launch {
+                    requestLocationPermission()
+                    val location = requestUserLocation()
+                    if (location != null) {
+                        viewModel.onLocationUpdate(location.latitude, location.longitude)
+                    }
+                }
+            },
             scrollToWeatherRequest = scrollToWeatherRequest,
         )
     }
