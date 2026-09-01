@@ -50,6 +50,9 @@ CREATE TABLE schedule_entity (
     day_type TEXT NOT NULL,
     departure_time TEXT NOT NULL,
     notes TEXT,
+    -- Comma-separated ISO dates a dated trip runs on; NULL/blank = runs on every
+    -- date matching its day_type. Set only for date-scoped seasonal trips (PL1).
+    valid_dates TEXT,
     FOREIGN KEY (line_id) REFERENCES line_entity(id),
     FOREIGN KEY (station_id) REFERENCES station_entity(id)
 );
@@ -171,8 +174,17 @@ getNextDepartures:
 SELECT departure_time, notes FROM schedule_entity
 WHERE station_id = ? AND line_id = ? AND direction = ? AND day_type = ?
     AND departure_time >= ?
+    -- Date-scoped trips run only on the listed ISO dates; unrestricted rows
+    -- (NULL/blank valid_dates) always match. :today is passed as yyyy-MM-dd.
+    -- Both sides are comma-wrapped so the match is on whole ISO-date tokens
+    -- (mirrors the iOS split(",").contains), never a bare substring: without
+    -- the commas "2026-09-01" would also match a hypothetical "2026-09-011".
+    AND (
+        valid_dates IS NULL OR valid_dates = ''
+        OR (',' || valid_dates || ',') LIKE ('%,' || :today || ',%')
+    )
 ORDER BY departure_time ASC
-LIMIT ?;
+LIMIT :limit;
 
 getAllDepartures:
 SELECT departure_time, notes FROM schedule_entity
@@ -186,8 +198,8 @@ ORDER BY departure_time ASC
 LIMIT 1;
 
 insertSchedule:
-INSERT INTO schedule_entity(line_id, station_id, direction, day_type, departure_time, notes)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO schedule_entity(line_id, station_id, direction, day_type, departure_time, notes, valid_dates)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 -- Frequency
 getFrequencies:

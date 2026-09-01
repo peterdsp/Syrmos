@@ -109,6 +109,10 @@ data class SeedLineScheduleFile(
 data class SeedTripEntry(
     @SerialName("direction") val direction: String = "",
     @SerialName("dayType") val dayType: String = "",
+    // Comma-separated ISO dates a dated trip runs on; null/blank = every date
+    // matching dayType. Seeded into schedule_entity.valid_dates so the offline
+    // query can hide a seasonal trip (e.g. Pelion PL1) on days it does not run.
+    @SerialName("validDates") val validDates: String? = null,
     @SerialName("stops") val stops: List<SeedTripStop> = emptyList(),
 )
 
