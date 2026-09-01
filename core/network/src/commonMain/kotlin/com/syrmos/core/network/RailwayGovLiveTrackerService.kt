@@ -3,6 +3,7 @@ package com.syrmos.core.network
 import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.currentCoroutineContext
@@ -39,7 +40,12 @@ class RailwayGovLiveTrackerService(
     fun observeSuburbanTrains(lineIds: Set<String>? = null): Flow<List<LiveSuburbanTrain>> = flow {
         while (currentCoroutineContext().isActive) {
             try {
-                val response = httpClient.get(TRAINS_URL)
+                // Fast per-call timeout: this is a live poll feeding the map, so
+                // a stalled request should fail quickly and let the loop retry /
+                // fall back, not hang on the 30s client default.
+                val response = httpClient.get(TRAINS_URL) {
+                    timeout { requestTimeoutMillis = LIVE_REQUEST_TIMEOUT_MS }
+                }
                 val body = response.bodyAsText()
                 val payload = json.decodeFromString<TrainsPayload>(body)
                 val trains = payload.trains
