@@ -52,6 +52,10 @@ data class MapUiState(
     val mapStations: List<MapStationNode> = emptyList(),
     val lines: List<Line> = emptyList(),
     val lineStations: Map<String, List<Station>> = emptyMap(),
+    // The one polyline per line used to draw the route, snap vehicle markers and
+    // interpolate simulated/projected vehicles, so all three always agree. See
+    // effectiveLineGeometry (buses ride their stops, not incomplete OSM shapes).
+    val effectiveGeometry: Map<String, List<LatLng>> = emptyMap(),
     val selectedStation: MapStationNode? = null,
     val selectedStationLines: List<Line> = emptyList(),
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
@@ -114,12 +118,22 @@ class MapViewModel(
                 lineStations[line.id] = ordered
             }
 
+            // One geometry per line, computed once, shared by the renderer and the
+            // train simulator/projector so a bus is never drawn along its stops
+            // while its vehicle rides an unrelated OSM shape.
+            val effectiveGeometry = effectiveLineGeometry(
+                lines = lines,
+                lineStations = lineStations,
+                osmShapes = lineGeometryRepository.getLineGeometry(),
+            )
+
             _uiState.update {
                 it.copy(
                     stations = stations,
                     mapStations = mapStations,
                     lines = lines,
                     lineStations = lineStations,
+                    effectiveGeometry = effectiveGeometry,
                     isLoading = false,
                 )
             }
@@ -228,13 +242,13 @@ class MapViewModel(
 
     private fun runTrainSimulation() {
         scope.launch {
-            // Bundled OSM route geometry (same shapes.json the web map uses). Loaded
-            // once — it is static and memoised — so both simulated and projected
-            // trains ride the real track instead of a straight chord between stops.
-            // Empty map (missing seed) makes the simulator fall back to chords.
-            val geometry: Map<String, List<LatLng>> = lineGeometryRepository.getLineGeometry()
             while (isActive) {
                 val state = _uiState.value
+                // The exact polyline the route is drawn as, so a vehicle is placed
+                // ALONG what the user sees (buses on their stops, not an incomplete
+                // OSM bus shape). Empty until loadMapData populates it; the guard
+                // below waits for lineStations, which is set in the same update.
+                val geometry = state.effectiveGeometry
                 if (state.lines.isNotEmpty() && state.lineStations.isNotEmpty()) {
                     val closedIds = state.stationDisruptions
                         .filterValues { it == AlertSeverity.CLOSURE }
