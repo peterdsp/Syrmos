@@ -24,6 +24,15 @@ class DateTimeExtensionsTest {
     }
 
     @Test
+    fun athens_time_is_standard_offset_in_winter() {
+        // 09:00 UTC on 2026-01-15. Athens is UTC+2 (EET) in January, so 11:00
+        // local. Pins standard time, catching any DST rule that wrongly applies
+        // the summer offset outside the March-October window.
+        val winterMorning = FixedClock(Instant.parse("2026-01-15T09:00:00Z"))
+        assertEquals(LocalTime(11, 0), currentAthensTime(winterMorning))
+    }
+
+    @Test
     fun athens_date_reflects_the_frozen_instant() {
         assertEquals(LocalDate(2026, 7, 8), currentAthensDate(summerMorning))
         assertEquals(Month.JULY, currentAthensDate(summerMorning).month)
