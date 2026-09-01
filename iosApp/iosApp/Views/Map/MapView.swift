@@ -115,7 +115,15 @@ enum PreloadedData {
             // markers off the drawn line), and a Catmull-Rom spline overshoots
             // on tight loops. Straight segments always connect every stop.
             guard anchors.count >= 2 else { return nil }
-            coords = anchors
+            // Close a circular bus route (both terminals identical, e.g. the
+            // Patras University PU1 whose terminals are both Kastelokampos) by
+            // returning to the first stop; drawn straight it otherwise leaves
+            // the return leg (~1km on PU1) undrawn. Mirrors the shared
+            // RouteGeometry.closeLoop used by Android and web.
+            coords = MapRouteGeometry.closeLoop(
+                anchors,
+                isLoop: MapRouteGeometry.isLoopTerminals(line.terminalA, line.terminalB)
+            )
         } else if let osm = SyrmosRouteShapesStore.shared.coordinates(for: line.id), osm.count >= 2 {
             // Rail/tram: prefer OSM geometry so the polyline follows the track
             // (T7 Piraeus loop, M3 airport branch, A4 Megara curve).
@@ -2520,5 +2528,28 @@ private func mapLocalized(_ language: AppLanguage, _ en: String, _ el: String, _
     case .greek: return el
     case .albanian: return sq
     case .italian: return it
+    }
+}
+
+// Swift port of the shared RouteGeometry loop helpers (core/common), so a
+// circular bus route draws its return leg on iOS the same way it does on
+// Android and web. Internal (not private) so iosAppTests can pin the behaviour.
+enum MapRouteGeometry {
+    /// A route is a loop when it starts and ends at the same terminal (PU1:
+    /// both terminals are Kastelokampos). Trimmed, case-insensitive; a blank
+    /// terminal is never a loop.
+    static func isLoopTerminals(_ terminalA: String, _ terminalB: String) -> Bool {
+        let a = terminalA.trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = terminalB.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !a.isEmpty && a.caseInsensitiveCompare(b) == .orderedSame
+    }
+
+    /// Append the first point to close a loop, unless it is not a loop, has
+    /// fewer than two points, or is already closed. Matches
+    /// RouteGeometry.closeLoop so the drawn shape is identical across platforms.
+    static func closeLoop(_ points: [CLLocationCoordinate2D], isLoop: Bool) -> [CLLocationCoordinate2D] {
+        guard isLoop, points.count >= 2, let first = points.first, let last = points.last else { return points }
+        if first.latitude == last.latitude && first.longitude == last.longitude { return points }
+        return points + [first]
     }
 }
