@@ -52,15 +52,35 @@ fun DepartureCard(
 ) {
     val vehicleResource = lineId?.let { VehicleIcons.resourceFor(it, direction, isAirport) }
     // One compound accessibility label so TalkBack announces the row as a single
-    // sentence (line, destination, minutes, time) instead of reading each field
-    // separately. Mirrors the iOS StationDetailView `accessibilityElement(.combine)`
-    // + `accessibilityLabel`. The card is non-interactive, so clearing child
-    // semantics loses no role.
-    val a11yLabel = when (language) {
-        AppLanguage.GREEK -> "$lineName προς $direction, σε $minutesAway λεπτά, στις $departureTime"
-        AppLanguage.ALBANIAN -> "$lineName drejt $direction, për $minutesAway minuta, në $departureTime"
-        AppLanguage.ITALIAN -> "$lineName verso $direction, tra $minutesAway minuti, alle $departureTime"
-        else -> "$lineName towards $direction, in $minutesAway minutes, at $departureTime"
+    // sentence instead of reading each field separately. Mirrors the iOS
+    // StationDetailView `accessibilityElement(.combine)` + `accessibilityLabel`.
+    // The card is non-interactive, so clearing child semantics loses no role -
+    // but the label must carry every on-screen field (airport badge, train
+    // number, source confidence) or a screen-reader user loses them; and it uses
+    // the same human countdown the row shows (formatMinutesAway) rather than the
+    // raw minute count.
+    val a11yLabel = buildString {
+        append(lineName)
+        if (isAirport && airportLabel != null) append(", $airportLabel")
+        append(
+            when (language) {
+                AppLanguage.GREEK -> ", προς $direction"
+                AppLanguage.ALBANIAN -> ", drejt $direction"
+                AppLanguage.ITALIAN -> ", verso $direction"
+                else -> ", towards $direction"
+            },
+        )
+        if (trainNo != null) append(", #$trainNo")
+        append(", ${formatMinutesAway(minutesAway, language)}")
+        append(
+            when (language) {
+                AppLanguage.GREEK -> ", στις $departureTime"
+                AppLanguage.ALBANIAN -> ", në $departureTime"
+                AppLanguage.ITALIAN -> ", alle $departureTime"
+                else -> ", at $departureTime"
+            },
+        )
+        sourceConfidence?.let { append(", ${sourceLabel ?: it.defaultLabel(language)}") }
     }
     Card(
         modifier = modifier

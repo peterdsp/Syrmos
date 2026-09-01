@@ -15,14 +15,17 @@ import kotlinx.coroutines.flow.firstOrNull
  * continues to work fully offline; this just lets us ship station fixes
  * (new tram stops, renamed stations) without an app release.
  *
- * Behaviour:
- * - Line rows are upserted (safe — API has the same columns as the seed).
- * - Station rows for stations the DB already knows about are LEFT ALONE
- *   so we don't clobber the interchange/accessibility/zone flags from the
- *   bundled seed.
+ * Behaviour (overlay-only, matching the iOS reference): the seed is
+ * authoritative; /api/lines may only ADD what the seed lacks, never mutate it.
+ * - A seeded line row is LEFT ALONE (its status/region/terminals are never
+ *   overwritten); only a genuinely new line id is inserted.
+ * - A seeded station row is LEFT ALONE (interchange/accessibility/zone flags
+ *   preserved); only a genuinely new station id is inserted.
+ * - Membership rows are added for a new line's full ordered stop list and for
+ *   a new station attaching to a seeded line; a seeded line's existing
+ *   membership order is never rewritten.
  * - New stations from the API (e.g. the 2022 Piraeus tram extension) are
  *   inserted with sensible defaults.
- * - Station-to-line relations are upserted so the order matches the API.
  * Schedules, frequencies and transfers are not touched — they remain
  * managed by the bundled seed since they're domain-specific.
  */
@@ -57,7 +60,8 @@ class LinesRefresher(
             remoteLines.forEach { line ->
                 // Only insert a genuinely NEW line; never overwrite a seeded line's
                 // status/region/terminals.
-                if (line.id !in knownLineIds) {
+                val lineIsNovel = line.id !in knownLineIds
+                if (lineIsNovel) {
                     database.syrmosDatabaseQueries.insertLine(
                         id = line.id,
                         name = line.name,
@@ -72,10 +76,10 @@ class LinesRefresher(
                     )
                 }
 
-                // Only add NOVEL stations and their membership. A known station's
-                // membership/order is left exactly as seeded (no reorder). This
-                // also never truncates a line: it only ever adds rows.
                 line.stations.forEachIndexed { index, station ->
+                    // Add the station row itself only when it is novel, so a seeded
+                    // station's interchange/accessibility/zone flags are never
+                    // clobbered.
                     if (station.id !in knownStationIds) {
                         database.syrmosDatabaseQueries.insertStation(
                             id = station.id,
@@ -90,6 +94,13 @@ class LinesRefresher(
                             region = line.region,
                             source_confidence = "scheduled",
                         )
+                    }
+                    // Insert the membership when the LINE is new (so a new line gets
+                    // its full ordered stop list, including stops that are already
+                    // seeded interchanges) OR the STATION is new (attach a new stop
+                    // to a seeded line). Skip only when both are already known -
+                    // that is the seeded-membership reorder we must avoid.
+                    if (shouldAttachMembership(lineIsNovel, station.id in knownStationIds)) {
                         database.syrmosDatabaseQueries.insertStationLine(
                             station_id = station.id,
                             line_id = line.id,
@@ -99,5 +110,18 @@ class LinesRefresher(
                 }
             }
         }
+    }
+
+    companion object {
+        /**
+         * Overlay-only membership rule: a station-to-line row is (re)written only
+         * when the line is genuinely new (it needs its full ordered stop list,
+         * including stops that are already-seeded interchanges) or the station is
+         * genuinely new (attach it to a seeded line). When both are already known
+         * the seeded membership is left untouched - writing it would reorder a
+         * seeded line's stops, the exact divergence overlay-only removes.
+         */
+        internal fun shouldAttachMembership(lineIsNovel: Boolean, stationIsKnown: Boolean): Boolean =
+            lineIsNovel || !stationIsKnown
     }
 }
