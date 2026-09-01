@@ -14,7 +14,12 @@ import com.syrmos.feature.stations.StationDetailScreen
 import com.syrmos.feature.stations.StationDetailViewModel
 import org.koin.compose.koinInject
 
-data class StationDetailScreenRoute(val stationId: String) : Screen {
+data class StationDetailScreenRoute(
+    val stationId: String,
+    // Set when reached as a transfer from another hub: scopes this screen's
+    // departures to that one line, so it shows the tapped line's timetable here.
+    val focusLineId: String? = null,
+) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -46,12 +51,22 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
             )
         }
 
-        viewModel.loadStation(stationId)
+        viewModel.loadStation(stationId, focusLineId)
         StationDetailScreen(
             viewModel = viewModel,
             alertBanner = alertBanner,
             lineDisruptions = lineDisruptions,
             onBack = { navigator.pop() },
+            onOpenTransfer = { lineId, targetStationId ->
+                // Honor BOTH resolver ids: open the resolved stop scoped to the
+                // tapped line, so the destination shows that line's timetable at
+                // that hub, not every line's departures aggregated. Ignore a tap
+                // that would push the identical route (belt-and-suspenders: the use
+                // case already excludes the focused line from a scoped screen).
+                if (targetStationId != stationId || lineId != focusLineId) {
+                    navigator.push(StationDetailScreenRoute(targetStationId, focusLineId = lineId))
+                }
+            },
         )
     }
 }

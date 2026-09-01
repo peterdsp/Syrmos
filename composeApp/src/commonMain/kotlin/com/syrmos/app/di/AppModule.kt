@@ -82,7 +82,7 @@ val featureModule = module {
     // instance switches its single refreshJob per station (loadStation cancels
     // the old one), so exactly one loop runs regardless of how many stations
     // are viewed.
-    single { StationDetailViewModel(getStationDetail = get(), getStationDepartures = get()) }
+    single { StationDetailViewModel(getStationDetail = get(), getStationDepartures = get(), getInterchangeTargets = get()) }
 }
 
 val appModules = listOf(

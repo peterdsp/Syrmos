@@ -60,6 +60,20 @@ class LinesRefresher(
                     status = line.status,
                 )
 
+                // Upsert memberships in place; deliberately do NOT delete-then-
+                // replace. The server derives stationCount from the very list it
+                // sends (generator.py: "stationCount": len(stops)), so a partial
+                // payload is internally self-consistent and indistinguishable from
+                // a complete one; deleting first would let such a payload truncate
+                // the line. There is no independent completeness signal (no
+                // versioned membership manifest), so upsert-only is the safe
+                // choice: it never truncates. A stop legitimately removed upstream
+                // can linger until a reseed, an accepted low-severity limitation.
+                // The interchange resolver's own-stop guarantee still holds because
+                // the server only ever emits a line's authoritative per-line
+                // station ids, never another hub's id under it, so no wrong-id row
+                // is inserted. INSERT OR REPLACE is composite-keyed on
+                // (station_id, line_id), so this updates positions in place.
                 line.stations.forEachIndexed { index, station ->
                     if (station.id !in knownStationIds) {
                         database.syrmosDatabaseQueries.insertStation(
@@ -76,9 +90,6 @@ class LinesRefresher(
                             source_confidence = "scheduled",
                         )
                     }
-                    // Station-line ordering is authored on the server, so always
-                    // re-sync the position. INSERT OR REPLACE is composite-keyed
-                    // on (station_id, line_id) so this updates in place.
                     database.syrmosDatabaseQueries.insertStationLine(
                         station_id = station.id,
                         line_id = line.id,
