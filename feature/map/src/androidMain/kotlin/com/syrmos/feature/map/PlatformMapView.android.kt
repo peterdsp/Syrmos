@@ -59,18 +59,10 @@ private val ESRI_DARK: ITileSource = esriGrayNoLabels("EsriGrayDark", "World_Dar
 
 private fun tileSourceFor(dark: Boolean): ITileSource = if (dark) ESRI_DARK else ESRI_LIGHT
 
-/**
- * OSM-derived rail route geometry shipped at `assets/files/seed/schedules-v2/shapes.json`.
- * Loaded once at first map mount and used in place of catmullRomSpline(stations)
- * so polylines follow real track (T7 Piraeus loop, M3 airport branch, A4 Megara curve).
- * Falls back to spline-of-stations when a line has no shape.
- */
-@Serializable
-private data class RouteShape(val coordinates: List<List<Double>>)
-
-@Serializable
-private data class RouteShapesPayload(val shapes: Map<String, RouteShape>)
-
+// Vehicle markers snap to the shared effectiveGeometry (the same polyline the
+// route is drawn as), so a marker never floats off its own line. OSM shapes are
+// loaded once in commonMain (LineGeometryRepository) and merged into that shared
+// geometry by MapViewModel, so this file no longer reads shapes.json directly.
 private fun snapToPolyline(lat: Double, lng: Double, lineId: String, shapes: Map<String, List<GeoPoint>>): GeoPoint {
     val poly = shapes[lineId] ?: return GeoPoint(lat, lng)
     if (poly.size < 2) return GeoPoint(lat, lng)
@@ -90,18 +82,6 @@ private fun snapToPolyline(lat: Double, lng: Double, lineId: String, shapes: Map
         if (d < bestDist) { bestDist = d; bestLat = px; bestLng = py }
     }
     return GeoPoint(bestLat, bestLng)
-}
-
-private fun loadRouteShapes(context: Context): Map<String, List<GeoPoint>> {
-    return runCatching {
-        val body = context.assets.open("files/seed/schedules-v2/shapes.json").bufferedReader().use { it.readText() }
-        val payload = Json { ignoreUnknownKeys = true }.decodeFromString<RouteShapesPayload>(body)
-        payload.shapes.mapValues { (_, shape) ->
-            shape.coordinates.mapNotNull { pair ->
-                if (pair.size >= 2) GeoPoint(pair[0], pair[1]) else null
-            }
-        }
-    }.getOrDefault(emptyMap())
 }
 
 /**
@@ -199,7 +179,16 @@ internal actual fun PlatformMapView(
     val context = LocalContext.current
     var hasFittedBounds by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
-    val routeShapes = remember { loadRouteShapes(context) }
+    // The single polyline each line is drawn as, has its vehicle markers snapped
+    // to, AND is simulated along: MapViewModel computes it once (buses ride their
+    // stops loop-closed for PU1, rail/tram keep the OSM shape) and shares it here,
+    // so the drawn route, the moving markers and the simulator can never diverge.
+    val effectiveShapes: Map<String, List<GeoPoint>> =
+        remember(uiState.effectiveGeometry) {
+            uiState.effectiveGeometry.mapValues { (_, poly) ->
+                poly.map { GeoPoint(it.lat, it.lng) }
+            }
+        }
     val lineColors = remember { loadLineColors(context) }
     val lineOverlays = remember { mutableListOf<Polyline>() }
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
@@ -299,15 +288,14 @@ internal actual fun PlatformMapView(
             val lineStations = uiState.lineStations[line.id].orEmpty()
             if (lineStations.size < 2) return@forEach
 
-            // Prefer real OSM track geometry over a spline through station
-            // points so the Piraeus loop, M3 airport branch and suburban
-            // curves render accurately.
-            val osmShape = routeShapes[line.id]
-            val smoothed: List<GeoPoint> = if (osmShape != null && osmShape.size >= 2) {
-                osmShape
-            } else {
-                catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
-            }
+            // The drawn polyline is the SAME shared effectiveGeometry the vehicle
+            // markers snap to and the simulator rides, so a bus is never drawn
+            // along its stops while its marker or vehicle follows an unrelated OSM
+            // shape. Buses resolve to their ordered stops (loop-closed for PU1),
+            // rail/tram keep OSM track geometry, and a shapeless line is already
+            // splined upstream. A line with no usable geometry is skipped.
+            val smoothed: List<GeoPoint> = effectiveShapes[line.id] ?: return@forEach
+            if (smoothed.size < 2) return@forEach
             val override = displayOverrides[line.id]
             // A line that is built but not open still draws, because the track is
             // real, but it reads as inert: muted grey, thinner, dashed. It carries
@@ -483,7 +471,7 @@ internal actual fun PlatformMapView(
             // badges, which is exactly why the trains looked nothing like web. Line
             // colour comes from the raw lines.json hex, same as web.
             val lineColor = lineColors[train.lineId] ?: train.lineColor.toComposeColor().toArgb()
-            val snappedSimPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
+            val snappedSimPos = snapToPolyline(train.latitude, train.longitude, train.lineId, effectiveShapes)
             val existing = trainMarkers[train.id]
             if (existing != null) {
                 existing.position = snappedSimPos
@@ -532,7 +520,7 @@ internal actual fun PlatformMapView(
             val color = if (notInService) 0xFF9CA3AF.toInt()
                 else uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
                     ?: 0xFF7C4DFF.toInt()
-            val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
+            val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, effectiveShapes)
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
                 existing.position = snappedPos
@@ -604,29 +592,6 @@ private fun parseHex(hex: String): Int {
         8 -> s.toLongOrNull(16)?.toInt() ?: fallback
         else -> fallback
     }
-}
-
-private fun catmullRomSpline(points: List<GeoPoint>, segments: Int = 5): List<GeoPoint> {
-    if (points.size < 3) return points
-    val result = mutableListOf(points[0])
-    for (i in 0 until points.size - 1) {
-        val p0 = points[maxOf(i - 1, 0)]
-        val p1 = points[i]
-        val p2 = points[i + 1]
-        val p3 = points[minOf(i + 2, points.size - 1)]
-        for (t in 1..segments) {
-            val f = t.toDouble() / (segments + 1)
-            val lat = cr(p0.latitude, p1.latitude, p2.latitude, p3.latitude, f)
-            val lon = cr(p0.longitude, p1.longitude, p2.longitude, p3.longitude, f)
-            result.add(GeoPoint(lat, lon))
-        }
-        result.add(p2)
-    }
-    return result
-}
-
-private fun cr(a: Double, b: Double, c: Double, d: Double, t: Double): Double {
-    return 0.5 * (2*b + (-a+c)*t + (2*a - 5*b + 4*c - d)*t*t + (-a + 3*b - 3*c + d)*t*t*t)
 }
 
 // Fallback bitmap builders for when PNG drawables are not found
