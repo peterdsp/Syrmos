@@ -380,7 +380,11 @@ enum SyrmosData {
             }
         }
         return firstSeen.map { id, s in
-            let lineIds = (lineIdsById[id] ?? []).sorted()
+            // Union the same-id membership with the network-wide proximity hub
+            // membership, so co-located stations that use different ids (e.g.
+            // Larissa: M2_STA / GR_ATH / A1_ATH) share the full line set in map
+            // pills and Browse All Stations, matching the interchange section.
+            let lineIds = (lineIdsById[id] ?? []).union(hubLineIds[id] ?? []).sorted()
             return TransitStation(
                 id: id, name: s.name, nameEl: s.nameEl,
                 coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng),

@@ -191,4 +191,14 @@ final class InterchangeAssociationTests: XCTestCase {
         XCTAssertTrue(Set(larissa).isSuperset(of: ["M2", "IC1", "RG1"]),
                       "Larissa (M2_STA) hub must include intercity IC1/RG1; got \(larissa.sorted())")
     }
+
+    func testPublicBundleStationLarissaExposesAllLines() throws {
+        // The RENDERED data source (map pills / Browse All Stations), not only
+        // hubLineIds, must carry the full Larissa membership.
+        let larissa = SyrmosData.bundleStations.first { $0.id == "M2_STA" }
+        let station = try XCTUnwrap(larissa, "M2_STA should be in the public bundle stations")
+        XCTAssertTrue(Set(station.lineIds).isSuperset(of: ["M2", "A1", "A3", "A4", "IC1", "RG1"]),
+                      "Larissa map/browse station must expose all co-located lines; got \(station.lineIds.sorted())")
+        XCTAssertTrue(station.isInterchange)
+    }
 }
