@@ -278,5 +278,95 @@ class ActiveTrainsOvernightTest(unittest.TestCase):
         self.assertIsInstance(trains, list)
 
 
+def make_m1_shortturn_conn(*, with_endpoints: bool = True, label: str = "short") -> sqlite3.Connection:
+    """M1 with a late-night band and (optionally) a scraped short-turn row.
+
+    STASY's real case: the 00:30 outbound from Piraeus terminates at Omonia,
+    not the line terminal Kifissia. The band grid only knows the terminal, so
+    the destination has to come from last_train_endpoints (migration 0017).
+    """
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE lines (id TEXT PRIMARY KEY, terminal_a TEXT NOT NULL, terminal_b TEXT NOT NULL);
+        CREATE TABLE schedule_rules (line_id TEXT, day_type TEXT, open_time TEXT, close_time TEXT, is_24_7 INTEGER DEFAULT 0);
+        CREATE TABLE frequency_bands (line_id TEXT, day_type TEXT, time_start TEXT, time_end TEXT, headway_minutes REAL, label TEXT, direction TEXT DEFAULT 'both');
+        CREATE TABLE station_offsets (line_id TEXT, direction TEXT, station_id TEXT, minutes_from_origin INTEGER);
+        CREATE TABLE stations (id TEXT PRIMARY KEY, name TEXT NOT NULL);
+        CREATE TABLE last_train_endpoints (
+            line_id TEXT, day_type TEXT, direction TEXT, from_station_id TEXT,
+            time TEXT, end_station_id TEXT, label TEXT, source TEXT, fetched_at TEXT
+        );
+        """
+    )
+    conn.execute("INSERT INTO lines VALUES ('M1', 'Piraeus', 'Kifissia')")
+    conn.execute("INSERT INTO schedule_rules VALUES ('M1', 'mon_thu', '05:30', '00:30', 0)")
+    # A plain 10:00 -> 11:00 band (slots 10:00, 10:15, 10:30, 10:45, 11:00).
+    # The real short-turn is at the end of the night, but the override matches
+    # purely on slot time, so a daytime band exercises the same code without
+    # fighting the projector's overnight next-day-extension descriptors.
+    conn.execute("INSERT INTO frequency_bands(line_id, day_type, time_start, time_end, headway_minutes, label) VALUES ('M1','mon_thu','10:00','11:00',15.0,'regular')")
+    conn.executemany(
+        "INSERT INTO stations(id, name) VALUES (?, ?)",
+        [("M1_OMO", "Omonia"), ("M1_KIF", "Kifissia")],
+    )
+    if with_endpoints:
+        conn.execute(
+            "INSERT INTO last_train_endpoints(line_id, day_type, direction, from_station_id, time, end_station_id, label)"
+            " VALUES ('M1', 'mon_thu', 'outbound', 'M1_PIR', '10:30', 'M1_OMO', ?)",
+            (label,),
+        )
+    return conn
+
+
+class LastTrainShortTurnTest(unittest.TestCase):
+    """Parity #12: the last short-turn train shows its real terminus."""
+
+    def _outbound(self, conn):
+        return project_next_departures(
+            conn, "M1_PIR", ["M1"], direction="outbound",
+            now=datetime(2026, 6, 15, 10, 0, tzinfo=ATHENS),  # Monday 10:00
+            limit=5,
+        )
+
+    def test_shortturn_slot_shows_intermediate_terminus(self):
+        rows = self._outbound(make_m1_shortturn_conn())
+        by_time = {r["time"]: r["direction"] for r in rows}
+        # The 10:30 short-turn goes to Omonia, not the line terminal.
+        self.assertEqual(by_time.get("10:30"), "Omonia")
+
+    def test_normal_slots_keep_line_terminal(self):
+        rows = self._outbound(make_m1_shortturn_conn())
+        by_time = {r["time"]: r["direction"] for r in rows}
+        # Trains that are not the short-turn still run to Kifissia.
+        self.assertEqual(by_time.get("10:15"), "Kifissia")
+        self.assertEqual(by_time.get("10:45"), "Kifissia")
+
+    def test_no_endpoints_table_data_keeps_terminal(self):
+        # Regression / offline parity: with no short-turn rows every slot is
+        # the line terminal, exactly as the bundled seed (which ships none).
+        rows = self._outbound(make_m1_shortturn_conn(with_endpoints=False))
+        self.assertTrue(rows)
+        for r in rows:
+            self.assertEqual(r["direction"], "Kifissia")
+
+    def test_regular_last_train_does_not_override(self):
+        # label='last' rows pin the clock time but keep the line terminal;
+        # only label='short' rewrites the destination.
+        rows = self._outbound(make_m1_shortturn_conn(label="last"))
+        by_time = {r["time"]: r["direction"] for r in rows}
+        self.assertEqual(by_time.get("10:30"), "Kifissia")
+
+    def test_missing_migration_is_graceful(self):
+        # A Pi without migration 0017 has no last_train_endpoints table; the
+        # projector must still return the normal terminal, never raise.
+        conn = make_m1_shortturn_conn(with_endpoints=False)
+        conn.execute("DROP TABLE last_train_endpoints")
+        rows = self._outbound(conn)
+        self.assertTrue(rows)
+        self.assertTrue(all(r["direction"] == "Kifissia" for r in rows))
+
+
 if __name__ == "__main__":
     unittest.main()
