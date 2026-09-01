@@ -36,12 +36,19 @@ class StationRepositoryImpl(
      * Only id + coordinates are populated (other Station fields are placeholders)
      * because the sole consumer, the interchange resolver, reads just those. This
      * replaces a per-line getStationsOnLine fan-out (~485 selects per station
-     * change). Falls back to the bundled seed when the DB is not yet seeded.
+     * change).
+     *
+     * Sourced ONLY from station_line_entity, whose (station_id, line_id) rows are
+     * the authoritative per-line memberships. Returns empty when the DB is
+     * unseeded: the interchange section simply does not appear, which is correct.
+     * A Station.lineIds-based seed fallback is deliberately NOT used, because
+     * lineIds lists every line at a hub (bundled M1_PIR lists M3), so it would put
+     * M1_PIR under M3 and hand the resolver a wrong own-stop id (M3 -> M1_PIR).
      */
-    suspend fun getStationCoordinatesByLine(): Map<String, List<Station>> {
-        val rows = database.syrmosDatabaseQueries.getAllStationLineCoordinates().executeAsList()
-        if (rows.isNotEmpty()) {
-            return rows.groupBy { it.lineId }.mapValues { (lineId, group) ->
+    fun getStationCoordinatesByLine(): Map<String, List<Station>> =
+        database.syrmosDatabaseQueries.getAllStationLineCoordinates().executeAsList()
+            .groupBy { it.lineId }
+            .mapValues { (lineId, group) ->
                 group.map { row ->
                     Station(
                         id = row.stationId,
@@ -53,10 +60,6 @@ class StationRepositoryImpl(
                     )
                 }
             }
-        }
-        return readSeedStations().flatMap { s -> s.lineIds.map { it to s } }
-            .groupBy({ it.first }, { it.second })
-    }
 
     fun getStationById(id: String): Flow<Station?> = flow {
         val entity = database.syrmosDatabaseQueries.getStationById(id).executeAsOneOrNull()
