@@ -12,6 +12,7 @@ import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
+import com.syrmos.core.domain.usecase.GetInterchangeTargetsUseCase
 import com.syrmos.core.domain.usecase.GetStationDetailUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
 import com.syrmos.core.domain.usecase.SearchStationsUseCase
@@ -21,6 +22,7 @@ val domainModule = module {
     factory { GetLinesUseCase(lineRepository = get()) }
     factory { GetLineDetailUseCase(lineRepository = get(), stationRepository = get(), scheduleRepository = get()) }
     factory { GetStationDetailUseCase(stationRepository = get(), lineRepository = get()) }
+    factory { GetInterchangeTargetsUseCase(lineRepository = get(), stationRepository = get(), scheduleSync = get()) }
     factory { ComputeDeparturesFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
     factory { ComputeActiveTrainsFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
     factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get()) }

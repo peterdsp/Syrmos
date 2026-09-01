@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +66,9 @@ fun StationDetailScreen(
     alertBanner: AlertBannerInfo? = null,
     lineDisruptions: Map<String, AlertSeverity> = emptyMap(),
     onBack: () -> Unit = {},
+    // Carries BOTH the line and the resolver's per-line station id so the caller
+    // can open that line's timetable AT this hub (not just the whole-line view).
+    onOpenTransfer: (lineId: String, stationId: String) -> Unit = { _, _ -> },
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -183,37 +185,53 @@ fun StationDetailScreen(
                 }
             }
 
-            if (uiState.isInterchange) {
+            // Actionable interchange: tap a line to open its timetable here.
+            // Replaces the old passive "Transfer station" badge. On an unscoped
+            // screen require 2+ targets so a single-line station (whose one target
+            // is its own line) shows nothing; on a focus-scoped transfer screen
+            // the focused line is already excluded, so any remaining target is a
+            // genuine other-line transfer and one is enough to show.
+            val minInterchangeTargets = if (uiState.focusLineId != null) 1 else 2
+            if (uiState.interchangeTargets.size >= minInterchangeTargets) {
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        ),
+                    SectionHeader(title = when (lang) {
+                        AppLanguage.GREEK -> "Αλλαγη γραμμης εδω"
+                        AppLanguage.ALBANIAN -> "Ndrysho linjen ketu"
+                        AppLanguage.ITALIAN -> "Cambia linea qui"
+                        else -> "Change line here"
+                    })
+                }
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "⇄",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                            Text(
-                                text = when (lang) {
-                                    AppLanguage.GREEK -> "Σταθμος ανταποκρισης"
-                                    AppLanguage.ALBANIAN -> "Stacion korrespondence"
-                                    AppLanguage.ITALIAN -> "Stazione di interscambio"
-                                    else -> "Transfer station"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
+                        uiState.interchangeTargets.forEach { target ->
+                            Card(
+                                onClick = { onOpenTransfer(target.line.id, target.stationId) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LineColorIndicator(lineColor = target.line.color, size = 14.dp)
+                                    Text(
+                                        text = "${target.line.localizedName(lang)} (${target.line.terminalA} - ${target.line.terminalB})",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Text(
+                                        text = "›",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -258,12 +276,22 @@ fun StationDetailScreen(
             }
 
             item {
-                SectionHeader(title = when (lang) {
+                val base = when (lang) {
                     AppLanguage.GREEK -> "Επομενες αναχωρησεις"
                     AppLanguage.ALBANIAN -> "Nisjet e ardhshme"
                     AppLanguage.ITALIAN -> "Prossime partenze"
                     else -> "Next departures"
-                })
+                }
+                // When opened as a transfer, departures are scoped to one line;
+                // name it so a single-line list does not look like a bug.
+                val focus = uiState.focusLineId
+                val title = if (focus != null) {
+                    val name = uiState.connectingLines.firstOrNull { it.id == focus }?.localizedName(lang) ?: focus
+                    "$base · $name"
+                } else {
+                    base
+                }
+                SectionHeader(title = title)
             }
 
             if (uiState.departures.isEmpty()) {
