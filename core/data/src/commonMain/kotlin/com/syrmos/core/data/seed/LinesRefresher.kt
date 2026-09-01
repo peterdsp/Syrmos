@@ -104,7 +104,7 @@ class LinesRefresher(
                         database.syrmosDatabaseQueries.insertStationLine(
                             station_id = station.id,
                             line_id = line.id,
-                            position_on_line = index.toLong(),
+                            position_on_line = membershipPosition(lineIsNovel, index),
                         )
                     }
                 }
@@ -123,5 +123,26 @@ class LinesRefresher(
          */
         internal fun shouldAttachMembership(lineIsNovel: Boolean, stationIsKnown: Boolean): Boolean =
             lineIsNovel || !stationIsKnown
+
+        // Beyond the longest real Athens line (T7, ~43 stops). Seeded positions
+        // never reach this, so overlay-appended stops sort strictly after them.
+        internal const val NOVEL_STOP_BASE: Long = 100_000L
+
+        /**
+         * Position for an overlay-inserted membership row. A novel line owns its
+         * whole ordered list, so its stops keep the payload index (0..N). A novel
+         * station attaching to a SEEDED line must NOT reuse the payload index:
+         * the seed already occupies 0..N-1 and those rows are left untouched
+         * (overlay-only), so a mid-line index would collide with a seeded stop and
+         * make `getStationsOnLine`'s `ORDER BY position_on_line` nondeterministic
+         * (and shift every later stop). Park novel stops past every real seeded
+         * position ([NOVEL_STOP_BASE]) so they append deterministically, in
+         * payload order, without ever rewriting a seeded row. The trade-off - a
+         * genuinely mid-line new stop shows at the end of the stop strip rather
+         * than in place - is strictly better than a corrupted (nondeterministic)
+         * order, and departures are unaffected (they key off station_offsets).
+         */
+        internal fun membershipPosition(lineIsNovel: Boolean, index: Int): Long =
+            if (lineIsNovel) index.toLong() else NOVEL_STOP_BASE + index.toLong()
     }
 }
