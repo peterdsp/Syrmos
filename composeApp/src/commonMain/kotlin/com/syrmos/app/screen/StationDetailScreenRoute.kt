@@ -60,8 +60,12 @@ data class StationDetailScreenRoute(
             onOpenTransfer = { lineId, targetStationId ->
                 // Honor BOTH resolver ids: open the resolved stop scoped to the
                 // tapped line, so the destination shows that line's timetable at
-                // that hub, not every line's departures aggregated.
-                navigator.push(StationDetailScreenRoute(targetStationId, focusLineId = lineId))
+                // that hub, not every line's departures aggregated. Ignore a tap
+                // that would push the identical route (belt-and-suspenders: the use
+                // case already excludes the focused line from a scoped screen).
+                if (targetStationId != stationId || lineId != focusLineId) {
+                    navigator.push(StationDetailScreenRoute(targetStationId, focusLineId = lineId))
+                }
             },
         )
     }

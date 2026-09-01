@@ -126,7 +126,9 @@ class StationDetailViewModel(
                 // degrade to empty targets, never crash station detail as an
                 // uncaught coroutine exception.
                 try {
-                    val targets = getInterchangeTargets.invoke(detail.station)
+                    // Exclude the focused line so a transfer-scoped screen never
+                    // offers a transfer back to the line it is already showing.
+                    val targets = getInterchangeTargets.invoke(detail.station, currentLineId = focusLineId.orEmpty())
                     if (loadedStationId == stationId && loadedFocusLineId == focusLineId) {
                         _uiState.update { it.copy(interchangeTargets = targets) }
                     }

@@ -25,7 +25,16 @@ class GetInterchangeTargetsUseCase(
     private val stationRepository: StationRepositoryImpl,
     private val scheduleSync: ScheduleSyncRepository,
 ) {
-    suspend fun invoke(station: Station): List<InterchangeTarget> = withContext(Dispatchers.Default) {
+    /**
+     * [currentLineId] is excluded from the results. It is empty for an unscoped
+     * station screen (offer every nearby line), and the focused line on a
+     * transfer-scoped screen, so that screen never offers a transfer back to the
+     * line it is already showing (which would push an identical route).
+     */
+    suspend fun invoke(
+        station: Station,
+        currentLineId: String = "",
+    ): List<InterchangeTarget> = withContext(Dispatchers.Default) {
         // Bundled offline snapshot (hydrated at cold start), so this works with no
         // network: a line has a timetable when it carries frequency bands or trips.
         val bundles = scheduleSync.lineBundles.value
@@ -44,7 +53,7 @@ class GetInterchangeTargetsUseCase(
         InterchangeResolver.resolve(
             hubLatitude = station.latitude,
             hubLongitude = station.longitude,
-            currentLineId = "",
+            currentLineId = currentLineId,
             lines = eligible,
             stationsByLine = stationsByLine,
             hasSchedule = ::hasSchedule,
