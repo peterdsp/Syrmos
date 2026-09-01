@@ -7,9 +7,11 @@ import com.syrmos.core.data.repository.ScheduleRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.repository.TransitPatternRepositoryImpl
 import com.syrmos.core.data.seed.SeedServicePattern
+import com.syrmos.core.common.extensions.currentAthensDate
 import com.syrmos.core.common.extensions.currentAthensDayOfWeek
 import com.syrmos.core.common.extensions.currentAthensTime
 import com.syrmos.core.common.extensions.parseTime
+import com.syrmos.core.domain.schedule.ServiceDayResolver
 import com.syrmos.core.domain.usecase.ComputeActiveTrainsFromBandsUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.model.schedule.DayType
@@ -453,15 +455,11 @@ class MapViewModel(
         }
     }
 
-    private fun resolveCurrentDayType(): DayType {
-        return when (currentAthensDayOfWeek()) {
-            DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY -> DayType.WEEKDAY
-            DayOfWeek.FRIDAY -> DayType.FRIDAY
-            DayOfWeek.SATURDAY -> DayType.SATURDAY
-            DayOfWeek.SUNDAY -> DayType.SUNDAY
-            else -> DayType.WEEKDAY
-        }
-    }
+    // Seed-DB fallback day type. Routes through the shared resolver so a public
+    // holiday (e.g. Aug 15 on a weekday) queries the Sunday/Saturday service it
+    // actually runs instead of weekday service.
+    private fun resolveCurrentDayType(): DayType =
+        ServiceDayResolver.baseDayType(currentAthensDate())
 
     /// The schedule day-type string the bundled national/bus trips are keyed by
     /// ("mon_thu" / "fri" / "sat" / "sun"), matching the web projector.
