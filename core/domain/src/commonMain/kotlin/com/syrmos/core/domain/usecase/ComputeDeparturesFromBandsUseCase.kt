@@ -2,6 +2,7 @@ package com.syrmos.core.domain.usecase
 
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
+import com.syrmos.core.domain.schedule.ServiceDayResolver
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.network.SyrmosSchedulesService
 import kotlin.math.roundToInt
@@ -241,16 +242,9 @@ class ComputeDeparturesFromBandsUseCase(
         private val line3AirportOnlyStations = setOf("M3_PAL", "M3_PEA", "M3_KO2", "M3_AER")
     }
 
-    private fun resolveHolidayDayType(date: LocalDate): String? {
-        val mmdd = "${pad(date.monthNumber)}-${pad(date.dayOfMonth)}"
-        return when (mmdd) {
-            "01-01", "05-01", "10-28", "12-25", "12-26" -> "sun"
-            "08-15" -> "aug_15"
-            "12-24", "12-31" -> "dec_24_31"
-            "01-02", "01-06", "11-17" -> "sat"
-            else -> null
-        }
-    }
+    // Delegates to the shared calendar so the holiday table is defined once.
+    private fun resolveHolidayDayType(date: LocalDate): String? =
+        ServiceDayResolver.holidayDayType(date)
 
     private fun projectForLine(
         bundle: SyrmosSchedulesService.LineSchedule,
