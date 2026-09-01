@@ -131,7 +131,7 @@ SELECT * FROM station_entity WHERE is_interchange = 1 ORDER BY name;
 
 searchStations:
 SELECT * FROM station_entity
-WHERE name LIKE ? OR name_el LIKE ?
+WHERE name LIKE ? OR name_el LIKE ? OR name_sq LIKE ? OR id LIKE ?
 ORDER BY name;
 
 insertStation:
