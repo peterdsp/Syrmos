@@ -252,18 +252,23 @@ final class STASYService: ObservableObject {
     }
 
     private struct APIAnnouncement: Decodable {
-        let id: String
-        let title: String
+        // These were required, so one malformed row (a missing id/title/date/
+        // summary/url/category) failed the whole APIPayload decode and dropped
+        // every announcement AND the service-status badge. Optional + defaulted +
+        // blank-title-skipped when mapping, matching the resilient Android
+        // STASYAnnouncementService.
+        let id: String?
+        let title: String?
         let titleEn: String?
         let titleSq: String?
         let titleIt: String?
-        let date: String
-        let summary: String
+        let date: String?
+        let summary: String?
         let summaryEn: String?
         let summarySq: String?
         let summaryIt: String?
-        let url: String
-        let category: String
+        let url: String?
+        let category: String?
         let affectedLines: [String]?
         let affectedStationIds: [String]?
         let severity: String?
@@ -295,20 +300,25 @@ final class STASYService: ObservableObject {
             let payload = try JSONDecoder().decode(APIPayload.self, from: data)
             serviceStatus = payload.status
             cacheStatus(payload.status)
-            let parsed: [STASYAnnouncement] = payload.announcements.map { item in
-                STASYAnnouncement(
-                    id: item.id,
-                    title: item.title,
+            let parsed: [STASYAnnouncement] = payload.announcements.compactMap { item -> STASYAnnouncement? in
+                // Skip a blank-title row rather than render an empty alert
+                // (matches Android's blank-title filter); other rows survive one
+                // bad sibling now that the fields are optional.
+                let title = item.title ?? ""
+                guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+                return STASYAnnouncement(
+                    id: item.id ?? "",
+                    title: title,
                     titleEn: item.titleEn ?? "",
                     titleSq: item.titleSq ?? "",
                     titleIt: item.titleIt ?? "",
-                    date: item.date,
-                    summary: item.summary,
+                    date: item.date ?? "",
+                    summary: item.summary ?? "",
                     summaryEn: item.summaryEn ?? "",
                     summarySq: item.summarySq ?? "",
                     summaryIt: item.summaryIt ?? "",
-                    url: URL(string: item.url),
-                    category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
+                    url: URL(string: item.url ?? ""),
+                    category: AnnouncementCategory(rawValue: (item.category ?? "") == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
                     affectedLines: item.affectedLines ?? [],
                     affectedStationIds: item.affectedStationIds ?? [],
                     severity: item.severity ?? "info",
