@@ -40,40 +40,41 @@ class LinesRefresher(
             .getAllStations()
             .executeAsList()
             .mapTo(HashSet()) { it.id }
+        val knownLineIds = database.syrmosDatabaseQueries
+            .getAllLines()
+            .executeAsList()
+            .mapTo(HashSet()) { it.id }
 
+        // Overlay-only, matching the iOS reference (SyrmosLinesService, which only
+        // ever collects genuinely novel stations and never touches line
+        // status/region or station order). Android previously UPSERTED each line's
+        // status/region from the payload and REORDERED every membership in place,
+        // so a drifted or partial /api/lines payload could silently flip a seeded
+        // line's status (under_construction <-> operational), relabel its region,
+        // or reorder its stops - none of which iOS does. The seed is authoritative;
+        // /api/lines may only ADD lines/stations the seed lacks.
         database.transaction {
             remoteLines.forEach { line ->
-                database.syrmosDatabaseQueries.insertLine(
-                    id = line.id,
-                    name = line.name,
-                    name_el = line.nameEl,
-                    type = line.type.lowercase(),
-                    color = line.color,
-                    terminal_a = line.terminalA,
-                    terminal_b = line.terminalB,
-                    station_count = line.stationCount.toLong(),
-                    // This upserts over the seeded rows, so region and status must
-                    // be carried through. Dropping them here would silently promote
-                    // an under-construction line back to live on the first refresh,
-                    // after the seed had it right.
-                    region = line.region,
-                    status = line.status,
-                )
+                // Only insert a genuinely NEW line; never overwrite a seeded line's
+                // status/region/terminals.
+                if (line.id !in knownLineIds) {
+                    database.syrmosDatabaseQueries.insertLine(
+                        id = line.id,
+                        name = line.name,
+                        name_el = line.nameEl,
+                        type = line.type.lowercase(),
+                        color = line.color,
+                        terminal_a = line.terminalA,
+                        terminal_b = line.terminalB,
+                        station_count = line.stationCount.toLong(),
+                        region = line.region,
+                        status = line.status,
+                    )
+                }
 
-                // Upsert memberships in place; deliberately do NOT delete-then-
-                // replace. The server derives stationCount from the very list it
-                // sends (generator.py: "stationCount": len(stops)), so a partial
-                // payload is internally self-consistent and indistinguishable from
-                // a complete one; deleting first would let such a payload truncate
-                // the line. There is no independent completeness signal (no
-                // versioned membership manifest), so upsert-only is the safe
-                // choice: it never truncates. A stop legitimately removed upstream
-                // can linger until a reseed, an accepted low-severity limitation.
-                // The interchange resolver's own-stop guarantee still holds because
-                // the server only ever emits a line's authoritative per-line
-                // station ids, never another hub's id under it, so no wrong-id row
-                // is inserted. INSERT OR REPLACE is composite-keyed on
-                // (station_id, line_id), so this updates positions in place.
+                // Only add NOVEL stations and their membership. A known station's
+                // membership/order is left exactly as seeded (no reorder). This
+                // also never truncates a line: it only ever adds rows.
                 line.stations.forEachIndexed { index, station ->
                     if (station.id !in knownStationIds) {
                         database.syrmosDatabaseQueries.insertStation(
@@ -89,12 +90,12 @@ class LinesRefresher(
                             region = line.region,
                             source_confidence = "scheduled",
                         )
+                        database.syrmosDatabaseQueries.insertStationLine(
+                            station_id = station.id,
+                            line_id = line.id,
+                            position_on_line = index.toLong(),
+                        )
                     }
-                    database.syrmosDatabaseQueries.insertStationLine(
-                        station_id = station.id,
-                        line_id = line.id,
-                        position_on_line = index.toLong(),
-                    )
                 }
             }
         }
