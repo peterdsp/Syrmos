@@ -98,6 +98,7 @@
 		D7E8F9A0B1C2D3E4F5060708 /* iosApp/Core/Diagnostics/Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5060709 /* iosApp/Core/Diagnostics/Diagnostics.swift */; };
 		DA7A0001F00D0001F00D0001 /* iosApp/Core/Schedule/DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */; };
 		DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */; };
+		DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */; };
 		DA7A0011F00D0011F00D0011 /* iosApp/Features/Assistant/AriadneParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */; };
 		DA7A0013F00D0013F00D0013 /* iosApp/Features/Assistant/AriadneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */; };
 		DA7A0015F00D0015F00D0015 /* iosApp/Features/Assistant/AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */; };
@@ -290,6 +291,7 @@
 		D7E8F9A0B1C2D3E4F5060709 /* iosApp/Core/Diagnostics/Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Diagnostics/Diagnostics.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0002F00D0002F00D0002 /* iosApp/Core/Schedule/DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeFeaturesTests.swift; sourceTree = "<group>"; };
+		DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapRouteGeometryTests.swift; sourceTree = "<group>"; };
 		DA7A0012F00D0012F00D0012 /* iosApp/Features/Assistant/AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0014F00D0014F00D0014 /* iosApp/Features/Assistant/AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0016F00D0016F00D0016 /* iosApp/Features/Assistant/AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
@@ -379,6 +381,7 @@
 			children = (
 				87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */,
 				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
+				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
 				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
 				B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */,
 				BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */,
@@ -1003,6 +1006,7 @@
 			files = (
 				3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */,
 				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
+				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
 				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,
 				ECAA824BE3E518277AB18AB6 /* NearbyStationDestinationTests.swift in Sources */,
 				28B86D763BF517E19CF4DB5D /* SuburbanProjectionTests.swift in Sources */,
