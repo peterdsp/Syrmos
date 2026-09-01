@@ -65,3 +65,29 @@ fun catmullRomSpline(points: List<LatLng>, segments: Int = 5): List<LatLng> {
 
 private fun cr(a: Double, b: Double, c: Double, d: Double, t: Double): Double =
     0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t)
+
+/**
+ * The nearest point on [polyline] to ([lat], [lng]), used to pin a live vehicle
+ * marker onto the polyline the route is drawn as so it never floats beside its
+ * own line. Planar nearest-point (lat/lng treated as x/y), which is accurate
+ * enough at city scale. Returns the input unchanged when the polyline is too
+ * short to snap to. Mirrors the Android renderer's snap so both agree.
+ */
+fun snapToPolyline(lat: Double, lng: Double, polyline: List<LatLng>): LatLng {
+    if (polyline.size < 2) return LatLng(lat, lng)
+    var bestDist = Double.MAX_VALUE
+    var bestLat = lat
+    var bestLng = lng
+    for (i in 0 until polyline.size - 1) {
+        val ax = polyline[i].lat; val ay = polyline[i].lng
+        val bx = polyline[i + 1].lat; val by = polyline[i + 1].lng
+        val dx = bx - ax; val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        val t = (if (len2 > 0) ((lat - ax) * dx + (lng - ay) * dy) / len2 else 0.0).coerceIn(0.0, 1.0)
+        val px = ax + t * dx; val py = ay + t * dy
+        val dlat = lat - px; val dlng = lng - py
+        val d = dlat * dlat + dlng * dlng
+        if (d < bestDist) { bestDist = d; bestLat = px; bestLng = py }
+    }
+    return LatLng(bestLat, bestLng)
+}

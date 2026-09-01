@@ -23,6 +23,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
+import com.syrmos.core.common.map.LatLng
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.LineType
@@ -134,34 +135,26 @@ private fun DrawScope.drawFallbackMap(
     textMeasurer: TextMeasurer,
 ) {
     for (line in uiState.lines) {
-        val stations = uiState.lineStations[line.id] ?: continue
+        // Draw the SAME shared effectiveGeometry the vehicles ride (buses on their
+        // stops, rail/tram on the OSM shape, shapeless lines splined upstream), so
+        // the drawn route and the moving vehicles agree on iOS and Wasm exactly as
+        // they do on Android. No extra smoothing: effectiveGeometry is final.
+        val poly = uiState.effectiveGeometry[line.id] ?: continue
+        if (poly.size < 2) continue
         val lineColor = line.color.toComposeColor()
         val strokeWidth = (4f * scale).coerceIn(1.5f, 12f)
-        val points = stations.map { s ->
-            latLonToScreen(s.latitude, s.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+        val points = poly.map { p ->
+            latLonToScreen(p.lat, p.lng, canvasWidth, canvasHeight, offsetX, offsetY, scale)
         }
-        if (points.size >= 2) {
-            val path = Path().apply {
-                moveTo(points[0].x, points[0].y)
-                if (points.size == 2) {
-                    lineTo(points[1].x, points[1].y)
-                } else {
-                    for (i in 1 until points.size) {
-                        val prev = points[i - 1]
-                        val curr = points[i]
-                        val mx = (prev.x + curr.x) / 2f
-                        val my = (prev.y + curr.y) / 2f
-                        quadraticTo(prev.x, prev.y, mx, my)
-                    }
-                    lineTo(points.last().x, points.last().y)
-                }
-            }
-            drawPath(
-                path = path,
-                color = lineColor,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round),
-            )
+        val path = Path().apply {
+            moveTo(points[0].x, points[0].y)
+            for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
         }
+        drawPath(
+            path = path,
+            color = lineColor,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
     }
 
     val dotRadius = (6f * scale).coerceIn(3f, 18f)
@@ -268,6 +261,7 @@ private fun DrawScope.drawFallbackMap(
 
     drawLiveTrains(
         trains = uiState.liveTrains,
+        geometry = uiState.effectiveGeometry,
         canvasWidth = canvasWidth,
         canvasHeight = canvasHeight,
         offsetX = offsetX,
@@ -430,6 +424,7 @@ private fun DrawScope.drawAirportTrain(pos: Offset, color: Color, scale: Float) 
 
 private fun DrawScope.drawLiveTrains(
     trains: List<LiveSuburbanTrain>,
+    geometry: Map<String, List<LatLng>>,
     canvasWidth: Float,
     canvasHeight: Float,
     offsetX: Float,
@@ -439,7 +434,11 @@ private fun DrawScope.drawLiveTrains(
 ) {
     val trainRadius = (6f * scale).coerceIn(3f, 14f)
     for (train in trains) {
-        val pos = latLonToScreen(train.latitude, train.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+        // Snap the raw GPS fix onto the drawn route so a live vehicle never floats
+        // beside its own line (same polyline the route is drawn as).
+        val snapped = geometry[train.lineId]?.let { snapToPolyline(train.latitude, train.longitude, it) }
+            ?: LatLng(train.latitude, train.longitude)
+        val pos = latLonToScreen(snapped.lat, snapped.lng, canvasWidth, canvasHeight, offsetX, offsetY, scale)
         if (pos.x < -100 || pos.x > canvasWidth + 100 || pos.y < -100 || pos.y > canvasHeight + 100) continue
 
         val lineColor = when (train.lineId) {

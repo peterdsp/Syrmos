@@ -110,4 +110,19 @@ class MapRouteGeometryTest {
         assertEquals(pts.last(), spline.last())
         assertTrue(spline.size > pts.size)
     }
+
+    @Test
+    fun snapPullsAnOffRouteFixOntoThePolyline() {
+        // A live GPS fix beside a straight west-east leg snaps onto the leg.
+        val leg = listOf(LatLng(37.0, 23.0), LatLng(37.0, 23.10))
+        val snapped = snapToPolyline(37.02, 23.05, leg)
+        assertEquals(37.0, snapped.lat, 1e-9, "snapped point sits on the leg's latitude")
+        assertTrue(snapped.lng in 23.0..23.10, "snapped point stays within the leg")
+    }
+
+    @Test
+    fun snapReturnsInputWhenPolylineTooShort() {
+        assertEquals(LatLng(37.02, 23.05), snapToPolyline(37.02, 23.05, listOf(LatLng(37.0, 23.0))))
+        assertEquals(LatLng(37.02, 23.05), snapToPolyline(37.02, 23.05, emptyList()))
+    }
 }
