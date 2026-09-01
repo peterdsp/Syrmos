@@ -81,6 +81,38 @@ No engineering P0/P1 blockers. The remaining steps are external / human-gated:
   (#21). Airport express buses X93-X97 still show "check OASA" pending a Pi
   seed regeneration with their timetables.
 
+## Deep QA phase (post-candidate, before the 10:00 deadline)
+
+Real Android runtime QA on a booted emulator (built locally with the Android
+SDK's bundled JDK; the "no local JDK" note was stale). All VERIFIED, no crashes:
+launch, More/settings, Airport tab + tap-through to Station Detail, Station
+Detail + interchange, Home (subtitle/status/CTA/living-map/news/network), Map
+(network + capsule vehicles on-track), search (case-insensitive in-memory),
+offline (news cache persists, living map projects, no crash), and localization
+(full Greek UI incl. localized news). The full KMP/Android unit-test suite
+passes locally on the consolidated master.
+
+Five more parity fixes landed and were verified this phase:
+
+- **#8 line-detail upcoming departures** (P1): every metro/tram line detail now
+  shows a departures section (was suburban-live-only); verified on the M1 detail.
+- **#18 departure-card accessibility**: the row merges into one TalkBack
+  announcement + section headings; verified via the a11y node tree.
+- **#16 /api/lines overlay-only**: Android no longer overwrites seeded line
+  status/region or reorders stations (matches iOS); strictly write-reducing.
+- **#6 Home enable-location CTA**: the nearby section shows an actionable CTA
+  instead of collapsing; verified on the emulator.
+- **CI hardening**: the debug APK is published as an artifact for runtime QA,
+  and the iOS test step now genuinely gates (the `sed E` typo + `|| echo`
+  swallow are fixed).
+
+Parity ledger now: 18 fixed, 2 partial, 5 backlog, 1 intentional (see
+cross-platform-parity.json). Remaining backlog is either a product-policy call
+(#9 departures source, #11 confidence), an external/Pi dependency (#10 live
+arrivals + airport-bus timetables), a documented deferral (#12 lastTrains -
+central departures-path blast radius too high for GA; fast-follow), or #14
+settings recents/digest.
+
 ## Release gate
 
 ```
@@ -103,16 +135,20 @@ iOS
 ANDROID
   2.0.0 version:         PASS (versionName 2.0.0, versionCode 223)
   Release config:        PASS (sign + minify + shrink + native-lib gate)
-  Tests:                 PASS (KMP/Android unit tests, CI)
+  Tests:                 PASS (KMP/Android unit tests, local + CI)
+  Runtime QA:            VERIFIED (emulator: launch, home, map+vehicles, airport
+                         +tap-through, station detail+interchange, search,
+                         offline+news-cache, localization; no crashes)
   Production candidate:  READY (signed AAB builds in CI on tag)
   Publish:               BLOCKED-EXTERNAL (keystore + Play JSON + v2.0.0 tag push)
 
 CROSS-PLATFORM
-  Core feature parity:   PASS (8 parity fixes merged this pass)
-  Localization:          PASS (EN/EL/SQ/IT present)
-  Offline mode:          PASS (news cache, seed fallback, decode resilience)
-  API/data correctness:  PASS (shared projector, resilient decode)
-  Critical regression:   PASS (iOS 132 + KMP + web build green in CI)
+  Core feature parity:   PASS (18 fixed / 2 partial / 5 backlog / 1 intentional)
+  Localization:          PASS (EN/EL/SQ/IT; Greek UI verified on device)
+  Accessibility:         PASS (departure rows merged for TalkBack + headings)
+  Offline mode:          VERIFIED (news cache persists, living map projects, no crash)
+  API/data correctness:  PASS (shared projector, resilient decode, overlay-only lines)
+  Critical regression:   PASS (iOS 132 + KMP suite + web build green; iOS tests now gate)
 
 BLOCKERS
   P0 (engineering): 0
