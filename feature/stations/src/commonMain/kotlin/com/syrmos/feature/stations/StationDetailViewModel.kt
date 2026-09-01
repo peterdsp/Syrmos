@@ -34,6 +34,9 @@ data class StationDetailUiState(
     val isInterchange: Boolean = false,
     val isSuburban: Boolean = false,
     val departures: List<UpcomingDeparture> = emptyList(),
+    // When set (opened as a transfer from another hub), departures are scoped to
+    // this one line, so the screen shows that line's timetable at this station.
+    val focusLineId: String? = null,
     val isLoading: Boolean = true,
     val hasLoadedDepartures: Boolean = false,
 )
@@ -48,12 +51,14 @@ class StationDetailViewModel(
     val uiState: StateFlow<StationDetailUiState> = _uiState.asStateFlow()
 
     private var loadedStationId: String? = null
+    private var loadedFocusLineId: String? = null
     private var loadJob: Job? = null
     private var refreshJob: Job? = null
 
-    fun loadStation(stationId: String) {
-        if (stationId == loadedStationId) return
+    fun loadStation(stationId: String, focusLineId: String? = null) {
+        if (stationId == loadedStationId && focusLineId == loadedFocusLineId) return
         loadedStationId = stationId
+        loadedFocusLineId = focusLineId
         // Cancel the previous load AND poller, and clear station-scoped state
         // synchronously, so an in-flight load for the old station can neither
         // write its departures/transfers under the new one nor (out of order)
@@ -78,12 +83,13 @@ class StationDetailViewModel(
                 departures = emptyList(),
                 hasLoadedDepartures = false,
                 interchangeTargets = emptyList(),
+                focusLineId = focusLineId,
                 isLoading = true,
             )
         }
         loadJob = scope.launch {
             val detail = getStationDetail.invoke(stationId).first()
-            if (loadedStationId != stationId) return@launch
+            if (loadedStationId != stationId || loadedFocusLineId != focusLineId) return@launch
             if (detail == null) {
                 // Reset loadedStationId so the same station can be retried;
                 // otherwise a null detail left the screen spinning forever.
@@ -109,7 +115,11 @@ class StationDetailViewModel(
 
             // Start the departures poller immediately; it must not wait on the
             // proximity resolver, which runs in parallel and is only cosmetic.
-            startRefreshLoop(stationId, detail.station.lineIds)
+            // When opened as a transfer, scope departures to the tapped line so
+            // the screen shows THAT line's timetable at this stop, not every
+            // line's departures aggregated (which could crowd it out).
+            val departureLineIds = focusLineId?.let { listOf(it) } ?: detail.station.lineIds
+            startRefreshLoop(stationId, focusLineId, departureLineIds)
 
             launch {
                 // Interchange is cosmetic: a resolver DB/resource failure must
@@ -117,7 +127,7 @@ class StationDetailViewModel(
                 // uncaught coroutine exception.
                 try {
                     val targets = getInterchangeTargets.invoke(detail.station)
-                    if (loadedStationId == stationId) {
+                    if (loadedStationId == stationId && loadedFocusLineId == focusLineId) {
                         _uiState.update { it.copy(interchangeTargets = targets) }
                     }
                 } catch (e: CancellationException) {
@@ -135,15 +145,16 @@ class StationDetailViewModel(
      * previous job avoids duplicate timers if a user navigates between
      * stations quickly.
      */
-    private fun startRefreshLoop(stationId: String, lineIds: List<String>) {
+    private fun startRefreshLoop(stationId: String, focusLineId: String?, lineIds: List<String>) {
         refreshJob?.cancel()
         refreshJob = scope.launch {
             while (isActive) {
                 try {
                     val departures = getStationDepartures.invoke(stationId, lineIds)
-                    // Guard: never write this station's departures if the user has
-                    // already moved to another (belt-and-suspenders over the cancel).
-                    if (loadedStationId == stationId) {
+                    // Guard: never write departures if the user has already moved to
+                    // another station OR changed the focused line (belt-and-suspenders
+                    // over the cancel).
+                    if (loadedStationId == stationId && loadedFocusLineId == focusLineId) {
                         _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
                     }
                 } catch (e: CancellationException) {

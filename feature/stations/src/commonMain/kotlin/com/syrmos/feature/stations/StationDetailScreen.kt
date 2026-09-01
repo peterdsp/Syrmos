@@ -273,12 +273,22 @@ fun StationDetailScreen(
             }
 
             item {
-                SectionHeader(title = when (lang) {
+                val base = when (lang) {
                     AppLanguage.GREEK -> "Επομενες αναχωρησεις"
                     AppLanguage.ALBANIAN -> "Nisjet e ardhshme"
                     AppLanguage.ITALIAN -> "Prossime partenze"
                     else -> "Next departures"
-                })
+                }
+                // When opened as a transfer, departures are scoped to one line;
+                // name it so a single-line list does not look like a bug.
+                val focus = uiState.focusLineId
+                val title = if (focus != null) {
+                    val name = uiState.connectingLines.firstOrNull { it.id == focus }?.localizedName(lang) ?: focus
+                    "$base · $name"
+                } else {
+                    base
+                }
+                SectionHeader(title = title)
             }
 
             if (uiState.departures.isEmpty()) {

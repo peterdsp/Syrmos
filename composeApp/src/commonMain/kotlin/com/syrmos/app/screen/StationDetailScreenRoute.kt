@@ -14,7 +14,12 @@ import com.syrmos.feature.stations.StationDetailScreen
 import com.syrmos.feature.stations.StationDetailViewModel
 import org.koin.compose.koinInject
 
-data class StationDetailScreenRoute(val stationId: String) : Screen {
+data class StationDetailScreenRoute(
+    val stationId: String,
+    // Set when reached as a transfer from another hub: scopes this screen's
+    // departures to that one line, so it shows the tapped line's timetable here.
+    val focusLineId: String? = null,
+) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -46,23 +51,17 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
             )
         }
 
-        viewModel.loadStation(stationId)
+        viewModel.loadStation(stationId, focusLineId)
         StationDetailScreen(
             viewModel = viewModel,
             alertBanner = alertBanner,
             lineDisruptions = lineDisruptions,
             onBack = { navigator.pop() },
             onOpenTransfer = { lineId, targetStationId ->
-                // Honor the resolver's per-line station id. A transfer whose stop
-                // differs from this one opens that stop's detail (its departures
-                // include the tapped line); a line that also serves THIS stop opens
-                // its whole-line detail. Either way the resolved id is used, never
-                // discarded.
-                if (targetStationId != stationId) {
-                    navigator.push(StationDetailScreenRoute(targetStationId))
-                } else {
-                    navigator.push(LineDetailScreenRoute(lineId))
-                }
+                // Honor BOTH resolver ids: open the resolved stop scoped to the
+                // tapped line, so the destination shows that line's timetable at
+                // that hub, not every line's departures aggregated.
+                navigator.push(StationDetailScreenRoute(targetStationId, focusLineId = lineId))
             },
         )
     }
