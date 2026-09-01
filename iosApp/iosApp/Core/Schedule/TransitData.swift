@@ -561,6 +561,38 @@ enum SyrmosData {
         )
     }
 
+    /// The other lines serving the same physical hub as `station`, each paired
+    /// with the station id to open on that line, nearest hub first.
+    ///
+    /// Computed purely by PROXIMITY across every line (any line with a stop
+    /// within ~150 m is a real transfer), not from the station's stored
+    /// `lineIds`. That keeps it complete for every region, Athens, Thessaloniki,
+    /// Patras and the national corridors, with no hand-maintained interchange
+    /// table to drift, and it resolves correctly even when a hub's per-line ids
+    /// use different suffixes (e.g. M3_AER vs A1_AIR). Used to make an
+    /// interchange actionable: tap a line to see its timetable at this hub.
+    static let interchangeRadiusMeters = 150.0
+
+    static func interchangeTargets(
+        from station: TransitStation, currentLineId: String
+    ) -> [(line: TransitLine, stationId: String)] {
+        func metersToHub(_ s: TransitStation) -> Double {
+            distanceMeters(
+                s.coordinate.latitude, s.coordinate.longitude,
+                station.coordinate.latitude, station.coordinate.longitude
+            )
+        }
+        var targets: [(line: TransitLine, stationId: String, meters: Double)] = []
+        for line in lines where line.id != currentLineId {
+            guard let nearest = stations(for: line.id).min(by: { metersToHub($0) < metersToHub($1) }) else { continue }
+            let d = metersToHub(nearest)
+            if d <= interchangeRadiusMeters {
+                targets.append((line, nearest.id, d))
+            }
+        }
+        return targets.sorted { $0.meters < $1.meters }.map { ($0.line, $0.stationId) }
+    }
+
     // MARK: - Departures (with correct service patterns)
 
     // Line 3 airport section: stations past Douk. Plakentias

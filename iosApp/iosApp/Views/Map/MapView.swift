@@ -114,7 +114,11 @@ enum PreloadedData {
                 ? stations.map { $0.coordinate }
                 : SyrmosLineGeometry.orderedCoordinates(for: line.id)
             guard anchors.count >= 2 else { return nil }
-            coords = catmullRomSpline(anchors)
+            // Buses run on roads with sharp turns and tight loops (e.g. the
+            // Patras University loop): a Catmull-Rom spline through their stops
+            // overshoots into wild curves, so draw straight segments for buses
+            // and keep the smooth spline only for rail/tram.
+            coords = line.type == .bus ? anchors : catmullRomSpline(anchors)
         }
         let underConstruction = !line.isOperational
         return RouteLine(
