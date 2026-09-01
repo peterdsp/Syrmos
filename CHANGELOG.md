@@ -2,13 +2,32 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 1.4.0** (App Store + TestFlight, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). Current beta: **2.0.0-beta.9**, iOS build 123 and Android versionCode 208. Burned Android version codes never reusable: 105, 106, 109-138, and 200-208. Next Android release must use 209+.
+Current production: **iOS 1.4.0** (App Store, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). **2.0.0 GA release candidate:** iOS build **138**, Android versionCode **223** (supersedes the beta series that ended at 2.0.0-beta.23, iOS build 137 / Android versionCode 222). Burned Android version codes never reusable: 105, 106, 109-138, and 200-222; the next release must use 223+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 2.0.0 - 2026-09-02
+
+The 2.0.0 general release: the culmination of the 2.0.0-beta.1 through beta.23 line (capsule vehicle markers, the three-column web redesign, anonymous Ichnos community history, the multi-airport hub, the Ariadne assistant with an async cloud provider chain, and proximity-based station interchanges), promoted to production after a full cross-platform QA and parity hardening pass.
+
+Final parity + QA hardening in this release (iOS / Android / Web brought closer to a true 1:1 product):
+
+- **Live-feed decode resilience (Android).** `/api/live-positions` and `/api/station-offsets` now decode row by row, so one malformed vehicle or offset entry is skipped instead of silently dropping the whole live map to the simulator. Matches the iOS trains/announcements resilience.
+- **Accent- and case-insensitive station search (Android).** A shared `normalizeForSearch` folds Greek tonos/final-sigma and Latin diacritics, and search runs in memory over the station list, fixing Greek names that the SQLite `LIKE` path never matched.
+- **Athens time via the IANA zone (Android).** `currentAthensTime/Date` delegate to `Europe/Athens` instead of hand-rolled DST arithmetic, removing transition-hour drift and unifying with the projector.
+- **Offline rail news (Android).** The news section keeps the last good payload when the feed is unreachable, matching iOS.
+- **Date-scoped trips (Android).** Trip `validDates` are honored end to end (schema migration + projector filter), so seasonal services no longer show on the wrong dates.
+- **Fast live/departures timeouts (Android).** An 8s per-call timeout on the live and departures calls drops to the bundled/simulated layer in seconds when the Pi is unreachable instead of hanging on the 30s client default.
+- **Interactive Airport tab (iOS + Android).** Rail service tiles, departure rows and the Thessaloniki metro-leg cards now open the stop's full Station Detail (departures + map + interchanges).
+- **Circular bus routes (iOS).** Loop bus routes (e.g. Patras PU1) draw their return leg, matching Android/web via a Swift port of the shared `RouteGeometry.closeLoop`.
+- **iOS reference resilience.** One GPS-less train no longer blanks the live map, and one malformed announcement no longer voids the feed.
+- **Release engineering.** Fixed the iOS release build-number read (it was reading the literal `$(CURRENT_PROJECT_VERSION)` placeholder from the Info.plist, which would have made App Store Connect reject the upload).
+
+iOS 2.0.0 build 138 / Android 2.0.0 versionCode 223. To be tagged as `v2.0.0`.
 
 ## 2.0.0-beta.9 - 2026-08-06
 
