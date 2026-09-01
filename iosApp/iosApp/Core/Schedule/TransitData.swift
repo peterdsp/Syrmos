@@ -550,15 +550,64 @@ enum SyrmosData {
     }
 
     private static func makeStation(_ s: (id: String, name: String, nameEl: String, lat: Double, lon: Double), primaryLine: String) -> TransitStation {
-        let allLines = StationCoords.lineAssociations[s.id] ?? [primaryLine]
+        // lineIds is DIRECT membership only (the line that owns this id), so
+        // (id, line) stays valid for navigation and schedule queries.
+        // isInterchange is a separate co-location signal (map rings / badge)
+        // from the physical-hub table; actionable transfers come from
+        // interchangeTargets, which resolves each line's real station id.
         return TransitStation(
             id: s.id,
             name: s.name,
             nameEl: s.nameEl,
             coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon),
-            lineIds: allLines,
-            isInterchange: allLines.count > 1
+            lineIds: [primaryLine],
+            isInterchange: (StationCoords.lineAssociations[s.id]?.count ?? 0) > 1
         )
+    }
+
+    /// The other lines serving the same physical hub as `station`, each paired
+    /// with the station id to open on that line, nearest hub first.
+    ///
+    /// Computed purely by PROXIMITY across every line (any line with a stop
+    /// within ~150 m is a real transfer), not from the station's stored
+    /// `lineIds`. That keeps it complete for every region, Athens, Thessaloniki,
+    /// Patras and the national corridors, with no hand-maintained interchange
+    /// table to drift, and it resolves correctly even when a hub's per-line ids
+    /// use different suffixes (e.g. M3_AER vs A1_AIR). Used to make an
+    /// interchange actionable: tap a line to see its timetable at this hub.
+    static let interchangeRadiusMeters = 150.0
+
+    @MainActor
+    static func interchangeTargets(
+        from station: TransitStation, currentLineId: String
+    ) -> [(line: TransitLine, stationId: String)] {
+        func metersToHub(_ s: TransitStation) -> Double {
+            distanceMeters(
+                s.coordinate.latitude, s.coordinate.longitude,
+                station.coordinate.latitude, station.coordinate.longitude
+            )
+        }
+        var targets: [(line: TransitLine, stationId: String, meters: Double)] = []
+        // Only offer a transfer the rider can actually board: operational and
+        // with a usable timetable. This drops suspended lines (e.g. DK1) and
+        // lines with no bundled schedule (e.g. the X3/2X airport shuttles),
+        // which would otherwise lead to an empty timetable.
+        for line in lines where line.id != currentLineId && line.isOperational && hasSchedule(line.id) {
+            guard let nearest = stations(for: line.id).min(by: { metersToHub($0) < metersToHub($1) }) else { continue }
+            let d = metersToHub(nearest)
+            if d <= interchangeRadiusMeters {
+                targets.append((line, nearest.id, d))
+            }
+        }
+        return targets.sorted { $0.meters < $1.meters }.map { ($0.line, $0.stationId) }
+    }
+
+    /// Whether a line has a bundled timetable (frequency bands or scheduled
+    /// trips). Metro/tram use bands, suburban/intercity use trips.
+    @MainActor
+    static func hasSchedule(_ lineId: String) -> Bool {
+        guard let bundle = SyrmosSchedulesStore.shared.service.bundles[lineId] else { return false }
+        return !bundle.trips.isEmpty || !bundle.bands.isEmpty
     }
 
     // MARK: - Departures (with correct service patterns)

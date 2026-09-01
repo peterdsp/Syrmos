@@ -853,6 +853,8 @@ struct DestinationDetailView: View {
             VStack(spacing: 16) {
                 stationHeader
 
+                interchangeSection
+
                 DayPickerRow(selectedOffset: $dayOffset)
 
                 if departures.isEmpty {
@@ -909,7 +911,7 @@ struct DestinationDetailView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if let st = station, st.isInterchange {
+            if !interchangeTargets.isEmpty {
                 Label(
                     loc.language == .greek ? "Μετεπιβιβαση" :
                     loc.language == .albanian ? "Transferim" :
@@ -922,6 +924,58 @@ struct DestinationDetailView: View {
         }
         .padding(.horizontal, 4)
         .padding(.top, 8)
+    }
+
+    private var interchangeTargets: [(line: TransitLine, stationId: String)] {
+        guard let station else { return [] }
+        return SyrmosData.interchangeTargets(from: station, currentLineId: lineId)
+    }
+
+    @ViewBuilder
+    private var interchangeSection: some View {
+        if !interchangeTargets.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(interchangeSectionTitle)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                ForEach(interchangeTargets, id: \.line.id) { target in
+                    NavigationLink {
+                        DestinationDetailView(
+                            stationId: target.stationId,
+                            lineId: target.line.id,
+                            onStationViewed: onStationViewed
+                        )
+                    } label: {
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(target.line.color)
+                                .frame(width: 12, height: 12)
+                            Text(target.line.localizedName(loc.language))
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var interchangeSectionTitle: String {
+        switch loc.language {
+        case .greek: return "Αλλαγή γραμμής εδώ"
+        case .albanian: return "Ndrysho linjën këtu"
+        case .italian: return "Cambia linea qui"
+        case .english: return "Change line here"
+        }
     }
 
     private func isOutbound(_ dir: String) -> Bool {

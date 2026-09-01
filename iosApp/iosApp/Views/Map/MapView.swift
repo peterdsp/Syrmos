@@ -99,20 +99,28 @@ enum PreloadedData {
         // spline of station coordinates when no shape is bundled for a
         // line, which keeps the curve smooth instead of zigzagging.
         let stations = SyrmosData.stations(for: line.id)
-        let osmCoords = SyrmosRouteShapesStore.shared.coordinates(for: line.id)
         let coords: [CLLocationCoordinate2D]
-        if let osm = osmCoords, osm.count >= 2 {
+        // Ordered stop anchors. Prefer the curated Athens coordinates; for
+        // every other line (national, Thessaloniki, Patras) read the ordered
+        // stations straight from lines.json so the WHOLE network draws, not
+        // just Athens.
+        let anchors = stations.count >= 2
+            ? stations.map { $0.coordinate }
+            : SyrmosLineGeometry.orderedCoordinates(for: line.id)
+        if line.type == .bus {
+            // Buses draw as straight segments through their actual ordered
+            // stops, chosen BEFORE any bundled shape. A bus's OSM shape can
+            // cover only part of the route (the Patras University loop shape
+            // omits the western Kastelokampos/OAED stops, stranding those
+            // markers off the drawn line), and a Catmull-Rom spline overshoots
+            // on tight loops. Straight segments always connect every stop.
+            guard anchors.count >= 2 else { return nil }
+            coords = anchors
+        } else if let osm = SyrmosRouteShapesStore.shared.coordinates(for: line.id), osm.count >= 2 {
+            // Rail/tram: prefer OSM geometry so the polyline follows the track
+            // (T7 Piraeus loop, M3 airport branch, A4 Megara curve).
             coords = osm
         } else {
-            // No bundled OSM shape: spline through the line's ordered stations.
-            // Prefer the curated Athens coordinates; for every other line
-            // (national, Thessaloniki, Patras) read the ordered stations
-            // straight from lines.json, so the WHOLE network draws - not just
-            // Athens. Web does exactly this, which is why national lines showed
-            // on web but were blank on iOS.
-            let anchors = stations.count >= 2
-                ? stations.map { $0.coordinate }
-                : SyrmosLineGeometry.orderedCoordinates(for: line.id)
             guard anchors.count >= 2 else { return nil }
             coords = catmullRomSpline(anchors)
         }
