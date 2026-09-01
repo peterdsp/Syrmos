@@ -1,5 +1,6 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.common.extensions.normalizeForSearch
 import com.syrmos.core.model.transit.Station
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -83,21 +84,11 @@ private fun List<Station>.clusterByProximity(radiusMeters: Double = 300.0): List
     return clusters
 }
 
-private fun String.normalizeStationText(): String {
-    return lowercase()
-        .replace("ά", "α")
-        .replace("έ", "ε")
-        .replace("ή", "η")
-        .replace("ί", "ι")
-        .replace("ϊ", "ι")
-        .replace("ΐ", "ι")
-        .replace("ό", "ο")
-        .replace("ύ", "υ")
-        .replace("ϋ", "υ")
-        .replace("ΰ", "υ")
-        .replace("ώ", "ω")
-        .replace(Regex("[^\\p{L}\\p{Nd}]+"), "")
-}
+// Clustering key: the shared search normalizer (case + tonos + diacritic
+// folding) reduced to a compact alphanumeric token. Delegating keeps the
+// tonos table in one place (core/common) instead of duplicating it here.
+private fun String.normalizeStationText(): String =
+    normalizeForSearch().replace(Regex("[^\\p{L}\\p{Nd}]+"), "")
 
 private fun List<Station>.latitudeBucket(): Int = (map { it.latitude }.average() * 10000).toInt()
 
