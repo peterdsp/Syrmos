@@ -162,4 +162,21 @@ final class InterchangeAssociationTests: XCTestCase {
         }
         XCTAssertTrue(offersTM2, "some TM1 station must offer a TM2 transfer")
     }
+
+    func testEveryStationLineIdPairIsValid() throws {
+        // Codex invariant: every (station.id, line) in a station's lineIds must
+        // resolve through stations(for: line), so the projector never keys a
+        // foreign id and produces phantom departures. Covers curated, per-line
+        // bundle, and the public map/browse collection.
+        func assertValid(_ station: TransitStation) {
+            for lid in station.lineIds {
+                let onThatLine = SyrmosData.stations(for: lid).contains { $0.id == station.id }
+                XCTAssertTrue(onThatLine, "\(station.id) lists \(lid) but is not a stop on \(lid)")
+            }
+        }
+        for line in SyrmosData.lines {
+            for station in SyrmosData.stations(for: line.id) { assertValid(station) }
+        }
+        for station in SyrmosData.bundleStations { assertValid(station) }
+    }
 }

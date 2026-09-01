@@ -550,18 +550,18 @@ enum SyrmosData {
     }
 
     private static func makeStation(_ s: (id: String, name: String, nameEl: String, lat: Double, lon: Double), primaryLine: String) -> TransitStation {
-        // Direct membership only: lineIds must contain lines that actually stop
-        // at THIS station id, so (id, line) stays valid for navigation and
-        // schedule queries. Physical-hub transfers are surfaced separately by
+        // lineIds is DIRECT membership only (the line that owns this id), so
+        // (id, line) stays valid for navigation and schedule queries.
+        // isInterchange is a separate co-location signal (map rings / badge)
+        // from the physical-hub table; actionable transfers come from
         // interchangeTargets, which resolves each line's real station id.
-        let allLines = StationCoords.lineAssociations[s.id] ?? [primaryLine]
         return TransitStation(
             id: s.id,
             name: s.name,
             nameEl: s.nameEl,
             coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon),
-            lineIds: allLines,
-            isInterchange: allLines.count > 1
+            lineIds: [primaryLine],
+            isInterchange: (StationCoords.lineAssociations[s.id]?.count ?? 0) > 1
         )
     }
 
