@@ -169,7 +169,7 @@ fun LineDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(line?.name ?: "") },
+                title = { Text(line?.localizedName(lang) ?: "") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -312,9 +312,9 @@ private fun LineDetailHeader(
                 )
                 Text(
                     text = if (line.type == LineType.SUBURBAN && liveTrainCount > 0) {
-                        "$stationCount stations, $liveTrainCount ${L.ACTIVE_TRAINS.text(lang)}"
+                        "$stationCount ${L.STATIONS_LOWER.text(lang)}, $liveTrainCount ${L.ACTIVE_TRAINS.text(lang)}"
                     } else {
-                        "$stationCount stations"
+                        "$stationCount ${L.STATIONS_LOWER.text(lang)}"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -630,4 +630,18 @@ private fun lineIdToColor(lineId: String): LineColor = when {
     lineId == "M3" -> LineColor.BLUE
     lineId.startsWith("T") -> LineColor.TRAM_ORANGE
     else -> LineColor.SUBURBAN_PURPLE
+}
+
+// Matches the localizedName used on the other line screens (LinesScreen etc).
+// TODO(parity): these per-file copies should be consolidated into one shared
+// helper; tracked as a separate refactor.
+private fun Line.localizedName(lang: AppLanguage): String {
+    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
+    if (lang == AppLanguage.ITALIAN) return name
+        .replace("Line ", "Linea ")
+        .replace("Suburban ", "Suburbano ")
+    if (lang == AppLanguage.ALBANIAN) return name
+        .replace("Line ", "Linja ")
+        .replace("Suburban ", "Periferik ")
+    return name
 }
