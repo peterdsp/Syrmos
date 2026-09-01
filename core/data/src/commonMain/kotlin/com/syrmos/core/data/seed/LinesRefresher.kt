@@ -60,55 +60,43 @@ class LinesRefresher(
                     status = line.status,
                 )
 
-                // Replace this line's membership set atomically ONLY when the
-                // payload is complete (declared stationCount, unique ids): clear
-                // its existing station_line rows, then insert the returned set, so
-                // a stop removed or re-keyed upstream cannot linger as a stale
-                // (station_id, line_id) row that would feed a wrong stop to the
-                // interchange resolver. A partial or duplicated snapshot is NOT
-                // authoritative, so the line keeps its prior memberships rather
-                // than being truncated to the incomplete set.
-                if (isCompleteMembership(line.stations.map { it.id }, line.stationCount)) {
-                    database.syrmosDatabaseQueries.deleteStationLinesForLine(line.id)
-                    line.stations.forEachIndexed { index, station ->
-                        if (station.id !in knownStationIds) {
-                            database.syrmosDatabaseQueries.insertStation(
-                                id = station.id,
-                                name = station.name,
-                                name_el = station.nameEl,
-                                name_sq = null,
-                                latitude = station.lat,
-                                longitude = station.lng,
-                                is_interchange = 0L,
-                                accessibility = 0L,
-                                zone = 1L,
-                                region = line.region,
-                                source_confidence = "scheduled",
-                            )
-                        }
-                        database.syrmosDatabaseQueries.insertStationLine(
-                            station_id = station.id,
-                            line_id = line.id,
-                            position_on_line = index.toLong(),
+                // Upsert memberships in place; deliberately do NOT delete-then-
+                // replace. The server derives stationCount from the very list it
+                // sends (generator.py: "stationCount": len(stops)), so a partial
+                // payload is internally self-consistent and indistinguishable from
+                // a complete one; deleting first would let such a payload truncate
+                // the line. There is no independent completeness signal (no
+                // versioned membership manifest), so upsert-only is the safe
+                // choice: it never truncates. A stop legitimately removed upstream
+                // can linger until a reseed, an accepted low-severity limitation.
+                // The interchange resolver's own-stop guarantee still holds because
+                // the server only ever emits a line's authoritative per-line
+                // station ids, never another hub's id under it, so no wrong-id row
+                // is inserted. INSERT OR REPLACE is composite-keyed on
+                // (station_id, line_id), so this updates positions in place.
+                line.stations.forEachIndexed { index, station ->
+                    if (station.id !in knownStationIds) {
+                        database.syrmosDatabaseQueries.insertStation(
+                            id = station.id,
+                            name = station.name,
+                            name_el = station.nameEl,
+                            name_sq = null,
+                            latitude = station.lat,
+                            longitude = station.lng,
+                            is_interchange = 0L,
+                            accessibility = 0L,
+                            zone = 1L,
+                            region = line.region,
+                            source_confidence = "scheduled",
                         )
                     }
+                    database.syrmosDatabaseQueries.insertStationLine(
+                        station_id = station.id,
+                        line_id = line.id,
+                        position_on_line = index.toLong(),
+                    )
                 }
             }
         }
-    }
-
-    companion object {
-        /**
-         * Whether a line's station payload is complete enough to REPLACE its
-         * stored memberships: non-empty, all ids unique, and exactly the declared
-         * [declaredCount]. A partial or duplicated snapshot fails this, so the
-         * refresh keeps the line's prior memberships instead of truncating them to
-         * the incomplete set. In the bundled data every line's stations.size
-         * equals its stationCount with no duplicate ids, so complete payloads pass.
-         */
-        internal fun isCompleteMembership(stationIds: List<String>, declaredCount: Int): Boolean =
-            stationIds.isNotEmpty() &&
-                stationIds.size == declaredCount &&
-                stationIds.toSet().size == stationIds.size
     }
 }
