@@ -104,67 +104,46 @@ final class NearbyStationDestinationTests: XCTestCase {
     }
 }
 
-/// Interchange completeness + actionable-interchange resolution.
-/// A hub must expose every line that serves it (symmetric associations), and
-/// the interchange must resolve to a real, co-located stop on each other line
-/// so DestinationDetailView can offer a tap-through to its timetable.
+/// Actionable-interchange resolution. Interchanges are computed by PROXIMITY at
+/// the point of use (interchangeTargets), NOT by enriching a station's lineIds:
+/// each target resolves to the real per-line station id, so navigation and
+/// schedule queries stay valid, and only boardable (operational + scheduled)
+/// lines are offered.
 /// @MainActor because interchangeTargets/hasSchedule read the main-actor
 /// schedule store.
 @MainActor
 final class InterchangeAssociationTests: XCTestCase {
 
-    private func meters(_ aLat: Double, _ aLon: Double, _ bLat: Double, _ bLon: Double) -> Double {
-        let R = 6_371_000.0
-        let p1 = aLat * .pi / 180, p2 = bLat * .pi / 180
-        let dp = (bLat - aLat) * .pi / 180, dl = (bLon - aLon) * .pi / 180
-        let x = sin(dp / 2) * sin(dp / 2) + cos(p1) * cos(p2) * sin(dl / 2) * sin(dl / 2)
-        return 2 * R * asin(min(1, sqrt(x)))
-    }
-
-    func testPiraeusOnLine1KnowsMetro3AndSuburban() throws {
-        let piraeus = SyrmosData.stations(for: "M1").first { $0.id == "M1_PIR" }
-        XCTAssertNotNil(piraeus, "M1_PIR must exist on Line 1")
-        let lines = Set(piraeus?.lineIds ?? [])
-        XCTAssertTrue(lines.isSuperset(of: ["M1", "M3", "A1", "A4"]),
-                      "Piraeus via Line 1 must expose M3 and the suburban lines; got \(lines.sorted())")
-        XCTAssertTrue(piraeus?.isInterchange ?? false)
-    }
-
     func testInterchangeTargetsFromLine1PiraeusAreActionable() throws {
         let piraeus = try XCTUnwrap(SyrmosData.stations(for: "M1").first { $0.id == "M1_PIR" })
         let targets = SyrmosData.interchangeTargets(from: piraeus, currentLineId: "M1")
-        XCTAssertEqual(Set(targets.map { $0.line.id }), ["M3", "A1", "A4"])
-        for t in targets {
-            let match = SyrmosData.stations(for: t.line.id).first { $0.id == t.stationId }
-            XCTAssertNotNil(match, "interchange target \(t.stationId) must be a real stop on \(t.line.id)")
-        }
+        XCTAssertEqual(Set(targets.map { $0.line.id }), ["M3", "A1", "A4"],
+                       "Piraeus on Line 1 must offer M3 and the suburban lines as transfers")
     }
 
-    func testLineAssociationsAreSymmetricAcrossColocatedHubs() throws {
-        let assoc = StationCoords.lineAssociations
-        let coord = Dictionary(uniqueKeysWithValues: StationCoords.allStations.map {
-            ($0.id, ($0.coordinate.latitude, $0.coordinate.longitude))
-        })
-        for (id, lines) in assoc where lines.count > 1 {
-            guard let a = coord[id] else { continue }
-            for (otherId, otherLines) in assoc where otherId != id {
-                guard let b = coord[otherId] else { continue }
-                // Same physical hub: co-located and sharing at least one line.
-                if meters(a.0, a.1, b.0, b.1) <= 150, !Set(lines).isDisjoint(with: otherLines) {
-                    XCTAssertEqual(Set(lines), Set(otherLines),
-                        "Co-located \(id)=\(lines.sorted()) and \(otherId)=\(otherLines.sorted()) must list the same lines")
+    func testEveryTransferResolvesToARealStopOnThatLine() throws {
+        // Codex regression guard: an interchange target must be a VALID
+        // (station id, line) pair on the TARGET line, so navigation and
+        // schedule queries never use a foreign id. This is exactly the
+        // invariant the earlier lineIds-enrichment approach violated.
+        for line in SyrmosData.lines {
+            for station in SyrmosData.stations(for: line.id) {
+                for target in SyrmosData.interchangeTargets(from: station, currentLineId: line.id) {
+                    let realStop = SyrmosData.stations(for: target.line.id)
+                        .contains { $0.id == target.stationId }
+                    XCTAssertTrue(realStop,
+                        "target \(target.stationId) is not a real stop on \(target.line.id)")
                 }
             }
         }
     }
 
     func testTransfersAreOnlyOperationalAndScheduled() throws {
-        // Every offered "Change line here" target must be boardable: an
-        // operational line with a bundled timetable, so it never leads to an
-        // empty schedule (drops suspended DK1 and the unscheduled X3/2X).
-        for lineId in ["M1", "A1", "KP1", "TM1"] {
-            for station in SyrmosData.stations(for: lineId) {
-                for target in SyrmosData.interchangeTargets(from: station, currentLineId: lineId) {
+        // Never offer a transfer that opens an empty timetable: drops suspended
+        // DK1 and the unscheduled X3/2X airport shuttles.
+        for line in SyrmosData.lines {
+            for station in SyrmosData.stations(for: line.id) {
+                for target in SyrmosData.interchangeTargets(from: station, currentLineId: line.id) {
                     XCTAssertTrue(target.line.isOperational,
                                   "\(target.line.id) offered at \(station.id) is not operational")
                     XCTAssertTrue(SyrmosData.hasSchedule(target.line.id),
@@ -175,30 +154,12 @@ final class InterchangeAssociationTests: XCTestCase {
     }
 
     func testThessalonikiMetroHubExposesBothLines() throws {
-        // A shared TM1/TM2 station must know both lines and offer the transfer,
-        // proving the interchange fix is not Athens-only.
-        let shared = SyrmosData.stations(for: "TM1").first { $0.lineIds.contains("TM2") }
-        let station = try XCTUnwrap(shared, "a TM1 station should be a TM1/TM2 interchange")
-        let targets = SyrmosData.interchangeTargets(from: station, currentLineId: "TM1")
-        XCTAssertTrue(targets.contains { $0.line.id == "TM2" },
-                      "TM2 must be an actionable transfer at a shared Thessaloniki hub")
-    }
-
-    func testLarissaHubIncludesIntercityLines() throws {
-        // Computed hub membership must include IC1/RG1 at Larissa Station, which
-        // the old hand-maintained table missed (the pills vs section mismatch).
-        let larissa = SyrmosData.hubLineIds["M2_STA"] ?? []
-        XCTAssertTrue(Set(larissa).isSuperset(of: ["M2", "IC1", "RG1"]),
-                      "Larissa (M2_STA) hub must include intercity IC1/RG1; got \(larissa.sorted())")
-    }
-
-    func testPublicBundleStationLarissaExposesAllLines() throws {
-        // The RENDERED data source (map pills / Browse All Stations), not only
-        // hubLineIds, must carry the full Larissa membership.
-        let larissa = SyrmosData.bundleStations.first { $0.id == "M2_STA" }
-        let station = try XCTUnwrap(larissa, "M2_STA should be in the public bundle stations")
-        XCTAssertTrue(Set(station.lineIds).isSuperset(of: ["M2", "A1", "A3", "A4", "IC1", "RG1"]),
-                      "Larissa map/browse station must expose all co-located lines; got \(station.lineIds.sorted())")
-        XCTAssertTrue(station.isInterchange)
+        // Proves the fix is not Athens-only: some TM1 station offers a TM2
+        // transfer (they share the central Thessaloniki metro corridor).
+        let offersTM2 = SyrmosData.stations(for: "TM1").contains { station in
+            SyrmosData.interchangeTargets(from: station, currentLineId: "TM1")
+                .contains { $0.line.id == "TM2" }
+        }
+        XCTAssertTrue(offersTM2, "some TM1 station must offer a TM2 transfer")
     }
 }

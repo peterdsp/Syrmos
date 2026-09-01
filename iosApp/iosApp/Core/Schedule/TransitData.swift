@@ -380,11 +380,7 @@ enum SyrmosData {
             }
         }
         return firstSeen.map { id, s in
-            // Union the same-id membership with the network-wide proximity hub
-            // membership, so co-located stations that use different ids (e.g.
-            // Larissa: M2_STA / GR_ATH / A1_ATH) share the full line set in map
-            // pills and Browse All Stations, matching the interchange section.
-            let lineIds = (lineIdsById[id] ?? []).union(hubLineIds[id] ?? []).sorted()
+            let lineIds = (lineIdsById[id] ?? []).sorted()
             return TransitStation(
                 id: id, name: s.name, nameEl: s.nameEl,
                 coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng),
@@ -524,17 +520,9 @@ enum SyrmosData {
         }
     }
 
-    private struct RawBundleStation {
-        let id: String
-        let lineId: String
-        let name: String
-        let nameEl: String
-        let coordinate: CLLocationCoordinate2D
-    }
+    private static let bundleStationsPerLine: [String: [TransitStation]] = loadBundleStationsPerLine()
 
-    private static let rawBundleStations: [RawBundleStation] = loadRawBundleStations()
-
-    private static func loadRawBundleStations() -> [RawBundleStation] {
+    private static func loadBundleStationsPerLine() -> [String: [TransitStation]] {
         struct P: Decodable {
             struct L: Decodable { let id: String; let stations: [S]? }
             struct S: Decodable { let id: String; let name: String; let nameEl: String; let lat: Double; let lng: Double }
@@ -545,62 +533,28 @@ enum SyrmosData {
         ) ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let payload = try? JSONDecoder().decode(P.self, from: data)
-        else { return [] }
-        var out: [RawBundleStation] = []
-        for line in payload.lines {
-            for s in line.stations ?? [] {
-                out.append(RawBundleStation(
-                    id: s.id, lineId: line.id, name: s.name, nameEl: s.nameEl,
-                    coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng)
-                ))
-            }
-        }
-        return out
-    }
+        else { return [:] }
 
-    /// Hub membership derived ONCE for the whole network: every line with a
-    /// stop within the interchange radius of a station id, unioned. Curated
-    /// (StationCoords) and bundled stations share ids, so this drives station
-    /// lineIds/pills AND the interchange section consistently for every region
-    /// (Athens, Thessaloniki, Patras, national) with no hand-maintained table
-    /// to drift.
-    static let hubLineIds: [String: [String]] = {
-        let pts = rawBundleStations
-        var result: [String: Set<String>] = [:]
-        for p in pts { result[p.id, default: []].insert(p.lineId) }
-        let n = pts.count
-        for i in 0..<n {
-            let a = pts[i]
-            for j in (i + 1)..<n {
-                let b = pts[j]
-                if distanceMeters(a.coordinate.latitude, a.coordinate.longitude,
-                                  b.coordinate.latitude, b.coordinate.longitude) <= interchangeRadiusMeters {
-                    result[a.id]?.insert(b.lineId)
-                    result[b.id]?.insert(a.lineId)
-                }
-            }
-        }
-        return result.mapValues { $0.sorted() }
-    }()
-
-    private static let bundleStationsPerLine: [String: [TransitStation]] = {
         var result: [String: [TransitStation]] = [:]
-        for s in rawBundleStations {
-            let lineIds = hubLineIds[s.id] ?? [s.lineId]
-            result[s.lineId, default: []].append(TransitStation(
-                id: s.id, name: s.name, nameEl: s.nameEl,
-                coordinate: s.coordinate, lineIds: lineIds, isInterchange: lineIds.count > 1
-            ))
+        for line in payload.lines {
+            guard let raw = line.stations, !raw.isEmpty else { continue }
+            result[line.id] = raw.map { s in
+                TransitStation(
+                    id: s.id, name: s.name, nameEl: s.nameEl,
+                    coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng),
+                    lineIds: [line.id], isInterchange: false
+                )
+            }
         }
         return result
-    }()
+    }
 
     private static func makeStation(_ s: (id: String, name: String, nameEl: String, lat: Double, lon: Double), primaryLine: String) -> TransitStation {
-        // Prefer the network-wide computed hub membership; fall back to the
-        // curated table then the primary line. Primary line first so the
-        // header and pills lead with the line being viewed.
-        let computed = hubLineIds[s.id] ?? StationCoords.lineAssociations[s.id] ?? [primaryLine]
-        let allLines = [primaryLine] + computed.filter { $0 != primaryLine }
+        // Direct membership only: lineIds must contain lines that actually stop
+        // at THIS station id, so (id, line) stays valid for navigation and
+        // schedule queries. Physical-hub transfers are surfaced separately by
+        // interchangeTargets, which resolves each line's real station id.
+        let allLines = StationCoords.lineAssociations[s.id] ?? [primaryLine]
         return TransitStation(
             id: s.id,
             name: s.name,

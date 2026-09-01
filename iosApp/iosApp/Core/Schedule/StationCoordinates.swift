@@ -279,24 +279,20 @@ enum StationCoords {
 
     // MARK: - Line associations
 
-    // Interchange membership per physical hub, kept SYMMETRIC: every station id
-    // that shares a hub lists the full union of lines there, so the hub reads
-    // the same whichever line you arrive on. Groupings are coordinate-verified
-    // co-located (all within ~140 m) against the seed.
     static let lineAssociations: [String: [String]] = [
-        "M1_PIR": ["M1", "M3", "A1", "A4"], "M1_MON": ["M1", "M3"], "M1_OMO": ["M1", "M2"],
-        "M1_ATT": ["M1", "M2"], "M1_NER": ["M1", "A1", "A2"],
-        "M2_ATT": ["M2", "M1"], "M2_OMO": ["M2", "M1"], "M2_SYN": ["M2", "M3", "T6"],
-        "M2_STA": ["M2", "A1", "A3", "A4"],
-        "M3_PIR": ["M3", "M1", "A1", "A4"], "M3_MON": ["M3", "M1"], "M3_SYN": ["M3", "M2", "T6"],
-        "M3_DOY": ["M3", "A1", "A2"], "M3_AER": ["M3", "A1", "A2"],
+        "M1_PIR": ["M1", "M3"], "M1_MON": ["M1", "M3"], "M1_OMO": ["M1", "M2"],
+        "M1_ATT": ["M1", "M2"], "M1_NER": ["M1"],
+        "M2_ATT": ["M2", "M1"], "M2_OMO": ["M2", "M1"], "M2_SYN": ["M2", "M3"],
+        "M2_STA": ["M2"],
+        "M3_PIR": ["M3", "M1"], "M3_MON": ["M3", "M1"], "M3_SYN": ["M3", "M2"],
+        "M3_DOY": ["M3"], "M3_AER": ["M3"],
         "T6_SYN": ["T6", "M2", "M3"], "T6_EDE": ["T6", "T7"], "T6_PIK": ["T6", "T7"],
         "T7_EDE": ["T7", "T6"], "T7_PIK": ["T7", "T6"],
-        "A1_PIR": ["A1", "M1", "M3", "A4"], "A1_ATH": ["A1", "M2", "A3", "A4"], "A1_NER": ["A1", "M1", "A2"],
-        "A1_DOY": ["A1", "M3", "A2"], "A1_AIR": ["A1", "M3", "A2"],
-        "A2_NER": ["A2", "M1", "A1"], "A2_DOY": ["A2", "M3", "A1"], "A2_AIR": ["A2", "M3", "A1"],
-        "A3_ATH": ["A3", "M2", "A1", "A4"], "A3_AGI": ["A3"],
-        "A4_PIR": ["A4", "M1", "M3", "A1"], "A4_ATH": ["A4", "M2", "A1", "A3"],
+        "A1_PIR": ["A1", "M1", "M3"], "A1_ATH": ["A1", "M2"], "A1_NER": ["A1", "M1"],
+        "A1_DOY": ["A1", "M3"], "A1_AIR": ["A1", "M3"],
+        "A2_NER": ["A2", "M1"], "A2_DOY": ["A2", "M3"], "A2_AIR": ["A2", "M3"],
+        "A3_ATH": ["A3", "M2"], "A3_AGI": ["A3"],
+        "A4_PIR": ["A4", "M1", "M3"], "A4_ATH": ["A4", "M2"],
         "KI_DIA": ["DK1", "KP1"],
     ]
 
