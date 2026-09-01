@@ -40,7 +40,7 @@ private fun SourceConfidence.color(): Color = when (this) {
 }
 
 /** English default label; callers pass a localised [label] for EL / SQ. */
-private fun SourceConfidence.defaultLabel(language: AppLanguage): String = when (this) {
+internal fun SourceConfidence.defaultLabel(language: AppLanguage): String = when (this) {
     SourceConfidence.LIVE -> localized(language, "Live", "Ζωντανά", "Drejtpërdrejt", "In tempo reale")
     SourceConfidence.SCHEDULED -> localized(language, "Scheduled", "Προγραμματισμένο", "I planifikuar", "Programmato")
     SourceConfidence.OFFLINE -> localized(language, "Offline snapshot", "Στιγμιότυπο εκτός σύνδεσης", "Pamje pa internet", "Istantanea offline")

@@ -54,7 +54,12 @@ val featureModule = module {
         )
     }
     single { LinesViewModel(getLinesUseCase = get()) }
-    factory {
+    // single, not factory: LineDetailViewModel owns an uncancelled CoroutineScope
+    // running an unbounded live-poll loop (and now a departures collector). As a
+    // factory, each navigation to a line detail spun up a fresh VM and leaked the
+    // previous one's loops forever - the same reason its siblings above are single.
+    // loadLine() re-inits per lineId (LineDetailScreenRoute keys it on lineId).
+    single {
         LineDetailViewModel(
             getLineDetailUseCase = get(),
             liveTrackerService = get(),
