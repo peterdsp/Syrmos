@@ -100,6 +100,7 @@ import com.syrmos.core.network.SyrmosLivePositionsService
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.compose.koinInject
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -229,7 +230,9 @@ fun HomeScreen(
         }
     }
 
-    Box(
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = { viewModel.refresh() },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
