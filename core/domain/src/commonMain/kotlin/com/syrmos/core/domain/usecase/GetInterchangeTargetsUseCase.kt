@@ -32,15 +32,15 @@ class GetInterchangeTargetsUseCase(
         fun hasSchedule(lineId: String): Boolean =
             bundles[lineId]?.let { it.trips.isNotEmpty() || it.bands.isNotEmpty() } ?: false
 
-        // Filter to eligible lines BEFORE loading their stops: only operational,
-        // scheduled lines can ever be a target, so querying stops for all 33 lines
-        // (hundreds of synchronous selects on every station change) is wasteful.
-        // Runs off the main dispatcher so it never stalls the departures poller.
+        // Only operational, scheduled lines can be a target.
         val eligible = lineRepository.getAllLines().first()
             .filter { it.isOperational && hasSchedule(it.id) }
-        val stationsByLine = eligible.associate { line ->
-            line.id to stationRepository.getStationsOnLine(line.id).first()
-        }
+        val eligibleIds = eligible.mapTo(HashSet()) { it.id }
+        // ONE bulk query for every stop's coordinates, then keep the eligible
+        // lines. Replaces a per-line fan-out (~485 synchronous selects). Off the
+        // main dispatcher so it never stalls render or the departures poller.
+        val stationsByLine = stationRepository.getStationCoordinatesByLine()
+            .filterKeys { it in eligibleIds }
         InterchangeResolver.resolve(
             hubLatitude = station.latitude,
             hubLongitude = station.longitude,

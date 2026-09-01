@@ -31,6 +31,33 @@ class StationRepositoryImpl(
         emit(stations.ifEmpty { readSeedStations().filter { lineId in it.lineIds } })
     }
 
+    /**
+     * All (line, stop) coordinate rows in a SINGLE query, grouped by line id.
+     * Only id + coordinates are populated (other Station fields are placeholders)
+     * because the sole consumer, the interchange resolver, reads just those. This
+     * replaces a per-line getStationsOnLine fan-out (~485 selects per station
+     * change). Falls back to the bundled seed when the DB is not yet seeded.
+     */
+    suspend fun getStationCoordinatesByLine(): Map<String, List<Station>> {
+        val rows = database.syrmosDatabaseQueries.getAllStationLineCoordinates().executeAsList()
+        if (rows.isNotEmpty()) {
+            return rows.groupBy { it.lineId }.mapValues { (lineId, group) ->
+                group.map { row ->
+                    Station(
+                        id = row.stationId,
+                        name = row.stationId,
+                        nameEl = row.stationId,
+                        latitude = row.latitude,
+                        longitude = row.longitude,
+                        lineIds = listOf(lineId),
+                    )
+                }
+            }
+        }
+        return readSeedStations().flatMap { s -> s.lineIds.map { it to s } }
+            .groupBy({ it.first }, { it.second })
+    }
+
     fun getStationById(id: String): Flow<Station?> = flow {
         val entity = database.syrmosDatabaseQueries.getStationById(id).executeAsOneOrNull()
         val station = entity?.let {

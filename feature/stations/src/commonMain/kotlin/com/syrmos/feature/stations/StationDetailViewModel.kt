@@ -61,12 +61,24 @@ class StationDetailViewModel(
         // by loadedStationId as belt-and-suspenders.
         loadJob?.cancel()
         refreshJob?.cancel()
+        // Reset EVERY station-derived field, not just departures: the detail
+        // lookup suspends and the screen does not gate on isLoading, so keeping
+        // the old name/coords/lines/isSuburban would render the previous
+        // station's map, alerts and ticket action under the new route.
         _uiState.update {
             it.copy(
-                isLoading = true,
+                stationName = "",
+                stationNameEl = "",
+                latitude = 0.0,
+                longitude = 0.0,
+                connectingLines = emptyList(),
+                lineIds = emptyList(),
+                isInterchange = false,
+                isSuburban = false,
                 departures = emptyList(),
                 hasLoadedDepartures = false,
                 interchangeTargets = emptyList(),
+                isLoading = true,
             )
         }
         loadJob = scope.launch {
@@ -100,9 +112,18 @@ class StationDetailViewModel(
             startRefreshLoop(stationId, detail.station.lineIds)
 
             launch {
-                val targets = getInterchangeTargets.invoke(detail.station)
-                if (loadedStationId == stationId) {
-                    _uiState.update { it.copy(interchangeTargets = targets) }
+                // Interchange is cosmetic: a resolver DB/resource failure must
+                // degrade to empty targets, never crash station detail as an
+                // uncaught coroutine exception.
+                try {
+                    val targets = getInterchangeTargets.invoke(detail.station)
+                    if (loadedStationId == stationId) {
+                        _uiState.update { it.copy(interchangeTargets = targets) }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Leave interchangeTargets empty; the rest of the screen is fine.
                 }
             }
         }
