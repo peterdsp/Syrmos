@@ -329,7 +329,11 @@ fun SettingsScreen(
             val serviceAlertsOn by NotificationSettings.serviceAlerts.collectAsState()
             val weatherAlertsOn by NotificationSettings.weatherAlerts.collectAsState()
             val nearbyAlertsOn by NotificationSettings.nearbyAlerts.collectAsState()
-            val morningDigestOn by NotificationSettings.morningDigest.collectAsState()
+            // Morning digest (07:00) is implemented and wired on iOS but has no
+            // consumer on Android yet: nothing schedules a 07:00 worker that reads
+            // notif_morning_digest, so the toggle only persisted a dead flag. Hide
+            // it rather than ship a control that does nothing; restore it together
+            // with a MorningDigestWorker when the feature actually lands.
 
             SettingsSection(title = when (lang) {
                 AppLanguage.GREEK -> "Ειδοποιησεις"
@@ -368,17 +372,6 @@ fun SettingsScreen(
                     },
                     checked = nearbyAlertsOn,
                     onCheckedChange = { NotificationSettings.setNearbyAlerts(it) },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                NotifToggleRow(
-                    title = when (lang) {
-                        AppLanguage.GREEK -> "Πρωινη ενημερωση (07:00)"
-                        AppLanguage.ALBANIAN -> "Perditesimi i mengjesit (07:00)"
-                        AppLanguage.ITALIAN -> "Riepilogo mattutino (07:00)"
-                        else -> "Morning digest (07:00)"
-                    },
-                    checked = morningDigestOn,
-                    onCheckedChange = { NotificationSettings.setMorningDigest(it) },
                 )
             }
         }
