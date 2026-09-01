@@ -71,6 +71,10 @@ class ScheduleSyncRepository(
             val manifest = json.decodeFromString<Manifest>(manifestBody)
             _manifest.value = manifest
             _scheduleVersion.value = manifest.version
+            // The cached bundles are exactly the snapshot the bundled manifest
+            // describes, so their hashes start as the bundled manifest's hashes.
+            // A server line whose hash later differs from this is what we re-fetch.
+            lineHashes = manifest.perLineHashes
         }
     }
 
@@ -82,6 +86,14 @@ class ScheduleSyncRepository(
 
     private val _lineBundles = MutableStateFlow<Map<String, LineSchedule>>(emptyMap())
     val lineBundles: StateFlow<Map<String, LineSchedule>> = _lineBundles.asStateFlow()
+
+    // The per-line content hashes the CACHED bundles correspond to: seeded from
+    // the bundled manifest on hydrate, updated as lines are re-fetched, and
+    // compared against the server manifest to decide what changed. Without a
+    // stored hash the old filter compared the server hash to itself (always
+    // equal), so a changed line was never pulled and Android could not update a
+    // timetable without an app release.
+    private var lineHashes: Map<String, String> = emptyMap()
 
     private val _lastSyncAt = MutableStateFlow<Instant?>(null)
     val lastSyncAt: StateFlow<Instant?> = _lastSyncAt.asStateFlow()
@@ -116,20 +128,23 @@ class ScheduleSyncRepository(
                     return RefreshOutcome.UpToDate
                 }
                 val current = _lineBundles.value.toMutableMap()
-                val toFetch = manifest.perLineHashes.entries
-                    .filter { (lid, hash) ->
-                        // Re-fetch when first time, hash changed, or bundle missing.
-                        current[lid]?.let { _ -> manifest.perLineHashes[lid] != hash } ?: true
-                    }
+                val toFetch = linesToFetch(
+                    cachedLineIds = current.keys,
+                    storedHashes = lineHashes,
+                    manifestHashes = manifest.perLineHashes,
+                )
 
+                val newHashes = lineHashes.toMutableMap()
                 var refreshed = 0
-                for ((lineId, _) in toFetch) {
+                for (lineId in toFetch) {
                     val bundle = schedulesService.fetchLineBundle(lineId).firstOrNull()
                     if (bundle != null) {
                         current[lineId] = bundle
+                        manifest.perLineHashes[lineId]?.let { newHashes[lineId] = it }
                         refreshed++
                     }
                 }
+                lineHashes = newHashes
                 _manifest.value = manifest
                 _scheduleVersion.value = manifest.version
                 _lineBundles.value = current
@@ -147,5 +162,24 @@ class ScheduleSyncRepository(
         data class Refreshed(val linesRefreshed: Int) : RefreshOutcome
         data object Skipped : RefreshOutcome
         data class Failure(val reason: String) : RefreshOutcome
+    }
+
+    companion object {
+        /**
+         * Which line ids must be pulled from the server: every line missing from
+         * the cache, plus every line whose cached content hash differs from the
+         * server manifest's hash. The previous inline filter compared
+         * `manifest.perLineHashes[lid]` to that same entry's value (always
+         * equal), so a changed line was never fetched and, with all lines
+         * pre-hydrated from the bundle, nothing was ever fetched at all.
+         */
+        internal fun linesToFetch(
+            cachedLineIds: Set<String>,
+            storedHashes: Map<String, String>,
+            manifestHashes: Map<String, String>,
+        ): List<String> =
+            manifestHashes.entries
+                .filter { (lid, serverHash) -> lid !in cachedLineIds || storedHashes[lid] != serverHash }
+                .map { it.key }
     }
 }
