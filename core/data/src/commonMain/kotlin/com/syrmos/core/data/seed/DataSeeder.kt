@@ -180,6 +180,8 @@ class DataSeeder(
                             day_type = schedule.dayType,
                             departure_time = time,
                             notes = null,
+                            // Band-derived schedules are never date-scoped.
+                            valid_dates = null,
                         )
                     }
                 }
@@ -218,6 +220,9 @@ class DataSeeder(
                     val dayType = mapBundleDayType(trip.dayType)
                     val direction = trip.direction.lowercase()
                     if (dayType == null || direction.isBlank()) return@forEach
+                    // Preserved so getNextDepartures can hide a dated trip on days
+                    // it does not run; blank normalizes to null (no restriction).
+                    val validDates = trip.validDates?.takeIf { it.isNotBlank() }
                     trip.stops.forEach { stop ->
                         if (stop.stationId.isBlank() || stop.departureTime.isBlank()) return@forEach
                         database.syrmosDatabaseQueries.insertSchedule(
@@ -227,6 +232,7 @@ class DataSeeder(
                             day_type = dayType,
                             departure_time = stop.departureTime,
                             notes = null,
+                            valid_dates = validDates,
                         )
                     }
                 }
@@ -246,11 +252,12 @@ class DataSeeder(
     }
 
     companion object {
-        // Bumped to 10: lines absent from routes.json (most buses) now get
-        // ordered station_line rows seeded from the nested lines.json stations,
-        // so their map geometry follows the real stop order. Without a bump an
-        // existing install keeps its old rows and the buses stay mis-ordered.
-        const val SEED_VERSION = "10"
+        // Bumped to 11: trip schedules now carry valid_dates, so a date-scoped
+        // seasonal trip (e.g. Pelion PL1) is hidden on days it does not run.
+        // Without a bump an existing install keeps its old rows, which have
+        // valid_dates NULL, and the seasonal trip keeps showing every matching
+        // day. (Schema migration 3.sqm adds the column; the reseed fills it.)
+        const val SEED_VERSION = "11"
 
         /**
          * Whether the bundled seed must be (re)written. Compares versions

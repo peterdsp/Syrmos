@@ -154,6 +154,8 @@ private val BAND_PROJECTED_LINES =
 /// timetable" path; if the Pi ever serves their live positions those win per line.
 ///
 /// [today] is the schedule day-type string ("mon_thu" / "fri" / "sat" / "sun").
+/// [todayIso] is the Athens date (yyyy-MM-dd) used to hide date-scoped trips off
+/// their valid dates; empty disables that filter.
 /// [nowMinutes] is minutes since Athens midnight (fractional for smooth glide).
 fun projectScheduledTrains(
     lines: List<Line>,
@@ -162,6 +164,7 @@ fun projectScheduledTrains(
     today: String,
     nowMinutes: Double,
     geometry: Map<String, List<LatLng>> = emptyMap(),
+    todayIso: String = "",
 ): List<SimulatedTrain> {
     if (bundles.isEmpty()) return emptyList()
     val lineById = lines.filter { it.isOperational }.associateBy { it.id }
@@ -177,6 +180,16 @@ fun projectScheduledTrains(
             // dayType is authoritative; an empty dayType runs every day.
             val td = trip.dayType.lowercase()
             if (td.isNotEmpty() && td != today) continue
+            // Date-scoped trips (seasonal, e.g. Pelion PL1) run only on the ISO
+            // dates listed in validDates; hide the vehicle off those dates so the
+            // map matches the offline departures filter. Skipped when todayIso is
+            // unknown (empty) so a missing date never blanks the map.
+            val vd = trip.validDates
+            if (!vd.isNullOrBlank() && todayIso.isNotEmpty() &&
+                todayIso !in vd.split(",").map { it.trim() }
+            ) {
+                continue
+            }
             val rawStops = trip.stops
             if (rawStops.size < 2) continue
             // Chronological stop order. The seed stores stops in canonical
