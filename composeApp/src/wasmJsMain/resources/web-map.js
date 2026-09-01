@@ -1286,6 +1286,29 @@
             lineJoin: "round",
             dashArray: builtButClosed ? MAP_TOKENS.greyedDash : (isBus ? MAP_TOKENS.busDash : (ld?.strokeDash || null)),
         };
+        if (isBus) {
+            // Buses draw straight segments through their actual ordered stops,
+            // BEFORE any bundled OSM shape. A bus shape can cover only part of
+            // the route (the Patras University loop shape omits its western
+            // Kastelokampos/OAED stops, stranding those markers), and a spline
+            // overshoots on tight loops. Straight segments always connect every
+            // stop. Rail/tram still prefer the OSM shape below.
+            // Ordered stops: routes.json first, else the line's own nested
+            // stations from lines.json (buses like PU1 are absent from
+            // routes.json). If neither exists, fall through to the shape so we
+            // never blank a bus that only has an OSM shape.
+            let busLatLngs = (lineStations.get(line.id) || [])
+                .map((s) => [s.latitude, s.longitude]);
+            if (busLatLngs.length < 2 && Array.isArray(line.stations)) {
+                busLatLngs = line.stations
+                    .map((s) => [s.lat ?? s.latitude, s.lng ?? s.longitude])
+                    .filter((p) => p[0] != null && p[1] != null);
+            }
+            if (busLatLngs.length > 1) {
+                L.polyline(busLatLngs, polylineOpts).addTo(map);
+                continue;
+            }
+        }
         if (feat && feat.geometry) {
             // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
             const segments = feat.geometry.type === "MultiLineString"
