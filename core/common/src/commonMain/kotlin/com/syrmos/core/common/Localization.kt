@@ -70,11 +70,13 @@ enum class L {
     DEST_DIAKOPTO, DEST_DIAKOPTO_HOOK;
 
     fun text(lang: AppLanguage): String = when (this) {
+        // Scope is all of Greece (national rail, Thessaloniki, Patras), not just
+        // Athens, matching the iOS subtitle. Proper Greek/Albanian diacritics kept.
         APP_SUBTITLE -> when (lang) {
-            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Αθήνας"
-            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta të hekurudhave të Athinës"
-            AppLanguage.ITALIAN -> "Orari ferroviari di Atene in tempo reale"
-            else -> "Live Athens rail times"
+            AppLanguage.GREEK -> "Ζωντανοί χρόνοι σιδηροδρόμων Ελλάδας"
+            AppLanguage.ALBANIAN -> "Oraret e drejtpërdrejta të hekurudhave të Greqisë"
+            AppLanguage.ITALIAN -> "Orari ferroviari della Grecia in tempo reale"
+            else -> "Live Greece rail times"
         }
         METRO -> when (lang) {
             AppLanguage.GREEK -> "Μετρό"
@@ -106,11 +108,13 @@ enum class L {
             AppLanguage.ITALIAN -> "Avviso che interessa questa linea"
             else -> "Alert affecting this line"
         }
+        // The feed covers the whole rail network (STASY metro/tram + Hellenic
+        // Train + OSETH), not just metro/tram, matching the iOS header scope.
         LATEST_FROM_STASY -> when (lang) {
-            AppLanguage.GREEK -> "Ενημέρωση Μετρό & Τραμ"
-            AppLanguage.ALBANIAN -> "Përditësime Metro & Tramvaj"
-            AppLanguage.ITALIAN -> "Aggiornamenti Metro e Tram"
-            else -> "Metro & Tram updates"
+            AppLanguage.GREEK -> "Ενημερώσεις σιδηροδρομικού δικτύου"
+            AppLanguage.ALBANIAN -> "Përditësime të rrjetit hekurudhor"
+            AppLanguage.ITALIAN -> "Aggiornamenti rete ferroviaria"
+            else -> "Rail network updates"
         }
         READ_MORE -> when (lang) {
             AppLanguage.GREEK -> "Διαβάστε περισσότερα"
