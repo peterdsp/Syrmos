@@ -72,6 +72,31 @@ class InterchangeResolverTest {
     }
 
     @Test
+    fun multiIdHubResolvesEachLinesOwnStationId() {
+        // Piraeus is a hub where M1's stop is M1_PIR and M3's OWN stop is M3_PIR,
+        // physically co-located. From an M1_PIR hub, resolving M3 must select
+        // M3_PIR (M3's own id), never M1_PIR. This is the guarantee a lineIds-based
+        // grouping would break by putting M1_PIR under M3.
+        val piraeusLat = 37.9485
+        val piraeusLng = 23.6425
+        val m1 = line("M1")
+        val m3 = line("M3")
+        val byLine = mapOf(
+            "M1" to listOf(station("M1_PIR", piraeusLat, piraeusLng, "M1")),
+            "M3" to listOf(station("M3_PIR", piraeusLat + 0.0001, piraeusLng, "M3")),
+        )
+        val targets = InterchangeResolver.resolve(
+            hubLatitude = piraeusLat,
+            hubLongitude = piraeusLng,
+            currentLineId = "M1",
+            lines = listOf(m1, m3),
+            stationsByLine = byLine,
+            hasSchedule = { true },
+        )
+        assertEquals(listOf(InterchangeTarget(m3, "M3_PIR")), targets)
+    }
+
+    @Test
     fun currentLineIsNeverATarget() {
         val targets = InterchangeResolver.resolve(
             hubLat, hubLng, currentLineId = "M2", lines = lines,

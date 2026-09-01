@@ -145,6 +145,14 @@ INNER JOIN station_line_entity sl ON s.id = sl.station_id
 WHERE sl.line_id = ?
 ORDER BY sl.position_on_line ASC;
 
+-- One row per (line, stop) with just the coordinates the interchange resolver
+-- needs. Replaces a per-line getStationsOnLine fan-out (~485 selects per station
+-- change, each also resolving lineIds) with a single join.
+getAllStationLineCoordinates:
+SELECT sl.line_id AS lineId, s.id AS stationId, s.latitude AS latitude, s.longitude AS longitude
+FROM station_line_entity sl
+INNER JOIN station_entity s ON s.id = sl.station_id;
+
 getLinesAtStation:
 SELECT l.* FROM line_entity l
 INNER JOIN station_line_entity sl ON l.id = sl.line_id
