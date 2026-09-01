@@ -125,4 +125,20 @@ class MapRouteGeometryTest {
         assertEquals(LatLng(37.02, 23.05), snapToPolyline(37.02, 23.05, listOf(LatLng(37.0, 23.0))))
         assertEquals(LatLng(37.02, 23.05), snapToPolyline(37.02, 23.05, emptyList()))
     }
+
+    @Test
+    fun snapPullsAChordFixBackOntoACurvedRoute() {
+        // The TP2 class: a projected vehicle that fell to a straight chord between
+        // two stations sits off a curved OSM route. Snapping must pull it back
+        // onto the drawn curve, not leave it on the chord.
+        val curve = listOf(
+            LatLng(38.00, 23.00), LatLng(38.05, 23.02), LatLng(38.10, 23.00),
+            LatLng(38.15, 23.02), LatLng(38.20, 23.00),
+        )
+        // Midpoint of the chord between first and last stations, far off the curve.
+        val chordMid = snapToPolyline(38.10, 23.06, curve)
+        // The nearest curve point is near the (38.10, 23.00) vertex, not the chord.
+        assertTrue(chordMid.lng < 23.04, "snapped point must move back toward the drawn curve")
+        assertTrue(curve.any { kotlin.math.abs(it.lat - chordMid.lat) < 0.06 })
+    }
 }

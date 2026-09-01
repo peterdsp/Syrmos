@@ -251,6 +251,7 @@ private fun DrawScope.drawFallbackMap(
 
     drawSimulatedTrains(
         trains = uiState.simulatedTrains,
+        geometry = uiState.effectiveGeometry,
         canvasWidth = canvasWidth,
         canvasHeight = canvasHeight,
         offsetX = offsetX,
@@ -273,6 +274,7 @@ private fun DrawScope.drawFallbackMap(
 
 private fun DrawScope.drawSimulatedTrains(
     trains: List<SimulatedTrain>,
+    geometry: Map<String, List<LatLng>>,
     canvasWidth: Float,
     canvasHeight: Float,
     offsetX: Float,
@@ -281,7 +283,13 @@ private fun DrawScope.drawSimulatedTrains(
     textMeasurer: TextMeasurer,
 ) {
     for (train in trains) {
-        val pos = latLonToScreen(train.latitude, train.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+        // Snap onto the drawn polyline: VehicleInterpolation.positionBetween can
+        // return a straight chord (arc-guard fallback) that leaves a curved OSM
+        // route by up to ~2km, so a projected vehicle must be pinned to the same
+        // geometry the route is drawn as, exactly as Android and the live path do.
+        val snapped = geometry[train.lineId]?.let { snapToPolyline(train.latitude, train.longitude, it) }
+            ?: LatLng(train.latitude, train.longitude)
+        val pos = latLonToScreen(snapped.lat, snapped.lng, canvasWidth, canvasHeight, offsetX, offsetY, scale)
         if (pos.x < -100 || pos.x > canvasWidth + 100 || pos.y < -100 || pos.y > canvasHeight + 100) continue
 
         val lineColor = train.lineColor.toComposeColor()
