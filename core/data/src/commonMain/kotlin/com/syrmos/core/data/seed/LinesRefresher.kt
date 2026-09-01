@@ -60,14 +60,15 @@ class LinesRefresher(
                     status = line.status,
                 )
 
-                // Replace this line's membership set atomically: clear its
-                // existing station_line rows first, so a stop removed or re-keyed
-                // upstream cannot linger as a stale (station_id, line_id) row that
-                // would feed a wrong stop to the interchange resolver. Guarded by a
-                // non-empty payload so a line the server returned without stops is
-                // never blanked. INSERT OR REPLACE alone could not delete a row the
-                // server no longer sends.
-                if (line.stations.isNotEmpty()) {
+                // Replace this line's membership set atomically ONLY when the
+                // payload is complete (declared stationCount, unique ids): clear
+                // its existing station_line rows, then insert the returned set, so
+                // a stop removed or re-keyed upstream cannot linger as a stale
+                // (station_id, line_id) row that would feed a wrong stop to the
+                // interchange resolver. A partial or duplicated snapshot is NOT
+                // authoritative, so the line keeps its prior memberships rather
+                // than being truncated to the incomplete set.
+                if (isCompleteMembership(line.stations.map { it.id }, line.stationCount)) {
                     database.syrmosDatabaseQueries.deleteStationLinesForLine(line.id)
                     line.stations.forEachIndexed { index, station ->
                         if (station.id !in knownStationIds) {
@@ -94,5 +95,20 @@ class LinesRefresher(
                 }
             }
         }
+    }
+
+    companion object {
+        /**
+         * Whether a line's station payload is complete enough to REPLACE its
+         * stored memberships: non-empty, all ids unique, and exactly the declared
+         * [declaredCount]. A partial or duplicated snapshot fails this, so the
+         * refresh keeps the line's prior memberships instead of truncating them to
+         * the incomplete set. In the bundled data every line's stations.size
+         * equals its stationCount with no duplicate ids, so complete payloads pass.
+         */
+        internal fun isCompleteMembership(stationIds: List<String>, declaredCount: Int): Boolean =
+            stationIds.isNotEmpty() &&
+                stationIds.size == declaredCount &&
+                stationIds.toSet().size == stationIds.size
     }
 }
