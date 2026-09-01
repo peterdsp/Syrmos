@@ -1337,23 +1337,23 @@ struct NearbyStationDestination: View {
     }
 
     private func resolveTransitStation() -> TransitStation? {
-        // The MapStationNode `node` already carries the cluster-merged
-        // line set (M1+M3+A1+A4 at Piraeus, M2+M3+T6 at Syntagma, etc).
-        // The base TransitStation we look up here only knows about its
-        // own per-row lineAssociations entry, which can be a strict
-        // subset — e.g. A1_PIR's row historically listed [A1, M1] and
-        // missed the M3 terminus. We override the returned station's
-        // lineIds with `node.lineIds` so the detail view always shows
-        // every line that actually calls at this physical platform,
-        // regardless of how complete the hardcoded association table is.
+        // Return the direct-membership base station: its lineIds must stay valid
+        // (id, line) pairs so StationDetailView never projects a foreign line
+        // against this id, which for band-based lines defaults the missing
+        // offset to zero and yields phantom departures. Attaching the whole
+        // cluster's line set (node.lineIds) to one id is exactly that bug.
+        // Physical-hub transfers are surfaced by StationDetailView via
+        // interchangeTargets, which resolves each line's real station id.
         guard let base = lookupBaseStation() else { return nil }
+        guard node.isInterchange, !base.isInterchange else { return base }
+        // Keep lineIds direct; only carry the co-location flag for the badge.
         return TransitStation(
             id: base.id,
             name: base.name,
             nameEl: base.nameEl,
             coordinate: base.coordinate,
-            lineIds: node.lineIds,
-            isInterchange: node.isInterchange || base.isInterchange
+            lineIds: base.lineIds,
+            isInterchange: true
         )
     }
 

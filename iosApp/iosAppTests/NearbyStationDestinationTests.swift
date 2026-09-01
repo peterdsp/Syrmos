@@ -102,6 +102,24 @@ final class NearbyStationDestinationTests: XCTestCase {
         )
         XCTAssertNil(resolve(bogus))
     }
+
+    func testNearMeResolvedPiraeusHasOnlyValidLinePairs() throws {
+        // Regression for the Near Me resolver: it must return a direct-membership
+        // base station, never a synthetic one with the whole hub's lines on a
+        // single id (which projected phantom departures). Build the real
+        // multi-line Piraeus map node and assert every (id, line) pair is valid.
+        let node = try XCTUnwrap(
+            SyrmosData.mapStations.first {
+                $0.displayName.localizedCaseInsensitiveContains("Piraeus") && $0.lineIds.count > 1
+            },
+            "a multi-line Piraeus map node should exist"
+        )
+        let station = try XCTUnwrap(resolve(node), "Piraeus node should resolve to a base station")
+        for lid in station.lineIds {
+            XCTAssertTrue(SyrmosData.stations(for: lid).contains { $0.id == station.id },
+                          "resolved \(station.id) lists \(lid) but is not a stop on \(lid)")
+        }
+    }
 }
 
 /// Actionable-interchange resolution. Interchanges are computed by PROXIMITY at
