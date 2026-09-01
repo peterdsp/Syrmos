@@ -108,6 +108,9 @@ final class NearbyStationDestinationTests: XCTestCase {
 /// A hub must expose every line that serves it (symmetric associations), and
 /// the interchange must resolve to a real, co-located stop on each other line
 /// so DestinationDetailView can offer a tap-through to its timetable.
+/// @MainActor because interchangeTargets/hasSchedule read the main-actor
+/// schedule store.
+@MainActor
 final class InterchangeAssociationTests: XCTestCase {
 
     private func meters(_ aLat: Double, _ aLon: Double, _ bLat: Double, _ bLon: Double) -> Double {
@@ -153,5 +156,39 @@ final class InterchangeAssociationTests: XCTestCase {
                 }
             }
         }
+    }
+
+    func testTransfersAreOnlyOperationalAndScheduled() throws {
+        // Every offered "Change line here" target must be boardable: an
+        // operational line with a bundled timetable, so it never leads to an
+        // empty schedule (drops suspended DK1 and the unscheduled X3/2X).
+        for lineId in ["M1", "A1", "KP1", "TM1"] {
+            for station in SyrmosData.stations(for: lineId) {
+                for target in SyrmosData.interchangeTargets(from: station, currentLineId: lineId) {
+                    XCTAssertTrue(target.line.isOperational,
+                                  "\(target.line.id) offered at \(station.id) is not operational")
+                    XCTAssertTrue(SyrmosData.hasSchedule(target.line.id),
+                                  "\(target.line.id) offered at \(station.id) has no timetable")
+                }
+            }
+        }
+    }
+
+    func testThessalonikiMetroHubExposesBothLines() throws {
+        // A shared TM1/TM2 station must know both lines and offer the transfer,
+        // proving the interchange fix is not Athens-only.
+        let shared = SyrmosData.stations(for: "TM1").first { $0.lineIds.contains("TM2") }
+        let station = try XCTUnwrap(shared, "a TM1 station should be a TM1/TM2 interchange")
+        let targets = SyrmosData.interchangeTargets(from: station, currentLineId: "TM1")
+        XCTAssertTrue(targets.contains { $0.line.id == "TM2" },
+                      "TM2 must be an actionable transfer at a shared Thessaloniki hub")
+    }
+
+    func testLarissaHubIncludesIntercityLines() throws {
+        // Computed hub membership must include IC1/RG1 at Larissa Station, which
+        // the old hand-maintained table missed (the pills vs section mismatch).
+        let larissa = SyrmosData.hubLineIds["M2_STA"] ?? []
+        XCTAssertTrue(Set(larissa).isSuperset(of: ["M2", "IC1", "RG1"]),
+                      "Larissa (M2_STA) hub must include intercity IC1/RG1; got \(larissa.sorted())")
     }
 }
