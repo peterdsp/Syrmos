@@ -48,19 +48,33 @@ class StationDetailViewModel(
     val uiState: StateFlow<StationDetailUiState> = _uiState.asStateFlow()
 
     private var loadedStationId: String? = null
+    private var loadJob: Job? = null
     private var refreshJob: Job? = null
 
     fun loadStation(stationId: String) {
         if (stationId == loadedStationId) return
         loadedStationId = stationId
-        scope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+        // Cancel the previous load AND poller, and clear station-scoped state
+        // synchronously, so an in-flight load for the old station can neither
+        // write its departures/transfers under the new one nor (out of order)
+        // restart its poller. Every post-suspension write below is also guarded
+        // by loadedStationId as belt-and-suspenders.
+        loadJob?.cancel()
+        refreshJob?.cancel()
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                departures = emptyList(),
+                hasLoadedDepartures = false,
+                interchangeTargets = emptyList(),
+            )
+        }
+        loadJob = scope.launch {
             val detail = getStationDetail.invoke(stationId).first()
+            if (loadedStationId != stationId) return@launch
             if (detail == null) {
-                // Clear the spinner and reset loadedStationId so the same station
-                // can be retried; otherwise a null detail (unknown id, data gap)
-                // left the screen spinning forever with the guard at loadStation's
-                // top blocking any re-attempt.
+                // Reset loadedStationId so the same station can be retried;
+                // otherwise a null detail left the screen spinning forever.
                 _uiState.update { it.copy(isLoading = false) }
                 loadedStationId = null
                 return@launch
@@ -74,9 +88,6 @@ class StationDetailViewModel(
                     latitude = detail.station.latitude,
                     longitude = detail.station.longitude,
                     connectingLines = detail.connectingLines,
-                    // Cleared here, then filled by the proximity resolver below, so
-                    // a previous station's transfers never flash on the new screen.
-                    interchangeTargets = emptyList(),
                     lineIds = detail.station.lineIds,
                     isInterchange = detail.station.isInterchange,
                     isSuburban = detail.station.lineIds.any { id -> id in suburbanIds },
@@ -84,15 +95,16 @@ class StationDetailViewModel(
                 )
             }
 
-            // Proximity transfers are static for the session, so resolve once per
-            // load (not in the 15s departures loop). Guard against a race where the
-            // user has already navigated to another station.
-            val targets = getInterchangeTargets.invoke(detail.station)
-            if (loadedStationId == stationId) {
-                _uiState.update { it.copy(interchangeTargets = targets) }
-            }
-
+            // Start the departures poller immediately; it must not wait on the
+            // proximity resolver, which runs in parallel and is only cosmetic.
             startRefreshLoop(stationId, detail.station.lineIds)
+
+            launch {
+                val targets = getInterchangeTargets.invoke(detail.station)
+                if (loadedStationId == stationId) {
+                    _uiState.update { it.copy(interchangeTargets = targets) }
+                }
+            }
         }
     }
 
@@ -108,7 +120,11 @@ class StationDetailViewModel(
             while (isActive) {
                 try {
                     val departures = getStationDepartures.invoke(stationId, lineIds)
-                    _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
+                    // Guard: never write this station's departures if the user has
+                    // already moved to another (belt-and-suspenders over the cancel).
+                    if (loadedStationId == stationId) {
+                        _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -122,6 +138,8 @@ class StationDetailViewModel(
     }
 
     fun dispose() {
+        loadJob?.cancel()
+        loadJob = null
         refreshJob?.cancel()
         refreshJob = null
     }

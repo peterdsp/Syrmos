@@ -52,7 +52,18 @@ data class StationDetailScreenRoute(val stationId: String) : Screen {
             alertBanner = alertBanner,
             lineDisruptions = lineDisruptions,
             onBack = { navigator.pop() },
-            onOpenLine = { lineId -> navigator.push(LineDetailScreenRoute(lineId)) },
+            onOpenTransfer = { lineId, targetStationId ->
+                // Honor the resolver's per-line station id. A transfer whose stop
+                // differs from this one opens that stop's detail (its departures
+                // include the tapped line); a line that also serves THIS stop opens
+                // its whole-line detail. Either way the resolved id is used, never
+                // discarded.
+                if (targetStationId != stationId) {
+                    navigator.push(StationDetailScreenRoute(targetStationId))
+                } else {
+                    navigator.push(LineDetailScreenRoute(lineId))
+                }
+            },
         )
     }
 }

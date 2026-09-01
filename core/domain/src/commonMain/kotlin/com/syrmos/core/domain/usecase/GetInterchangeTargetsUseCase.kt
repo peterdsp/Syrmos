@@ -6,7 +6,9 @@ import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.domain.interchange.InterchangeResolver
 import com.syrmos.core.domain.interchange.InterchangeTarget
 import com.syrmos.core.model.transit.Station
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * The operational, scheduled lines serving the same physical hub as a station,
@@ -23,23 +25,29 @@ class GetInterchangeTargetsUseCase(
     private val stationRepository: StationRepositoryImpl,
     private val scheduleSync: ScheduleSyncRepository,
 ) {
-    suspend fun invoke(station: Station): List<InterchangeTarget> {
-        val lines = lineRepository.getAllLines().first()
-        val stationsByLine = lines.associate { line ->
-            line.id to stationRepository.getStationsOnLine(line.id).first()
-        }
+    suspend fun invoke(station: Station): List<InterchangeTarget> = withContext(Dispatchers.Default) {
         // Bundled offline snapshot (hydrated at cold start), so this works with no
         // network: a line has a timetable when it carries frequency bands or trips.
         val bundles = scheduleSync.lineBundles.value
-        return InterchangeResolver.resolve(
+        fun hasSchedule(lineId: String): Boolean =
+            bundles[lineId]?.let { it.trips.isNotEmpty() || it.bands.isNotEmpty() } ?: false
+
+        // Filter to eligible lines BEFORE loading their stops: only operational,
+        // scheduled lines can ever be a target, so querying stops for all 33 lines
+        // (hundreds of synchronous selects on every station change) is wasteful.
+        // Runs off the main dispatcher so it never stalls the departures poller.
+        val eligible = lineRepository.getAllLines().first()
+            .filter { it.isOperational && hasSchedule(it.id) }
+        val stationsByLine = eligible.associate { line ->
+            line.id to stationRepository.getStationsOnLine(line.id).first()
+        }
+        InterchangeResolver.resolve(
             hubLatitude = station.latitude,
             hubLongitude = station.longitude,
             currentLineId = "",
-            lines = lines,
+            lines = eligible,
             stationsByLine = stationsByLine,
-            hasSchedule = { lineId ->
-                bundles[lineId]?.let { it.trips.isNotEmpty() || it.bands.isNotEmpty() } ?: false
-            },
+            hasSchedule = ::hasSchedule,
         )
     }
 }

@@ -66,7 +66,9 @@ fun StationDetailScreen(
     alertBanner: AlertBannerInfo? = null,
     lineDisruptions: Map<String, AlertSeverity> = emptyMap(),
     onBack: () -> Unit = {},
-    onOpenLine: (lineId: String) -> Unit = {},
+    // Carries BOTH the line and the resolver's per-line station id so the caller
+    // can open that line's timetable AT this hub (not just the whole-line view).
+    onOpenTransfer: (lineId: String, stationId: String) -> Unit = { _, _ -> },
     onOpenDirections: ((latitude: Double, longitude: Double, label: String) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -203,7 +205,7 @@ fun StationDetailScreen(
                     ) {
                         uiState.interchangeTargets.forEach { target ->
                             Card(
-                                onClick = { onOpenLine(target.line.id) },
+                                onClick = { onOpenTransfer(target.line.id, target.stationId) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
