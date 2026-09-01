@@ -102,4 +102,99 @@ final class NearbyStationDestinationTests: XCTestCase {
         )
         XCTAssertNil(resolve(bogus))
     }
+
+    func testNearMeResolvedPiraeusHasOnlyValidLinePairs() throws {
+        // Regression for the Near Me resolver: it must return a direct-membership
+        // base station, never a synthetic one with the whole hub's lines on a
+        // single id (which projected phantom departures). Build the real
+        // multi-line Piraeus map node and assert every (id, line) pair is valid.
+        let node = try XCTUnwrap(
+            SyrmosData.mapStations.first {
+                $0.displayName.localizedCaseInsensitiveContains("Piraeus") && $0.lineIds.count > 1
+            },
+            "a multi-line Piraeus map node should exist"
+        )
+        let station = try XCTUnwrap(resolve(node), "Piraeus node should resolve to a base station")
+        for lid in station.lineIds {
+            XCTAssertTrue(SyrmosData.stations(for: lid).contains { $0.id == station.id },
+                          "resolved \(station.id) lists \(lid) but is not a stop on \(lid)")
+        }
+    }
+}
+
+/// Actionable-interchange resolution. Interchanges are computed by PROXIMITY at
+/// the point of use (interchangeTargets), NOT by enriching a station's lineIds:
+/// each target resolves to the real per-line station id, so navigation and
+/// schedule queries stay valid, and only boardable (operational + scheduled)
+/// lines are offered.
+/// @MainActor because interchangeTargets/hasSchedule read the main-actor
+/// schedule store.
+@MainActor
+final class InterchangeAssociationTests: XCTestCase {
+
+    func testInterchangeTargetsFromLine1PiraeusAreActionable() throws {
+        let piraeus = try XCTUnwrap(SyrmosData.stations(for: "M1").first { $0.id == "M1_PIR" })
+        let targets = SyrmosData.interchangeTargets(from: piraeus, currentLineId: "M1")
+        XCTAssertEqual(Set(targets.map { $0.line.id }), ["M3", "A1", "A4"],
+                       "Piraeus on Line 1 must offer M3 and the suburban lines as transfers")
+    }
+
+    func testEveryTransferResolvesToARealStopOnThatLine() throws {
+        // Codex regression guard: an interchange target must be a VALID
+        // (station id, line) pair on the TARGET line, so navigation and
+        // schedule queries never use a foreign id. This is exactly the
+        // invariant the earlier lineIds-enrichment approach violated.
+        for line in SyrmosData.lines {
+            for station in SyrmosData.stations(for: line.id) {
+                for target in SyrmosData.interchangeTargets(from: station, currentLineId: line.id) {
+                    let realStop = SyrmosData.stations(for: target.line.id)
+                        .contains { $0.id == target.stationId }
+                    XCTAssertTrue(realStop,
+                        "target \(target.stationId) is not a real stop on \(target.line.id)")
+                }
+            }
+        }
+    }
+
+    func testTransfersAreOnlyOperationalAndScheduled() throws {
+        // Never offer a transfer that opens an empty timetable: drops suspended
+        // DK1 and the unscheduled X3/2X airport shuttles.
+        for line in SyrmosData.lines {
+            for station in SyrmosData.stations(for: line.id) {
+                for target in SyrmosData.interchangeTargets(from: station, currentLineId: line.id) {
+                    XCTAssertTrue(target.line.isOperational,
+                                  "\(target.line.id) offered at \(station.id) is not operational")
+                    XCTAssertTrue(SyrmosData.hasSchedule(target.line.id),
+                                  "\(target.line.id) offered at \(station.id) has no timetable")
+                }
+            }
+        }
+    }
+
+    func testThessalonikiMetroHubExposesBothLines() throws {
+        // Proves the fix is not Athens-only: some TM1 station offers a TM2
+        // transfer (they share the central Thessaloniki metro corridor).
+        let offersTM2 = SyrmosData.stations(for: "TM1").contains { station in
+            SyrmosData.interchangeTargets(from: station, currentLineId: "TM1")
+                .contains { $0.line.id == "TM2" }
+        }
+        XCTAssertTrue(offersTM2, "some TM1 station must offer a TM2 transfer")
+    }
+
+    func testEveryStationLineIdPairIsValid() throws {
+        // Codex invariant: every (station.id, line) in a station's lineIds must
+        // resolve through stations(for: line), so the projector never keys a
+        // foreign id and produces phantom departures. Covers curated, per-line
+        // bundle, and the public map/browse collection.
+        func assertValid(_ station: TransitStation) {
+            for lid in station.lineIds {
+                let onThatLine = SyrmosData.stations(for: lid).contains { $0.id == station.id }
+                XCTAssertTrue(onThatLine, "\(station.id) lists \(lid) but is not a stop on \(lid)")
+            }
+        }
+        for line in SyrmosData.lines {
+            for station in SyrmosData.stations(for: line.id) { assertValid(station) }
+        }
+        for station in SyrmosData.bundleStations { assertValid(station) }
+    }
 }

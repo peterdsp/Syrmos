@@ -13,6 +13,12 @@ struct StationDetailView: View {
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
+    // Physical-hub transfers, resolved by proximity to each line's REAL station
+    // id (never this station's id), so navigation and schedules stay valid.
+    private var interchangeTargets: [(line: TransitLine, stationId: String)] {
+        SyrmosData.interchangeTargets(from: station, currentLineId: station.lineIds.first ?? "")
+    }
+
     private var stationAlerts: [STASYAnnouncement] {
         stasyService.announcements.filter { ann in
             ann.category == .serviceAlert
@@ -54,14 +60,25 @@ struct StationDetailView: View {
                 .buttonStyle(.plain)
             }
 
-            if station.isInterchange {
+            if !interchangeTargets.isEmpty {
                 Section(loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : loc.language == .italian ? "Interscambio" : "Interchange") {
-                    Label(
-                        loc.language == .greek ? "Σταθμός ανταπόκρισης" : loc.language == .albanian ? "Stacion korrespondence" : loc.language == .italian ? "Stazione di interscambio" : "Transfer station",
-                        systemImage: "arrow.triangle.2.circlepath"
-                    )
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    ForEach(interchangeTargets, id: \.line.id) { target in
+                        NavigationLink {
+                            DestinationDetailView(
+                                stationId: target.stationId,
+                                lineId: target.line.id,
+                                onStationViewed: { _, _ in }
+                            )
+                        } label: {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(target.line.color)
+                                    .frame(width: 12, height: 12)
+                                Text(target.line.localizedName(loc.language))
+                                    .font(.subheadline)
+                            }
+                        }
+                    }
                 }
             }
 
