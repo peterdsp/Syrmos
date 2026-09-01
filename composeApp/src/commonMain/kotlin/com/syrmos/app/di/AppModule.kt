@@ -29,7 +29,7 @@ val featureModule = module {
             announcementsRepository = get(),
             liveTrackerService = get(),
             weatherRepository = get(),
-            railNewsService = get(),
+            railNews = get(),
         )
     }
     factory {

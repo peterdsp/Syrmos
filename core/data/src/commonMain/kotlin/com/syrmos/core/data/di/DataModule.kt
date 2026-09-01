@@ -9,7 +9,10 @@ import com.syrmos.core.data.repository.TransitPatternRepositoryImpl
 import com.syrmos.core.data.seed.DataSeeder
 import com.syrmos.core.data.seed.LinesRefresher
 import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.data.sync.DatabaseRailNewsCache
 import com.syrmos.core.data.sync.FaresRepository
+import com.syrmos.core.data.sync.RailNewsCache
+import com.syrmos.core.data.sync.RailNewsRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.data.sync.VisualOverridesRepository
@@ -25,6 +28,8 @@ val dataModule = module {
     single { VisualOverridesRepository(service = get(), resourceReader = get()) }
     single { AnnouncementsRepository(service = get(), resourceReader = get()) }
     single { WeatherRepository(weatherService = get(), database = get()) }
+    single<RailNewsCache> { DatabaseRailNewsCache(database = get()) }
+    single { RailNewsRepository(railNewsService = get(), cache = get()) }
     single { LineRepositoryImpl(database = get(), resourceReader = get()) }
     single { StationRepositoryImpl(database = get(), resourceReader = get()) }
     single { ScheduleRepositoryImpl(database = get()) }
