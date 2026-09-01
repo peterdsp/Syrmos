@@ -852,8 +852,11 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
         let nextStationEn: String?
         let delayMinutes: Int
         let serviceType: String
-        let lat: Double
-        let lng: Double
+        // Optional so one GPS-less vehicle row does not fail the whole decode and
+        // blank every live train (matches the Android RailwayGovLiveTrackerService
+        // fix). Coord-less rows are skipped when mapping below.
+        let lat: Double?
+        let lng: Double?
         let speed: Double?
         let course: Double?
         let altitude: Double?
@@ -910,8 +913,12 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                 throw URLError(.badServerResponse)
             }
             let payload = try JSONDecoder().decode(TrainsPayload.self, from: data)
-            let parsed: [LiveTrain] = payload.trains.map { t in
-                LiveTrain(
+            let parsed: [LiveTrain] = payload.trains.compactMap { t -> LiveTrain? in
+                // Skip a coord-less vehicle rather than plot it at (0,0); the
+                // optional lat/lng above already keeps one bad row from failing
+                // the whole payload and blanking every train.
+                guard let lat = t.lat, let lng = t.lng else { return nil }
+                return LiveTrain(
                     id: t.id,
                     lineId: t.lineId,
                     trainNumber: t.trainNumber,
@@ -923,7 +930,7 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     nextStationEn: t.nextStationEn ?? "",
                     delayMinutes: t.delayMinutes,
                     serviceType: t.serviceType,
-                    coordinate: CLLocationCoordinate2D(latitude: t.lat, longitude: t.lng),
+                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng),
                     speed: t.speed,
                     course: t.course,
                     altitude: t.altitude,
