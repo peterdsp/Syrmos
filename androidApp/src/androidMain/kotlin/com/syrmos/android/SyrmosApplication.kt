@@ -29,5 +29,9 @@ class SyrmosApplication : Application() {
         // Periodic alert and weather checks, posts local notifications
         // when new service alerts appear or severe weather is detected.
         com.syrmos.android.notification.AlertCheckWorker.enqueuePeriodic(this)
+
+        // Refresh the moment the device is back online instead of waiting for
+        // the next 60s freshness poll. Mirrors the iOS NWPathMonitor (parity #7).
+        ConnectivityObserver(this).start()
     }
 }
