@@ -12,7 +12,7 @@ class DataSeeder(
     suspend fun seedIfNeeded() {
         val currentVersion = database.syrmosDatabaseQueries.getMetadata("seed_version")
             .executeAsOneOrNull()
-        if (currentVersion != null && currentVersion >= SEED_VERSION) return
+        if (!shouldReseed(currentVersion, SEED_VERSION)) return
 
         seed()
     }
@@ -251,6 +251,20 @@ class DataSeeder(
         // so their map geometry follows the real stop order. Without a bump an
         // existing install keeps its old rows and the buses stay mis-ordered.
         const val SEED_VERSION = "10"
+
+        /**
+         * Whether the bundled seed must be (re)written. Compares versions
+         * NUMERICALLY: they are stored as strings and SEED_VERSION crossed into
+         * two digits at 10, so a lexicographic String compare reads "9" >= "10"
+         * as true and a version-9 install would never pick up the version-10
+         * data (skipping exactly the bus-ordering repair this bump ships). An
+         * unset or unparseable stored version always reseeds.
+         */
+        internal fun shouldReseed(storedVersion: String?, targetVersion: String): Boolean {
+            val target = targetVersion.toIntOrNull() ?: return true
+            val stored = storedVersion?.toIntOrNull() ?: return true
+            return stored < target
+        }
 
         /**
          * The ordered nested stations to seed into station_line_entity for a

@@ -152,6 +152,38 @@ class DataSeederOrderingTest {
     }
 
     @Test
+    fun version9InstallStillReseedsToVersion10() {
+        // The regression Codex caught: a lexicographic String compare reads
+        // "9" >= "10" as true, so a version-9 install would skip the reseed and
+        // keep the broken bus geometry. shouldReseed must compare numerically.
+        assertTrue(
+            DataSeeder.shouldReseed("9", "10"),
+            "a version-9 install must reseed to version 10",
+        )
+    }
+
+    @Test
+    fun sameOrNewerVersionDoesNotReseed() {
+        assertTrue(!DataSeeder.shouldReseed("10", "10"), "same version must not reseed")
+        assertTrue(!DataSeeder.shouldReseed("11", "10"), "a newer version must not reseed")
+    }
+
+    @Test
+    fun missingOrUnparseableVersionReseeds() {
+        assertTrue(DataSeeder.shouldReseed(null, "10"), "a fresh install must seed")
+        assertTrue(DataSeeder.shouldReseed("", "10"))
+        assertTrue(DataSeeder.shouldReseed("garbage", "10"))
+    }
+
+    @Test
+    fun earlierSingleDigitVersionsStillReseed() {
+        // Guards the pre-existing single-digit bumps that happened to work
+        // lexicographically, so numeric comparison does not regress them.
+        assertTrue(DataSeeder.shouldReseed("6", "10"))
+        assertTrue(DataSeeder.shouldReseed("9", "10"))
+    }
+
+    @Test
     fun aBusWithFewerThanTwoStopsIsDetectable() {
         // Proves the >= 2 guard above has teeth: a degenerate bus is flagged.
         val degenerate = json.decodeFromString<SeedLinesPayload>(

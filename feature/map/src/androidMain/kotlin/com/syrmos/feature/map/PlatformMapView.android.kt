@@ -19,7 +19,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.common.map.LatLng
 import com.syrmos.core.common.map.MapDesignTokens
+import com.syrmos.core.common.map.RouteGeometry
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.SimulatedTrain
@@ -306,12 +308,17 @@ internal actual fun PlatformMapView(
             // on tight loops. Straight segments connect every stop; the stops
             // are correctly ordered because DataSeeder seeds station_line rows
             // for routes.json-absent lines from the nested lines.json stations.
+            // A loop bus (PU1: both terminals Kastelokampos) is closed back to
+            // its origin so the return leg is not left as an open gap.
             // Rail/tram still prefer real OSM track geometry so the Piraeus
             // loop, M3 airport branch and suburban curves render accurately.
             val osmShape = routeShapes[line.id]
             val smoothed: List<GeoPoint> = when {
                 line.type == LineType.BUS ->
-                    lineStations.map { GeoPoint(it.latitude, it.longitude) }
+                    RouteGeometry.closeLoop(
+                        lineStations.map { LatLng(it.latitude, it.longitude) },
+                        RouteGeometry.isLoopTerminals(line.terminalA, line.terminalB),
+                    ).map { GeoPoint(it.lat, it.lng) }
                 osmShape != null && osmShape.size >= 2 -> osmShape
                 else -> catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
             }
