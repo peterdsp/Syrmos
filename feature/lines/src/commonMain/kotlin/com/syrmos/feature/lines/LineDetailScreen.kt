@@ -48,7 +48,12 @@ import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.common.extensions.currentAthensTime
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.toComposeColor
+import com.syrmos.core.designsystem.component.DepartureCard
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
+import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
+import com.syrmos.core.domain.usecase.UpcomingDeparture
+import com.syrmos.core.model.schedule.SourceConfidence
+import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineColor
 import com.syrmos.core.model.transit.LineType
@@ -77,6 +82,13 @@ data class LineDetailUiState(
     val line: Line? = null,
     val stations: List<Station> = emptyList(),
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
+    /**
+     * Projected next departures from the line's origin, shown when there are no
+     * live trains (metro/tram have no live feed). Mirrors the iOS
+     * LineDetailView "Upcoming departures" fallback so every line-detail screen
+     * has a departures section, not just suburban lines.
+     */
+    val upcomingDepartures: List<UpcomingDeparture> = emptyList(),
     val isLoading: Boolean = true,
     val isLiveTrackerLoading: Boolean = false,
 )
@@ -84,34 +96,56 @@ data class LineDetailUiState(
 class LineDetailViewModel(
     private val getLineDetailUseCase: GetLineDetailUseCase,
     private val liveTrackerService: RailwayGovLiveTrackerService,
+    private val getNextDepartures: GetNextDeparturesUseCase,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(LineDetailUiState())
     private var lineDetailJob: Job? = null
     private var liveTrackerJob: Job? = null
+    private var departuresJob: Job? = null
 
     val uiState: StateFlow<LineDetailUiState> = _uiState.asStateFlow()
 
     fun loadLine(lineId: String) {
         lineDetailJob?.cancel()
         liveTrackerJob?.cancel()
+        departuresJob?.cancel()
 
         _uiState.update {
             it.copy(
                 isLoading = true,
                 isLiveTrackerLoading = true,
                 liveTrains = emptyList(),
+                upcomingDepartures = emptyList(),
             )
         }
 
+        var departuresStarted = false
         lineDetailJob = scope.launch {
             getLineDetailUseCase.invoke(lineId).collect { detail ->
+                val stations = detail?.stations ?: emptyList()
                 _uiState.update {
                     it.copy(
                         line = detail?.line,
-                        stations = detail?.stations ?: emptyList(),
+                        stations = stations,
                         isLoading = false,
                     )
+                }
+                // Project upcoming departures once, from the line's origin, so a
+                // metro/tram line (no live feed) still shows a departures list.
+                val origin = stations.firstOrNull()?.id
+                if (origin != null && !departuresStarted) {
+                    departuresStarted = true
+                    departuresJob = scope.launch {
+                        getNextDepartures.invoke(
+                            stationId = origin,
+                            lineId = lineId,
+                            direction = Direction.OUTBOUND,
+                            limit = 5,
+                        ).collect { deps ->
+                            _uiState.update { it.copy(upcomingDepartures = deps) }
+                        }
+                    }
                 }
             }
         }
@@ -252,6 +286,33 @@ fun LineDetailScreen(
                                 )
                             }
                         }
+                    }
+                }
+
+                // Upcoming departures: shown when there are no live trains, so a
+                // metro/tram line (which has no live GPS feed) still gets a
+                // departures section. Mirrors iOS LineDetailView.
+                if (uiState.liveTrains.isEmpty() && uiState.upcomingDepartures.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = L.DEPARTURES.text(lang),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                        )
+                    }
+                    items(uiState.upcomingDepartures) { dep ->
+                        DepartureCard(
+                            lineName = line.name,
+                            lineColor = line.color,
+                            direction = if (dep.direction == Direction.OUTBOUND) line.terminalB else line.terminalA,
+                            minutesAway = dep.minutesAway,
+                            departureTime = dep.time,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            lineId = dep.lineId,
+                            sourceConfidence = dep.sourceConfidence.takeIf { it != SourceConfidence.UNKNOWN },
+                            language = lang,
+                        )
                     }
                 }
 

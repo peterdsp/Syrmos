@@ -58,6 +58,7 @@ val featureModule = module {
         LineDetailViewModel(
             getLineDetailUseCase = get(),
             liveTrackerService = get(),
+            getNextDepartures = get(),
         )
     }
     single {
