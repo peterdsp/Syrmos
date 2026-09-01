@@ -302,11 +302,15 @@ enum StationCoords {
         func add(_ list: [(id: String, name: String, nameEl: String, lat: Double, lon: Double)], defaultLine: String) {
             for s in list {
                 if stationMap[s.id] != nil { continue }
-                let lines = lineAssociations[s.id] ?? [defaultLine]
+                // lineIds is DIRECT membership only (the line that owns this
+                // id), so (id, line) stays valid for schedule queries.
+                // isInterchange is a separate co-location signal for map rings /
+                // badges; actionable transfers come from interchangeTargets.
                 stationMap[s.id] = TransitStation(
                     id: s.id, name: s.name, nameEl: s.nameEl,
                     coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon),
-                    lineIds: lines, isInterchange: lines.count > 1
+                    lineIds: [defaultLine],
+                    isInterchange: (lineAssociations[s.id]?.count ?? 0) > 1
                 )
             }
         }
