@@ -66,6 +66,16 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :androidApp:assembleDebug
 
+      # Publish the debug APK so it can be installed on an emulator/device for
+      # real runtime QA (a green compile is not runtime verification).
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload build artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -104,17 +114,25 @@ jobs:
 
       - name: Run iOS tests
         run: |
-          SIM_DEST="$(xcodebuild -project iosApp/Syrmos.xcodeproj \
-            -scheme 'Syrmos - Athens Rail Times' -showdestinations 2>&1 \
-            | grep 'platform:iOS Simulator' | grep 'iPhone' | head -1 \
-            | sed E 's/.*\{ //' | sed -E 's/ \}$//')"
-          if [ -z "$SIM_DEST" ]; then
-            SIM_DEST="platform=iOS Simulator,name=Any iOS Simulator Device"
+          set -euo pipefail
+          # Resolve a concrete, available iOS simulator by UDID. The previous
+          # `-showdestinations | sed E ...` had a typo (`sed E`) and produced a
+          # colon-format string xcodebuild can't use, so SIM_DEST was always
+          # empty and fell back to a generic destination. Take the first UDID in
+          # the "-- iOS ... --" section of `simctl list devices available`.
+          SIM_ID="$(xcrun simctl list devices available \
+            | sed -n '/-- iOS/,/^-- /p' \
+            | grep -oiE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' \
+            | head -1)"
+          if [ -z "$SIM_ID" ]; then
+            echo "::error::No available iOS simulator to run tests on"; exit 1
           fi
+          echo "Testing on simulator $SIM_ID"
+          # No `|| echo warning`: a real test failure now fails CI so the suite
+          # genuinely gates against regressions.
           xcodebuild test \
             -project iosApp/Syrmos.xcodeproj \
             -scheme "Syrmos - Athens Rail Times" \
-            -destination "$SIM_DEST" \
+            -destination "platform=iOS Simulator,id=$SIM_ID" \
             ARCHS=arm64 \
-            CODE_SIGNING_ALLOWED=NO \
-            || echo "::warning::iOS tests exited non-zero (test target may have no host app configured); build passed."
+            CODE_SIGNING_ALLOWED=NO
