@@ -44,7 +44,10 @@ class StationRepositoryImpl(
 
     fun searchStations(query: String): Flow<List<Station>> = flow {
         val pattern = "%$query%"
-        val stations = database.syrmosDatabaseQueries.searchStations(pattern, pattern)
+        // Match Greek (name_el), English (name), Albanian (name_sq) names and the
+        // station code (id), mirroring the iOS Browse-All filter. The DB path had
+        // only name/name_el, so Albanian names and station codes never matched.
+        val stations = database.syrmosDatabaseQueries.searchStations(pattern, pattern, pattern, pattern)
             .executeAsList()
             .map { entity ->
                 val lineIds = database.syrmosDatabaseQueries.getLinesAtStation(entity.id)
@@ -59,10 +62,7 @@ class StationRepositoryImpl(
                 // matches all). The use-case already guards this, but keep the
                 // repo honest if called directly.
                 if (normalized.isEmpty()) emptyList()
-                else readSeedStations().filter {
-                    it.name.lowercase().contains(normalized) ||
-                        it.nameEl.lowercase().contains(normalized)
-                }
+                else readSeedStations().filter { matchesQuery(it, normalized) }
             },
         )
     }
@@ -138,6 +138,10 @@ class StationRepositoryImpl(
                 id = seed.id,
                 name = seed.name,
                 nameEl = seed.nameEl,
+                // Carry the Albanian name so the offline search fallback can
+                // match it; the seed has name_sq for ~200 stations and it was
+                // being dropped here.
+                nameSq = seed.nameSq,
                 latitude = seed.latitude,
                 longitude = seed.longitude,
                 lineIds = seed.lineIds,
@@ -148,5 +152,19 @@ class StationRepositoryImpl(
         }.also {
             seedStations = it
         }
+    }
+
+    companion object {
+        /**
+         * Whether [station] matches an already-normalized (trimmed, lowercased)
+         * search query across its English, Greek and Albanian names and its
+         * station code. Mirrors the iOS Browse-All filter so all three platforms
+         * match the same stations.
+         */
+        internal fun matchesQuery(station: Station, normalizedQuery: String): Boolean =
+            station.name.lowercase().contains(normalizedQuery) ||
+                station.nameEl.lowercase().contains(normalizedQuery) ||
+                station.nameSq?.lowercase()?.contains(normalizedQuery) == true ||
+                station.id.lowercase().contains(normalizedQuery)
     }
 }
