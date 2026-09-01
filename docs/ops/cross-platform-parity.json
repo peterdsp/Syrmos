@@ -1,0 +1,33 @@
+{
+  "$comment": "Machine-readable Syrmos iOS/Android/Web parity ledger. Derived from docs/plans/2026-09-01-android-ios-parity-audit.md. status: matched | fixed | partial | backlog | intentional | blocked-external. Update when a row's parity changes.",
+  "generatedFor": "2.0.0",
+  "reference": "iOS is the product reference; Android/Web are brought to a deliberate-difference 1:1.",
+  "features": [
+    { "id": 1, "area": "schedule-sync", "expected": "Per-line etag diff pulls only changed bundles so timetables update without an app release", "platforms": ["ios", "android", "web"], "status": "fixed", "pr": 52, "tests": "ScheduleSyncRepositoryTest" },
+    { "id": 2, "area": "interchange", "expected": "Proximity (150m) interchange with actionable per-line transfer targets", "platforms": ["ios", "android"], "status": "fixed", "pr": 58, "tests": "InterchangeResolver tests" },
+    { "id": 3, "area": "timetable-holiday", "expected": "Greek holiday calendar applied on the offline seed day-type path", "platforms": ["ios", "android"], "status": "fixed", "pr": 54, "tests": "ServiceDayResolverTest" },
+    { "id": 4, "area": "search-fields", "expected": "Search matches name/nameEl/nameSq/id", "platforms": ["ios", "android"], "status": "fixed", "pr": 55, "tests": "StationSearchMatchTest" },
+    { "id": 5, "area": "data-validDates", "expected": "Date-scoped trips run only on their valid ISO dates", "platforms": ["ios", "android"], "status": "fixed", "pr": 63, "tests": "TrainSimulatorTest validDates cases" },
+    { "id": 6, "area": "home-location-cta", "expected": "Denied/empty location shows an enable-location CTA", "platforms": ["ios", "android"], "status": "backlog", "note": "needs on-device permission verification" },
+    { "id": 7, "area": "home-refresh-connectivity", "expected": "Pull-to-refresh + event-driven reconnect retry", "platforms": ["ios", "android"], "status": "partial", "pr": 60, "note": "pull-to-refresh + retry signal done; connectivity monitor wiring backlog (needs on-device)" },
+    { "id": 8, "area": "line-detail", "expected": "Metro/tram line detail shows live trains + upcoming departures, localized", "platforms": ["ios", "android"], "status": "partial", "pr": 59, "note": "title/count localized; live + upcoming backlog (needs on-device)" },
+    { "id": 9, "area": "departures-source", "expected": "One source-selection policy (local-first for Athens)", "platforms": ["ios", "android"], "status": "backlog", "note": "product policy decision" },
+    { "id": 10, "area": "live-arrivals-router", "expected": "LIVE->SCHEDULED fallback wired as first tier (X93-97 live ETAs)", "platforms": ["android"], "status": "backlog", "note": "router built but unwired; tied to #9 and the airport-bus seed" },
+    { "id": 11, "area": "source-confidence", "expected": "One confidence rule shared by all clients", "platforms": ["ios", "android"], "status": "backlog" },
+    { "id": 12, "area": "projector-lastTrains", "expected": "Short-turn last-train destination override in the shared projector", "platforms": ["ios", "android"], "status": "backlog", "note": "Android Home derives destination from line terminals; override needs Home render change too" },
+    { "id": 13, "area": "strings", "expected": "Canonical copy per key across platforms", "platforms": ["ios", "android"], "status": "partial", "pr": 56, "note": "subtitle + news header aligned; Airport tab string backlog" },
+    { "id": 14, "area": "settings", "expected": "Recents store, refresh feedback, digest toggle wired or hidden", "platforms": ["ios", "android"], "status": "backlog" },
+    { "id": 15, "area": "networking-timeouts", "expected": "Fast per-call timeouts on live/departures", "platforms": ["ios", "android"], "status": "fixed", "pr": 70, "tests": "NetworkTimeoutsTest" },
+    { "id": 16, "area": "api-lines-semantics", "expected": "Canonical /api/lines behaviour (overlay vs upsert)", "platforms": ["ios", "android"], "status": "backlog", "note": "behaviour decision" },
+    { "id": 17, "area": "search-diacritics", "expected": "Accent/tonos-insensitive search", "platforms": ["ios", "android"], "status": "fixed", "pr": 65, "tests": "TextExtensionsTest, StationSearchMatchTest", "note": "shared normalizer; iOS can adopt it" },
+    { "id": 18, "area": "a11y-departures", "expected": "Compound departure label + heading + alert live-region", "platforms": ["ios", "android"], "status": "backlog", "note": "additive semantics; runtime TalkBack/VoiceOver verification blocked here" },
+    { "id": 19, "area": "news-offline", "expected": "News keeps last good payload offline", "platforms": ["ios", "android"], "status": "fixed", "pr": 67, "tests": "RailNewsRepositoryTest, RailNewsItemSerializationTest" },
+    { "id": 20, "area": "athens-time", "expected": "Athens time via the IANA tz everywhere", "platforms": ["ios", "android"], "status": "fixed", "pr": 66, "tests": "DateTimeExtensionsTest" },
+    { "id": 21, "area": "map-cosmetics", "expected": "Aligned map padding / vehicle motion", "platforms": ["ios", "android"], "status": "intentional", "note": "per-tick vs CADisplayLink motion is an engine difference; padding tweak backlog" },
+    { "id": 22, "area": "ios-live-map-null", "expected": "One GPS-less train does not blank the live map", "platforms": ["ios"], "status": "fixed", "pr": 61 },
+    { "id": 23, "area": "ios-loop-closure", "expected": "Circular bus routes draw their return leg", "platforms": ["ios"], "status": "fixed", "pr": 69, "tests": "MapRouteGeometryTests" },
+    { "id": 24, "area": "ios-announcement-decode", "expected": "One malformed announcement does not void the feed", "platforms": ["ios"], "status": "fixed", "pr": 62 },
+    { "id": 25, "area": "live-decode-resilience", "expected": "One malformed live/offset row does not drop the whole layer", "platforms": ["android"], "status": "fixed", "pr": 64, "tests": "SyrmosLivePositionsDecodeTest" },
+    { "id": "airport-interactive", "area": "airport-tab", "expected": "Airport service tiles/rows/legs open the stop's Station Detail", "platforms": ["ios", "android"], "status": "fixed", "pr": 68, "note": "buses inert pending their timetable data" }
+  ]
+}
