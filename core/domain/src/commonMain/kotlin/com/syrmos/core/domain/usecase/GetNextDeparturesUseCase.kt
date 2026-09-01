@@ -1,11 +1,12 @@
 package com.syrmos.core.domain.usecase
 
-import com.syrmos.core.common.extensions.currentAthensDayOfWeek
+import com.syrmos.core.common.extensions.currentAthensDate
 import com.syrmos.core.common.extensions.currentAthensTime
 import com.syrmos.core.common.extensions.minutesUntil
 import com.syrmos.core.common.extensions.parseTime
 import com.syrmos.core.common.extensions.toDisplayString
 import com.syrmos.core.data.repository.ScheduleRepositoryImpl
+import com.syrmos.core.domain.schedule.ServiceDayResolver
 import com.syrmos.core.model.schedule.DayType
 import com.syrmos.core.model.schedule.Departure
 import com.syrmos.core.model.schedule.SourceConfidence
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.DayOfWeek
 
 data class UpcomingDeparture(
     val time: String,
@@ -161,14 +161,9 @@ class GetNextDeparturesUseCase(
         )
     }
 
-    private fun resolveCurrentDayType(): DayType {
-        return when (currentAthensDayOfWeek()) {
-            DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
-            DayOfWeek.THURSDAY -> DayType.WEEKDAY
-            DayOfWeek.FRIDAY -> DayType.FRIDAY
-            DayOfWeek.SATURDAY -> DayType.SATURDAY
-            DayOfWeek.SUNDAY -> DayType.SUNDAY
-            else -> DayType.WEEKDAY
-        }
-    }
+    // Seed-DB fallback day type. Routes through the shared resolver so a public
+    // holiday (e.g. Aug 15 on a weekday) queries the Sunday/Saturday service it
+    // actually runs instead of the weekday service.
+    private fun resolveCurrentDayType(): DayType =
+        ServiceDayResolver.baseDayType(currentAthensDate())
 }
