@@ -277,6 +277,34 @@ final class STASYService: ObservableObject {
         let serviceUntilTime: String?
     }
 
+    /// Maps one decoded API row to a domain announcement, skipping blank-title
+    /// rows. Shared by the network and cache paths so both survive a single
+    /// malformed row instead of dropping the whole feed + status badge.
+    private static func mapAnnouncement(_ item: APIAnnouncement) -> STASYAnnouncement? {
+        let title = item.title ?? ""
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return STASYAnnouncement(
+            id: item.id ?? "",
+            title: title,
+            titleEn: item.titleEn ?? "",
+            titleSq: item.titleSq ?? "",
+            titleIt: item.titleIt ?? "",
+            date: item.date ?? "",
+            summary: item.summary ?? "",
+            summaryEn: item.summaryEn ?? "",
+            summarySq: item.summarySq ?? "",
+            summaryIt: item.summaryIt ?? "",
+            url: URL(string: item.url ?? ""),
+            category: AnnouncementCategory(rawValue: (item.category ?? "") == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
+            affectedLines: item.affectedLines ?? [],
+            affectedStationIds: item.affectedStationIds ?? [],
+            severity: item.severity ?? "info",
+            validFrom: item.validFrom,
+            validUntil: item.validUntil,
+            serviceUntilTime: item.serviceUntilTime
+        )
+    }
+
     /// Latest STASY service-status badge, populated by `fetchAnnouncements`.
     @Published var serviceStatus: APIStatus?
 
@@ -300,33 +328,7 @@ final class STASYService: ObservableObject {
             let payload = try JSONDecoder().decode(APIPayload.self, from: data)
             serviceStatus = payload.status
             cacheStatus(payload.status)
-            let parsed: [STASYAnnouncement] = payload.announcements.compactMap { item -> STASYAnnouncement? in
-                // Skip a blank-title row rather than render an empty alert
-                // (matches Android's blank-title filter); other rows survive one
-                // bad sibling now that the fields are optional.
-                let title = item.title ?? ""
-                guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-                return STASYAnnouncement(
-                    id: item.id ?? "",
-                    title: title,
-                    titleEn: item.titleEn ?? "",
-                    titleSq: item.titleSq ?? "",
-                    titleIt: item.titleIt ?? "",
-                    date: item.date ?? "",
-                    summary: item.summary ?? "",
-                    summaryEn: item.summaryEn ?? "",
-                    summarySq: item.summarySq ?? "",
-                    summaryIt: item.summaryIt ?? "",
-                    url: URL(string: item.url ?? ""),
-                    category: AnnouncementCategory(rawValue: (item.category ?? "") == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
-                    affectedLines: item.affectedLines ?? [],
-                    affectedStationIds: item.affectedStationIds ?? [],
-                    severity: item.severity ?? "info",
-                    validFrom: item.validFrom,
-                    validUntil: item.validUntil,
-                    serviceUntilTime: item.serviceUntilTime
-                )
-            }
+            let parsed: [STASYAnnouncement] = payload.announcements.compactMap(Self.mapAnnouncement)
             announcements = parsed
             lastUpdated = Date()
             // The feed came back from the API, so we're online. Flip the
@@ -478,27 +480,6 @@ final class STASYService: ObservableObject {
               let payload = try? JSONDecoder().decode(APIPayload.self, from: data)
         else { return }
         serviceStatus = payload.status
-        announcements = payload.announcements.map { item in
-            STASYAnnouncement(
-                id: item.id,
-                title: item.title,
-                titleEn: item.titleEn ?? "",
-                titleSq: item.titleSq ?? "",
-                titleIt: item.titleIt ?? "",
-                date: item.date,
-                summary: item.summary,
-                summaryEn: item.summaryEn ?? "",
-                summarySq: item.summarySq ?? "",
-                summaryIt: item.summaryIt ?? "",
-                url: URL(string: item.url),
-                category: AnnouncementCategory(rawValue: item.category == "serviceAlert" ? "Έκτακτες Ανακοινώσεις" : "Ανακοινώσεις") ?? .general,
-                affectedLines: item.affectedLines ?? [],
-                affectedStationIds: item.affectedStationIds ?? [],
-                severity: item.severity ?? "info",
-                validFrom: item.validFrom,
-                validUntil: item.validUntil,
-                serviceUntilTime: item.serviceUntilTime
-            )
-        }
+        announcements = payload.announcements.compactMap(Self.mapAnnouncement)
     }
 }
