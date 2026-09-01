@@ -1,6 +1,7 @@
 package com.syrmos.core.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.Serializable
@@ -28,12 +29,18 @@ class SyrmosLivePositionsService(
 
     suspend fun fetchActiveTrains(lineIds: List<String>): LivePositionsResponse? = runCatching {
         val ids = lineIds.joinToString(",")
-        val response = httpClient.get("$BASE_URL/api/live-positions?lineIds=$ids")
+        // Fast per-call timeout: a stalled live poll should drop to the
+        // simulated layer in seconds, not hang the map for the 30s default.
+        val response = httpClient.get("$BASE_URL/api/live-positions?lineIds=$ids") {
+            timeout { requestTimeoutMillis = LIVE_REQUEST_TIMEOUT_MS }
+        }
         parseLivePositions(response.bodyAsText())
     }.getOrNull()
 
     suspend fun fetchStationOffsets(): StationOffsetsResponse? = runCatching {
-        val response = httpClient.get("$BASE_URL/api/station-offsets")
+        val response = httpClient.get("$BASE_URL/api/station-offsets") {
+            timeout { requestTimeoutMillis = LIVE_REQUEST_TIMEOUT_MS }
+        }
         parseStationOffsets(response.bodyAsText())
     }.getOrNull()
 

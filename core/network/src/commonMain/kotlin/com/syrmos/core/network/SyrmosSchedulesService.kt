@@ -1,6 +1,7 @@
 package com.syrmos.core.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -94,6 +95,10 @@ class SyrmosSchedulesService(
     ): Flow<ProjectedDeparturesPayload?> = flow {
         val payload = runCatching {
             val response = httpClient.get(DEPARTURES_NEXT_URL) {
+                // Fast per-call timeout: the departures sheet must fall back to
+                // the local projector / seed in seconds when the Pi is
+                // unreachable, not wait out the 30s client default.
+                timeout { requestTimeoutMillis = LIVE_REQUEST_TIMEOUT_MS }
                 parameter("stationId", stationId)
                 parameter("lineIds", lineIds.joinToString(","))
                 parameter("limit", limit)
