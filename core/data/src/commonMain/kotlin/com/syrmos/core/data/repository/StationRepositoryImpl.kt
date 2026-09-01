@@ -1,6 +1,7 @@
 package com.syrmos.core.data.repository
 
 import com.syrmos.core.common.extensions.distanceInMeters
+import com.syrmos.core.common.extensions.normalizeForSearch
 import com.syrmos.core.database.SyrmosDatabase
 import com.syrmos.core.database.mapper.toDomain
 import com.syrmos.core.data.seed.ResourceReader
@@ -73,28 +74,35 @@ class StationRepositoryImpl(
     }
 
     fun searchStations(query: String): Flow<List<Station>> = flow {
-        val pattern = "%$query%"
-        // Match Greek (name_el), English (name), Albanian (name_sq) names and the
-        // station code (id), mirroring the iOS Browse-All filter. The DB path had
-        // only name/name_el, so Albanian names and station codes never matched.
-        val stations = database.syrmosDatabaseQueries.searchStations(pattern, pattern, pattern, pattern)
-            .executeAsList()
-            .map { entity ->
-                val lineIds = database.syrmosDatabaseQueries.getLinesAtStation(entity.id)
-                    .executeAsList()
-                    .map { it.id }
-                entity.toDomain(lineIds)
-            }
-        emit(
-            stations.ifEmpty {
-                val normalized = query.trim().lowercase()
-                // Defense-in-depth: never contains("") against every station (it
-                // matches all). The use-case already guards this, but keep the
-                // repo honest if called directly.
-                if (normalized.isEmpty()) emptyList()
-                else readSeedStations().filter { matchesQuery(it, normalized) }
-            },
-        )
+        // Filter in memory with a diacritic- and case-folding predicate, matching
+        // the iOS in-memory Browse-All filter. The old SQL LIKE path could not do
+        // this: SQLite LIKE is case-insensitive for ASCII only, so a stored Greek
+        // name (Αττική) never matched a typed lowercase query, and no path folded
+        // tonos. Matching the entity rows (which already carry name/name_el/
+        // name_sq/id) means the per-row lineId fan-out only runs for the handful
+        // of stations that actually matched.
+        val normalized = query.trim().normalizeForSearch()
+        // Defense-in-depth: never contains("") against every station (it matches
+        // all). The use-case already guards this, but keep the repo honest if
+        // called directly.
+        if (normalized.isEmpty()) {
+            emit(emptyList())
+            return@flow
+        }
+        val entities = database.syrmosDatabaseQueries.getAllStations().executeAsList()
+        val matched = if (entities.isNotEmpty()) {
+            entities
+                .filter { matchesNormalized(it.name, it.name_el, it.name_sq, it.id, normalized) }
+                .map { entity ->
+                    val lineIds = database.syrmosDatabaseQueries.getLinesAtStation(entity.id)
+                        .executeAsList()
+                        .map { it.id }
+                    entity.toDomain(lineIds)
+                }
+        } else {
+            readSeedStations().filter { matchesQuery(it, normalized) }
+        }
+        emit(matched)
     }
 
     fun findNearestStations(
@@ -186,15 +194,31 @@ class StationRepositoryImpl(
 
     companion object {
         /**
-         * Whether [station] matches an already-normalized (trimmed, lowercased)
-         * search query across its English, Greek and Albanian names and its
-         * station code. Mirrors the iOS Browse-All filter so all three platforms
-         * match the same stations.
+         * Whether [station] matches an already-[normalizeForSearch]d search
+         * query across its English, Greek and Albanian names and its station
+         * code. Mirrors the iOS Browse-All filter so all platforms match the
+         * same stations.
          */
         internal fun matchesQuery(station: Station, normalizedQuery: String): Boolean =
-            station.name.lowercase().contains(normalizedQuery) ||
-                station.nameEl.lowercase().contains(normalizedQuery) ||
-                station.nameSq?.lowercase()?.contains(normalizedQuery) == true ||
-                station.id.lowercase().contains(normalizedQuery)
+            matchesNormalized(station.name, station.nameEl, station.nameSq, station.id, normalizedQuery)
+
+        /**
+         * Field-level match used by both the DB and seed paths. Both the fields
+         * and the (already-normalized) query are folded with [normalizeForSearch]
+         * so case and diacritics are ignored uniformly, e.g. a typed "attiki"
+         * matches the stored "Αττική" and "οδος" matches "Οδός". The caller MUST
+         * pass a query that has already been through [normalizeForSearch].
+         */
+        internal fun matchesNormalized(
+            name: String,
+            nameEl: String,
+            nameSq: String?,
+            id: String,
+            normalizedQuery: String,
+        ): Boolean =
+            name.normalizeForSearch().contains(normalizedQuery) ||
+                nameEl.normalizeForSearch().contains(normalizedQuery) ||
+                nameSq?.normalizeForSearch()?.contains(normalizedQuery) == true ||
+                id.normalizeForSearch().contains(normalizedQuery)
     }
 }

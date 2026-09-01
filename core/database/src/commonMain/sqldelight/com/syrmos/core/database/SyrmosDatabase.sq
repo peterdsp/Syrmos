@@ -132,10 +132,10 @@ SELECT * FROM station_entity WHERE id = ?;
 getInterchangeStations:
 SELECT * FROM station_entity WHERE is_interchange = 1 ORDER BY name;
 
-searchStations:
-SELECT * FROM station_entity
-WHERE name LIKE ? OR name_el LIKE ? OR name_sq LIKE ? OR id LIKE ?
-ORDER BY name;
+-- Station search runs in memory in StationRepositoryImpl (see searchStations):
+-- SQLite LIKE is case-insensitive for ASCII only and cannot fold Greek tonos,
+-- so a shared normalizeForSearch() predicate over getAllStations() replaces the
+-- old LIKE query. Kept as a comment so the missing query is not a mystery.
 
 insertStation:
 INSERT OR REPLACE INTO station_entity(id, name, name_el, name_sq, latitude, longitude, is_interchange, accessibility, zone, region, source_confidence)
