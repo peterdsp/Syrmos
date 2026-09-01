@@ -185,11 +185,14 @@ fun StationDetailScreen(
                 }
             }
 
-            // Actionable interchange: at a real transfer hub (2+ operational,
-            // scheduled lines within 150m, resolved to each line's own stop),
-            // tap a line to open its timetable here. Replaces the old passive
-            // "Transfer station" badge, matching iOS StationDetailView.
-            if (uiState.interchangeTargets.size >= 2) {
+            // Actionable interchange: tap a line to open its timetable here.
+            // Replaces the old passive "Transfer station" badge. On an unscoped
+            // screen require 2+ targets so a single-line station (whose one target
+            // is its own line) shows nothing; on a focus-scoped transfer screen
+            // the focused line is already excluded, so any remaining target is a
+            // genuine other-line transfer and one is enough to show.
+            val minInterchangeTargets = if (uiState.focusLineId != null) 1 else 2
+            if (uiState.interchangeTargets.size >= minInterchangeTargets) {
                 item {
                     SectionHeader(title = when (lang) {
                         AppLanguage.GREEK -> "Αλλαγη γραμμης εδω"
