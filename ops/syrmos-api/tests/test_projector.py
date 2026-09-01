@@ -293,7 +293,11 @@ def make_m1_shortturn_conn(*, with_endpoints: bool = True, label: str = "short")
         CREATE TABLE schedule_rules (line_id TEXT, day_type TEXT, open_time TEXT, close_time TEXT, is_24_7 INTEGER DEFAULT 0);
         CREATE TABLE frequency_bands (line_id TEXT, day_type TEXT, time_start TEXT, time_end TEXT, headway_minutes REAL, label TEXT, direction TEXT DEFAULT 'both');
         CREATE TABLE station_offsets (line_id TEXT, direction TEXT, station_id TEXT, minutes_from_origin INTEGER);
-        CREATE TABLE stations (id TEXT PRIMARY KEY, name TEXT NOT NULL);
+        -- Mirror the production stations schema (migration 0001): name_en/name_el,
+        -- NOT a single `name` column. The projector resolves the short-turn
+        -- terminus via s.name_en, so a fixture with the wrong column would let a
+        -- column-name bug pass silently (it did once); keep this in sync with prod.
+        CREATE TABLE stations (id TEXT PRIMARY KEY, name_en TEXT NOT NULL, name_el TEXT NOT NULL, lat REAL, lng REAL);
         CREATE TABLE last_train_endpoints (
             line_id TEXT, day_type TEXT, direction TEXT, from_station_id TEXT,
             time TEXT, end_station_id TEXT, label TEXT, source TEXT, fetched_at TEXT
@@ -308,8 +312,8 @@ def make_m1_shortturn_conn(*, with_endpoints: bool = True, label: str = "short")
     # fighting the projector's overnight next-day-extension descriptors.
     conn.execute("INSERT INTO frequency_bands(line_id, day_type, time_start, time_end, headway_minutes, label) VALUES ('M1','mon_thu','10:00','11:00',15.0,'regular')")
     conn.executemany(
-        "INSERT INTO stations(id, name) VALUES (?, ?)",
-        [("M1_OMO", "Omonia"), ("M1_KIF", "Kifissia")],
+        "INSERT INTO stations(id, name_en, name_el, lat, lng) VALUES (?, ?, ?, 0, 0)",
+        [("M1_OMO", "Omonia", "Ομόνοια"), ("M1_KIF", "Kifissia", "Κηφισιά")],
     )
     if with_endpoints:
         conn.execute(
