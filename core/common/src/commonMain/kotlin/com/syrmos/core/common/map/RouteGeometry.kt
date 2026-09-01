@@ -32,4 +32,27 @@ object RouteGeometry {
         if (!isLoop || points.size < 2) return points
         return if (points.first() == points.last()) points else points + points.first()
     }
+
+    /**
+     * The single polyline a line is BOTH drawn as and has its vehicle markers
+     * snapped to, so the drawn route and the moving markers can never diverge.
+     *
+     * Buses use their ordered stops (closed into a loop when circular),
+     * deliberately ignoring any bundled OSM [osmShape]: a bus shape can be
+     * incomplete (PU1's omits the western stops), which would both strand the
+     * drawn route and fling a snapped marker roughly a kilometre onto the
+     * missing segment. Rail and tram prefer real OSM track geometry. Returns
+     * null when there is no usable geometry (fewer than two points), leaving the
+     * caller to fall back to a spline through the stops.
+     */
+    fun displayShape(
+        isBus: Boolean,
+        isLoop: Boolean,
+        stations: List<LatLng>,
+        osmShape: List<LatLng>?,
+    ): List<LatLng>? = when {
+        isBus -> closeLoop(stations, isLoop).takeIf { it.size >= 2 }
+        osmShape != null && osmShape.size >= 2 -> osmShape
+        else -> null
+    }
 }

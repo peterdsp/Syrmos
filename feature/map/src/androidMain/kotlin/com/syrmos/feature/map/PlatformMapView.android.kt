@@ -202,6 +202,26 @@ internal actual fun PlatformMapView(
     var hasFittedBounds by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val routeShapes = remember { loadRouteShapes(context) }
+    // The single polyline each line is BOTH drawn as and has its vehicle markers
+    // snapped to, so the drawn route and the moving markers never diverge. Buses
+    // resolve to their ordered stops (loop-closed for PU1), ignoring incomplete
+    // bundled shapes; rail/tram keep the OSM shape. Built via the shared
+    // RouteGeometry so every client agrees on the geometry.
+    val effectiveShapes: Map<String, List<GeoPoint>> =
+        remember(uiState.lines, uiState.lineStations, routeShapes) {
+            uiState.lines.associate { line ->
+                val stations = uiState.lineStations[line.id].orEmpty()
+                    .map { LatLng(it.latitude, it.longitude) }
+                val osm = routeShapes[line.id]?.map { LatLng(it.latitude, it.longitude) }
+                val shape = RouteGeometry.displayShape(
+                    isBus = line.type == LineType.BUS,
+                    isLoop = RouteGeometry.isLoopTerminals(line.terminalA, line.terminalB),
+                    stations = stations,
+                    osmShape = osm,
+                )
+                line.id to (shape?.map { GeoPoint(it.lat, it.lng) } ?: emptyList())
+            }.filterValues { it.size >= 2 }
+        }
     val lineColors = remember { loadLineColors(context) }
     val lineOverlays = remember { mutableListOf<Polyline>() }
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
@@ -301,27 +321,17 @@ internal actual fun PlatformMapView(
             val lineStations = uiState.lineStations[line.id].orEmpty()
             if (lineStations.size < 2) return@forEach
 
-            // Buses draw straight segments through their actual ordered stops,
-            // chosen BEFORE any bundled OSM shape. A bus shape can cover only
-            // part of the route (the Patras University loop shape omits its
-            // western stops, stranding those markers), and a spline overshoots
-            // on tight loops. Straight segments connect every stop; the stops
-            // are correctly ordered because DataSeeder seeds station_line rows
-            // for routes.json-absent lines from the nested lines.json stations.
-            // A loop bus (PU1: both terminals Kastelokampos) is closed back to
-            // its origin so the return leg is not left as an open gap.
-            // Rail/tram still prefer real OSM track geometry so the Piraeus
-            // loop, M3 airport branch and suburban curves render accurately.
-            val osmShape = routeShapes[line.id]
-            val smoothed: List<GeoPoint> = when {
-                line.type == LineType.BUS ->
-                    RouteGeometry.closeLoop(
-                        lineStations.map { LatLng(it.latitude, it.longitude) },
-                        RouteGeometry.isLoopTerminals(line.terminalA, line.terminalB),
-                    ).map { GeoPoint(it.lat, it.lng) }
-                osmShape != null && osmShape.size >= 2 -> osmShape
-                else -> catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
-            }
+            // The drawn polyline is the SAME effectiveShapes geometry the vehicle
+            // markers snap to, so a bus is never drawn along its stops while its
+            // marker rides an unrelated OSM shape. Buses resolve to their ordered
+            // stops (loop-closed for PU1, whose bundled shape omits the western
+            // stops); rail/tram keep OSM track geometry so the Piraeus loop, M3
+            // airport branch and suburban curves render accurately. Only a line
+            // with no usable geometry falls back to a spline through its stops.
+            val displayShape = effectiveShapes[line.id]
+            val smoothed: List<GeoPoint> =
+                if (displayShape != null && displayShape.size >= 2) displayShape
+                else catmullRomSpline(lineStations.map { GeoPoint(it.latitude, it.longitude) })
             val override = displayOverrides[line.id]
             // A line that is built but not open still draws, because the track is
             // real, but it reads as inert: muted grey, thinner, dashed. It carries
@@ -497,7 +507,7 @@ internal actual fun PlatformMapView(
             // badges, which is exactly why the trains looked nothing like web. Line
             // colour comes from the raw lines.json hex, same as web.
             val lineColor = lineColors[train.lineId] ?: train.lineColor.toComposeColor().toArgb()
-            val snappedSimPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
+            val snappedSimPos = snapToPolyline(train.latitude, train.longitude, train.lineId, effectiveShapes)
             val existing = trainMarkers[train.id]
             if (existing != null) {
                 existing.position = snappedSimPos
@@ -546,7 +556,7 @@ internal actual fun PlatformMapView(
             val color = if (notInService) 0xFF9CA3AF.toInt()
                 else uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
                     ?: 0xFF7C4DFF.toInt()
-            val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, routeShapes)
+            val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, effectiveShapes)
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
                 existing.position = snappedPos
