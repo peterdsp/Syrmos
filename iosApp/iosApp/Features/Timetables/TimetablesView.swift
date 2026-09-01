@@ -848,15 +848,22 @@ private struct AirportNextServicesCard: View {
                 .font(.headline)
 
             HStack(spacing: 10) {
-                AirportNextServiceTile(
+                let m3Tile = AirportNextServiceTile(
                     route: "M3",
                     icon: "tram.fill",
                     destination: "Syntagma",
                     primary: primaryMetroLabel,
                     secondary: followingMetroLabel,
                     status: airportText(language, "Scheduled", "Προγραμματισμένο", "Programuar", "Programmato"),
-                    color: Color.metroBlue
+                    color: Color.metroBlue,
+                    navigable: airportStation(id: "M3_AER") != nil
                 )
+                if let station = airportStation(id: "M3_AER") {
+                    NavigationLink { StationDetailView(station: station) } label: { m3Tile }
+                        .buttonStyle(.plain)
+                } else {
+                    m3Tile
+                }
                 AirportNextServiceTile(
                     route: "X95",
                     icon: "bus.fill",
@@ -889,6 +896,7 @@ private struct AirportNextServiceTile: View {
     let secondary: String
     let status: String
     let color: Color
+    var navigable: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -896,6 +904,11 @@ private struct AirportNextServiceTile: View {
                 Label(route, systemImage: icon).font(.caption.weight(.bold)).foregroundStyle(color)
                 Spacer()
                 Text(status).font(.caption2.weight(.semibold)).foregroundStyle(color)
+                if navigable {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
             }
             Text(primary)
                 .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -920,33 +933,52 @@ private struct AirportDepartureList: View {
     var body: some View {
         VStack(spacing: 8) {
             ForEach(Array(rows.prefix(9).enumerated()), id: \.offset) { _, row in
-                HStack(spacing: 12) {
-                    Text(row.route)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 38, height: 38)
-                        .background(row.color, in: Circle())
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(row.destination).font(.subheadline.weight(.semibold))
-                        Text(row.detail).font(.caption).foregroundStyle(.secondary)
+                if let station = airportStation(id: row.stationId) {
+                    NavigationLink {
+                        StationDetailView(station: station)
+                    } label: {
+                        rowBody(row, navigable: true)
                     }
-                    Spacer()
-                    Text(row.time).font(.headline).monospacedDigit().foregroundStyle(row.color)
+                    .buttonStyle(.plain)
+                } else {
+                    rowBody(row, navigable: false)
                 }
-                .padding(12)
-                .glassCardBackground(cornerRadius: 16)
             }
         }
+    }
+
+    private func rowBody(_ row: AirportListRow, navigable: Bool) -> some View {
+        HStack(spacing: 12) {
+            Text(row.route)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(row.color, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.destination).font(.subheadline.weight(.semibold))
+                Text(row.detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(row.time).font(.headline).monospacedDigit().foregroundStyle(row.color)
+            // A chevron signals the row opens the station's full departures.
+            if navigable {
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(12)
+        .glassCardBackground(cornerRadius: 16)
     }
 
     private var rows: [AirportListRow] {
         let busDetail = airportText(language, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali.")
         var output = metroDepartures.prefix(3).map {
-            AirportListRow(route: $0.lineId == "M3_AIR" ? "M3" : $0.lineId, destination: "Syntagma", detail: airportText(language, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), time: $0.time, color: Color.metroBlue)
+            AirportListRow(route: $0.lineId == "M3_AIR" ? "M3" : $0.lineId, destination: "Syntagma", detail: airportText(language, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), time: $0.time, color: Color.metroBlue, stationId: airportStationId(forRoute: $0.lineId))
         }
         let suburbanDeps = metroDepartures.filter { $0.lineId == "A1" || $0.lineId == "A2" }.prefix(2)
         for dep in suburbanDeps {
-            output.append(AirportListRow(route: dep.lineId, destination: airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), detail: airportText(language, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), time: dep.time, color: SyrmosTokens.suburban))
+            output.append(AirportListRow(route: dep.lineId, destination: airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), detail: airportText(language, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), time: dep.time, color: SyrmosTokens.suburban, stationId: airportStationId(forRoute: dep.lineId)))
         }
         output.append(AirportListRow(route: "X95", destination: "Syntagma", detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
         output.append(AirportListRow(route: "X93", destination: "Kifisos", detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
@@ -963,6 +995,9 @@ private struct AirportListRow {
     let detail: String
     let time: String
     let color: Color
+    // Airport-side station to open in StationDetailView; nil for buses (no
+    // per-stop timetable), which keeps their row non-navigable.
+    var stationId: String? = nil
 }
 
 // MARK: - Thessaloniki connections (metro + shuttle, or direct bus)
@@ -1045,53 +1080,73 @@ private struct AirportMetroLegsCard: View {
         VStack(spacing: 10) {
             ForEach(hub.metroLegs) { leg in
                 let deps = departuresByStation[leg.stationId] ?? []
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 10) {
-                        Text(leg.badge)
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 34, height: 34)
-                            .background(Color(hex: leg.colorHex), in: Circle())
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(leg.stationName.text(language))
-                                .font(.subheadline.weight(.semibold))
-                            Text(leg.towards.text(language))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
+                if let station = airportStation(id: leg.stationId) {
+                    NavigationLink {
+                        StationDetailView(station: station)
+                    } label: {
+                        legCard(leg: leg, deps: deps, navigable: true)
                     }
-
-                    if deps.isEmpty {
-                        Text(airportText(
-                            language,
-                            "No scheduled metro departure in the current window.",
-                            "Καμία προγραμματισμένη αναχώρηση μετρό αυτή τη στιγμή.",
-                            "Asnjë nisje e programuar e metros tani.",
-                            "Nessuna partenza metro programmata al momento."
-                        ))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    } else {
-                        HStack(spacing: 8) {
-                            ForEach(Array(deps.prefix(4).enumerated()), id: \.offset) { _, dep in
-                                Text(dayOffset == 0 ? dep.minutesAwayDisplay(language: language) : dep.time)
-                                    .font(.caption.weight(.bold))
-                                    .monospacedDigit()
-                                    .foregroundStyle(Color(hex: leg.colorHex))
-                                    .padding(.horizontal, 9)
-                                    .padding(.vertical, 5)
-                                    .background(Color(hex: leg.colorHex).opacity(0.12), in: Capsule())
-                            }
-                            Spacer(minLength: 0)
-                        }
-                    }
+                    .buttonStyle(.plain)
+                } else {
+                    legCard(leg: leg, deps: deps, navigable: false)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .glassCardBackground(cornerRadius: 16)
             }
         }
+    }
+
+    private func legCard(leg: AirportMetroLeg, deps: [Departure], navigable: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text(leg.badge)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(Color(hex: leg.colorHex), in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(leg.stationName.text(language))
+                        .font(.subheadline.weight(.semibold))
+                    Text(leg.towards.text(language))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                // Chevron signals the card opens the interchange station's
+                // full departures board.
+                if navigable {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            if deps.isEmpty {
+                Text(airportText(
+                    language,
+                    "No scheduled metro departure in the current window.",
+                    "Καμία προγραμματισμένη αναχώρηση μετρό αυτή τη στιγμή.",
+                    "Asnjë nisje e programuar e metros tani.",
+                    "Nessuna partenza metro programmata al momento."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: 8) {
+                    ForEach(Array(deps.prefix(4).enumerated()), id: \.offset) { _, dep in
+                        Text(dayOffset == 0 ? dep.minutesAwayDisplay(language: language) : dep.time)
+                            .font(.caption.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(Color(hex: leg.colorHex))
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(Color(hex: leg.colorHex).opacity(0.12), in: Capsule())
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .glassCardBackground(cornerRadius: 16)
     }
 }
 
@@ -1128,6 +1183,24 @@ private struct AirportServiceAlertCard: View {
 
 private func airportSectionTitle(_ title: String) -> some View {
     Text(title).font(.title3.bold()).padding(.top, 2)
+}
+
+// Resolve the airport-side station a service tile/row/leg should open in
+// StationDetailView. Metro maps to the M3 airport station, the suburban lines
+// to their own airport stops; buses (X..) have no station detail, so nil keeps
+// the row non-navigable. Returns nil when the id is unknown so a tap never dead-ends.
+private func airportStationId(forRoute route: String) -> String? {
+    switch route {
+    case "M3", "M3_AIR": return "M3_AER"
+    case "A1": return "A1_AIR"
+    case "A2": return "A2_AIR"
+    default: return nil
+    }
+}
+
+private func airportStation(id: String?) -> TransitStation? {
+    guard let id, !id.isEmpty else { return nil }
+    return StationCoords.allStations.first { $0.id == id }
 }
 
 private func airportText(_ language: AppLanguage, _ english: String, _ greek: String, _ albanian: String, _ italian: String) -> String {
