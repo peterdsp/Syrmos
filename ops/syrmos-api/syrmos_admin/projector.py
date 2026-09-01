@@ -387,6 +387,56 @@ def _service_type(line_id: str, band_label: str) -> str:
     return "regular"
 
 
+def _last_train_overrides(
+    conn: sqlite3.Connection, line_id: str, day_type: str, station_id: str
+) -> dict[str, list[tuple[int, str]]]:
+    """Short-turn destination overrides for the last trains of the night.
+
+    STASY runs short-turn services that terminate at an intermediate station
+    (M1 00:30 from Piraeus goes only to Omonia, not Kifissia). Those rows live
+    in last_train_endpoints (migration 0017), scraped per (line, direction,
+    from_station, time). When a projected slot at this station matches such a
+    row by time (+/-1 min), the displayed destination must become the short-turn
+    terminal instead of the band's line terminal - otherwise a passenger is told
+    "towards Kifissia" for a train that never reaches it. iOS already does this
+    from its synced bundle (ScheduleProjector.lastTrainOverride); Android and
+    Web render whatever this endpoint returns, so applying it here is what brings
+    them to parity without a client change.
+
+    Returns {direction_key: [(time_minutes, destination_name)]}. Empty when the
+    table is absent (older Pi without migration 0017) or the line ships no
+    short-turn rows - the projector then keeps the band terminal, matching the
+    client fallback projectors and the bundled seed (both ship none). Only
+    genuine short-turns (label='short') override; regular last trains
+    (label='last') keep the line terminal, so a spelling difference between the
+    stations table and lines.terminal_* can never flip a normal destination.
+    """
+    if not station_id:
+        return {}
+    try:
+        rows = conn.execute(
+            "SELECT lte.direction AS direction, lte.time AS time,"
+            " lte.end_station_id AS end_station_id, s.name AS end_name"
+            " FROM last_train_endpoints lte"
+            " LEFT JOIN stations s ON s.id = lte.end_station_id"
+            " WHERE lte.line_id=? AND lte.day_type=? AND lte.from_station_id=?"
+            " AND lte.label='short'",
+            (line_id, day_type, station_id),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        # Pi hasn't applied migration 0017 (or has no stations table): no
+        # override, keep the line terminal. Mirrors generator.py's guard.
+        return {}
+    result: dict[str, list[tuple[int, str]]] = {}
+    for r in rows:
+        minute = _minutes_of_day(r["time"])
+        if minute is None:
+            continue
+        end_name = r["end_name"] if ("end_name" in r.keys() and r["end_name"]) else r["end_station_id"]
+        result.setdefault((r["direction"] or "").lower(), []).append((minute, end_name))
+    return result
+
+
 def _project_line(
     *,
     bundle: dict,
@@ -491,6 +541,11 @@ def _project_line(
             bands.append(b)
         bands.sort(key=lambda b: _minutes_of_day(b["timeStart"]) or 0)
 
+        # Short-turn last-train destinations for this day-type at this station
+        # (empty for lines/days with no scraped short-turns). Keyed by direction
+        # so an outbound override never leaks onto an inbound slot.
+        overrides = _last_train_overrides(conn, line_id, dt, station_id)
+
         for band in bands:
             band_dir = (band.get("direction") or "both").lower()
             for direction_key, direction_label in streams:
@@ -507,6 +562,7 @@ def _project_line(
                     limit=limit,
                     out=line_out,
                     conn=conn,
+                    overrides=overrides.get(direction_key, ()),
                 )
 
     line_out = _dedupe(line_out)
@@ -526,6 +582,7 @@ def _project_band(
     limit: int,
     out: list[Departure],
     conn: sqlite3.Connection,
+    overrides: "Iterable[tuple[int, str]]" = (),
 ):
     raw_start = _minutes_of_day(band["timeStart"])
     raw_end = _minutes_of_day(band["timeEnd"])
@@ -554,11 +611,20 @@ def _project_band(
         time_str = f"{display_min // 60:02d}:{display_min % 60:02d}"
         minutes_away = max(0, slot_min - now_minutes)
         display_line_id = _display_line_id(line_id)
+        # Override the destination when this exact slot is a scraped short-turn
+        # last train (e.g. the 00:30 that stops at Omonia, not Kifissia). +/-1
+        # min absorbs the rounding between the band's headway grid and STASY's
+        # published clock time; matches iOS ScheduleProjector.lastTrainOverride.
+        dest = direction_label
+        for ov_min, ov_name in overrides:
+            if abs(ov_min - display_min) <= 1:
+                dest = ov_name
+                break
         out.append(Departure(
             lineId=display_line_id,
             line=display_line_id,
             directionKey=direction_key,
-            direction=direction_label,
+            direction=dest,
             time=time_str,
             minutesAway=minutes_away,
             serviceType=_service_type(line_id, band["label"]),
