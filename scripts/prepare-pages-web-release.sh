@@ -47,6 +47,15 @@ for route in now plan explore departures tickets line station; do
     cp "$TARGET_DIR/index.html" "$TARGET_DIR/$route/index.html"
 done
 
+# The privacy policy is a STANDALONE static page (not the SPA shell): it must
+# render without JavaScript and stay a real 200 at /privacy for App Store /
+# Google Play review. privacy.html ships in wasmJsMain/resources; also expose it
+# at the clean /privacy path so both /privacy and /privacy.html resolve.
+if [[ -f "$TARGET_DIR/privacy.html" ]]; then
+    mkdir -p "$TARGET_DIR/privacy"
+    cp "$TARGET_DIR/privacy.html" "$TARGET_DIR/privacy/index.html"
+fi
+
 # 404.html is recovery only. It lets a mistyped or stale deep path still boot
 # the app and route client-side, but the canonical entry points above already
 # return 200, so a custom 404 (which stays an HTTP 404 on GitHub Pages) is never
