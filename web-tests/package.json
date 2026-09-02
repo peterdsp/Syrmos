@@ -1,0 +1,9 @@
+{
+  "name": "syrmos-web-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node test harness for the Syrmos web client (static-source guardrails + bundled-seed contract). No dependencies: uses the built-in node:test runner.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

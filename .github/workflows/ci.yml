@@ -48,6 +48,25 @@ jobs:
           path: "**/build/reports/tests/"
           retention-days: 7
 
+  # ── Web JS (static client) ──────────────────────────────────────────────
+  web-tests:
+    name: Web JS tests (node:test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: web-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run web guardrail + seed-contract tests
+        # No dependencies to install: uses the built-in node:test runner.
+        run: node --test
+
   # ── Android ────────────────────────────────────────────────────────────
   android:
     name: Android build + lint
