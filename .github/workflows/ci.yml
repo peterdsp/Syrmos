@@ -136,3 +136,28 @@ jobs:
             -destination "platform=iOS Simulator,id=$SIM_ID" \
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
+
+  # ── Backend API (FastAPI on the Pi) ─────────────────────────────────────
+  backend-tests:
+    name: Backend API tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ops/syrmos-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # The Pi runs Python 3.11 (Bookworm); the app uses PEP 604 unions that
+          # require 3.10+. Pin CI to 3.11 so the gate matches production.
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run backend tests
+        run: pytest -q
