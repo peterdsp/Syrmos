@@ -131,9 +131,11 @@
     railway stations nearest to you and to show relevant departures. Nearest-station matching is
     computed on your device against the app's built-in station list. Your location is not stored
     on any server and is not used to identify or track you. When the app shows local weather, it
-    sends coordinates to the weather service (below) to get the forecast for that area. You can
-    change or revoke location access at any time in your device settings; the app still works
-    without it.</p>
+    sends coordinates to the weather service (below) to get the forecast for that area; those
+    coordinates are first rounded to roughly one kilometre, so only an approximate position leaves
+    your device, never a precise fix. On iOS the weather uses a city or station anchor rather than
+    device GPS. You can change or revoke location access at any time in your device settings; the
+    app still works without it.</p>
 
     <h3>Notifications</h3>
     <p>If you enable notifications, Syrmos schedules them <strong>locally on your device</strong>
@@ -155,6 +157,14 @@
     <h3>Siri &amp; app shortcuts (iOS)</h3>
     <p>Syrmos offers Siri shortcuts (for example "next departures"). Siri processing follows
     Apple's platform privacy; Syrmos does not receive additional personal data through it.</p>
+
+    <h3>Calendar (iOS Airport tab)</h3>
+    <p>On iOS only, the Airport tab can connect to your calendar so it can line up your upcoming
+    flights with airport transit. If you tap "Connect calendar" and grant access, Syrmos reads
+    your calendar events <strong>on your device</strong> to find flight-related entries. Nothing
+    from your calendar is sent to any server, linked to you, or used for anything else, and you can
+    revoke calendar access at any time in your device settings. The Android app does not request or
+    use calendar access.</p>
 
     <h3>Widgets &amp; Apple Watch</h3>
     <p>The home-screen widgets and the Apple Watch app show the same transit information as the

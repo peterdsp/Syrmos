@@ -25,16 +25,23 @@ feedback (which is Linked, because you supplied it as contact info).
 
 | Data type | Collected (leaves device)? | Linked to you? | Purpose |
 |---|---|---|---|
-| Precise/Coarse Location | Only for weather, and only on Android (iOS uses a city/station anchor, not device GPS) | No | App Functionality |
+| Coarse Location | Only for weather, and only on Android; the coordinate is rounded to ~1 km before the request, so only an approximate position leaves the device. iOS uses a city/station anchor, not device GPS. | No | App Functionality |
 | Contact Info - Email Address | Only if you type one into the feedback form | Yes (you provided it) | Customer Support |
 | User Content - other (assistant question text; feedback message; optional feedback photo/video) | Yes, when you send it | No | App Functionality / Customer Support |
+| Calendar events (iOS only) | No: read on-device only when you tap "Connect calendar" on the Airport tab, to match your flights to airport transit; never sent off-device | - | App Functionality |
 | Identifiers | None | - | - |
 | Usage Data / Diagnostics | Not collected off-device (iOS diagnostics stay on device unless you tap Share) | - | - |
 
 Notes for the reviewer / consistency: location is used **on-device** for
 nearest-station on all platforms; the only off-device location is the Android
-weather request. The assistant question text is relayed by the Syrmos API to AI
-providers to answer; it is not linked to an identity.
+weather request, and it is **coarsened to ~1 km** before it is sent (rounded to
+two decimals in `WeatherService.buildForecastUrl`), so a precise device fix
+never leaves the device. The **iOS Airport calendar** feature reads calendar
+events **on-device only** (EventKit, `AirportCalendarStore`) to line up your
+flights with airport transit; nothing from the calendar is sent anywhere, and
+there is **no calendar access on Android** (the unused `READ_CALENDAR`
+permission was removed for GA). The assistant question text is relayed by the
+Syrmos API to AI providers to answer; it is not linked to an identity.
 
 ## Google Play Data Safety (Play Console)
 
@@ -47,7 +54,7 @@ in the listing).
 
 | Data type | Collected? | Shared? | Processed ephemerally? | Optional | Purpose | Encrypted in transit |
 |---|---|---|---|---|---|---|
-| Location - approximate | Yes (Android weather only) | To the weather provider | Not stored server-side by Syrmos | Optional (needs permission) | App functionality | Yes |
+| Location - approximate | Yes (Android weather only; coarsened to ~1 km before sending, so it is genuinely approximate) | To the weather provider | Not stored server-side by Syrmos | Optional (needs permission) | App functionality | Yes |
 | Personal info - Email address | Only if entered in feedback | No | No (kept to reply) | Optional | Customer support | Yes |
 | Messages / other user content (feedback text, optional media, assistant question) | Yes, when you send it | Assistant text: to AI providers via the Syrmos API | Assistant text not persisted by the client | Optional | App functionality / support | Yes |
 | App activity / analytics | No | No | - | - | - | - |
@@ -64,7 +71,8 @@ identifiable.
 |---|---|---|---|
 | No tracking / no ads / no IDFA | stated | Used to Track: none | Advertising: none |
 | No accounts / no stable ID | stated | Identifiers: none | Device IDs: none |
-| Location off-device only for Android weather | stated | Location, not linked | Location approximate, weather |
+| Location off-device only for Android weather, coarsened to ~1 km | stated | Location, not linked | Location approximate, weather |
+| Calendar read on-device (iOS Airport only), never sent; none on Android | stated | Calendar, on-device, not collected | n/a (no calendar access) |
 | Assistant text -> AI providers | stated | User content, not linked | Shared with AI providers |
 | Feedback email optional -> support | stated | Contact info, linked | Personal info, support |
 | Encrypted in transit | HTTPS stated | - | Yes |

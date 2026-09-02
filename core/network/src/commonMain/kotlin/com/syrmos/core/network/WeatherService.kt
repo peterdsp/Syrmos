@@ -29,14 +29,7 @@ class WeatherService(
 
     suspend fun fetch(latitude: Double, longitude: Double): Reading? {
         return runCatching {
-            val url = "https://api.open-meteo.com/v1/forecast" +
-                "?latitude=$latitude&longitude=$longitude" +
-                "&current=time,temperature_2m,apparent_temperature,is_day,precipitation," +
-                "relative_humidity_2m,weather_code,wind_speed_10m" +
-                "&hourly=temperature_2m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min" +
-                "&forecast_days=1&timezone=auto"
-            val body = httpClient.get(url).bodyAsText()
+            val body = httpClient.get(buildForecastUrl(latitude, longitude)).bodyAsText()
             val resp = json.decodeFromString<OpenMeteoResponse>(body)
             Reading(
                 current = resp.current.toDomain(),
@@ -45,6 +38,34 @@ class WeatherService(
                 lowC = resp.daily?.min?.firstOrNull(),
             )
         }.getOrNull()
+    }
+
+    companion object {
+        /**
+         * Rounds a coordinate to ~2 decimals (about 1 km) so the weather
+         * request carries only an approximate position. Weather is uniform
+         * across a neighbourhood, so this is invisible to the rider while
+         * ensuring the only off-device location Syrmos sends (to Open-Meteo,
+         * and only when the user shares location) is genuinely coarse, matching
+         * the "approximate location" store-privacy label. Open-Meteo snaps to
+         * its own grid anyway.
+         */
+        internal fun coarsen(coordinate: Double): Double =
+            kotlin.math.round(coordinate * 100.0) / 100.0
+
+        /**
+         * Builds the Open-Meteo request URL with the coordinates coarsened.
+         * Kept pure (no I/O) so the coarsening is unit-testable without a live
+         * HTTP call.
+         */
+        internal fun buildForecastUrl(latitude: Double, longitude: Double): String =
+            "https://api.open-meteo.com/v1/forecast" +
+                "?latitude=${coarsen(latitude)}&longitude=${coarsen(longitude)}" +
+                "&current=time,temperature_2m,apparent_temperature,is_day,precipitation," +
+                "relative_humidity_2m,weather_code,wind_speed_10m" +
+                "&hourly=temperature_2m,weather_code" +
+                "&daily=temperature_2m_max,temperature_2m_min" +
+                "&forecast_days=1&timezone=auto"
     }
 
     @Serializable
