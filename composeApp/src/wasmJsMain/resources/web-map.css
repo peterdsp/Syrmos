@@ -1209,6 +1209,17 @@ body.dark-mode .live-status-pill {
     text-decoration: none;
 }
 .info-link__verify:hover { text-decoration: underline; }
+.info-link__privacy {
+    display: inline-block;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--sy-border, rgba(255,255,255,0.08));
+    width: 100%;
+    font-size: 12px; font-weight: 500;
+    color: var(--sy-accent);
+    text-decoration: none;
+}
+.info-link__privacy:hover { text-decoration: underline; }
 
 /* ===== Telemetry Grid ===== */
 .telemetry-grid {
