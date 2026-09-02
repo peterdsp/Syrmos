@@ -504,8 +504,9 @@ iOS  (2.0.0 / build 138)
                            additive Settings privacy Link, covered by CI build + tests)
   Privacy manifest:        VERIFIED (PrivacyInfo.xcprivacy in all 4 bundles; correct reason codes)
   Privacy-policy link:     VERIFIED (Settings > About; opens the live /privacy)
-  Archive + IPA + validation: RE-RUNNING on 1363b4b6 via the CI dry-run (real Apple Distribution
-                           cert + App Store profiles; altool --validate-app, no upload)
+  Archive + IPA + validation: VERIFIED on 1363b4b6 via the CI dry-run (real Apple Distribution
+                           cert + App Store profiles; archive + signed IPA export succeeded;
+                           altool: "VERIFY SUCCEEDED with no errors", no upload)
   TestFlight upload:       HUMAN-GATED (skipped in dry-run; runs on the v2.0.0 tag)
 
 ANDROID  (2.0.0 / versionCode 223)
@@ -516,7 +517,8 @@ ANDROID  (2.0.0 / versionCode 223)
                            Settings > About privacy link fires ACTION_VIEW to the live /privacy)
   Permissions:             MINIMIZED (unused READ_CALENDAR removed; FINE location used on-device
                            for nearest-station; weather coordinate coarsened before it is sent)
-  Production-signed AAB:   RE-RUNNING on 1363b4b6 via the CI dry-run (no Play upload)
+  Production-signed AAB:   VERIFIED on 1363b4b6 via the CI dry-run (build signed release bundle +
+                           validate signed AAB succeeded; Play upload correctly skipped)
   Play upload:             HUMAN-GATED (skipped in dry-run; runs on the v2.0.0 tag)
 
 SERVER (deploy-gated on the Pi; SSH to the production server is safety-blocked in this environment)
@@ -563,8 +565,9 @@ FINAL STATUS:
   Web 2.0.0 LIVE and re-verified after the privacy work. iOS + Android 2.0.0 are
   production candidates at master 1363b4b6 with a published, in-app-linked privacy
   policy, minimized permissions, and privacy declarations verified against the
-  code. Signed-artifact + store-validation are being re-confirmed on this exact
-  SHA via the CI dry-run (no upload). The mobile/web binaries are store-ready;
+  code. Signed-artifact + store-validation were re-confirmed on this exact SHA
+  via the CI dry-run (iOS altool "VERIFY SUCCEEDED with no errors"; Android
+  signed AAB validated), with no upload. The mobile/web binaries are store-ready;
   full production correctness for the two server-side data fixes (#12/#9) remains
   gated on the human-run Pi deploy. No outward-facing publish was performed and
   the v2.0.0 tag was NOT pushed.
