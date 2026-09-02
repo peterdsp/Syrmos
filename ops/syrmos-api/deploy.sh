@@ -62,6 +62,11 @@ export SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
 .venv/bin/python -m syrmos_admin.scraper_ht_important_info || echo "Hellenic Train alerts scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.scraper_oseth || echo "OSETH scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.scraper_thessmetro || echo "Thessaloniki Metro scraper failed, continuing"
+# Per-station short-turn last trains (STASY) -> last_train_endpoints (migration
+# 0017). Without this the table stays empty and the projector's short-turn
+# override (parity #12) is a no-op in production, so the M1 00:30 shows the line
+# terminal instead of its real short-turn terminus. Best-effort like the others.
+.venv/bin/python scripts/scrape-stasy-last-trains.py || echo "last-train scraper failed, continuing"
 .venv/bin/python -m syrmos_admin.generator
 REMOTE
 
