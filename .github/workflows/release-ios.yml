@@ -31,10 +31,21 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate the signed IPA against App Store Connect but do NOT upload to TestFlight (release-readiness check only)."
+        type: boolean
+        default: true
 
 concurrency:
   group: release-ios-${{ github.ref }}
   cancel-in-progress: false
+
+# A tag push always releases (upload to TestFlight). A manual run defaults to a
+# dry run: it signs, exports, and validates the IPA, and keeps it as an
+# artifact, but never uploads. Set dry_run=false on a manual run to also upload.
+env:
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
 
 jobs:
   ci:
@@ -186,14 +197,33 @@ jobs:
             fi
           }
 
+          # App Store Connect validation always runs (read-only pre-flight: it
+          # checks the signed IPA against the store's rules without creating a
+          # build or publishing anything).
           xcrun altool --validate-app -f "$IPA" -t ios \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool-validate.log"
           check_altool "$RUNNER_TEMP/altool-validate.log"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "DRY RUN: signed IPA built + App Store validation passed; skipping the TestFlight upload."
+            exit 0
+          fi
 
           xcrun altool --upload-app -f "$IPA" -t ios \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool-upload.log"
           check_altool "$RUNNER_TEMP/altool-upload.log"
           echo "Verified delivery to App Store Connect / TestFlight."
+
+      - name: Upload signed IPA + validation log (artifact)
+        if: ${{ env.IOS_DIST_CERT_P12_BASE64 != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-signed-ipa
+          path: |
+            ${{ runner.temp }}/export/*.ipa
+            ${{ runner.temp }}/altool-validate.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Clean up secrets from the runner
         if: always()
