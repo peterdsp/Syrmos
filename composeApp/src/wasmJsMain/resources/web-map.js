@@ -99,6 +99,7 @@
             open_details: "Open details",
             reduced: "Reduced",
             verify_on: "Verify on {op} ↗",
+            privacy_policy: "Privacy Policy",
             ask_ariadne: "Ask Ariadne",
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Ask Ariadne...",
@@ -193,6 +194,7 @@
             open_details: "Άνοιγμα λεπτομερειών",
             reduced: "Μειωμένο",
             verify_on: "Επιβεβαίωση στο {op} ↗",
+            privacy_policy: "Πολιτική απορρήτου",
             ask_ariadne: "Ρώτα την Αριάδνη",
             ariadne_title: "Αριάδνη",
             ariadne_placeholder: "Ρώτα την Αριάδνη...",
@@ -287,6 +289,7 @@
             open_details: "Hap detajet",
             reduced: "Me zbritje",
             verify_on: "Verifiko në {op} ↗",
+            privacy_policy: "Politika e privatësisë",
             ask_ariadne: "Pyet Ariadnen",
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Pyet Ariadnen...",
@@ -381,6 +384,7 @@
             open_details: "Apri i dettagli",
             reduced: "Ridotto",
             verify_on: "Verifica su {op} ↗",
+            privacy_policy: "Informativa sulla privacy",
             ask_ariadne: "Chiedi ad Ariadne",
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Chiedi ad Ariadne...",
@@ -1070,7 +1074,7 @@
         const links = (payload && payload.infoLinks) || [];
         // Always expose the privacy policy here (the footer "more" utility jumps
         // to this list), independent of the server-provided operator links.
-        const privacyLink = `<a class="info-link__privacy" href="/privacy" rel="noopener" style="display:inline-block;margin-top:8px;font-size:13px;">Privacy Policy</a>`;
+        const privacyLink = `<a class="info-link__privacy" href="/privacy" rel="noopener">${escapeHtml(t("privacy_policy"))}</a>`;
         if (!links.length) {
             infoLinksList.innerHTML = privacyLink;
             return;
