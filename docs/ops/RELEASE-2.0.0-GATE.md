@@ -622,3 +622,84 @@ that knowingly point at a backend still serving the old incorrect behaviour.
 
 Only after steps 1-6 pass can Syrmos 2.0.0 be legitimately called
 production-complete.
+
+## Backend DEPLOYED + live production verified (runbook steps 1-3 executed)
+
+Executed 2026-09-02 ~21:23 Europe/Athens (well after the 10:00 target, which
+remains MISSED). SSH to the Pi was available in this environment, so the backend
+deploy was run and verified directly against the live API.
+
+Release candidate: validated binaries at `658ef87d` (the seed-refresh commit;
+both release dry-runs ran on this exact SHA). The working tip is a few
+docs/ops-only commits ahead (`deploy.sh` line-geometry fix + this doc); none
+touch the app binary or the bundled seeds, so the dry-run validation holds for
+the tip.
+
+### Latest-master validation (incl. the automated seed refresh)
+
+The seed-refresh commit `1d0ff49f` was inspected, not assumed harmless:
+triple-copy invariant holds (Android/composeApp/iOS byte-identical),
+`verify-bundles.py` passes (offline-first contract), lines/stations data
+unchanged (only `updatedAt`/`version`), fare prices unchanged (only
+`fetchedAt`), one shape coordinate re-snapped ~1 m, announcements refreshed
+(new live notices), manifest rehashed correctly. Nothing touches #12/#9.
+
+### #12 short-turn destinations - VERIFIED FIXED in production
+
+```
+                          BEFORE deploy        AFTER deploy
+  M1 lastTrains count     0                    68 (9 outbound + 15 inbound short-turn to Omonia)
+  M1 00:30 outbound       (would be Kifissia)  "Omonia"  <- real short-turn terminal
+  endStationId spread     none                 M1_KIF (full) + M1_OMO (short-turn) both present
+```
+
+Rider-facing: `GET /api/departures/next?stationId=M1_PIR&lineIds=M1&direction=outbound&now=2026-09-01T23:55:00+03:00`
+returns the 00:30 slot as direction **"Omonia"**, not "Kifissia".
+
+### #9 phantom rows + rounding - VERIFIED FIXED in production
+
+```
+                                   BEFORE deploy                       AFTER deploy
+  M3_PEA phantom city rows         4x "Doukissis Plakentias" (regular) 0
+  M3_KO2 phantom city rows         4x "Doukissis Plakentias" (regular) 0
+  M3_PEA/KO2 serviceType=regular   present                             0 (only airport-service)
+  half-up rounding in projector    (banker's on server)               deployed (5 sites in projector.py)
+```
+
+(The "Dimotiko Theatro" rows that remain are the legitimate inbound terminus of
+the airport line, now correctly classified `serviceType=airport`, not phantom.)
+
+### Health + Web smoke against the newly deployed backend
+
+- `/healthz` -> `{"ok":true}`.
+- Web production re-smoked on a clean tab: home loads, 0 console errors, live
+  feed (~65-68 trains from the new backend), search + autocomplete, station
+  detail + interchange, EL localization, `/privacy` 200. All API + line-geometry
+  requests 200.
+- **Regression found and fixed during this smoke:** the deploy's
+  `rsync --delete` had wiped the Pi's OSM-generated line-geometry for five
+  non-Athens lines (TM1/TM2/AL1/PS1/DK1), 404-ing them (graceful stop-anchor
+  fallback, but 5 console 404s). Regenerated on the Pi via the OSM refresh (after
+  an Overpass 504 cleared on retry); all five now 200 and the console is clean.
+  `deploy.sh` was fixed to stop `--delete`-ing that scraper-owned dir.
+
+### Signed-artifact re-validation on the RC (`658ef87d`, with the refreshed seeds)
+
+- iOS: archive + signed App Store IPA export succeeded; `altool --validate-app`
+  -> **"VERIFY SUCCEEDED with no errors"**. No upload (dry-run).
+- Android: build + validate signed release AAB succeeded. No Play upload (dry-run).
+
+### Parity after the deploy
+
+```
+  Implementation Parity (code):        26/26  (unchanged)
+  Live Production Parity (backend):     26/26  <- NOW ACHIEVED
+       #12 short-turn + #9 phantom-rows/rounding are live and verified against
+       the production API. The earlier "pre-fix until deploy" gap is CLOSED.
+```
+
+### Still outstanding (unchanged by this deploy)
+
+- Store upload: `v2.0.0` tag push -> TestFlight + Play (internal/beta) uploads.
+- Store-console privacy metadata (App Privacy + Data Safety): account-gated.
+- Deadline: the 10:00 Europe/Athens target was and remains MISSED.
