@@ -449,3 +449,126 @@ FINAL STATUS:
   account / external-network action, each proven and enumerated above. The
   v2.0.0 tag was NOT pushed.
 ```
+
+## Final gate: privacy policy live + RC adversarial pass (supersedes the block above)
+
+Release candidate: master `1363b4b6`. This pass closed the last store-readiness
+gap (a published privacy policy) and ran the final release-candidate adversarial
+audit of privacy declarations against actual code. Changes since `cfe36362` are
+small, additive, and CI-verified: iOS gained one Settings > About privacy Link
+(`SettingsView.swift`), Android gained the same row (`SettingsScreen.kt`) and
+dropped an unused permission (`AndroidManifest.xml`), and the shared
+`WeatherService` now coarsens weather coordinates (`core/network`, Android + web
+only; iOS weather already uses a station anchor). The iOS/Android `release-*.yml`
+dry-run workflows were re-run on this exact SHA because release-affecting files
+changed.
+
+What this pass did:
+
+- **Privacy policy is LIVE** at https://syrmos.peterdsp.dev/privacy (HTTP 200,
+  standalone page, renders without JS, desktop + mobile verified, 0 console
+  errors). It is written from the actual code after a 22-data-type audit, and is
+  linked in-app from Settings > About on iOS + Android and from the web map info
+  panel (all three point to the same URL; the web link is styled + localized
+  EN/EL/SQ/IT). The App Store Privacy + Play Data Safety matrix is prepared in
+  `docs/ops/STORE-PRIVACY-DECLARATIONS-2.0.0.md`; the three declarations agree.
+- **RC adversarial pass (privacy vs code)** found and fixed: (1) weather sent a
+  precise device coordinate to Open-Meteo while the label says approximate, now
+  coarsened to ~1 km at the network boundary (unit-tested); (2) Android
+  over-declared `READ_CALENDAR` with zero uses, removed; (3) the on-device iOS
+  Airport calendar read was undocumented, now disclosed (policy + matrix) with
+  Android declared as having none; (4) a dead `hls.js` jsdelivr `<script>` ran on
+  every web load, removed. Every runtime egress host is now HTTPS and disclosed.
+- **#10 re-verified NOT external-blocked.** The OASA endpoint serves live
+  `airportArrivals` (minutesAway) as of 2026-09-02; the client fetch layer
+  exists and only the router->UI wiring is deferred (wiring it would create an
+  iOS/Android divergence). External-blocked drops to 0.
+
+```
+SYRMOS 2.0.0 FINAL GATE
+Deadline: 2026-09-02 10:00 Europe/Athens
+Release candidate: master 1363b4b6
+
+WEB
+  Production deployment:   VERIFIED LIVE (https://syrmos.peterdsp.dev, deploy of 1363b4b6)
+  Smoke test:              PASS (home, map + 57 live trains, search + autocomplete,
+                           station detail + interchange, EL localization, mobile-responsive)
+  Console / network:       0 errors; all requests 200 (JS, CSS, seed JSON, shapes, icons)
+  Privacy page:            VERIFIED LIVE (/privacy 200; calendar + coarsening disclosed;
+                           styled + localized link in the map info panel)
+  Third-party egress:      MINIMIZED (dead hls.js/jsdelivr removed; only unpkg Leaflet
+                           remains, with SRI, and it is disclosed)
+
+iOS  (2.0.0 / build 138)
+  Tests:                   VERIFIED (iosAppTests 132/0 at cfe36362; only change since is the
+                           additive Settings privacy Link, covered by CI build + tests)
+  Privacy manifest:        VERIFIED (PrivacyInfo.xcprivacy in all 4 bundles; correct reason codes)
+  Privacy-policy link:     VERIFIED (Settings > About; opens the live /privacy)
+  Archive + IPA + validation: VERIFIED on 1363b4b6 via the CI dry-run (real Apple Distribution
+                           cert + App Store profiles; archive + signed IPA export succeeded;
+                           altool: "VERIFY SUCCEEDED with no errors", no upload)
+  TestFlight upload:       HUMAN-GATED (skipped in dry-run; runs on the v2.0.0 tag)
+
+ANDROID  (2.0.0 / versionCode 223)
+  Tests:                   VERIFIED (KMP unit suite green in CI + local; new
+                           WeatherServiceCoordinatePrivacyTest 2/2)
+  Runtime QA:              VERIFIED (emulator: launch, home, settings, airport + tap-through,
+                           station + interchange, map, search, offline, reconnect, localization;
+                           Settings > About privacy link fires ACTION_VIEW to the live /privacy)
+  Permissions:             MINIMIZED (unused READ_CALENDAR removed; FINE location used on-device
+                           for nearest-station; weather coordinate coarsened before it is sent)
+  Production-signed AAB:   VERIFIED on 1363b4b6 via the CI dry-run (build signed release bundle +
+                           validate signed AAB succeeded; Play upload correctly skipped)
+  Play upload:             HUMAN-GATED (skipped in dry-run; runs on the v2.0.0 tag)
+
+SERVER (deploy-gated on the Pi; SSH to the production server is safety-blocked in this environment)
+  #12 short-turn code:     VERIFIED (projector override + name_en fix; tests)
+  #9 phantom-rows + round: VERIFIED (Peania-Kantza/Koropi ids + half-up rounding; tests)
+  #10 OASA endpoint:       VERIFIED LIVE (api/oasa-airport-buses serves airportArrivals minutesAway)
+  Migration / deploy:      BLOCKED-EXTERNAL (deploy.sh from the LAN; migration 0017 + scraper;
+                           deploy.sh now also runs the previously-orphaned last-train scraper)
+  Production data:         PRE-FIX until deploy (live endpoint still returns M1 last train ->
+                           Kifissia, 0 lastTrains). This is the one honest gap: see PARITY below.
+
+PARITY (26 audited) - reported as two numbers
+  Implementation Parity (code, in this repo):   26/26 resolved
+                           = 23 user-visible fixed + 3 implementation-only (verified
+                             rider-equivalent: #10 dormant router, #11 chip wording, #21 map
+                             motion) + 0 external-blocked + 0 backlog.
+  Live Production Parity (what the running backend serves today): NOT YET at 26/26
+                           = the #12 short-turn destination and the #9 phantom-rows/rounding
+                             fixes are correct and test-verified in code but take effect only
+                             on the next Pi deploy. Until that deploy, Android + Web render the
+                             pre-fix server behaviour for those two items; iOS is unaffected
+                             (local-first bundle). Offline, all platforms agree (the seed ships
+                             no short-turn rows). No client-code gap remains.
+
+SECURITY / CONFIG
+  Privacy declarations:    VERIFIED against code (policy, Apple, Play agree; egress all disclosed)
+  Permissions:             MINIMIZED (no unused sensitive permissions; calendar iOS-only, on-device)
+  Secrets:                 CLEAN (all env-based, none committed)
+  Transport security:      VERIFIED (all egress HTTPS; ATS enforced; no TLS bypass; SRI on the CDN dep)
+  Release hardening:       VERIFIED (no debuggable release, no debug entitlements, no feature
+                           flags or hidden/dead controls, no localhost/staging in runtime paths)
+  Signing:                 Production signing certificate matched the expected CI configuration: VERIFIED
+  Export compliance:       VERIFIED (ITSAppUsesNonExemptEncryption=false)
+
+REMAINING BLOCKERS
+  P0 / P1 (engineering):   0
+  Human-gated:             (1) push the v2.0.0 tag -> starts the signed TestFlight + Play uploads;
+                           (2) enter the (live) privacy-policy URL + Data Safety / App Privacy
+                               labels in the store consoles (account-gated);
+                           (3) deploy the server fixes to the Pi (migration 0017 + scraper +
+                               projector) to bring Live Production Parity to 26/26 for #12/#9.
+
+FINAL STATUS:
+  Web 2.0.0 LIVE and re-verified after the privacy work. iOS + Android 2.0.0 are
+  production candidates at master 1363b4b6 with a published, in-app-linked privacy
+  policy, minimized permissions, and privacy declarations verified against the
+  code. Signed-artifact + store-validation were re-confirmed on this exact SHA
+  via the CI dry-run (iOS altool "VERIFY SUCCEEDED with no errors"; Android
+  signed AAB validated), with no upload. The mobile/web binaries are store-ready;
+  full production correctness for the two server-side data fixes (#12/#9) remains
+  gated on the human-run Pi deploy. No outward-facing publish was performed and
+  the v2.0.0 tag was NOT pushed.
+```
