@@ -700,6 +700,60 @@ the airport line, now correctly classified `serviceType=airport`, not phantom.)
 
 ### Still outstanding (unchanged by this deploy)
 
-- Store upload: `v2.0.0` tag push -> TestFlight + Play (internal/beta) uploads.
 - Store-console privacy metadata (App Privacy + Data Safety): account-gated.
 - Deadline: the 10:00 Europe/Athens target was and remains MISSED.
+
+## v2.0.0 tag pushed + store uploads DELIVERED (runbook steps 5-6 executed)
+
+Executed 2026-09-02 ~21:53 Europe/Athens. Before pushing, the release workflows
+were read to confirm the tag triggers only **beta/internal** distribution, not a
+public release: iOS runs `altool --upload-app` -> TestFlight (Apple beta);
+Android uses `track: internal` (Google Play internal testing). There is no
+submit-for-review or production-promotion step anywhere. Safe to push under the
+"beta/internal only" rule, so it was pushed.
+
+Tag: `v2.0.0` -> commit `3fc2e39c` (app binary + bundled seeds identical to the
+dry-run-validated `658ef87d`; only docs/ops changed between them).
+
+```
+iOS (build 138) - release-ios.yml on the tag
+  Archive + signed IPA export:   success
+  App Store validation:          success
+  altool --upload-app:           "UPLOAD SUCCEEDED with no errors"
+                                 "Verified delivery to App Store Connect / TestFlight"
+  -> Delivered to TestFlight. Apple-side ASC processing is asynchronous and not
+     observable from here (ASC API keys are CI-only secrets); it typically
+     finishes minutes-to-an-hour after delivery.
+
+Android (versionCode 223) - release-android.yml on the tag
+  Build + validate signed AAB:   success
+  Upload to Google Play:         success (track: internal, status: completed)
+  -> AAB accepted; the Play edit committed to the internal testing track.
+
+Web
+  GitHub Pages: live, / and /privacy both 200.
+```
+
+No signing or validation errors on either platform.
+
+### What is deliberately NOT done (the remaining human/account/legal boundary)
+
+These are the irreversible-public and account-owner actions; none were performed:
+
+- **iOS public release:** submitting the TestFlight build for App Store review and
+  releasing it to the public App Store (account-owner, legal, irreversible).
+- **Android production release:** promoting the internal-track build to the
+  production track (account-owner, irreversible public release).
+- **Store-console privacy metadata:** App Store App Privacy + Play Data Safety +
+  the privacy-policy URL. The credentials are CI-only GitHub secrets (not
+  readable here) and the declarations are account-owner legal attestations behind
+  MFA. Values are prepared in `STORE-PRIVACY-DECLARATIONS-2.0.0.md`.
+
+### Honest final state
+
+Backend deployed and #12/#9 verified live; Web live; iOS build 138 on TestFlight;
+Android versionCode 223 on the Play internal track; Live Production Parity 26/26.
+The apps are in **beta/internal distribution**, NOT publicly released. The 10:00
+Europe/Athens deadline was MISSED. Syrmos 2.0.0 is not publicly released until the
+account owner performs the store-console metadata + the public-release promotions
+above.
