@@ -109,7 +109,7 @@ Five more parity fixes landed and were verified this phase:
 Parity ledger after the first deep-QA pass: 18 fixed, 2 partial, 5 backlog, 1
 intentional. A second round (below) reopened every remaining item.
 
-## Second deep-QA round (release candidate 0591afee)
+## Second deep-QA round (release candidate 3b643377)
 
 The first round's conclusion was reopened and every partial/backlog item
 re-examined individually rather than bulk-deferred. Outcomes:
@@ -143,10 +143,12 @@ re-examined individually rather than bulk-deferred. Outcomes:
   providers are built and Koin-registered but nothing consumes the router; the one
   real provider (OASA) depends on the Pi endpoint serving X93-97. Deliberately not
   wired for GA.
-- **#13 (airport strings): stays PARTIAL, lowest-priority polish.** Most hardcodes
-  are shared with iOS (not a divergence); the one Android-only gap (M3/A1
-  route-strip names) is partly a seed data gap (M3_DIM / M3_DOY have `nameEl=null`,
-  so iOS is English there too).
+- **#13 (airport strings): FIXED (#86).** The M3/A1/X95/X97 route-strip station
+  names were hardcoded English; #86 localizes them through `airportText()` with
+  the exact seed values, verified on the emulator in Greek. (The earlier
+  "seed data gap" reading was a false alarm from checking the camelCase field;
+  the seed uses `name_el` and every station has complete `name_el`/`name_sq`.)
+  Other Airport-tab hardcodes remain shared with iOS, not a divergence.
 - **#21 (map motion): confirmed INTENTIONAL.** CADisplayLink vs per-tick is an
   engine-only difference; both interpolate the same positions at the same
   wall-clock, so user-visible behaviour is equivalent.
@@ -177,6 +179,15 @@ Flagged for the Pi owner (not a client bug): the client's
 uses different ids (`M3_PEK`/`M3_KRP` vs the seed's `M3_PEA`/`M3_KO2`) for
 Peania-Kantza / Koropi; reconcile Pi vs seed station ids so a client `station_id`
 always resolves server-side.
+
+A second adversarial pass over the fixes themselves (#83 column, #84 position,
+#86 localization) found no code-level defects and confirmed both prior findings
+resolved: it verified `name_en` is the correct column AND the right language
+(the line terminals are English too, so the short-turn override matches the
+surrounding rows), that `NOVEL_STOP_BASE` cannot collide or overflow, and that
+the #86 Greek/Albanian strings match the seed exactly. Its one actionable note,
+that #86 was still stranded on its branch, is resolved: #86 is merged into the
+final candidate.
 
 Restart/persistence QA on the emulator: online launch -> populate -> kill ->
 airplane on -> relaunch offline (cached news + network status + living map +
@@ -256,10 +267,10 @@ candidate; it is a submission-time checklist entry.
 ```
 Syrmos 2.0.0 Release Candidate
 
-Commit:        0591afee  (master; #79 -> #80 -> #81 -> #82 -> #83 -> #84)
+Commit:        3b643377  (master; #79 -> #80 -> #81 -> #82 -> #83 -> #84 -> #86)
 
 Web:
-  deployment SHA:  0591afee (GitHub Pages; web sources unchanged since 30912fe0)
+  deployment SHA:  3b643377 (GitHub Pages; web sources unchanged since 30912fe0)
   production URL:  https://syrmos.peterdsp.dev
   runtime QA:      VERIFIED (load, search, station detail, departures, live feed
                    "updated 8s ago", map, mobile-responsive, EL localization)
@@ -279,8 +290,8 @@ iOS:
 Android:
   versionName:     2.0.0
   versionCode:     223
-  tests:           VERIFIED (KMP unit suite 356/0/0 local on 0591afee; CI green)
-  APK (debug):     BUILD VERIFIED (final 0591afee; installed + smoke-tested, no crash)
+  tests:           VERIFIED (KMP unit suite 356/0/0 local on 3b643377; CI green)
+  APK (debug):     BUILD VERIFIED (final 3b643377; installed + smoke-tested, no crash)
   AAB (release):   SIGNED ARTIFACT VERIFIED (throwaway key; contents validated)
   signing:         CONFIG VERIFIED (prod keystore is a CI secret; PLAY UPLOAD CI-only)
   runtime:         VERIFIED (emulator: launch, home, settings/no-digest, airport
@@ -290,7 +301,7 @@ Android:
 
 Parity (see cross-platform-parity.json):
   fixed:        21
-  partial:      1   (#13 airport strings; partly a seed nameEl data gap)
+  partial:      0
   intentional:  1   (#21 map motion engine difference; behaviour-equivalent)
   backlog:      3   (#9, #11 product decisions; #10 external/Pi)
   unverified:   0 engineering P0/P1
@@ -301,7 +312,7 @@ Parity (see cross-platform-parity.json):
 ```
 SYRMOS 2.0.0 RELEASE GATE
 Deadline: 2026-09-02 10:00 Europe/Athens
-Release candidate: master 0591afee
+Release candidate: master 3b643377
 
 WEB
   Production build:      PASS
@@ -323,7 +334,7 @@ ANDROID
   Release config:        CONFIG VERIFIED (sign + minify + shrink + 16 KB align)
   Release artifact:      SIGNED ARTIFACT VERIFIED (throwaway key; AAB+APK contents)
   Tests:                 PASS (KMP unit suite 356/0/0 local; CI green)
-  Runtime QA:            VERIFIED (emulator, final 0591afee: launch, home,
+  Runtime QA:            VERIFIED (emulator, final 3b643377: launch, home,
                          settings/no-digest, map+vehicles, airport+tap-through,
                          station detail+interchange, search, offline+news-cache,
                          reconnect, localization; no crashes)
@@ -332,7 +343,7 @@ ANDROID
   Publish:               BLOCKED-EXTERNAL (keystore + Play JSON + v2.0.0 tag push)
 
 CROSS-PLATFORM
-  Core feature parity:   PASS (21 fixed / 1 partial / 3 backlog / 1 intentional)
+  Core feature parity:   PASS (22 fixed / 0 partial / 3 backlog / 1 intentional)
   Data correctness:      PASS (#12 short-turn override fixed server-side)
   Localization:          PASS (EN/EL/SQ/IT; Greek UI verified on device + web)
   Accessibility:         PASS (departure rows merged for TalkBack + headings)
@@ -350,6 +361,6 @@ BLOCKERS
 
 FINAL STATUS:
   Web 2.0.0: LIVE. iOS + Android 2.0.0: PRODUCTION CANDIDATES VALIDATED AND READY
-  FOR SUBMISSION at master 0591afee. Remaining action is the human-gated v2.0.0
+  FOR SUBMISSION at master 3b643377. Remaining action is the human-gated v2.0.0
   tag push (starts the signed store uploads).
 ```
