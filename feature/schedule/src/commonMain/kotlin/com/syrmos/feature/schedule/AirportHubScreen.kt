@@ -561,14 +561,19 @@ private fun airportRouteStops(route: String, lang: AppLanguage): List<RouteStrip
     fun stop(label: String) = RouteStripStop(label, false, false)
     fun interchange(label: String) = RouteStripStop(label, false, true)
     val terminal = RouteStripStop(airport, true, false)
+    // Station names come from the bundled seed (stations.json name / name_el /
+    // name_sq); Greek/Albanian riders saw these strip stops in English before.
+    val dimotikoTheatro = airportText(lang, "Dimotiko Theatro", "Δημοτικό Θέατρο", "Dimotiko Theatro", "Dimotiko Theatro")
+    val syntagma = airportText(lang, "Syntagma", "Σύνταγμα", "Sintagma", "Syntagma")
+    val doukissis = airportText(lang, "Doukissis Plakentias", "Δουκίσσης Πλακεντίας", "Dukisës Plakendias", "Doukissis Plakentias")
     return when (route) {
         // Real termini + the major airport-route interchanges (stable stops).
-        "M3" -> listOf(stop("Dimotiko Theatro"), interchange("Syntagma"), interchange("Doukissis Plakentias"), terminal)
-        "A1" -> listOf(stop("Piraeus"), interchange("Athens"), interchange("Doukissis Plakentias"), terminal)
-        "X95" -> listOf(stop("Syntagma"), terminal)
+        "M3" -> listOf(stop(dimotikoTheatro), interchange(syntagma), interchange(doukissis), terminal)
+        "A1" -> listOf(stop(airportText(lang, "Piraeus", "Πειραιάς", "Pireu", "Pireo")), interchange(airportText(lang, "Athens", "Αθήνα", "Athinë", "Atene")), interchange(doukissis), terminal)
+        "X95" -> listOf(stop(syntagma), terminal)
         "X93" -> listOf(stop(airportText(lang, "Kifisos B Station", "ΚΤΕΛ Κηφισού", "Stacioni Kifisos", "Stazione Kifisos")), terminal)
-        "X96" -> listOf(stop(airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo")), terminal)
-        "X97" -> listOf(stop("Elliniko"), terminal)
+        "X96" -> listOf(stop(airportText(lang, "Piraeus", "Πειραιάς", "Pireu", "Pireo")), terminal)
+        "X97" -> listOf(stop(airportText(lang, "Elliniko", "Ελληνικό", "Eliniko", "Elliniko")), terminal)
         else -> listOf(stop(airportText(lang, "City", "Πόλη", "Qyteti", "Città")), terminal)
     }
 }
