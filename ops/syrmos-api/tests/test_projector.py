@@ -2,7 +2,50 @@ import sqlite3
 import unittest
 from datetime import datetime
 
-from syrmos_admin.projector import ATHENS, active_trains, project_next_departures
+from syrmos_admin.projector import (
+    ATHENS,
+    active_trains,
+    project_next_departures,
+    _expand_line_ids,
+    _round_half_up,
+)
+
+
+class Line3AirportOnlyStationsTest(unittest.TestCase):
+    """Parity #9: Peania-Kantza (M3_PEA) and Koropi (M3_KO2) are on the airport
+    branch only, so a query there must NOT project city M3 service (which would
+    show phantom 'towards Doukissis Plakentias' rows the clients never show)."""
+
+    def test_airport_only_station_gets_airport_service_only(self):
+        for sid in ("M3_PEA", "M3_KO2", "M3_PAL", "M3_AER"):
+            self.assertEqual(_expand_line_ids(sid, ["M3"]), ["M3_AIR"], sid)
+
+    def test_city_station_gets_both_city_and_airport(self):
+        self.assertEqual(_expand_line_ids("M3_SYN", ["M3"]), ["M3", "M3_AIR"])
+
+    def test_typoed_ids_are_gone(self):
+        # The old typos (M3_PEK / M3_KRP) do not exist in the data; if they crept
+        # back, the real station ids would wrongly get city service again.
+        from syrmos_admin.projector import LINE3_AIRPORT_ONLY_STATIONS as S
+        self.assertNotIn("M3_PEK", S)
+        self.assertNotIn("M3_KRP", S)
+        self.assertEqual(S, {"M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"})
+
+
+class RoundHalfUpTest(unittest.TestCase):
+    """Parity #9: the server must round slots half up to match all three clients
+    (iOS Int(rounded()), Kotlin roundToInt(), JS Math.round()), not banker's."""
+
+    def test_half_rounds_up_not_to_even(self):
+        # 382.5 -> 383 (half up), NOT 382 (banker's would pick the even 382).
+        self.assertEqual(_round_half_up(382.5), 383)
+        self.assertEqual(_round_half_up(383.5), 384)  # banker's would also give 384 here
+        self.assertEqual(_round_half_up(0.5), 1)
+
+    def test_non_half_values_round_to_nearest(self):
+        self.assertEqual(_round_half_up(382.4), 382)
+        self.assertEqual(_round_half_up(382.6), 383)
+        self.assertEqual(_round_half_up(382.0), 382)
 
 
 def make_conn() -> sqlite3.Connection:

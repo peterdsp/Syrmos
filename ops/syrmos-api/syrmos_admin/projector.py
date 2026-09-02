@@ -29,10 +29,25 @@ mirror the change OR be deleted in favour of always calling the API.
 """
 from __future__ import annotations
 
+import math
 import sqlite3
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta, timezone
 from typing import Iterable
+
+
+def _round_half_up(x: float) -> int:
+    """Round a slot minute to the nearest whole minute, half up.
+
+    Python's built-in round() is banker's rounding (half to even), but all three
+    clients round half up: iOS Int(x.rounded()), Kotlin roundToInt() and JS
+    Math.round() are all floor(x + 0.5). Athens metro headways include exact
+    half-integers (7.5, 8.5, 9.5, 12.5 ...), so every odd slot lands on x.5;
+    banker's rounding on the server therefore disagreed with the clients by one
+    minute on ~half of those slots. Match the clients so a rider sees the same
+    time on every platform.
+    """
+    return math.floor(x + 0.5)
 
 # Athens timezone, fixed UTC+2/+3 with DST. Use zoneinfo from stdlib.
 try:
@@ -41,7 +56,14 @@ try:
 except ImportError:  # very old Python; should never happen on the Pi
     ATHENS = timezone(timedelta(hours=2))
 
-LINE3_AIRPORT_ONLY_STATIONS = {"M3_PAL", "M3_PEK", "M3_KRP", "M3_AER"}
+# Peania-Kantza (M3_PEA) and Koropi (M3_KO2) are on the airport branch only, so
+# a city-bound (Doukissis Plakentias) train never reaches them. The ids must
+# match the seed/clients exactly; the earlier M3_PEK/M3_KRP were typos that do
+# not exist in the data, so the guard silently failed and the server emitted
+# phantom "towards Doukissis Plakentias" rows at those two stations that iOS
+# (which uses the correct ids) never showed. See ScheduleProjector.swift /
+# ComputeDeparturesFromBandsUseCase.kt / web-map.js for the canonical set.
+LINE3_AIRPORT_ONLY_STATIONS = {"M3_PAL", "M3_PEA", "M3_KO2", "M3_AER"}
 NEXT_DAY_EXTENSION_CUTOFF_MIN = 5 * 60   # bands < 05:00 count as next-day extension
 AIRPORT_LOOKAHEAD_DAYS = 7
 
@@ -610,7 +632,7 @@ def _project_band(
 
     added = 0
     while slot <= end and added < limit:
-        slot_min = int(round(slot)) + offset
+        slot_min = _round_half_up(slot) + offset
         display_min = ((slot_min % (24 * 60)) + 24 * 60) % (24 * 60)
         time_str = f"{display_min // 60:02d}:{display_min % 60:02d}"
         minutes_away = max(0, slot_min - now_minutes)
@@ -1089,7 +1111,7 @@ def _next_airport_lookahead(
                 while slot + offset < now_minutes:
                     slot += headway
             if slot <= end:
-                total_minutes = int(round(slot)) + offset + day_offset * 24 * 60
+                total_minutes = _round_half_up(slot) + offset + day_offset * 24 * 60
                 display_min = ((total_minutes % (24 * 60)) + 24 * 60) % (24 * 60)
                 time_str = f"{display_min // 60:02d}:{display_min % 60:02d}"
                 minutes_away = max(0, total_minutes - now_minutes)
