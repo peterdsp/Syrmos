@@ -1,8 +1,12 @@
 # Syrmos 2.0.0 release gate
 
-Deadline: 2026-09-02 10:00 Europe/Athens. This is the release-readiness record
-for the 2.0.0 general release. It is a point-in-time snapshot; the machine block
-at the end is the canonical status.
+Deadline: 2026-09-02 10:00 Europe/Athens. **This target was MISSED** (this record
+was finalized at 2026-09-02 10:41 Europe/Athens). This is the release-readiness
+record for the 2.0.0 general release, not a declaration that it shipped: as of
+finalization, client binaries are production-ready and Web is live, but the
+backend server fixes are not deployed, no store upload was performed, and the
+store-console privacy metadata is account-gated. It is a point-in-time snapshot;
+the machine block at the end is the canonical status.
 
 ## Version state (finalized on master)
 
@@ -486,8 +490,9 @@ What this pass did:
 
 ```
 SYRMOS 2.0.0 FINAL GATE
-Deadline: 2026-09-02 10:00 Europe/Athens
-Release candidate: master 1363b4b6
+Deadline (target):  2026-09-02 10:00 Europe/Athens
+Deadline (result):  MISSED (finalized 2026-09-02 10:41 Europe/Athens)
+Release candidate:  master 1363b4b6
 
 WEB
   Production deployment:   VERIFIED LIVE (https://syrmos.peterdsp.dev, deploy of 1363b4b6)
@@ -561,14 +566,31 @@ REMAINING BLOCKERS
                            (3) deploy the server fixes to the Pi (migration 0017 + scraper +
                                projector) to bring Live Production Parity to 26/26 for #12/#9.
 
-FINAL STATUS:
-  Web 2.0.0 LIVE and re-verified after the privacy work. iOS + Android 2.0.0 are
-  production candidates at master 1363b4b6 with a published, in-app-linked privacy
-  policy, minimized permissions, and privacy declarations verified against the
-  code. Signed-artifact + store-validation were re-confirmed on this exact SHA
-  via the CI dry-run (iOS altool "VERIFY SUCCEEDED with no errors"; Android
-  signed AAB validated), with no upload. The mobile/web binaries are store-ready;
-  full production correctness for the two server-side data fixes (#12/#9) remains
-  gated on the human-run Pi deploy. No outward-facing publish was performed and
-  the v2.0.0 tag was NOT pushed.
+FINAL STATUS (separated by category, no category standing in for another):
+
+  CLIENT RELEASE READINESS
+    Web:            production deployed and verified (https://syrmos.peterdsp.dev)
+    iOS 2.0.0:      production artifact signed + App Store validated (CI dry-run; altool ok)
+    Android 2.0.0:  production artifact signed + validated (CI dry-run)
+
+  LIVE PRODUCT READINESS
+    Backend #12/#9 deployment:  NOT COMPLETE (Pi deploy is human-run over the LAN)
+    Live production parity:     NOT YET 26/26 (Android/Web serve pre-fix for #12/#9 until deploy)
+
+  STORE RELEASE
+    TestFlight upload:              NOT PERFORMED
+    Google Play upload:            NOT PERFORMED
+    App Store privacy metadata:    ACCOUNT-GATED (values ready in STORE-PRIVACY-DECLARATIONS-2.0.0.md)
+    Google Play Data Safety:       ACCOUNT-GATED (same source)
+
+  DEADLINE
+    Target:  2026-09-02 10:00 Europe/Athens
+    Result:  MISSED (this record finalized 2026-09-02 10:41 Europe/Athens)
+
+  Honest one-line summary: Syrmos 2.0.0 client binaries are production-ready and
+  deeply validated, and Web is live. Full production parity remains blocked by the
+  Pi deployment of the server fixes, while TestFlight / Google Play upload and the
+  store-console metadata remain human / account-gated. The 10:00 Athens target was
+  missed. Syrmos 2.0.0 is NOT fully released and NOT yet production-complete. No
+  outward-facing publish was performed and the v2.0.0 tag was NOT pushed.
 ```
