@@ -19,6 +19,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build + sign the release AAB and validate it, but do NOT upload to Google Play (release-readiness check only)."
+        type: boolean
+        default: true
 
 concurrency:
   group: release-android-${{ github.ref }}
@@ -84,7 +89,29 @@ jobs:
       - name: Build signed release bundle
         run: ./gradlew :androidApp:bundleRelease
 
+      # Validate the signed artifact: prove it is production-signed by printing
+      # the signing cert's PUBLIC SHA-256 fingerprint (never the private key),
+      # and confirm the JAR/upload signature verifies. Uses only JDK tools.
+      - name: Validate signed AAB
+        run: |
+          set -euo pipefail
+          AAB=androidApp/build/outputs/bundle/release/androidApp-release.aab
+          echo "AAB size: $(du -h "$AAB" | cut -f1)"
+          echo "== signature verification =="
+          jarsigner -verify "$AAB" | head -1
+          echo "== signing certificate (public fingerprint) =="
+          keytool -printcert -jarfile "$AAB" 2>&1 | grep -iE "Owner:|SHA256:" | head -4
+
+      - name: Upload signed AAB (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: androidApp/build/outputs/bundle/release/androidApp-release.aab
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload to Google Play (internal track)
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
