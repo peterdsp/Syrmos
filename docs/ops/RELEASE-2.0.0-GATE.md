@@ -210,7 +210,14 @@ Signed/packaged artifacts:
   Note: the archived app has no `PrivacyInfo.xcprivacy` (no privacy manifest in
   the iOS source tree); see the pre-submission section below.
 
-## Pre-submission: iOS privacy manifest (ITMS-91053)
+## Pre-submission: iOS privacy manifest (ITMS-91053) — RESOLVED (#87)
+
+> Update: this was fixed in-repo (PR #87). `PrivacyInfo.xcprivacy` is now added to
+> all four bundle targets, embedded in the archive, and the signed IPA passes
+> `altool --validate-app` with no errors. The analysis below is retained as the
+> record of how the declarations were derived; the "not fixed in-repo" note that
+> follows is superseded.
+
 
 Real finding from the deep QA (researched against Apple's current required-reason
 API rules). The iOS app ships no `PrivacyInfo.xcprivacy`, but it uses two
@@ -363,4 +370,82 @@ FINAL STATUS:
   Web 2.0.0: LIVE. iOS + Android 2.0.0: PRODUCTION CANDIDATES VALIDATED AND READY
   FOR SUBMISSION at master 3b643377. Remaining action is the human-gated v2.0.0
   tag push (starts the signed store uploads).
+```
+
+## Final gate: release blockers resolved (supersedes the block above)
+
+Release candidate: master `95df9e5c`. The app-binary code is unchanged since
+`cfe36362` (the privacy-manifest commit); `#88` (CI dry-run mode) and `#89`
+(server #9 fixes) do not touch the app binary, so the iOS 132/0 + archive +
+manifest-embedded validation and KMP 356/0/0 hold for this tip (re-confirmed:
+zero app-code files changed `cfe36362..95df9e5c`).
+
+What changed since the earlier block: the two items previously handed back as
+"notes for the human" were done here. The iOS **privacy manifest** is created,
+wired into all four bundles, and proven to pass Apple's own `altool
+--validate-app` (no ITMS-91053). A CI **dry-run mode** now produces the real
+production-signed IPA + AAB and validates them **without publishing**, so the
+signed-artifact and store-validation statuses are VERIFIED rather than assumed.
+The deep #9/#11 analysis found and fixed a hard phantom-rows defect + a rounding
+gap (`#89`). The #12 Pi deploy boundary is proven (SSH to the production server
+is safety-blocked) and production behaviour is documented from the live endpoint.
+
+```
+SYRMOS 2.0.0 FINAL GATE
+Deadline: 2026-09-02 10:00 Europe/Athens
+Release candidate: master 95df9e5c  (app code == cfe36362)
+
+WEB
+  Production deployment:   VERIFIED (https://syrmos.peterdsp.dev; smoke clean, 0 console errors, all 200)
+
+iOS
+  Tests:                   VERIFIED (iosAppTests 132/0)
+  Archive:                 VERIFIED (Release device archive, 2.0.0 / build 138)
+  Privacy manifest:        VERIFIED (PrivacyInfo.xcprivacy embedded in all 4 bundles; correct reason codes)
+  IPA export:              VERIFIED (CI dry-run, real Apple Distribution cert + App Store profiles)
+  App Store validation:    VERIFIED (CI dry-run: altool --validate-app -> "VERIFY SUCCEEDED with no errors")
+  TestFlight upload:       HUMAN-GATED (skipped in dry-run; runs on the v2.0.0 tag)
+
+ANDROID
+  Tests:                   VERIFIED (KMP unit suite 356/0/0)
+  Runtime QA:              VERIFIED (emulator: launch, home, settings, airport+tap-through, station+interchange, map, search, offline+news-cache, reconnect, localization)
+  Persistence QA:          VERIFIED (kill + offline relaunch + reconnect, no corruption)
+  Unsigned/throwaway AAB:  VERIFIED (local: minify + shrink + zipalign + 4 ABIs; versionName 2.0.0 / versionCode 223)
+  Production-signed AAB:   VERIFIED (CI dry-run, real upload keystore CN=Petros Dhespollari, SHA256 59:D5:BF:5F...)
+  Play upload:             HUMAN-GATED (skipped in dry-run; runs on the v2.0.0 tag)
+
+SERVER (deploy-gated on the Pi; SSH to the production server is safety-blocked in this environment)
+  #12 short-turn code:     VERIFIED (projector override + name_en fix; tests 23/23)
+  #9 phantom-rows+round:   VERIFIED (code; Peania-Kantza/Koropi ids + half-up rounding; tests)
+  Migration/deploy:        BLOCKED-EXTERNAL (deploy.sh from the LAN; migration 0017 + scraper)
+  Production behavior:     UNFIXED until deploy (live endpoint confirms M1 last train -> Kifissia, 0 lastTrains)
+
+PARITY (26 audited)
+  Fixed (user-visible):                       23
+  User-visible intentional differences:       0
+  Implementation-only / cosmetic (verified):  2  (#11 confidence chip wording, #21 map-motion engine)
+  External-blocked:                           1  (#10 OASA live arrivals, needs the Pi endpoint)
+
+SECURITY / CONFIG
+  Secrets:                 CLEAN (all env-based, none committed)
+  Transport security:      VERIFIED (ATS enforced, no arbitrary loads, no TLS bypass)
+  Release hardening:       VERIFIED (no debuggable release, no debug entitlements, no dev flags)
+  Export compliance:       VERIFIED (ITSAppUsesNonExemptEncryption=false)
+
+STORE READINESS
+  App icons / release notes / usage strings:  PRESENT
+  Privacy-policy URL:      MISSING (both stores require one) -> legal content + console entry (human)
+  Listings/screenshots/Data-Safety/labels:    CONSOLE-ONLY (human/account-gated)
+
+BLOCKERS
+  P0 / P1 (engineering):   0
+  Human-gated:             v2.0.0 tag push (starts signed uploads); TestFlight + Play uploads;
+                           privacy-policy URL; Pi deploy of the server fixes (#12/#9).
+
+FINAL STATUS:
+  Web 2.0.0 LIVE. iOS + Android 2.0.0 production candidates VALIDATED at master
+  95df9e5c, with production-signed artifacts + App Store validation proven in CI
+  and no outward-facing publish performed. Every remaining item is a human /
+  account / external-network action, each proven and enumerated above. The
+  v2.0.0 tag was NOT pushed.
 ```
