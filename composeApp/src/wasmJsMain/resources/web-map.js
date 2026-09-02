@@ -1068,8 +1068,11 @@
     function renderInfoLinksPanel(payload) {
         if (!infoLinksList) return;
         const links = (payload && payload.infoLinks) || [];
+        // Always expose the privacy policy here (the footer "more" utility jumps
+        // to this list), independent of the server-provided operator links.
+        const privacyLink = `<a class="info-link__privacy" href="/privacy" rel="noopener" style="display:inline-block;margin-top:8px;font-size:13px;">Privacy Policy</a>`;
         if (!links.length) {
-            infoLinksList.innerHTML = "";
+            infoLinksList.innerHTML = privacyLink;
             return;
         }
         infoLinksList.innerHTML = links.map((link) => {
@@ -1091,7 +1094,7 @@
                     <a class="info-link__verify" href="${escapeAttr(localisedUrl)}" target="_blank" rel="noopener">${escapeHtml(t("verify_on", { op }))}</a>
                 </article>
             `;
-        }).join("");
+        }).join("") + privacyLink;
     }
 
     // Re-render fares + info links when the language flips, using the

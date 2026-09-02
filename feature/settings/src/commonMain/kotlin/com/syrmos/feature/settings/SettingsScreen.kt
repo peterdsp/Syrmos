@@ -520,6 +520,18 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp),
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                SettingsRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Πολιτικη απορρητου"
+                        AppLanguage.ALBANIAN -> "Politika e privatesise"
+                        AppLanguage.ITALIAN -> "Informativa sulla privacy"
+                        else -> "Privacy Policy"
+                    },
+                    value = "",
+                    onClick = { uriHandler.openUri("https://syrmos.peterdsp.dev/privacy") },
+                    interactive = true,
+                )
             }
         }
 

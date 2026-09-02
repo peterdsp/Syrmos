@@ -380,6 +380,17 @@ struct SyrmosSettingsView: View {
             Text(loc[.aboutText])
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+            if let url = URL(string: "https://syrmos.peterdsp.dev/privacy") {
+                Link(destination: url) {
+                    Label(
+                        loc.language == .greek ? "Πολιτικη απορρητου"
+                            : loc.language == .albanian ? "Politika e privatesise"
+                            : loc.language == .italian ? "Informativa sulla privacy"
+                            : "Privacy Policy",
+                        systemImage: "hand.raised.fill"
+                    )
+                }
+            }
         }
     }
 
