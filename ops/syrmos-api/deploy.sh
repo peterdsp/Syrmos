@@ -26,9 +26,15 @@ ssh "$PI" "mkdir -p $REMOTE_HOME/assets/icons"
 rsync -avz --delete \
   "$REPO_ROOT/assets/athens-transit-package/icons"/ "$PI:$REMOTE_HOME/assets/icons"/
 
-echo ">>> syncing OSM line-geometry to $PI"
+echo ">>> syncing OSM line-geometry to $PI (no --delete: preserve scraper output)"
+# NOTE: no --delete here. The Pi's weekly OSM refresh (refresh_osm_shapes.py)
+# generates geometry for lines that are NOT committed to the repo (the non-Athens
+# lines TM1/TM2/AL1/PS1/DK1). A mirroring --delete would wipe those on every
+# deploy, 404-ing them until the next weekly refresh (and a deploy landing during
+# an Overpass outage would leave them missing for a while). We only push/refresh
+# the committed geometry and leave the scraper's extra files in place.
 ssh "$PI" "mkdir -p $REMOTE_HOME/assets/line-geometry"
-rsync -avz --delete \
+rsync -avz \
   "$REPO_ROOT/assets/line-geometry"/ "$PI:$REMOTE_HOME/assets/line-geometry"/
 
 echo ">>> installing venv + deps"
