@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Privacy Policy — Syrmos</title>
+  <meta name="description" content="Syrmos privacy policy: what data the Athens transit app uses, what stays on your device, and the few third-party services it talks to. No accounts, no tracking, no ads.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://syrmos.peterdsp.dev/privacy">
+  <meta name="theme-color" content="#0072CE">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <style>
+    :root {
+      --brand: #1466B8; --brand-strong: #0F4E8C;
+      --bg: #F7F5F1; --bg-muted: #EFEBE4; --card: #FFFFFF;
+      --text: #14181F; --text-muted: #5B636E; --outline: #E0DACF;
+      --good: #00843D; --stop: #DA291C;
+      --maxw: 760px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --brand: #6BA8E6; --brand-strong: #9CC5F0;
+        --bg: #14181F; --bg-muted: #1B2028; --card: #1E242D;
+        --text: #ECEFF3; --text-muted: #A2ABB6; --outline: #2C333D;
+        --good: #4CC38A; --stop: #F98C82;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 0 20px env(safe-area-inset-bottom, 24px);
+    }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 32px 0 64px; }
+    header { border-bottom: 2px solid var(--outline); padding-bottom: 20px; margin-bottom: 8px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 40px; height: 40px; border-radius: 9px; }
+    .brand .name { font-size: 20px; font-weight: 700; letter-spacing: .2px; }
+    h1 { font-size: 30px; line-height: 1.2; margin: 20px 0 6px; }
+    h2 { font-size: 20px; margin: 34px 0 10px; padding-top: 6px; }
+    h3 { font-size: 16px; margin: 20px 0 6px; color: var(--brand-strong); }
+    .meta { color: var(--text-muted); font-size: 14px; }
+    a { color: var(--brand); }
+    p, li { color: var(--text); }
+    ul { padding-left: 22px; }
+    li { margin: 6px 0; }
+    .lead { font-size: 18px; color: var(--text); }
+    .callout {
+      background: var(--card); border: 1px solid var(--outline); border-radius: 14px;
+      padding: 16px 18px; margin: 18px 0;
+    }
+    .callout.good { border-left: 4px solid var(--good); }
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14.5px; display: block; overflow-x: auto; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--outline); vertical-align: top; }
+    th { color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+    code { background: var(--bg-muted); padding: 1px 6px; border-radius: 6px; font-size: 13.5px; }
+    footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--outline); color: var(--text-muted); font-size: 14px; }
+    .back { display: inline-block; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img src="/favicon.png" alt="Syrmos logo" width="40" height="40">
+        <span class="name">Syrmos</span>
+      </div>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Effective 2 September 2026 &middot; Last updated 2 September 2026</p>
+    </header>
+
+    <p class="lead">Syrmos is a free, offline-first app for public transport in Greece
+    (Athens Metro, Tram, Suburban Railway, and intercity/regional rail). This policy
+    describes exactly what data the app uses, what stays on your device, and the small
+    number of outside services it talks to. It is written from the app's actual code.</p>
+
+    <div class="callout good">
+      <strong>The short version.</strong> Syrmos has <strong>no accounts and no login</strong>.
+      It uses <strong>no analytics, no advertising, no third-party trackers, no crash-reporting
+      SDKs, and no advertising identifiers</strong>. It does not build a profile of you and does
+      not sell or share personal data. Your settings, favourites, and history stay on your
+      device. What leaves your device is what is technically required to show a map, the weather,
+      live transit times, and (when online) to answer an assistant question &mdash; none of which
+      identifies you &mdash; plus anything you deliberately send, such as feedback or an anonymous
+      community status report.
+    </div>
+
+    <h2>Who we are</h2>
+    <p>Syrmos is developed and operated by Petros Dhespollari (the developer). You can reach us
+    about privacy at <a href="mailto:info@peterdsp.dev">info@peterdsp.dev</a>. Syrmos is an
+    independent app and is not operated by or affiliated with any transit authority (STASY, OASA,
+    OSY, Hellenic Train, OSETH, or others); it displays public and official information about
+    their services.</p>
+
+    <h2>What Syrmos does <em>not</em> do</h2>
+    <ul>
+      <li>No user accounts, sign-in, email, or phone number.</li>
+      <li>No analytics or usage-measurement SDKs (no Google Analytics, Firebase Analytics, Amplitude, Mixpanel, Segment, or similar).</li>
+      <li>No advertising and no ad networks.</li>
+      <li>No cross-app or cross-site tracking; no App Tracking Transparency prompt because nothing is tracked.</li>
+      <li>No advertising identifier (IDFA), no device fingerprinting.</li>
+      <li>No third-party crash-reporting or attribution SDKs.</li>
+      <li>No sale or sharing of personal data with data brokers.</li>
+    </ul>
+    <p>These are not just promises; the app ships with none of those SDKs.</p>
+
+    <h2>Data the app uses, and where it goes</h2>
+    <p>The table lists every kind of data the app touches. "On device" means it never leaves your
+    phone or computer.</p>
+
+    <table>
+      <thead><tr><th>Data</th><th>Leaves device?</th><th>Sent to</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Settings &amp; preferences (language, theme, notification toggles, default region)</td><td>No &mdash; on device</td><td>&mdash;</td><td>Remember how you like the app</td></tr>
+        <tr><td>Favourites &amp; recently viewed stations</td><td>No &mdash; on device</td><td>&mdash;</td><td>Quick access, home &amp; widgets</td></tr>
+        <tr><td>Approximate/precise location</td><td>Only as noted below</td><td>See "Location"</td><td>Find the nearest stations; local weather</td></tr>
+        <tr><td>Transit queries (station and line identifiers, the time)</td><td>Yes, when online</td><td>Syrmos API (<code>api-syrmos.peterdsp.dev</code>)</td><td>Live departure times, service alerts, live vehicle positions</td></tr>
+        <tr><td>Weather request (coordinates)</td><td>Yes, when shown</td><td>Open-Meteo (<code>api.open-meteo.com</code>)</td><td>Local weather (approximate location on Android; a city/station location on iOS and web)</td></tr>
+        <tr><td>Map tile requests (map area / zoom)</td><td>Yes, when the map is shown</td><td>Map tile providers (see below)</td><td>Draw the map background</td></tr>
+        <tr><td>Assistant (Ariadne) question text</td><td>Yes, when answered online</td><td>Syrmos API &rarr; AI providers</td><td>Answer your transit question</td></tr>
+        <tr><td>AI model file</td><td>Download only</td><td>Model host (see below)</td><td>Optional on-device assistant</td></tr>
+        <tr><td>Calendar events (if you allow it)</td><td>No &mdash; on device</td><td>&mdash;</td><td>Suggest when to leave for the airport</td></tr>
+        <tr><td>Feedback you send (message, optional email/attachment)</td><td>Only when you submit it</td><td>Syrmos API</td><td>Contact the developer / report a problem</td></tr>
+        <tr><td>Community status reports (anonymous)</td><td>Only when you submit one</td><td>Syrmos API</td><td>Share/see crowding &amp; delay signals for a stop</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Location</h3>
+    <p>If you grant location permission, Syrmos uses your location to find the metro, tram, and
+    railway stations nearest to you and to show relevant departures. Nearest-station matching is
+    computed on your device against the app's built-in station list. Your location is not stored
+    on any server and is not used to identify or track you. When the app shows local weather, it
+    sends coordinates to the weather service (below) to get the forecast for that area. You can
+    change or revoke location access at any time in your device settings; the app still works
+    without it.</p>
+
+    <h3>Notifications</h3>
+    <p>If you enable notifications, Syrmos schedules them <strong>locally on your device</strong>
+    (for example service alerts or weather warnings). There is no remote push server that targets
+    you individually.</p>
+
+    <h3>Ariadne assistant</h3>
+    <p>Ariadne answers plain-language questions about Greek transit. When you are online, your
+    question is sent to the Syrmos API (<code>api-syrmos.peterdsp.dev/api/ariadne/chat</code>) to
+    generate a richer answer; the Syrmos service in turn relays your question to third-party AI
+    language-model providers (such as Google Gemini, Groq, and SambaNova). Only the text you type
+    is sent &mdash; on mobile, the last few messages of the current conversation for context; on
+    the web, the single question plus your language. <strong>No location, device identifier, or
+    account is attached</strong>, because there is none. When you are offline (or the assistant is
+    set to on-device mode), Ariadne answers on your device using a built-in parser and an optional
+    downloaded language model, with no network request at all. Your conversation is kept on your
+    device and is not stored under an account.</p>
+
+    <h3>Siri &amp; app shortcuts (iOS)</h3>
+    <p>Syrmos offers Siri shortcuts (for example "next departures"). Siri processing follows
+    Apple's platform privacy; Syrmos does not receive additional personal data through it.</p>
+
+    <h3>Widgets &amp; Apple Watch</h3>
+    <p>The home-screen widgets and the Apple Watch app show the same transit information as the
+    app. They share your saved station/preferences with the main app through a private on-device
+    app group; that shared data does not leave your device except through the same transit and
+    map requests described above.</p>
+
+    <h3>Feedback and problem reports</h3>
+    <p>If you use the in-app "Contact the developer" form, the message you write is sent to the
+    Syrmos API. You may optionally include an email address (only if you want a reply) and, on iOS,
+    an optional photo or video you choose to attach; a short technical string with your app version
+    and device model/OS is included to help diagnose issues. This is only sent when you submit the
+    form.</p>
+
+    <h3>Community status (Ichnos)</h3>
+    <p>Syrmos lets riders share quick, <strong>anonymous</strong> status signals for a stop or line
+    (for example "crowded" or "delay"). If you submit one, the app sends the signal, the stop/line
+    it applies to, and a random one-off report token &mdash; <strong>not</strong> a device or user
+    identifier &mdash; to the Syrmos API, where it is kept only temporarily. These reports are
+    community observations, not official operator announcements, and are not linked to you.</p>
+
+    <h3>Diagnostics (iOS)</h3>
+    <p>On iOS, Syrmos keeps a small local diagnostics log (using Apple's MetricKit and an on-device
+    breadcrumb buffer) to help investigate crashes or hangs. It stays on your device and is only
+    ever shared if you explicitly tap "Share" in the diagnostics screen. It is never uploaded
+    automatically.</p>
+
+    <h2>Third-party services</h2>
+    <p>Syrmos talks to a small set of services purely to provide its features. It does not send
+    them your identity, and it does not embed their advertising or analytics.</p>
+    <ul>
+      <li><strong>Syrmos API</strong> (<code>api-syrmos.peterdsp.dev</code>) &mdash; the developer's own backend for live departures, service alerts, live vehicle positions, news, fares, community status, feedback, and the assistant. Requests carry transit identifiers (station/line IDs) and the time, not your identity.</li>
+      <li><strong>Open-Meteo</strong> (<code>api.open-meteo.com</code>) &mdash; free weather forecasts; receives coordinates (approximate on Android, a city/station location on iOS and web).</li>
+      <li><strong>Map tiles</strong> &mdash; Esri/ArcGIS map tiles on all platforms, plus CARTO tiles for the Android station mini-map; the web map library (Leaflet) loads from a public CDN. These receive the map area/zoom, not user data.</li>
+      <li><strong>AI language-model providers</strong> &mdash; when Ariadne answers online, the Syrmos service relays your question to third-party AI providers (such as Google Gemini, Groq, and SambaNova) to generate the reply.</li>
+      <li><strong>AI model host</strong> (Hugging Face) &mdash; if you opt in to the on-device assistant, its model file is downloaded from here; a one-way download, nothing is uploaded.</li>
+    </ul>
+    <p>These providers process requests under their own privacy policies. All requests are made over
+    encrypted HTTPS connections. As with any internet service, the servers and content delivery
+    networks the app contacts can see your device's <strong>IP address</strong>; Syrmos does not use
+    it to identify or track you.</p>
+
+    <h2>Storage, retention, and deletion</h2>
+    <p>Your preferences, favourites, history, downloaded assistant model, and conversations are
+    stored <strong>on your device</strong>. Because Syrmos has no account, there is no server-side
+    profile of you to request or delete. To remove everything Syrmos stores locally, delete the app
+    (or, on the web, clear the site's data in your browser). The Syrmos API keeps standard,
+    short-lived operational request logs to run and protect the service; anonymous community status
+    reports are kept only temporarily; and if you send feedback, the developer keeps your message
+    (and any email you chose to give) for as long as needed to respond. None of this is used to
+    build a profile of you. For a request about feedback you have sent, email us at the address
+    below.</p>
+
+    <h2>Children</h2>
+    <p>Syrmos is a general-audience transit utility and is not directed to children, and it does
+    not knowingly collect personal information from children.</p>
+
+    <h2>External links</h2>
+    <p>The app links out to official transit operators (for example STASY, OASA, Hellenic Train,
+    OSETH) for tickets or timetables, and to the app stores. On the web, a "directions" button can
+    open Google Maps with your current location as the starting point &mdash; only when you tap it.
+    These destinations have their own privacy policies.</p>
+
+    <h2>Your choices</h2>
+    <ul>
+      <li>Grant or revoke location, notifications, calendar, and Siri access in your device settings.</li>
+      <li>Turn features off in the app's settings.</li>
+      <li>Delete the app to remove all locally stored data.</li>
+    </ul>
+
+    <h2>Changes to this policy</h2>
+    <p>If this policy changes, we will update the date at the top and post the new version at this
+    URL. Material changes will be reflected here before they take effect.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about privacy? Email <a href="mailto:info@peterdsp.dev">info@peterdsp.dev</a>.</p>
+
+    <footer>
+      <p>Syrmos &middot; Athens &amp; Greece public transport &middot; independent app.</p>
+      <a class="back" href="/">&larr; Back to Syrmos</a>
+    </footer>
+  </div>
+</body>
+</html>
