@@ -594,3 +594,31 @@ FINAL STATUS (separated by category, no category standing in for another):
   missed. Syrmos 2.0.0 is NOT fully released and NOT yet production-complete. No
   outward-facing publish was performed and the v2.0.0 tag was NOT pushed.
 ```
+
+## Canonical release sequence from here (operator runbook)
+
+The remaining work is operational, not code. Run it in this order; the ordering
+matters, because tagging before the backend is deployed would ship 2.0.0 clients
+that knowingly point at a backend still serving the old incorrect behaviour.
+
+1. **Deploy the backend to the Pi.** `PI=syrmos-pi bash ops/syrmos-api/deploy.sh`
+   (over the LAN; applies migration 0017, runs the scrapers including the
+   now-wired last-train scraper, reloads). See `PI-DEPLOY-CHECKLIST-2.0.0.md`.
+2. **Verify #12 and #9 against the production API and one client.** Use the exact
+   assertions in `PI-DEPLOY-CHECKLIST-2.0.0.md`: `/api/schedules/M1` returns
+   `lastTrains` count > 0 and the M1 short-turn slot's terminus is its real
+   short-turn end (e.g. Omonia), not Kifissia; `/api/departures/next` at
+   `M3_PEA`/`M3_KO2` shows no phantom "towards Doukissis Plakentias" rows; and a
+   half-integer-headway slot rounds half-up. Confirm the same through one client.
+3. **Confirm production Web remains healthy.** `/` and `/privacy` return 200, live
+   feed present, 0 console errors.
+4. **Enter the store-console privacy metadata.** App Store Connect App Privacy and
+   Play Data Safety, plus the privacy-policy URL (https://syrmos.peterdsp.dev/privacy),
+   from `STORE-PRIVACY-DECLARATIONS-2.0.0.md` (account-gated).
+5. **Push the `v2.0.0` tag.** `git tag -a v2.0.0 -m "Syrmos 2.0.0" && git push origin v2.0.0`
+   (starts the real TestFlight + Play release workflows).
+6. **Verify TestFlight and Google Play processing actually succeeds** (build
+   processes, no rejection).
+
+Only after steps 1-6 pass can Syrmos 2.0.0 be legitimately called
+production-complete.
