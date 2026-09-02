@@ -1,0 +1,5 @@
+# Dev/test-only dependencies for the Syrmos API. Kept out of requirements.txt so
+# the Pi runtime install stays minimal. Install with:
+#   pip install -r requirements.txt -r requirements-dev.txt
+-r requirements.txt
+pytest>=8,<9
