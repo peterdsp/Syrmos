@@ -71,9 +71,16 @@ against, so planner/GO logic cannot drift. No risky client-unification refactor 
 
 ## PRs
 
-- Opened: (none yet)
-- Merged this session: (none yet)
-- Awaiting CI: (none yet)
+- **Merged this session:** #104 backend pytest CI gate (139 tests, all green on CI py3.11, 18s job);
+  #103 docs 3.0 Journeys thesis + stale-roadmap fix.
+- **Open:** #105 web JS test harness (10/10 local; CI pending). Edits ci.yml after kmp-tests (no
+  conflict with #104's backend job which sits after iOS).
+
+## Findings this session
+
+- T7 tram coords disagree between seed/lines.json and stations.json for 6 stops (T7_DIM/PLA/EVA/GRI/MIK/GIP,
+  up to ~490m). Tracked as spawn_task task_29952061; guarded loosely in web-tests/topology-integrity.test.js.
+  NOT a shipped regression (2.0.0 shipped with it). Determine authoritative source before fixing.
 
 ## Findings / bugs (audit)
 
