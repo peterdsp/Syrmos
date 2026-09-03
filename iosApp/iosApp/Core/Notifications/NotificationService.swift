@@ -171,6 +171,50 @@ final class NotificationService: ObservableObject {
 
     // MARK: - Seen Alert Storage
 
+    // MARK: - GO get-off alert (live guidance)
+
+    /// Fire an immediate local notification telling the rider to get off at the
+    /// next stop. `station` is the alight stop; `transferTo` is the line to change
+    /// to, or nil when it is the destination.
+    func fireGetOffAlert(station: String, isDestination: Bool, transferTo: String?, language lang: AppLanguage) {
+        guard isAuthorized else { return }
+        let content = UNMutableNotificationContent()
+        switch lang {
+        case .greek: content.title = "Αποβίβαση στην επόμενη"
+        case .albanian: content.title = "Zbrit në ndalesën tjetër"
+        case .italian: content.title = "Scendi alla prossima"
+        default: content.title = "Get off next"
+        }
+        content.body = getOffBody(station: station, isDestination: isDestination, transferTo: transferTo, language: lang)
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "syrmos.go.getoff.\(station)",
+            content: content,
+            trigger: nil // immediate
+        )
+        center.add(request)
+    }
+
+    private func getOffBody(station: String, isDestination: Bool, transferTo: String?, language lang: AppLanguage) -> String {
+        if isDestination {
+            switch lang {
+            case .greek: return "\(station) — ο προορισμός σου."
+            case .albanian: return "\(station) — destinacioni yt."
+            case .italian: return "\(station) — la tua destinazione."
+            default: return "\(station) — your destination."
+            }
+        }
+        if let transferTo {
+            switch lang {
+            case .greek: return "\(station) → αλλαγή σε \(transferTo)."
+            case .albanian: return "\(station) → ndërro në \(transferTo)."
+            case .italian: return "\(station) → cambia in \(transferTo)."
+            default: return "\(station) → change to \(transferTo)."
+            }
+        }
+        return station
+    }
+
     private func loadSeenAlertIds() -> Set<String> {
         let array = UserDefaults.standard.stringArray(forKey: seenAlertsKey) ?? []
         return Set(array)

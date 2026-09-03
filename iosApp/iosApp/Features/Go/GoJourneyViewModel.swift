@@ -10,11 +10,24 @@ import SwiftUI
 final class GoJourneyViewModel: ObservableObject {
     let journey: GuidanceJourney
     @Published private(set) var position: GuidancePosition
+    @Published private(set) var isLive = false
 
-    init(journey: GuidanceJourney) {
+    /// Stop coordinates by id, for live GPS advance. Empty = manual-only.
+    private let coords: [String: GoLocationAdvancer.Coord]
+    /// Legs whose get-off cue has already fired, so it fires at most once per leg.
+    private var alertedLegs: Set<Int> = []
+    /// Called once per leg when the rider reaches its get-off point (the view wires
+    /// this to a local notification + haptic). Kept out of the view model so it
+    /// stays free of NotificationService and unit-testable.
+    var onGetOffAlert: ((JourneyGuidance) -> Void)?
+
+    init(journey: GuidanceJourney, coords: [String: GoLocationAdvancer.Coord] = [:]) {
         self.journey = journey
+        self.coords = coords
         self.position = GuidancePosition(legIndex: 0, stopIndex: 0)
     }
+
+    var canGoLive: Bool { !coords.isEmpty }
 
     // MARK: Derived state
 
@@ -62,5 +75,25 @@ final class GoJourneyViewModel: ObservableObject {
         }
     }
 
-    func reset() { position = GuidancePosition(legIndex: 0, stopIndex: 0) }
+    func reset() {
+        position = GuidancePosition(legIndex: 0, stopIndex: 0)
+        alertedLegs.removeAll()
+    }
+
+    // MARK: Live GO
+
+    func startLive() { guard canGoLive else { return }; isLive = true }
+    func stopLive() { isLive = false }
+
+    /// Feed a GPS fix while live: auto-advance to the reached stop and fire the
+    /// get-off cue once per leg. No-op when not live or without coordinates.
+    func applyLocation(lat: Double, lon: Double) {
+        guard isLive, !coords.isEmpty else { return }
+        let next = GoLocationAdvancer.advancedPosition(journey: journey, current: position, coords: coords, lat: lat, lon: lon)
+        if next != position { position = next }
+        if JourneyGuidance.shouldAlertGetOff(journey, position), !alertedLegs.contains(position.legIndex) {
+            alertedLegs.insert(position.legIndex)
+            if let g = try? JourneyGuidance.at(journey, position) { onGetOffAlert?(g) }
+        }
+    }
 }

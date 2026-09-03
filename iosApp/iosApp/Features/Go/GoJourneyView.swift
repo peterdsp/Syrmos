@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // The GO screen: guide the rider through a planned journey one instruction at a
 // time (board / stay on / get off next / change here / arrived). The current
@@ -8,12 +9,13 @@ import SwiftUI
 // labelled "Next stop" rather than implying live tracking.
 struct GoJourneyView: View {
     @StateObject private var model: GoJourneyViewModel
+    @StateObject private var location = LocationService()
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
 
-    init(journey: GuidanceJourney, language: AppLanguage) {
-        _model = StateObject(wrappedValue: GoJourneyViewModel(journey: journey))
+    init(journey: GuidanceJourney, language: AppLanguage, coords: [String: GoLocationAdvancer.Coord] = [:]) {
+        _model = StateObject(wrappedValue: GoJourneyViewModel(journey: journey, coords: coords))
         self.language = language
         self.originName = journey.legs.first?.stops.first?.name ?? ""
         self.destinationName = journey.legs.last?.stops.last?.name ?? ""
@@ -32,6 +34,7 @@ struct GoJourneyView: View {
                 .tint(tint)
                 .padding(.horizontal)
             controls
+            if model.canGoLive { liveToggle }
             Spacer()
             footnote
         }
@@ -39,6 +42,51 @@ struct GoJourneyView: View {
         .navigationTitle("GO")
         .navigationBarTitleDisplayMode(.inline)
         .animation(.easeInOut(duration: 0.2), value: model.position)
+        .onAppear {
+            model.onGetOffAlert = { guidance in fireGetOff(guidance) }
+            Task { await NotificationService.shared.requestAuthorization() }
+        }
+        .onReceive(location.$currentLocation) { loc in
+            if let loc { model.applyLocation(lat: loc.coordinate.latitude, lon: loc.coordinate.longitude) }
+        }
+    }
+
+    private var liveToggle: some View {
+        Button {
+            if model.isLive {
+                model.stopLive()
+            } else {
+                location.requestIfNeeded()
+                model.startLive()
+            }
+        } label: {
+            Label(
+                model.isLive
+                    ? t("Live guidance on", "Ζωντανή καθοδήγηση ενεργή", "Udhëzim i drejtpërdrejtë aktiv", "Guida dal vivo attiva")
+                    : t("Start live guidance", "Έναρξη ζωντανής καθοδήγησης", "Nis udhëzimin e drejtpërdrejtë", "Avvia guida dal vivo"),
+                systemImage: model.isLive ? "location.fill" : "location"
+            )
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(model.isLive ? .green : .accentColor)
+    }
+
+    private func fireGetOff(_ guidance: JourneyGuidance) {
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        #endif
+        switch guidance {
+        case let .getOffNext(nextStation, isDestination, transferTo):
+            NotificationService.shared.fireGetOffAlert(
+                station: nextStation, isDestination: isDestination, transferTo: transferTo, language: language)
+        case let .board(_, _, _, nextStation):
+            // 2-stop leg: the get-off cue coincides with boarding.
+            NotificationService.shared.fireGetOffAlert(
+                station: nextStation, isDestination: false, transferTo: nil, language: language)
+        default:
+            break
+        }
     }
 
     private var header: some View {
