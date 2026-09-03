@@ -69,6 +69,33 @@ against, so planner/GO logic cannot drift. No risky client-unification refactor 
 | E | GO get-off alert + journey state machine (iOS first, verifiable) | PLANNED | XCTest/sim | lowest-effort product spine |
 | F | README/roadmap staleness fixes | PLANNED | n/a | README says "iOS 1.0.5" (stale); Appendix K roadmap stale |
 
+## MILESTONE: v3.0.0-beta.1 DELIVERED (04:22 EEST)
+
+The first 3.0 beta is TAGGED (`v3.0.0-beta.1`, master @ f8742244) and **UPLOADED**: Release iOS ->
+`Archive + upload to TestFlight: success`; Release Android -> `Signed AAB to Play (internal track): success`.
+Both gated by full CI (dry-runs validated the signed IPA/AAB against ASC/Play first). TestFlight then
+processes the build asynchronously before testers see it (not monitorable from here; the dry-run validated
+the IPA so processing should pass).
+
+### beta.2 in progress (open PRs)
+- #114 iOS GPS-proximity advancer (pure core of live GO) — 6/6 local, CI running.
+- #115 web GO — JS planner + panel, node 20/20 + BROWSER-VERIFIED (harness screenshot: board -> get-off card).
+  Not yet wired into the app's Plan workspace (can't build Compose/Wasm locally, no JDK; wiring verifies on
+  Pages deploy).
+Contents: GO engine on all 4 targets + server, iOS visible GO journey screen (internal-build-gated),
+planner->GO connection, backend+web test gates, T7 reconcile, CI flake fix. 11 PRs merged (#103-#113).
+Web auto-deploys via Pages from the master push.
+
+### beta.2 backlog (next 3.0 increments, pick by value/verifiability)
+- **Live GO (iOS)** — GPS proximity auto-advance + a get-off local notification (+haptic), so GO stops being
+  a manual preview and delivers the real reassurance. Ungate from internal once live. macos-verifiable
+  (simulate location). The research's #1 signature feature.
+- **Android/web GO UI parity** — web needs a JS planner port (planDetailed) since it plans only via Ariadne
+  text today; then a GO panel using web-go.js (browser-verifiable). Android: a Compose GO screen over
+  GoGuidance (CI-verify).
+- **Journey confidence (pillar 2)** — "you'll make it / tight transfer / take the next one"; can enhance the
+  existing Ariadne route answers (not purely dormant).
+
 ## Progress log (03:35 EEST)
 
 Merged (8): #103 thesis, #104 backend pytest gate, #105 web harness, #107 KMP GO, #106 web+server GO +
