@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Syrmos GO panel harness</title>
+  <style>body{margin:0;padding:24px;background:#fafafa;} #go{margin:0 auto;}</style>
+</head>
+<body>
+  <!-- Manual browser harness (not part of the app or the deployed bundle): mounts
+       the GO panel over a planned journey so the rendered UI can be eyeballed.
+       Load order matters (web-go defines SyrmosGO, then planner, then panel). -->
+  <div id="go"></div>
+  <script src="../composeApp/src/wasmJsMain/resources/web-go.js"></script>
+  <script src="../composeApp/src/wasmJsMain/resources/web-planner.js"></script>
+  <script src="../composeApp/src/wasmJsMain/resources/web-go-panel.js"></script>
+  <script>
+    // A representative M2 -> M3 transfer journey (Larissa Station -> Airport).
+    const journey = {
+      legs: [
+        { lineId: 'M2', towards: 'Syntagma', stops: [
+          { id: 'M2_LAR', name: 'Larissa Station' }, { id: 'M2_MET', name: 'Metaxourgeio' },
+          { id: 'M2_OMO', name: 'Omonia' }, { id: 'M2_SYN', name: 'Syntagma' } ] },
+        { lineId: 'M3', towards: 'Airport', stops: [
+          { id: 'M3_SYN', name: 'Syntagma' }, { id: 'M3_EVA', name: 'Evangelismos' },
+          { id: 'M3_MEG', name: 'Megaro Moussikis' } ] },
+      ],
+    };
+    const colors = { M1: '#009640', M2: '#e30613', M3: '#0072CE' };
+    window.__go = SyrmosGoPanel.mount(document.getElementById('go'), journey, {
+      language: 'en',
+      lineColor: (id) => colors[id] || '#0072CE',
+    });
+  </script>
+</body>
+</html>
