@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 1.4.0** (App Store, build 115), **Android 1.4.0** (Play, versionCode 138), **Web** (rolling). **2.0.0 GA release candidate:** iOS build **138**, Android versionCode **223** (supersedes the beta series that ended at 2.0.0-beta.23, iOS build 137 / Android versionCode 222). Burned Android version codes never reusable: 105, 106, 109-138, and 200-222; the next release must use 223+.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train opening:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0** / versionCode **224**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-223; the next release must use 224+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
@@ -10,22 +10,38 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
-## Unreleased - 3.0.0 "Journeys"
+## 3.0.0-beta.1 - 2026-09-03
 
-Direction defined in [docs/plans/3.0-JOURNEYS.md](docs/plans/3.0-JOURNEYS.md): evolve Syrmos from a
-next-departure companion into an end-to-end journey companion (plan A to B, journey confidence and
-last-train-home, and GO live trip guidance that tells you board / ride / get off next / change here without
-opening the app). Landing incrementally behind the 3.0 beta train.
+The first beta of **3.0 "Journeys"** ([docs/plans/3.0-JOURNEYS.md](docs/plans/3.0-JOURNEYS.md)): the shift
+from a next-departure companion to an end-to-end journey companion (plan A to B, then be guided through the
+ride, board / ride / get off next / change here, without opening the app). This beta lands the GO engine
+across every platform and the first visible GO experience on iOS.
 
-- **GO trip-guidance engine (core).** The pure, offline, deterministic core of GO live guidance: given a
-  planned journey (legs of ordered stops) and the rider's current stop, it returns the one instruction that
-  matters now (board, ride, get off next, transfer, arrived) and a single get-off-alert predicate. Shipped as
-  implementations kept in lockstep by one cross-client golden contract
-  (`fixtures/go-guidance/cases.json`). The web (`web-go.js`) and server (`go_guidance.py`) engines land
-  first, gated in CI (14 web `node:test`, 16 backend `pytest`); the iOS (Swift) and Android/KMP (Kotlin)
-  ports follow against the same fixtures. Not yet wired into any client UI (feature-flag-dormant).
-- **Test + release engineering.** Backend API tests (139) now run as a CI gate; a zero-dependency web JS test
-  harness gates the web client (guardrails for shipped-and-fixed bug classes + a bundled-seed contract).
+- **GO trip-guidance engine, all four targets.** The pure, offline, deterministic core of GO: given a planned
+  journey (legs of ordered stops) and the rider's current stop, it returns the one instruction that matters
+  now (board / ride / get off next / transfer / arrived) plus a single get-off-alert predicate. Implemented
+  identically in web (`web-go.js`), server (`go_guidance.py`), iOS (`JourneyGuidance.swift`) and Android/KMP
+  (`GoGuidance.kt`), all validated against one cross-client golden contract
+  (`fixtures/go-guidance/cases.json`, exact-equality). Independently reviewed by Codex: no divergence across
+  a 1,290-state sweep, and the get-off cue is never dropped.
+- **iOS GO journey screen (internal beta only).** A screen that guides a rider through a planned journey one
+  instruction at a time, line-tinted, with the get-off cue emphasised, localized EN/EL/SQ/IT. Reachable from
+  More -> "Journey guide (GO)". Gated behind the internal-build flag, so it ships to TestFlight/internal
+  testers but stays hidden in a public App Store build until live GPS auto-advance and get-off notifications
+  land. Advancing is manual in this beta (step through your journey); live auto-advance is the next phase.
+- **iOS planner -> GO connection.** `JourneyPlanner.planDetailed` exposes each leg's full ordered stop
+  sequence and feeds the GO engine, with no change to the existing Ariadne-facing routing (verified by the
+  full 138-test iOS suite).
+- **Data + release engineering.** The 139-test backend API suite now runs as a CI gate; a zero-dependency web
+  JS test harness gates the web client (guardrails for shipped-and-fixed bug classes + a bundled-seed
+  contract); six T7 tram stop coordinates reconciled to the canonical registry with an exact regression
+  guard; the flaky watchOS-runtime CI step no longer fails iOS workflows.
+
+Known issues / boundaries in this beta: GO is visible on iOS only (Android/web carry the engine but no GO UI
+yet); GO advance is manual, not live; the T7 physical-coordinate source (June 2026 realignment vs. the
+node-referenced package) still needs OSM/field verification before the Pi DB is updated.
+
+iOS 3.0.0 (build auto-stamped) / Android 3.0.0 versionCode 224. Tagged as `v3.0.0-beta.1`.
 
 ## 2.0.0 - 2026-09-02
 
