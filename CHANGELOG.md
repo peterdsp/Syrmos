@@ -10,6 +10,23 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## Unreleased - 3.0.0 "Journeys"
+
+Direction defined in [docs/plans/3.0-JOURNEYS.md](docs/plans/3.0-JOURNEYS.md): evolve Syrmos from a
+next-departure companion into an end-to-end journey companion (plan A to B, journey confidence and
+last-train-home, and GO live trip guidance that tells you board / ride / get off next / change here without
+opening the app). Landing incrementally behind the 3.0 beta train.
+
+- **GO trip-guidance engine (core).** The pure, offline, deterministic core of GO live guidance: given a
+  planned journey (legs of ordered stops) and the rider's current stop, it returns the one instruction that
+  matters now (board, ride, get off next, transfer, arrived) and a single get-off-alert predicate. Shipped as
+  implementations kept in lockstep by one cross-client golden contract
+  (`fixtures/go-guidance/cases.json`). The web (`web-go.js`) and server (`go_guidance.py`) engines land
+  first, gated in CI (14 web `node:test`, 16 backend `pytest`); the iOS (Swift) and Android/KMP (Kotlin)
+  ports follow against the same fixtures. Not yet wired into any client UI (feature-flag-dormant).
+- **Test + release engineering.** Backend API tests (139) now run as a CI gate; a zero-dependency web JS test
+  harness gates the web client (guardrails for shipped-and-fixed bug classes + a bundled-seed contract).
+
 ## 2.0.0 - 2026-09-02
 
 The 2.0.0 general release: the culmination of the 2.0.0-beta.1 through beta.23 line (capsule vehicle markers, the three-column web redesign, anonymous Ichnos community history, the multi-airport hub, the Ariadne assistant with an async cloud provider chain, and proximity-based station interchanges), promoted to production after a full cross-platform QA and parity hardening pass.
