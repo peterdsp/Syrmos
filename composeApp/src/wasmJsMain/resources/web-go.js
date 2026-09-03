@@ -88,6 +88,12 @@
   // from a leg's alight point (works even on a 2-stop leg, where it coincides with
   // boarding). This is the single most-valued transit alert; keep it independent
   // of the display `kind` so a UI can drive the notification off one predicate.
+  //
+  // Consumer note: on a 2-stop leg the guidance kind stays `board` while this is
+  // already true (board + alert), because after boarding the very next stop is the
+  // alight. A consumer that dedupes get-off alerts must key the dedupe on the leg's
+  // alight stop, not on the guidance `kind` becoming `getOffNext` (which never
+  // happens on a 2-stop leg) — otherwise it would drop the rider's only get-off cue.
   function shouldAlertGetOff(journey, position) {
     const l = leg(journey, position.legIndex);
     if (!l) return false;

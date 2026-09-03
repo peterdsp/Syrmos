@@ -98,6 +98,12 @@ def should_alert_get_off(journey: Dict[str, Any], position: Dict[str, int]) -> b
     """Whether a get-off notification should fire now (rider one stop from a leg's
     alight point). Independent of the display kind so a caller can drive the push
     off one predicate; true even on a 2-stop leg where it coincides with boarding.
+
+    Consumer note: on a 2-stop leg the guidance kind stays ``board`` while this is
+    already true (board + alert), because after boarding the very next stop is the
+    alight. A consumer that dedupes get-off alerts must key the dedupe on the leg's
+    alight stop, not on the guidance kind becoming ``getOffNext`` (which never
+    happens on a 2-stop leg), or it would drop the rider's only get-off cue.
     """
     leg = _leg(journey, position["legIndex"])
     if leg is None:

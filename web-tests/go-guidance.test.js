@@ -20,9 +20,10 @@ test('GO engine matches every golden fixture case', () => {
     const journey = FIX.journeys[c.journey];
     assert.ok(journey, `fixture references unknown journey ${c.journey}`);
     const g = GO.guidance(journey, c.position);
-    for (const [k, v] of Object.entries(c.expect)) {
-      assert.deepEqual(g[k], v, `[${c.name}] guidance.${k}: got ${JSON.stringify(g[k])}, want ${JSON.stringify(v)}`);
-    }
+    // Exact-equality against the full expected object (not a subset), so every
+    // rider-facing field (stopsRemaining, nextStation, towards, ...) is part of
+    // the cross-client contract.
+    assert.deepEqual(g, c.expect, `[${c.name}] guidance: got ${JSON.stringify(g)}, want ${JSON.stringify(c.expect)}`);
     assert.equal(
       GO.shouldAlertGetOff(journey, c.position),
       c.alert,

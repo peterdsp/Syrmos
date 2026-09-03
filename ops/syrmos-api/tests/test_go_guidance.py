@@ -19,8 +19,9 @@ with open(_FIXTURE, encoding="utf-8") as fh:
 def test_guidance_matches_golden_fixture(case):
     journey = FIX["journeys"][case["journey"]]
     g = go.guidance(journey, case["position"])
-    for key, want in case["expect"].items():
-        assert g[key] == want, f"guidance.{key}: got {g.get(key)!r}, want {want!r}"
+    # Exact-equality against the full expected object (not a subset), so every
+    # rider-facing field is part of the cross-client contract.
+    assert g == case["expect"], f"guidance: got {g!r}, want {case['expect']!r}"
     assert go.should_alert_get_off(journey, case["position"]) is case["alert"]
 
 

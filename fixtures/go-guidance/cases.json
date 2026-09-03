@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Cross-client golden contract for Syrmos GO live trip guidance (3.0 Journeys). Every client implementation (web JS web-go.js, iOS Swift, Android/KMP Kotlin) must produce the same guidance step and get-off-alert decision for each case. A journey is { legs: [ { lineId, towards, stops: [ {id, name} ] } ] }; a position is { legIndex, stopIndex } meaning the rider is AT legs[legIndex].stops[stopIndex]. Guidance kinds: board | ride | getOffNext | transfer | arrived. `alert` is whether a get-off notification should fire now (rider one stop from a leg's alight point).",
+  "description": "Cross-client golden contract for Syrmos GO live trip guidance (3.0 Journeys). Every client engine (web/iOS/Android/server) must produce the EXACT guidance object and get-off-alert decision for each case. A journey is { legs: [ { lineId, towards, stops: [ {id, name} ] } ] }; a position is { legIndex, stopIndex } meaning the rider is AT legs[legIndex].stops[stopIndex]. Guidance kinds: board | ride | getOffNext | transfer | arrived. `alert` is whether a get-off notification should fire now (rider one stop from a leg's alight point). `expect` is the FULL guidance object; tests assert exact equality, not a subset. Note the 2-stop leg (m1_hop_2): its only alert-capable state coincides with `board` (board + alert:true) because after boarding the very next stop is the alight; a consumer must not dedupe that away, it is the rider's one and only get-off cue for that leg.",
   "journeys": {
     "m2_direct_3": {
       "legs": [
@@ -52,18 +52,18 @@
     }
   },
   "cases": [
-    { "name": "direct: at origin -> board", "journey": "m2_direct_3", "position": { "legIndex": 0, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M2", "towards": "Anthoupoli" }, "alert": false },
+    { "name": "direct: at origin -> board", "journey": "m2_direct_3", "position": { "legIndex": 0, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M2", "towards": "Anthoupoli", "stopsRemaining": 2, "nextStation": "Panepistimio" }, "alert": false },
     { "name": "direct: one before destination -> get off next + alert", "journey": "m2_direct_3", "position": { "legIndex": 0, "stopIndex": 1 }, "expect": { "kind": "getOffNext", "nextStation": "Omonia", "isDestination": true, "transferTo": null }, "alert": true },
     { "name": "direct: at destination -> arrived", "journey": "m2_direct_3", "position": { "legIndex": 0, "stopIndex": 2 }, "expect": { "kind": "arrived", "station": "Omonia" }, "alert": false },
 
-    { "name": "2-stop hop: board coincides with alert", "journey": "m1_hop_2", "position": { "legIndex": 0, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M1", "towards": "Kifisia" }, "alert": true },
+    { "name": "2-stop hop: board coincides with alert", "journey": "m1_hop_2", "position": { "legIndex": 0, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M1", "towards": "Kifisia", "stopsRemaining": 1, "nextStation": "Attiki" }, "alert": true },
     { "name": "2-stop hop: arrived", "journey": "m1_hop_2", "position": { "legIndex": 0, "stopIndex": 1 }, "expect": { "kind": "arrived", "station": "Attiki" }, "alert": false },
 
-    { "name": "transfer: at origin -> board leg 1", "journey": "m2_m3_transfer", "position": { "legIndex": 0, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M2", "towards": "Elliniko" }, "alert": false },
-    { "name": "transfer: mid leg 1 -> ride", "journey": "m2_m3_transfer", "position": { "legIndex": 0, "stopIndex": 1 }, "expect": { "kind": "ride", "lineId": "M2", "stopsRemaining": 2, "nextStation": "Omonia" }, "alert": false },
+    { "name": "transfer: at origin -> board leg 1", "journey": "m2_m3_transfer", "position": { "legIndex": 0, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M2", "towards": "Elliniko", "stopsRemaining": 3, "nextStation": "Metaxourgeio" }, "alert": false },
+    { "name": "transfer: mid leg 1 -> ride", "journey": "m2_m3_transfer", "position": { "legIndex": 0, "stopIndex": 1 }, "expect": { "kind": "ride", "lineId": "M2", "towards": "Elliniko", "stopsRemaining": 2, "nextStation": "Omonia" }, "alert": false },
     { "name": "transfer: one before interchange -> get off next, transfer to M3", "journey": "m2_m3_transfer", "position": { "legIndex": 0, "stopIndex": 2 }, "expect": { "kind": "getOffNext", "nextStation": "Syntagma", "isDestination": false, "transferTo": "M3" }, "alert": true },
     { "name": "transfer: at interchange -> transfer", "journey": "m2_m3_transfer", "position": { "legIndex": 0, "stopIndex": 3 }, "expect": { "kind": "transfer", "atStation": "Syntagma", "toLineId": "M3", "towards": "Airport" }, "alert": false },
-    { "name": "transfer: board leg 2", "journey": "m2_m3_transfer", "position": { "legIndex": 1, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M3", "towards": "Airport" }, "alert": false },
+    { "name": "transfer: board leg 2", "journey": "m2_m3_transfer", "position": { "legIndex": 1, "stopIndex": 0 }, "expect": { "kind": "board", "lineId": "M3", "towards": "Airport", "stopsRemaining": 2, "nextStation": "Evangelismos" }, "alert": false },
     { "name": "transfer: one before destination on leg 2 -> get off next", "journey": "m2_m3_transfer", "position": { "legIndex": 1, "stopIndex": 1 }, "expect": { "kind": "getOffNext", "nextStation": "Megaro Moussikis", "isDestination": true, "transferTo": null }, "alert": true },
     { "name": "transfer: arrived on leg 2", "journey": "m2_m3_transfer", "position": { "legIndex": 1, "stopIndex": 2 }, "expect": { "kind": "arrived", "station": "Megaro Moussikis" }, "alert": false }
   ]
