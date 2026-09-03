@@ -49,6 +49,12 @@ struct GoJourneyView: View {
         .onReceive(location.$currentLocation) { loc in
             if let loc { model.applyLocation(lat: loc.coordinate.latitude, lon: loc.coordinate.longitude) }
         }
+        .onChange(of: model.position) { _, _ in
+            // Announce each new instruction so a VoiceOver rider hears "get off
+            // next" hands-free, the iOS analog of the web panel's aria-live region.
+            let text = [headline, detail].filter { !$0.isEmpty }.joined(separator: ". ")
+            UIAccessibility.post(notification: .announcement, argument: text)
+        }
     }
 
     private var liveToggle: some View {
