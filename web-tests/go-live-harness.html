@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Syrmos GO live harness</title>
+  <style>body{margin:0;padding:24px;background:#fafafa;font-family:system-ui;} #go{max-width:420px;} #log{margin-top:16px;font-size:13px;color:#333;white-space:pre-wrap;}</style>
+</head>
+<body>
+  <!-- Manual harness (not shipped): drives the GO panel's LIVE mode with a fake
+       geolocation so the GPS-proximity auto-advance can be verified in a browser.
+       window.__emit(lat,lon) feeds a fix; window.__alerts records get-off cues. -->
+  <div id="go"></div>
+  <div id="log">alerts: none</div>
+  <script src="../composeApp/src/wasmJsMain/resources/web-go.js"></script>
+  <script src="../composeApp/src/wasmJsMain/resources/web-go-panel.js"></script>
+  <script>
+    // Fake geolocation: navigator.geolocation is read-only, but its methods are
+    // writable, so patch watchPosition/clearWatch to capture the callback and let
+    // __emit drive scripted fixes.
+    let __cb = null;
+    navigator.geolocation.watchPosition = (cb) => { __cb = cb; return 1; };
+    navigator.geolocation.clearWatch = () => { __cb = null; };
+    window.__emit = (lat, lon) => { if (__cb) __cb({ coords: { latitude: lat, longitude: lon } }); };
+
+    // M2 -> M3 transfer journey with synthetic coords along a west->east line.
+    const journey = {
+      legs: [
+        { lineId: 'M2', towards: 'Syntagma', stops: [
+          { id: 'M2_LAR', name: 'Larissa Station' }, { id: 'M2_MET', name: 'Metaxourgeio' },
+          { id: 'M2_OMO', name: 'Omonia' }, { id: 'M2_SYN', name: 'Syntagma' } ] },
+        { lineId: 'M3', towards: 'Airport', stops: [
+          { id: 'M3_SYN', name: 'Syntagma' }, { id: 'M3_EVA', name: 'Evangelismos' },
+          { id: 'M3_MEG', name: 'Megaro Moussikis' } ] },
+      ],
+    };
+    const coords = {
+      M2_LAR: { lat: 38.0, lon: 23.700 }, M2_MET: { lat: 38.0, lon: 23.712 },
+      M2_OMO: { lat: 38.0, lon: 23.724 }, M2_SYN: { lat: 38.0, lon: 23.736 },
+      M3_SYN: { lat: 38.0005, lon: 23.7362 }, M3_EVA: { lat: 38.0, lon: 23.748 },
+      M3_MEG: { lat: 38.0, lon: 23.760 },
+    };
+    const colors = { M2: '#e30613', M3: '#0072CE' };
+    window.__alerts = [];
+    window.__go = SyrmosGoPanel.mount(document.getElementById('go'), journey, {
+      language: 'en', coords, lineColor: (id) => colors[id] || '#0072CE',
+      onGetOff: (g) => { window.__alerts.push(g.nextStation); document.getElementById('log').textContent = 'alerts: ' + window.__alerts.join(', '); },
+    });
+  </script>
+</body>
+</html>
