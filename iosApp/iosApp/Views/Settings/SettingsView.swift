@@ -39,6 +39,25 @@ struct SyrmosSettingsView: View {
 
                 contactSection
 
+                // GO is a 3.0 preview (manual step-through; live get-off alerts
+                // come later), so it rides the internal-build flag: visible in
+                // TestFlight / internal betas, hidden in a public App Store build
+                // until live GO ships.
+                if BuildEnv.isInternalBuild {
+                    Section {
+                        NavigationLink {
+                            GoDemoEntryView(language: loc.language)
+                        } label: {
+                            Label(
+                                loc.language == .greek ? "Οδηγός ταξιδιού (GO)" : loc.language == .albanian ? "Udhëzues udhëtimi (GO)" : loc.language == .italian ? "Guida al viaggio (GO)" : "Journey guide (GO)",
+                                systemImage: "figure.walk.motion"
+                            )
+                        }
+                    } footer: {
+                        Text(loc.language == .greek ? "Δες μια διαδρομή βήμα-βήμα με το GO." : loc.language == .albanian ? "Shiko një rrugë hap pas hapi me GO." : loc.language == .italian ? "Vedi un percorso passo passo con GO." : "Preview a route step by step with GO.")
+                    }
+                }
+
                 #if DEBUG
                 Section {
                     NavigationLink {
