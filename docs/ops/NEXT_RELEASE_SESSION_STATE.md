@@ -11,7 +11,7 @@ This file is a convenience index, NOT a source of truth. Git history, PRs, CI ru
 
 ## Snapshot
 
-- Last updated (Athens): 2026-09-03 02:25 EEST
+- Last updated (Athens): 2026-09-03 03:12 EEST
 - Window ends: 20:00 Europe/Athens 2026-09-03
 - Branch at session start: `master` @ `5e90d78b`
 - Version shipped: 2.0.0 (iOS build 138 / Android versionCode 223), tagged `v2.0.0`
@@ -69,18 +69,44 @@ against, so planner/GO logic cannot drift. No risky client-unification refactor 
 | E | GO get-off alert + journey state machine (iOS first, verifiable) | PLANNED | XCTest/sim | lowest-effort product spine |
 | F | README/roadmap staleness fixes | PLANNED | n/a | README says "iOS 1.0.5" (stale); Appendix K roadmap stale |
 
+## GO engine status (the 3.0 spine)
+
+The GO live trip-guidance engine is implemented and tested in FOUR languages against ONE cross-client golden
+contract (`fixtures/go-guidance/cases.json`, exact-equality): web `web-go.js`, server `go_guidance.py`, iOS
+`JourneyGuidance.swift`, Android/KMP `core/domain/go/GoGuidance.kt`. Codex adversarially reviewed it
+(session 01a06488): no divergence across 1,290 states, getOffNext never pairs with alert=false; two MEDIUM
+findings addressed (exact-equality contract + 2-stop consumer caveat). NOT yet wired into any client UI
+(dormant). Kotlin verified via CI (kmp-tests); Swift verified locally (xcodebuild 3/3); JS+Python in CI.
+
 ## PRs
 
-- **Merged this session:** #104 backend pytest CI gate (139 tests, all green on CI py3.11, 18s job);
-  #103 docs 3.0 Journeys thesis + stale-roadmap fix.
-- **Open:** #105 web JS test harness (10/10 local; CI pending). Edits ci.yml after kmp-tests (no
-  conflict with #104's backend job which sits after iOS).
+- **Merged:** #103 thesis, #104 backend pytest gate, #105 web JS harness, #107 KMP GO engine.
+- **Open (green except long iOS job):** #106 web+server GO engine + contract (Codex-reviewed);
+  #108 T7 seed-coord reconciliation (see below).
+- **Branch ready, not PR'd:** `feat/go-guidance-ios` (iOS Swift GO port, local xcodebuild 3/3) — PR after
+  #106 merges (rebase to keep diff iOS-only).
 
 ## Findings this session
 
-- T7 tram coords disagree between seed/lines.json and stations.json for 6 stops (T7_DIM/PLA/EVA/GRI/MIK/GIP,
-  up to ~490m). Tracked as spawn_task task_29952061; guarded loosely in web-tests/topology-integrity.test.js.
-  NOT a shipped regression (2.0.0 shipped with it). Determine authoritative source before fixing.
+- **T7 tram coords** disagreed between seed/lines.json and stations.json for 6 stops (up to ~490m).
+  RESOLVED in #108: reconciled the *unused* denormalized lines.json copy to the canonical registry
+  (independently verified: exactly 6 T7 coord changes to registry values, no displayed-position change),
+  topology test tightened to exact, generator invariant test added. **Open external boundary (needs user):**
+  the Pi DB + `ops/syrmos-api/pkg/athens_fixed_rail_station_coordinates.md` still hold pre-realignment values
+  with OSM node IDs; which coordinate set is *physically* correct needs OSM/field verification (blocked in
+  sandbox). Do not run a fresh snapshot-api-to-seed until that is decided or the split reappears in
+  schedules-v2/lines.json.
+
+## Next highest-value actions (updated)
+
+1. Merge #106 + #108 when iOS CI green.
+2. Rebase `feat/go-guidance-ios` onto master, open iOS GO PR, CI, merge.
+3. Wire GO into a VISIBLE client (make it non-dormant): iOS is most verifiable (simulator screenshots).
+   Add `JourneyPlanner.planDetailed` (per-leg ordered stop ids; Dijkstra already computes the path) ->
+   map to GuidanceJourney -> a GO view driven by it. Entry point: Ariadne route answers (AriadneModel).
+4. Consider a 3.0.0-beta.1 tag ONCE GO is visibly wired on a client (authorized internal/TestFlight beta;
+   tag triggers release-ios/release-android workflows). Not before a user-visible feature exists.
+5. Later: journey confidence engine (pillar 2), disruption-aware routing (drop suspended edges).
 
 ## Findings / bugs (audit)
 
