@@ -114,6 +114,7 @@
 		DA7A0202F00D0202F00D0202 /* JourneyGuidanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */; };
 		DA7A0206F00D0206F00D0206 /* JourneyPlannerConnectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */; };
 		DA7A020EF00D020EF00D020E /* GoJourneyViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */; };
+		DA7A0222F00D0222F00D0222 /* GoLocationAdvancerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */; };
 		DA7A0021F00D0021F00D0021 /* DepartureTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */; };
 		DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */; };
 		DA7A010BF00D010BF00D010B /* SyrmosWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -127,6 +128,7 @@
 		DA7A0208F00D0208F00D0208 /* GoJourneyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0209F00D0209F00D0209 /* GoJourneyViewModel.swift */; };
 		DA7A020AF00D020AF00D020A /* GoJourneyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A020BF00D020BF00D020B /* GoJourneyView.swift */; };
 		DA7A020CF00D020CF00D020C /* GoDemoEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A020DF00D020DF00D020D /* GoDemoEntryView.swift */; };
+		DA7A0220F00D0220F00D0220 /* GoLocationAdvancer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0221F00D0221F00D0221 /* GoLocationAdvancer.swift */; };
 		DA7A0140F00D0140F00D0140 /* WeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0141F00D0141F00D0141 /* WeatherStore.swift */; };
 		DA7A0142F00D0142F00D0142 /* WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0143F00D0143F00D0143 /* WeatherCard.swift */; };
 		DA7A0150F00D0150F00D0150 /* AriadneBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0151F00D0151F00D0151 /* AriadneBrain.swift */; };
@@ -317,6 +319,7 @@
 		DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyGuidanceTests.swift; sourceTree = "<group>"; };
 		DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyPlannerConnectTests.swift; sourceTree = "<group>"; };
 		DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoJourneyViewModelTests.swift; sourceTree = "<group>"; };
+		DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoLocationAdvancerTests.swift; sourceTree = "<group>"; };
 		DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureTracking.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapRouteGeometryTests.swift; sourceTree = "<group>"; };
 		DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SyrmosWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -330,6 +333,7 @@
 		DA7A0209F00D0209F00D0209 /* GoJourneyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Go/GoJourneyViewModel.swift; sourceTree = SOURCE_ROOT; };
 		DA7A020BF00D020BF00D020B /* GoJourneyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Go/GoJourneyView.swift; sourceTree = SOURCE_ROOT; };
 		DA7A020DF00D020DF00D020D /* GoDemoEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Go/GoDemoEntryView.swift; sourceTree = SOURCE_ROOT; };
+		DA7A0221F00D0221F00D0221 /* GoLocationAdvancer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Go/GoLocationAdvancer.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0141F00D0141F00D0141 /* WeatherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/WeatherStore.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0143F00D0143F00D0143 /* WeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Weather/WeatherCard.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0151F00D0151F00D0151 /* AriadneBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneBrain.swift; sourceTree = SOURCE_ROOT; };
@@ -409,6 +413,7 @@
 				DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */,
 				DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */,
 				DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */,
+				DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */,
 				B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */,
 				BF6FDC539EEBEA3DCEA3416B /* SuburbanProjectionTests.swift */,
 			);
@@ -686,6 +691,7 @@
 				DA7A0209F00D0209F00D0209 /* GoJourneyViewModel.swift */,
 				DA7A020BF00D020BF00D020B /* GoJourneyView.swift */,
 				DA7A020DF00D020DF00D020D /* GoDemoEntryView.swift */,
+				DA7A0221F00D0221F00D0221 /* GoLocationAdvancer.swift */,
 				DA7A0141F00D0141F00D0141 /* WeatherStore.swift */,
 				DA7A0143F00D0143F00D0143 /* WeatherCard.swift */,
 				DA7A0151F00D0151F00D0151 /* AriadneBrain.swift */,
@@ -979,6 +985,7 @@
 				DA7A0208F00D0208F00D0208 /* GoJourneyViewModel.swift in Sources */,
 				DA7A020AF00D020AF00D020A /* GoJourneyView.swift in Sources */,
 				DA7A020CF00D020CF00D020C /* GoDemoEntryView.swift in Sources */,
+				DA7A0220F00D0220F00D0220 /* GoLocationAdvancer.swift in Sources */,
 				DA7A0140F00D0140F00D0140 /* WeatherStore.swift in Sources */,
 				DA7A0142F00D0142F00D0142 /* WeatherCard.swift in Sources */,
 				DA7A0150F00D0150F00D0150 /* AriadneBrain.swift in Sources */,
@@ -1054,6 +1061,7 @@
 				DA7A0202F00D0202F00D0202 /* JourneyGuidanceTests.swift in Sources */,
 				DA7A0206F00D0206F00D0206 /* JourneyPlannerConnectTests.swift in Sources */,
 				DA7A020EF00D020EF00D020E /* GoJourneyViewModelTests.swift in Sources */,
+				DA7A0222F00D0222F00D0222 /* GoLocationAdvancerTests.swift in Sources */,
 				ECAA824BE3E518277AB18AB6 /* NearbyStationDestinationTests.swift in Sources */,
 				28B86D763BF517E19CF4DB5D /* SuburbanProjectionTests.swift in Sources */,
 			);
