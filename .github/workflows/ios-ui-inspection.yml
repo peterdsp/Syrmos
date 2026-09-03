@@ -47,7 +47,12 @@ jobs:
           xcodebuild -version
 
       # The app scheme embeds the watch app, so the watchOS runtime is required.
+      # The download occasionally fails with "Unable to connect to simulator"
+      # (exit 70) on a transient network/infra hiccup; don't let that flake fail
+      # the job. A genuinely missing runtime surfaces as a real error in the
+      # later build step. Matches ci.yml's handling of the same step.
       - name: Install watchOS simulator runtime
+        continue-on-error: true
         run: xcodebuild -downloadPlatform watchOS
 
       - name: Install Apple AI tools (Loupe + agent-device)
