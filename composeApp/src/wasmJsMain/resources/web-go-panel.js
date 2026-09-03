@@ -73,6 +73,20 @@
     const destLeg = journey.legs[journey.legs.length - 1];
     const dest = destLeg ? destLeg.stops[destLeg.stops.length - 1].name : '';
 
+    // Persistent structure so screen readers hear every instruction change: a
+    // visually-hidden aria-live region whose text is updated on each render (a
+    // re-created live region would not reliably announce), plus a content div the
+    // card re-renders into.
+    container.innerHTML = '';
+    const srEl = document.createElement('div');
+    srEl.className = 'go-sr';
+    srEl.setAttribute('aria-live', 'assertive');
+    srEl.setAttribute('role', 'status');
+    srEl.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;';
+    const contentEl = document.createElement('div');
+    container.appendChild(srEl);
+    container.appendChild(contentEl);
+
     function progress() {
       const total = Math.max(1, journey.legs.reduce((n, l) => n + Math.max(0, l.stops.length - 1), 0));
       let done = 0;
@@ -89,7 +103,10 @@
       const tint = g.kind === 'arrived' ? '#2E7D32' : color(g.lineId || (journey.legs[pos.legIndex] && journey.legs[pos.legIndex].lineId));
       const canBack = pos.legIndex > 0 || pos.stopIndex > 0;
 
-      container.innerHTML = `
+      // Announce the current instruction to screen readers (headline + detail).
+      srEl.textContent = [d.headline, d.detail, d.sub].filter(Boolean).join('. ');
+
+      contentEl.innerHTML = `
         <div class="go-panel" role="group" aria-label="GO journey guidance" style="max-width:420px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">
           <div class="go-head" style="display:flex;gap:8px;align-items:center;color:#666;font-size:14px;font-weight:600;margin-bottom:12px;">
             <span>${esc(origin)}</span><span aria-hidden="true">→</span><span>${esc(dest)}</span>
@@ -114,9 +131,9 @@
           </button>` : ''}
         </div>`;
 
-      const back = container.querySelector('.go-back');
-      const next = container.querySelector('.go-next');
-      const liveBtn = container.querySelector('.go-live');
+      const back = contentEl.querySelector('.go-back');
+      const next = contentEl.querySelector('.go-next');
+      const liveBtn = contentEl.querySelector('.go-live');
       if (back) back.onclick = () => { api.back(); };
       if (next) next.onclick = () => { arrived ? api.reset() : api.advance(); };
       if (liveBtn) liveBtn.onclick = () => { live ? api.stopLive() : api.startLive(); };
