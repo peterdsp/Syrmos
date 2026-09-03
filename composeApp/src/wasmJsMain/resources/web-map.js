@@ -3950,13 +3950,83 @@
             };
         })();
 
+        // ---- Web GO in the Plan workspace (guarded, additive) ----
+        // Mounts the GO guided-journey panel (plan A->B, then be told board / ride
+        // / get off next / change here / arrived, with an optional live GPS mode)
+        // when the user is in Plan. Every path is wrapped so a failure only hides
+        // the GO card and leaves Ariadne and the rest of Plan untouched.
+        const goPlan = (function () {
+            let card = null, panelEl = null, mounted = false;
+            function container() {
+                if (card) return card;
+                try {
+                    const rail = document.getElementById("contextRail");
+                    if (!rail) return null;
+                    card = document.createElement("div");
+                    card.className = "panel-card";
+                    card.id = "goPlanCard";
+                    card.style.display = "none";
+                    const title = document.createElement("div");
+                    title.className = "panel-card__title";
+                    title.textContent = ({ el: "GO — καθοδηγούμενο ταξίδι", sq: "GO — udhëtim i udhëhequr", it: "GO — viaggio guidato" }[currentLang]) || "GO — guided journey";
+                    panelEl = document.createElement("div");
+                    panelEl.id = "goPlanPanel";
+                    card.appendChild(title);
+                    card.appendChild(panelEl);
+                    const cards = document.getElementById("contextPanelCards");
+                    if (cards && cards.parentNode) cards.parentNode.insertBefore(card, cards);
+                    else rail.appendChild(card);
+                    return card;
+                } catch (_) { return null; }
+            }
+            function build() {
+                try {
+                    if (!window.SyrmosPlanner) return null;
+                    // Showcase route: M1 origin -> M2 terminus, a real transfer.
+                    const m1 = lines.find((l) => l.id === "M1");
+                    const m2 = lines.find((l) => l.id === "M2");
+                    const fromId = m1 && m1.stations && m1.stations[0] && m1.stations[0].id;
+                    const toId = m2 && m2.stations && m2.stations.length && m2.stations[m2.stations.length - 1].id;
+                    if (!fromId || !toId) return null;
+                    const journey = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
+                    if (!journey) return null;
+                    const coords = {};
+                    const byId = new Map(stations.map((s) => [s.id, s]));
+                    for (const leg of journey.legs) for (const stop of leg.stops) {
+                        const rec = byId.get(stop.id);
+                        if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
+                    }
+                    return { journey, coords };
+                } catch (_) { return null; }
+            }
+            function mount() {
+                try {
+                    if (!window.SyrmosGoPanel) return false;
+                    if (!container()) return false;
+                    const built = build();
+                    if (!built) return false;
+                    window.SyrmosGoPanel.mount(panelEl, built.journey, {
+                        language: currentLang,
+                        coords: built.coords,
+                        lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                    });
+                    mounted = true;
+                    return true;
+                } catch (_) { return false; }
+            }
+            return {
+                show() { try { if (!mounted) mount(); if (card) card.style.display = ""; } catch (_) {} },
+                hide() { try { if (card) card.style.display = "none"; } catch (_) {} },
+            };
+        })();
+
         window.SyrmosNav.wire(nav, router, {
-            now() { clearSelection(); fitAthensCore(); panelTop(); },              // Athens now view
-            plan() { panelTop(); openAriadne(); },                                 // journey planning via Ariadne
-            explore() { panelTop(); if (stationSearch) stationSearch.focus(); },   // search / discover stations
-            departures() { jumpTo(".departures-card"); },                          // next departures + live trains
-            tickets() { const c = faresCard(); if (c) jumpTo(c); },                // OASA fares
-            more() { jumpTo("#infoLinksList"); },                                  // footer utility: useful info
+            now() { goPlan.hide(); clearSelection(); fitAthensCore(); panelTop(); },   // Athens now view
+            plan() { panelTop(); openAriadne(); goPlan.show(); },                       // journey planning + GO
+            explore() { goPlan.hide(); panelTop(); if (stationSearch) stationSearch.focus(); }, // search / discover
+            departures() { goPlan.hide(); jumpTo(".departures-card"); },                // next departures + live
+            tickets() { goPlan.hide(); const c = faresCard(); if (c) jumpTo(c); },       // OASA fares
+            more() { goPlan.hide(); jumpTo("#infoLinksList"); },                        // footer utility
         });
     })();
 

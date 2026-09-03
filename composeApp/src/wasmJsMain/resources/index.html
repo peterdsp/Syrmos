@@ -535,6 +535,12 @@
 <script src="/llm/ariadne-wllama.js?v=3"></script>
 <script src="/web-router.js"></script>
 <script src="/web-nav.js"></script>
+<!-- GO guided-journey engine + planner + panel (must load before web-map.js,
+     which mounts the panel in the Plan workspace). web-go defines SyrmosGO,
+     which the panel uses. -->
+<script src="/web-go.js"></script>
+<script src="/web-planner.js"></script>
+<script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
 </body>
 </html>
