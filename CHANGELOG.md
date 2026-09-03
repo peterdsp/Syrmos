@@ -2,13 +2,36 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train opening:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0** / versionCode **224**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-223; the next release must use 224+.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 uses **225**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-224; the next release must use 225+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 3.0.0-beta.2 - 2026-09-03
+
+Live GO: the get-off cue that is the point of the whole feature. GO no longer waits for you to tap through
+your journey; it tracks your position and tells you when to get off, hands-free.
+
+- **iOS live GO.** A "Start live guidance" toggle in the GO screen tracks the rider's GPS and advances the
+  journey on its own, firing a local notification + haptic when they are one stop from a leg's alight point
+  (board / change / get off next), localized EN/EL/SQ/IT. Advance is forward-only (GPS jitter never rewinds)
+  and threshold-gated (holds between stops). Still gated behind the internal-build flag (TestFlight/internal
+  only). The get-off decision reuses the same advancer verified end to end on web.
+- **Web live GO.** The web GO panel gained the same live mode over the browser's geolocation
+  (`web-go.js advancedPosition` + panel `startLive`), verified end to end in a browser: emitted fixes drove
+  the panel ride -> get off at the interchange -> transfer -> get off at the destination, one alert per leg.
+  The modules ship in the web bundle; wiring them into the Plan workspace is a follow-up.
+- **Cross-client advancer parity.** The GPS-proximity advancer is implemented identically on iOS
+  (`GoLocationAdvancer`) and web (`web-go.js`), with the web tests mirroring the iOS scenarios exactly.
+
+Known issues: iOS live GO's GPS-to-notification path is exercised by internal testers (not verifiable in the
+build environment); very coarse GPS sampling could skip a leg's get-off cue (mitigated by a 50m distance
+filter). Web live GO is not yet wired into the app's Plan workspace.
+
+iOS 3.0.0 (build auto-stamped) / Android 3.0.0 versionCode 225. Tagged as `v3.0.0-beta.2`.
 
 ## 3.0.0-beta.1 - 2026-09-03
 
