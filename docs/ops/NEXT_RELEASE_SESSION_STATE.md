@@ -69,6 +69,14 @@ against, so planner/GO logic cannot drift. No risky client-unification refactor 
 | E | GO get-off alert + journey state machine (iOS first, verifiable) | PLANNED | XCTest/sim | lowest-effort product spine |
 | F | README/roadmap staleness fixes | PLANNED | n/a | README says "iOS 1.0.5" (stale); Appendix K roadmap stale |
 
+## WEB GO WIRED into the Plan workspace - VERIFIED ON PROD (21:55 EEST)
+
+#122 merged + Pages-deployed. Verified on https://syrmos.peterdsp.dev/plan/ via browser: the GO card mounts in
+the context rail, plans a real route (Piraeus->Elliniko), guides board M1 -> get off / change at Monastiraki
+-> M3, with the Start-live-guidance button, and the rest of the app is untouched (guarded/additive). Web GO is
+now reachable in the app. Follow-up: from/to deep-link (currently a showcase M1->M2 route) + the Ariadne
+route -> GO handoff.
+
 ## RELEASE-ENGINEERING FIX - beta.2 iOS RE-DELIVERED (05:26 EEST)
 
 beta.2 Android UPLOADED (Play internal, versionCode 225). beta.2 iOS first upload FAILED - build-number
