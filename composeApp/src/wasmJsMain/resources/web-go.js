@@ -122,5 +122,52 @@
     return Boolean(lastLeg && l && position.stopIndex === l.stops.length - 1);
   }
 
-  return { guidance, shouldAlertGetOff, advance, isArrived, KIND: { BOARD, RIDE, GET_OFF_NEXT, TRANSFER, ARRIVED } };
+  // Live GO: given the rider's GPS fix and the journey's stop coordinates
+  // ({ [stopId]: {lat, lon} }), return the forward-most position they've reached,
+  // so the guidance advances on its own. Forward-only (jitter never rewinds),
+  // threshold-gated (holds between stops so guidance doesn't flicker). Mirrors iOS
+  // GoLocationAdvancer.
+  function advancedPosition(journey, current, coords, lat, lon, thresholdMeters) {
+    const threshold = thresholdMeters == null ? 350 : thresholdMeters;
+    let best = current;
+    let bestDist = Infinity;
+    let cursor = current;
+    while (cursor) {
+      const st = stopAt(journey, cursor);
+      if (st && coords[st.id]) {
+        const d = haversine(coords[st.id].lat, coords[st.id].lon, lat, lon);
+        if (d <= threshold && d < bestDist) { bestDist = d; best = cursor; }
+      }
+      cursor = nextPos(journey, cursor);
+    }
+    return best;
+  }
+
+  function stopAt(journey, p) {
+    const l = leg(journey, p.legIndex);
+    if (!l || p.stopIndex < 0 || p.stopIndex >= l.stops.length) return null;
+    return l.stops[p.stopIndex];
+  }
+
+  function nextPos(journey, p) {
+    const l = leg(journey, p.legIndex);
+    if (!l) return null;
+    if (p.stopIndex < l.stops.length - 1) return { legIndex: p.legIndex, stopIndex: p.stopIndex + 1 };
+    if (p.legIndex < journey.legs.length - 1) return { legIndex: p.legIndex + 1, stopIndex: 0 };
+    return null;
+  }
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2
+      + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+  }
+
+  return {
+    guidance, shouldAlertGetOff, advance, isArrived, advancedPosition, haversine,
+    KIND: { BOARD, RIDE, GET_OFF_NEXT, TRANSFER, ARRIVED },
+  };
 });
