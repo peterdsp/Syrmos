@@ -69,6 +69,51 @@ against, so planner/GO logic cannot drift. No risky client-unification refactor 
 | E | GO get-off alert + journey state machine (iOS first, verifiable) | PLANNED | XCTest/sim | lowest-effort product spine |
 | F | README/roadmap staleness fixes | PLANNED | n/a | README says "iOS 1.0.5" (stale); Appendix K roadmap stale |
 
+## RELEASE-ENGINEERING FIX - beta.2 iOS RE-DELIVERED (05:26 EEST)
+
+beta.2 Android UPLOADED (Play internal, versionCode 225). beta.2 iOS first upload FAILED - build-number
+collision: the release read a static CURRENT_PROJECT_VERSION (138), and beta.1 had already uploaded 3.0.0
+build 138, so ASC rejected "must be higher than 138". FIXED in #121 (merged): the release now stamps a Unix
+epoch (date +%s) as CFBundleVersion - always unique + increasing, no manual bump. Dry-run validated the
+epoch build (1788401926) against ASC; then dispatched release-ios dry_run=false on master -> **iOS beta.2
+RE-DELIVERED to TestFlight (Archive + upload: success)**. Both platforms now have beta.2. Also merged this
+session: #119 transit-data quality tests, #120 GO screen-reader a11y.
+
+NOTE: the iOS beta.2 TestFlight build was delivered via a workflow_dispatch on master (build = epoch), so it
+includes the a11y (#120) + transit-quality (#119) + build-number fix (#121) merges on top of the tagged
+beta.2 content. The v3.0.0-beta.2 git tag still points at the version-bump commit; the actual TestFlight build
+is newer master - honest to call it beta.2.
+
+LESSON: release-ios.yml build number was NOT auto-stamped (RELEASE.md was aspirational); each iOS release
+must have a strictly-higher build than any prior in the marketing-version train. Epoch stamp fixes it durably.
+
+## MILESTONE: v3.0.0-beta.2 tagged - LIVE GO (04:51 EEST)
+
+beta.2 (`v3.0.0-beta.2`) tagged + uploading to TestFlight + Play internal (Android versionCode 225).
+Content: **live GO** - iOS GPS auto-advance + get-off notification + haptic (#117, gated internal), web live
+GO over browser geolocation (#116, browser-verified end to end). Cross-client advancer parity (iOS
+GoLocationAdvancer == web-go.js advancedPosition, tests mirror exactly). 17 PRs merged (#103-#118), 2 betas
+shipped.
+
+The 3.0 "Journeys" thesis is realized on iOS + web: plan A->B, be guided board/ride/get-off/change/arrived,
+and be told hands-free when to get off. GO engine on all 4 targets + server against one Codex-reviewed
+golden contract.
+
+### Environment constraints learned (bound what's verifiable here)
+- No JDK -> cannot build/run the Compose/Wasm web app or Android APK locally (CI + deploy only).
+- iOS simulator device-access gating -> can build+XCTest+launch-smoke, but cannot navigate/screenshot the
+  live UI or inject location into a navigated screen.
+- So: iOS live GPS path + web Plan-workspace wiring are verified by internal-beta testers / on the Pages
+  deploy, not pre-merge here. Web GO panel itself IS fully browser-verified via a served harness.
+
+### beta.3 backlog (verifiable-vs-constrained)
+- Web GO Plan-workspace wiring (guarded, verify on live Pages deploy). VISIBLE web GO.
+- Android GO Compose screen over GoGuidance (CI-build + commonTest verify; no local run).
+- Journey confidence / last-train-home (pillar 2; entangled with the schedule projector).
+- Transit-data quality tests (FULLY verifiable via the node harness): duplicate trains, impossible
+  departures, wrong terminals, direction/overnight boundary checks -> regression tests.
+- iOS live GO robustness: coarse-GPS skip edge (noted; 50m filter mitigates).
+
 ## MILESTONE: v3.0.0-beta.1 DELIVERED (04:22 EEST)
 
 The first 3.0 beta is TAGGED (`v3.0.0-beta.1`, master @ f8742244) and **UPLOADED**: Release iOS ->
