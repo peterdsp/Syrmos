@@ -22,6 +22,21 @@ enum JourneyPlanner {
         let transfers: Int
     }
 
+    /// A leg with its full ordered stop id sequence (board..alight inclusive),
+    /// the extra detail GO live guidance needs. Kept separate from `Plan` so the
+    /// existing (Ariadne-facing) `plan()` API is unchanged.
+    struct DetailedLeg: Equatable {
+        let lineId: String
+        let stationIds: [String]
+        var boardId: String { stationIds.first ?? "" }
+        var alightId: String { stationIds.last ?? "" }
+    }
+
+    struct DetailedPlan: Equatable {
+        let legs: [DetailedLeg]
+        let totalMinutes: Int
+    }
+
     private struct Edge {
         let to: String
         let lineId: String?   // nil = transfer between co-located stations
@@ -45,73 +60,61 @@ enum JourneyPlanner {
         compute(from: fromId, to: toId, lines: SyrmosData.operationalLines.filter { $0.type == .metro }, language: language)
     }
 
+    /// The fastest route as a `DetailedPlan` (per-leg ordered stop ids), for the
+    /// GO live-guidance engine. Operational lines only, like `plan`.
+    static func planDetailed(from fromId: String, to toId: String, language: AppLanguage) -> DetailedPlan? {
+        guard fromId != toId else { return nil }
+        let stations = allStations()
+        let byId = Dictionary(uniqueKeysWithValues: stations.map { ($0.id, $0) })
+        guard byId[fromId] != nil, byId[toId] != nil else { return nil }
+        let graph = buildGraph(SyrmosData.operationalLines, stations: stations)
+        guard let result = shortestPath(from: fromId, to: toId, graph: graph) else { return nil }
+
+        // Group the (stationId, edge) path into per-line legs, keeping every stop
+        // id. A transfer edge (lineId == nil) ends the current leg and starts the
+        // next one at the co-located board stop.
+        var legs: [DetailedLeg] = []
+        var curLine: String?
+        var curStops: [String] = [fromId]
+        func flush() {
+            if let line = curLine, curStops.count >= 2 {
+                legs.append(DetailedLeg(lineId: line, stationIds: curStops))
+            }
+        }
+        for (stationId, edge) in result.path {
+            if edge.lineId == nil {
+                flush()
+                curLine = nil
+                curStops = [stationId]
+            } else if edge.lineId != curLine {
+                // New same-line leg. When a line change is not via a transfer edge
+                // (co-located same-id junction), start the new leg from the shared
+                // station so no stop is dropped.
+                if curLine != nil, let junction = curStops.last {
+                    flush()
+                    curStops = [junction]
+                }
+                curLine = edge.lineId
+                curStops.append(stationId)
+            } else {
+                curStops.append(stationId)
+            }
+        }
+        flush()
+
+        guard !legs.isEmpty else { return nil }
+        return DetailedPlan(legs: legs, totalMinutes: result.total)
+    }
+
     private static func compute(from fromId: String, to toId: String, lines: [TransitLine], language: AppLanguage) -> Plan? {
         if fromId == toId { return nil }
         let stations = allStations()
         let byId = Dictionary(uniqueKeysWithValues: stations.map { ($0.id, $0) })
         guard byId[fromId] != nil, byId[toId] != nil else { return nil }
 
-        var graph: [String: [Edge]] = [:]
-
-        // Same-line edges between consecutive stations.
-        for line in lines {
-            let weight = travelTime(for: line.type)
-            let ordered = SyrmosData.stations(for: line.id)
-            for i in 0..<max(0, ordered.count - 1) {
-                let a = ordered[i].id
-                let b = ordered[i + 1].id
-                graph[a, default: []].append(Edge(to: b, lineId: line.id, weight: weight))
-                graph[b, default: []].append(Edge(to: a, lineId: line.id, weight: weight))
-            }
-        }
-
-        // Transfer edges between co-located stations (same physical place,
-        // different per-line ids).
-        var groups: [String: [String]] = [:]
-        for st in stations {
-            groups[norm(st.name.isEmpty ? st.nameEl : st.name), default: []].append(st.id)
-        }
-        for (_, ids) in groups where ids.count > 1 {
-            for i in 0..<ids.count {
-                for j in (i + 1)..<ids.count {
-                    graph[ids[i], default: []].append(Edge(to: ids[j], lineId: nil, weight: TRANSFER_MINUTES))
-                    graph[ids[j], default: []].append(Edge(to: ids[i], lineId: nil, weight: TRANSFER_MINUTES))
-                }
-            }
-        }
-
-        // Dijkstra.
-        var dist: [String: Int] = [fromId: 0]
-        var prev: [String: (String, Edge)] = [:]
-        var visited = Set<String>()
-        var frontier: [(String, Int)] = [(fromId, 0)]
-
-        while !frontier.isEmpty {
-            frontier.sort { $0.1 < $1.1 }
-            let (current, d) = frontier.removeFirst()
-            if visited.contains(current) { continue }
-            visited.insert(current)
-            if current == toId { break }
-            for edge in graph[current] ?? [] {
-                let nd = d + edge.weight
-                if nd < (dist[edge.to] ?? Int.max) {
-                    dist[edge.to] = nd
-                    prev[edge.to] = (current, edge)
-                    frontier.append((edge.to, nd))
-                }
-            }
-        }
-
-        guard prev[toId] != nil else { return nil }
-
-        // Reconstruct (stationId, edge) path from origin to destination.
-        var path: [(String, Edge)] = []
-        var node = toId
-        while node != fromId {
-            guard let (p, e) = prev[node] else { break }
-            path.insert((node, e), at: 0)
-            node = p
-        }
+        let graph = buildGraph(lines, stations: stations)
+        guard let result = shortestPath(from: fromId, to: toId, graph: graph) else { return nil }
+        let path = result.path
 
         // Merge consecutive same-line edges into legs; transfer edges split legs.
         var legs: [Leg] = []
@@ -150,8 +153,77 @@ enum JourneyPlanner {
         flush(endName: byId[toId].map { displayName($0, language) } ?? toId)
 
         if legs.isEmpty { return nil }
-        let total = dist[toId] ?? legs.reduce(0) { $0 + $1.minutes }
-        return Plan(legs: legs, totalMinutes: total, transfers: max(0, legs.count - 1))
+        return Plan(legs: legs, totalMinutes: result.total, transfers: max(0, legs.count - 1))
+    }
+
+    // MARK: - Graph + shortest path (shared by compute and planDetailed)
+
+    private static func buildGraph(_ lines: [TransitLine], stations: [TransitStation]) -> [String: [Edge]] {
+        var graph: [String: [Edge]] = [:]
+
+        // Same-line edges between consecutive stations.
+        for line in lines {
+            let weight = travelTime(for: line.type)
+            let ordered = SyrmosData.stations(for: line.id)
+            for i in 0..<max(0, ordered.count - 1) {
+                let a = ordered[i].id
+                let b = ordered[i + 1].id
+                graph[a, default: []].append(Edge(to: b, lineId: line.id, weight: weight))
+                graph[b, default: []].append(Edge(to: a, lineId: line.id, weight: weight))
+            }
+        }
+
+        // Transfer edges between co-located stations (same physical place,
+        // different per-line ids).
+        var groups: [String: [String]] = [:]
+        for st in stations {
+            groups[norm(st.name.isEmpty ? st.nameEl : st.name), default: []].append(st.id)
+        }
+        for (_, ids) in groups where ids.count > 1 {
+            for i in 0..<ids.count {
+                for j in (i + 1)..<ids.count {
+                    graph[ids[i], default: []].append(Edge(to: ids[j], lineId: nil, weight: TRANSFER_MINUTES))
+                    graph[ids[j], default: []].append(Edge(to: ids[i], lineId: nil, weight: TRANSFER_MINUTES))
+                }
+            }
+        }
+        return graph
+    }
+
+    /// Dijkstra returning the ordered (stationId, edgeUsedToReachIt) path from
+    /// `fromId` to `toId` (excluding the origin) and the total weight to `toId`.
+    private static func shortestPath(from fromId: String, to toId: String, graph: [String: [Edge]]) -> (path: [(String, Edge)], total: Int)? {
+        var dist: [String: Int] = [fromId: 0]
+        var prev: [String: (String, Edge)] = [:]
+        var visited = Set<String>()
+        var frontier: [(String, Int)] = [(fromId, 0)]
+
+        while !frontier.isEmpty {
+            frontier.sort { $0.1 < $1.1 }
+            let (current, d) = frontier.removeFirst()
+            if visited.contains(current) { continue }
+            visited.insert(current)
+            if current == toId { break }
+            for edge in graph[current] ?? [] {
+                let nd = d + edge.weight
+                if nd < (dist[edge.to] ?? Int.max) {
+                    dist[edge.to] = nd
+                    prev[edge.to] = (current, edge)
+                    frontier.append((edge.to, nd))
+                }
+            }
+        }
+
+        guard prev[toId] != nil else { return nil }
+
+        var path: [(String, Edge)] = []
+        var node = toId
+        while node != fromId {
+            guard let (p, e) = prev[node] else { break }
+            path.insert((node, e), at: 0)
+            node = p
+        }
+        return (path, dist[toId] ?? path.reduce(0) { $0 + $1.1.weight })
     }
 
     // MARK: - Helpers
