@@ -30,9 +30,22 @@ struct GoDemoEntryView: View {
         return nil
     }
 
+    /// Stop coordinates for the journey (by id), so live GO can advance from GPS.
+    private func coords(for journey: GuidanceJourney) -> [String: GoLocationAdvancer.Coord] {
+        var out: [String: GoLocationAdvancer.Coord] = [:]
+        for leg in journey.legs {
+            for stop in leg.stops where out[stop.id] == nil {
+                if let c = StationCoordinateLookup.shared.coordinate(for: stop.id) {
+                    out[stop.id] = GoLocationAdvancer.Coord(lat: c.lat, lon: c.lon)
+                }
+            }
+        }
+        return out
+    }
+
     var body: some View {
         if let journey {
-            GoJourneyView(journey: journey, language: language)
+            GoJourneyView(journey: journey, language: language, coords: coords(for: journey))
         } else {
             ContentUnavailableView(
                 language == .greek ? "Δεν βρέθηκε διαδρομή" : language == .albanian ? "Nuk u gjet rrugë" : language == .italian ? "Nessun percorso" : "No route available",

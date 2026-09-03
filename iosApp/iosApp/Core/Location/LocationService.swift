@@ -7,6 +7,9 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
     @Published var nearbyStations: [NearbyStation] = []
     @Published var hasPermission = false
     @Published var isDenied = false
+    /// The most recent fix, for features that need the raw coordinate (e.g. live
+    /// GO guidance) rather than the nearest-station list.
+    @Published var currentLocation: CLLocation?
 
     private let manager = CLLocationManager()
     private var lastLocation: CLLocation?
@@ -64,6 +67,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         guard let location = locations.last else { return }
         Task { @MainActor [weak self] in
             self?.lastLocation = location
+            self?.currentLocation = location
             self?.updateNearby(from: location)
         }
     }
