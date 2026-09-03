@@ -69,6 +69,22 @@ against, so planner/GO logic cannot drift. No risky client-unification refactor 
 | E | GO get-off alert + journey state machine (iOS first, verifiable) | PLANNED | XCTest/sim | lowest-effort product spine |
 | F | README/roadmap staleness fixes | PLANNED | n/a | README says "iOS 1.0.5" (stale); Appendix K roadmap stale |
 
+## Progress log (03:35 EEST)
+
+Merged (8): #103 thesis, #104 backend pytest gate, #105 web harness, #107 KMP GO, #106 web+server GO +
+contract, #108 T7 reconcile, #109 iOS GO engine, #110 iOS-CI watchOS-flake fix.
+Open: #111 iOS planner->GO connection (CI running).
+Branch ready (stacked on #111): `feat/go-ios-screen` = the first VISIBLE GO feature (GoJourneyView +
+GoJourneyViewModel + GoDemoEntryView + a "Journey guide (GO)" Settings entry). Locally: view-model tests
+pass, whole app compiles, launches clean on iPhone 17 sim. Visual nav screenshot blocked by simulator
+device-access gating (honest boundary). TODO before PR: gate the Settings entry behind
+`BuildEnv.isInternalBuild` (like developerSection) so GO shows in TestFlight/internal betas but not public GA
+until live GO ships.
+
+Next: land #111 -> rebase+PR #112 (GO screen) -> consider tagging v3.0.0-beta.1 (iOS TestFlight/Play internal
+= authorized beta channel; needs version bumps, next Android versionCode >= 224). Web GO wiring deferred (web
+plans only via Ariadne text, no structured legs; needs a web planner port first).
+
 ## GO engine status (the 3.0 spine)
 
 The GO live trip-guidance engine is implemented and tested in FOUR languages against ONE cross-client golden
