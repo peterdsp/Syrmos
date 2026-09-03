@@ -39,25 +39,29 @@ test('every line.stations[].id exists in the station registry', () => {
   assert.deepEqual(missing, [], `line.stations ids absent from stations.json: ${missing.join(', ')}`);
 });
 
-test('a line and the station registry agree on each stop within ~800m', () => {
+test('a line and the station registry agree on each stop exactly', () => {
   // seed/lines.json carries a denormalized copy of each stop's coordinates.
-  // stations.json is the canonical registry. They must not grossly disagree, or
-  // the map draws the line and the marker in different places. This guard is
-  // deliberately loose (~0.008 deg) to catch a gross regression, not to enforce
-  // exact equality. KNOWN small deltas: six T7 tram stops (T7_DIM/PLA/EVA/GRI/
-  // MIK/GIP) currently differ by up to ~0.005 deg (~490m); tracked as a data
-  // follow-up. Tighten this once the two files are reconciled.
+  // stations.json is the CANONICAL registry, and it is the source every platform
+  // actually renders markers and nearest-station from (web-map.js circleMarker,
+  // iOS StationCoordinates, KMP StationRepository). So the denormalized copy must
+  // match it EXACTLY, or the two committed files describe the same stop in two
+  // places. This used to be a loose ~800m guard that tolerated six T7 tram stops
+  // (T7_DIM/PLA/EVA/GRI/MIK/GIP) differing by up to ~490m; those were reconciled
+  // to the registry (fix/t7-seed-coord-divergence) and the guard is now exact so
+  // the divergence cannot silently return. A tiny epsilon absorbs float repr only.
+  const EPS = 1e-6; // ~0.1 m; not a tolerance, just IEEE-754 round-trip slack.
   const byId = new Map(readJson('stations.json').map((s) => [s.id, s]));
-  const TOL = 0.008;
-  const gross = [];
+  const off = [];
   for (const l of linesArr(readJson('lines.json'))) {
     for (const st of l.stations || []) {
       const s = byId.get(st.id);
       if (!s) continue;
-      if (Math.abs(s.latitude - st.lat) > TOL || Math.abs(s.longitude - st.lng) > TOL) {
-        gross.push(`${l.id}:${st.id}`);
+      const dLat = Math.abs(s.latitude - st.lat);
+      const dLng = Math.abs(s.longitude - st.lng);
+      if (dLat > EPS || dLng > EPS) {
+        off.push(`${l.id}:${st.id} (dlat=${dLat.toFixed(6)}, dlng=${dLng.toFixed(6)})`);
       }
     }
   }
-  assert.deepEqual(gross, [], `line vs registry coordinates grossly disagree: ${gross.join(', ')}`);
+  assert.deepEqual(off, [], `line vs registry coordinates disagree: ${off.join('; ')}`);
 });
