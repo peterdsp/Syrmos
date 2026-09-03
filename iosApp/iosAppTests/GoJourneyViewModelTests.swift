@@ -79,4 +79,47 @@ final class GoJourneyViewModelTests: XCTestCase {
         XCTAssertEqual(vm.position.legIndex, 0)
         XCTAssertEqual(vm.position.stopIndex, 0)
     }
+
+    // MARK: Live GO
+
+    // Coords for the two-leg journey: M2 (A,B,Syntagma) west->east, then M3
+    // (Syntagma, Airport). 0.012 deg lon ~ 1km at this latitude.
+    private func liveCoords() -> [String: GoLocationAdvancer.Coord] {
+        [
+            "M2_A": .init(lat: 38.0, lon: 23.700),
+            "M2_B": .init(lat: 38.0, lon: 23.712),
+            "M2_SYN": .init(lat: 38.0, lon: 23.724),
+            "M3_SYN": .init(lat: 38.0005, lon: 23.7242),
+            "M3_AER": .init(lat: 38.0, lon: 23.736),
+        ]
+    }
+
+    func test_applyLocation_noOpWhenNotLive() {
+        let vm = GoJourneyViewModel(journey: journey(), coords: liveCoords())
+        XCTAssertTrue(vm.canGoLive)
+        vm.applyLocation(lat: 38.0, lon: 23.712) // near B, but not live
+        XCTAssertEqual(vm.position, GuidancePosition(legIndex: 0, stopIndex: 0))
+    }
+
+    func test_applyLocation_advancesAndAlertsOncePerLeg() {
+        let vm = GoJourneyViewModel(journey: journey(), coords: liveCoords())
+        var alerts: [String] = []
+        vm.onGetOffAlert = { g in
+            if case let .getOffNext(next, _, _) = g { alerts.append(next) }
+            if case let .board(_, _, _, next) = g { alerts.append("board:\(next)") }
+        }
+        vm.startLive()
+
+        vm.applyLocation(lat: 38.0, lon: 23.712)   // near B -> get off next (Syntagma), alert
+        XCTAssertEqual(vm.position, GuidancePosition(legIndex: 0, stopIndex: 1))
+        XCTAssertEqual(alerts, ["Syntagma"])
+
+        vm.applyLocation(lat: 38.0005, lon: 23.7242) // at interchange -> board M3 (2-stop leg alert)
+        XCTAssertEqual(vm.position, GuidancePosition(legIndex: 1, stopIndex: 0))
+        XCTAssertEqual(alerts, ["Syntagma", "board:Airport"])
+
+        // A repeat fix on the same leg must not re-alert.
+        vm.applyLocation(lat: 38.0005, lon: 23.7242)
+        XCTAssertEqual(alerts, ["Syntagma", "board:Airport"])
+    }
 }
