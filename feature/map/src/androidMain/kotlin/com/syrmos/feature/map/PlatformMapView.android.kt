@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.common.map.MapDesignTokens
+import com.syrmos.core.model.status.LiveVehicleState
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.SimulatedTrain
@@ -498,7 +499,7 @@ internal actual fun PlatformMapView(
         mapView.invalidate()
     }
 
-    LaunchedEffect(uiState.liveTrains, mapBand) {
+    LaunchedEffect(uiState.visibleLiveTrains, mapBand) {
         val res = context.resources
         if (mapBand < 2) {
             liveTrainMarkers.values.forEach { mapView.overlays.remove(it) }
@@ -506,40 +507,49 @@ internal actual fun PlatformMapView(
             mapView.invalidate()
             return@LaunchedEffect
         }
-        val activeIds = uiState.liveTrains.map { it.id }.toSet()
-        val staleIds = liveTrainMarkers.keys - activeIds
-        staleIds.forEach { id ->
+        // visibleLiveTrains already dropped EXPIRED positions, so a marker that
+        // aged out disappears here instead of freezing on its last GPS fix.
+        val activeIds = uiState.visibleLiveTrains.map { it.train.id }.toSet()
+        val goneIds = liveTrainMarkers.keys - activeIds
+        goneIds.forEach { id ->
             liveTrainMarkers[id]?.let { mapView.overlays.remove(it) }
             liveTrainMarkers.remove(id)
         }
 
-        uiState.liveTrains.forEach { train ->
-            // A "position only" / not-in-service live vehicle is a real GPS dot
-            // but NOT boardable, so draw it de-emphasized (grey, faded) to match
-            // its detail card. Assigned trains keep the line colour.
+        uiState.visibleLiveTrains.forEach { marker ->
+            val train = marker.train
+            // Two independent reasons to de-emphasize a real GPS dot:
+            //  - notInService: a "position only" vehicle is a real dot but NOT
+            //    boardable (grey to match its detail card).
+            //  - stale: the position is older than the fresh window. Drawing an
+            //    aged position with full live styling would be the exact "old
+            //    position shown as live" the data-status rules forbid, so it is
+            //    muted and its sheet says how long ago it was seen.
             val notInService = !train.inService || train.status == "position_only"
-            val color = if (notInService) 0xFF9CA3AF.toInt()
+            val stale = marker.state == LiveVehicleState.STALE
+            val muted = notInService || stale
+            val color = if (muted) 0xFF9CA3AF.toInt()
                 else uiState.lines.find { it.id == train.lineId }?.color?.toComposeColor()?.toArgb()
                     ?: 0xFF7C4DFF.toInt()
             val snappedPos = snapToPolyline(train.latitude, train.longitude, train.lineId, effectiveShapes)
             val existing = liveTrainMarkers[train.id]
             if (existing != null) {
                 existing.position = snappedPos
-                existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId, muted = notInService)
+                existing.icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId, muted = muted)
             } else {
                 val trainId = train.id
-                val marker = Marker(mapView).apply {
+                val newMarker = Marker(mapView).apply {
                     position = snappedPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId, muted = notInService)
+                    icon = buildLiveTrainBitmap(res, color = color, lineId = train.lineId, muted = muted)
                     title = "${train.lineId} ${train.trainNumber}"
                     setOnMarkerClickListener { _, _ ->
                         onTrainSelected(trainId)
                         true
                     }
                 }
-                liveTrainMarkers[train.id] = marker
-                mapView.overlays.add(marker)
+                liveTrainMarkers[train.id] = newMarker
+                mapView.overlays.add(newMarker)
             }
         }
         mapView.invalidate()
