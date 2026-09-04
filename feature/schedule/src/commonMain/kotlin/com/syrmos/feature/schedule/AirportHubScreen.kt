@@ -795,8 +795,16 @@ private fun ServiceTile(route: String, icon: ImageVector, main: String, destinat
 
 @Composable
 private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, suburbanDepartures: List<ProjectedDeparture>, liveBuses: LiveAirportBuses, onOpenStation: (String) -> Unit) {
-    val metroRows = departures.take(3).map { AirportRow("M3", "Syntagma", airportText(lang, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), it.time, SyrmosColorTokens.metroBlue, stationId = "M3_AER") }
-    val suburbanRows = suburbanDepartures.take(2).map { AirportRow("A1", airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), airportText(lang, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), it.time, SyrmosColorTokens.suburban, stationId = "A1_AIR") }
+    // Group by (line, destination) into one card carrying the next few times,
+    // instead of a stack of identical "M3 · Syntagma · Scheduled" rows differing
+    // only by the clock time. Mirrors the grouped station board (groupDepartures)
+    // and the "Then …" tail the featured tiles already use.
+    val metroRows = if (departures.isEmpty()) emptyList() else listOf(
+        AirportRow("M3", "Syntagma", airportText(lang, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), departures.take(3).map { it.time }, SyrmosColorTokens.metroBlue, stationId = "M3_AER"),
+    )
+    val suburbanRows = if (suburbanDepartures.isEmpty()) emptyList() else listOf(
+        AirportRow("A1", airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), airportText(lang, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), suburbanDepartures.take(2).map { it.time }, SyrmosColorTokens.suburban, stationId = "A1_AIR"),
+    )
     // Buses: a live ETA when the Pi is tracking one (LIVE chip, real countdown),
     // else a neutral 24/7 badge - never the old passive "check OASA" copy.
     val busDefs = listOf(
@@ -808,9 +816,9 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
     val busRows = busDefs.map { (line, dest) ->
         val mins = liveBuses.soonest(line)
         if (mins != null) {
-            AirportRow(line, dest, airportText(lang, "Live to the airport stop", "Ζωντανά στη στάση του αεροδρομίου", "Drejtpërdrejt te stacioni i aeroportit", "In tempo reale alla fermata dell'aeroporto"), formatMinutes(mins, lang), SyrmosColorTokens.warning, confidence = SourceConfidence.LIVE)
+            AirportRow(line, dest, airportText(lang, "Live to the airport stop", "Ζωντανά στη στάση του αεροδρομίου", "Drejtpërdrejt te stacioni i aeroportit", "In tempo reale alla fermata dell'aeroporto"), listOf(formatMinutes(mins, lang)), SyrmosColorTokens.warning, confidence = SourceConfidence.LIVE)
         } else {
-            AirportRow(line, dest, airportText(lang, "24-hour express bus", "24ωρο λεωφορείο express", "Autobus express 24 orë", "Bus express 24 ore"), "24/7", SyrmosColorTokens.warning, confidence = SourceConfidence.OPERATOR_LINK)
+            AirportRow(line, dest, airportText(lang, "24-hour express bus", "24ωρο λεωφορείο express", "Autobus express 24 orë", "Bus express 24 ore"), listOf("24/7"), SyrmosColorTokens.warning, confidence = SourceConfidence.OPERATOR_LINK)
         }
     }
     val rows = metroRows + suburbanRows + busRows
@@ -839,8 +847,18 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
                         } else {
                             Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        // Grouped tail: the next departures after the soonest, so
+                        // one card replaces the old stack of same-line rows.
+                        if (row.times.size > 1) {
+                            val later = row.times.drop(1).joinToString(" · ")
+                            Text(
+                                airportText(lang, "Then $later", "Έπειτα $later", "Pastaj $later", "Poi $later"),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
-                    Text(row.time, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = row.color)
+                    Text(row.times.firstOrNull() ?: "-", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = row.color)
                     // Chevron signals the row opens the station's full departures.
                     if (row.stationId != null) {
                         Spacer(Modifier.width(8.dp))
@@ -880,7 +898,7 @@ private fun AirportCard(content: @Composable () -> Unit) {
 
 // stationId is the airport-side stop a row opens in Station Detail; null for
 // buses (no per-stop timetable), which keeps their row non-tappable.
-private data class AirportRow(val route: String, val destination: String, val detail: String, val time: String, val color: Color, val stationId: String? = null, val confidence: SourceConfidence = SourceConfidence.SCHEDULED)
+private data class AirportRow(val route: String, val destination: String, val detail: String, val times: List<String>, val color: Color, val stationId: String? = null, val confidence: SourceConfidence = SourceConfidence.SCHEDULED)
 
 // MARK: - Multi-airport hubs (mirrors iOS AirportData.swift)
 
