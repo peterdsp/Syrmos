@@ -8,7 +8,10 @@ struct AirportListRow: Identifiable {
     let route: String
     let destination: String
     let detail: String
-    let time: String
+    /// The next few departure times for this (line, destination). The first is
+    /// the dominant countdown; the rest render as a "Then …" tail, so one grouped
+    /// row replaces the old stack of same-line rows.
+    let times: [String]
     let color: Color
     var stationId: String? = nil
     var confidence: SourceConfidence = .scheduled
@@ -45,10 +48,17 @@ enum AirportServiceRows {
     ) -> [AirportListRow] {
         var output: [AirportListRow] = []
 
-        // Metro (M3 / M3_AIR) -> Syntagma. De-dup by time, cap at 3.
+        // Metro (M3 / M3_AIR) -> Syntagma. De-dup by time, next 3, collapsed into
+        // ONE grouped row (was three identical "M3 · Syntagma · Scheduled" rows
+        // differing only by the clock time). Mirrors the grouped station board.
+        var metroTimes: [String] = []
         var seenMetro = Set<String>()
         for dep in metroDepartures where dep.lineId == "M3" || dep.lineId == "M3_AIR" {
             guard seenMetro.insert(dep.time).inserted else { continue }
+            metroTimes.append(dep.time)
+            if metroTimes.count >= 3 { break }
+        }
+        if !metroTimes.isEmpty {
             output.append(AirportListRow(
                 route: "M3",
                 destination: "Syntagma",
@@ -57,35 +67,42 @@ enum AirportServiceRows {
                           "Προγραμματισμένη αναχώρηση μετρό",
                           "Nisje e programuar e metrosë",
                           "Partenza metro programmata"),
-                time: dep.time,
+                times: metroTimes,
                 color: Color.metroBlue,
-                stationId: airportSideStationId(forRoute: dep.lineId),
+                stationId: airportSideStationId(forRoute: "M3"),
                 confidence: .scheduled
             ))
-            if output.count >= 3 { break }
         }
 
-        // Suburban (A1 / A2) -> Piraeus. De-dup by line+time, cap at 2, keep the
-        // real line badge instead of relabeling everything A1.
+        // Suburban (A1 / A2) -> Piraeus. Group by the REAL line (never relabel to
+        // A1), de-dup by time, next 2 each -> one grouped row per line.
+        var suburbanTimes: [String: [String]] = [:]
+        var suburbanOrder: [String] = []
         var seenSuburban = Set<String>()
-        var suburbanCount = 0
         for dep in metroDepartures where dep.lineId == "A1" || dep.lineId == "A2" {
             guard seenSuburban.insert(dep.lineId + dep.time).inserted else { continue }
+            if suburbanTimes[dep.lineId] == nil {
+                suburbanTimes[dep.lineId] = []
+                suburbanOrder.append(dep.lineId)
+            }
+            if suburbanTimes[dep.lineId]!.count < 2 {
+                suburbanTimes[dep.lineId]!.append(dep.time)
+            }
+        }
+        for line in suburbanOrder {
             output.append(AirportListRow(
-                route: dep.lineId,
+                route: line,
                 destination: t(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"),
                 detail: t(language,
                           "Scheduled suburban departure",
                           "Προγραμματισμένη αναχώρηση προαστιακού",
                           "Nisje e programuar e trenit periferik",
                           "Partenza suburbano programmata"),
-                time: dep.time,
+                times: suburbanTimes[line] ?? [],
                 color: SyrmosTokens.suburban,
-                stationId: airportSideStationId(forRoute: dep.lineId),
+                stationId: airportSideStationId(forRoute: line),
                 confidence: .scheduled
             ))
-            suburbanCount += 1
-            if suburbanCount >= 2 { break }
         }
 
         // Express buses. Live ETA when the Pi is tracking one, else a neutral 24/7.
@@ -99,7 +116,7 @@ enum AirportServiceRows {
                               "Ζωντανή άφιξη στη στάση του αεροδρομίου",
                               "Mbërritje e drejtpërdrejtë në stacionin e aeroportit",
                               "Arrivo in tempo reale alla fermata dell'aeroporto"),
-                    time: etaLabel(minutes: mins, language: language),
+                    times: [etaLabel(minutes: mins, language: language)],
                     color: SyrmosTokens.warning,
                     stationId: nil,
                     confidence: .live
@@ -113,7 +130,7 @@ enum AirportServiceRows {
                               "24ωρο λεωφορείο express",
                               "Autobus express 24 orë",
                               "Bus express 24 ore"),
-                    time: "24/7",
+                    times: ["24/7"],
                     color: SyrmosTokens.warning,
                     stationId: nil,
                     confidence: .operatorLink

@@ -44,7 +44,8 @@ final class AirportServiceTests: XCTestCase {
         let deps = [dep("M3", "06:39"), dep("M3_AIR", "06:39"), dep("M3", "06:49")]
         let rows = AirportServiceRows.build(metroDepartures: deps, buses: nil, language: .english)
         let metro = rows.filter { $0.route == "M3" }
-        XCTAssertEqual(metro.map { $0.time }, ["06:39", "06:49"], "one row per distinct time")
+        XCTAssertEqual(metro.count, 1, "one grouped M3 row")
+        XCTAssertEqual(metro.first?.times, ["06:39", "06:49"], "distinct times collapse into one grouped row")
     }
 
     func testSuburbanKeepsRealLineAndIsNotRelabeledMetro() {
@@ -62,13 +63,16 @@ final class AirportServiceTests: XCTestCase {
                     dep("A1", "04:30", dir: "Piraeus"), dep("A1", "05:00", dir: "Piraeus")]
         let rows = AirportServiceRows.build(metroDepartures: deps, buses: nil, language: .english)
         let sub = rows.filter { $0.route == "A1" }
-        XCTAssertEqual(sub.map { $0.time }, ["04:00", "04:30"], "duplicates dropped, capped at 2")
+        XCTAssertEqual(sub.count, 1, "one grouped A1 row")
+        XCTAssertEqual(sub.first?.times, ["04:00", "04:30"], "duplicates dropped, next 2 in one grouped row")
     }
 
     func testMetroCappedAtThree() {
         let deps = (0..<6).map { dep("M3", String(format: "07:%02d", $0 * 5)) }
         let rows = AirportServiceRows.build(metroDepartures: deps, buses: nil, language: .english)
-        XCTAssertEqual(rows.filter { $0.route == "M3" }.count, 3)
+        let metro = rows.filter { $0.route == "M3" }
+        XCTAssertEqual(metro.count, 1, "one grouped M3 row")
+        XCTAssertEqual(metro.first?.times.count, 3, "capped at the next 3 times")
     }
 
     // MARK: - Buses: live vs fallback
@@ -80,11 +84,11 @@ final class AirportServiceTests: XCTestCase {
         ]))
         let rows = AirportServiceRows.build(metroDepartures: [], buses: live, language: .english)
         let x95 = rows.first { $0.route == "X95" }
-        XCTAssertEqual(x95?.time, "5 min")
+        XCTAssertEqual(x95?.times, ["5 min"])
         XCTAssertEqual(x95?.confidence, .live)
         // X96 is untracked in this feed -> neutral fallback, never a fake time.
         let x96 = rows.first { $0.route == "X96" }
-        XCTAssertEqual(x96?.time, "24/7")
+        XCTAssertEqual(x96?.times, ["24/7"])
         XCTAssertEqual(x96?.confidence, .operatorLink)
     }
 
@@ -92,7 +96,7 @@ final class AirportServiceTests: XCTestCase {
         let rows = AirportServiceRows.build(metroDepartures: [], buses: nil, language: .english)
         for line in ["X95", "X93", "X96", "X97"] {
             let row = rows.first { $0.route == line }
-            XCTAssertEqual(row?.time, "24/7")
+            XCTAssertEqual(row?.times, ["24/7"])
             XCTAssertEqual(row?.confidence, .operatorLink)
             XCTAssertFalse(row?.detail.contains("OASA") ?? true, "no passive check-OASA copy")
         }
