@@ -365,6 +365,74 @@ body.dark-mode .nav-item--active {
     background: rgba(0,114,206,.08);
 }
 
+/* ===== Grouped departure card =====
+   One card per (line, destination): a destination-first heading with the line
+   badge shown once, then the next few relative times (dominant) over their
+   clock times (secondary), then a single confidence chip. Replaces the stack of
+   near-identical "Line 3 · Scheduled" rows. */
+.departure-card--grouped {
+    align-items: flex-start;
+    padding: 10px 4px;
+}
+.departure-card--grouped .departure-card__header { align-items: flex-start; }
+.departure-card--grouped .departure-card__icon { margin-top: 2px; }
+.departure-card--grouped .departure-card__text { gap: 5px; }
+
+.departure-card__heading {
+    display: flex; align-items: center; gap: 6px;
+    min-width: 0;
+}
+.departure-card__line-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 20px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+.departure-card__arrow {
+    color: var(--sy-text-secondary);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.departure-card__dest-inline {
+    font-size: 13px; font-weight: 600;
+    color: var(--sy-text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.departure-card__times {
+    display: flex; align-items: flex-end; flex-wrap: wrap;
+    gap: 12px;
+}
+.dep-time {
+    display: inline-flex; flex-direction: column; align-items: flex-start;
+    line-height: 1.15;
+}
+.dep-time__min {
+    font-size: 14px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--sy-text-secondary);
+}
+.dep-time__clock {
+    font-size: var(--sy-font-clock-size);
+    font-variant-numeric: tabular-nums;
+    color: var(--sy-text-tertiary, var(--sy-text-secondary));
+}
+.dep-time--next .dep-time__min {
+    font-size: 17px; font-weight: 700;
+    color: var(--sy-text-primary);
+}
+.dep-time--more {
+    justify-content: center;
+    font-size: 12px; font-weight: 600;
+    color: var(--sy-text-secondary);
+    align-self: center;
+}
+.dep-time--more::before { content: ""; }
+
 .departure-empty {
     padding: 16px 8px;
     font-size: 13px;
