@@ -39,6 +39,8 @@ import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.designsystem.theme.tokens.SyrmosTypographyTokens
+import com.syrmos.core.domain.departures.ResolvedDeparture
+import com.syrmos.core.domain.departures.groupDepartures
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.location.NearestStationResult
@@ -405,10 +407,27 @@ internal fun RadialNearbySection(
                             )
                             Text(formatNearbyDistance(station.distanceMeters), style = MaterialTheme.typography.labelMedium)
                         }
-                        departures.filter { it.lineId in station.lineIds }.take(2).forEach { departure ->
-                            val disrupted = lineDisruptions[departure.lineId]
+                        // Group by line so a line with two imminent departures reads
+                        // as "M3 · 5 min · 12 min" instead of two "M3 · N min" rows.
+                        // Destination is empty because this compact card shows only
+                        // the line + countdowns, so grouping folds purely by line.
+                        val grouped = groupDepartures(
+                            departures.filter { it.lineId in station.lineIds }.map { departure ->
+                                ResolvedDeparture(
+                                    lineId = departure.lineId,
+                                    destination = "",
+                                    minutesAway = departure.minutesAway,
+                                    time = "",
+                                    sourceConfidence = departure.sourceConfidence,
+                                )
+                            },
+                            maxTimes = 3,
+                        ).take(2)
+                        grouped.forEach { group ->
+                            val disrupted = lineDisruptions[group.lineId]
                             Text(
-                                text = "${departure.lineId} · ${formatCountdown(departure.minutesAway, lang)}" +
+                                text = "${group.lineId} · " +
+                                    group.times.joinToString(" · ") { formatCountdown(it.minutesAway, lang) } +
                                     if (disrupted != null && disrupted.rank > 0) " · ⚠" else "",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
