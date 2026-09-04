@@ -699,6 +699,11 @@
     // marched out into the Saronic Gulf — the "live trains in the sea" the feed
     // never actually reported.
     const liveTrainLayer = L.layerGroup();
+    // Live airport express-bus vehicles (X93/95/96/97) ride in their own layer,
+    // fed by /api/oasa-airport-buses. Kept separate from the train layer so each
+    // clears independently and buses never inherit the train glyph/colour.
+    const liveBusLayer = L.layerGroup();
+    let lastBusVehicles = [];
     let departureRefreshTimer = null;
     const lineStations = new Map(
         routes.map((route) => [
@@ -2367,10 +2372,14 @@
             if (vehiclesHidden) {
                 liveTrainLayer.clearLayers();
                 liveTrainMarkers.clear();
+                liveBusLayer.clearLayers();
                 simulatedTrainMarkers.forEach((marker) => marker.remove());
                 simulatedTrainMarkers.clear();
-            } else if (lastSimulatedTrains.length) {
-                renderSimulatedTrainsOnMap(lastSimulatedTrains);
+            } else {
+                renderAirportBusVehicles(lastBusVehicles);
+                if (lastSimulatedTrains.length) {
+                    renderSimulatedTrainsOnMap(lastSimulatedTrains);
+                }
             }
         });
     }
@@ -2404,6 +2413,7 @@
         // Without this they stayed full-size when zoomed out and collapsed into a
         // single pile on the coastline that read as "trains in the sea".
         renderLiveTrains(lastLiveTrains);
+        renderAirportBusVehicles(lastBusVehicles);
         if (DEBUG) logMarkerAudit(z);
     });
 
@@ -2532,6 +2542,7 @@
     initStep("renderPopularPanel", renderPopularPanel);
     initStep("updateNearbyPanel", updateNearbyPanel);
     initStep("connectLiveTrainStream", connectLiveTrainStream);
+    initStep("connectAirportBusStream", connectAirportBusStream);
     initStep("pollLivePositions", pollLivePositions);
     initStep("setupRightRail", setupRightRail);
     initStep("startTrainSimulation", startTrainSimulation);
@@ -2754,6 +2765,58 @@
                 showTrainSheet("live", train);
             });
             liveTrainMarkers.set(train.id, marker);
+        }
+    }
+
+    // Poll the airport-bus feed and plot each tracked vehicle. Separate from the
+    // train stream: buses come from /api/oasa-airport-buses (positions + ETAs),
+    // trains from /api/trains. 15s cadence matches the watcher's 30s writes.
+    function connectAirportBusStream() {
+        const URL = "https://api-syrmos.peterdsp.dev/api/oasa-airport-buses";
+        async function pollOnce() {
+            try {
+                const res = await fetch(URL, { cache: "no-store" });
+                if (!res.ok) return;
+                const payload = await res.json();
+                renderAirportBusVehicles(SyrmosAirport.airportBusVehicles(payload));
+            } catch (_error) {
+                // Keep the last frame on transient errors.
+            }
+        }
+        pollOnce();
+        setInterval(pollOnce, 15_000);
+    }
+
+    function renderAirportBusVehicles(vehicles) {
+        lastBusVehicles = vehicles;
+        if (!map.hasLayer(liveBusLayer)) liveBusLayer.addTo(map);
+        liveBusLayer.clearLayers();
+        // Same declutter rule as trains: hidden by the manual toggle or when
+        // zoomed out past the regional threshold (avoids a coastline pile-up).
+        if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
+            return;
+        }
+        const busColor = "#D97706"; // SyrmosTokens.warning, matching the bus rows.
+        for (const v of vehicles) {
+            const icon = L.divIcon({
+                className: "live-train-marker",
+                html: `
+                    <span class="live-train-marker__pulse" style="border-color:${busColor}"></span>
+                    <span class="live-train-marker__core" style="background:${busColor}">
+                        <span class="live-train-marker__glyph">🚌</span>
+                    </span>
+                    <span class="live-train-marker__badge" style="background:${busColor}">${v.lineId}</span>
+                `,
+                iconSize: [44, 56],
+                iconAnchor: [22, 22],
+            });
+            const dir = v.toAirport === true
+                ? (currentLang === "el" ? "προς αεροδρόμιο" : currentLang === "sq" ? "drejt aeroportit" : currentLang === "it" ? "verso l'aeroporto" : "to the airport")
+                : v.toAirport === false
+                    ? (currentLang === "el" ? "από αεροδρόμιο" : currentLang === "sq" ? "nga aeroporti" : currentLang === "it" ? "dall'aeroporto" : "from the airport")
+                    : "";
+            const marker = L.marker([v.lat, v.lng], { icon, keyboard: false, zIndexOffset: 900 }).addTo(liveBusLayer);
+            marker.bindTooltip(`${v.lineId}${dir ? " · " + dir : ""}`, { direction: "top", offset: [0, -10] });
         }
     }
 
