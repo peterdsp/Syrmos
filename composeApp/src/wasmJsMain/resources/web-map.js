@@ -2099,41 +2099,63 @@
         const railLabel = t(fromApi ? "scheduled" : "offline_snapshot");
         const departures = [...railDepartures, ...busRows];
 
-        stationDepartures.innerHTML = departures.map((departure, idx) => {
-            const sourceMod = departure.source || railMod;
-            const sourceLabel = departure.sourceLabel || railLabel;
+        // Collapse consecutive-in-time departures that share a (line,
+        // destination) into one grouped card carrying the next few times, so a
+        // busy line reads as "Line 3 → Doukissis Plakentias · 4 · 12 · 22 min"
+        // with the badge and confidence shown once, instead of a stack of
+        // near-identical "Line 3 · Scheduled" rows. Falls back to one group per
+        // departure if the pure module failed to load.
+        const groups = window.SyrmosDepartures
+            ? window.SyrmosDepartures.groupDepartures(departures, { maxTimes: 3 })
+            : departures.map((d) => ({
+                line: d.line, lineId: d.line?.id || "", destination: d.destination || d.direction || "",
+                serviceType: d.serviceType, source: d.source, sourceLabel: d.sourceLabel, ariaNote: d.ariaNote,
+                times: [{ minutesAway: d.minutesAway, time: d.time }], moreCount: 0, total: 1,
+            }));
+
+        stationDepartures.innerHTML = groups.map((group, idx) => {
+            const sourceMod = group.source || railMod;
+            const sourceLabel = group.sourceLabel || railLabel;
             const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
             const entranceCls = idx <= 8 ? ` sy-entrance sy-entrance-${idx}` : "";
-            const minutesLabel = formatMinutesAway(departure.minutesAway);
-            const lineId = departure.line?.id || "";
-            const destination = departure.destination || departure.direction || "";
+            const lineId = group.lineId || group.line?.id || "";
+            const destination = group.destination || "";
             const iconSrc = vehicleIconFor(lineId, destination);
             const iconHtml = iconSrc
                 ? `<img class="departure-card__icon" src="https://api-syrmos.peterdsp.dev${iconSrc}" alt="${lineId}" loading="lazy" />`
-                : `<span class="line-dot" style="background:${departure.line?.color || 'var(--accent)'};"></span>`;
+                : `<span class="line-dot" style="background:${group.line?.color || 'var(--accent)'};"></span>`;
             // Airport pill: serviceType=="airport" covers both outbound (to
             // Airport) and inbound (from Airport → Dimotiko Theatro). Keeps
             // the terminus text intact so the destination column stays
             // truthful — the pill just signals "this train touches the
             // Airport leg."
-            const airportPill = departure.serviceType === "airport"
+            const airportPill = group.serviceType === "airport"
                 ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
                 : "";
+            // Dominant relative minutes with the secondary clock time beneath;
+            // the soonest gets the --next accent. Absolute times stay so a rider
+            // planning ahead still sees the wall-clock.
+            const timesHtml = group.times.map((tt, i) => {
+                const minLabel = formatMinutesAway(tt.minutesAway);
+                return `<span class="dep-time${i === 0 ? ' dep-time--next' : ''}"><span class="dep-time__min">${minLabel}</span><span class="dep-time__clock">${tt.time || ""}</span></span>`;
+            }).join("");
+            const moreHtml = group.moreCount > 0
+                ? `<span class="dep-time dep-time--more" title="${group.moreCount} more">+${group.moreCount}</span>`
+                : "";
+            const minsAria = group.times.map((tt) => formatMinutesAway(tt.minutesAway)).join(", ");
             return `
-                <div class="departure-card${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minutesLabel}, at ${departure.time || ''}${departure.ariaNote ? ', ' + departure.ariaNote : ''}">
+                <div class="departure-card departure-card--grouped${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minsAria}${group.ariaNote ? ', ' + group.ariaNote : ''}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
-                            <div class="departure-card__line">
-                                <span>${departure.line?.name || lineId}</span>
+                            <div class="departure-card__heading">
+                                <span class="departure-card__line-badge" style="background:${group.line?.color || 'var(--accent)'};">${group.line?.name || lineId}</span>
                                 ${airportPill}
+                                <span class="departure-card__arrow" aria-hidden="true">→</span>
+                                <span class="departure-card__dest-inline">${destination}</span>
                             </div>
-                            <div class="departure-card__destination">${destination}</div>
+                            <div class="departure-card__times">${timesHtml}${moreHtml}</div>
                             ${sourceChip}
-                        </div>
-                        <div class="departure-card__eta">
-                            <div class="departure-card__minutes">${minutesLabel}</div>
-                            <div class="departure-card__time">${departure.time || ""}</div>
                         </div>
                     </div>
                 </div>
