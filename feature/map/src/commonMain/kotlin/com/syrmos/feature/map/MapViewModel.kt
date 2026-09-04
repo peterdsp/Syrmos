@@ -21,12 +21,14 @@ import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.SimulatedTrain
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.model.status.LiveVehicleState
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.network.OasaAirportBusService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLivePositionsService
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +52,20 @@ data class StationDepartureUi(
     val minutesAway: Int,
 )
 
+/**
+ * A real-GPS live train ready to plot, tagged with its freshness so the renderer
+ * can be honest about age. Only [LiveVehicleState.LIVE] and
+ * [LiveVehicleState.STALE] markers are ever produced; an EXPIRED position is
+ * dropped upstream (and its line handed back to the schedule projector), so a
+ * dead / offline feed never leaves a frozen "live" dot on the map. [ageSeconds]
+ * is `null` when the position carried no usable timestamp.
+ */
+data class LiveTrainMarker(
+    val train: LiveSuburbanTrain,
+    val state: LiveVehicleState,
+    val ageSeconds: Long?,
+)
+
 data class MapUiState(
     val stations: List<Station> = emptyList(),
     val mapStations: List<MapStationNode> = emptyList(),
@@ -63,6 +79,12 @@ data class MapUiState(
     val selectedStationLines: List<Line> = emptyList(),
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
+    // The real-GPS trains actually plotted, tagged with per-vehicle freshness and
+    // with EXPIRED positions already dropped. Recomputed every simulation tick so
+    // a marker ages LIVE -> STALE -> gone against wall-clock even when the feed
+    // stops emitting (offline). The renderer must use THIS, not [liveTrains], so
+    // an aged position is never drawn as a plain live dot.
+    val visibleLiveTrains: List<LiveTrainMarker> = emptyList(),
     val simulatedTrains: List<SimulatedTrain> = emptyList(),
     // Live airport express-bus positions (X93/95/96/97) from the OASA telematics
     // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
@@ -268,14 +290,19 @@ class MapViewModel(
                         closedStationIds = closedIds,
                         geometry = geometry,
                     )
-                    // Suburban A1-A4 dedupe: railway.gov.gr `liveTrains` carry
-                    // raw GPS. Whenever the live feed has a train on a line,
-                    // hide the projected dot for that line so we don't render
-                    // two markers (one accurate GPS, one schedule-projected)
-                    // for the same physical train. If the live feed is empty
-                    // for a line (offline mode or feed dropped), the
-                    // projected dot is the only thing the user sees.
-                    val coveredByLive = state.liveTrains.map { it.lineId }.toSet()
+                    // Classify each real-GPS train by the age of its own position.
+                    // A LIVE or STALE (recent-but-aged) train is plotted; an
+                    // EXPIRED one is dropped so a dead/offline feed cannot leave a
+                    // frozen dot pretending to be live. Recomputed every tick so a
+                    // marker crosses LIVE -> STALE -> gone against wall-clock with
+                    // no new data. Suburban A1-A4 dedupe: a STILL-TRACKED (LIVE or
+                    // STALE) live train hides its line's projected dot; an EXPIRED
+                    // ghost is NOT covered, so the projector fills back in once the
+                    // feed goes stale - the offline fallback the frozen ghost used
+                    // to block.
+                    val classification = classifyLiveTrains(state.liveTrains, Clock.System.now())
+                    val liveMarkers = classification.markers
+                    val coveredByLive = classification.coveredLineIds
                     val filtered = simulated.filter { it.lineId !in coveredByLive }
                     // National rail + rail-replacement buses have no live feed or
                     // offsets, so project them from the bundled timetables.
@@ -295,6 +322,7 @@ class MapViewModel(
                     _uiState.update { current ->
                         current.copy(
                             simulatedTrains = visibleTrains,
+                            visibleLiveTrains = liveMarkers,
                             selectedSimulatedTrain = current.selectedSimulatedTrain?.let { selected ->
                                 visibleTrains.find { it.id == selected.id }
                             },

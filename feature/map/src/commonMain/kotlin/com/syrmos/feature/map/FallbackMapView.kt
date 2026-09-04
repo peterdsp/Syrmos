@@ -261,7 +261,9 @@ private fun DrawScope.drawFallbackMap(
     )
 
     drawLiveTrains(
-        trains = uiState.liveTrains,
+        // EXPIRED positions already dropped, so the fallback canvas never draws a
+        // frozen ghost either (parity with the osmdroid map).
+        trains = uiState.visibleLiveTrains.map { it.train },
         geometry = uiState.effectiveGeometry,
         canvasWidth = canvasWidth,
         canvasHeight = canvasHeight,

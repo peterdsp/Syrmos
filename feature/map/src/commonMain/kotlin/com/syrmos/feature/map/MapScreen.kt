@@ -86,7 +86,10 @@ import com.syrmos.core.common.StationNameTranslator
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.alerts.AlertSeverity
+import com.syrmos.core.model.status.LiveVehicleState
+import com.syrmos.core.model.status.classifyLiveVehicleIso
 import com.syrmos.core.model.transit.LiveSuburbanTrain
+import kotlinx.datetime.Clock
 import com.syrmos.core.model.transit.SimulatedTrain
 import org.koin.compose.koinInject
 
@@ -143,7 +146,7 @@ fun MapScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.End,
         ) {
-            if (uiState.liveTrains.isNotEmpty()) {
+            if (uiState.visibleLiveTrains.isNotEmpty()) {
                 Surface(
                     onClick = { viewModel.toggleLiveTrainsSheet() },
                     modifier = Modifier.size(56.dp).liquidGlassOverlay(),
@@ -312,7 +315,9 @@ fun MapScreen(
 
         if (uiState.showLiveTrainsSheet) {
             LiveTrainsSheet(
-                trains = uiState.liveTrains,
+                // The stale-aware, EXPIRED-dropped list the map plots, so the
+                // sheet never lists a ghost train that is no longer on the map.
+                trains = uiState.visibleLiveTrains.map { it.train },
                 lines = uiState.lines,
                 onTrainSelected = viewModel::flyToTrain,
                 onDismiss = viewModel::toggleLiveTrainsSheet,
@@ -1138,41 +1143,79 @@ private fun TrainDetailCard(
                 }
             }
 
-            // Live stream button
+            // Live stream button. A livestream intrinsically needs connectivity,
+            // so offer it ONLY while the train is freshly tracked (a proxy for
+            // "online and this vehicle is live"). Once the position is stale or
+            // expired (offline / feed dropped) the URL would be dead, so we show a
+            // clear "requires an internet connection" state rather than a button
+            // that opens nothing - mirroring the iOS livestream offline state.
             val streamUrl = train.liveStreamUrl
             if (!streamUrl.isNullOrBlank()) {
-                Button(
-                    onClick = { uriHandler.openUri(streamUrl) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Info,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = vehicleText(lang, "Watch Live", "Ζωντανή προβολή", "Shiko drejtpërdrejt", "Guarda in diretta"),
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(Color.Red, CircleShape),
-                    )
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text(
-                        text = vehicleText(lang, "LIVE", "ΖΩΝΤΑΝΑ", "DREJTPËRDREJT", "DIRETTA"),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red,
-                    )
+                val streamFresh = classifyLiveVehicleIso(train.updatedAt, Clock.System.now()).state == LiveVehicleState.LIVE
+                if (streamFresh) {
+                    Button(
+                        onClick = { uriHandler.openUri(streamUrl) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text(
+                            text = vehicleText(lang, "Watch Live", "Ζωντανή προβολή", "Shiko drejtpërdrejt", "Guarda in diretta"),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(Color.Red, CircleShape),
+                        )
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Text(
+                            text = vehicleText(lang, "LIVE", "ΖΩΝΤΑΝΑ", "DREJTPËRDREJT", "DIRETTA"),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red,
+                        )
+                    }
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(
+                                text = vehicleText(
+                                    lang,
+                                    "Livestream requires an internet connection",
+                                    "Η ζωντανή ροή απαιτεί σύνδεση στο διαδίκτυο",
+                                    "Transmetimi i drejtpërdrejtë kërkon lidhje interneti",
+                                    "La diretta richiede una connessione a internet",
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
         }

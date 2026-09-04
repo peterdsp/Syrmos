@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
+import kotlinx.datetime.Clock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -48,6 +49,14 @@ class RailwayGovLiveTrackerService(
                 }
                 val body = response.bodyAsText()
                 val payload = json.decodeFromString<TrainsPayload>(body)
+                // The feed stamps every snapshot with a single generation time
+                // (railway.gov's own). Carry it onto each position so the map can
+                // age a marker out honestly: an offline / dropped poll no longer
+                // emits, so the retained trains keep this timestamp and grow stale
+                // against wall-clock instead of freezing on screen as "live".
+                // Fall back to receive-time when the feed omits it.
+                val stamp = payload.updatedAt?.takeIf { it.isNotBlank() }
+                    ?: Clock.System.now().toString()
                 val trains = payload.trains
                     .asSequence()
                     // Skip a train that has no coordinate rather than letting the
@@ -57,7 +66,7 @@ class RailwayGovLiveTrackerService(
                     // on the previous frame. Mirrors the web map's null guard.
                     .filter { it.lat != null && it.lng != null }
                     .filter { lineIds.isNullOrEmpty() || it.lineId in lineIds }
-                    .map { it.toDomain() }
+                    .map { it.toDomain(stamp) }
                     .sortedWith(
                         compareBy<LiveSuburbanTrain> { it.delayMinutes }
                             .thenBy { it.trainNumber },
@@ -76,7 +85,7 @@ class RailwayGovLiveTrackerService(
         }
     }
 
-    private fun TrainItem.toDomain(): LiveSuburbanTrain {
+    private fun TrainItem.toDomain(updatedAtStamp: String): LiveSuburbanTrain {
         return LiveSuburbanTrain(
             id = id,
             lineId = lineId,
@@ -95,7 +104,7 @@ class RailwayGovLiveTrackerService(
             speedKph = speed,
             latitude = lat ?: 0.0,
             longitude = lng ?: 0.0,
-            updatedAt = "",
+            updatedAt = updatedAtStamp,
             course = course,
             altitude = altitude,
             locomotiveNumber = locomotiveNumber,
