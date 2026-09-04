@@ -2686,6 +2686,14 @@
 
         pollOnce();
         setInterval(pollOnce, POLL_INTERVAL_MS);
+        // Re-render from the last snapshot on a timer so the fleet ages out even
+        // with NO new data (offline / dropped feed): the poll only redraws on a
+        // successful fetch, so without this a stale batch would keep its fresh
+        // "live" styling until the next success. Cheap (re-uses lastLiveTrains)
+        // and idempotent - renderLiveTrains recomputes the batch freshness.
+        setInterval(() => {
+            if (lastLiveTrains && lastLiveTrains.length) renderLiveTrains(lastLiveTrains);
+        }, 15_000);
     }
 
     function updateLiveTrains(trainsFromApi, updatedAt) {
@@ -2720,21 +2728,39 @@
         renderLiveTrains(trains);
     }
 
-    // Honest freshness for the real telematics batch. Always shows the age; the
-    // chip colour signals fresh (live) vs stale (shown as an estimate). These
-    // are observed GPS trains, so this is the age of real data, not a schedule
-    // projection. The 90s window mirrors the DataStatus contract; a small future
-    // clock skew is tolerated rather than shown as an error. Uses epoch math
+    // Pure classification of the real-telematics batch by the age of its single
+    // `updatedAt`, mirroring the KMP `classifyLiveVehicle` and iOS
+    // `LiveVehicleFreshnessRule` (90s fresh window, 600s expiry). Returns
+    // { state, ageSec } where state is "live" | "stale" | "expired" | "unknown".
+    // The /api/trains feed carries ONE updatedAt for the whole snapshot (no
+    // per-train GPS timestamps), so the fleet ages as a batch. Epoch math
     // (Date.now vs the absolute updatedAt), not athensNow(), because this is a
     // duration between two absolute timestamps, not a wall-clock comparison.
+    const LIVE_FRESH_WINDOW_SEC = 90;
+    const LIVE_EXPIRY_SEC = 600;
+    function classifyLiveBatch(updatedAtIso, nowMs) {
+        if (!updatedAtIso) return { state: "unknown", ageSec: null };
+        const parsed = Date.parse(updatedAtIso);
+        if (isNaN(parsed)) return { state: "unknown", ageSec: null };
+        const ageSec = Math.round((nowMs - parsed) / 1000);
+        if (ageSec < 0) {
+            // Tolerate a small device clock skew as just-now; distrust a far-future stamp.
+            return -ageSec <= 120 ? { state: "live", ageSec: 0 } : { state: "unknown", ageSec: null };
+        }
+        if (ageSec <= LIVE_FRESH_WINDOW_SEC) return { state: "live", ageSec };
+        if (ageSec <= LIVE_EXPIRY_SEC) return { state: "stale", ageSec };
+        return { state: "expired", ageSec };
+    }
+
+    // Honest freshness for the real telematics batch, for the panel header chip.
+    // Always shows the age; the chip colour signals fresh (live) vs aged (shown
+    // as an estimate). These are observed GPS trains, so this is the age of real
+    // data, not a schedule projection.
     function liveBatchFreshness() {
-        const iso = liveTrainsUpdatedAt;
-        if (!iso) return { mod: "estimated", label: t("live_unknown_age") };
-        const ageSec = Math.round((Date.now() - Date.parse(iso)) / 1000);
-        if (isNaN(ageSec)) return { mod: "estimated", label: t("live_unknown_age") };
-        const human = Math.abs(ageSec) < 90 ? `${Math.max(ageSec, 0)}s` : `${Math.round(ageSec / 60)}m`;
-        const fresh = ageSec <= 90 && ageSec > -120;
-        return { mod: fresh ? "live" : "estimated", label: `${t("live")} · ${t("updated_ago", { t: human })}` };
+        const c = classifyLiveBatch(liveTrainsUpdatedAt, Date.now());
+        if (c.state === "unknown") return { mod: "estimated", label: t("live_unknown_age") };
+        const human = c.ageSec < 90 ? `${Math.max(c.ageSec, 0)}s` : `${Math.round(c.ageSec / 60)}m`;
+        return { mod: c.state === "live" ? "live" : "estimated", label: `${t("live")} · ${t("updated_ago", { t: human })}` };
     }
 
     function renderLiveTrains(trains) {
@@ -2742,6 +2768,13 @@
         if (!map.hasLayer(liveTrainLayer)) liveTrainLayer.addTo(map);
         liveTrainLayer.clearLayers();
         liveTrainMarkers.clear();
+        // Age of the real-GPS batch. Once STALE the markers are drawn
+        // de-emphasised (never pulsing "live"); once EXPIRED they are not drawn
+        // at all, so a dead/offline feed hands the map back to the schedule
+        // projector instead of freezing a fake-live fleet. Recomputed on every
+        // call, and a timer re-renders from lastLiveTrains so this ages with no
+        // new data.
+        const batch = classifyLiveBatch(liveTrainsUpdatedAt, Date.now());
 
         if (trains.length) {
             // Head the real-telematics section with its batch freshness, so a
@@ -2791,9 +2824,23 @@
         // the live markers must follow the identical rule. The zoomend handler
         // re-runs this from lastLiveTrains, so zooming back in restores every
         // marker at its true coordinate (Piraeus, Rentis, Koropi…) untouched.
+        // An EXPIRED batch is too old to plot as real positions at all: leave the
+        // layer cleared so the schedule-projected dots take the map back rather
+        // than pinning a frozen "live" fleet. (The panel above still shows the
+        // aged batch chip so the list is not silently emptied.)
+        if (batch.state === "expired") {
+            return;
+        }
+
         if (window.__syrmosVehiclesHidden || map.getZoom() < MAP_TOKENS.majorHubMinZoom) {
             return;
         }
+
+        // A STALE (or unknown-age) batch is the last-known position, not a current
+        // one: draw every marker de-emphasised so an aged GPS fix never reads as a
+        // live, pulsing dot - the exact "old position shown as live" the
+        // data-status rules forbid.
+        const staleBatch = batch.state !== "live";
 
         for (const train of trains) {
             const line = lineMap.get(train.lineId);
@@ -2803,17 +2850,19 @@
             // faded) so it never reads as a normal boardable train, matching the
             // detail sheet. Parked/yard vehicles are withheld server-side.
             const notInService = train.inService === false || train.status === "position_only";
-            const lineColor = notInService ? "#9CA3AF" : (line ? line.color : "#7C4DFF");
+            // De-emphasise for EITHER reason: not boardable, OR the batch is aged.
+            const muted = notInService || staleBatch;
+            const lineColor = muted ? "#9CA3AF" : (line ? line.color : "#7C4DFF");
             // Custom divIcon so suburban trains are clearly distinguishable
             // from simulated metro/tram dots: pulsing ring + line-id badge.
             const icon = L.divIcon({
-                className: notInService ? "live-train-marker live-train-marker--muted" : "live-train-marker",
+                className: muted ? "live-train-marker live-train-marker--muted" : "live-train-marker",
                 html: `
-                    ${notInService ? "" : `<span class="live-train-marker__pulse" style="border-color:${lineColor}"></span>`}
-                    <span class="live-train-marker__core" style="background:${lineColor}${notInService ? ";opacity:0.55" : ""}">
-                        <span class="live-train-marker__glyph">${notInService ? "⏸" : "🚆"}</span>
+                    ${muted ? "" : `<span class="live-train-marker__pulse" style="border-color:${lineColor}"></span>`}
+                    <span class="live-train-marker__core" style="background:${lineColor}${muted ? ";opacity:0.55" : ""}">
+                        <span class="live-train-marker__glyph">${notInService ? "⏸" : (staleBatch ? "🕒" : "🚆")}</span>
                     </span>
-                    <span class="live-train-marker__badge" style="background:${lineColor}${notInService ? ";opacity:0.7" : ""}">${train.lineId}</span>
+                    <span class="live-train-marker__badge" style="background:${lineColor}${muted ? ";opacity:0.7" : ""}">${train.lineId}</span>
                 `,
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
@@ -2825,7 +2874,7 @@
             const marker = L.marker([train.lat, train.lng], {
                 icon,
                 keyboard: false,
-                zIndexOffset: notInService ? 400 : 1000,
+                zIndexOffset: muted ? 400 : 1000,
             }).addTo(liveTrainLayer);
             marker.bindTooltip(
                 `${line ? line.name : train.lineId} ${train.trainNumber}<br>${train.origin || "?"} → ${train.destination || "?"}`,
