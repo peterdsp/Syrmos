@@ -604,6 +604,11 @@ body.dark-mode .nav-item--active {
 .panel-item--tappable:active { background: var(--sy-background-subtle); transform: scale(0.99); }
 .panel-item--tappable:focus-visible { outline: 2px solid var(--sy-accent, #2563eb); outline-offset: 1px; }
 .panel-item__body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+/* Per-row confidence chip in the live-trains panel, mirroring the grouped
+   departure cards. A GPS-only (non-boardable) row is muted so it never reads
+   as a normal live service. */
+.panel-item__body .src-chip { align-self: flex-start; margin-top: 4px; }
+.panel-item--muted { opacity: 0.62; }
 .panel-item--tappable .panel-item__title { flex: none; }
 .panel-item--tappable .panel-item__meta {
     margin-left: 0; flex: none;
