@@ -194,6 +194,7 @@ internal actual fun PlatformMapView(
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
     val trainMarkers = remember { mutableMapOf<String, Marker>() }
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
+    val busMarkers = remember { mutableMapOf<String, Marker>() }
     // 0 = country, 1 = city, 2 = district, 3 = street. Mirrors web + iOS buckets.
     var zoomBucket by remember { mutableStateOf(2) }
     // Zoom-tiered decluttering, four bands (mirrors web + iOS): 0 = country
@@ -538,6 +539,42 @@ internal actual fun PlatformMapView(
                     }
                 }
                 liveTrainMarkers[train.id] = marker
+                mapView.overlays.add(marker)
+            }
+        }
+        mapView.invalidate()
+    }
+
+    // Live airport express-buses. Same regional declutter as trains, but plotted
+    // at the raw GPS coordinate (buses follow roads, not a rail polyline, so no
+    // snapping) and drawn in warning-orange to stand apart from the rail dots.
+    LaunchedEffect(uiState.busVehicles, mapBand) {
+        val res = context.resources
+        if (mapBand < 2) {
+            busMarkers.values.forEach { mapView.overlays.remove(it) }
+            busMarkers.clear()
+            mapView.invalidate()
+            return@LaunchedEffect
+        }
+        val activeIds = uiState.busVehicles.map { it.id }.toSet()
+        (busMarkers.keys - activeIds).forEach { id ->
+            busMarkers[id]?.let { mapView.overlays.remove(it) }
+            busMarkers.remove(id)
+        }
+        val busColor = 0xFFD97706.toInt() // SyrmosColorTokens.warning
+        uiState.busVehicles.forEach { bus ->
+            val pos = GeoPoint(bus.latitude, bus.longitude)
+            val existing = busMarkers[bus.id]
+            if (existing != null) {
+                existing.position = pos
+            } else {
+                val marker = Marker(mapView).apply {
+                    position = pos
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    icon = buildLiveTrainBitmap(res, color = busColor, lineId = bus.lineId)
+                    title = bus.lineId
+                }
+                busMarkers[bus.id] = marker
                 mapView.overlays.add(marker)
             }
         }
