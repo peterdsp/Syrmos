@@ -604,12 +604,16 @@ struct StationSheetView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
-            ForEach(departures.prefix(6)) { dep in
+            // Group by (line, destination) so a busy line reads as one row with
+            // its next few times, not a stack of "Line 3 · Scheduled" rows.
+            // Computed once so the divider check shares the group ids.
+            let groups = Array(DepartureGrouping.group(departures).prefix(6))
+            ForEach(groups) { group in
                 DepartureRowView(
-                    departure: dep,
-                    disruptionSeverity: stasyService.lineDisruptions[dep.lineId]
+                    group: group,
+                    disruptionSeverity: stasyService.lineDisruptions[group.lineId]
                 )
-                if dep.id != departures.prefix(6).last?.id {
+                if group.id != groups.last?.id {
                     Divider().padding(.leading, 28)
                 }
             }
@@ -950,15 +954,17 @@ struct LiveTrainMarker: View {
 // MARK: - Departure Row
 
 struct DepartureRowView: View {
-    let departure: Departure
+    let group: GroupedDeparture
     var disruptionSeverity: String? = nil
     @ObservedObject private var loc = LocalizationManager.shared
+
+    private var soonest: GroupedDeparture.Time { group.times.first ?? GroupedDeparture.Time(minutesAway: 0, time: "") }
 
     var body: some View {
         HStack(spacing: 12) {
             // Bigger color indicator that ties the row to its line
             RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .fill(SyrmosData.lineColor(for: departure.lineId))
+                .fill(SyrmosData.lineColor(for: group.lineId))
                 .frame(width: 4, height: 32)
                 .overlay(alignment: .topTrailing) {
                     LineDisruptionDot(severity: disruptionSeverity)
@@ -967,10 +973,10 @@ struct DepartureRowView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
+                    Text(SyrmosData.line(for: group.lineId)?.localizedName(loc.language) ?? group.lineId)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    if departure.serviceType == "airport" {
+                    if group.serviceType == "airport" {
                         Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : loc.language == .italian ? "Aeroporto" : "Airport")
                             .font(.caption2)
                             .fontWeight(.semibold)
@@ -983,32 +989,40 @@ struct DepartureRowView: View {
                 }
                 HStack(spacing: 4) {
                     Text(loc.language == .greek
-                        ? "προς \(departure.direction)"
+                        ? "προς \(group.destination)"
                         : loc.language == .albanian
-                        ? "drejt \(departure.direction)"
+                        ? "drejt \(group.destination)"
                         : loc.language == .italian
-                        ? "per \(departure.direction)"
-                        : "to \(departure.direction)")
+                        ? "per \(group.destination)"
+                        : "to \(group.destination)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    if let trainNo = departure.trainNo {
+                    if let trainNo = group.trainNo {
                         Text("#\(trainNo)")
                             .font(.caption2)
                             .fontWeight(.medium)
                             .foregroundStyle(.secondary)
                     }
                 }
-                SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
+                // Grouped tail: the next departures after the soonest, so one row
+                // replaces the old stack of same-line rows.
+                if group.times.count > 1 {
+                    Text(thenLabel)
+                        .font(.caption2)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                SourceConfidenceChip(confidence: group.sourceConfidence, language: loc.language)
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 1) {
-                Text(departure.minutesAwayDisplay(language: loc.language))
+                Text(minutesLabel(soonest.minutesAway))
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundStyle(arrivalColor)
                     .contentTransition(.numericText())
-                Text(departure.time)
+                Text(soonest.time)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
@@ -1018,9 +1032,44 @@ struct DepartureRowView: View {
     }
 
     private var arrivalColor: Color {
-        if departure.minutesAway <= 2 { return Color.arrivalSoon }
-        if departure.minutesAway <= 5 { return Color.arrivalModerate }
+        if soonest.minutesAway <= 2 { return Color.arrivalSoon }
+        if soonest.minutesAway <= 5 { return Color.arrivalModerate }
         return Color.arrivalFar
+    }
+
+    private var thenLabel: String {
+        let later = group.times.dropFirst().map { minutesLabel($0.minutesAway) }.joined(separator: " · ")
+        let prefix: String
+        switch loc.language {
+        case .greek: prefix = "Έπειτα"
+        case .albanian: prefix = "Pastaj"
+        case .italian: prefix = "Poi"
+        default: prefix = "Then"
+        }
+        return "\(prefix) \(later)"
+    }
+
+    private func minutesLabel(_ minutes: Int) -> String {
+        if minutes <= 1 {
+            switch loc.language {
+            case .greek: return "Τώρα"
+            case .albanian: return "Tani"
+            case .italian: return "Ora"
+            default: return "Now"
+            }
+        }
+        let minAbbr: String
+        let hAbbr: String
+        switch loc.language {
+        case .greek: minAbbr = "λεπ"; hAbbr = "ω"
+        case .albanian: minAbbr = "min"; hAbbr = "o"
+        case .italian: minAbbr = "min"; hAbbr = "h"
+        default: minAbbr = "min"; hAbbr = "h"
+        }
+        if minutes < 60 { return "\(minutes) \(minAbbr)" }
+        let h = minutes / 60
+        let m = minutes % 60
+        return m == 0 ? "\(h)\(hAbbr)" : "\(h)\(hAbbr) \(m)\(minAbbr)"
     }
 }
 
