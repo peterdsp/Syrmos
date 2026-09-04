@@ -20,5 +20,8 @@ kotlin {
             implementation(projects.core.data)
             implementation(projects.core.network)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
     }
 }
