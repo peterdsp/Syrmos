@@ -151,6 +151,9 @@
 		F547F60AEDEF7EE113E77B7B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8FAA054C866F04CB39A4C07 /* Assets.xcassets */; };
 		FAB11EB401D5464F9E009564 /* SyrmosLineTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32687A748EF4519991403D6 /* SyrmosLineTokens.swift */; };
 		FFDDCB33EB8ADA0BA119A64C /* WatchConnectivityProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA07DD99223CD5AAE17E70 /* WatchConnectivityProvider.swift */; };
+		2D82DB91972D4DB8BBDE77DB /* AirportBusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F8EA0447A54742B5757B83 /* AirportBusService.swift */; };
+		2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */; };
+		02CA5092C4E9490DBFD4C185 /* AirportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -358,6 +361,9 @@
 		F9632839850F8DA49BA56324 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		FE854D92A6C68AEAC8E0603F /* AriadneModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AriadneModelStore.swift; path = iosApp/Features/Assistant/AriadneModelStore.swift; sourceTree = SOURCE_ROOT; };
 		FF201314EADCD2EA1936941F /* Complications-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SyrmosWatch/Complications-Info.plist"; sourceTree = SOURCE_ROOT; };
+		C0F8EA0447A54742B5757B83 /* AirportBusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusService.swift; sourceTree = SOURCE_ROOT; };
+		D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/AirportServiceRows.swift; sourceTree = SOURCE_ROOT; };
+		90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AirportServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -407,6 +413,7 @@
 			isa = PBXGroup;
 			children = (
 				87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */,
+				90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */,
 				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
 				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
 				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
@@ -581,6 +588,7 @@
 				C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */,
 				0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */,
 				E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */,
+				C0F8EA0447A54742B5757B83 /* AirportBusService.swift */,
 				E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */,
 				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
 				31E31FFAA5B22EE54B9E980E /* RailNewsService.swift */,
@@ -669,6 +677,7 @@
 			isa = PBXGroup;
 			children = (
 				09288EF8307B4CDC9D065AED /* TimetablesView.swift */,
+				D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */,
 				DBADA13AF3954288A721329B /* TimetablesIcons.swift */,
 			);
 			name = Timetables;
@@ -971,6 +980,8 @@
 				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+				2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */,
+				2D82DB91972D4DB8BBDE77DB /* AirportBusService.swift in Sources */,
 				AAAA111111111111111111B1 /* OnboardingView.swift in Sources */,
 				DA7A0011F00D0011F00D0011 /* AriadneParser.swift in Sources */,
 				DA7A0211F00D0211F00D0211 /* AriadneDomain.swift in Sources */,
@@ -1055,6 +1066,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */,
+				02CA5092C4E9490DBFD4C185 /* AirportServiceTests.swift in Sources */,
 				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
 				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
 				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,

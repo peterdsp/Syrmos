@@ -100,6 +100,7 @@ struct TimetablesView: View {
     @State private var selectedRoute = "M3"
     @State private var airportDepartures: [Departure] = []
     @State private var cityAirportDepartures: [Departure] = []
+    @State private var liveBuses: AirportBusService.LiveAirportBuses? = nil
     /// Thessaloniki only: next metro departures at each interchange station
     /// (Mikra on L2, Nea Elvetia on L1) that feeds an airport shuttle, keyed by
     /// station id. Athens is fed by direct rail so it uses the two lists above.
@@ -156,7 +157,8 @@ struct TimetablesView: View {
                         AirportNextServicesCard(
                             language: loc.language,
                             dayOffset: dayOffset,
-                            metroDepartures: airportDepartures
+                            metroDepartures: airportDepartures,
+                            liveBuses: liveBuses
                         )
 
                         airportSectionTitle(
@@ -172,7 +174,8 @@ struct TimetablesView: View {
                         AirportDepartureList(
                             language: loc.language,
                             dayOffset: dayOffset,
-                            metroDepartures: airportDepartures
+                            metroDepartures: airportDepartures,
+                            liveBuses: liveBuses
                         )
                     } else {
                         AirportConnectionsCard(hub: hub, language: loc.language)
@@ -236,6 +239,7 @@ struct TimetablesView: View {
                 // at each interchange that feeds an airport shuttle.
                 airportDepartures = []
                 cityAirportDepartures = []
+                liveBuses = nil
                 var legs: [String: [Departure]] = [:]
                 for leg in currentHub.metroLegs {
                     legs[leg.stationId] = ScheduleProjector.nextDepartures(
@@ -262,6 +266,15 @@ struct TimetablesView: View {
                 limit: 80,
                 dayOffset: selectedDay
             ).filter { AirportData.isAirportBoundDirection($0.direction) || $0.serviceType == "airport" }
+
+            // Live express-bus ETAs are Athens-only (X93/95/96/97 tracked by the
+            // Pi). Only the live schedule (today) is meaningful, so skip the fetch
+            // when browsing a future day, where "in 5 min" would be misleading.
+            if currentHub.city == .athens && selectedDay == 0 {
+                liveBuses = await AirportBusService.fetch()
+            } else {
+                liveBuses = nil
+            }
         }
     }
 }
@@ -841,6 +854,7 @@ private struct AirportNextServicesCard: View {
     let language: AppLanguage
     let dayOffset: Int
     let metroDepartures: [Departure]
+    var liveBuses: AirportBusService.LiveAirportBuses? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -864,15 +878,27 @@ private struct AirportNextServicesCard: View {
                 } else {
                     m3Tile
                 }
-                AirportNextServiceTile(
-                    route: "X95",
-                    icon: "bus.fill",
-                    destination: "Syntagma",
-                    primary: "24/7",
-                    secondary: airportText(language, "Check OASA for current bus times", "Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια", "Kontrollo OASA për oraret aktuale", "Controlla OASA per gli orari attuali"),
-                    status: airportText(language, "Express", "Express", "Express", "Express"),
-                    color: SyrmosTokens.warning
-                )
+                if let mins = liveBuses?.soonest("X95") {
+                    AirportNextServiceTile(
+                        route: "X95",
+                        icon: "bus.fill",
+                        destination: "Syntagma",
+                        primary: AirportServiceRows.etaLabel(minutes: mins, language: language),
+                        secondary: airportText(language, "Live to the airport stop", "Ζωντανά στη στάση του αεροδρομίου", "Drejtpërdrejt te stacioni i aeroportit", "In tempo reale alla fermata dell'aeroporto"),
+                        status: SourceConfidence.live.label(language),
+                        color: SyrmosTokens.warning
+                    )
+                } else {
+                    AirportNextServiceTile(
+                        route: "X95",
+                        icon: "bus.fill",
+                        destination: "Syntagma",
+                        primary: "24/7",
+                        secondary: airportText(language, "24-hour express bus", "24ωρο λεωφορείο express", "Autobus express 24 orë", "Bus express 24 ore"),
+                        status: airportText(language, "Express", "Express", "Express", "Express"),
+                        color: SyrmosTokens.warning
+                    )
+                }
             }
         }
     }
@@ -929,6 +955,7 @@ private struct AirportDepartureList: View {
     let language: AppLanguage
     let dayOffset: Int
     let metroDepartures: [Departure]
+    var liveBuses: AirportBusService.LiveAirportBuses? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -954,9 +981,19 @@ private struct AirportDepartureList: View {
                 .foregroundStyle(.white)
                 .frame(width: 38, height: 38)
                 .background(row.color, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(row.destination).font(.subheadline.weight(.semibold))
-                Text(row.detail).font(.caption).foregroundStyle(.secondary)
+                // Live bus rows carry a pulsing Live chip instead of a static
+                // detail line, so the source reads the same as every other
+                // departure surface. Scheduled/operator rows keep their text.
+                if row.confidence == .live {
+                    HStack(spacing: 6) {
+                        SourceConfidenceChip(confidence: .live, language: language)
+                        Text(row.detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                } else {
+                    Text(row.detail).font(.caption).foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Text(row.time).font(.headline).monospacedDigit().foregroundStyle(row.color)
@@ -972,32 +1009,13 @@ private struct AirportDepartureList: View {
     }
 
     private var rows: [AirportListRow] {
-        let busDetail = airportText(language, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali.")
-        var output = metroDepartures.prefix(3).map {
-            AirportListRow(route: $0.lineId == "M3_AIR" ? "M3" : $0.lineId, destination: "Syntagma", detail: airportText(language, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), time: $0.time, color: Color.metroBlue, stationId: airportStationId(forRoute: $0.lineId))
-        }
-        let suburbanDeps = metroDepartures.filter { $0.lineId == "A1" || $0.lineId == "A2" }.prefix(2)
-        for dep in suburbanDeps {
-            output.append(AirportListRow(route: dep.lineId, destination: airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), detail: airportText(language, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), time: dep.time, color: SyrmosTokens.suburban, stationId: airportStationId(forRoute: dep.lineId)))
-        }
-        output.append(AirportListRow(route: "X95", destination: "Syntagma", detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
-        output.append(AirportListRow(route: "X93", destination: "Kifisos", detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
-        output.append(AirportListRow(route: "X96", destination: airportText(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
-        output.append(AirportListRow(route: "X97", destination: airportText(language, "Elliniko", "Ελληνικό", "Elliniko", "Elliniko"), detail: busDetail, time: "24/7", color: SyrmosTokens.warning))
-        return output
+        AirportServiceRows.build(
+            metroDepartures: metroDepartures,
+            buses: liveBuses,
+            language: language
+        )
     }
 
-}
-
-private struct AirportListRow {
-    let route: String
-    let destination: String
-    let detail: String
-    let time: String
-    let color: Color
-    // Airport-side station to open in StationDetailView; nil for buses (no
-    // per-stop timetable), which keeps their row non-navigable.
-    var stationId: String? = nil
 }
 
 // MARK: - Thessaloniki connections (metro + shuttle, or direct bus)
@@ -1183,19 +1201,6 @@ private struct AirportServiceAlertCard: View {
 
 private func airportSectionTitle(_ title: String) -> some View {
     Text(title).font(.title3.bold()).padding(.top, 2)
-}
-
-// Resolve the airport-side station a service tile/row/leg should open in
-// StationDetailView. Metro maps to the M3 airport station, the suburban lines
-// to their own airport stops; buses (X..) have no station detail, so nil keeps
-// the row non-navigable. Returns nil when the id is unknown so a tap never dead-ends.
-private func airportStationId(forRoute route: String) -> String? {
-    switch route {
-    case "M3", "M3_AIR": return "M3_AER"
-    case "A1": return "A1_AIR"
-    case "A2": return "A2_AIR"
-    default: return nil
-    }
 }
 
 private func airportStation(id: String?) -> TransitStation? {
