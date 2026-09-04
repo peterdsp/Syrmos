@@ -17,6 +17,8 @@ PBX = ROOT / "iosApp/Syrmos.xcodeproj/project.pbxproj"
 FILES = [
     ("AirportBusService.swift", "iosApp/Core/Networking/AirportBusService.swift",
      "SyrmosDeparturesService.swift", "TimetablesView.swift"),
+    ("AirportBusVehicles.swift", "iosApp/Core/Networking/AirportBusVehicles.swift",
+     "SyrmosDeparturesService.swift", "TimetablesView.swift"),
     ("AirportServiceRows.swift", "iosApp/Features/Timetables/AirportServiceRows.swift",
      "TimetablesView.swift", "TimetablesView.swift"),
     ("AirportServiceTests.swift", None,

@@ -154,6 +154,7 @@
 		2D82DB91972D4DB8BBDE77DB /* AirportBusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F8EA0447A54742B5757B83 /* AirportBusService.swift */; };
 		2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */; };
 		02CA5092C4E9490DBFD4C185 /* AirportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */; };
+		916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -364,6 +365,7 @@
 		C0F8EA0447A54742B5757B83 /* AirportBusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusService.swift; sourceTree = SOURCE_ROOT; };
 		D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/AirportServiceRows.swift; sourceTree = SOURCE_ROOT; };
 		90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AirportServiceTests.swift; sourceTree = "<group>"; };
+		34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusVehicles.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -588,6 +590,7 @@
 				C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */,
 				0F174A75E7C14871B9B77CAE /* SyrmosSchedulesService.swift */,
 				E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */,
+				34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */,
 				C0F8EA0447A54742B5757B83 /* AirportBusService.swift */,
 				E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */,
 				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
@@ -980,6 +983,7 @@
 				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+				916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */,
 				2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */,
 				2D82DB91972D4DB8BBDE77DB /* AirportBusService.swift in Sources */,
 				AAAA111111111111111111B1 /* OnboardingView.swift in Sources */,
