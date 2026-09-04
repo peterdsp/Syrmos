@@ -154,79 +154,12 @@ struct StationDetailView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
                 } else {
-                    ForEach(departures.prefix(10)) { departure in
-                        let iconName = TimetablesIcons.vehicleImageName(
-                            lineId: departure.lineId,
-                            direction: departure.direction,
-                            isAirport: departure.serviceType == "airport"
+                    ForEach(DepartureGrouping.group(departures)) { group in
+                        GroupedDepartureRow(
+                            group: group,
+                            language: loc.language,
+                            disruptionSeverity: stasyService.lineDisruptions[group.lineId]
                         )
-                        HStack {
-                            Group {
-                                if let iconName, UIImage(named: iconName) != nil {
-                                    Image(iconName)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 44, height: 30)
-                                } else {
-                                    Circle()
-                                        .fill(SyrmosData.lineColor(for: departure.lineId))
-                                        .frame(width: 12, height: 12)
-                                }
-                            }
-                            .overlay(alignment: .topTrailing) {
-                                LineDisruptionDot(severity: stasyService.lineDisruptions[departure.lineId])
-                                    .offset(x: 3, y: -3)
-                            }
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 4) {
-                                    Text(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                    if departure.serviceType == "airport" {
-                                        Text(loc.language == .greek ? "Αεροδρόμιο" : loc.language == .albanian ? "Aeroporti" : loc.language == .italian ? "Aeroporto" : "Airport")
-                                            .font(.caption2)
-                                            .fontWeight(.semibold)
-                                            .padding(.horizontal, 5)
-                                            .padding(.vertical, 1)
-                                            .background(Color.metroBlue.opacity(0.15))
-                                            .clipShape(Capsule())
-                                    }
-                                }
-                                HStack(spacing: 4) {
-                                    Text(loc.language == .greek
-                                        ? "προς \(departure.direction)"
-                                        : loc.language == .albanian
-                                        ? "drejt \(departure.direction)"
-                                        : loc.language == .italian
-                                        ? "per \(departure.direction)"
-                                        : "towards \(departure.direction)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    if let trainNo = departure.trainNo {
-                                        Text("#\(trainNo)")
-                                            .font(.caption2)
-                                            .fontWeight(.medium)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                SourceConfidenceChip(confidence: departure.sourceConfidence, language: loc.language)
-                            }
-
-                            Spacer()
-
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(departure.minutesAwayDisplay(language: loc.language))
-                                    .font(.headline)
-                                    .foregroundStyle(arrivalColor(departure.minutesAway))
-                                Text(departure.time)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(departure.lineId) towards \(departure.direction), \(departure.minutesAway) minutes, at \(departure.time)")
                     }
                 }
             }
@@ -365,6 +298,139 @@ struct StationDetailView: View {
         case 3...5: return .arrivalModerate
         default: return .arrivalFar
         }
+    }
+}
+
+// MARK: - Grouped departure row
+
+/// A single (line -> destination) card: destination-first heading with the line
+/// badge shown once, the next few relative times (dominant) over their clock
+/// times (secondary), a "+N" overflow, and one confidence chip. Replaces the
+/// stack of near-identical "Line 3 · towards X · Scheduled" rows.
+private struct GroupedDepartureRow: View {
+    let group: GroupedDeparture
+    let language: AppLanguage
+    let disruptionSeverity: String?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            iconView
+                .overlay(alignment: .topTrailing) {
+                    LineDisruptionDot(severity: disruptionSeverity).offset(x: 3, y: -3)
+                }
+            VStack(alignment: .leading, spacing: 5) {
+                heading
+                timesRow
+                SourceConfidenceChip(confidence: group.sourceConfidence, language: language)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityText)
+    }
+
+    @ViewBuilder private var iconView: some View {
+        let iconName = TimetablesIcons.vehicleImageName(
+            lineId: group.lineId, direction: group.destination, isAirport: group.serviceType == "airport"
+        )
+        if let iconName, UIImage(named: iconName) != nil {
+            Image(iconName).resizable().scaledToFit().frame(width: 44, height: 30)
+        } else {
+            Circle().fill(SyrmosData.lineColor(for: group.lineId)).frame(width: 12, height: 12)
+        }
+    }
+
+    private var heading: some View {
+        HStack(spacing: 6) {
+            Text(SyrmosData.line(for: group.lineId)?.localizedName(language) ?? group.lineId)
+                .font(.caption2).fontWeight(.bold)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(SyrmosData.lineColor(for: group.lineId))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            if group.serviceType == "airport" {
+                Text(airportLabel)
+                    .font(.caption2).fontWeight(.semibold)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(Color.metroBlue.opacity(0.15))
+                    .clipShape(Capsule())
+            }
+            Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
+            Text(group.destination)
+                .font(.subheadline).fontWeight(.semibold)
+                .lineLimit(1)
+        }
+    }
+
+    private var timesRow: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ForEach(Array(group.times.enumerated()), id: \.offset) { idx, t in
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(minutesLabel(t.minutesAway))
+                        .font(idx == 0 ? .headline : .subheadline)
+                        .fontWeight(idx == 0 ? .bold : .semibold)
+                        .foregroundStyle(idx == 0 ? arrivalColor(t.minutesAway) : Color.secondary)
+                    if !t.time.isEmpty {
+                        Text(t.time).font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            if group.moreCount > 0 {
+                Text("+\(group.moreCount)")
+                    .font(.caption).fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
+            }
+        }
+    }
+
+    private func arrivalColor(_ minutes: Int) -> Color {
+        switch minutes {
+        case 0...2: return .arrivalSoon
+        case 3...5: return .arrivalModerate
+        default: return .arrivalFar
+        }
+    }
+
+    private var airportLabel: String {
+        switch language {
+        case .greek: return "Αεροδρόμιο"
+        case .albanian: return "Aeroporti"
+        case .italian: return "Aeroporto"
+        default: return "Airport"
+        }
+    }
+
+    private func minutesLabel(_ minutes: Int) -> String {
+        if minutes <= 1 {
+            switch language {
+            case .greek: return "Τώρα"
+            case .albanian: return "Tani"
+            case .italian: return "Ora"
+            default: return "Now"
+            }
+        }
+        let minAbbr: String
+        let hAbbr: String
+        switch language {
+        case .greek: minAbbr = "λεπ"; hAbbr = "ω"
+        case .albanian: minAbbr = "min"; hAbbr = "o"
+        case .italian: minAbbr = "min"; hAbbr = "h"
+        default: minAbbr = "min"; hAbbr = "h"
+        }
+        if minutes < 60 { return "\(minutes) \(minAbbr)" }
+        let h = minutes / 60
+        let m = minutes % 60
+        return m == 0 ? "\(h)\(hAbbr)" : "\(h)\(hAbbr) \(m)\(minAbbr)"
+    }
+
+    private var accessibilityText: String {
+        let times = group.times.map { t -> String in
+            t.time.isEmpty ? minutesLabel(t.minutesAway) : "\(minutesLabel(t.minutesAway)) at \(t.time)"
+        }.joined(separator: ", ")
+        let more = group.moreCount > 0 ? ", +\(group.moreCount) more" : ""
+        return "\(group.lineId) towards \(group.destination), \(times)\(more)"
     }
 }
 

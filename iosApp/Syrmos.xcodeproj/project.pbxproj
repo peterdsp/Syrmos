@@ -155,6 +155,8 @@
 		2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */; };
 		02CA5092C4E9490DBFD4C185 /* AirportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */; };
 		916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */; };
+		E0924DBFD89E4529BE2607A6 /* DepartureGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */; };
+		2611916041EE42F7AEA6576E /* DepartureGroupingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -366,6 +368,8 @@
 		D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/AirportServiceRows.swift; sourceTree = SOURCE_ROOT; };
 		90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AirportServiceTests.swift; sourceTree = "<group>"; };
 		34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusVehicles.swift; sourceTree = SOURCE_ROOT; };
+		0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureGrouping.swift; sourceTree = SOURCE_ROOT; };
+		794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DepartureGroupingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -416,6 +420,7 @@
 			children = (
 				87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */,
 				90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */,
+				794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */,
 				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
 				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
 				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
@@ -623,6 +628,7 @@
 				DA7A0002F00D0002F00D0002 /* DataFreshness.swift */,
 				DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
+				0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */,
 				2F0AC3ECFD5A2387CA6CFEFB /* StationCoordinates.swift */,
 			);
 			name = Schedule;
@@ -983,6 +989,7 @@
 				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+				E0924DBFD89E4529BE2607A6 /* DepartureGrouping.swift in Sources */,
 				916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */,
 				2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */,
 				2D82DB91972D4DB8BBDE77DB /* AirportBusService.swift in Sources */,
@@ -1071,6 +1078,7 @@
 			files = (
 				3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */,
 				02CA5092C4E9490DBFD4C185 /* AirportServiceTests.swift in Sources */,
+				2611916041EE42F7AEA6576E /* DepartureGroupingTests.swift in Sources */,
 				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
 				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
 				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,
