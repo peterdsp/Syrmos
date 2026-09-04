@@ -64,6 +64,41 @@
     return rows;
   }
 
+  // Normalized live vehicle positions for the map layer. Drops rows without a
+  // finite non-zero coordinate or a line id. Direction (toAirport true/false, or
+  // null when unknown) is derived from the routeCode against payload.routes so a
+  // marker can say whether the bus is heading to or from the terminal.
+  function airportBusVehicles(payload) {
+    const routes = (payload && payload.routes) || {};
+    const dirOf = (lineId, routeCode) => {
+      const r = routes[lineId];
+      if (!r) return null;
+      if ((r.toAirport || []).indexOf(routeCode) !== -1) return true;
+      if ((r.fromAirport || []).indexOf(routeCode) !== -1) return false;
+      return null;
+    };
+    const out = [];
+    const vehicles = (payload && Array.isArray(payload.vehicles)) ? payload.vehicles : [];
+    for (const v of vehicles) {
+      if (!v) continue;
+      const lat = Number(v.lat);
+      const lng = Number(v.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      if (lat === 0 && lng === 0) continue;
+      const lineId = typeof v.lineId === 'string' ? v.lineId : '';
+      if (!lineId) continue;
+      out.push({
+        id: String(v.vehicleId || ''),
+        lineId,
+        lat,
+        lng,
+        heading: Number(v.heading) || 0,
+        toAirport: dirOf(lineId, Number(v.routeCode)),
+      });
+    }
+    return out;
+  }
+
   // True when a station node is an airport station (metro M3_AER or suburban
   // A1_AIR/A2_AIR, or a name that reads "airport"). Same rule as web-map's
   // isAirportStation, duplicated here so callers can gate the bus fetch without
@@ -75,5 +110,5 @@
     return false;
   }
 
-  return { reduceAirportBuses, soonest, airportBusDepartures, isAirportStationId, BUS_DESTINATIONS };
+  return { reduceAirportBuses, soonest, airportBusDepartures, airportBusVehicles, isAirportStationId, BUS_DESTINATIONS };
 });
