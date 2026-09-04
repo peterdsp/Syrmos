@@ -267,6 +267,7 @@ struct TransitMapView: View {
     // work by ~50% and avoids the multi-view re-render storms that were
     // freezing the UI on iOS.
     @ObservedObject private var liveTrainService = LiveTrainService.shared
+    @ObservedObject private var airportBusService = LiveAirportBusService.shared
     @ObservedObject private var trainSimulator = TrainSimulatorService.shared
     @StateObject private var stasyService = STASYService()
     @StateObject private var locationManager = MapLocationManager()
@@ -377,6 +378,7 @@ struct TransitMapView: View {
                         return trainSimulator.trains.filter { !coveredLines.contains($0.lineId) }
                     }(),
                     liveTrains: vehiclesHidden ? [] : liveTrainService.trains,
+                    busVehicles: vehiclesHidden ? [] : airportBusService.vehicles,
                     stationDisruptions: stasyService.stationDisruptions,
                     recenterToUserPing: recenterToUserPing,
                     onStationTap: { stationId in
@@ -1034,6 +1036,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
     let routeLines: [RouteLine]
     let simulatedTrains: [SimulatedTrain]
     let liveTrains: [LiveTrain]
+    let busVehicles: [AirportBusVehicle]
     let stationDisruptions: [String: String]
     /// Bumped from the parent's "Locate me" button to re-center on the
     /// user. Reading it in updateUIView() lets us tell a fresh request
@@ -1245,6 +1248,23 @@ struct SyrmosMKMapView: UIViewRepresentable {
             let ann = SyrmosTrainAnnotation(live: train)
             mv.addAnnotation(ann)
             ann.coordinate = context.coordinator.snapToPolyline(coord: train.coordinate, lineId: train.lineId)
+        }
+
+        // Sync live airport buses. Same move-in-place reconcile as live trains,
+        // but plotted at their true road coordinate (no rail-polyline snapping).
+        let busLang = LocalizationManager.shared.language
+        let wantBus = Dictionary(busVehicles.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var seenBus: Set<String> = []
+        for ann in mv.annotations.compactMap({ $0 as? SyrmosBusAnnotation }) {
+            if let v = wantBus[ann.busId] {
+                ann.refresh(v, lang: busLang)
+                seenBus.insert(ann.busId)
+            } else {
+                mv.removeAnnotation(ann)
+            }
+        }
+        for v in busVehicles where !seenBus.contains(v.id) {
+            mv.addAnnotation(SyrmosBusAnnotation(vehicle: v, lang: busLang))
         }
     }
 
@@ -1648,6 +1668,20 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.isHidden = currentBand < 2
                 return v
             }
+            if let bus = annotation as? SyrmosBusAnnotation {
+                let id = "airportBus"
+                let v = (mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView)
+                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
+                v.annotation = annotation
+                v.canShowCallout = true
+                // Orange balloon with the line id, distinct from the rail dots.
+                v.markerTintColor = UIColor(SyrmosTokens.warning)
+                v.glyphText = bus.lineId
+                v.displayPriority = .defaultHigh
+                // Same regional declutter rule as trains.
+                v.isHidden = currentBand < 2
+                return v
+            }
             return nil
         }
 
@@ -1672,7 +1706,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 guard let view = mapView.view(for: annotation) else { continue }
                 if let station = annotation as? SyrmosStationAnnotation {
                     view.isHidden = !inView(station.coordinate) || !shouldShow(station.station, band: b)
-                } else if annotation is SyrmosTrainAnnotation {
+                } else if annotation is SyrmosTrainAnnotation || annotation is SyrmosBusAnnotation {
                     // Vehicles follow the station decluttering rule: hidden below
                     // the regional band so the fleet never piles into a coastal blob.
                     view.isHidden = b < 2
@@ -1853,6 +1887,56 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
     init(live: LiveTrain) {
         self.kind = .live(live)
         self.coordinate = live.coordinate
+    }
+}
+
+/// A live airport express-bus on the map. Buses follow roads (not a rail
+/// polyline), so unlike SyrmosTrainAnnotation they plot at their true reported
+/// coordinate with no snapping.
+final class SyrmosBusAnnotation: NSObject, MKAnnotation {
+    let busId: String
+    var lineId: String
+    var toAirport: Bool?
+    @objc dynamic var coordinate: CLLocationCoordinate2D
+    // Stored (not computed) so the MKAnnotation getters stay nonisolated under
+    // Swift 6: the localized direction is baked in at construction, on the main
+    // actor where the language is read, and refreshed on reconcile.
+    var title: String?
+    var subtitle: String?
+    var id: String { "bus:\(busId)" }
+
+    init(vehicle: AirportBusVehicle, lang: AppLanguage) {
+        self.busId = vehicle.id
+        self.lineId = vehicle.lineId
+        self.toAirport = vehicle.toAirport
+        self.coordinate = vehicle.coordinate
+        super.init()
+        self.title = vehicle.lineId
+        self.subtitle = Self.directionText(vehicle.toAirport, lang: lang)
+    }
+
+    func refresh(_ vehicle: AirportBusVehicle, lang: AppLanguage) {
+        lineId = vehicle.lineId
+        toAirport = vehicle.toAirport
+        coordinate = vehicle.coordinate
+        title = vehicle.lineId
+        subtitle = Self.directionText(vehicle.toAirport, lang: lang)
+    }
+
+    static func directionText(_ toAirport: Bool?, lang: AppLanguage) -> String {
+        func tr(_ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+            switch lang {
+            case .greek: return el
+            case .albanian: return sq
+            case .italian: return it
+            default: return en
+            }
+        }
+        switch toAirport {
+        case .some(true): return tr("To the airport", "Προς το αεροδρόμιο", "Drejt aeroportit", "Verso l'aeroporto")
+        case .some(false): return tr("From the airport", "Από το αεροδρόμιο", "Nga aeroporti", "Dall'aeroporto")
+        case .none: return tr("Express bus", "Λεωφορείο express", "Autobus express", "Bus express")
+        }
     }
 }
 

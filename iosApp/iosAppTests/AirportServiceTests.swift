@@ -98,6 +98,35 @@ final class AirportServiceTests: XCTestCase {
         }
     }
 
+    // MARK: - LiveAirportBusService.parse (map vehicles)
+
+    func testParseKeepsValidVehiclesAndDerivesDirection() {
+        let payload = LiveAirportBusService.Payload(
+            vehicles: [
+                .init(vehicleId: "61233", lat: 37.90, lng: 23.90, routeCode: 2051, lineId: "X95"), // to airport
+                .init(vehicleId: "61167", lat: 37.93, lng: 23.94, routeCode: 2052, lineId: "X95"), // from airport
+                .init(vehicleId: "0", lat: 0, lng: 0, routeCode: 2051, lineId: "X95"),   // dropped: null island
+                .init(vehicleId: "y", lat: 37.9, lng: 23.9, routeCode: 999, lineId: ""), // dropped: no line
+            ],
+            routes: ["X95": .init(toAirport: [2051], fromAirport: [2052])]
+        )
+        let vehicles = LiveAirportBusService.parse(payload)
+        XCTAssertEqual(vehicles.count, 2)
+        XCTAssertEqual(vehicles[0].toAirport, true)
+        XCTAssertEqual(vehicles[1].toAirport, false)
+        XCTAssertEqual(vehicles[0].id, "61233")
+    }
+
+    func testParseUnknownDirectionWhenNoRoutes() {
+        let payload = LiveAirportBusService.Payload(
+            vehicles: [.init(vehicleId: "1", lat: 37.9, lng: 23.9, routeCode: 5675, lineId: "X93")],
+            routes: [:]
+        )
+        let vehicles = LiveAirportBusService.parse(payload)
+        XCTAssertEqual(vehicles.count, 1)
+        XCTAssertNil(vehicles[0].toAirport)
+    }
+
     func testEtaLabelFormatting() {
         XCTAssertEqual(AirportServiceRows.etaLabel(minutes: 0, language: .english), "Now")
         XCTAssertEqual(AirportServiceRows.etaLabel(minutes: 1, language: .english), "Now")
