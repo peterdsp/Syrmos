@@ -47,8 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.domain.departures.ResolvedDeparture
+import com.syrmos.core.domain.departures.groupDepartures
 import com.syrmos.core.domain.usecase.UpcomingDeparture
-import com.syrmos.core.designsystem.component.DepartureCard
+import com.syrmos.core.designsystem.component.GroupedDepartureCard
 import com.syrmos.core.designsystem.component.AlertBannerInfo
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
@@ -323,25 +325,41 @@ fun StationDetailScreen(
                     )
                 }
             } else {
-                items(uiState.departures) { departure ->
-                    val direction = departureDirectionLabel(
-                        departure = departure,
-                        connectingLines = uiState.connectingLines,
-                        language = lang,
-                    )
-                    val isAirport = departure.serviceType == "airport" ||
-                            direction.contains("airport", ignoreCase = true) ||
-                            direction.contains("αεροδρ", ignoreCase = true)
-                    DepartureCard(
-                        lineName = departure.lineId,
-                        lineColor = lineIdToColor(departure.lineId),
-                        direction = direction,
-                        minutesAway = departure.minutesAway,
-                        departureTime = departure.time,
+                // Collapse the repeated "Line 3 · towards X · Scheduled" rows into
+                // one grouped card per (line, destination) carrying the next few
+                // times. The destination label (localized, connecting-line aware)
+                // is resolved here, then the pure `groupDepartures` transform (shared
+                // in shape with web/iOS) folds by that label.
+                val grouped = groupDepartures(
+                    uiState.departures.map { departure ->
+                        val direction = departureDirectionLabel(
+                            departure = departure,
+                            connectingLines = uiState.connectingLines,
+                            language = lang,
+                        )
+                        val isAirport = departure.serviceType == "airport" ||
+                                direction.contains("airport", ignoreCase = true) ||
+                                direction.contains("αεροδρ", ignoreCase = true)
+                        ResolvedDeparture(
+                            lineId = departure.lineId,
+                            destination = direction,
+                            minutesAway = departure.minutesAway,
+                            time = departure.time,
+                            serviceType = if (isAirport) "airport" else departure.serviceType,
+                            sourceConfidence = departure.sourceConfidence,
+                        )
+                    },
+                )
+                items(grouped) { group ->
+                    val isAirport = group.serviceType == "airport"
+                    GroupedDepartureCard(
+                        lineName = group.lineId,
+                        lineColor = lineIdToColor(group.lineId),
+                        destination = group.destination,
+                        times = group.times.map { it.minutesAway to it.time },
+                        moreCount = group.moreCount,
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        lineId = departure.lineId,
-                        sourceConfidence = departure.sourceConfidence
-                            .takeIf { it != com.syrmos.core.model.schedule.SourceConfidence.UNKNOWN },
+                        lineId = group.lineId,
                         isAirport = isAirport,
                         airportLabel = if (isAirport) {
                             when (lang) {
@@ -351,8 +369,10 @@ fun StationDetailScreen(
                                 else -> "Airport"
                             }
                         } else null,
+                        sourceConfidence = group.sourceConfidence
+                            .takeIf { it != com.syrmos.core.model.schedule.SourceConfidence.UNKNOWN },
                         language = lang,
-                        disruptionSeverity = lineDisruptions[departure.lineId],
+                        disruptionSeverity = lineDisruptions[group.lineId],
                     )
                 }
             }
