@@ -69,7 +69,12 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
+import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
+import com.syrmos.core.model.schedule.SourceConfidence
+import com.syrmos.core.network.OasaAirportBusService
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -97,6 +102,7 @@ fun AirportHubScreen(
 ) {
     val sync = koinInject<ScheduleSyncRepository>()
     val offsetsRepo = koinInject<StationOffsetsRepository>()
+    val airportBusService = koinInject<OasaAirportBusService>()
     val bundles by sync.lineBundles.collectAsState()
     val offsets by offsetsRepo.offsets.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
@@ -125,6 +131,21 @@ fun AirportHubScreen(
     LaunchedEffect(Unit) {
         sync.hydrateFromBundleIfNeeded()
         offsetsRepo.hydrateFromBundleIfNeeded()
+    }
+
+    // Live airport express-bus ETAs (Athens, today only - "in 5 min" would be
+    // misleading for a future day). Refreshed every 15s while the tab is shown;
+    // any failure leaves EMPTY, so bus rows fall back to a neutral 24/7 badge.
+    var liveBuses by remember { mutableStateOf(LiveAirportBuses.EMPTY) }
+    LaunchedEffect(selectedCity, dayOffset) {
+        if (selectedCity != AirportCity.ATHENS || dayOffset != 0) {
+            liveBuses = LiveAirportBuses.EMPTY
+            return@LaunchedEffect
+        }
+        while (isActive) {
+            liveBuses = AirportBusEtas.reduce(airportBusService.fetchAirportBuses())
+            delay(15_000)
+        }
     }
 
     val now = Clock.System.now().toLocalDateTime(zone)
@@ -207,7 +228,7 @@ fun AirportHubScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
-            AirportDepartureRows(lang, dayOffset, airportDepartures, suburbanAirportDepartures, onOpenStation)
+            AirportDepartureRows(lang, dayOffset, airportDepartures, suburbanAirportDepartures, liveBuses, onOpenStation)
         } else {
             AirportConnections(hub, lang)
             Text(
@@ -773,15 +794,25 @@ private fun ServiceTile(route: String, icon: ImageVector, main: String, destinat
 }
 
 @Composable
-private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, suburbanDepartures: List<ProjectedDeparture>, onOpenStation: (String) -> Unit) {
+private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, suburbanDepartures: List<ProjectedDeparture>, liveBuses: LiveAirportBuses, onOpenStation: (String) -> Unit) {
     val metroRows = departures.take(3).map { AirportRow("M3", "Syntagma", airportText(lang, "Scheduled metro departure", "Προγραμματισμένη αναχώρηση μετρό", "Nisje e programuar e metrosë", "Partenza metro programmata"), it.time, SyrmosColorTokens.metroBlue, stationId = "M3_AER") }
     val suburbanRows = suburbanDepartures.take(2).map { AirportRow("A1", airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), airportText(lang, "Scheduled suburban departure", "Προγραμματισμένη αναχώρηση προαστιακού", "Nisje e programuar e trenit periferik", "Partenza suburbano programmata"), it.time, SyrmosColorTokens.suburban, stationId = "A1_AIR") }
-    val busRows = listOf(
-        AirportRow("X95", "Syntagma", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
-        AirportRow("X93", "Kifisos", airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
-        AirportRow("X96", airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"), airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
-        AirportRow("X97", airportText(lang, "Elliniko", "Ελληνικό", "Elliniko", "Elliniko"), airportText(lang, "24-hour express bus. Check OASA for current times.", "24ωρο λεωφορείο express. Ελέγξτε τον ΟΑΣΑ για τα τρέχοντα δρομολόγια.", "Autobus express 24 orë. Kontrollo OASA për oraret aktuale.", "Bus express 24 ore. Controlla OASA per gli orari attuali."), "24/7", SyrmosColorTokens.warning),
+    // Buses: a live ETA when the Pi is tracking one (LIVE chip, real countdown),
+    // else a neutral 24/7 badge - never the old passive "check OASA" copy.
+    val busDefs = listOf(
+        "X95" to "Syntagma",
+        "X93" to "Kifisos",
+        "X96" to airportText(lang, "Piraeus", "Πειραιάς", "Pireus", "Pireo"),
+        "X97" to airportText(lang, "Elliniko", "Ελληνικό", "Elliniko", "Elliniko"),
     )
+    val busRows = busDefs.map { (line, dest) ->
+        val mins = liveBuses.soonest(line)
+        if (mins != null) {
+            AirportRow(line, dest, airportText(lang, "Live to the airport stop", "Ζωντανά στη στάση του αεροδρομίου", "Drejtpërdrejt te stacioni i aeroportit", "In tempo reale alla fermata dell'aeroporto"), formatMinutes(mins, lang), SyrmosColorTokens.warning, confidence = SourceConfidence.LIVE)
+        } else {
+            AirportRow(line, dest, airportText(lang, "24-hour express bus", "24ωρο λεωφορείο express", "Autobus express 24 orë", "Bus express 24 ore"), "24/7", SyrmosColorTokens.warning, confidence = SourceConfidence.OPERATOR_LINK)
+        }
+    }
     val rows = metroRows + suburbanRows + busRows
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         rows.take(9).forEach { row ->
@@ -796,9 +827,18 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
                         Box(contentAlignment = Alignment.Center) { Text(row.route, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
                     }
                     Spacer(Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(row.destination, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // Live bus rows carry a Live chip so the source reads the
+                        // same as every other departure surface; others keep text.
+                        if (row.confidence == SourceConfidence.LIVE) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                SourceConfidenceChip(SourceConfidence.LIVE)
+                                Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        } else {
+                            Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                     Text(row.time, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = row.color)
                     // Chevron signals the row opens the station's full departures.
@@ -840,7 +880,7 @@ private fun AirportCard(content: @Composable () -> Unit) {
 
 // stationId is the airport-side stop a row opens in Station Detail; null for
 // buses (no per-stop timetable), which keeps their row non-tappable.
-private data class AirportRow(val route: String, val destination: String, val detail: String, val time: String, val color: Color, val stationId: String? = null)
+private data class AirportRow(val route: String, val destination: String, val detail: String, val time: String, val color: Color, val stationId: String? = null, val confidence: SourceConfidence = SourceConfidence.SCHEDULED)
 
 // MARK: - Multi-airport hubs (mirrors iOS AirportData.swift)
 
