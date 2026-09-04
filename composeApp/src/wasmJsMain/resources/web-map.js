@@ -1135,6 +1135,18 @@
         }
     });
 
+    // The live-trains + simulated-trains panel renders on the simulation timer,
+    // not on language change, so a flip left its rows (titles, meta, and the
+    // per-row confidence chips) in the old language until the next tick. Re-render
+    // both from the cached batches so the panel relabels immediately, mirroring
+    // the fares panel above. Guarded so a flip before any batch arrives is a
+    // no-op. (renderSimulatedTrainsInPanel overwrites #liveTrainList, then
+    // renderLiveTrains re-appends the suburban rows, the same order as a poll.)
+    onLanguageChange(() => {
+        if (lastSimulatedTrains && lastSimulatedTrains.length) renderSimulatedTrainsInPanel(lastSimulatedTrains);
+        if (lastLiveTrains && lastLiveTrains.length) renderLiveTrains(lastLiveTrains);
+    });
+
     function escapeHtml(s) {
         return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
     }
