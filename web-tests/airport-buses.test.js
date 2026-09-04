@@ -52,6 +52,32 @@ test('airportBusDepartures never fabricates a row for an untracked line', () => 
   assert.equal(rows[0].line, 'X95');
 });
 
+test('airportBusVehicles keeps valid positions and derives direction', () => {
+  const payload = {
+    vehicles: [
+      { vehicleId: '61233', lat: 37.90, lng: 23.90, heading: 12, routeCode: 2051, lineId: 'X95' }, // to airport
+      { vehicleId: '61167', lat: 37.93, lng: 23.94, heading: 0, routeCode: 2052, lineId: 'X95' },  // from airport
+      { vehicleId: '0', lat: 0, lng: 0, routeCode: 2051, lineId: 'X95' },   // dropped: null island
+      { vehicleId: 'x', lat: 'n/a', lng: 23.9, routeCode: 2051, lineId: 'X95' }, // dropped: bad coord
+      { vehicleId: 'y', lat: 37.9, lng: 23.9, routeCode: 999, lineId: '' },  // dropped: no line
+    ],
+    routes: { X95: { toAirport: [2051], fromAirport: [2052] } },
+  };
+  const v = A.airportBusVehicles(payload);
+  assert.equal(v.length, 2);
+  assert.equal(v[0].toAirport, true);
+  assert.equal(v[1].toAirport, false);
+  assert.equal(v[0].id, '61233');
+});
+
+test('airportBusVehicles tolerates missing vehicles / routes', () => {
+  assert.deepEqual(A.airportBusVehicles({}), []);
+  assert.equal(A.airportBusVehicles(null).length, 0);
+  const v = A.airportBusVehicles({ vehicles: [{ lat: 37.9, lng: 23.9, lineId: 'X93', routeCode: 5675 }] });
+  assert.equal(v.length, 1);
+  assert.equal(v[0].toAirport, null, 'unknown direction when no routes map');
+});
+
 test('isAirportStationId matches metro/suburban airport ids and names', () => {
   assert.equal(A.isAirportStationId('M3_AER'), true);
   assert.equal(A.isAirportStationId('A1_AIR'), true);
