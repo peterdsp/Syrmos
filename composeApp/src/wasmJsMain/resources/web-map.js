@@ -1036,13 +1036,13 @@
     // suburban, intercity) under clear headers instead of one flat OASA list.
     const FARE_GROUPS = [
         { key: "athens", sections: ["single", "airport", "offers", "passes"],
-          label: { en: "Athens - OASA", el: "Αθηνα - OASA", sq: "Athine - OASA" } },
+          label: { en: "Athens - OASA", el: "Αθηνα - OASA", sq: "Athine - OASA", it: "Atene - OASA" } },
         { key: "thessaloniki", sections: ["thessaloniki"],
-          label: { en: "Thessaloniki - OSETH", el: "Θεσσαλονικη - OSETH", sq: "Selanik - OSETH" } },
+          label: { en: "Thessaloniki - OSETH", el: "Θεσσαλονικη - OSETH", sq: "Selanik - OSETH", it: "Salonicco - OSETH" } },
         { key: "patras", sections: ["patras"],
-          label: { en: "Patras suburban", el: "Προαστιακός Πάτρας", sq: "Suburban Patra" } },
+          label: { en: "Patras suburban", el: "Προαστιακός Πάτρας", sq: "Suburban Patra", it: "Suburbano di Patrasso" } },
         { key: "intercity", sections: ["intercity"],
-          label: { en: "Intercity / regional", el: "Υπεραστικά / περιφερειακά", sq: "Ndërqytetëse" } },
+          label: { en: "Intercity / regional", el: "Υπεραστικά / περιφερειακά", sq: "Ndërqytetëse", it: "Intercity / regionale" } },
     ];
 
     function renderFaresPanel(payload) {
@@ -4195,8 +4195,9 @@
         const lang = currentLang;
         const title = lang === "el" ? "Τι νέο υπάρχει στο Syrmos"
             : lang === "sq" ? "Çfarë ka të re në Syrmos"
+            : lang === "it" ? "Novità in Syrmos"
             : "What's new in Syrmos";
-        const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : "Got it";
+        const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : lang === "it" ? "Ho capito" : "Got it";
         const bullets = lang === "el" ? [
             "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια.",
             "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα και πηγαινε κατευθειαν.",
@@ -4209,6 +4210,12 @@
             "Shfleto te gjitha stacionet me harta dhe etiketa linjash.",
             "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit.",
             "Gjeolokalizim ne web per stacionet me te aferta.",
+        ] : lang === "it" ? [
+            "Hellenic Rail Atlas: un nuovo design chiaro con risposte a colpo d'occhio.",
+            "Ariadne ora collega stazioni e linee: tocca una risposta per andarci subito.",
+            "Sfoglia tutte le stazioni con mappe interattive ed etichette delle linee.",
+            "Scheda Esplora ridisegnata con schede destinazione e stazioni recenti.",
+            "Geolocalizzazione web per le stazioni vicine.",
         ] : [
             "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers.",
             "Ariadne now links to stations and lines: tap any answer to jump straight there.",
@@ -4306,21 +4313,25 @@
             banner.className = "severe-weather-banner";
             const lang = currentLang;
             const title = code === 95 || code === 96 || code === 99
-                ? (lang === "el" ? "Καταιγίδα σε εξέλιξη" : lang === "sq" ? "Stuhi në zhvillim" : "Storm in progress")
-                : (lang === "el" ? "Έντονη κακοκαιρία" : lang === "sq" ? "Mot i keq" : "Severe weather");
+                ? (lang === "el" ? "Καταιγίδα σε εξέλιξη" : lang === "sq" ? "Stuhi në zhvillim" : lang === "it" ? "Temporale in corso" : "Storm in progress")
+                : (lang === "el" ? "Έντονη κακοκαιρία" : lang === "sq" ? "Mot i keq" : lang === "it" ? "Maltempo intenso" : "Severe weather");
             const body = lang === "el"
                 ? "Οι υπόγειες γραμμές μετρό είναι η πιο ασφαλής επιλογή. Πρόσεχε στη μετακίνηση."
                 : lang === "sq"
                 ? "Metroja nëntokësore është zgjidhja më e sigurt. Ki kujdes gjatë udhëtimit."
+                : lang === "it"
+                ? "Le linee metro sotterranee sono l'opzione più sicura. Fai attenzione negli spostamenti."
                 : "Underground metro lines are the safest option. Take care on your journey.";
             const numbersHeader = lang === "el" ? "ΤΗΛΕΦΩΝΑ ΕΚΤΑΚΤΗΣ ΑΝΑΓΚΗΣ"
                 : lang === "sq" ? "NUMRAT E EMERGJENCËS"
+                : lang === "it" ? "NUMERI DI EMERGENZA"
                 : "EMERGENCY NUMBERS";
             const num112 = lang === "el" ? "Ευρωπαϊκή γραμμή έκτακτης ανάγκης"
                 : lang === "sq" ? "Numri europian i emergjencës"
+                : lang === "it" ? "Numero unico di emergenza europeo"
                 : "European emergency line";
-            const numFire = lang === "el" ? "Πυροσβεστική" : lang === "sq" ? "Zjarrfikësit" : "Fire service";
-            const numOASA = lang === "el" ? "Πληροφορίες OASA" : lang === "sq" ? "Informacione OASA" : "OASA transit info";
+            const numFire = lang === "el" ? "Πυροσβεστική" : lang === "sq" ? "Zjarrfikësit" : lang === "it" ? "Vigili del fuoco" : "Fire service";
+            const numOASA = lang === "el" ? "Πληροφορίες OASA" : lang === "sq" ? "Informacione OASA" : lang === "it" ? "Info trasporti OASA" : "OASA transit info";
             banner.innerHTML = `
                 <div class="severe-weather-banner__head">
                     <span class="severe-weather-banner__cloud">☁️</span>
@@ -4338,6 +4349,7 @@
                     <div class="severe-weather-banner__hint">${
                         lang === "el" ? "Πατήστε έναν αριθμό για κλήση."
                         : lang === "sq" ? "Prek një numër për të thirrur."
+                        : lang === "it" ? "Tocca un numero per chiamare."
                         : "Tap a number to call."
                     }</div>
                 </div>

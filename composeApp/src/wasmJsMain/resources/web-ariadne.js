@@ -769,11 +769,13 @@
     function help(lang) {
         switch (lang) {
             case 'el':
-                return 'Μπορώ να βρω επόμενες αναχωρήσεις, τελευταίο τρένο, να σχεδιάσω διαδρομή, να δείξω ειδοποιήσεις, να ανοίξω σταθμό στον χάρτη ή να πω τιμές εισιτηρίων. Ρώτα με στα Ελληνικά, Αγγλικά ή Αλβανικά.';
+                return 'Μπορώ να βρω επόμενες αναχωρήσεις, τελευταίο τρένο, να σχεδιάσω διαδρομή, να δείξω ειδοποιήσεις, να ανοίξω σταθμό στον χάρτη ή να πω τιμές εισιτηρίων. Ρώτα με στα Ελληνικά, Αγγλικά, Αλβανικά ή Ιταλικά.';
             case 'sq':
-                return 'Mund të gjej nisjet e ardhshme, trenin e fundit, të planifikoj një udhëtim, të tregoj njoftime, të hap një stacion në hartë ose të tregoj çmimet e biletave. Pyet mua në shqip, anglisht ose greqisht.';
+                return 'Mund të gjej nisjet e ardhshme, trenin e fundit, të planifikoj një udhëtim, të tregoj njoftime, të hap një stacion në hartë ose të tregoj çmimet e biletave. Pyet mua në shqip, anglisht, greqisht ose italisht.';
+            case 'it':
+                return "Posso trovare le prossime partenze, l'ultimo treno della sera, pianificare un viaggio, mostrare gli avvisi di servizio, aprire una stazione sulla mappa o indicarti i prezzi dei biglietti. Chiedimi in italiano, inglese, greco o albanese.";
             default:
-                return 'I can find next departures, the last train tonight, plan a trip, show service alerts, open a station on the map, or tell you ticket prices. Ask in English, Greek, or Albanian.';
+                return 'I can find next departures, the last train tonight, plan a trip, show service alerts, open a station on the map, or tell you ticket prices. Ask in English, Greek, Albanian, or Italian.';
         }
     }
 
@@ -783,6 +785,8 @@
                 return 'Δεν είμαι σίγουρη ότι είναι σχετικό με τα ΜΜΜ Αθήνας. Δοκίμασε "επόμενα τρένα από Σύνταγμα" ή "πώς πάω από Πειραιά στο Αεροδρόμιο".';
             case 'sq':
                 return 'S\'jam e sigurt që kjo lidhet me transportin publik të Athinës. Provo "nisjet e ardhshme nga Syntagma" ose "si shkoj nga Piraeus në aeroport".';
+            case 'it':
+                return "Non sono sicura che riguardi i trasporti di Atene. Prova \"prossimi treni da Syntagma\" o \"come arrivo da Pireo all'aeroporto\".";
             default:
                 return "I'm not sure that's about Athens transit. Try 'next trains from Syntagma' or 'how do I get from Piraeus to the airport'.";
         }
@@ -794,16 +798,19 @@
                 en: 'Which station?',
                 el: 'Ποιος σταθμός;',
                 sq: 'Cili stacion?',
+                it: 'Quale stazione?',
             },
             ORIGIN_STATION: {
                 en: 'From which station?',
                 el: 'Από ποιον σταθμό;',
                 sq: 'Nga cili stacion?',
+                it: 'Da quale stazione?',
             },
             DESTINATION_STATION: {
                 en: 'To which station?',
                 el: 'Προς ποιον σταθμό;',
                 sq: 'Për te cili stacion?',
+                it: 'Verso quale stazione?',
             },
         };
         const row = map[missing] || map.STATION;
