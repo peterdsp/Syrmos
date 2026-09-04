@@ -347,8 +347,13 @@
             </button>
         </div>
 
-        <!-- Map chrome: bottom-right zoom + locate -->
+        <!-- Map chrome: bottom-right vehicles + zoom + locate -->
         <div class="map-chrome map-chrome--br">
+            <button id="vehiclesToggle" class="chrome-button" type="button"
+                    data-i18n-aria="hide_vehicles" data-i18n-title="hide_vehicles"
+                    aria-label="Hide vehicles" title="Hide vehicles" aria-pressed="false">
+                <svg class="ic" aria-hidden="true"><use href="#ic-vehicles"/></svg>
+            </button>
             <div class="zoom-stack">
                 <button id="zoomInButton" class="chrome-button" type="button" aria-label="Zoom in">
                     <svg class="ic" aria-hidden="true"><use href="#ic-zoom-in"/></svg>
@@ -403,7 +408,6 @@
 
     <!-- Hidden controls for JS backward compatibility -->
     <button id="liveTrainsButton" type="button" aria-hidden="true" style="display:none"></button>
-    <button id="vehiclesToggle" type="button" aria-hidden="true" style="display:none"></button>
 
     <!-- ===== Station Sheet ===== -->
     <section id="stationSheet" class="station-sheet station-sheet--hidden" aria-live="polite">

@@ -805,6 +805,11 @@ body.dark-mode .chrome-button:hover { background: rgba(27,32,40,1); }
 
 .chrome-button--accent .ic { color: var(--sy-accent); }
 
+/* Vehicles toggle in its pressed (vehicles-hidden) state: tint icon + border
+   accent so it reads as an active filter, mirroring the iOS purple bus toggle. */
+.chrome-button--active { border-color: var(--sy-accent); color: var(--sy-accent); }
+.chrome-button--active .ic { color: var(--sy-accent); }
+
 .zoom-stack {
     display: flex; flex-direction: column;
     border: 1px solid var(--sy-border-subtle);
