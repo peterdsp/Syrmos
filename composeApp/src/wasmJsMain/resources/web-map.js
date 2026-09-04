@@ -2391,11 +2391,15 @@
     if (vehiclesToggle) {
         vehiclesToggle.addEventListener("click", () => {
             vehiclesHidden = !vehiclesHidden;
-            vehiclesToggle.classList.toggle("control-button--active", vehiclesHidden);
-            vehiclesToggle.setAttribute(
-                "aria-label", vehiclesHidden ? t("show_vehicles") : t("hide_vehicles")
-            );
-            vehiclesToggle.title = vehiclesHidden ? t("show_vehicles") : t("hide_vehicles");
+            vehiclesToggle.classList.toggle("chrome-button--active", vehiclesHidden);
+            vehiclesToggle.setAttribute("aria-pressed", vehiclesHidden ? "true" : "false");
+            // Keep the i18n key on the element so a later language switch relabels
+            // the button for whichever state it is currently in, not the default.
+            const labelKey = vehiclesHidden ? "show_vehicles" : "hide_vehicles";
+            vehiclesToggle.setAttribute("data-i18n-aria", labelKey);
+            vehiclesToggle.setAttribute("data-i18n-title", labelKey);
+            vehiclesToggle.setAttribute("aria-label", t(labelKey));
+            vehiclesToggle.title = t(labelKey);
             window.__syrmosVehiclesHidden = vehiclesHidden;
             if (vehiclesHidden) {
                 liveTrainLayer.clearLayers();
