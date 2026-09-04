@@ -4758,6 +4758,7 @@
             const table = {
                 el: { "clear": "καθαρός", "partly-cloudy": "μερική συννεφιά", "cloudy": "συννεφιασμένος", "fog": "ομίχλη", "drizzle": "ψιχάλα", "rain": "βροχή", "snow": "χιόνι", "showers": "μπόρες", "thunderstorm": "καταιγίδα", "unknown": "άγνωστη" },
                 sq: { "clear": "kthjellët", "partly-cloudy": "pjesërisht i vranët", "cloudy": "i vranët", "fog": "mjegull", "drizzle": "shi i lehtë", "rain": "shi", "snow": "borë", "showers": "reshje", "thunderstorm": "stuhi", "unknown": "e panjohur" },
+                it: { "clear": "sereno", "partly-cloudy": "parzialmente nuvoloso", "cloudy": "nuvoloso", "fog": "nebbia", "drizzle": "pioviggine", "rain": "pioggia", "snow": "neve", "showers": "rovesci", "thunderstorm": "temporale", "unknown": "sconosciuto" },
                 en: { "clear": "clear", "partly-cloudy": "partly cloudy", "cloudy": "cloudy", "fog": "foggy", "drizzle": "drizzling", "rain": "raining", "snow": "snowing", "showers": "showery", "thunderstorm": "thunderstorm", "unknown": "unknown" },
             };
             return (table[lang] || table.en)[bucket];
@@ -4780,6 +4781,13 @@
                     "Pse ishte macja ulur mbi kompjuter? Për të vëzhguar miun.",
                     "Cila është ëmbëlsira e preferuar e maces? Muslet me çokollatë.",
                     "Si e mbyllin macet një grindje? Me një fshirje dhe një mjau.",
+                ],
+                it: [
+                    "Perché i gatti non giocano a poker nella giungla? Ci sono troppi ghepardi.",
+                    "Come si chiama un mucchio di gattini? Una miao-ntagna.",
+                    "Perché il gatto stava sul computer? Per tenere d'occhio il mouse.",
+                    "Qual è il dolce preferito dei gatti? La mousse al cioccolato.",
+                    "Come finisce una lite tra due gatti? Con un soffio e poi fanno pace.",
                 ],
                 en: [
                     "Why don't cats play poker in the jungle? Too many cheetahs.",
@@ -4889,18 +4897,24 @@
                             ? `Δύσκολο. Για να είσαι στο ${toName} στις ${arriveLabel} έπρεπε να έχεις ξεκινήσει πριν ${-slack} λεπτά.`
                             : currentLang === "sq"
                             ? `E vështirë. Për të qenë në ${toName} në ${arriveLabel} duhej të kishe nisur ${-slack} minuta më parë.`
+                            : currentLang === "it"
+                            ? `Ci siamo per un pelo. Per essere a ${toName} alle ${arriveLabel} avresti dovuto partire ${-slack} minuti fa.`
                             : `Cutting it close. To make ${toName} by ${arriveLabel} you'd have needed to leave ${-slack} min ago.`;
                     } else if (slack < 5) {
                         msg = currentLang === "el"
                             ? `Στριμωγμένα. Πάρε το${linePart} στις ${leaveLabel} από ${fromName} για να προλάβεις στο ${toName} στις ${arriveLabel}.`
                             : currentLang === "sq"
                             ? `Ngushtë. Merr${linePart} në ${leaveLabel} nga ${fromName} për të arritur në ${toName} në ${arriveLabel}.`
+                            : currentLang === "it"
+                            ? `Di poco. Prendi il${linePart} delle ${leaveLabel} da ${fromName} per arrivare a ${toName} alle ${arriveLabel}.`
                             : `Tight. Board the ${leaveLabel}${linePart} at ${fromName} to make ${toName} by ${arriveLabel}.`;
                     } else if (slack > roughDuration + 45) {
                         msg = currentLang === "el"
                             ? `Έχεις άπλα. Το επόμενο${linePart} στις ${leaveLabel} από ${fromName} σε φτάνει στο ${toName} στις ${arriveLabel}.`
                             : currentLang === "sq"
                             ? `Ke kohë. ${linePart ? "Merri" + linePart : "Nis"} në ${leaveLabel} nga ${fromName} dhe do të jesh në ${toName} në ${arriveLabel}.`
+                            : currentLang === "it"
+                            ? `Hai tempo. Il prossimo${linePart} delle ${leaveLabel} da ${fromName} ti porta a ${toName} alle ${arriveLabel}.`
                             : `You have time. Board the ${leaveLabel}${linePart} at ${fromName} to reach ${toName} by ${arriveLabel}.`;
                     } else {
                         msg = leaveByExact
@@ -4908,11 +4922,15 @@
                                 ? `Πάρε το${linePart} στις ${leaveLabel} από ${fromName} και θα είσαι στο ${toName} στις ${arriveLabel}. ${slack} λεπτά περιθώριο.`
                                 : currentLang === "sq"
                                 ? `Merr${linePart} në ${leaveLabel} nga ${fromName} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
+                                : currentLang === "it"
+                                ? `Prendi il${linePart} delle ${leaveLabel} da ${fromName} e sarai a ${toName} alle ${arriveLabel}. ${slack} minuti di margine.`
                                 : `Board the ${leaveLabel}${linePart} at ${fromName} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`)
                             : (currentLang === "el"
                                 ? `Ξεκίνα από ${fromName} έως ${leaveLabel} και θα είσαι στο ${toName} στις ${arriveLabel}. ${slack} λεπτά περιθώριο.`
                                 : currentLang === "sq"
                                 ? `Nis nga ${fromName} deri në ${leaveLabel} dhe do të jesh në ${toName} në ${arriveLabel}. ${slack} minuta hapësirë.`
+                                : currentLang === "it"
+                                ? `Parti da ${fromName} entro le ${leaveLabel} e sarai a ${toName} alle ${arriveLabel}. ${slack} minuti di margine.`
                                 : `Leave ${fromName} by ${leaveLabel} and you'll be at ${toName} by ${arriveLabel}. ${slack} min to spare.`);
                     }
                     return { text: msg, sourceConf: leaveByExact ? "scheduled" : "estimated" };
@@ -4923,10 +4941,11 @@
                     const lng = anchor ? anchor.longitude : 23.7275;
                     const name = anchor
                         ? (currentLang === "el" ? (anchor.name_el || anchor.nameEl || anchor.name) : anchor.name)
-                        : (currentLang === "el" ? "Αθήνα" : currentLang === "sq" ? "Athina" : "Athens");
+                        : (currentLang === "el" ? "Αθήνα" : currentLang === "sq" ? "Athina" : currentLang === "it" ? "Atene" : "Athens");
                     return {
                         text: currentLang === "el" ? `Αναζήτηση καιρού για ${name}…`
                             : currentLang === "sq" ? `Po kërkoj motin për ${name}…`
+                            : currentLang === "it" ? `Cerco il meteo per ${name}…`
                             : `Fetching weather for ${name}…`,
                         sourceConf: "live",
                         act: async () => {
@@ -4942,12 +4961,15 @@
                                     ? `${name} τώρα: ${temp}°C, ${cond}. Αίσθηση ${feels}°C.`
                                     : currentLang === "sq"
                                     ? `${name} tani: ${temp}°C, ${cond}. Ndihet si ${feels}°C.`
+                                    : currentLang === "it"
+                                    ? `${name} ora: ${temp}°C, ${cond}. Percepiti ${feels}°C.`
                                     : `${name} right now: ${temp}°C, ${cond}. Feels like ${feels}°C.`;
                                 appendMessage(reply, "assistant", "live");
                             } catch (_) {
                                 appendMessage(
                                     currentLang === "el" ? "Δεν έχω δεδομένα καιρού. Δοκίμασε ξανά."
                                     : currentLang === "sq" ? "S'kam të dhëna moti. Provo përsëri."
+                                    : currentLang === "it" ? "Non ho dati meteo. Riprova."
                                     : "I don't have weather data. Try again.",
                                     "assistant"
                                 );
@@ -4993,9 +5015,11 @@
                     const text = acc
                         ? (currentLang === "el" ? `Ο ${nm} είναι προσβάσιμος για ΑμεΑ (ασανσέρ / ισόπεδη πρόσβαση).`
                             : currentLang === "sq" ? `${nm} është i aksesueshëm pa shkallë (ashensor / qasje e sheshtë).`
+                            : currentLang === "it" ? `${nm} è accessibile senza scale (ascensore / accesso a raso).`
                             : `${nm} is step-free accessible (lift / level access).`)
                         : (currentLang === "el" ? `Ο ${nm} δεν είναι σημειωμένος ως προσβάσιμος ΑμεΑ. Ίσως έχει μόνο σκάλες.`
                             : currentLang === "sq" ? `${nm} nuk shënohet si i aksesueshëm pa shkallë. Mund të ketë vetëm shkallë.`
+                            : currentLang === "it" ? `${nm} non risulta accessibile senza scale. Potrebbe avere solo scale.`
                             : `${nm} is not marked step-free. Check for stairs-only access before you go.`);
                     return { text: text, sourceConf: "offline" };
                 }
@@ -5005,6 +5029,7 @@
                         return {
                             text: currentLang === "el" ? "Πες μου πρώτα μια διαδρομή, μετά τη γυρίζω για την επιστροφή."
                                 : currentLang === "sq" ? "Më trego fillimisht një udhëtim, pastaj e kthej për rrugën e kthimit."
+                                : currentLang === "it" ? "Dimmi prima un viaggio, poi lo inverto per il ritorno."
                                 : "Tell me a trip first, then I can flip it for the way back.",
                         };
                     }
@@ -5017,11 +5042,15 @@
                     const nm = stationName(st.id);
                     if (!ids.length) {
                         return { text: currentLang === "el" ? `Δεν έχω γραμμές για ${nm}.`
-                            : currentLang === "sq" ? `Nuk kam linja për ${nm}.` : `I don't have any lines listed for ${nm}.` };
+                            : currentLang === "sq" ? `Nuk kam linja për ${nm}.`
+                            : currentLang === "it" ? `Non ho linee elencate per ${nm}.`
+                            : `I don't have any lines listed for ${nm}.` };
                     }
                     const list = ids.join(", ");
                     return { text: currentLang === "el" ? `Ο ${nm} εξυπηρετείται από: ${list}.`
-                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.` : `${nm} is served by: ${list}.`, sourceConf: "offline" };
+                        : currentLang === "sq" ? `${nm} shërbehet nga: ${list}.`
+                        : currentLang === "it" ? `${nm} è servito da: ${list}.`
+                        : `${nm} is served by: ${list}.`, sourceConf: "offline" };
                 }
                 case "stopsBetween": {
                     // The web has no JS stop-counting planner, so delegate to the
@@ -5121,11 +5150,15 @@
                             ? `Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο πίσω προς ${nm}.`
                             : currentLang === "sq"
                             ? `Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt drejt ${nm}.`
+                            : currentLang === "it"
+                            ? `Scendi alla prossima fermata e prendi la corsa in senso opposto verso ${nm}.`
                             : `Get off at the next stop and take the reverse service back towards ${nm}.`)
                         : (currentLang === "el"
                             ? "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο."
                             : currentLang === "sq"
                             ? "Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt."
+                            : currentLang === "it"
+                            ? "Scendi alla prossima fermata e prendi la corsa in senso opposto."
                             : "Get off at the next stop and take the reverse service.");
                     return { text, sourceConf: "offline" };
                 }
@@ -5137,11 +5170,15 @@
                             ? `Κατέβα στον επόμενο σταθμό και γύρνα πίσω προς ${tName}.`
                             : currentLang === "sq"
                             ? `Zbrit në stacionin e ardhshëm dhe kthehu drejt ${tName}.`
+                            : currentLang === "it"
+                            ? `Scendi alla prossima fermata e torna indietro verso ${tName}.`
                             : `Get off at the next stop and double back to ${tName}.`)
                         : (currentLang === "el"
                             ? "Κατέβα στον επόμενο σταθμό και πάρε το αντίθετο δρομολόγιο."
                             : currentLang === "sq"
                             ? "Zbrit në stacionin e ardhshëm dhe merr trenin e kundërt."
+                            : currentLang === "it"
+                            ? "Scendi alla prossima fermata e prendi la corsa in senso opposto."
                             : "Get off at the next stop and take the reverse service.");
                     return { text, sourceConf: "offline" };
                 }
@@ -5177,6 +5214,8 @@
                             ? `Ναι. Επόμενο δρομολόγιο από ${fromName} στις ${nextDep.time} (σε ${wait} λεπτά) προς ${toName}.`
                             : currentLang === "sq"
                             ? `Po. Treni i ardhshëm nga ${fromName} në ${nextDep.time} (pas ${wait} minutash) drejt ${toName}.`
+                            : currentLang === "it"
+                            ? `Sì. Prossima corsa da ${fromName} alle ${nextDep.time} (tra ${wait} minuti) verso ${toName}.`
                             : `Yes. Next service from ${fromName} at ${nextDep.time} (${wait} min away) towards ${toName}.`;
                         return { text, sourceConf: "scheduled" };
                     }
@@ -5185,11 +5224,15 @@
                             ? `Δεν βρήκα επόμενο δρομολόγιο από ${fromName} προς ${toName}. Δοκίμασε "δρομολόγια ${fromName}".`
                             : currentLang === "sq"
                             ? `Nuk gjeta nisje të ardhshme nga ${fromName} drejt ${toName}. Provo "nisjet ${fromName}".`
+                            : currentLang === "it"
+                            ? `Non ho trovato una corsa in arrivo da ${fromName} verso ${toName}. Prova "partenze ${fromName}".`
                             : `I couldn't find an upcoming service from ${fromName} to ${toName}. Try "departures ${fromName}".`)
                         : (currentLang === "el"
                             ? `Πες μου από ποιον σταθμό ξεκινάς, για να ελέγξω αν προλαβαίνεις.`
                             : currentLang === "sq"
                             ? `Më thuaj nga cili stacion nisesh, që të kontrolloj nëse e arrin.`
+                            : currentLang === "it"
+                            ? `Dimmi da quale stazione parti, così controllo se ce la fai.`
                             : `Tell me which station you're at so I can check if you can make it.`);
                     return { text, sourceConf: "estimated" };
                 }

@@ -49,3 +49,16 @@ test('web-map.js: notification + fare strings have Italian branches', () => {
   assert.match(js, /it: "Atene - OASA"/, 'fare group headers missing it');
   assert.match(js, /it: "Intercity \/ regionale"/, 'fare group headers missing it');
 });
+
+test('web-map.js: every sq language branch has an it sibling (parity guardrail)', () => {
+  const js = read('web-map.js');
+  const count = (re) => (js.match(re) || []).length;
+  // The offline Ariadne respond() block and the notification banners branch on
+  // currentLang/lang; Italian must not silently fall back to English again.
+  assert.equal(count(/currentLang === "it"/g), count(/currentLang === "sq"/g),
+    'currentLang it/sq branch counts diverged - an it branch is missing');
+  assert.equal(count(/lang === "it"/g), count(/lang === "sq"/g),
+    'lang it/sq branch counts diverged - an it branch is missing');
+  // weather + easter-egg language tables gained an it entry
+  assert.match(js, /"clear": "sereno"/, 'weatherCodeLabel missing the it table');
+});
