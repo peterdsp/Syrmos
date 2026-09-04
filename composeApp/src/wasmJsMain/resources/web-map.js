@@ -2142,7 +2142,13 @@
             const moreHtml = group.moreCount > 0
                 ? `<span class="dep-time dep-time--more" title="${group.moreCount} more">+${group.moreCount}</span>`
                 : "";
-            const minsAria = group.times.map((tt) => formatMinutesAway(tt.minutesAway)).join(", ");
+            // Screen readers get every time WITH its clock (sighted users see
+            // both) plus the "+N more" overflow, so nothing the eye sees is lost
+            // to assistive tech.
+            const minsAria = group.times
+                .map((tt) => tt.time ? `${formatMinutesAway(tt.minutesAway)} at ${tt.time}` : formatMinutesAway(tt.minutesAway))
+                .join(", ")
+                + (group.moreCount > 0 ? `, +${group.moreCount} more` : "");
             return `
                 <div class="departure-card departure-card--grouped${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minsAria}${group.ariaNote ? ', ' + group.ariaNote : ''}">
                     <div class="departure-card__header">

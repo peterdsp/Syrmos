@@ -71,13 +71,26 @@ test('maxTimes <= 0 keeps every time', () => {
   assert.equal(g[0].moreCount, 0);
 });
 
-test('group takes the strongest confidence among its members (live wins)', () => {
-  const g = D.groupDepartures([
+test('confidence chip reflects the SOONEST time, not the strongest source', () => {
+  // Soonest member is live -> live chip (and times come out ascending even
+  // though the live one was passed second).
+  const live = D.groupDepartures([
     dep({ line: L3, destination: 'Airport', minutesAway: 8, source: 'scheduled', sourceLabel: 'Scheduled' }),
     dep({ line: L3, destination: 'Airport', minutesAway: 3, source: 'live', sourceLabel: 'Live' }),
   ]);
-  assert.equal(g[0].source, 'live', 'one live ETA is never hidden behind a scheduled sibling');
-  assert.equal(g[0].sourceLabel, 'Live');
+  assert.equal(live[0].times[0].minutesAway, 3, 'times sorted ascending regardless of input order');
+  assert.equal(live[0].source, 'live');
+  assert.equal(live[0].sourceLabel, 'Live');
+
+  // Soonest member is scheduled and a LATER time is live -> chip stays
+  // scheduled, so a tracked vehicle is never advertised over a scheduled lead
+  // time the rider is actually reading.
+  const sched = D.groupDepartures([
+    dep({ line: L3, destination: 'Airport', minutesAway: 3, source: 'scheduled', sourceLabel: 'Scheduled' }),
+    dep({ line: L3, destination: 'Airport', minutesAway: 20, source: 'live', sourceLabel: 'Live' }),
+  ]);
+  assert.equal(sched[0].source, 'scheduled');
+  assert.equal(sched[0].sourceLabel, 'Scheduled');
 });
 
 test('different lines never merge even with the same destination', () => {
