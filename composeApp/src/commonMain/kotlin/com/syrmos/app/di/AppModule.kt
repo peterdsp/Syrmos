@@ -75,6 +75,7 @@ val featureModule = module {
             transitPatternRepository = get(),
             liveTrackerService = get(),
             livePositionsService = get(),
+            airportBusService = get(),
             stationOffsetsRepo = get(),
             scheduleSyncRepository = get(),
             computeActiveTrains = get(),

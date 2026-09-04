@@ -24,6 +24,7 @@ import com.syrmos.core.model.transit.Station
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
+import com.syrmos.core.network.OasaAirportBusService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLivePositionsService
 import kotlinx.datetime.Instant
@@ -63,6 +64,9 @@ data class MapUiState(
     val selectedStationDepartures: List<StationDepartureUi> = emptyList(),
     val liveTrains: List<LiveSuburbanTrain> = emptyList(),
     val simulatedTrains: List<SimulatedTrain> = emptyList(),
+    // Live airport express-bus positions (X93/95/96/97) from the OASA telematics
+    // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
+    val busVehicles: List<AirportBusVehicle> = emptyList(),
     val selectedTrain: LiveSuburbanTrain? = null,
     val selectedSimulatedTrain: SimulatedTrain? = null,
     val showTrains: Boolean = true,
@@ -80,6 +84,7 @@ class MapViewModel(
     private val transitPatternRepository: TransitPatternRepositoryImpl,
     private val liveTrackerService: RailwayGovLiveTrackerService,
     private val livePositionsService: SyrmosLivePositionsService,
+    private val airportBusService: OasaAirportBusService,
     private val stationOffsetsRepo: StationOffsetsRepository,
     private val scheduleSyncRepository: com.syrmos.core.data.sync.ScheduleSyncRepository,
     private val computeActiveTrains: ComputeActiveTrainsFromBandsUseCase,
@@ -96,6 +101,7 @@ class MapViewModel(
         loadMapData()
         observeLiveTrains()
         pollLivePositions()
+        pollAirportBuses()
         runTrainSimulation()
         observeStationDisruptions()
     }
@@ -296,6 +302,16 @@ class MapViewModel(
                     }
                 }
                 delay(1_000)
+            }
+        }
+    }
+
+    private fun pollAirportBuses() {
+        scope.launch {
+            while (isActive) {
+                val vehicles = AirportBusVehicles.parse(airportBusService.fetchAirportBuses())
+                _uiState.update { it.copy(busVehicles = vehicles) }
+                delay(15_000)
             }
         }
     }

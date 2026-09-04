@@ -116,6 +116,7 @@ fun MapScreen(
                 uiState = if (uiState.showTrains) uiState else uiState.copy(
                     simulatedTrains = emptyList(),
                     liveTrains = emptyList(),
+                    busVehicles = emptyList(),
                 ),
                 onStationSelected = viewModel::selectStation,
                 onTrainSelected = viewModel::selectTrain,
