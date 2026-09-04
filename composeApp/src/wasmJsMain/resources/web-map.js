@@ -86,6 +86,7 @@
             train: "Train",
             route: "Route",
             live: "Live",
+            position_only: "Position only",
             updated_ago: "updated {t} ago",
             live_unknown_age: "Live, age unknown",
             estimated: "Estimated",
@@ -186,6 +187,7 @@
             train: "Συρμός",
             route: "Διαδρομή",
             live: "Ζωντανά",
+            position_only: "Μόνο θέση",
             updated_ago: "ενημέρωση πριν {t}",
             live_unknown_age: "Ζωντανά, άγνωστη ώρα",
             estimated: "Εκτίμηση",
@@ -286,6 +288,7 @@
             train: "Tren",
             route: "Itinerari",
             live: "Drejtpërdrejt",
+            position_only: "Vetëm pozicion",
             updated_ago: "përditësuar {t} më parë",
             live_unknown_age: "Drejtpërdrejt, kohë e panjohur",
             estimated: "Vlerësim",
@@ -386,6 +389,7 @@
             train: "Treno",
             route: "Percorso",
             live: "In tempo reale",
+            position_only: "Solo posizione",
             updated_ago: "aggiornato {t} fa",
             live_unknown_age: "In tempo reale, età sconosciuta",
             estimated: "Stimato",
@@ -2738,12 +2742,23 @@
                 const line = lineMap.get(train.lineId);
                 const title = `${line ? line.name : train.lineId} ${train.trainNumber}`;
                 const meta = `${train.origin || t("live")} ${toWord} ${train.destination || t("unknown")}${train.nextStation ? `, ${t("next")} ${train.nextStation}` : ""}`;
+                // Per-row confidence chip, matching the grouped departure cards: a
+                // boardable telematics train reads LIVE, while a GPS-only position
+                // (inService false / status "position_only") reads as the muted
+                // "Position only" — the panel used to hide that distinction that
+                // the map already draws in grey, so a non-boardable dot looked like
+                // a normal live train in the list.
+                const notInService = train.inService === false || train.status === "position_only";
+                const chipMod = notInService ? "offline" : "live";
+                const chipLabel = notInService ? t("position_only") : t("live");
+                const chip = `<span class="src-chip src-chip--${chipMod}"><span class="src-chip__dot"></span>${escapeHtml(chipLabel)}</span>`;
                 // Tappable row -> shared vehicle sheet (same as tapping on the map).
                 return `
-                    <div class="panel-item panel-item--tappable" data-live-suburban data-train-id="${train.id}" data-train-kind="live" role="button" tabindex="0" aria-label="${escapeHtml(`${title}. ${meta}. ${t("open_details")}`)}">
+                    <div class="panel-item panel-item--tappable${notInService ? " panel-item--muted" : ""}" data-live-suburban data-train-id="${train.id}" data-train-kind="live" role="button" tabindex="0" aria-label="${escapeHtml(`${title}. ${meta}. ${chipLabel}. ${t("open_details")}`)}">
                         <div class="panel-item__body">
                             <div class="panel-item__title">🚆 ${escapeHtml(title)}</div>
                             <div class="panel-item__meta">${escapeHtml(meta)}</div>
+                            ${chip}
                         </div>
                         <span class="panel-item__chevron" aria-hidden="true">›</span>
                     </div>
@@ -3950,19 +3965,27 @@
         lastSimPanelTrains = display;
 
         const panelHtml =
-            // These positions are schedule projections (simulateAllTrains), not
-            // observed GPS, so the count row carries an Estimated provenance chip.
-            // Never implies a live fix; the per-train sheet already explains this.
-            `<div class="panel-item panel-item--live-status"><div class="panel-item__count">${t("trains_active", { n: trains.length })}</div><span class="src-chip src-chip--estimated"><span class="src-chip__dot"></span>${t("estimated")}</span></div>` +
+            // Just the active-count summary now; each projected row below carries
+            // its own Estimated chip, so a provenance chip here too would only
+            // repeat it (the same reason the grouped departure cards show one
+            // chip per row, not a redundant section header).
+            `<div class="panel-item panel-item--live-status"><div class="panel-item__count">${t("trains_active", { n: trains.length })}</div></div>` +
             display.map((train) => {
                 const icon = train.isAirport ? "✈" : train.line.type === "tram" ? "🚊" : "🚇";
                 const title = `${train.line.name} → ${train.destination}`;
                 const meta = `${t("near")} ${train.fromStation} · ${t("next")}: ${train.toStation}`;
+                // Per-row confidence chip, matching the grouped departure cards and
+                // the live-telematics rows below. These positions are schedule
+                // projections (simulateAllTrains), never observed GPS, so each row
+                // reads Estimated, so a rider never mistakes a projected metro dot
+                // for a tracked one.
+                const chip = `<span class="src-chip src-chip--estimated"><span class="src-chip__dot"></span>${t("estimated")}</span>`;
                 return `
-                    <div class="panel-item panel-item--tappable" data-train-id="${train.id}" data-train-kind="simulated" role="button" tabindex="0" aria-label="${escapeHtml(`${title}. ${meta}. ${t("open_details")}`)}">
+                    <div class="panel-item panel-item--tappable" data-train-id="${train.id}" data-train-kind="simulated" role="button" tabindex="0" aria-label="${escapeHtml(`${title}. ${meta}. ${t("estimated")}. ${t("open_details")}`)}">
                         <div class="panel-item__body">
                             <div class="panel-item__title">${icon} ${escapeHtml(title)}</div>
                             <div class="panel-item__meta">${escapeHtml(meta)}</div>
+                            ${chip}
                         </div>
                         <span class="panel-item__chevron" aria-hidden="true">›</span>
                     </div>
