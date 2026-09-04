@@ -994,9 +994,18 @@ private struct AirportDepartureList: View {
                 } else {
                     Text(row.detail).font(.caption).foregroundStyle(.secondary)
                 }
+                // Grouped tail: the next departures after the soonest, so one card
+                // replaces the old stack of same-line rows (matches the featured
+                // tile's "Then …" pattern above).
+                if row.times.count > 1 {
+                    Text(airportText(language, "Then", "Έπειτα", "Pastaj", "Poi") + " " + row.times.dropFirst().joined(separator: " · "))
+                        .font(.caption2)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
-            Text(row.time).font(.headline).monospacedDigit().foregroundStyle(row.color)
+            Text(row.times.first ?? "-").font(.headline).monospacedDigit().foregroundStyle(row.color)
             // A chevron signals the row opens the station's full departures.
             if navigable {
                 Image(systemName: "chevron.right")
