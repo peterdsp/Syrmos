@@ -133,6 +133,10 @@
         },
         el: {
             brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
+            athens: "Αθήνα",
+            thessaloniki: "Θεσσαλονίκη",
+            national: "Πανελλαδικά",
+            patras: "Πάτρα",
             search_placeholder: "Αναζήτηση σταθμού (Σύνταγμα, Πειραιάς, Αεροδρόμιο)",
             search_aria: "Αναζήτηση σταθμού",
             locate_me: "Η τοποθεσία μου",
@@ -229,6 +233,10 @@
         },
         sq: {
             brand_subtitle: "Harta e hekurudhave të Athinës",
+            athens: "Athina",
+            thessaloniki: "Selanik",
+            national: "Kombëtare",
+            patras: "Patra",
             search_placeholder: "Kërko stacion (Syntagma, Piraeus, Aeroporti)",
             search_aria: "Kërko stacion",
             locate_me: "Vendndodhja ime",
@@ -325,6 +333,10 @@
         },
         it: {
             brand_subtitle: "Mappa ferroviaria di Atene",
+            athens: "Atene",
+            thessaloniki: "Salonicco",
+            national: "Nazionale",
+            patras: "Patrasso",
             search_placeholder: "Cerca stazione (Syntagma, Pireo, Aeroporto)",
             search_aria: "Cerca stazione",
             locate_me: "La mia posizione",
