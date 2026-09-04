@@ -90,6 +90,7 @@
             live_unknown_age: "Live, age unknown",
             estimated: "Estimated",
             offline_snapshot: "Offline snapshot",
+            airport_bus_live: "Live to the airport stop",
             check_operator: "Check operator",
             unknown: "unknown",
             next: "next",
@@ -185,6 +186,7 @@
             live_unknown_age: "Ζωντανά, άγνωστη ώρα",
             estimated: "Εκτίμηση",
             offline_snapshot: "Εκτός σύνδεσης",
+            airport_bus_live: "Ζωντανά στη στάση του αεροδρομίου",
             check_operator: "Δείτε πάροχο",
             unknown: "άγνωστο",
             next: "επόμενος",
@@ -280,6 +282,7 @@
             live_unknown_age: "Drejtpërdrejt, kohë e panjohur",
             estimated: "Vlerësim",
             offline_snapshot: "Pa internet",
+            airport_bus_live: "Drejtpërdrejt te stacioni i aeroportit",
             check_operator: "Kontrolloni operatorin",
             unknown: "i panjohur",
             next: "tjetër",
@@ -375,6 +378,7 @@
             live_unknown_age: "In tempo reale, età sconosciuta",
             estimated: "Stimato",
             offline_snapshot: "Snapshot offline",
+            airport_bus_live: "In tempo reale alla fermata dell'aeroporto",
             check_operator: "Verifica operatore",
             unknown: "sconosciuto",
             next: "prossimo",
@@ -1941,6 +1945,42 @@
         }
     }
 
+    // Live airport express-bus ETAs (X93/95/96/97). Fetched only when an airport
+    // station sheet is open. Short TTL so the 15s countdown timer picks up fresh
+    // ETAs without a network hit every tick. Returns the reduced shape from
+    // web-airport.js, or null on any failure (the sheet just omits bus rows).
+    let airportBusCache = null; // { at: epochMs, data }
+    async function fetchAirportBuses() {
+        const now = Date.now();
+        if (airportBusCache && (now - airportBusCache.at) < 12_000) return airportBusCache.data;
+        try {
+            const r = await fetch("https://api-syrmos.peterdsp.dev/api/oasa-airport-buses");
+            if (!r.ok) return null;
+            const payload = await r.json();
+            const data = SyrmosAirport.reduceAirportBuses(payload);
+            airportBusCache = { at: now, data };
+            return data;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    // Turn a pure airport-bus row into a departure-card-shaped object. Live by
+    // construction: minutesAway is OASA's real ETA to the airport stop.
+    function toBusDeparture(row) {
+        return {
+            line: { id: row.line, name: row.line, color: "#D97706" },
+            direction: row.destination,
+            destination: row.destination,
+            minutesAway: row.minutesAway,
+            time: formatTimeFromNow(row.minutesAway),
+            serviceType: "",
+            source: "live",
+            sourceLabel: t("live"),
+            ariaNote: t("airport_bus_live"),
+        };
+    }
+
     // Honest service-state for a station whose live/scheduled departures are
     // empty. A seasonal or suspended line must never look like a plain "no
     // departures right now" glitch: it has a real, explainable reason, so the
@@ -2023,11 +2063,21 @@
     }
 
     async function renderDepartures(station) {
-        const apiDepartures = await fetchApiDepartures(station);
-        const departures = (apiDepartures && apiDepartures.length)
+        // Rail departures and (for airport stations) live express-bus ETAs load
+        // in parallel so the sheet paints once with both.
+        const isAirport = SyrmosAirport.isAirportStationId(station.id, station.name, station.nameEl);
+        const [apiDepartures, busReduced] = await Promise.all([
+            fetchApiDepartures(station),
+            isAirport ? fetchAirportBuses() : Promise.resolve(null),
+        ]);
+        const railDepartures = (apiDepartures && apiDepartures.length)
             ? apiDepartures
             : buildStationDepartures(station);
-        if (!departures.length) {
+        const busRows = busReduced
+            ? SyrmosAirport.airportBusDepartures(busReduced).map(toBusDeparture)
+            : [];
+
+        if (!railDepartures.length && !busRows.length) {
             const svc = stationServiceState(station);
             stationDepartures.innerHTML = svc
                 ? serviceStateCardHtml(svc)
@@ -2036,15 +2086,18 @@
             return;
         }
 
-        // Source-confidence: API departures are the live timetable feed
-        // (SCHEDULED); the bundled fallback is the offline snapshot. One source
-        // per render because both branches produce a single homogeneous list.
+        // Source-confidence is per row: rail is the live timetable feed
+        // (SCHEDULED) or the offline snapshot; airport buses carry their own
+        // LIVE chip. Trains first, then the live buses grouped after them.
         const fromApi = !!(apiDepartures && apiDepartures.length);
-        const sourceMod = fromApi ? "scheduled" : "offline";
-        const sourceLabel = t(fromApi ? "scheduled" : "offline_snapshot");
-        const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
+        const railMod = fromApi ? "scheduled" : "offline";
+        const railLabel = t(fromApi ? "scheduled" : "offline_snapshot");
+        const departures = [...railDepartures, ...busRows];
 
         stationDepartures.innerHTML = departures.map((departure, idx) => {
+            const sourceMod = departure.source || railMod;
+            const sourceLabel = departure.sourceLabel || railLabel;
+            const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
             const entranceCls = idx <= 8 ? ` sy-entrance sy-entrance-${idx}` : "";
             const minutesLabel = formatMinutesAway(departure.minutesAway);
             const lineId = departure.line?.id || "";
@@ -2062,7 +2115,7 @@
                 ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
                 : "";
             return `
-                <div class="departure-card${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minutesLabel}, at ${departure.time || ''}">
+                <div class="departure-card${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minutesLabel}, at ${departure.time || ''}${departure.ariaNote ? ', ' + departure.ariaNote : ''}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
