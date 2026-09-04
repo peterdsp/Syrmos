@@ -84,3 +84,63 @@ final class LiveDataFreshness: ObservableObject {
         )
     }
 }
+
+// MARK: - Live vehicle marker freshness
+
+/// Rendering-facing freshness of a REAL-GPS live vehicle marker (a suburban /
+/// national train position), computed from that vehicle's OWN `updatedAt`.
+/// Swift mirror of the KMP `core.model.status.LiveVehicleState`/
+/// `classifyLiveVehicle` - keep the three buckets and the 90s / 600s windows in
+/// lockstep across platforms.
+///
+/// - `.live`    within the fresh window: draw as a live, boardable position.
+/// - `.stale`   older than the fresh window but still recent: draw
+///              DE-EMPHASISED and label it with its age. It must NEVER render as
+///              a plain live dot - an aged position shown as live is the exact
+///              dishonesty the data-status rules forbid.
+/// - `.expired` so old it is no longer meaningful: the renderer drops the marker
+///              (and its line falls back to the schedule projector).
+enum LiveVehicleState { case live, stale, expired }
+
+/// The classification of a single live vehicle: its ``state`` plus the age of
+/// its position in seconds (`nil` when the timestamp was missing/unusable, or
+/// when the position is within the future-skew tolerance and treated as
+/// just-now).
+struct LiveVehicleFreshness {
+    let state: LiveVehicleState
+    let ageSeconds: Int?
+}
+
+enum LiveVehicleFreshnessRule {
+    /// Within this many seconds a position is `.live`. Matches
+    /// `LiveDataFreshness.windowSeconds` and the KMP fresh window.
+    static let freshWindowSeconds: TimeInterval = 90
+    /// Older than ``freshWindowSeconds`` but within this is `.stale`; beyond it
+    /// is `.expired`. Ten minutes, mirroring the KMP `LIVE_VEHICLE_EXPIRY_SECONDS`.
+    static let expirySeconds: TimeInterval = 600
+    /// Tolerated future offset for device clock skew.
+    static let futureSkewToleranceSeconds: TimeInterval = 120
+
+    /// Pure classification, mirrors the KMP `classifyLiveVehicle`. A `nil` or
+    /// far-future timestamp is `.stale` with no age (never `.live`).
+    static func classify(
+        updatedAt: Date?,
+        now: Date,
+        freshWindowSeconds: TimeInterval = freshWindowSeconds,
+        expirySeconds: TimeInterval = expirySeconds,
+        futureSkewToleranceSeconds: TimeInterval = futureSkewToleranceSeconds
+    ) -> LiveVehicleFreshness {
+        guard let updatedAt else { return LiveVehicleFreshness(state: .stale, ageSeconds: nil) }
+        let age = now.timeIntervalSince(updatedAt)
+        if age < 0 {
+            // Future timestamp: tolerate small device clock skew as just-now, but
+            // do not trust one that sits far ahead of us.
+            return -age <= futureSkewToleranceSeconds
+                ? LiveVehicleFreshness(state: .live, ageSeconds: 0)
+                : LiveVehicleFreshness(state: .stale, ageSeconds: nil)
+        }
+        if age <= freshWindowSeconds { return LiveVehicleFreshness(state: .live, ageSeconds: Int(age)) }
+        if age <= expirySeconds { return LiveVehicleFreshness(state: .stale, ageSeconds: Int(age)) }
+        return LiveVehicleFreshness(state: .expired, ageSeconds: Int(age))
+    }
+}
