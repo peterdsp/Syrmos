@@ -6,21 +6,43 @@ struct LiveStreamPlayerView: View {
     let trainNumber: String
 
     @StateObject private var playerModel = LiveStreamPlayerModel()
+    @ObservedObject private var loc = LocalizationManager.shared
+    @ObservedObject private var freshness = LiveDataFreshness.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+
+    // A livestream intrinsically needs connectivity. When the device is offline
+    // we must not spin a doomed player or imply a cached frame is live: we show a
+    // clear, accessible "requires an internet connection" state and reconnect
+    // automatically once the network returns - no restart, no manual retry.
+    private var isOffline: Bool { !freshness.isNetworkAvailable }
+
+    private func title(_ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+        switch loc.language {
+        case .greek: return el
+        case .albanian: return sq
+        case .italian: return it
+        default: return en
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Train \(trainNumber)")
+                Text(title(
+                    "Train \(trainNumber)", "Τρένο \(trainNumber)",
+                    "Treni \(trainNumber)", "Treno \(trainNumber)"))
                     .font(.headline)
                 Spacer()
-                Button("Done") { dismiss() }
+                Button(title("Done", "Τέλος", "U krye", "Fine")) { dismiss() }
                     .fontWeight(.semibold)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
 
-            if playerModel.isReady {
+            if isOffline {
+                offlineState
+            } else if playerModel.isReady {
                 VideoPlayer(player: playerModel.player)
                     .aspectRatio(16/9, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -36,23 +58,10 @@ struct LiveStreamPlayerView: View {
                         .foregroundStyle(.red)
                 }
                 .padding(.top, 8)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(title("Live", "Ζωντανά", "Drejtpërdrejt", "In diretta"))
             } else if playerModel.hasError {
-                VStack(spacing: 12) {
-                    Image(systemName: "video.slash.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                    Text("Stream unavailable")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Button("Retry") {
-                        playerModel.load(url)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                }
-                .frame(maxWidth: .infinity)
-                .aspectRatio(16/9, contentMode: .fit)
-                .padding(.horizontal, 12)
+                errorState
             } else {
                 ZStack {
                     Color.black
@@ -66,8 +75,87 @@ struct LiveStreamPlayerView: View {
 
             Spacer(minLength: 16)
         }
-        .onAppear { playerModel.load(url) }
+        .onAppear {
+            // Only start a player when there is a network to reach; otherwise the
+            // offline state is shown and .onChange resumes once we are back online.
+            if !isOffline { playerModel.load(url) }
+        }
         .onDisappear { playerModel.stop() }
+        .onChange(of: freshness.isNetworkAvailable) { _, online in
+            if online {
+                // Connectivity returned: reconnect automatically, no restart.
+                playerModel.load(url)
+            } else {
+                // Release playback resources cleanly while offline.
+                playerModel.stop()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active:
+                guard !isOffline else { return }
+                // Foregrounded: resume if the player survived, else reload.
+                if playerModel.isReady {
+                    playerModel.resume()
+                } else if !playerModel.hasError {
+                    playerModel.load(url)
+                }
+            case .background, .inactive:
+                // Backgrounded: pause so we do not decode video off-screen; the
+                // item is kept so foregrounding can resume without a full reload.
+                playerModel.pause()
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    private var offlineState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "wifi.slash")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Text(title(
+                "Livestream requires an internet connection",
+                "Η ζωντανή ροή απαιτεί σύνδεση στο διαδίκτυο",
+                "Transmetimi i drejtpërdrejtë kërkon lidhje interneti",
+                "La diretta richiede una connessione a internet"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Text(title(
+                "It will resume automatically when you are back online.",
+                "Θα συνεχίσει αυτόματα μόλις επανέλθει η σύνδεση.",
+                "Do të vazhdojë automatikisht kur të rikthehet lidhja.",
+                "Riprenderà automaticamente quando tornerai online."))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .aspectRatio(16/9, contentMode: .fit)
+        .padding(.horizontal, 12)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var errorState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "video.slash.fill")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Text(title("Stream unavailable", "Η ροή δεν είναι διαθέσιμη",
+                       "Transmetimi nuk disponohet", "Diretta non disponibile"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Button(title("Retry", "Επανάληψη", "Riprovo", "Riprova")) {
+                playerModel.load(url)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity)
+        .aspectRatio(16/9, contentMode: .fit)
+        .padding(.horizontal, 12)
     }
 }
 
@@ -117,6 +205,17 @@ private final class LiveStreamPlayerModel: ObservableObject {
         }
 
         avPlayer.play()
+    }
+
+    /// Pause without tearing down, so a foregrounding view can resume the same
+    /// item instead of reloading from scratch.
+    func pause() {
+        player?.pause()
+    }
+
+    /// Resume a paused player (e.g. after returning to the foreground).
+    func resume() {
+        player?.play()
     }
 
     func stop() {

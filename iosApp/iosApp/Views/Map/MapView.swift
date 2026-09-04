@@ -282,14 +282,33 @@ struct TransitMapView: View {
     /// The map asks us to recenter via this trigger. UIViewRepresentable
     /// reads it in update() and calls setRegion on the wrapped MKMapView.
     @State private var recenterToUserPing: Int = 0
+    // Drives periodic re-evaluation so real-GPS train markers age out even with
+    // NO new data (offline / dropped feed): the live-train fleet only changes on
+    // a poll, so without this a stale position would freeze on screen as "live".
+    @State private var nowTick = Date()
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
+
+    /// The real-GPS trains actually worth plotting: EXPIRED positions dropped so
+    /// a dead/offline feed never leaves a frozen "live" ghost on the map. STALE
+    /// ones are kept (they are the best-known last position) and rendered
+    /// de-emphasised + aged by `trainImage`. `nowTick` is read so SwiftUI
+    /// re-evaluates this on the timer, not only when the feed changes.
+    private var visibleLiveTrains: [LiveTrain] {
+        let now = nowTick
+        return liveTrainService.trains.filter {
+            LiveVehicleFreshnessRule.classify(updatedAt: $0.updatedAt, now: now).state != .expired
+        }
+    }
 
     var body: some View {
         NavigationStack {
             mapContent
                 .safeAreaInset(edge: .top, spacing: 8) {
                     CompactTabHeader(loc[.map])
+                }
+                .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
+                    nowTick = Date()
                 }
                 .task { await stasyService.fetchAnnouncements() }
                 .onChange(of: stasyService.stationDisruptions) {
@@ -331,7 +350,9 @@ struct TransitMapView: View {
             }
             .sheet(isPresented: $showLiveTrainsSheet) {
                 LiveTrainsListSheet(
-                    trains: liveTrainService.trains,
+                    // Stale-aware, EXPIRED-dropped list the map plots, so the
+                    // sheet never lists a ghost that is no longer on the map.
+                    trains: visibleLiveTrains,
                     onSelect: { train in
                         showLiveTrainsSheet = false
                         tappedVehicle = .live(train)
@@ -374,10 +395,14 @@ struct TransitMapView: View {
                     stations: stations,
                     routeLines: routeLines,
                     simulatedTrains: vehiclesHidden ? [] : {
-                        let coveredLines = Set(liveTrainService.trains.map(\.lineId))
+                        // Only a STILL-TRACKED (non-expired) live train hides its
+                        // line's projected dot. An EXPIRED ghost is excluded here,
+                        // so once the feed goes stale the projector fills the line
+                        // back in - the offline fallback the frozen ghost blocked.
+                        let coveredLines = Set(visibleLiveTrains.map(\.lineId))
                         return trainSimulator.trains.filter { !coveredLines.contains($0.lineId) }
                     }(),
-                    liveTrains: vehiclesHidden ? [] : liveTrainService.trains,
+                    liveTrains: vehiclesHidden ? [] : visibleLiveTrains,
                     busVehicles: vehiclesHidden ? [] : airportBusService.vehicles,
                     stationDisruptions: stasyService.stationDisruptions,
                     recenterToUserPing: recenterToUserPing,
@@ -395,7 +420,7 @@ struct TransitMapView: View {
                 .ignoresSafeArea(.container, edges: [.top, .bottom])
 
                 VStack(spacing: 12) {
-                    if !liveTrainService.trains.isEmpty {
+                    if !visibleLiveTrains.isEmpty {
                         Button {
                             showLiveTrainsSheet = true
                         } label: {
@@ -1281,6 +1306,14 @@ struct SyrmosMKMapView: UIViewRepresentable {
                     ann.kind = .live(train)
                     ann.coordinate = context.coordinator.snapToPolyline(
                         coord: train.coordinate, lineId: train.lineId)
+                    // Refresh the image so a train that has aged into STALE since
+                    // the last pass renders de-emphasised. This reconcile re-runs
+                    // on the `nowTick` timer, so muting happens even offline (no
+                    // new GPS), and a train that has EXPIRED is already absent from
+                    // `wantLive` and removed by the else branch below.
+                    if let view = mv.view(for: ann) {
+                        view.image = context.coordinator.trainImage(for: ann)
+                    }
                     seenLive.insert(t.id)
                 } else {
                     mv.removeAnnotation(ann)
@@ -1866,7 +1899,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
             }
         }
 
-        private func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
+        func trainImage(for train: SyrmosTrainAnnotation) -> UIImage {
             // Simulated (projected) trains ride their line as an oriented capsule;
             // live GPS trains are ring pins (mirroring web). Colour is the line's
             // raw hex from lines.json (same source web reads).
@@ -1875,14 +1908,20 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 let color = UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
                 return Self.capsuleTrainImage(color: color, bearing: t.bearing)
             case .live(let t):
-                // A "position only" / not-in-service live vehicle is a real GPS
-                // dot but NOT boardable, so draw it de-emphasized (grey, faded)
-                // to match its detail sheet. Assigned trains keep the line colour.
+                // Two independent reasons to de-emphasize a real GPS dot:
+                //  - notInService: a "position only" vehicle is a real dot but
+                //    NOT boardable (grey, to match its detail sheet).
+                //  - stale: the position is older than the fresh window. Drawing
+                //    an aged position with full live styling would be the exact
+                //    "old position shown as live" the data-status rules forbid,
+                //    so it is muted (and its sheet says how long ago it was seen).
                 let notInService = !t.inService || t.status == "position_only"
-                let color = notInService
+                let stale = LiveVehicleFreshnessRule.classify(updatedAt: t.updatedAt, now: Date()).state == .stale
+                let muted = notInService || stale
+                let color = muted
                     ? UIColor(red: 0.61, green: 0.64, blue: 0.69, alpha: 1.0)   // ~#9CA3AF, matches web
                     : UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
-                return Self.liveTrainRingImage(color: color, muted: notInService)
+                return Self.liveTrainRingImage(color: color, muted: muted)
             }
         }
     }

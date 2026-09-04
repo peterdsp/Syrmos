@@ -52,4 +52,49 @@ final class SuburbanProjectionTests: XCTestCase {
         let kept = simulated.filter { !liveLineIds.contains($0.lineId) }
         XCTAssertEqual(kept.count, 2, "Offline (empty live feed) means suburban dots stay on screen")
     }
+
+    // MARK: - Live vehicle freshness (mirrors KMP LiveVehicleFreshnessTest)
+
+    func test_freshness_classifier_buckets() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        func at(_ ageSeconds: Double) -> Date { now.addingTimeInterval(-ageSeconds) }
+
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: at(10), now: now).state, .live)
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: at(90), now: now).state, .live, "90s boundary is still live")
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: at(91), now: now).state, .stale)
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: at(600), now: now).state, .stale, "600s boundary is still stale")
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: at(601), now: now).state, .expired)
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: at(300), now: now).ageSeconds, 300)
+    }
+
+    func test_freshness_classifier_missing_and_future_timestamps_never_live() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        // No timestamp -> stale, no age, never live.
+        let none = LiveVehicleFreshnessRule.classify(updatedAt: nil, now: now)
+        XCTAssertEqual(none.state, .stale)
+        XCTAssertNil(none.ageSeconds)
+        // Small future skew tolerated as just-now.
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: now.addingTimeInterval(60), now: now).state, .live)
+        // Far future is not trusted.
+        XCTAssertEqual(LiveVehicleFreshnessRule.classify(updatedAt: now.addingTimeInterval(100_000), now: now).state, .stale)
+    }
+
+    /// The safety-critical guarantee: an EXPIRED live train must NOT cover its
+    /// line, so the schedule projector fills back in once the feed goes stale.
+    /// Mirrors `MapView.visibleLiveTrains` + the coveredLines filter.
+    func test_expired_live_train_releases_its_line_to_projection() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let live: [(lineId: String, updatedAt: Date?)] = [
+            ("A1", now.addingTimeInterval(-10)),    // LIVE
+            ("A2", now.addingTimeInterval(-300)),   // STALE (still tracked)
+            ("A3", now.addingTimeInterval(-1000)),  // EXPIRED -> released
+        ]
+        let covered = Set(
+            live.filter {
+                LiveVehicleFreshnessRule.classify(updatedAt: $0.updatedAt, now: now).state != .expired
+            }.map(\.lineId)
+        )
+        XCTAssertEqual(covered, ["A1", "A2"], "A3 expired so its line is handed back to the projector")
+        XCTAssertFalse(covered.contains("A3"))
+    }
 }

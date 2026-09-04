@@ -913,6 +913,10 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                 throw URLError(.badServerResponse)
             }
             let payload = try JSONDecoder().decode(TrainsPayload.self, from: data)
+            // The feed stamps every snapshot with one generation time. Carry it
+            // onto each position so the map can age a marker out honestly; fall
+            // back to receive-time when the feed omits it.
+            let stamp = LiveTrainService.parseFeedTimestamp(payload.updatedAt) ?? Date()
             let parsed: [LiveTrain] = payload.trains.compactMap { t -> LiveTrain? in
                 // Skip a coord-less vehicle rather than plot it at (0,0); the
                 // optional lat/lng above already keeps one bad row from failing
@@ -946,6 +950,7 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                     scheduleStatus: t.scheduleStatus,
                     trainId: t.trainId,
                     liveStreamUrl: t.liveStream?.playlistUrl,
+                    updatedAt: stamp,
                     status: t.status ?? "in_service",
                     inService: t.inService ?? true
                 )
@@ -961,6 +966,20 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
             // the last poll returned. Map keeps rendering bundled
             // polylines + stations regardless.
         }
+    }
+
+    /// Parse the feed's ISO-8601 `updatedAt` (e.g. `2026-09-04T21:40:27.477972+00:00`).
+    /// Tries fractional seconds first, then plain, then returns nil so callers
+    /// fall back to receive-time. Formatters are created locally (not cached in a
+    /// non-Sendable static) so this is safe to call from any actor; at a 10s poll
+    /// cadence the allocation cost is irrelevant.
+    static func parseFeedTimestamp(_ iso: String?) -> Date? {
+        guard let iso, !iso.isEmpty else { return nil }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = fractional.date(from: iso) { return d }
+        let plain = ISO8601DateFormatter()
+        return plain.date(from: iso)
     }
 }
 
@@ -992,6 +1011,13 @@ struct LiveTrain: Identifiable {
     let scheduleStatus: String?
     let trainId: String?
     let liveStreamUrl: String?
+    // When the feed reported this position (the payload's own generation time,
+    // or receive-time when the feed omits it). The map ages a marker out against
+    // this: an offline / dropped poll no longer refreshes `trains`, so the
+    // retained trains keep this stamp and grow stale against wall-clock instead
+    // of freezing on screen as "live". Optional so any other constructor is
+    // backward-safe.
+    var updatedAt: Date? = nil
     // Honest service status: "in_service" | "position_only" | "parked_yard" |
     // "not_in_service". Parked/yard vehicles are withheld server-side, so a
     // non-boardable train that still reaches the client is "position_only".
