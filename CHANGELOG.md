@@ -10,6 +10,32 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## Unreleased
+
+Honest live-vehicle freshness on the map, and an offline-aware livestream, across
+every client. Answers the offline-first data-status rule that an aged position
+must never be shown as live. See [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/OFFLINE_FIRST_AND_DATA_SOURCES.md).
+
+- **Live-GPS markers age out honestly (iOS + Android + web).** A real train/bus
+  position is now classified by the age of its own `updatedAt`: fresh (<=90s)
+  draws live; stale (90s-600s) draws de-emphasised (grey, no pulse), never a plain
+  live dot; expired (>600s) is dropped so the line falls back to the schedule
+  projector. Freshness is recomputed on a timer, so a marker ages LIVE -> STALE ->
+  gone even when the feed stops emitting (offline / dropped) with no new data. Root
+  cause fixed on Android/KMP where live trains carried no timestamp at all
+  (`updatedAt = ""`) and a frozen ghost both looked live and blocked its line's
+  offline projection. One shared rule: `core/model/status/LiveVehicleFreshness.kt`
+  (KMP), `LiveVehicleFreshnessRule` (iOS), `classifyLiveBatch` (web).
+- **Offline-aware livestream.** iOS gained an explicit "Livestream requires an
+  internet connection" state, automatic reconnect when connectivity returns (no
+  restart), and background/foreground pause-resume; Android no longer offers a
+  dead "Watch Live" link when the train is not currently tracked, showing the same
+  offline message instead.
+- **Tests.** `LiveVehicleFreshnessTest` (KMP, 12), `LiveTrainClassificationTest`
+  (KMP, 5), iOS `SuburbanProjectionTests` (+3, 7 total), web
+  `live-train-freshness.test.js` (8). Full suites green: iOS 173, web 68, Android
+  build + unit tests.
+
 ## 3.0.0-beta.2 - 2026-09-03
 
 Live GO: the get-off cue that is the point of the whole feature. GO no longer waits for you to tap through
