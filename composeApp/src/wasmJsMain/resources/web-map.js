@@ -651,8 +651,13 @@
         if (activeTrainSheet) showTrainSheet(activeTrainSheet.kind, activeTrainSheet.train);
     });
 
+    // Each core seed fetch carries its own .catch returning an empty default, so
+    // a first-ever visit with NO network (before the Service Worker has cached
+    // the seed) degrades to an empty-but-alive map instead of rejecting the whole
+    // init and rendering a blank screen. Once the SW is installed these are
+    // served from cache offline and the .catch never fires.
     const [stations, lines, routes, servicePatterns, vehicleManifest] = await Promise.all([
-        fetch("/files/seed/stations.json").then((r) => r.json()),
+        fetch("/files/seed/stations.json").then((r) => r.json()).catch(() => []),
         // schedules-v2 is the generator's payload and the single source of truth
         // for lines. The legacy flat seed/lines.json was transcribed from
         // hardcoded Swift by a script broken since June 2026, so it carries
@@ -662,9 +667,10 @@
         fetch("/files/seed/schedules-v2/lines.json")
             .then((r) => r.json())
             .then((d) => (Array.isArray(d?.lines) && d.lines.length ? d.lines : Promise.reject()))
-            .catch(() => fetch("/files/seed/lines.json").then((r) => r.json())),
-        fetch("/files/seed/routes.json").then((r) => r.json()),
-        fetch("/files/seed/service_patterns.json").then((r) => r.json()),
+            .catch(() => fetch("/files/seed/lines.json").then((r) => r.json()))
+            .catch(() => []),
+        fetch("/files/seed/routes.json").then((r) => r.json()).catch(() => []),
+        fetch("/files/seed/service_patterns.json").then((r) => r.json()).catch(() => ({})),
         fetch("/icons/vehicles/manifest.json").then((r) => r.json()).catch(() => ({ directional_icons: [] })),
     ]);
 
