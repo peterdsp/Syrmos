@@ -551,5 +551,15 @@
 <script src="/web-planner.js"></script>
 <script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
+<!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
+     dropped connection keeps the app usable with no network. Registered on load
+     so it never competes with the first paint's resource fetches. -->
+<script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("/sw.js").catch(function () { /* offline-first is best-effort */ });
+        });
+    }
+</script>
 </body>
 </html>
