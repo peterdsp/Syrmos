@@ -269,6 +269,7 @@ struct TransitMapView: View {
     @ObservedObject private var liveTrainService = LiveTrainService.shared
     @ObservedObject private var airportBusService = LiveAirportBusService.shared
     @ObservedObject private var trainSimulator = TrainSimulatorService.shared
+    @ObservedObject private var freshnessStore = LiveDataFreshness.shared
     @StateObject private var stasyService = STASYService()
     @StateObject private var locationManager = MapLocationManager()
     @State private var tappedStation: MapStationNode?
@@ -478,7 +479,24 @@ struct TransitMapView: View {
                 }
                 .padding(.trailing, 16)
                 .padding(.bottom, 80)
+
+                // Subtle, non-interrupting offline indicator: the map keeps
+                // working from the bundled schedule + last-known data, and this
+                // just says so. Shown when the device is offline OR no live data
+                // has arrived within the freshness window (online != API reachable),
+                // and hidden the moment live data resumes. Passive (never an alert).
+                if !freshnessStore.isNetworkAvailable || freshnessStore.freshness != .live {
+                    OfflinePill(message: loc[.runningOffline])
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .padding(.leading, 16)
+                        .padding(.top, 8)
+                        .allowsHitTesting(false)
+                        .accessibilityLabel(loc[.runningOffline])
+                        .transition(.opacity)
+                }
         }
+        .animation(.easeInOut(duration: 0.25), value: freshnessStore.isNetworkAvailable)
+        .animation(.easeInOut(duration: 0.25), value: freshnessStore.lastLiveUpdate)
     }
 }
 
