@@ -116,9 +116,13 @@ fun MapScreen(
             )
         } else {
             PlatformMapView(
+                // Hide-vehicles must also clear visibleLiveTrains: the live-train
+                // renderer switched to it in #141, so zeroing only the raw
+                // liveTrains left GPS trains on the map when vehicles were hidden.
                 uiState = if (uiState.showTrains) uiState else uiState.copy(
                     simulatedTrains = emptyList(),
                     liveTrains = emptyList(),
+                    visibleLiveTrains = emptyList(),
                     busVehicles = emptyList(),
                 ),
                 onStationSelected = viewModel::selectStation,
@@ -134,6 +138,20 @@ fun MapScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
+                    .zIndex(1f),
+            )
+        }
+
+        // Subtle, non-interrupting offline indicator. The map keeps working from
+        // the bundled schedule + last-known data; this just says so, and hides the
+        // moment live data resumes. Passive pill, never an alert.
+        if (uiState.mapOffline) {
+            com.syrmos.core.designsystem.component.OfflinePill(
+                message = L.RUNNING_OFFLINE.text(lang),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(start = 16.dp, top = 56.dp)
                     .zIndex(1f),
             )
         }
