@@ -2,6 +2,7 @@ package com.syrmos.feature.map
 
 import com.syrmos.core.common.DataFreshness
 import com.syrmos.core.common.LiveDataFreshness
+import com.syrmos.core.common.PollBackoff
 import com.syrmos.core.common.map.LatLng
 import com.syrmos.core.data.repository.LineGeometryRepositoryImpl
 import com.syrmos.core.data.repository.LineRepositoryImpl
@@ -46,6 +47,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
+
+/** Base interval for the live-positions + airport-bus polls (backoff resets to this). */
+private const val LIVE_POLL_BASE_MS = 15_000L
 
 data class StationDepartureUi(
     val line: Line,
@@ -347,10 +351,18 @@ class MapViewModel(
 
     private fun pollAirportBuses() {
         scope.launch {
+            var failures = 0
             while (isActive) {
-                val vehicles = AirportBusVehicles.parse(airportBusService.fetchAirportBuses())
-                _uiState.update { it.copy(busVehicles = vehicles) }
-                delay(15_000)
+                try {
+                    val vehicles = AirportBusVehicles.parse(airportBusService.fetchAirportBuses())
+                    _uiState.update { it.copy(busVehicles = vehicles) }
+                    failures = 0
+                } catch (e: Exception) {
+                    // Keep the last vehicles on screen and back off (don't clobber
+                    // good data with an empty list on a transient failure).
+                    failures++
+                }
+                delay(PollBackoff.nextDelayMillis(failures, LIVE_POLL_BASE_MS))
             }
         }
     }
@@ -365,11 +377,16 @@ class MapViewModel(
             if (offsetsMap.isEmpty()) {
                 offsetsMap = bundledOffsets()
             }
+            var failures = 0
             while (isActive) {
                 if (offsetsMap.isEmpty()) {
                     offsetsMap = bundledOffsets()
                 }
                 val active = livePositionsService.fetchActiveTrains(targetLines)
+                // A null response is a network failure -> back off. An empty-but-
+                // non-null response means the API is reachable (just no active
+                // trains, e.g. overnight), so that resets the backoff.
+                failures = if (active == null) failures + 1 else 0
                 if (active != null && active.trains.isNotEmpty()) {
                     val generatedAtEpoch = runCatching {
                         Instant.parse(active.generatedAt).epochSeconds
@@ -394,7 +411,7 @@ class MapViewModel(
                         generatedAtEpochSeconds = kotlinx.datetime.Clock.System.now().epochSeconds,
                     )
                 }
-                delay(15_000)
+                delay(PollBackoff.nextDelayMillis(failures, LIVE_POLL_BASE_MS))
             }
         }
     }
