@@ -26,6 +26,12 @@ data. See [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/OFFLINE_FIRST_AND_DATA_S
   Android gained instant offline detection (`ConnectivityObserver.onLost` +
   a shared `LiveDataFreshness.isNetworkAvailable` flag) and, in passing, a fix so
   "hide vehicles" also clears the live-train layer.
+- **Backoff + jitter on the live polls (iOS + Android + web).** Every live poll
+  (trains, live-positions, airport buses) now backs off exponentially with jitter
+  on repeated failure (`base -> 2x -> 4x`, capped, +/-25% so installed clients do
+  not retry a down Pi in lockstep) and resets to its base interval on the next
+  success, replacing the previous fixed-interval loops. One shared rule:
+  `PollBackoff` (KMP + iOS) / `pollBackoffMs` (web).
 
 - **Live-GPS markers age out honestly (iOS + Android + web).** A real train/bus
   position is now classified by the age of its own `updatedAt`: fresh (<=90s)

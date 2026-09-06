@@ -1,6 +1,7 @@
 package com.syrmos.core.network
 
 import com.syrmos.core.common.LiveDataFreshness
+import com.syrmos.core.common.PollBackoff
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
@@ -39,6 +40,7 @@ class RailwayGovLiveTrackerService(
     }
 
     fun observeSuburbanTrains(lineIds: Set<String>? = null): Flow<List<LiveSuburbanTrain>> = flow {
+        var consecutiveFailures = 0
         while (currentCoroutineContext().isActive) {
             try {
                 // Fast per-call timeout: this is a live poll feeding the map, so
@@ -77,11 +79,17 @@ class RailwayGovLiveTrackerService(
                 // offline-alive pill flips to "live".
                 LiveDataFreshness.markLive()
                 emit(trains)
+                consecutiveFailures = 0
             } catch (e: Exception) {
                 println("[LiveTracker] poll failed: ${e.message}")
+                consecutiveFailures++
             }
 
-            delay(POLL_INTERVAL_MS)
+            // Exponential backoff + jitter: a healthy feed polls every 10s; a
+            // failing one backs off (20s, 40s, capped 60s) with jitter so every
+            // installed client does not hammer a down Pi in lockstep. Resets to
+            // 10s on the next success.
+            delay(PollBackoff.nextDelayMillis(consecutiveFailures, POLL_INTERVAL_MS))
         }
     }
 
