@@ -2700,11 +2700,36 @@
         });
     }
 
+    // Exponential backoff with jitter for the live polls. Mirrors the KMP
+    // PollBackoff + iOS PollBackoff (2^failures growth, +/-25% jitter, 60s cap).
+    // A healthy loop waits its base interval; after consecutive failures it waits
+    // min(base * 2^failures, max), jittered so many clients never retry a down Pi
+    // in lockstep. Reset failures to 0 on the next success.
+    const POLL_MAX_BACKOFF_MS = 60_000;
+    function pollBackoffMs(consecutiveFailures, baseMs, maxMs = POLL_MAX_BACKOFF_MS, jitterFraction = 0.25, random01 = Math.random()) {
+        const failures = Math.max(0, Math.min(consecutiveFailures | 0, 16));
+        const raw = Math.min(failures === 0 ? baseMs : baseMs * Math.pow(2, failures), maxMs);
+        const mult = (1 - jitterFraction) + (2 * jitterFraction * random01);
+        return Math.max(Math.round(raw * mult), 1);
+    }
+    // Self-scheduling poll loop with backoff: run `pollOnce` (returns true on
+    // success), then schedule the next run after pollBackoffMs(failures, baseMs).
+    function startPollLoop(pollOnce, baseMs, maxMs = POLL_MAX_BACKOFF_MS) {
+        let failures = 0;
+        async function loop() {
+            let ok = false;
+            try { ok = await pollOnce(); } catch (_) { ok = false; }
+            failures = ok ? 0 : failures + 1;
+            setTimeout(loop, pollBackoffMs(failures, baseMs, maxMs));
+        }
+        loop();
+    }
+
     function connectLiveTrainStream() {
-        // Poll the Syrmos API cached JSON every 10 seconds. The Pi handles the
-        // upstream SSE connection and pre-filters the data so each browser
-        // downloads only ~1.5 KB per poll instead of holding an SSE stream
-        // that emits 10+ KB of schedule cards per second.
+        // Poll the Syrmos API cached JSON. The Pi handles the upstream SSE
+        // connection and pre-filters the data so each browser downloads only
+        // ~1.5 KB per poll instead of holding an SSE stream that emits 10+ KB of
+        // schedule cards per second. 10s while healthy; backs off on failure.
         const TRAINS_URL = "https://api-syrmos.peterdsp.dev/api/trains";
         const POLL_INTERVAL_MS = 10_000;
 
@@ -2712,18 +2737,19 @@
             try {
                 const res = await fetch(TRAINS_URL, { cache: "no-store" });
                 if (!res.ok) {
-                    return;
+                    return false;
                 }
                 const payload = await res.json();
                 updateLiveTrains(payload.trains || [], payload.updatedAt);
                 markApiOk();
+                return true;
             } catch (_error) {
                 // Keep showing the last successful frame on transient errors.
+                return false;
             }
         }
 
-        pollOnce();
-        setInterval(pollOnce, POLL_INTERVAL_MS);
+        startPollLoop(pollOnce, POLL_INTERVAL_MS);
         // Re-render from the last snapshot on a timer so the fleet ages out even
         // with NO new data (offline / dropped feed): the poll only redraws on a
         // successful fetch, so without this a stale batch would keep its fresh
@@ -2934,15 +2960,16 @@
         async function pollOnce() {
             try {
                 const res = await fetch(URL, { cache: "no-store" });
-                if (!res.ok) return;
+                if (!res.ok) return false;
                 const payload = await res.json();
                 renderAirportBusVehicles(SyrmosAirport.airportBusVehicles(payload));
+                return true;
             } catch (_error) {
                 // Keep the last frame on transient errors.
+                return false;
             }
         }
-        pollOnce();
-        setInterval(pollOnce, 15_000);
+        startPollLoop(pollOnce, 15_000);
     }
 
     function renderAirportBusVehicles(vehicles) {
@@ -3535,15 +3562,16 @@
                     generatedAtEpochSeconds: isNaN(generatedAtEpoch) ? Date.now() / 1000 : generatedAtEpoch,
                 };
                 markApiOk();
+                return true;
             } catch (_) {
                 // Offline (or the Pi is down): project from the bundled timetable.
                 applyOfflineFallback();
                 updateOfflineIndicator();
+                return false;
             }
         }
         await loadStationOffsets();
-        await tick();
-        setInterval(tick, 15000);
+        startPollLoop(tick, 15000);
     }
 
     // Position a train ALONG the real line polyline instead of on the straight
