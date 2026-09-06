@@ -97,4 +97,30 @@ final class SuburbanProjectionTests: XCTestCase {
         XCTAssertEqual(covered, ["A1", "A2"], "A3 expired so its line is handed back to the projector")
         XCTAssertFalse(covered.contains("A3"))
     }
+
+    // MARK: - Live poll backoff (mirrors KMP PollBackoffTest)
+
+    func test_pollBackoff_successWaitsBaseAndFailuresEscalate() {
+        // random01 = 0.5 -> multiplier 1.0, so raw delays are exact.
+        func d(_ f: Int, _ base: TimeInterval, _ maxD: TimeInterval = 60) -> TimeInterval {
+            PollBackoff.nextDelaySeconds(consecutiveFailures: f, baseDelaySeconds: base, maxDelaySeconds: maxD, random01: 0.5)
+        }
+        XCTAssertEqual(d(0, 10), 10, accuracy: 0.001)  // healthy -> base
+        XCTAssertEqual(d(1, 10), 20, accuracy: 0.001)  // 10 * 2
+        XCTAssertEqual(d(2, 10), 40, accuracy: 0.001)  // 10 * 4
+        XCTAssertEqual(d(3, 10), 60, accuracy: 0.001)  // capped at 60
+        XCTAssertEqual(d(10, 10), 60, accuracy: 0.001) // stays capped
+    }
+
+    func test_pollBackoff_jitterWithinBounds() {
+        // failures=2 -> raw 40s; +/-25% -> [30, 50].
+        XCTAssertEqual(PollBackoff.nextDelaySeconds(consecutiveFailures: 2, baseDelaySeconds: 10, random01: 0.0), 30, accuracy: 0.001)
+        XCTAssertEqual(PollBackoff.nextDelaySeconds(consecutiveFailures: 2, baseDelaySeconds: 10, random01: 1.0), 50, accuracy: 0.001)
+        // base success delay is jittered too, to desync clients: 10 +/-25% -> [7.5, 12.5].
+        XCTAssertEqual(PollBackoff.nextDelaySeconds(consecutiveFailures: 0, baseDelaySeconds: 10, random01: 0.0), 7.5, accuracy: 0.001)
+    }
+
+    func test_pollBackoff_negativeFailuresTreatedAsZero() {
+        XCTAssertEqual(PollBackoff.nextDelaySeconds(consecutiveFailures: -5, baseDelaySeconds: 15, random01: 0.5), 15, accuracy: 0.001)
+    }
 }

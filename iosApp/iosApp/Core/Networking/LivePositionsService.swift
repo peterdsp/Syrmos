@@ -67,9 +67,10 @@ final class LivePositionsService: ObservableObject {
 
     /// Public entry. Settings' Check now calls this; the in-app
     /// schedule of polling is the user, not a timer.
-    func refresh() async {
+    @discardableResult
+    func refresh() async -> Bool {
         await ensureOffsets()
-        await fetchActiveTrains()
+        return await fetchActiveTrains()
     }
 
     /// Re-fetch active positions on a cadence so metro / tram / A1-A4 dots stay
@@ -82,10 +83,19 @@ final class LivePositionsService: ObservableObject {
     func startPolling(intervalSeconds: UInt64 = 60) {
         guard pollTask == nil else { return }
         pollTask = Task { [weak self] in
+            var failures = 0
+            let base = TimeInterval(intervalSeconds)
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: intervalSeconds * 1_000_000_000)
+                // Backoff + jitter: base cadence while healthy, escalating on
+                // repeated failure (capped 5 min) with jitter, reset on success.
+                // The map keeps projecting metro/tram from the bundle meanwhile.
+                try? await Task.sleep(nanoseconds: PollBackoff.nextDelayNanos(
+                    consecutiveFailures: failures,
+                    baseDelaySeconds: base,
+                    maxDelaySeconds: max(base, 300)))
                 if Task.isCancelled { return }
-                await self?.refresh()
+                let ok = await self?.refresh() ?? false
+                failures = ok ? 0 : failures + 1
             }
         }
     }
@@ -129,12 +139,13 @@ final class LivePositionsService: ObservableObject {
         }
     }
 
-    private func fetchActiveTrains() async {
-        guard var components = URLComponents(string: "\(base)/api/live-positions") else { return }
+    @discardableResult
+    private func fetchActiveTrains() async -> Bool {
+        guard var components = URLComponents(string: "\(base)/api/live-positions") else { return false }
         components.queryItems = [
             URLQueryItem(name: "lineIds", value: projectedLineIds.joined(separator: ",")),
         ]
-        guard let url = components.url else { return }
+        guard let url = components.url else { return false }
         var req = URLRequest(url: url)
         req.timeoutInterval = 6
         do {
@@ -161,6 +172,7 @@ final class LivePositionsService: ObservableObject {
             // Live positions came back from the API: we're online. Surface
             // it on the home offline-alive pill.
             LiveDataFreshness.shared.markLive()
+            return true
         } catch {
             // Offline (or Pi down): project metro/tram from the bundled
             // timetable so the map still shows live-moving dots, including
@@ -182,6 +194,7 @@ final class LivePositionsService: ObservableObject {
                 }
             }
             // else: keep existing trains so a brief glitch animates smoothly.
+            return false
         }
     }
 }
