@@ -27,8 +27,18 @@ class ConnectivityObserver(context: Context) {
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             // A usable default network appeared (cold start while online, or an
-            // offline -> online transition). Ask the home surface to re-probe.
+            // offline -> online transition). Flag online and ask the home surface
+            // to re-probe.
+            LiveDataFreshness.setNetworkAvailable(true)
             LiveDataFreshness.requestRetry()
+        }
+
+        override fun onLost(network: Network) {
+            // The default network went away: flag offline instantly so the map's
+            // offline indicator appears without waiting for the freshness window
+            // to decay. Live polls keep running and recover on their own once
+            // onAvailable fires again.
+            LiveDataFreshness.setNetworkAvailable(false)
         }
     }
 
