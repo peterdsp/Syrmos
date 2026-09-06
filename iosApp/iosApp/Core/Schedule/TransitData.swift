@@ -890,9 +890,15 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
     func startPolling() {
         guard task == nil else { return }
         task = Task { [weak self] in
+            var failures = 0
             while !Task.isCancelled {
-                await LiveTrainService.fetchOnce(self)
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                let ok = await LiveTrainService.fetchOnce(self)
+                failures = ok ? 0 : failures + 1
+                // Exponential backoff + jitter: 10s while healthy, then 20/40/60s
+                // on repeated failure, reset to 10s on the next success. Mirrors
+                // the KMP tracker service so no client hammers a down Pi.
+                try? await Task.sleep(nanoseconds: PollBackoff.nextDelayNanos(
+                    consecutiveFailures: failures, baseDelaySeconds: 10))
             }
         }
     }
@@ -902,7 +908,8 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
         await LiveTrainService.fetchOnce(self)
     }
 
-    private static func fetchOnce(_ instance: LiveTrainService?) async {
+    @discardableResult
+    private static func fetchOnce(_ instance: LiveTrainService?) async -> Bool {
         let url = URL(string: "https://api-syrmos.peterdsp.dev/api/trains")!
         do {
             var req = URLRequest(url: url)
@@ -961,10 +968,12 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
                 LiveDataFreshness.shared.markLive()
                 LiveTrainService.onLiveDataRefreshed?(trainCount)
             }
+            return true
         } catch {
             // Silent — the user's previous Check now still has whatever
             // the last poll returned. Map keeps rendering bundled
             // polylines + stations regardless.
+            return false
         }
     }
 
