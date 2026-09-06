@@ -2528,6 +2528,37 @@
     // ISO timestamp of the last real telematics batch (see updateLiveTrains).
     let liveTrainsUpdatedAt = null;
 
+    // --- Map offline indicator ---------------------------------------------
+    // Subtle, non-interrupting pill (#offlinePill) shown when the device is
+    // offline OR no live data has landed within the freshness window. Two honest
+    // signals: navigator.onLine is instant; the staleness check catches the
+    // "online but the API is unreachable" case (online != API reachable). The
+    // map keeps working from the bundled schedule + last-known data throughout.
+    // Optimistic start so a fresh online load shows nothing until a poll proves
+    // otherwise; a cold offline (SW-served) start reads navigator.onLine === false.
+    const LIVE_STALE_MS = 90_000;
+    let lastApiOkMs = Date.now();
+    function updateOfflineIndicator() {
+        const pill = document.getElementById("offlinePill");
+        if (!pill) return;
+        const txt = document.getElementById("offlinePillText");
+        if (txt) txt.textContent = t("offline_snapshot");
+        const stale = (Date.now() - lastApiOkMs) > LIVE_STALE_MS;
+        const offline = (typeof navigator !== "undefined" && navigator.onLine === false) || stale;
+        pill.hidden = !offline;
+    }
+    function markApiOk() {
+        lastApiOkMs = Date.now();
+        updateOfflineIndicator();
+    }
+    if (typeof window !== "undefined") {
+        window.addEventListener("online", updateOfflineIndicator);
+        window.addEventListener("offline", updateOfflineIndicator);
+        setInterval(updateOfflineIndicator, 15_000);
+        onLanguageChange(() => updateOfflineIndicator());
+        updateOfflineIndicator();
+    }
+
     // Guard the fit anyway, so no future handler throw during it can abort init.
     // Open framed on the ATHENS network, not the whole country. The app went
     // nationwide, but fitting every station Ioannina->Alexandroupoli->Kalamata
@@ -2685,6 +2716,7 @@
                 }
                 const payload = await res.json();
                 updateLiveTrains(payload.trains || [], payload.updatedAt);
+                markApiOk();
             } catch (_error) {
                 // Keep showing the last successful frame on transient errors.
             }
@@ -3502,9 +3534,11 @@
                     trains: data.trains || [],
                     generatedAtEpochSeconds: isNaN(generatedAtEpoch) ? Date.now() / 1000 : generatedAtEpoch,
                 };
+                markApiOk();
             } catch (_) {
                 // Offline (or the Pi is down): project from the bundled timetable.
                 applyOfflineFallback();
+                updateOfflineIndicator();
             }
         }
         await loadStationOffsets();
