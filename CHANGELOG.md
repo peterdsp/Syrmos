@@ -31,10 +31,19 @@ must never be shown as live. See [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/O
   restart), and background/foreground pause-resume; Android no longer offers a
   dead "Watch Live" link when the train is not currently tracked, showing the same
   offline message instead.
+- **Web loads and runs fully offline (Service Worker).** A new `sw.js` precaches
+  the app shell + bundled seed and runtime-caches the content-hashed bundles, so
+  after one visit a reload or a dropped connection keeps the map, stations, routes
+  and schedules usable with no network instead of blanking the page. Navigations
+  and the live API are network-first (online always gets the latest; offline falls
+  back to cache), map tiles use a capped opportunistic cache, and the seed init was
+  hardened so a first-ever offline visit degrades to an empty-but-alive map. See
+  [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/OFFLINE_FIRST_AND_DATA_SOURCES.md).
 - **Tests.** `LiveVehicleFreshnessTest` (KMP, 12), `LiveTrainClassificationTest`
   (KMP, 5), iOS `SuburbanProjectionTests` (+3, 7 total), web
-  `live-train-freshness.test.js` (8). Full suites green: iOS 173, web 68, Android
-  build + unit tests.
+  `live-train-freshness.test.js` (8) plus `service-worker.test.js` /
+  `service-worker-behavior.test.js` (13, the latter executing the real `sw.js`
+  handlers). Full suites green: iOS 173, web 81, Android build + unit tests.
 
 ## 3.0.0-beta.2 - 2026-09-03
 
