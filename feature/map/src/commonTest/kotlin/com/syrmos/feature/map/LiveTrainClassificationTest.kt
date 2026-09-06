@@ -1,5 +1,6 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.common.DataFreshness
 import com.syrmos.core.model.status.LiveVehicleState
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import kotlinx.datetime.Instant
@@ -88,5 +89,25 @@ class LiveTrainClassificationTest {
         assertEquals(listOf("A1", "A2", "A4"), c.markers.map { it.train.lineId })
         assertEquals(setOf("A1", "A2", "A4"), c.coveredLineIds)
         assertFalse("A3" in c.coveredLineIds)
+    }
+
+    // --- Map offline indicator rule ---
+
+    @Test
+    fun mapOffline_whenDeviceOffline_regardlessOfFreshness() {
+        assertTrue(mapShowsOffline(isNetworkAvailable = false, freshness = DataFreshness.LIVE))
+        assertTrue(mapShowsOffline(isNetworkAvailable = false, freshness = DataFreshness.PREDICTED))
+    }
+
+    @Test
+    fun mapOffline_whenOnlineButNoLiveData_apiUnreachable() {
+        // Device says online but no live data landed in the window -> still offline
+        // indicator (online != API reachable).
+        assertTrue(mapShowsOffline(isNetworkAvailable = true, freshness = DataFreshness.PREDICTED))
+    }
+
+    @Test
+    fun mapNotOffline_onlyWhenOnlineAndLive() {
+        assertFalse(mapShowsOffline(isNetworkAvailable = true, freshness = DataFreshness.LIVE))
     }
 }

@@ -1,5 +1,7 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.common.DataFreshness
+import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.common.map.LatLng
 import com.syrmos.core.data.repository.LineGeometryRepositoryImpl
 import com.syrmos.core.data.repository.LineRepositoryImpl
@@ -89,6 +91,10 @@ data class MapUiState(
     // Live airport express-bus positions (X93/95/96/97) from the OASA telematics
     // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
     val busVehicles: List<AirportBusVehicle> = emptyList(),
+    // Subtle map offline indicator: true when the device is offline OR no live
+    // data has arrived within the freshness window. Recomputed on the sim tick so
+    // it flips within ~1s of losing/regaining live data.
+    val mapOffline: Boolean = false,
     val selectedTrain: LiveSuburbanTrain? = null,
     val selectedSimulatedTrain: SimulatedTrain? = null,
     val showTrains: Boolean = true,
@@ -319,10 +325,15 @@ class MapViewModel(
                         todayIso = currentAthensDate().toString(),
                     ).filter { it.lineId !in coveredByLive }
                     val visibleTrains = filtered + projected
+                    val offline = mapShowsOffline(
+                        isNetworkAvailable = LiveDataFreshness.isNetworkAvailable.value,
+                        freshness = LiveDataFreshness.freshnessNow(),
+                    )
                     _uiState.update { current ->
                         current.copy(
                             simulatedTrains = visibleTrains,
                             visibleLiveTrains = liveMarkers,
+                            mapOffline = offline,
                             selectedSimulatedTrain = current.selectedSimulatedTrain?.let { selected ->
                                 visibleTrains.find { it.id == selected.id }
                             },

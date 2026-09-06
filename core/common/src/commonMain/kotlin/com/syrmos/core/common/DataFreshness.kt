@@ -59,12 +59,27 @@ object LiveDataFreshness {
     private val _retryRequested = MutableStateFlow(0L)
     val retryRequested: StateFlow<Long> = _retryRequested.asStateFlow()
 
+    /**
+     * Whether the device currently has a usable default network. Set by the
+     * platform connectivity observer (Android [ConnectivityObserver], iOS
+     * NWPathMonitor). Defaults to `true` so a platform that never reports
+     * connectivity behaves as before (freshness alone drives the offline state).
+     * This gives an INSTANT offline signal; freshness still catches the
+     * "online but the API is unreachable" case the spec calls out.
+     */
+    private val _isNetworkAvailable = MutableStateFlow(true)
+    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
+
     fun markLive(at: Instant = Clock.System.now()) {
         _lastLiveUpdate.value = at
     }
 
     fun requestRetry() {
         _retryRequested.value = Clock.System.now().epochSeconds
+    }
+
+    fun setNetworkAvailable(available: Boolean) {
+        _isNetworkAvailable.value = available
     }
 
     fun freshnessNow(windowSeconds: Long = FreshnessEvaluator.DEFAULT_WINDOW_SECONDS): DataFreshness =
