@@ -144,3 +144,44 @@ enum LiveVehicleFreshnessRule {
         return LiveVehicleFreshness(state: .expired, ageSeconds: Int(age))
     }
 }
+
+// MARK: - Live poll backoff
+
+/// Exponential backoff with jitter for the live polling loops. Swift mirror of
+/// the KMP `PollBackoff` - keep the 2^failures growth, the +/-25% jitter and the
+/// 60s default cap in lockstep. A healthy loop waits its base interval; after
+/// consecutive failures it waits `min(base * 2^failures, max)`, jittered so many
+/// installed clients never retry a down Pi in lockstep. Reset the failure count
+/// to 0 on the next success. Pure + rng-injected so it unit-tests.
+enum PollBackoff {
+    static let defaultMaxDelaySeconds: TimeInterval = 60
+    static let defaultJitterFraction: Double = 0.25
+    private static let maxFailures = 16
+
+    static func nextDelaySeconds(
+        consecutiveFailures: Int,
+        baseDelaySeconds: TimeInterval,
+        maxDelaySeconds: TimeInterval = defaultMaxDelaySeconds,
+        jitterFraction: Double = defaultJitterFraction,
+        random01: Double = Double.random(in: 0..<1)
+    ) -> TimeInterval {
+        let failures = min(max(consecutiveFailures, 0), maxFailures)
+        let exp = failures == 0 ? baseDelaySeconds : baseDelaySeconds * pow(2.0, Double(failures))
+        let raw = min(exp, maxDelaySeconds)
+        let multiplier = (1.0 - jitterFraction) + (2.0 * jitterFraction * random01)
+        return max(raw * multiplier, 0.001)
+    }
+
+    /// Convenience for `Task.sleep(nanoseconds:)`.
+    static func nextDelayNanos(
+        consecutiveFailures: Int,
+        baseDelaySeconds: TimeInterval,
+        maxDelaySeconds: TimeInterval = defaultMaxDelaySeconds
+    ) -> UInt64 {
+        UInt64(nextDelaySeconds(
+            consecutiveFailures: consecutiveFailures,
+            baseDelaySeconds: baseDelaySeconds,
+            maxDelaySeconds: maxDelaySeconds
+        ) * 1_000_000_000)
+    }
+}

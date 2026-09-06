@@ -29,29 +29,37 @@ final class LiveAirportBusService: ObservableObject {
     func startPolling() {
         guard task == nil else { return }
         task = Task { [weak self] in
+            var failures = 0
             while !Task.isCancelled {
-                await self?.fetchOnce()
-                try? await Task.sleep(nanoseconds: 15_000_000_000)
+                let ok = await self?.fetchOnce() ?? false
+                failures = ok ? 0 : failures + 1
+                // Backoff + jitter: 15s healthy, escalating on failure (capped
+                // 60s), reset on success. Keeps the last frame meanwhile.
+                try? await Task.sleep(nanoseconds: PollBackoff.nextDelayNanos(
+                    consecutiveFailures: failures, baseDelaySeconds: 15))
             }
         }
     }
 
-    private func fetchOnce() async {
+    @discardableResult
+    private func fetchOnce() async -> Bool {
         guard !SyrmosSchedulesStore.shared.offlineOnly else {
             vehicles = []
-            return
+            return true // intentional offline-only mode, not a poll failure
         }
-        guard let url = URL(string: "https://api-syrmos.peterdsp.dev/api/oasa-airport-buses") else { return }
+        guard let url = URL(string: "https://api-syrmos.peterdsp.dev/api/oasa-airport-buses") else { return false }
         var req = URLRequest(url: url)
         req.timeoutInterval = 8
         req.cachePolicy = .reloadIgnoringLocalCacheData
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return false }
             let payload = try JSONDecoder().decode(Payload.self, from: data)
             vehicles = Self.parse(payload)
+            return true
         } catch {
             // Keep the last frame on transient errors.
+            return false
         }
     }
 
