@@ -12,9 +12,20 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
-Honest live-vehicle freshness on the map, and an offline-aware livestream, across
-every client. Answers the offline-first data-status rule that an aged position
-must never be shown as live. See [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/OFFLINE_FIRST_AND_DATA_SOURCES.md).
+Honest live-vehicle freshness on the map, an offline-aware livestream, a web
+offline Service Worker, and a subtle map offline indicator, across every client.
+Answers the offline-first data-status rule that an aged position must never be
+shown as live, and that the app must say when it is running on schedule/cached
+data. See [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/OFFLINE_FIRST_AND_DATA_SOURCES.md).
+
+- **Map offline indicator (iOS + Android + web).** A subtle, accessible pill on
+  the map appears when the device is offline OR no live data has arrived within
+  the freshness window (a device reporting "online" does not prove the API is
+  reachable), and hides the moment live data resumes. The map keeps working from
+  the bundled schedule + last-known data throughout; the pill never interrupts.
+  Android gained instant offline detection (`ConnectivityObserver.onLost` +
+  a shared `LiveDataFreshness.isNetworkAvailable` flag) and, in passing, a fix so
+  "hide vehicles" also clears the live-train layer.
 
 - **Live-GPS markers age out honestly (iOS + Android + web).** A real train/bus
   position is now classified by the age of its own `updatedAt`: fresh (<=90s)
