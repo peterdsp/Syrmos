@@ -641,13 +641,25 @@ body.dark-mode .nav-item--active {
 
 /* ===== Offline Pill ===== */
 .offline-pill {
+    /* Floating, non-interrupting map indicator: pinned bottom-centre over the
+       map so it is reliably visible (it used to sit at the bottom of the
+       scrolling context rail and never showed). Shown only when offline; the
+       [hidden] rule below wins over this display:flex. */
+    position: fixed;
+    bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 500;
     display: flex; align-items: center; gap: 8px;
-    width: 100%;
+    width: auto; max-width: min(92vw, 420px);
     padding: 8px 14px;
     border-radius: var(--sy-radius-pill);
     background: var(--sy-background-subtle);
+    border: 1px solid var(--sy-border, rgba(0,0,0,0.08));
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
     flex-shrink: 0;
 }
+/* Class+attribute specificity (0,2,0) beats .offline-pill (0,1,0), so the
+   default-hidden element stays hidden despite the display:flex above. */
+.offline-pill[hidden] { display: none; }
 
 .offline-pill .ic {
     width: 16px; height: 16px;
