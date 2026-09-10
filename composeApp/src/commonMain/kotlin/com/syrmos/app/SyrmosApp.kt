@@ -7,10 +7,13 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,8 +48,13 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.Dp
+import com.syrmos.core.common.layout.ContentBreakpoint
+import com.syrmos.core.common.layout.ContentMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -188,20 +196,25 @@ fun SyrmosApp() {
                         // Vehicles buttons already own bottom-right).
                         val showLauncher = currentTab != MoreTab && currentTab != MapTab
 
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            CurrentTab()
-                            LiquidGlassTabBar(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                                    .windowInsetsPadding(WindowInsets.navigationBars),
-                            )
+                        // Adaptive navigation (prompt section 5, Android). A
+                        // native large window (tablet / unfolded foldable) uses a
+                        // navigation rail; the compact phone window keeps the
+                        // floating liquid-glass bottom bar. The web desktop shell
+                        // above still owns >=900dp on web. Driven by the shared
+                        // ContentBreakpoint rule so iOS/web resolve identically.
+                        // Content width rules apply to the region AFTER the rail.
+                        val layout = ContentBreakpoint.resolve(
+                            width = maxWidth.value.toInt(),
+                            height = maxHeight.value.toInt(),
+                        )
+                        val useRail = !isWebPlatform && layout.mode != ContentMode.COMPACT
 
-                            // App-level Ariadne launcher pill: floats above
-                            // the tab bar on Home / Explore / Map / Departures.
-                            // Hidden on More so the settings scroll isn't
-                            // obstructed by a chat pill. Slides in with a
-                            // spring so tab changes feel physical.
+                        // CurrentTab + the Ariadne launcher pill + the full-screen
+                        // assistant overlay. Shared by both nav layouts so the
+                        // per-tab screens and their state are identical either way.
+                        @Composable
+                        fun BoxScope.TabContentWithOverlays(pillBottomInset: Dp) {
+                            CurrentTab()
                             AnimatedVisibility(
                                 visible = showLauncher && !showAriadne,
                                 enter = fadeIn() + slideInVertically(
@@ -209,19 +222,13 @@ fun SyrmosApp() {
                                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                                 ),
                                 exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                                // Lift the pill above the system navigation
-                                // bar (three-button / gesture bar) AND above
-                                // the LiquidGlassTabBar. The tab bar itself
-                                // uses windowInsetsPadding + ~64dp of visual
-                                // height + 4dp margin, so we need ~96dp of
-                                // clearance ON TOP of the nav-bar inset. On
-                                // devices with a tall three-button nav bar
-                                // (Xiaomi HyperOS etc) the previous fixed
-                                // 90dp overlapped the tab bar.
+                                // Lift the pill above the system navigation bar and,
+                                // in compact, above the LiquidGlassTabBar (~96dp);
+                                // in rail mode there is no bottom bar so 16dp is enough.
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .windowInsetsPadding(WindowInsets.navigationBars)
-                                    .padding(end = 16.dp, bottom = 96.dp)
+                                    .padding(end = 16.dp, bottom = pillBottomInset)
                                     .zIndex(2f),
                             ) {
                                 AriadneLauncherPill(
@@ -256,6 +263,25 @@ fun SyrmosApp() {
                                         },
                                     )
                                 }
+                            }
+                        }
+
+                        if (useRail) {
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                SyrmosNavigationRail()
+                                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                    TabContentWithOverlays(pillBottomInset = 16.dp)
+                                }
+                            }
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                TabContentWithOverlays(pillBottomInset = 96.dp)
+                                LiquidGlassTabBar(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                                        .windowInsetsPadding(WindowInsets.navigationBars),
+                                )
                             }
                         }
                     }
@@ -295,6 +321,38 @@ private fun BootSplash() {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
+    }
+}
+
+/**
+ * Adaptive navigation rail for native large windows (tablet / unfolded foldable).
+ * Same five destinations and order as the compact bottom bar; the rail consumes
+ * its width first, then the content breakpoint rules apply to the remainder.
+ * Items are centred so the rail reads as a peer of the bottom bar, not a toolbar.
+ */
+@Composable
+private fun SyrmosNavigationRail() {
+    val tabNavigator = LocalTabNavigator.current
+    val items = listOf(
+        HomeTab to Icons.Filled.Home,
+        ExploreTab to Icons.Filled.Explore,
+        MapTab to Icons.Filled.Map,
+        DeparturesTab to Icons.Filled.Flight,
+        MoreTab to Icons.Filled.MoreVert,
+    )
+    NavigationRail(
+        modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+    ) {
+        Spacer(Modifier.weight(1f))
+        items.forEach { (tab, icon) ->
+            NavigationRailItem(
+                selected = tabNavigator.current == tab,
+                onClick = { tabNavigator.current = tab },
+                icon = { Icon(imageVector = icon, contentDescription = tab.options.title) },
+                label = { Text(tab.options.title) },
+            )
+        }
+        Spacer(Modifier.weight(1f))
     }
 }
 
