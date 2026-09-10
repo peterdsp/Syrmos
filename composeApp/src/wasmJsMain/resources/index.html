@@ -172,23 +172,29 @@
         <div class="nav-rail__items">
             <button class="nav-item nav-item--active" type="button" data-nav="now" aria-label="Now" title="Now" aria-current="page">
                 <svg class="ic" aria-hidden="true"><use href="#ic-home"/></svg>
+                <span class="nav-item__label" data-i18n="ws_now">Now</span>
             </button>
             <button class="nav-item" type="button" data-nav="plan" aria-label="Plan a trip" title="Plan">
                 <svg class="ic" aria-hidden="true"><use href="#ic-plan"/></svg>
+                <span class="nav-item__label" data-i18n="ws_plan">Plan</span>
             </button>
             <button class="nav-item" type="button" data-nav="explore" aria-label="Explore" title="Explore">
                 <svg class="ic" aria-hidden="true"><use href="#ic-explore"/></svg>
+                <span class="nav-item__label" data-i18n="ws_explore">Explore</span>
             </button>
             <button class="nav-item" type="button" data-nav="departures" aria-label="Departures" title="Departures">
                 <svg class="ic" aria-hidden="true"><use href="#ic-departures"/></svg>
+                <span class="nav-item__label" data-i18n="ws_departures">Departures</span>
             </button>
             <button class="nav-item" type="button" data-nav="tickets" aria-label="Tickets and fares" title="Tickets">
                 <svg class="ic" aria-hidden="true"><use href="#ic-tickets"/></svg>
+                <span class="nav-item__label" data-i18n="ws_tickets">Tickets</span>
             </button>
         </div>
         <div class="nav-rail__footer">
             <button class="nav-item" type="button" data-nav="more" aria-label="More" title="More">
                 <svg class="ic" aria-hidden="true"><use href="#ic-more"/></svg>
+                <span class="nav-item__label" data-i18n="ws_more">More</span>
             </button>
         </div>
     </nav>
@@ -525,10 +531,15 @@
     function dismissed() {
         try { return localStorage.getItem(STORE_BANNER_DISMISSED) === "1"; } catch (_) { return false; }
     }
-    function sync() { banner.hidden = dismissed() || !narrow.matches; }
+    function sync() {
+        banner.hidden = dismissed() || !narrow.matches;
+        // Reserve the strip's height in the layout only while it is visible.
+        document.body.classList.toggle("has-store-banner", !banner.hidden);
+    }
     dismiss.addEventListener("click", function () {
         try { localStorage.setItem(STORE_BANNER_DISMISSED, "1"); } catch (_) {}
         banner.hidden = true;
+        document.body.classList.remove("has-store-banner");
     });
     if (narrow.addEventListener) narrow.addEventListener("change", sync);
     else if (narrow.addListener) narrow.addListener(sync);
