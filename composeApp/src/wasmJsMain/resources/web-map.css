@@ -77,6 +77,14 @@ html, body {
 body.dark-mode .nav-item--active {
     background: rgba(142,202,255,.10);
 }
+/* Text label under the icon. Hidden on the desktop icon rail; shown in the
+   compact bottom bar (see the <=599px block) so phone users get labelled tabs. */
+.nav-item__label {
+    display: none;
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 500;
+}
 
 /* ===== Context Rail (352px) ===== */
 .context-rail {
@@ -1743,9 +1751,12 @@ body.dark-mode .leaflet-tile-pane {
     border: 2px solid;
 }
 
-/* ===== Responsive: Collapse layout below 960px ===== */
+/* ===== Responsive: Collapse layout below 960px =====
+   The nav rail STAYS reachable (was `display:none` with no replacement, which
+   stranded every workspace root on phones/tablets). 600-959px keeps a left rail
+   (widened to 80px per the 3.0 spec); under 600px it becomes a bottom bar below. */
 @media (max-width: 960px) {
-    .nav-rail { display: none; }
+    .nav-rail { flex: 0 0 80px; }
     .context-rail {
         flex: 0 0 300px;
         border-right: none;
@@ -1780,6 +1791,67 @@ body.dark-mode .leaflet-tile-pane {
     .ariadne-launcher { top: 56px; right: 12px; }
 }
 
+/* ===== Compact (<600px): the rail becomes a bottom navigation bar =====
+   Replaces the old "nav vanishes" behaviour. Five equal workspace slots plus a
+   trailing More utility, labelled, fixed to the bottom with a safe-area inset,
+   above the context bottom sheet. Reuses the same .nav-rail element and buttons
+   so web-nav.js routing/aria-current keep working untouched. */
+@media (max-width: 599px) {
+    .nav-rail {
+        flex: none;
+        flex-direction: row;
+        align-items: stretch;
+        position: fixed;
+        left: 0; right: 0; bottom: 0; top: auto;
+        width: 100vw;
+        height: calc(64px + env(safe-area-inset-bottom));
+        padding: 0 4px env(safe-area-inset-bottom);
+        border-right: none;
+        border-top: 1px solid var(--sy-border-subtle);
+        z-index: 1200;
+    }
+    .nav-rail__logo { display: none; }
+    .nav-rail__items {
+        flex-direction: row;
+        flex: 1;
+        gap: 0;
+        align-items: stretch;
+    }
+    .nav-rail__footer {
+        flex-direction: row;
+        width: auto;
+        margin-top: 0;
+        padding-top: 0;
+        padding-left: 4px;
+        margin-left: 4px;
+        border-top: none;
+        border-left: 1px solid var(--sy-border-subtle);
+        align-items: stretch;
+    }
+    .nav-item {
+        flex: 1;
+        flex-direction: column;
+        gap: 2px;
+        width: auto;
+        min-width: 44px;
+        height: 100%;
+        border-radius: 0;
+    }
+    .nav-rail__footer .nav-item { flex: 0 0 56px; }
+    .nav-item__label { display: block; }
+    .nav-item .ic { width: 20px; height: 20px; }
+
+    /* Header shrinks to 56px per spec; the context sheet and map controls lift
+       above the 64px bar so nothing is hidden behind it. */
+    .context-rail {
+        bottom: calc(64px + env(safe-area-inset-bottom));
+        max-height: 40vh;
+    }
+    .map-chrome--br { bottom: calc(40vh + 64px + 12px); }
+    .map-chrome--bl { bottom: calc(40vh + 64px + 12px); }
+    .ariadne-launcher { top: 12px; right: 12px; }
+}
+
 /* ===== Severe Weather Banner (JS-injected but base here) ===== */
 .severe-weather-banner {
     position: fixed;
@@ -1799,6 +1871,11 @@ body.dark-mode .leaflet-tile-pane {
    never overlapping or gating the app. Dismissed state persists in
    localStorage so it does not nag. */
 .store-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1300;
+    box-sizing: border-box;
+    height: 48px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1808,11 +1885,25 @@ body.dark-mode .leaflet-tile-pane {
     color: var(--sy-text-primary);
     font-size: 13px;
     line-height: 16px;
+    overflow: hidden;
+}
+/* Class beats the bare [hidden] attribute at equal specificity, so the JS
+   toggle needs this explicit rule to actually hide the strip (mirrors the
+   .offline-pill[hidden] pattern used elsewhere in this file). */
+.store-banner[hidden] { display: none; }
+/* Reserve the strip's height only while it is actually shown (the controller
+   toggles this class in lockstep with the banner). */
+body.has-store-banner .app-shell {
+    margin-top: 48px;
+    height: calc(100dvh - 48px);
 }
 .store-banner__text {
     flex: 1 1 auto;
     min-width: 0;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .store-banner__links {
     display: flex;
