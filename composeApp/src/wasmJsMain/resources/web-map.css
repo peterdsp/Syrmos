@@ -1940,3 +1940,71 @@ body.has-store-banner .app-shell {
     stroke-width: 1.75;
     stroke-linecap: round;
 }
+
+/* ===== Plan workspace draft + results (3.0 Phase P) ===== */
+.plan-draft {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 12px 0;
+}
+.plan-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.plan-field__label {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--sy-text-secondary);
+}
+.plan-field__select {
+    min-height: 44px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-primary);
+    font-size: 16px;
+    padding: 8px 12px;
+}
+.plan-draft__find {
+    min-height: 44px;
+    align-self: stretch;
+}
+.plan-results {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0 12px;
+}
+.plan-results__summary {
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 600;
+    color: var(--sy-text-primary);
+}
+.plan-results__meta {
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--sy-text-secondary);
+}
+.plan-results__empty {
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--sy-text-secondary);
+}
+.plan-results__chip {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 4px 10px;
+    border-radius: var(--sy-radius-pill);
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    background: var(--sy-background-subtle);
+    color: var(--sy-text-secondary);
+}
+.plan-results__chip--comfortable { background: rgba(5,150,105,.12); color: #059669; }
+.plan-results__chip--tight { background: rgba(180,83,9,.12); color: #b45309; }
+.plan-results__chip--missed { background: rgba(220,38,38,.12); color: #dc2626; }
