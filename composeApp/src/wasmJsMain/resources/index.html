@@ -118,70 +118,27 @@
     <link rel="stylesheet" href="/web-map.css">
 </head>
 <body>
-<script>
-(function(){
-  var ua = navigator.userAgent || '';
-  var mobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-  if (!mobile) return;
-  document.documentElement.innerHTML = '<head>' +
-    '<meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
-    '<title>Syrmos - Download the App</title>' +
-    '<meta name="theme-color" content="#0072CE">' +
-    '<link rel="icon" type="image/png" href="/favicon.png">' +
-    '<link rel="stylesheet" href="/design-tokens.css">' +
-    '<style>' +
-    '*{margin:0;padding:0;box-sizing:border-box}' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;' +
-    'min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-    'background:var(--sy-surface);color:var(--sy-on-surface);padding:24px 20px;text-align:center}' +
-    '@media(prefers-color-scheme:dark){body{--sy-brand:#8ECAFF;--sy-surface:#0F1216;--sy-surface-muted:#171B21;' +
-    '--sy-surface-card:#1B2028;--sy-on-surface:#E6ECF5;--sy-on-surface-muted:#9AA3AF;--sy-outline:#2A2F37}}' +
-    '.m-card{max-width:380px;width:100%}' +
-    '.m-logo{width:88px;height:88px;border-radius:22px;margin:0 auto 24px;' +
-    'box-shadow:0 12px 32px rgba(0,0,0,.18)}' +
-    '.m-name{font-size:32px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px}' +
-    '.m-tagline{font-size:15px;font-weight:500;color:var(--sy-on-surface-muted);margin-bottom:8px}' +
-    '.m-desc{font-size:14px;line-height:1.6;color:var(--sy-on-surface-muted);margin-bottom:32px;max-width:320px;margin-left:auto;margin-right:auto}' +
-    '.m-features{text-align:left;margin-bottom:36px;display:flex;flex-direction:column;gap:14px}' +
-    '.m-feat{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.4;color:var(--sy-on-surface)}' +
-    '.m-feat-dot{flex-shrink:0;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;' +
-    'font-size:15px;background:rgba(20,102,184,.08);color:var(--sy-brand)}' +
-    '.m-badges{display:flex;flex-direction:column;gap:12px;align-items:center;margin-bottom:20px}' +
-    '.m-badge{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:260px;' +
-    'height:52px;border-radius:var(--sy-radius-md,12px);font:600 15px/1 system-ui,sans-serif;' +
-    'text-decoration:none;transition:transform .15s}' +
-    '.m-badge:active{transform:scale(.97)}' +
-    '.m-badge--ios{background:#000;color:#fff}' +
-    '.m-badge--android{background:var(--sy-brand);color:#fff}' +
-    '.m-badge svg{width:22px;height:22px;fill:currentColor}' +
-    '.m-footer{font-size:12px;color:var(--sy-on-surface-muted);margin-top:16px}' +
-    '.m-footer a{color:var(--sy-brand);text-decoration:none;font-weight:500}' +
-    '</style></head><body>' +
-    '<div class="m-card">' +
-    '<img class="m-logo" src="/favicon.png" alt="Syrmos">' +
-    '<div class="m-name">Syrmos</div>' +
-    '<div class="m-tagline">Greece Rail Times</div>' +
-    '<p class="m-desc">Live departures, offline schedules, and maps for Metro, Tram, Suburban, and Intercity trains across Greece.</p>' +
-    '<div class="m-features">' +
-    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="10" cy="10" r="3"/><circle cx="10" cy="10" r="7"/></svg></div><div>Live departure countdowns and GPS nearest station</div></div>' +
-    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 14V7a3 3 0 013-3h8a3 3 0 013 3v7"/><path d="M3 11h14"/><circle cx="7" cy="13" r="1"/><circle cx="13" cy="13" r="1"/></svg></div><div>Works offline with full schedule data</div></div>' +
-    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14M4.5 5.5l11 9M4.5 14.5l11-9"/></svg></div><div>English, Greek, Albanian, and Italian</div></div>' +
-    '<div class="m-feat"><div class="m-feat-dot"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 3l2 5h5l-4 3 1.5 5L10 13l-4.5 3L7 11 3 8h5z"/></svg></div><div>Service alerts and real-time train positions</div></div>' +
-    '</div>' +
-    '<div class="m-badges">' +
-    '<a class="m-badge m-badge--ios" href="https://apps.apple.com/app/id6777650671">' +
-    '<svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83"/><path d="M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg>' +
-    'App Store</a>' +
-    '<a class="m-badge m-badge--android" href="https://play.google.com/store/apps/details?id=com.syrmos.android">' +
-    '<svg viewBox="0 0 24 24"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302-2.302 2.302L15.396 12l2.302-2.302zM5.864 1.469L16.8 7.8l-2.302 2.302-8.634-8.633z"/></svg>' +
-    'Google Play</a>' +
-    '</div>' +
-    '<p class="m-footer">Or visit <a href="https://syrmos.peterdsp.dev">syrmos.peterdsp.dev</a> on desktop</p>' +
-    '</div></body>';
-})();
-</script>
 <div class="app-shell">
+
+    <!-- Secondary, dismissible native-app promotion. Replaces the old
+         user-agent blockade that swapped the whole document for a store
+         landing page on mobile: every browser now gets the real app. This
+         strip is CSS-gated to narrow viewports, sits above the app chrome
+         in reading order, is fully localized via data-i18n, and stays
+         dismissed across visits through localStorage. Never blocks content. -->
+    <aside id="storeBanner" class="store-banner" role="complementary"
+           aria-label="Get the Syrmos app" hidden>
+        <span class="store-banner__text" data-i18n="get_the_app">Get the free Syrmos app</span>
+        <span class="store-banner__links">
+            <a class="store-banner__link" href="https://apps.apple.com/app/id6777650671">App Store</a>
+            <a class="store-banner__link" href="https://play.google.com/store/apps/details?id=com.syrmos.android">Google Play</a>
+        </span>
+        <button id="storeBannerDismiss" class="store-banner__close" type="button"
+                data-i18n-aria="dismiss" aria-label="Dismiss">
+            <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+    </aside>
+
 
     <!-- Inline SVG icon sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -554,6 +511,31 @@
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
      dropped connection keeps the app usable with no network. Registered on load
      so it never competes with the first paint's resource fetches. -->
+<!-- Store-promotion banner controller. The banner is secondary and optional:
+     it only appears on narrow (phone-width) viewports, only when the visitor
+     has not dismissed it before, and dismissing it hides it for good. It never
+     gates access to the app, unlike the old user-agent blockade it replaced. -->
+<script>
+(function () {
+    var STORE_BANNER_DISMISSED = "syrmos.storeBanner.dismissed";
+    var banner = document.getElementById("storeBanner");
+    var dismiss = document.getElementById("storeBannerDismiss");
+    if (!banner || !dismiss) return;
+    var narrow = window.matchMedia("(max-width: 599px)");
+    function dismissed() {
+        try { return localStorage.getItem(STORE_BANNER_DISMISSED) === "1"; } catch (_) { return false; }
+    }
+    function sync() { banner.hidden = dismissed() || !narrow.matches; }
+    dismiss.addEventListener("click", function () {
+        try { localStorage.setItem(STORE_BANNER_DISMISSED, "1"); } catch (_) {}
+        banner.hidden = true;
+    });
+    if (narrow.addEventListener) narrow.addEventListener("change", sync);
+    else if (narrow.addListener) narrow.addListener(sync);
+    sync();
+})();
+</script>
+
 <script>
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {

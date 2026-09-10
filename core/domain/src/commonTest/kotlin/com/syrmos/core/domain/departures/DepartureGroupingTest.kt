@@ -31,6 +31,37 @@ class DepartureGroupingTest {
     )
 
     @Test
+    fun collapsesExactDuplicateDeparturesWithSameTime() {
+        // The Airport-hub duplicate: two "A1 -> Syntagma 04:00" plus a 05:00. The
+        // two 04:00 are one physical departure and must not read "04:00 · 04:00".
+        val g = groupDepartures(
+            listOf(
+                dep("A1", 40, "04:00", dir = "Syntagma"),
+                dep("A1", 40, "04:00", dir = "Syntagma"),
+                dep("A1", 100, "05:00", dir = "Syntagma"),
+            ),
+        )
+        assertEquals(1, g.size, "still one group")
+        assertEquals(listOf("04:00", "05:00"), g[0].times.map { it.time }, "duplicate 04:00 dropped")
+        assertEquals(2, g[0].total, "total counts distinct departures, not raw rows")
+        assertEquals(0, g[0].moreCount)
+    }
+
+    @Test
+    fun dedupesByMinutesAwayWhenNoClockTime() {
+        val g = groupDepartures(
+            listOf(
+                dep("A1", 5, dir = "Piraeus"),
+                dep("A1", 5, dir = "Piraeus"),
+                dep("A1", 9, dir = "Piraeus"),
+            ),
+        )
+        assertEquals(1, g.size)
+        assertEquals(listOf(5, 9), g[0].times.map { it.minutesAway })
+        assertEquals(2, g[0].total)
+    }
+
+    @Test
     fun collapsesSameLineAndDestinationWithOrderedTimes() {
         val g = groupDepartures(
             listOf(

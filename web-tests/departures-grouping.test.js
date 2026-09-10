@@ -28,6 +28,31 @@ test('collapses same line+destination into one group with ordered times', () => 
   assert.equal(g[0].moreCount, 0);
 });
 
+test('collapses exact duplicate departures (same time) within a group', () => {
+  // The Airport-hub duplicate: two "A1 -> Syntagma 04:00" plus a 05:00. The two
+  // 04:00 are one physical departure and must not read as "04:00 · 04:00".
+  const g = D.groupDepartures([
+    dep({ line: L3, destination: 'Syntagma', minutesAway: 40, time: '04:00' }),
+    dep({ line: L3, destination: 'Syntagma', minutesAway: 40, time: '04:00' }),
+    dep({ line: L3, destination: 'Syntagma', minutesAway: 100, time: '05:00' }),
+  ]);
+  assert.equal(g.length, 1, 'still one group');
+  assert.deepEqual(g[0].times.map((t) => t.time), ['04:00', '05:00'], 'duplicate 04:00 dropped');
+  assert.equal(g[0].total, 2, 'total counts distinct departures, not raw rows');
+  assert.equal(g[0].moreCount, 0);
+});
+
+test('dedupes by minutesAway when there is no clock time', () => {
+  const g = D.groupDepartures([
+    dep({ line: L3, destination: 'Piraeus', minutesAway: 5 }),
+    dep({ line: L3, destination: 'Piraeus', minutesAway: 5 }),
+    dep({ line: L3, destination: 'Piraeus', minutesAway: 9 }),
+  ]);
+  assert.equal(g.length, 1);
+  assert.deepEqual(g[0].times.map((t) => t.minutesAway), [5, 9]);
+  assert.equal(g[0].total, 2);
+});
+
 test('distinct destinations on the same line stay separate groups, soonest-first', () => {
   const g = D.groupDepartures([
     dep({ line: L3, destination: 'Airport', minutesAway: 4 }),
