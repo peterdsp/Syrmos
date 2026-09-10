@@ -511,6 +511,9 @@
 <!-- Pure departure-board grouping (SyrmosDepartures.groupDepartures); must load
      before web-map.js, which calls it in renderDepartures. -->
 <script src="/web-departures.js"></script>
+<!-- Pure connection-feasibility engine (SyrmosFeasibility.forOption); mirrors
+     the Kotlin FeasibilityCalculator. Loaded before the planner/panel that read it. -->
+<script src="/web-feasibility.js"></script>
 <script src="/web-planner.js"></script>
 <script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
