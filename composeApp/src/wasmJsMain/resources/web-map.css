@@ -1792,3 +1792,60 @@ body.dark-mode .leaflet-tile-pane {
     border: 1px solid var(--sy-status-warning);
     box-shadow: 0 8px 24px rgba(0,0,0,.15);
 }
+
+/* ===== Store-promotion banner (S-web, secondary + dismissible) =====
+   Replaces the old mobile user-agent blockade. Secondary by design: a slim
+   strip, phone-width only (JS toggles [hidden] via a max-width:599px match),
+   never overlapping or gating the app. Dismissed state persists in
+   localStorage so it does not nag. */
+.store-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--sy-background-raised);
+    border-bottom: 1px solid var(--sy-border-subtle);
+    color: var(--sy-text-primary);
+    font-size: 13px;
+    line-height: 16px;
+}
+.store-banner__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 500;
+}
+.store-banner__links {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.store-banner__link {
+    color: var(--sy-accent);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+}
+.store-banner__close {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--sy-radius-md);
+    color: var(--sy-text-secondary);
+    cursor: pointer;
+}
+.store-banner__close .ic {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+}
