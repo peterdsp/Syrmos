@@ -4300,7 +4300,48 @@
         // when the user is in Plan. Every path is wrapped so a failure only hides
         // the GO card and leaves Ariadne and the rest of Plan untouched.
         const goPlan = (function () {
-            let card = null, panelEl = null, mounted = false;
+            // Real endpoint-driven plan (Phase P). Replaces the old fixed
+            // M1->M2 showcase: the rider picks From/To, we plan through the
+            // shared adapter (planner -> ranked JourneyOptions + feasibility),
+            // show an honest results summary, and mount the selected route in
+            // the GO panel. Times are estimated (no schedule), so nothing is
+            // labelled with a fabricated clock.
+            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null;
+            const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
+
+            function stationName(s) {
+                if (currentLang === "el" && (s.name_el || s.nameEl)) return s.name_el || s.nameEl;
+                return s.name || s.id;
+            }
+            function fillSelect(sel, selectedId) {
+                sel.innerHTML = "";
+                stations.slice()
+                    .sort((a, b) => stationName(a).localeCompare(stationName(b)))
+                    .forEach((s) => {
+                        const o = document.createElement("option");
+                        o.value = s.id; o.textContent = stationName(s);
+                        if (s.id === selectedId) o.selected = true;
+                        sel.appendChild(o);
+                    });
+            }
+            function defaults() {
+                const m1 = lines.find((l) => l.id === "M1");
+                const m2 = lines.find((l) => l.id === "M2");
+                return {
+                    from: m1 && m1.stations && m1.stations[0] && m1.stations[0].id,
+                    to: m2 && m2.stations && m2.stations.length && m2.stations[m2.stations.length - 1].id,
+                };
+            }
+            function field(labelText) {
+                const wrap = document.createElement("label");
+                wrap.className = "plan-field";
+                const lbl = document.createElement("span");
+                lbl.className = "plan-field__label"; lbl.textContent = labelText;
+                const sel = document.createElement("select");
+                sel.className = "plan-field__select";
+                wrap.appendChild(lbl); wrap.appendChild(sel);
+                return { wrap, sel };
+            }
             function container() {
                 if (card) return card;
                 try {
@@ -4312,54 +4353,125 @@
                     card.style.display = "none";
                     const title = document.createElement("div");
                     title.className = "panel-card__title";
-                    title.textContent = ({ el: "GO — καθοδηγούμενο ταξίδι", sq: "GO — udhëtim i udhëhequr", it: "GO — viaggio guidato" }[currentLang]) || "GO — guided journey";
+                    title.textContent = T("Plan a journey", "Σχεδίασε διαδρομή", "Planifiko udhëtim", "Pianifica un viaggio");
+
+                    const draft = document.createElement("div");
+                    draft.className = "plan-draft";
+                    const f = field(T("From", "Από", "Nga", "Da"));
+                    const t = field(T("To", "Προς", "Për", "A"));
+                    fromSel = f.sel; toSel = t.sel;
+                    const find = document.createElement("button");
+                    find.type = "button";
+                    find.className = "primary-button plan-draft__find";
+                    find.textContent = T("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi");
+                    find.addEventListener("click", () => runPlan());
+                    draft.appendChild(f.wrap); draft.appendChild(t.wrap); draft.appendChild(find);
+
+                    resultsEl = document.createElement("div");
+                    resultsEl.id = "planResults";
+                    resultsEl.className = "plan-results";
+
                     panelEl = document.createElement("div");
                     panelEl.id = "goPlanPanel";
+
                     card.appendChild(title);
+                    card.appendChild(draft);
+                    card.appendChild(resultsEl);
                     card.appendChild(panelEl);
                     const cards = document.getElementById("contextPanelCards");
                     if (cards && cards.parentNode) cards.parentNode.insertBefore(card, cards);
                     else rail.appendChild(card);
+
+                    ensureSelectsFilled();
                     return card;
                 } catch (_) { return null; }
             }
-            function build() {
-                try {
-                    if (!window.SyrmosPlanner) return null;
-                    // Showcase route: M1 origin -> M2 terminus, a real transfer.
-                    const m1 = lines.find((l) => l.id === "M1");
-                    const m2 = lines.find((l) => l.id === "M2");
-                    const fromId = m1 && m1.stations && m1.stations[0] && m1.stations[0].id;
-                    const toId = m2 && m2.stations && m2.stations.length && m2.stations[m2.stations.length - 1].id;
-                    if (!fromId || !toId) return null;
-                    const journey = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
-                    if (!journey) return null;
-                    const coords = {};
-                    const byId = new Map(stations.map((s) => [s.id, s]));
-                    for (const leg of journey.legs) for (const stop of leg.stops) {
-                        const rec = byId.get(stop.id);
-                        if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
-                    }
-                    return { journey, coords };
-                } catch (_) { return null; }
+            // Seed data (stations/lines) loads asynchronously, so the selects may
+            // be empty when the panel is first built. Fill them the first time
+            // data is present (on show / before planning), never clobbering a
+            // choice the rider already made.
+            function ensureSelectsFilled() {
+                if (!fromSel || !toSel) return;
+                if (fromSel.options.length || !stations.length) return;
+                const d = defaults();
+                fillSelect(fromSel, d.from);
+                fillSelect(toSel, d.to);
             }
-            function mount() {
-                try {
-                    if (!window.SyrmosGoPanel) return false;
-                    if (!container()) return false;
-                    const built = build();
-                    if (!built) return false;
-                    window.SyrmosGoPanel.mount(panelEl, built.journey, {
+            function fmtDuration(seconds) {
+                const m = Math.max(1, Math.round(seconds / 60));
+                if (m < 60) return "~" + m + " " + T("min", "λεπ", "min", "min");
+                return "~" + Math.floor(m / 60) + T("h", "ω", "h", "h") + " " + (m % 60) + " " + T("min", "λεπ", "min", "min");
+            }
+            function feasibilityLabel(status) {
+                return {
+                    comfortable: T("Comfortable", "Άνετη", "Komode", "Comoda"),
+                    tight: T("Tight", "Στενή", "E ngushtë", "Stretta"),
+                    missed: T("Missed", "Χαμένη", "Humbur", "Persa"),
+                    unknown: T("Estimated times", "Εκτιμώμενοι χρόνοι", "Kohë të vlerësuara", "Orari stimato"),
+                }[status] || status;
+            }
+            function renderResults(planned, detailed, coords) {
+                resultsEl.innerHTML = "";
+                if (!planned || !planned.options.length) {
+                    const empty = document.createElement("div");
+                    empty.className = "plan-results__empty";
+                    empty.textContent = T("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.");
+                    resultsEl.appendChild(empty);
+                    if (window.SyrmosGoPanel) panelEl.innerHTML = "";
+                    return;
+                }
+                const opt = planned.options[0];
+                const chain = detailed.legs.map((l) => l.lineId).join(" → ");
+                const changes = opt.transferCount === 1
+                    ? T("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
+                    : opt.transferCount + " " + T("changes", "αλλαγές", "ndërrime", "cambi");
+
+                const summary = document.createElement("div");
+                summary.className = "plan-results__summary";
+                summary.textContent = "1 " + T("route", "διαδρομή", "rrugë", "percorso");
+                const meta = document.createElement("div");
+                meta.className = "plan-results__meta";
+                meta.textContent = fmtDuration(opt.durationSeconds) + " · " + changes + " · " + chain;
+
+                const chip = document.createElement("span");
+                chip.className = "plan-results__chip plan-results__chip--" + opt.feasibility.status;
+                chip.textContent = feasibilityLabel(opt.feasibility.status);
+
+                resultsEl.appendChild(summary);
+                resultsEl.appendChild(meta);
+                resultsEl.appendChild(chip);
+
+                // Selected route detail: mount the topology journey in the GO panel.
+                if (window.SyrmosGoPanel && panelEl) {
+                    window.SyrmosGoPanel.mount(panelEl, detailed, {
                         language: currentLang,
-                        coords: built.coords,
+                        coords,
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                     });
-                    mounted = true;
-                    return true;
-                } catch (_) { return false; }
+                }
+            }
+            function runPlan() {
+                try {
+                    if (!window.SyrmosPlanner || !window.SyrmosJourneyPlan) return;
+                    if (!container()) return;
+                    ensureSelectsFilled();
+                    const fromId = fromSel && fromSel.value;
+                    const toId = toSel && toSel.value;
+                    const detailed = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
+                    const planned = window.SyrmosJourneyPlan.plan(stations, lines, { fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang });
+                    const coords = {};
+                    if (detailed) {
+                        const byId = new Map(stations.map((s) => [s.id, s]));
+                        for (const leg of detailed.legs) for (const stop of leg.stops) {
+                            const rec = byId.get(stop.id);
+                            if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
+                        }
+                    }
+                    renderResults(planned, detailed || { legs: [] }, coords);
+                } catch (_) { /* leave prior results intact */ }
             }
             return {
-                show() { try { if (!mounted) mount(); if (card) card.style.display = ""; } catch (_) {} },
+                show() { try { if (container()) { card.style.display = ""; ensureSelectsFilled(); if (resultsEl && !resultsEl.childNodes.length && fromSel && fromSel.options.length) runPlan(); } } catch (_) {} },
                 hide() { try { if (card) card.style.display = "none"; } catch (_) {} },
             };
         })();

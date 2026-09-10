@@ -517,6 +517,9 @@
 <!-- Pure itinerary ranking/dedup/cap (SyrmosJourneyRanker); mirrors Kotlin JourneyRanker. -->
 <script src="/web-journey-ranker.js"></script>
 <script src="/web-planner.js"></script>
+<!-- Composes the planner into ranked JourneyOptions with feasibility (Phase P).
+     Loaded after planner/feasibility/ranker, before web-map.js which mounts Plan. -->
+<script src="/web-journey-plan.js"></script>
 <script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
