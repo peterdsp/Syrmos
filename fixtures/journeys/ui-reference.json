@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "testOnly": true,
+  "description": "Frozen, language-neutral visual-acceptance fixture for Syrmos 3.0 Journeys screens S01-S10. TEST-ONLY: synthetic stations and clocks, never part of bundled transit data. The clocks 08:42-09:12 are synthetic and are not an assertion about any real Greek service. Every client renders these exact values (no live network, no device clock) so pixel/geometry baselines are deterministic and comparable across web/iOS/Android. Station display labels are given per locale (en/el/sq/it) so the localized screenshots use real localized content, not English placeholders.",
+  "serviceTimeZone": "Europe/Athens",
+  "frozenClock": {
+    "instant": "2026-01-15T08:30:00+02:00",
+    "serviceDate": "2026-01-15",
+    "note": "Thursday, winter (EET, UTC+02:00, no DST). All relative countdowns compute from this instant."
+  },
+  "stations": {
+    "test-origin": {
+      "labels": { "en": "Test Origin", "el": "Αφετηρία Δοκιμής", "sq": "Nisje Provë", "it": "Origine Test" },
+      "region": { "en": "Test Region", "el": "Περιοχή Δοκιμής", "sq": "Rajon Prove", "it": "Regione Test" }
+    },
+    "test-transfer": {
+      "labels": { "en": "Test Interchange", "el": "Ανταπόκριση Δοκιμής", "sq": "Ndërresa Provë", "it": "Interscambio Test" },
+      "region": { "en": "Test Region", "el": "Περιοχή Δοκιμής", "sq": "Rajon Prove", "it": "Regione Test" }
+    },
+    "test-destination": {
+      "labels": { "en": "Test Destination", "el": "Προορισμός Δοκιμής", "sq": "Destinacion Provë", "it": "Destinazione Test" },
+      "region": { "en": "Test Region", "el": "Περιοχή Δοκιμής", "sq": "Rajon Prove", "it": "Regione Test" }
+    }
+  },
+  "request": {
+    "schemaVersion": 1,
+    "fromStationId": "test-origin",
+    "toStationId": "test-destination",
+    "timeMode": "now",
+    "requestedInstant": "2026-01-15T08:30:00+02:00",
+    "serviceTimeZone": "Europe/Athens",
+    "ranking": "fastest",
+    "accessibilityPreference": "unknown"
+  },
+  "options": [
+    {
+      "id": "ui-ref-direct",
+      "requestId": "ui-ref",
+      "rankingBadge": "fastest",
+      "departureInstant": "2026-01-15T08:42:00+02:00",
+      "arrivalInstant": "2026-01-15T09:12:00+02:00",
+      "durationSeconds": 1800,
+      "transferCount": 0,
+      "walkingSeconds": 0,
+      "feasibility": { "status": "comfortable", "minimumMarginSeconds": null, "explanationCode": "direct_scheduled", "limitingLegId": null },
+      "sourceSummary": { "timingKind": "scheduled", "snapshotVersion": "ui-ref-1", "statusCoverage": "known", "scheduleCoverage": "known" },
+      "legs": [
+        {
+          "id": "ui-ref-direct-leg1",
+          "kind": "ride",
+          "fromId": "test-origin",
+          "toId": "test-destination",
+          "lineId": "TEST-A",
+          "directionId": "test-destination",
+          "tripId": "ui-ref-direct-trip",
+          "orderedStopIds": ["test-origin", "test-transfer", "test-destination"],
+          "departureInstant": "2026-01-15T08:42:00+02:00",
+          "arrivalInstant": "2026-01-15T09:12:00+02:00",
+          "serviceDate": "2026-01-15",
+          "timingKind": "scheduled",
+          "uncertaintySeconds": null,
+          "transferMinimumSeconds": null,
+          "accessibility": "unknown",
+          "sourceRef": { "sourceId": "ui-ref", "observedAt": null, "fetchedAt": "2026-01-15T08:30:00+02:00", "validUntil": null, "snapshotVersion": "ui-ref-1", "statusCoverage": "known", "scheduleCoverage": "known" }
+        }
+      ]
+    },
+    {
+      "id": "ui-ref-transfer",
+      "requestId": "ui-ref",
+      "rankingBadge": null,
+      "departureInstant": "2026-01-15T08:45:00+02:00",
+      "arrivalInstant": "2026-01-15T09:20:00+02:00",
+      "durationSeconds": 2100,
+      "transferCount": 1,
+      "walkingSeconds": 180,
+      "feasibility": { "status": "tight", "minimumMarginSeconds": 120, "explanationCode": "transfer_tight", "limitingLegId": "ui-ref-transfer-leg2" },
+      "sourceSummary": { "timingKind": "scheduled", "snapshotVersion": "ui-ref-1", "statusCoverage": "known", "scheduleCoverage": "known" },
+      "legs": [
+        {
+          "id": "ui-ref-transfer-leg1",
+          "kind": "ride",
+          "fromId": "test-origin",
+          "toId": "test-transfer",
+          "lineId": "TEST-A",
+          "directionId": "test-transfer",
+          "tripId": "ui-ref-transfer-trip1",
+          "orderedStopIds": ["test-origin", "test-transfer"],
+          "departureInstant": "2026-01-15T08:45:00+02:00",
+          "arrivalInstant": "2026-01-15T09:00:00+02:00",
+          "serviceDate": "2026-01-15",
+          "timingKind": "scheduled",
+          "uncertaintySeconds": null,
+          "transferMinimumSeconds": null,
+          "accessibility": "unknown",
+          "sourceRef": { "sourceId": "ui-ref", "observedAt": null, "fetchedAt": "2026-01-15T08:30:00+02:00", "validUntil": null, "snapshotVersion": "ui-ref-1", "statusCoverage": "known", "scheduleCoverage": "known" }
+        },
+        {
+          "id": "ui-ref-transfer-walk",
+          "kind": "transfer",
+          "fromId": "test-transfer",
+          "toId": "test-transfer",
+          "lineId": null,
+          "directionId": null,
+          "tripId": null,
+          "orderedStopIds": ["test-transfer"],
+          "departureInstant": "2026-01-15T09:00:00+02:00",
+          "arrivalInstant": "2026-01-15T09:03:00+02:00",
+          "serviceDate": "2026-01-15",
+          "timingKind": "scheduled",
+          "uncertaintySeconds": null,
+          "transferMinimumSeconds": 120,
+          "accessibility": "unknown",
+          "sourceRef": { "sourceId": "ui-ref", "observedAt": null, "fetchedAt": "2026-01-15T08:30:00+02:00", "validUntil": null, "snapshotVersion": "ui-ref-1", "statusCoverage": "known", "scheduleCoverage": "known" }
+        },
+        {
+          "id": "ui-ref-transfer-leg2",
+          "kind": "ride",
+          "fromId": "test-transfer",
+          "toId": "test-destination",
+          "lineId": "TEST-B",
+          "directionId": "test-destination",
+          "tripId": "ui-ref-transfer-trip2",
+          "orderedStopIds": ["test-transfer", "test-destination"],
+          "departureInstant": "2026-01-15T09:05:00+02:00",
+          "arrivalInstant": "2026-01-15T09:20:00+02:00",
+          "serviceDate": "2026-01-15",
+          "timingKind": "scheduled",
+          "uncertaintySeconds": null,
+          "transferMinimumSeconds": null,
+          "accessibility": "unknown",
+          "sourceRef": { "sourceId": "ui-ref", "observedAt": null, "fetchedAt": "2026-01-15T08:30:00+02:00", "validUntil": null, "snapshotVersion": "ui-ref-1", "statusCoverage": "known", "scheduleCoverage": "known" }
+        }
+      ]
+    }
+  ]
+}
