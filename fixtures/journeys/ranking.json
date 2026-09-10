@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for Syrmos 3.0 itinerary ranking (prompt 7.2 / S04). Kotlin JourneyRanker.rank and web SyrmosJourneyRanker.rank must return the same ordered ids, the same length (dedup + cap at 3, never padded), and the same top-option badge for each case. Each option carries a single ride leg whose lineId equals the option id so leg signatures are distinct, except the dedup case where two share one signature.",
+  "cases": [
+    {
+      "id": "fastest_orders_and_badges",
+      "ranking": "fastest",
+      "expectedOrder": ["a", "b", "c"],
+      "expectedFirstBadge": "fastest",
+      "options": [
+        { "id": "b", "durationSeconds": 2100, "transferCount": 1, "walkingSeconds": 100, "arrivalInstant": "2026-01-15T09:15:00+02:00", "legs": [{ "kind": "ride", "lineId": "b", "fromId": "x", "toId": "y" }] },
+        { "id": "a", "durationSeconds": 1800, "transferCount": 0, "walkingSeconds": 200, "arrivalInstant": "2026-01-15T09:12:00+02:00", "legs": [{ "kind": "ride", "lineId": "a", "fromId": "x", "toId": "y" }] },
+        { "id": "c", "durationSeconds": 2400, "transferCount": 2, "walkingSeconds": 50, "arrivalInstant": "2026-01-15T09:20:00+02:00", "legs": [{ "kind": "ride", "lineId": "c", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "dedup_identical_leg_sequences",
+      "ranking": "fastest",
+      "expectedOrder": ["a"],
+      "expectedFirstBadge": "fastest",
+      "options": [
+        { "id": "a", "durationSeconds": 1800, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:12:00+02:00", "legs": [{ "kind": "ride", "lineId": "M2", "fromId": "x", "toId": "y" }] },
+        { "id": "b", "durationSeconds": 2000, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:14:00+02:00", "legs": [{ "kind": "ride", "lineId": "M2", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "cap_at_three_never_padded",
+      "ranking": "fastest",
+      "expectedOrder": ["o1", "o2", "o3"],
+      "expectedFirstBadge": "fastest",
+      "options": [
+        { "id": "o5", "durationSeconds": 500, "transferCount": 0, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "o5", "fromId": "x", "toId": "y" }] },
+        { "id": "o1", "durationSeconds": 100, "transferCount": 0, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "o1", "fromId": "x", "toId": "y" }] },
+        { "id": "o3", "durationSeconds": 300, "transferCount": 0, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "o3", "fromId": "x", "toId": "y" }] },
+        { "id": "o2", "durationSeconds": 200, "transferCount": 0, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "o2", "fromId": "x", "toId": "y" }] },
+        { "id": "o4", "durationSeconds": 400, "transferCount": 0, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "o4", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "fewest_changes_orders_and_badges",
+      "ranking": "fewestChanges",
+      "expectedOrder": ["c0", "c1", "c2"],
+      "expectedFirstBadge": "fewestChanges",
+      "options": [
+        { "id": "c2", "durationSeconds": 1000, "transferCount": 2, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "c2", "fromId": "x", "toId": "y" }] },
+        { "id": "c0", "durationSeconds": 3000, "transferCount": 0, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "c0", "fromId": "x", "toId": "y" }] },
+        { "id": "c1", "durationSeconds": 2000, "transferCount": 1, "walkingSeconds": 0, "legs": [{ "kind": "ride", "lineId": "c1", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "least_walking_nulls_last",
+      "ranking": "leastWalking",
+      "expectedOrder": ["w120", "w300", "wnull"],
+      "expectedFirstBadge": "leastWalking",
+      "options": [
+        { "id": "w300", "durationSeconds": 1000, "transferCount": 0, "walkingSeconds": 300, "legs": [{ "kind": "ride", "lineId": "w300", "fromId": "x", "toId": "y" }] },
+        { "id": "wnull", "durationSeconds": 1000, "transferCount": 0, "walkingSeconds": null, "legs": [{ "kind": "ride", "lineId": "wnull", "fromId": "x", "toId": "y" }] },
+        { "id": "w120", "durationSeconds": 1000, "transferCount": 0, "walkingSeconds": 120, "legs": [{ "kind": "ride", "lineId": "w120", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "tie_break_by_arrival_then_id",
+      "ranking": "fastest",
+      "expectedOrder": ["early", "late"],
+      "expectedFirstBadge": "fastest",
+      "options": [
+        { "id": "late", "durationSeconds": 1800, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:10:00+02:00", "legs": [{ "kind": "ride", "lineId": "late", "fromId": "x", "toId": "y" }] },
+        { "id": "early", "durationSeconds": 1800, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:05:00+02:00", "legs": [{ "kind": "ride", "lineId": "early", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "badge_null_when_objective_metric_unknown",
+      "ranking": "fastest",
+      "expectedOrder": ["p", "q"],
+      "expectedFirstBadge": null,
+      "options": [
+        { "id": "q", "durationSeconds": null, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:20:00+02:00", "legs": [{ "kind": "ride", "lineId": "q", "fromId": "x", "toId": "y" }] },
+        { "id": "p", "durationSeconds": null, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:10:00+02:00", "legs": [{ "kind": "ride", "lineId": "p", "fromId": "x", "toId": "y" }] }
+      ]
+    }
+  ]
+}
