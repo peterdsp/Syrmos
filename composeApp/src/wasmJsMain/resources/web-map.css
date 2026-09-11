@@ -1979,10 +1979,31 @@ body.has-store-banner .app-shell {
     margin: 8px 0 12px;
 }
 .plan-results__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     font-size: 17px;
     line-height: 22px;
     font-weight: 600;
     color: var(--sy-text-primary);
+}
+.plan-results__save {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 6px 14px;
+    border-radius: var(--sy-radius-pill);
+    border: 1px solid var(--sy-accent);
+    background: var(--sy-surface);
+    color: var(--sy-accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.plan-results__save:disabled {
+    border-color: var(--sy-border);
+    color: var(--sy-text-secondary);
+    cursor: default;
 }
 .plan-results__meta {
     font-size: 13px;
@@ -2042,4 +2063,90 @@ body.has-store-banner .app-shell {
     border-color: var(--sy-accent);
     border-width: 2px;
     background: rgba(20,102,184,.06);
+}
+
+/* ===== Saved journeys (S08 / J05) ===== */
+.plan-saved {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--sy-border);
+}
+.plan-saved__heading {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+    color: var(--sy-text-primary);
+}
+.plan-saved__empty {
+    font-size: 14px;
+    line-height: 19px;
+    color: var(--sy-text-secondary);
+}
+.plan-saved__row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+.plan-saved__load {
+    flex: 1 1 auto;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-primary);
+    cursor: pointer;
+}
+.plan-saved__name {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+}
+.plan-saved__pair {
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--sy-text-secondary);
+}
+.plan-saved__action {
+    flex: 0 0 auto;
+    width: 44px;
+    min-height: 56px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+}
+.plan-saved__action--danger:hover { color: #dc2626; border-color: #dc2626; }
+.plan-saved__undo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--sy-radius-md);
+    background: var(--sy-background-subtle);
+    font-size: 14px;
+    color: var(--sy-text-primary);
+}
+.plan-saved__undobtn {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 6px 14px;
+    border-radius: var(--sy-radius-pill);
+    border: 1px solid var(--sy-accent);
+    background: var(--sy-surface);
+    color: var(--sy-accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
 }

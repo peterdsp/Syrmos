@@ -4306,9 +4306,13 @@
             // show an honest results summary, and mount the selected route in
             // the GO panel. Times are estimated (no schedule), so nothing is
             // labelled with a fabricated clock.
-            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null;
+            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null;
             let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
+            let undoTimer = null, pendingUndo = null; // last-deleted journey for the 5s Undo
+            let saveBtnRef = null; // the results "Save journey" button, kept in sync with the store
             const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
+            const savedStore = (window.SyrmosSavedJourneys && typeof window.SyrmosSavedJourneys.createStore === "function")
+                ? window.SyrmosSavedJourneys.createStore() : null;
 
             function stationName(s) {
                 if (currentLang === "el" && (s.name_el || s.nameEl)) return s.name_el || s.nameEl;
@@ -4406,12 +4410,17 @@
                     resultsEl.id = "planResults";
                     resultsEl.className = "plan-results";
 
+                    savedEl = document.createElement("div");
+                    savedEl.id = "planSaved";
+                    savedEl.className = "plan-saved";
+
                     panelEl = document.createElement("div");
                     panelEl.id = "goPlanPanel";
 
                     card.appendChild(title);
                     card.appendChild(draft);
                     card.appendChild(resultsEl);
+                    card.appendChild(savedEl);
                     card.appendChild(panelEl);
                     const cards = document.getElementById("contextPanelCards");
                     if (cards && cards.parentNode) cards.parentNode.insertBefore(card, cards);
@@ -4469,7 +4478,155 @@
                 }
                 return coords;
             }
+            // --- Saved journeys (S08 / J05) ---------------------------------
+            // Locally owned, no account: the current From/To pair is stored through
+            // the shared SyrmosSavedJourneys store (one versioned localStorage root,
+            // HARD de-dup by pair). A saved row loads back into the draft and plans.
+            function pairName(fromId, toId) {
+                const byId = new Map(stations.map((s) => [s.id, s]));
+                const nm = (id) => { const s = byId.get(id); return s ? stationName(s) : id; };
+                return nm(fromId) + " → " + nm(toId);
+            }
+            function isCurrentSaved() {
+                if (!savedStore || !fromSel || !toSel) return false;
+                const f = fromSel.value, t = toSel.value;
+                return savedStore.list().some((s) => s.fromId === f && s.toId === t);
+            }
+            // Keep the results "Save journey" button in sync with the store without a
+            // full re-render (so a delete/undo elsewhere flips it back to enabled).
+            function syncSaveButton() {
+                if (!saveBtnRef) return;
+                const saved = isCurrentSaved();
+                saveBtnRef.disabled = saved;
+                saveBtnRef.textContent = saved
+                    ? T("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                    : T("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio");
+            }
+            function saveCurrent() {
+                if (!savedStore || !fromSel || !toSel) return;
+                const f = fromSel.value, t = toSel.value;
+                if (!f || !t || f === t) return;
+                savedStore.save({
+                    id: window.SyrmosSavedJourneys.newId(),
+                    fromId: f, toId: t,
+                    createdAt: new Date().toISOString(),
+                    label: null,
+                    preferences: { ranking: "fastest", accessibilityPreference: "none" },
+                });
+                renderSaved();
+            }
+            function loadSaved(entry) {
+                if (!fromSel || !toSel) return;
+                ensureSelectsFilled();
+                fromSel.value = entry.fromId;
+                toSel.value = entry.toId;
+                runPlan();
+            }
+            function deleteSaved(entry) {
+                if (!savedStore) return;
+                savedStore.remove(entry.id);
+                // 5s Undo: keep the deleted row available to restore.
+                pendingUndo = entry;
+                if (undoTimer) clearTimeout(undoTimer);
+                undoTimer = setTimeout(() => { pendingUndo = null; undoTimer = null; renderSaved(); }, 5000);
+                renderSaved();
+            }
+            function undoDelete() {
+                if (!savedStore || !pendingUndo) return;
+                savedStore.save(pendingUndo);
+                pendingUndo = null;
+                if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+                renderSaved();
+            }
+            function renderSaved() {
+                if (!savedEl) return;
+                syncSaveButton();
+                savedEl.innerHTML = "";
+                if (!savedStore) return;
+                const heading = document.createElement("div");
+                heading.className = "plan-saved__heading";
+                heading.textContent = T("Saved journeys", "Αποθηκευμένες διαδρομές", "Udhëtimet e ruajtura", "Viaggi salvati");
+                savedEl.appendChild(heading);
+
+                // 5s Undo banner for the most recent delete.
+                if (pendingUndo) {
+                    const undo = document.createElement("div");
+                    undo.className = "plan-saved__undo";
+                    const label = document.createElement("span");
+                    label.textContent = T("Journey deleted", "Η διαδρομή διαγράφηκε", "Udhëtimi u fshi", "Viaggio eliminato");
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "plan-saved__undobtn";
+                    btn.textContent = T("Undo", "Αναίρεση", "Zhbëj", "Annulla");
+                    btn.addEventListener("click", () => undoDelete());
+                    undo.appendChild(label); undo.appendChild(btn);
+                    savedEl.appendChild(undo);
+                }
+
+                const list = savedStore.list();
+                if (!list.length) {
+                    const empty = document.createElement("div");
+                    empty.className = "plan-saved__empty";
+                    empty.textContent = T(
+                        "No saved journeys yet. Plan a route and tap Save.",
+                        "Καμία αποθηκευμένη διαδρομή. Σχεδίασε μια διαδρομή και πάτα Αποθήκευση.",
+                        "Ende s'ka udhëtime të ruajtura. Planifiko një rrugë dhe shtyp Ruaj.",
+                        "Nessun viaggio salvato. Pianifica un percorso e tocca Salva.");
+                    savedEl.appendChild(empty);
+                    return;
+                }
+
+                list.forEach((entry) => {
+                    const row = document.createElement("div");
+                    row.className = "plan-saved__row";
+
+                    const main = document.createElement("button");
+                    main.type = "button";
+                    main.className = "plan-saved__load";
+                    const title = document.createElement("div");
+                    title.className = "plan-saved__name";
+                    title.textContent = entry.label || pairName(entry.fromId, entry.toId);
+                    main.appendChild(title);
+                    if (entry.label) {
+                        const sub = document.createElement("div");
+                        sub.className = "plan-saved__pair";
+                        sub.textContent = pairName(entry.fromId, entry.toId);
+                        main.appendChild(sub);
+                    }
+                    main.addEventListener("click", () => loadSaved(entry));
+                    row.appendChild(main);
+
+                    const renameBtn = document.createElement("button");
+                    renameBtn.type = "button";
+                    renameBtn.className = "plan-saved__action";
+                    renameBtn.title = T("Rename", "Μετονομασία", "Riemërto", "Rinomina");
+                    renameBtn.setAttribute("aria-label", renameBtn.title);
+                    renameBtn.textContent = "✎";
+                    renameBtn.addEventListener("click", () => {
+                        const current = entry.label || "";
+                        const next = window.prompt(T("Name this journey", "Ονόμασε τη διαδρομή", "Emërto këtë udhëtim", "Nomina questo viaggio"), current);
+                        if (next === null) return; // cancelled
+                        savedStore.rename(entry.id, next);
+                        renderSaved();
+                    });
+                    row.appendChild(renameBtn);
+
+                    const delBtn = document.createElement("button");
+                    delBtn.type = "button";
+                    delBtn.className = "plan-saved__action plan-saved__action--danger";
+                    delBtn.title = T("Delete", "Διαγραφή", "Fshi", "Elimina");
+                    delBtn.setAttribute("aria-label", delBtn.title);
+                    delBtn.textContent = "🗑";
+                    delBtn.addEventListener("click", () => deleteSaved(entry));
+                    row.appendChild(delBtn);
+
+                    savedEl.appendChild(row);
+                });
+            }
+            let lastPlanned = null, lastHasTimetable = false;
             function renderResults(planned, hasTimetable) {
+                lastPlanned = planned; lastHasTimetable = hasTimetable;
+                saveBtnRef = null;
                 resultsEl.innerHTML = "";
                 const byId = new Map(stations.map((s) => [s.id, s]));
                 // In a backward mode only options that actually scheduled are usable.
@@ -4493,8 +4650,24 @@
 
                 const summary = document.createElement("div");
                 summary.className = "plan-results__summary";
-                summary.textContent = opts.length + " " +
+                const count = document.createElement("span");
+                count.textContent = opts.length + " " +
                     (opts.length === 1 ? T("route", "διαδρομή", "rrugë", "percorso") : T("routes", "διαδρομές", "rrugë", "percorsi"));
+                summary.appendChild(count);
+                // Save action on a plan result (S08): store the current From/To pair.
+                if (savedStore) {
+                    const saveBtn = document.createElement("button");
+                    saveBtn.type = "button";
+                    saveBtn.className = "plan-results__save";
+                    const saved = isCurrentSaved();
+                    saveBtn.textContent = saved
+                        ? T("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                        : T("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio");
+                    saveBtn.disabled = saved;
+                    saveBtn.addEventListener("click", () => saveCurrent());
+                    summary.appendChild(saveBtn);
+                    saveBtnRef = saveBtn;
+                }
                 resultsEl.appendChild(summary);
 
                 const mountSelected = (opt) => {
@@ -4631,7 +4804,7 @@
                 } catch (_) { /* leave prior results intact */ }
             }
             return {
-                show() { try { if (container()) { card.style.display = ""; ensureSelectsFilled(); if (resultsEl && !resultsEl.childNodes.length && fromSel && fromSel.options.length) runPlan(); } } catch (_) {} },
+                show() { try { if (container()) { card.style.display = ""; ensureSelectsFilled(); renderSaved(); if (resultsEl && !resultsEl.childNodes.length && fromSel && fromSel.options.length) runPlan(); } } catch (_) {} },
                 hide() { try { if (card) card.style.display = "none"; } catch (_) {} },
             };
         })();

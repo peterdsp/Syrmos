@@ -523,6 +523,9 @@
 <!-- Composes the planner into ranked JourneyOptions with feasibility (Phase P).
      Loaded after planner/feasibility/ranker/schedule, before web-map.js. -->
 <script src="/web-journey-plan.js?v=4"></script>
+<!-- Locally-owned saved journeys (SyrmosSavedJourneys, S08/J05): one versioned
+     localStorage root, HARD de-dup by (fromId,toId); mirrors Kotlin SavedJourney. -->
+<script src="/web-saved-journeys.js?v=4"></script>
 <script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
