@@ -43,7 +43,41 @@ object JourneyPlanAdapter {
         arriveByInstant: kotlinx.datetime.Instant? = null,
         lastConnection: Boolean = false,
     ): List<JourneyOption> {
-        if (result == null || result.segments.isEmpty()) return emptyList()
+        val option = buildOption(result, serviceDate, timetable, requestedInstant, arriveByInstant, lastConnection)
+            ?: return emptyList()
+        return JourneyRanker.rank(listOf(option), ranking)
+    }
+
+    /**
+     * Rank several candidate routes together (k-shortest via line-banning): each
+     * result is converted + scheduled with its OWN timetable, then the shared
+     * ranker dedups identical leg sequences, orders by objective, and caps at 3.
+     */
+    fun rankCandidates(
+        results: List<JourneyResult?>,
+        ranking: Ranking,
+        serviceDate: LocalDate,
+        requestedInstant: kotlinx.datetime.Instant? = null,
+        arriveByInstant: kotlinx.datetime.Instant? = null,
+        lastConnection: Boolean = false,
+        timetableFor: (JourneyResult) -> SchedulePlanner.Timetable? = { null },
+    ): List<JourneyOption> {
+        val options = results.mapNotNull { r ->
+            r?.let { buildOption(it, serviceDate, timetableFor(it), requestedInstant, arriveByInstant, lastConnection) }
+        }
+        return JourneyRanker.rank(options, ranking)
+    }
+
+    /** Convert one topology result into a single (scheduled) option; no ranking. */
+    private fun buildOption(
+        result: JourneyResult?,
+        serviceDate: LocalDate,
+        timetable: SchedulePlanner.Timetable?,
+        requestedInstant: kotlinx.datetime.Instant?,
+        arriveByInstant: kotlinx.datetime.Instant?,
+        lastConnection: Boolean,
+    ): JourneyOption? {
+        if (result == null || result.segments.isEmpty()) return null
 
         val fromId = result.segments.first().fromStationId
         val toId = result.segments.last().toStationId
@@ -79,8 +113,10 @@ object JourneyPlanAdapter {
         val transferCount = result.transferCount
         val durationSeconds = (result.totalMinutes + transferCount * TRANSFER_ESTIMATE_MINUTES) * 60
 
+        // Stable id from the ride-line chain so distinct candidates sort/dedup well.
+        val chainId = result.segments.joinToString("_") { it.lineId + ":" + it.fromStationId + ">" + it.toStationId }
         var option = JourneyOption(
-            id = "plan-$fromId-$toId",
+            id = "opt-$chainId",
             requestId = "req-$fromId-$toId",
             legs = legs,
             departureInstant = null,
@@ -99,7 +135,6 @@ object JourneyPlanAdapter {
                 else -> option
             }
         }
-        option = option.copy(feasibility = FeasibilityCalculator.forOption(option))
-        return JourneyRanker.rank(listOf(option), ranking)
+        return option.copy(feasibility = FeasibilityCalculator.forOption(option))
     }
 }

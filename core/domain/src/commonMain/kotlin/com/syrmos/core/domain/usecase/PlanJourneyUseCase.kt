@@ -36,6 +36,16 @@ class PlanJourneyUseCase(
         emit(compute(fromStationId, toStationId, operationalLines()))
     }
 
+    /**
+     * Fastest route with a set of lines banned, used to generate materially
+     * distinct alternatives (k-shortest via line-banning): re-plan with each line
+     * the base route used removed, yielding a different route where one exists.
+     * Null when banning leaves no path.
+     */
+    fun invoke(fromStationId: String, toStationId: String, bannedLineIds: Set<String>): Flow<JourneyResult?> = flow {
+        emit(compute(fromStationId, toStationId, operationalLines().filter { it.id !in bannedLineIds }))
+    }
+
     private suspend fun operationalLines(): List<Line> =
         lineRepository.getAllLines().first().filter { it.isOperational }
 
