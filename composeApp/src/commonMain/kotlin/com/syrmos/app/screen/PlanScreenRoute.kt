@@ -13,13 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
@@ -41,6 +45,7 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
+import com.syrmos.app.journey.SavedJourneysRepository
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
 import com.syrmos.core.domain.journey.SchedulePlanner
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
@@ -49,9 +54,12 @@ import com.syrmos.core.model.planner.JourneyResult
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.journey.FeasibilityStatus
 import com.syrmos.core.model.journey.JourneyOption
+import com.syrmos.core.model.journey.JourneyPreferences
 import com.syrmos.core.model.journey.LegKind
 import com.syrmos.core.model.journey.Ranking
+import com.syrmos.core.model.journey.SavedJourney
 import com.syrmos.core.model.transit.Station
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -91,7 +99,20 @@ class PlanScreenRoute : Screen {
         var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
         var arriveByText by remember { mutableStateOf("") } // "HH:MM"
 
-        LaunchedEffect(Unit) { stations = stationRepo.getAllStations().first() }
+        // Saved journeys (S08 / J05): locally owned, no account.
+        val savedItems by SavedJourneysRepository.items.collectAsState()
+        var pendingUndo by remember { mutableStateOf<SavedJourney?>(null) }
+        var renameTarget by remember { mutableStateOf<SavedJourney?>(null) }
+        var renameText by remember { mutableStateOf("") }
+
+        LaunchedEffect(Unit) {
+            SavedJourneysRepository.refresh()
+            stations = stationRepo.getAllStations().first()
+        }
+        // 5s Undo window for the most recent delete.
+        LaunchedEffect(pendingUndo) {
+            if (pendingUndo != null) { delay(5000); pendingUndo = null }
+        }
 
         fun name(id: String?): String {
             val s = stations.firstOrNull { it.id == id } ?: return "-"
@@ -127,6 +148,29 @@ class PlanScreenRoute : Screen {
                 selectedIdx = 0
                 planned = true
             }
+        }
+
+        fun pairName(from: String, to: String) = name(from) + " → " + name(to)
+        fun saveCurrent() {
+            val f = fromId; val to = toId
+            if (f == null || to == null || f == to) return
+            SavedJourneysRepository.save(
+                SavedJourney(
+                    id = SavedJourneysRepository.newId(),
+                    fromId = f, toId = to,
+                    createdAt = Clock.System.now(),
+                    label = null,
+                    preferences = JourneyPreferences(ranking = Ranking.FASTEST),
+                ),
+            )
+        }
+        fun loadSaved(entry: SavedJourney) {
+            fromId = entry.fromId; toId = entry.toId; open = null; query = ""
+            runPlan()
+        }
+        fun deleteSaved(entry: SavedJourney) {
+            SavedJourneysRepository.remove(entry.id)
+            pendingUndo = entry
         }
 
         Scaffold(
@@ -225,10 +269,24 @@ class PlanScreenRoute : Screen {
                     )
                     usable.isNotEmpty() -> {
                         val count = usable.size
-                        Text(
-                            "$count " + (if (count == 1) t("route", "διαδρομή", "rrugë", "percorso") else t("routes", "διαδρομές", "rrugë", "percorsi")),
-                            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
-                        )
+                        val alreadySaved = fromId != null && toId != null &&
+                            SavedJourneysRepository.isSaved(fromId!!, toId!!)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "$count " + (if (count == 1) t("route", "διαδρομή", "rrugë", "percorso") else t("routes", "διαδρομές", "rrugë", "percorsi")),
+                                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                            )
+                            OutlinedButton(onClick = { saveCurrent() }, enabled = !alreadySaved) {
+                                Text(
+                                    if (alreadySaved) t("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                                    else t("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio"),
+                                )
+                            }
+                        }
                         usable.forEachIndexed { i, opt ->
                             OptionCard(
                                 opt = opt, selected = i == selectedIdx, lang = lang, t = ::t,
@@ -246,7 +304,113 @@ class PlanScreenRoute : Screen {
                         }
                     }
                 }
+
+                // --- Saved journeys (S08 / J05) -----------------------------
+                HorizontalDivider()
+                Text(
+                    t("Saved journeys", "Αποθηκευμένες διαδρομές", "Udhëtimet e ruajtura", "Viaggi salvati"),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                )
+                if (pendingUndo != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(t("Journey deleted", "Η διαδρομή διαγράφηκε", "Udhëtimi u fshi", "Viaggio eliminato"))
+                        TextButton(onClick = {
+                            pendingUndo?.let { SavedJourneysRepository.save(it) }
+                            pendingUndo = null
+                        }) { Text(t("Undo", "Αναίρεση", "Zhbëj", "Annulla")) }
+                    }
+                }
+                if (savedItems.isEmpty()) {
+                    Text(
+                        t(
+                            "No saved journeys yet. Plan a route and tap Save.",
+                            "Καμία αποθηκευμένη διαδρομή. Σχεδίασε μια διαδρομή και πάτα Αποθήκευση.",
+                            "Ende s'ka udhëtime të ruajtura. Planifiko një rrugë dhe shtyp Ruaj.",
+                            "Nessun viaggio salvato. Pianifica un percorso e tocca Salva.",
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    savedItems.forEach { entry ->
+                        SavedRow(
+                            title = entry.label ?: pairName(entry.fromId, entry.toId),
+                            subtitle = if (entry.label != null) pairName(entry.fromId, entry.toId) else null,
+                            renameLabel = t("Rename", "Μετονομασία", "Riemërto", "Rinomina"),
+                            deleteLabel = t("Delete", "Διαγραφή", "Fshi", "Elimina"),
+                            onOpen = { loadSaved(entry) },
+                            onRename = { renameTarget = entry; renameText = entry.label ?: "" },
+                            onDelete = { deleteSaved(entry) },
+                        )
+                    }
+                }
             }
+        }
+
+        // Rename dialog (S08): sets a label; a blank name clears it back to null.
+        val target = renameTarget
+        if (target != null) {
+            AlertDialog(
+                onDismissRequest = { renameTarget = null },
+                title = { Text(t("Name this journey", "Ονόμασε τη διαδρομή", "Emërto këtë udhëtim", "Nomina questo viaggio")) },
+                text = {
+                    OutlinedTextField(
+                        value = renameText,
+                        onValueChange = { renameText = it },
+                        singleLine = true,
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        SavedJourneysRepository.rename(target.id, renameText)
+                        renameTarget = null
+                    }) { Text(t("Save", "Αποθήκευση", "Ruaj", "Salva")) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { renameTarget = null }) {
+                        Text(t("Cancel", "Άκυρο", "Anulo", "Annulla"))
+                    }
+                },
+            )
+        }
+    }
+
+    @Composable
+    private fun SavedRow(
+        title: String,
+        subtitle: String?,
+        renameLabel: String,
+        deleteLabel: String,
+        onOpen: () -> Unit,
+        onRename: () -> Unit,
+        onDelete: () -> Unit,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .clickable(onClick = onOpen)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                if (subtitle != null) {
+                    Text(subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            IconButton(onClick = onRename) { Text("✎", style = MaterialTheme.typography.titleMedium) }
+            IconButton(onClick = onDelete) { Text("🗑", style = MaterialTheme.typography.titleMedium) }
         }
     }
 
