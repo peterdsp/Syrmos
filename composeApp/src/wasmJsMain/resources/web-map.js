@@ -4457,8 +4457,9 @@
             // is real (comfortable/tight) instead of estimated. Returns null when no
             // projection is available (the adapter then keeps the estimated option).
             function buildTimetable(detailed) {
-                if (!detailed || typeof buildStationDepartures !== "function") return null;
+                if (!detailed || typeof projectFromBundle !== "function" || typeof apiSchedules === "undefined") return null;
                 const nowMs = Date.now();
+                const nowDate = (typeof athensNow === "function") ? athensNow() : new Date();
                 const departures = {};
                 const legSeconds = {};
                 for (const leg of detailed.legs) {
@@ -4466,25 +4467,23 @@
                     if (stops.length < 2) continue;
                     const boardId = stops[0].id;
                     const alightId = stops[stops.length - 1].id;
-                    let node = null;
-                    try {
-                        const nid = (typeof rawIdToNodeId !== "undefined" && rawIdToNodeId.get(boardId)) ||
-                            (typeof nodeIdFor === "function" ? nodeIdFor(boardId) : null);
-                        node = (nid && typeof stationNodeMap !== "undefined") ? stationNodeMap.get(nid) : null;
-                    } catch (_) { node = null; }
-                    if (node) {
-                        let deps = [];
-                        try { deps = buildStationDepartures(node) || []; } catch (_) { deps = []; }
-                        const instants = [];
-                        for (const d of deps) {
-                            const lid = (d.line && d.line.id) || d.lineId;
-                            const norm = lid === "M3_AIR" ? "M3" : lid;
-                            if (norm !== leg.lineId) continue;
-                            if (!Number.isFinite(d.minutesAway)) continue;
-                            instants.push(new Date(nowMs + d.minutesAway * 60000).toISOString());
+                    // Project the leg's OWN line directly from its bundle with a long
+                    // horizon (limit 30 ~= the next 1-2 hours). The old node path used
+                    // buildStationDepartures, which caps at 10 near-term slots ACROSS
+                    // all lines at an interchange, so a later leg (rider arrives 15+
+                    // min out) had no catchable departure left and stayed unscheduled.
+                    const bundleLineIds = leg.lineId === "M3" ? ["M3", "M3_AIR"] : [leg.lineId];
+                    const out = [];
+                    for (const lid of bundleLineIds) {
+                        const bundle = apiSchedules.get(lid);
+                        if (bundle) {
+                            try { projectFromBundle(bundle, nowDate, lid, out, 30); } catch (_) { /* skip */ }
                         }
-                        if (instants.length) departures[leg.lineId + "|" + boardId] = instants;
                     }
+                    const instants = out
+                        .filter((d) => Number.isFinite(d.minutesAway))
+                        .map((d) => new Date(nowMs + d.minutesAway * 60000).toISOString());
+                    if (instants.length) departures[leg.lineId + "|" + boardId] = instants;
                     const type = (lines.find((l) => l.id === leg.lineId) || {}).type;
                     const perHop = (window.SyrmosPlanner && window.SyrmosPlanner._travelTime)
                         ? window.SyrmosPlanner._travelTime(type) : 3;

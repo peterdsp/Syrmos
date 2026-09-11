@@ -241,7 +241,9 @@ private fun buildTimetable(
         val lineIds = if (seg.lineId == "M3") listOf("M3", "M3_AIR") else listOf(seg.lineId)
         val list = depMap.getOrPut(seg.lineId + "|" + seg.fromStationId) { ArrayList() }
         for (dir in listOf(Direction.OUTBOUND, Direction.INBOUND)) {
-            val ups = runCatching { departures.invoke(lineIds, dir, 8, seg.fromStationId) }.getOrElse { emptyList() }
+            // Long horizon (20, not 8) so a LATER leg still has a catchable
+            // departure once the rider has ridden earlier legs + transferred.
+            val ups = runCatching { departures.invoke(lineIds, dir, 20, seg.fromStationId) }.getOrElse { emptyList() }
             for (u in ups) {
                 if (u.lineId == seg.lineId || (seg.lineId == "M3" && u.lineId == "M3_AIR")) {
                     list.add(now + u.minutesAway.minutes)
