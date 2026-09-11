@@ -29,17 +29,80 @@ enum JourneyPlanAdapter {
         return out
     }
 
-    static func plan(from fromId: String, to toId: String, language: AppLanguage) -> PlannedJourney? {
+    /// Plan a journey. When `departuresFor` is supplied (real projected departure
+    /// instants per line at a board station), the option is scheduled and
+    /// feasibility is real (comfortable/tight/missed); otherwise it falls back to
+    /// an honest estimated option (transfers => unknown, direct => comfortable).
+    /// Mirrors web `SyrmosSchedulePlan` + `SyrmosFeasibility` and Kotlin
+    /// `SchedulePlanner` + `FeasibilityCalculator`.
+    static func plan(
+        from fromId: String,
+        to toId: String,
+        language: AppLanguage,
+        departuresFor: ((_ lineId: String, _ boardId: String) -> [Date])? = nil
+    ) -> PlannedJourney? {
         guard let detailed = JourneyPlanner.planDetailed(from: fromId, to: toId, language: language) else { return nil }
         let transfers = max(0, detailed.legs.count - 1)
-        return PlannedJourney(
-            lineChain: detailed.legs.map { $0.lineId },
-            transferCount: transfers,
-            durationSeconds: detailed.totalMinutes * 60,
-            // Same honest rule as web/Android: a direct ride is comfortable; a
-            // transfer we cannot time (no schedule) is unknown, never a fake score.
-            feasibility: transfers == 0 ? .comfortable : .unknown
-        )
+        let chain = detailed.legs.map { $0.lineId }
+
+        guard let departuresFor = departuresFor else {
+            return PlannedJourney(lineChain: chain, transferCount: transfers,
+                                  durationSeconds: detailed.totalMinutes * 60,
+                                  feasibility: transfers == 0 ? .comfortable : .unknown)
+        }
+
+        // Schedule-aware pass: assign the earliest catchable departure per leg and
+        // take the worst transfer margin (default transfer minimum 120s, tight <=179s).
+        let transferMin: TimeInterval = 120
+        var readyEpoch = Date().timeIntervalSince1970
+        var firstDep: TimeInterval?
+        var lastArr: TimeInterval?
+        var prevArr: TimeInterval?
+        var timedAll = true
+        var worst: Feasibility = .comfortable
+
+        for leg in detailed.legs {
+            let board = leg.boardId
+            let deps = departuresFor(leg.lineId, board).map { $0.timeIntervalSince1970 }.sorted()
+            let ready = (firstDep == nil) ? readyEpoch : (prevArr! + transferMin)
+            guard let dep = deps.first(where: { $0 >= ready }) else { timedAll = false; break }
+            let hops = max(1, leg.stationIds.count - 1)
+            let arr = dep + Double(hops * perHopSeconds(leg.lineId))
+            if let pArr = prevArr {
+                let margin = dep - pArr - transferMin
+                let s: Feasibility = margin < 0 ? .missed : (margin <= 179 ? .tight : .comfortable)
+                if severity(s) > severity(worst) { worst = s }
+            }
+            if firstDep == nil { firstDep = dep }
+            lastArr = arr
+            prevArr = arr
+            readyEpoch = arr
+        }
+
+        if timedAll, let fd = firstDep, let la = lastArr {
+            return PlannedJourney(lineChain: chain, transferCount: transfers,
+                                  durationSeconds: Int(la - fd),
+                                  feasibility: transfers == 0 ? .comfortable : worst)
+        }
+        // Could not time the whole trip -> honest estimate + unknown feasibility.
+        return PlannedJourney(lineChain: chain, transferCount: transfers,
+                              durationSeconds: detailed.totalMinutes * 60,
+                              feasibility: transfers == 0 ? .comfortable : .unknown)
+    }
+
+    private static func severity(_ f: Feasibility) -> Int {
+        switch f { case .missed: return 3; case .unknown: return 2; case .tight: return 1; case .comfortable: return 0 }
+    }
+
+    // Per-hop travel estimate by line type, mirroring JourneyPlanner.travelTime.
+    private static func perHopSeconds(_ lineId: String) -> Int {
+        switch SyrmosData.lines.first(where: { $0.id == lineId })?.type {
+        case .metro: return 120
+        case .tram: return 180
+        case .suburban: return 240
+        case .bus: return 240
+        default: return 300
+        }
     }
 }
 
@@ -133,7 +196,17 @@ struct PlanView: View {
 
     private func runPlan() {
         guard let f = fromId, let t = toId else { return }
-        result = JourneyPlanAdapter.plan(from: f, to: t, language: language)
+        // Real timetable from the iOS projector: next departures of the leg's line
+        // at the board station, as absolute instants (now + minutesAway). Empty
+        // when the projector has no data, so the adapter keeps the estimate.
+        let schedule: (String, String) -> [Date] = { lineId, boardId in
+            let lineIds = lineId == "M3" ? ["M3", "M3_AIR"] : [lineId]
+            let now = Date()
+            return ScheduleProjector.nextDepartures(for: boardId, lineIds: lineIds, limit: 8)
+                .filter { $0.lineId == lineId || (lineId == "M3" && $0.lineId == "M3_AIR") }
+                .map { now.addingTimeInterval(Double($0.minutesAway) * 60) }
+        }
+        result = JourneyPlanAdapter.plan(from: f, to: t, language: language, departuresFor: schedule)
         planned = true
     }
 
