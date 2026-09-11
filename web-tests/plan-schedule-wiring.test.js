@@ -30,14 +30,19 @@ test('runPlan builds a timetable from the live projection and passes it in', () 
   // absolute instants = now + minutesAway (not the shifted athensNow epoch)
   assert.match(js, /new Date\(nowMs \+ d\.minutesAway \* 60000\)\.toISOString\(\)/,
     'departures must be real instants from Date.now()+minutesAway');
-  // fed into the adapter with a requested instant
-  assert.match(js, /timetable, requestedInstant: new Date\(\)\.toISOString\(\), defaultTransferSeconds: 120/,
-    'plan() must receive the timetable + requested instant');
+  // fed into the adapter as a per-candidate timetable builder + requested instant
+  assert.match(js, /buildTimetable: perCandidate, requestedInstant: new Date\(\)\.toISOString\(\)/,
+    'plan() must receive a per-candidate timetable builder + requested instant');
 });
 
 test('the adapter applies the schedule pass only when a timetable is supplied', () => {
   const plan = fs.readFileSync(path.join(RES, 'web-journey-plan.js'), 'utf8');
-  assert.match(plan, /if \(request && request\.timetable && d\.SchedulePlan\)/,
+  assert.match(plan, /function applySchedule\(option, request, timetable, SchedulePlan\)/,
+    'schedule application factored into applySchedule');
+  assert.match(plan, /if \(!timetable \|\| !SchedulePlan\) return option;/,
     'schedule upgrade must be gated on a supplied timetable');
-  assert.match(plan, /d\.SchedulePlan\.assignSchedule\(/, 'must call assignSchedule');
+  assert.match(plan, /SchedulePlan\.assignSchedule\(/, 'must call assignSchedule (forward)');
+  // k-shortest: candidate generation via line-banning, deduped/capped by the ranker
+  assert.match(plan, /function candidateRoutes\(/, 'must generate candidate routes');
+  assert.match(plan, /d\.Ranker\.rank\(options, ranking\)/, 'candidates go through the ranker (dedup + cap 3)');
 });
