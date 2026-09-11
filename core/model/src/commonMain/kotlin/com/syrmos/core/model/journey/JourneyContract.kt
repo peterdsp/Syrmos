@@ -50,11 +50,23 @@ object JourneyContract {
     fun decodeSavedJourney(raw: String): DecodeResult<SavedJourney> =
         decode(raw) { json.decodeFromString(SavedJourney.serializer(), it) }
 
+    /**
+     * Decode the saved-journeys list root. An empty/blank blob is a fresh, valid
+     * empty list (not corrupt), so a first run never opens recovery.
+     */
+    fun decodeSavedJourneysRoot(raw: String): DecodeResult<SavedJourneysRoot> {
+        if (raw.isBlank()) return DecodeResult.Ok(SavedJourneysRoot())
+        return decode(raw) { json.decodeFromString(SavedJourneysRoot.serializer(), it) }
+    }
+
     fun encodeActiveJourney(value: ActiveJourney): String =
         json.encodeToString(ActiveJourney.serializer(), value)
 
     fun encodeSavedJourney(value: SavedJourney): String =
         json.encodeToString(SavedJourney.serializer(), value)
+
+    fun encodeSavedJourneysRoot(value: SavedJourneysRoot): String =
+        json.encodeToString(SavedJourneysRoot.serializer(), value)
 
     private inline fun <T> decode(raw: String, parse: (String) -> T): DecodeResult<T> {
         val version = peekVersion(raw)
