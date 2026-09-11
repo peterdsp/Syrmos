@@ -28,6 +28,7 @@
       Planner: g.SyrmosPlanner || (req && req('./web-planner.js')),
       Feasibility: g.SyrmosFeasibility || (req && req('./web-feasibility.js')),
       Ranker: g.SyrmosJourneyRanker || (req && req('./web-journey-ranker.js')),
+      SchedulePlan: g.SyrmosSchedulePlan || (req && req('./web-schedule-plan.js')),
     };
   }
 
@@ -96,7 +97,17 @@
     if (!detailed || !detailed.legs || !detailed.legs.length) return { requestId: null, options: [] };
 
     const typeById = typeIndex(lines);
-    const option = toOption(detailed, fromId, toId, typeById, d.Planner._travelTime);
+    let option = toOption(detailed, fromId, toId, typeById, d.Planner._travelTime);
+    // If a real timetable is supplied, upgrade the estimated option to scheduled
+    // instants so feasibility is real (comfortable/tight) rather than estimated.
+    // Without one, the estimated option stands (honest: feasibility unknown/direct).
+    if (request && request.timetable && d.SchedulePlan) {
+      option = d.SchedulePlan.assignSchedule(
+        option,
+        { requestedInstant: request.requestedInstant, defaultTransferSeconds: request.defaultTransferSeconds },
+        request.timetable,
+      );
+    }
     option.feasibility = d.Feasibility.forOption(option);
     const options = d.Ranker.rank([option], ranking);
     return { requestId: option.requestId, options };
