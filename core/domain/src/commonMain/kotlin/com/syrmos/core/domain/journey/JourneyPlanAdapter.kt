@@ -37,6 +37,11 @@ object JourneyPlanAdapter {
         // the estimated option is turned into a scheduled one (real feasibility).
         timetable: SchedulePlanner.Timetable? = null,
         requestedInstant: kotlinx.datetime.Instant? = null,
+        // Backward (arrive-by) target; when set, the schedule pass assigns the
+        // LATEST feasible departures to arrive by it. `lastConnection = true`
+        // ignores any target and takes the latest available departure (last train).
+        arriveByInstant: kotlinx.datetime.Instant? = null,
+        lastConnection: Boolean = false,
     ): List<JourneyOption> {
         if (result == null || result.segments.isEmpty()) return emptyList()
 
@@ -86,8 +91,13 @@ object JourneyPlanAdapter {
             feasibility = Feasibility(com.syrmos.core.model.journey.FeasibilityStatus.UNKNOWN, explanationCode = "pending"),
             rankingBadge = null,
         )
-        if (timetable != null && requestedInstant != null) {
-            option = SchedulePlanner.assignSchedule(option, requestedInstant, timetable)
+        if (timetable != null) {
+            option = when {
+                lastConnection -> SchedulePlanner.lastConnection(option, timetable)
+                arriveByInstant != null -> SchedulePlanner.assignScheduleArriveBy(option, arriveByInstant, timetable)
+                requestedInstant != null -> SchedulePlanner.assignSchedule(option, requestedInstant, timetable)
+                else -> option
+            }
         }
         option = option.copy(feasibility = FeasibilityCalculator.forOption(option))
         return JourneyRanker.rank(listOf(option), ranking)

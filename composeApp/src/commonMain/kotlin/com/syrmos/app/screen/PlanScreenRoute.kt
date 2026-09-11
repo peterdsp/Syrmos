@@ -87,6 +87,8 @@ class PlanScreenRoute : Screen {
         var query by remember { mutableStateOf("") }
         var option by remember { mutableStateOf<JourneyOption?>(null) }
         var planned by remember { mutableStateOf(false) }
+        var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
+        var arriveByText by remember { mutableStateOf("") } // "HH:MM"
 
         LaunchedEffect(Unit) { stations = stationRepo.getAllStations().first() }
 
@@ -108,8 +110,16 @@ class PlanScreenRoute : Screen {
                 // real (comfortable/tight) rather than estimated; null-safe, and the
                 // adapter keeps the estimated option when no projection is available.
                 val now = Clock.System.now()
-                val timetable = result?.let { buildTimetable(it, departuresUseCase, now) }
-                option = JourneyPlanAdapter.toOptions(result, Ranking.FASTEST, serviceDate, timetable, now).firstOrNull()
+                // Backward modes need the whole remaining service day to find the
+                // true latest train; forward "leave now" only needs the next handful.
+                val horizon = if (mode == "now") 8 else 60
+                val timetable = result?.let { buildTimetable(it, departuresUseCase, now, horizon) }
+                val arriveBy = if (mode == "arriveBy") parseArriveBy(arriveByText, now) else null
+                option = JourneyPlanAdapter.toOptions(
+                    result, Ranking.FASTEST, serviceDate, timetable, now,
+                    arriveByInstant = arriveBy,
+                    lastConnection = (mode == "lastConnection"),
+                ).firstOrNull()
                 planned = true
             }
         }
@@ -163,6 +173,34 @@ class PlanScreenRoute : Screen {
                     }
                 }
 
+                // Travel-time mode: Leave now / Arrive by / Last train home.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    listOf(
+                        "now" to t("Leave now", "Τώρα", "Tani", "Ora"),
+                        "arriveBy" to t("Arrive by", "Άφιξη έως", "Mbërri", "Arriva"),
+                        "lastConnection" to t("Last train", "Τελευταίο", "I fundit", "Ultimo"),
+                    ).forEach { (id, label) ->
+                        androidx.compose.material3.FilterChip(
+                            selected = mode == id,
+                            onClick = { mode = id },
+                            label = { Text(label, maxLines = 1) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                if (mode == "arriveBy") {
+                    OutlinedTextField(
+                        value = arriveByText,
+                        onValueChange = { arriveByText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text(t("Arrive by (HH:MM)", "Άφιξη έως (ΩΩ:ΛΛ)", "Mbërri (OO:MM)", "Arriva (HH:MM)")) },
+                    )
+                }
+
                 Button(
                     onClick = { runPlan() },
                     enabled = fromId != null && toId != null && open == null,
@@ -170,13 +208,33 @@ class PlanScreenRoute : Screen {
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
 
                 val opt = option
-                if (planned && opt == null) {
-                    Text(
+                when {
+                    planned && opt == null -> Text(
                         t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato."),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else if (opt != null) {
-                    ResultCard(opt, lang, ::t)
+                    opt != null && mode != "now" && opt.departureInstant == null -> Text(
+                        if (mode == "lastConnection")
+                            t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                        else
+                            t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo."),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    opt != null -> {
+                        ResultCard(opt, lang, ::t)
+                        val dep = opt.departureInstant
+                        if (mode != "now" && dep != null) {
+                            val label = if (mode == "lastConnection")
+                                t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
+                            else t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
+                            Text(
+                                "$label ${athensHm(dep)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -234,6 +292,7 @@ private fun buildTimetable(
     result: JourneyResult,
     departures: ComputeDeparturesFromBandsUseCase,
     now: kotlinx.datetime.Instant,
+    horizon: Int = 20,
 ): SchedulePlanner.Timetable {
     val depMap = HashMap<String, MutableList<kotlinx.datetime.Instant>>()
     val legSeconds = HashMap<String, Int>()
@@ -241,9 +300,9 @@ private fun buildTimetable(
         val lineIds = if (seg.lineId == "M3") listOf("M3", "M3_AIR") else listOf(seg.lineId)
         val list = depMap.getOrPut(seg.lineId + "|" + seg.fromStationId) { ArrayList() }
         for (dir in listOf(Direction.OUTBOUND, Direction.INBOUND)) {
-            // Long horizon (20, not 8) so a LATER leg still has a catchable
-            // departure once the rider has ridden earlier legs + transferred.
-            val ups = runCatching { departures.invoke(lineIds, dir, 20, seg.fromStationId) }.getOrElse { emptyList() }
+            // Forward needs ~20; backward (arrive-by / last train) needs the whole
+            // remaining service day so it can find the true latest catchable train.
+            val ups = runCatching { departures.invoke(lineIds, dir, horizon, seg.fromStationId) }.getOrElse { emptyList() }
             for (u in ups) {
                 if (u.lineId == seg.lineId || (seg.lineId == "M3" && u.lineId == "M3_AIR")) {
                     list.add(now + u.minutesAway.minutes)
@@ -254,4 +313,22 @@ private fun buildTimetable(
     }
     depMap.entries.removeAll { it.value.isEmpty() }
     return SchedulePlanner.Timetable(departures = depMap, legSeconds = legSeconds)
+}
+
+/** Parse an "HH:MM" Athens clock into the next occurrence as an absolute instant. */
+private fun parseArriveBy(text: String, now: kotlinx.datetime.Instant): kotlinx.datetime.Instant? {
+    val m = Regex("""^\s*(\d{1,2}):(\d{2})\s*$""").find(text) ?: return null
+    val target = m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
+    val zone = TimeZone.of("Europe/Athens")
+    val nowLocal = now.toLocalDateTime(zone).time
+    val nowMin = nowLocal.hour * 60 + nowLocal.minute
+    var delta = target - nowMin
+    if (delta < 0) delta += 24 * 60
+    return now + delta.minutes
+}
+
+/** Format an absolute instant as an Athens HH:MM clock. */
+private fun athensHm(instant: kotlinx.datetime.Instant): String {
+    val t = instant.toLocalDateTime(TimeZone.of("Europe/Athens")).time
+    return t.hour.toString().padStart(2, '0') + ":" + t.minute.toString().padStart(2, '0')
 }
