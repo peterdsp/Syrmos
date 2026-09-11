@@ -4306,7 +4306,8 @@
             // show an honest results summary, and mount the selected route in
             // the GO panel. Times are estimated (no schedule), so nothing is
             // labelled with a fabricated clock.
-            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null;
+            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null;
+            let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
             const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
 
             function stationName(s) {
@@ -4365,7 +4366,41 @@
                     find.className = "primary-button plan-draft__find";
                     find.textContent = T("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi");
                     find.addEventListener("click", () => runPlan());
-                    draft.appendChild(f.wrap); draft.appendChild(t.wrap); draft.appendChild(find);
+
+                    // Travel-time mode: Leave now / Arrive by (time input) / Last train home.
+                    const timeWrap = document.createElement("div");
+                    timeWrap.className = "plan-time";
+                    timeWrap.style.display = "none";
+                    timeInput = document.createElement("input");
+                    timeInput.type = "time";
+                    timeInput.className = "plan-time__input";
+                    timeWrap.appendChild(timeInput);
+
+                    const modeRow = document.createElement("div");
+                    modeRow.className = "plan-mode";
+                    [["now", T("Leave now", "Τώρα", "Tani", "Ora")],
+                     ["arriveBy", T("Arrive by", "Άφιξη έως", "Mbërri deri", "Arriva entro")],
+                     ["lastConnection", T("Last train home", "Τελευταίο τρένο", "Treni i fundit", "Ultimo treno")]]
+                        .forEach(([id, label]) => {
+                            const b = document.createElement("button");
+                            b.type = "button";
+                            b.className = "plan-mode__btn" + (id === "now" ? " plan-mode__btn--active" : "");
+                            b.dataset.mode = id;
+                            b.textContent = label;
+                            b.addEventListener("click", () => {
+                                planMode = id;
+                                modeRow.querySelectorAll(".plan-mode__btn").forEach((x) =>
+                                    x.classList.toggle("plan-mode__btn--active", x.dataset.mode === id));
+                                timeWrap.style.display = (id === "arriveBy") ? "" : "none";
+                            });
+                            modeRow.appendChild(b);
+                        });
+
+                    draft.appendChild(f.wrap);
+                    draft.appendChild(t.wrap);
+                    draft.appendChild(modeRow);
+                    draft.appendChild(timeWrap);
+                    draft.appendChild(find);
 
                     resultsEl = document.createElement("div");
                     resultsEl.id = "planResults";
@@ -4410,7 +4445,7 @@
                     unknown: T("Estimated times", "Εκτιμώμενοι χρόνοι", "Kohë të vlerësuara", "Orari stimato"),
                 }[status] || status;
             }
-            function renderResults(planned, detailed, coords) {
+            function renderResults(planned, detailed, coords, hasTimetable) {
                 resultsEl.innerHTML = "";
                 if (!planned || !planned.options.length) {
                     const empty = document.createElement("div");
@@ -4437,8 +4472,38 @@
                 chip.className = "plan-results__chip plan-results__chip--" + opt.feasibility.status;
                 chip.textContent = feasibilityLabel(opt.feasibility.status);
 
+                // Arrive-by / last-connection: the first departure IS the leave-by
+                // answer. If nothing was schedulable, distinguish "no train" from
+                // "schedules still loading" so we never show a wrong time.
+                let leaveBy = null;
+                if (planMode !== "now") {
+                    if (opt.departureInstant) {
+                        const hhmm = new Date(opt.departureInstant).toLocaleTimeString(
+                            "en-GB", { timeZone: "Europe/Athens", hour: "2-digit", minute: "2-digit" });
+                        leaveBy = document.createElement("div");
+                        leaveBy.className = "plan-results__leaveby";
+                        const label = planMode === "lastConnection"
+                            ? T("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
+                            : T("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro");
+                        leaveBy.textContent = label + " " + hhmm;
+                    } else {
+                        resultsEl.innerHTML = "";
+                        const empty = document.createElement("div");
+                        empty.className = "plan-results__empty";
+                        empty.textContent = !hasTimetable
+                            ? T("Schedules still loading — try again.", "Φόρτωση δρομολογίων — δοκίμασε ξανά.", "Oraret po ngarkohen — provo sërish.", "Orari in caricamento — riprova.")
+                            : (planMode === "lastConnection"
+                                ? T("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                                : T("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo."));
+                        resultsEl.appendChild(empty);
+                        if (window.SyrmosGoPanel) panelEl.innerHTML = "";
+                        return;
+                    }
+                }
+
                 resultsEl.appendChild(summary);
                 resultsEl.appendChild(meta);
+                if (leaveBy) resultsEl.appendChild(leaveBy);
                 resultsEl.appendChild(chip);
 
                 // Selected route detail: mount the topology journey in the GO panel.
@@ -4456,8 +4521,12 @@
             // estimated per-leg travel time. Feeds SyrmosSchedulePlan so feasibility
             // is real (comfortable/tight) instead of estimated. Returns null when no
             // projection is available (the adapter then keeps the estimated option).
-            function buildTimetable(detailed) {
+            function buildTimetable(detailed, horizon) {
                 if (!detailed || typeof projectFromBundle !== "function" || typeof apiSchedules === "undefined") return null;
+                // Forward "leave now" needs only the next ~30 departures; arrive-by
+                // and last-connection need the WHOLE remaining service day so the
+                // backward search finds the real latest train, not the next 2 hours.
+                const limit = Number.isFinite(horizon) ? horizon : 30;
                 const nowMs = Date.now();
                 const nowDate = (typeof athensNow === "function") ? athensNow() : new Date();
                 const departures = {};
@@ -4477,7 +4546,7 @@
                     for (const lid of bundleLineIds) {
                         const bundle = apiSchedules.get(lid);
                         if (bundle) {
-                            try { projectFromBundle(bundle, nowDate, lid, out, 30); } catch (_) { /* skip */ }
+                            try { projectFromBundle(bundle, nowDate, lid, out, limit); } catch (_) { /* skip */ }
                         }
                     }
                     const instants = out
@@ -4499,10 +4568,26 @@
                     const fromId = fromSel && fromSel.value;
                     const toId = toSel && toSel.value;
                     const detailed = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
-                    const timetable = buildTimetable(detailed);
+                    // Backward modes need the whole day's departures to find the true
+                    // latest train; forward "leave now" only needs the next handful.
+                    const timetable = buildTimetable(detailed, planMode === "now" ? 30 : 400);
+                    // Arrive-by target: interpret HH:MM as the next occurrence in Athens
+                    // time, expressed as a real instant (now + minutes-until).
+                    let arriveByInstant = null;
+                    if (planMode === "arriveBy" && timeInput && timeInput.value) {
+                        const m = /^(\d{1,2}):(\d{2})$/.exec(timeInput.value);
+                        if (m) {
+                            const anow = (typeof athensNow === "function") ? athensNow() : new Date();
+                            const nowMin = anow.getHours() * 60 + anow.getMinutes();
+                            let delta = (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) - nowMin;
+                            if (delta < 0) delta += 24 * 60;
+                            arriveByInstant = new Date(Date.now() + delta * 60000).toISOString();
+                        }
+                    }
                     const planned = window.SyrmosJourneyPlan.plan(stations, lines, {
                         fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
                         timetable, requestedInstant: new Date().toISOString(), defaultTransferSeconds: 120,
+                        timeMode: planMode, arriveByInstant,
                     });
                     const coords = {};
                     if (detailed) {
@@ -4512,7 +4597,7 @@
                             if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
                         }
                     }
-                    renderResults(planned, detailed || { legs: [] }, coords);
+                    renderResults(planned, detailed || { legs: [] }, coords, !!timetable);
                 } catch (_) { /* leave prior results intact */ }
             }
             return {

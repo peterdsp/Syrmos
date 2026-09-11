@@ -102,11 +102,19 @@
     // instants so feasibility is real (comfortable/tight) rather than estimated.
     // Without one, the estimated option stands (honest: feasibility unknown/direct).
     if (request && request.timetable && d.SchedulePlan) {
-      option = d.SchedulePlan.assignSchedule(
-        option,
-        { requestedInstant: request.requestedInstant, defaultTransferSeconds: request.defaultTransferSeconds },
-        request.timetable,
-      );
+      const dt = request.defaultTransferSeconds;
+      if (request.timeMode === 'arriveBy' && request.arriveByInstant) {
+        // Backward search: latest departures that still arrive by the target.
+        option = d.SchedulePlan.assignScheduleArriveBy(
+          option, { arriveByInstant: request.arriveByInstant, defaultTransferSeconds: dt }, request.timetable);
+      } else if (request.timeMode === 'lastConnection') {
+        // Latest feasible journey to the destination (last train home).
+        option = d.SchedulePlan.lastConnection(option, { defaultTransferSeconds: dt }, request.timetable);
+      } else {
+        // Forward: earliest catchable departures from the requested instant.
+        option = d.SchedulePlan.assignSchedule(
+          option, { requestedInstant: request.requestedInstant, defaultTransferSeconds: dt }, request.timetable);
+      }
     }
     option.feasibility = d.Feasibility.forOption(option);
     const options = d.Ranker.rank([option], ranking);

@@ -2008,3 +2008,19 @@ body.has-store-banner .app-shell {
 .plan-results__chip--comfortable { background: rgba(5,150,105,.12); color: #059669; }
 .plan-results__chip--tight { background: rgba(180,83,9,.12); color: #b45309; }
 .plan-results__chip--missed { background: rgba(220,38,38,.12); color: #dc2626; }
+
+/* ===== Plan travel-time mode (Leave now / Arrive by / Last train home) ===== */
+.plan-mode { display: flex; gap: 8px; flex-wrap: wrap; }
+.plan-mode__btn {
+    flex: 1 1 auto; min-height: 44px; padding: 8px 10px;
+    border-radius: var(--sy-radius-md); border: 1px solid var(--sy-border);
+    background: var(--sy-surface); color: var(--sy-text-secondary);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.plan-mode__btn--active { background: rgba(20,102,184,.10); border-color: var(--sy-accent); color: var(--sy-accent); }
+.plan-time__input {
+    min-height: 44px; width: 100%; border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border); background: var(--sy-surface);
+    color: var(--sy-text-primary); font-size: 16px; padding: 8px 12px;
+}
+.plan-results__leaveby { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--sy-accent); }
