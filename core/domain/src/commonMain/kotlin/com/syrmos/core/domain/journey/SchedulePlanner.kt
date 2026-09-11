@@ -110,4 +110,73 @@ object SchedulePlanner {
 
     private fun unscheduled(leg: Leg): Leg =
         leg.copy(departureInstant = null, arrivalInstant = null, timingKind = TimingKind.UNKNOWN)
+
+    /**
+     * Backward (arrive-by) pass: assign the LATEST departures such that the rider
+     * still arrives by [arriveByInstant] (a real backward search, not a static
+     * duration subtracted from the target, per prompt 7.2). When [arriveByInstant]
+     * is null the last leg takes the latest available departure, giving the "last
+     * connection home". The first ride's departure is the "leave by" answer.
+     */
+    fun assignScheduleArriveBy(
+        option: JourneyOption,
+        arriveByInstant: Instant?,
+        timetable: Timetable,
+        defaultTransferSeconds: Int = DEFAULT_TRANSFER_SECONDS,
+    ): JourneyOption {
+        val legs = option.legs.toMutableList()
+        val rideIdx = legs.indices.filter { legs[it].kind == LegKind.RIDE }
+
+        fun transferMinBefore(pos: Int): Int {
+            if (pos <= 0) return 0
+            for (j in rideIdx[pos] - 1 downTo rideIdx[pos - 1] + 1) {
+                val l = legs[j]
+                if (l.kind == LegKind.TRANSFER || l.kind == LegKind.WALK) {
+                    return l.transferMinimumSeconds ?: defaultTransferSeconds
+                }
+            }
+            return defaultTransferSeconds
+        }
+
+        var deadline: Long = arriveByInstant?.epochSeconds ?: Long.MAX_VALUE
+        var timedAll = true
+        for (pos in rideIdx.indices.reversed()) {
+            val i = rideIdx[pos]
+            val leg = legs[i]
+            val travel = timetable.legSeconds[key3(leg.lineId ?: "", leg.fromId, leg.toId)]
+            if (travel == null) { legs[i] = unscheduled(leg); timedAll = false; continue }
+            val list = leg.lineId?.let { timetable.departures[key2(it, leg.fromId)] } ?: emptyList()
+            var best: Long? = null
+            for (d in list) {
+                val e = d.epochSeconds
+                if (e + travel <= deadline && (best == null || e > best!!)) best = e
+            }
+            val chosen = best
+            if (chosen == null) { legs[i] = unscheduled(leg); timedAll = false; continue }
+            legs[i] = leg.copy(
+                departureInstant = Instant.fromEpochSeconds(chosen),
+                arrivalInstant = Instant.fromEpochSeconds(chosen + travel),
+                timingKind = TimingKind.SCHEDULED,
+            )
+            deadline = chosen - transferMinBefore(pos)
+        }
+
+        val rides = rideIdx.map { legs[it] }
+        val firstDep = rides.firstOrNull()?.departureInstant
+        val lastArr = if (timedAll) rides.lastOrNull()?.arrivalInstant else null
+        return option.copy(
+            legs = legs,
+            departureInstant = firstDep,
+            arrivalInstant = lastArr,
+            durationSeconds = if (timedAll && firstDep != null && lastArr != null)
+                (lastArr.epochSeconds - firstDep.epochSeconds).toInt() else null,
+        )
+    }
+
+    /** Last connection home: latest feasible journey to the destination. */
+    fun lastConnection(
+        option: JourneyOption,
+        timetable: Timetable,
+        defaultTransferSeconds: Int = DEFAULT_TRANSFER_SECONDS,
+    ): JourneyOption = assignScheduleArriveBy(option, null, timetable, defaultTransferSeconds)
 }
