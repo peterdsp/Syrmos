@@ -85,41 +85,72 @@
     };
   }
 
-  // plan(stations, lines, request) -> { requestId, options: [JourneyOption] }
-  // request: { fromStationId, toStationId, ranking = 'fastest', language }
+  // Stable per-route id from the leg chain, so distinct candidates sort/dedup
+  // deterministically (the ranker dedups by leg signature; this feeds tiebreaks).
+  function optionId(detailed) {
+    return 'opt-' + detailed.legs.map((l) => l.lineId + ':' + l.stops[0].id + '>' + l.stops[l.stops.length - 1].id).join('_');
+  }
+
+  // Alternatives via line-banning: re-plan with each line used by the base route
+  // removed, yielding a materially different route where one exists. A light,
+  // deterministic stand-in for k-shortest that reuses the topology planner as-is.
+  function candidateRoutes(base, stations, lines, fromId, toId, language, Planner) {
+    const routes = [base];
+    const used = [];
+    for (const l of base.legs) if (used.indexOf(l.lineId) < 0) used.push(l.lineId);
+    for (const banned of used) {
+      const filtered = lines.filter((l) => l.id !== banned);
+      const alt = Planner.planDetailed(stations, filtered, fromId, toId, language);
+      if (alt && alt.legs && alt.legs.length) routes.push(alt);
+    }
+    return routes;
+  }
+
+  // Apply the requested time mode (forward / arrive-by / last-connection) to one
+  // option with its own timetable. Returns the option unchanged when no timetable.
+  function applySchedule(option, request, timetable, SchedulePlan) {
+    if (!timetable || !SchedulePlan) return option;
+    const dt = request.defaultTransferSeconds;
+    if (request.timeMode === 'arriveBy' && request.arriveByInstant) {
+      return SchedulePlan.assignScheduleArriveBy(option, { arriveByInstant: request.arriveByInstant, defaultTransferSeconds: dt }, timetable);
+    }
+    if (request.timeMode === 'lastConnection') {
+      return SchedulePlan.lastConnection(option, { defaultTransferSeconds: dt }, timetable);
+    }
+    return SchedulePlan.assignSchedule(option, { requestedInstant: request.requestedInstant, defaultTransferSeconds: dt }, timetable);
+  }
+
+  // plan(stations, lines, request) -> { requestId, options: [JourneyOption] (<=3) }
+  // request: { fromStationId, toStationId, ranking, language, timeMode,
+  //   requestedInstant?, arriveByInstant?, defaultTransferSeconds?,
+  //   timetable? (single) OR buildTimetable?(detailed)->timetable (per candidate) }
   function plan(stations, lines, request) {
     const d = deps();
     if (!d.Planner || !d.Feasibility || !d.Ranker) return { requestId: null, options: [] };
     const fromId = request && request.fromStationId;
     const toId = request && request.toStationId;
     const ranking = (request && request.ranking) || 'fastest';
-    const detailed = d.Planner.planDetailed(stations, lines, fromId, toId, request && request.language);
-    if (!detailed || !detailed.legs || !detailed.legs.length) return { requestId: null, options: [] };
+    const base = d.Planner.planDetailed(stations, lines, fromId, toId, request && request.language);
+    if (!base || !base.legs || !base.legs.length) return { requestId: null, options: [] };
 
     const typeById = typeIndex(lines);
-    let option = toOption(detailed, fromId, toId, typeById, d.Planner._travelTime);
-    // If a real timetable is supplied, upgrade the estimated option to scheduled
-    // instants so feasibility is real (comfortable/tight) rather than estimated.
-    // Without one, the estimated option stands (honest: feasibility unknown/direct).
-    if (request && request.timetable && d.SchedulePlan) {
-      const dt = request.defaultTransferSeconds;
-      if (request.timeMode === 'arriveBy' && request.arriveByInstant) {
-        // Backward search: latest departures that still arrive by the target.
-        option = d.SchedulePlan.assignScheduleArriveBy(
-          option, { arriveByInstant: request.arriveByInstant, defaultTransferSeconds: dt }, request.timetable);
-      } else if (request.timeMode === 'lastConnection') {
-        // Latest feasible journey to the destination (last train home).
-        option = d.SchedulePlan.lastConnection(option, { defaultTransferSeconds: dt }, request.timetable);
-      } else {
-        // Forward: earliest catchable departures from the requested instant.
-        option = d.SchedulePlan.assignSchedule(
-          option, { requestedInstant: request.requestedInstant, defaultTransferSeconds: dt }, request.timetable);
-      }
-    }
-    option.feasibility = d.Feasibility.forOption(option);
-    const options = d.Ranker.rank([option], ranking);
-    return { requestId: option.requestId, options };
+    const routes = candidateRoutes(base, stations, lines, fromId, toId, request && request.language, d.Planner);
+    const options = routes.map((detailed) => {
+      const bId = detailed.legs[0].stops[0].id;
+      const aId = detailed.legs[detailed.legs.length - 1].stops.slice(-1)[0].id;
+      let o = toOption(detailed, bId, aId, typeById, d.Planner._travelTime);
+      o.id = optionId(detailed);
+      // Each candidate needs its OWN timetable (different lines/boards); the caller
+      // supplies buildTimetable(detailed) for that, or a single shared timetable.
+      const tt = (typeof request.buildTimetable === 'function') ? request.buildTimetable(detailed) : request.timetable;
+      o = applySchedule(o, request, tt, d.SchedulePlan);
+      o.feasibility = d.Feasibility.forOption(o);
+      return o;
+    });
+    // Ranker dedups identical leg sequences, orders by objective, caps at 3.
+    const ranked = d.Ranker.rank(options, ranking);
+    return { requestId: (options[0] && options[0].requestId) || null, options: ranked };
   }
 
-  return { plan, _toOption: toOption };
+  return { plan, _toOption: toOption, _candidateRoutes: candidateRoutes };
 });
