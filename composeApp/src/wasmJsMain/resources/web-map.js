@@ -4445,75 +4445,110 @@
                     unknown: T("Estimated times", "Εκτιμώμενοι χρόνοι", "Kohë të vlerësuara", "Orari stimato"),
                 }[status] || status;
             }
-            function renderResults(planned, detailed, coords, hasTimetable) {
+            // Reconstruct a GO-panel journey ({legs:[{lineId, towards, stops}]})
+            // from a JourneyOption's ride legs, so a selected alternative can be
+            // shown without carrying the topology route around.
+            function optionToJourney(opt, byId) {
+                const nm = (id) => {
+                    const s = byId.get(id);
+                    if (!s) return id;
+                    return (currentLang === "el" && (s.name_el || s.nameEl)) ? (s.name_el || s.nameEl) : (s.name || id);
+                };
+                const rides = opt.legs.filter((l) => l.kind === "ride");
+                const legs = rides.map((l) => {
+                    const ids = (l.orderedStopIds && l.orderedStopIds.length) ? l.orderedStopIds : [l.fromId, l.toId];
+                    return { lineId: l.lineId, towards: nm(ids[ids.length - 1]), stops: ids.map((id) => ({ id, name: nm(id) })) };
+                });
+                return { legs };
+            }
+            function coordsFor(journey, byId) {
+                const coords = {};
+                for (const leg of journey.legs) for (const stop of leg.stops) {
+                    const rec = byId.get(stop.id);
+                    if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
+                }
+                return coords;
+            }
+            function renderResults(planned, hasTimetable) {
                 resultsEl.innerHTML = "";
-                if (!planned || !planned.options.length) {
+                const byId = new Map(stations.map((s) => [s.id, s]));
+                // In a backward mode only options that actually scheduled are usable.
+                let opts = (planned && planned.options) ? planned.options : [];
+                if (planMode !== "now") opts = opts.filter((o) => o.departureInstant);
+
+                if (!opts.length) {
                     const empty = document.createElement("div");
                     empty.className = "plan-results__empty";
-                    empty.textContent = T("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.");
+                    empty.textContent = (planMode !== "now" && !hasTimetable)
+                        ? T("Schedules still loading — try again.", "Φόρτωση δρομολογίων — δοκίμασε ξανά.", "Oraret po ngarkohen — provo sërish.", "Orari in caricamento — riprova.")
+                        : (planMode === "lastConnection"
+                            ? T("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                            : planMode === "arriveBy"
+                                ? T("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo.")
+                                : T("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato."));
                     resultsEl.appendChild(empty);
                     if (window.SyrmosGoPanel) panelEl.innerHTML = "";
                     return;
                 }
-                const opt = planned.options[0];
-                const chain = detailed.legs.map((l) => l.lineId).join(" → ");
-                const changes = opt.transferCount === 1
-                    ? T("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
-                    : opt.transferCount + " " + T("changes", "αλλαγές", "ndërrime", "cambi");
 
                 const summary = document.createElement("div");
                 summary.className = "plan-results__summary";
-                summary.textContent = "1 " + T("route", "διαδρομή", "rrugë", "percorso");
-                const meta = document.createElement("div");
-                meta.className = "plan-results__meta";
-                meta.textContent = fmtDuration(opt.durationSeconds) + " · " + changes + " · " + chain;
+                summary.textContent = opts.length + " " +
+                    (opts.length === 1 ? T("route", "διαδρομή", "rrugë", "percorso") : T("routes", "διαδρομές", "rrugë", "percorsi"));
+                resultsEl.appendChild(summary);
 
-                const chip = document.createElement("span");
-                chip.className = "plan-results__chip plan-results__chip--" + opt.feasibility.status;
-                chip.textContent = feasibilityLabel(opt.feasibility.status);
+                const mountSelected = (opt) => {
+                    if (!window.SyrmosGoPanel || !panelEl) return;
+                    const journey = optionToJourney(opt, byId);
+                    window.SyrmosGoPanel.mount(panelEl, journey, {
+                        language: currentLang,
+                        coords: coordsFor(journey, byId),
+                        lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                    });
+                };
 
-                // Arrive-by / last-connection: the first departure IS the leave-by
-                // answer. If nothing was schedulable, distinguish "no train" from
-                // "schedules still loading" so we never show a wrong time.
-                let leaveBy = null;
-                if (planMode !== "now") {
-                    if (opt.departureInstant) {
+                const cardEls = [];
+                opts.forEach((opt, i) => {
+                    const chain = opt.legs.filter((l) => l.kind === "ride").map((l) => l.lineId).join(" → ");
+                    const changes = opt.transferCount === 1
+                        ? T("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
+                        : opt.transferCount + " " + T("changes", "αλλαγές", "ndërrime", "cambi");
+                    const el = document.createElement("button");
+                    el.type = "button";
+                    el.className = "plan-option" + (i === 0 ? " plan-option--selected" : "");
+
+                    const meta = document.createElement("div");
+                    meta.className = "plan-results__meta";
+                    meta.textContent = fmtDuration(opt.durationSeconds || 0) + " · " + changes + " · " + chain;
+                    el.appendChild(meta);
+
+                    if (planMode !== "now" && opt.departureInstant) {
                         const hhmm = new Date(opt.departureInstant).toLocaleTimeString(
                             "en-GB", { timeZone: "Europe/Athens", hour: "2-digit", minute: "2-digit" });
-                        leaveBy = document.createElement("div");
-                        leaveBy.className = "plan-results__leaveby";
+                        const lb = document.createElement("div");
+                        lb.className = "plan-results__leaveby";
                         const label = planMode === "lastConnection"
                             ? T("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
                             : T("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro");
-                        leaveBy.textContent = label + " " + hhmm;
-                    } else {
-                        resultsEl.innerHTML = "";
-                        const empty = document.createElement("div");
-                        empty.className = "plan-results__empty";
-                        empty.textContent = !hasTimetable
-                            ? T("Schedules still loading — try again.", "Φόρτωση δρομολογίων — δοκίμασε ξανά.", "Oraret po ngarkohen — provo sërish.", "Orari in caricamento — riprova.")
-                            : (planMode === "lastConnection"
-                                ? T("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
-                                : T("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo."));
-                        resultsEl.appendChild(empty);
-                        if (window.SyrmosGoPanel) panelEl.innerHTML = "";
-                        return;
+                        lb.textContent = label + " " + hhmm;
+                        el.appendChild(lb);
                     }
-                }
 
-                resultsEl.appendChild(summary);
-                resultsEl.appendChild(meta);
-                if (leaveBy) resultsEl.appendChild(leaveBy);
-                resultsEl.appendChild(chip);
+                    const chip = document.createElement("span");
+                    chip.className = "plan-results__chip plan-results__chip--" + opt.feasibility.status;
+                    chip.textContent = feasibilityLabel(opt.feasibility.status);
+                    el.appendChild(chip);
 
-                // Selected route detail: mount the topology journey in the GO panel.
-                if (window.SyrmosGoPanel && panelEl) {
-                    window.SyrmosGoPanel.mount(panelEl, detailed, {
-                        language: currentLang,
-                        coords,
-                        lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                    el.addEventListener("click", () => {
+                        cardEls.forEach((c) => c.classList.remove("plan-option--selected"));
+                        el.classList.add("plan-option--selected");
+                        mountSelected(opt);
                     });
-                }
+                    cardEls.push(el);
+                    resultsEl.appendChild(el);
+                });
+
+                mountSelected(opts[0]); // first (best) selected by default
             }
             // Build a real timetable for a planned route from the live departure
             // projection: for each ride leg, the next departures of that line at the
@@ -4567,10 +4602,13 @@
                     ensureSelectsFilled();
                     const fromId = fromSel && fromSel.value;
                     const toId = toSel && toSel.value;
-                    const detailed = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
+                    const base = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
                     // Backward modes need the whole day's departures to find the true
                     // latest train; forward "leave now" only needs the next handful.
-                    const timetable = buildTimetable(detailed, planMode === "now" ? 30 : 400);
+                    const horizon = planMode === "now" ? 30 : 400;
+                    // Each candidate route gets its OWN timetable (different lines).
+                    const perCandidate = (d) => buildTimetable(d, horizon);
+                    const hasTimetable = !!(base && buildTimetable(base, horizon));
                     // Arrive-by target: interpret HH:MM as the next occurrence in Athens
                     // time, expressed as a real instant (now + minutes-until).
                     let arriveByInstant = null;
@@ -4586,18 +4624,10 @@
                     }
                     const planned = window.SyrmosJourneyPlan.plan(stations, lines, {
                         fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
-                        timetable, requestedInstant: new Date().toISOString(), defaultTransferSeconds: 120,
-                        timeMode: planMode, arriveByInstant,
+                        buildTimetable: perCandidate, requestedInstant: new Date().toISOString(),
+                        defaultTransferSeconds: 120, timeMode: planMode, arriveByInstant,
                     });
-                    const coords = {};
-                    if (detailed) {
-                        const byId = new Map(stations.map((s) => [s.id, s]));
-                        for (const leg of detailed.legs) for (const stop of leg.stops) {
-                            const rec = byId.get(stop.id);
-                            if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
-                        }
-                    }
-                    renderResults(planned, detailed || { legs: [] }, coords, !!timetable);
+                    renderResults(planned, hasTimetable);
                 } catch (_) { /* leave prior results intact */ }
             }
             return {

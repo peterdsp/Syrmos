@@ -2024,3 +2024,22 @@ body.has-store-banner .app-shell {
     color: var(--sy-text-primary); font-size: 16px; padding: 8px 12px;
 }
 .plan-results__leaveby { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--sy-accent); }
+
+/* ===== Plan option cards (k-shortest alternatives, selectable) ===== */
+.plan-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    text-align: left;
+    padding: 12px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    cursor: pointer;
+}
+.plan-option--selected {
+    border-color: var(--sy-accent);
+    border-width: 2px;
+    background: rgba(20,102,184,.06);
+}
