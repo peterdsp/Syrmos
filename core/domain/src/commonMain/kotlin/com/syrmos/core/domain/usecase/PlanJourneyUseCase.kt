@@ -87,17 +87,25 @@ class PlanJourneyUseCase(
             }
         }
 
-        // Add transfer edges at interchange stations
-        val interchanges = stationRepository.getInterchangeStations().first()
-        for (station in interchanges) {
-            if (station.lineIds.size < 2) continue
-            for (i in station.lineIds.indices) {
-                for (j in i + 1 until station.lineIds.size) {
-                    val transferTime = 3 // default walking time
-                    // Transfer from line i to line j at this station
-                    // We model transfers as edges within the same physical station
-                    // but between different line contexts
-                    graph.getOrPut(station.id) { mutableListOf() }
+        // Transfer edges between co-located stations that share a folded display
+        // name (mirrors web-planner.js buildGraph). Each line keeps its OWN
+        // per-line station id even at an interchange, so without these edges the
+        // graph is disconnected across lines and every cross-line journey returns
+        // null. The old loop here was a no-op (it added no edges at all).
+        val idsByFoldedName = mutableMapOf<String, MutableList<String>>()
+        for ((id, name) in stationNames) {
+            idsByFoldedName.getOrPut(foldStationName(name)) { mutableListOf() }.add(id)
+        }
+        for (ids in idsByFoldedName.values) {
+            if (ids.size < 2) continue
+            for (i in ids.indices) {
+                for (j in i + 1 until ids.size) {
+                    val a = ids[i]
+                    val b = ids[j]
+                    graph.getOrPut(a) { mutableListOf() }
+                        .add(Edge(b, TRANSFER_LINE_ID, "", TRANSFER_MINUTES, isTransfer = true))
+                    graph.getOrPut(b) { mutableListOf() }
+                        .add(Edge(a, TRANSFER_LINE_ID, "", TRANSFER_MINUTES, isTransfer = true))
                 }
             }
         }
@@ -162,7 +170,39 @@ class PlanJourneyUseCase(
         "suburban" -> 4 // avg 4 min between suburban stations
         else -> 3
     }
+
+    companion object {
+        /** Walking time estimate at an interchange (matches web TRANSFER_MINUTES). */
+        const val TRANSFER_MINUTES = 3
+        /** Sentinel line id on a transfer edge; reconstructSegments skips it. */
+        const val TRANSFER_LINE_ID = "__transfer__"
+    }
 }
+
+/**
+ * Accent-folded, alphanumerics-only key for grouping co-located interchange
+ * stations by display name. Mirrors web-planner.js `nameKey` and iOS
+ * AthensTransitParser.fold so the three clients group interchanges identically.
+ */
+internal fun foldStationName(name: String): String =
+    name.lowercase()
+        .replace(Regex("[\\u0300-\\u036f]"), "") // strip combining diacritics
+        .let {
+            // NFD-fold common Greek/Latin accented vowels that survive lowercase.
+            buildString {
+                for (ch in it) append(
+                    when (ch) {
+                        'ά' -> 'α'; 'έ' -> 'ε'; 'ή' -> 'η'; 'ί', 'ϊ', 'ΐ' -> 'ι'
+                        'ό' -> 'ο'; 'ύ', 'ϋ', 'ΰ' -> 'υ'; 'ώ' -> 'ω'
+                        'á', 'à', 'ä', 'â' -> 'a'; 'é', 'è', 'ë', 'ê' -> 'e'
+                        'í', 'ì', 'ï', 'î' -> 'i'; 'ó', 'ò', 'ö', 'ô' -> 'o'
+                        'ú', 'ù', 'ü', 'û' -> 'u'
+                        else -> ch
+                    },
+                )
+            }
+        }
+        .replace(Regex("[^a-z0-9α-ω]"), "")
 
 internal data class Edge(
     val toStationId: String,
@@ -199,6 +239,32 @@ internal fun reconstructSegments(
 
     for ((stationId, edge) in path) {
         if (edge == null) { prevStationId = stationId; continue }
+        if (edge.isTransfer) {
+            // Close the running leg at the interchange on the OLD line, then let
+            // the next real edge start a fresh leg from the co-located station on
+            // the new line. The transfer itself is never its own segment.
+            if (currentLineId != null) {
+                segments.add(
+                    JourneySegment(
+                        lineId = currentLineId,
+                        lineName = currentLineName,
+                        fromStationId = segmentStartStation,
+                        fromStationName = nameOf(segmentStartStation),
+                        toStationId = prevStationId,
+                        toStationName = nameOf(prevStationId),
+                        stationCount = segmentStationCount,
+                        estimatedMinutes = segmentMinutes,
+                        isTransfer = false,
+                    )
+                )
+                currentLineId = null
+            }
+            segmentStartStation = stationId
+            segmentStationCount = 0
+            segmentMinutes = 0
+            prevStationId = stationId
+            continue
+        }
         when {
             currentLineId == null -> {
                 // First segment keeps the origin as its start (the old code
