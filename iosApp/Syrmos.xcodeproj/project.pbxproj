@@ -124,6 +124,8 @@
 		DA7A0123F00D0123F00D0123 /* SyrmosWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */; };
 		DA7A0130F00D0130F00D0130 /* JourneyPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */; };
 		FE0000000000000000000A01 /* PlanFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000A02 /* PlanFlow.swift */; };
+		FE0000000000000000000B01 /* SavedJourneyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000B02 /* SavedJourneyStore.swift */; };
+		FE0000000000000000000B03 /* SavedJourneyStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */; };
 		DA7A0200F00D0200F00D0200 /* JourneyGuidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */; };
 		DA7A0204F00D0204F00D0204 /* JourneyGuidance+Planner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */; };
 		DA7A0208F00D0208F00D0208 /* GoJourneyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0209F00D0209F00D0209 /* GoJourneyViewModel.swift */; };
@@ -336,6 +338,8 @@
 		DA7A0113F00D0113F00D0113 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SyrmosWidget/Info.plist; sourceTree = SOURCE_ROOT; };
 		DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyPlanner.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000A02 /* PlanFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/PlanFlow.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000B02 /* SavedJourneyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SavedJourneyStore.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SavedJourneyStoreTests.swift; sourceTree = "<group>"; };
 		DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyGuidance.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Features/Assistant/JourneyGuidance+Planner.swift"; sourceTree = SOURCE_ROOT; };
 		DA7A0209F00D0209F00D0209 /* GoJourneyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Go/GoJourneyViewModel.swift; sourceTree = SOURCE_ROOT; };
@@ -423,6 +427,7 @@
 				87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */,
 				90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */,
 				794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */,
+				FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */,
 				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
 				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
 				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
@@ -707,6 +712,7 @@
 				DA7A0016F00D0016F00D0016 /* AriadneView.swift */,
 				DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */,
 				FE0000000000000000000A02 /* PlanFlow.swift */,
+				FE0000000000000000000B02 /* SavedJourneyStore.swift */,
 				DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */,
 				DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */,
 				DA7A0209F00D0209F00D0209 /* GoJourneyViewModel.swift */,
@@ -1006,6 +1012,7 @@
 				DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */,
 				DA7A0130F00D0130F00D0130 /* JourneyPlanner.swift in Sources */,
 				FE0000000000000000000A01 /* PlanFlow.swift in Sources */,
+				FE0000000000000000000B01 /* SavedJourneyStore.swift in Sources */,
 				DA7A0200F00D0200F00D0200 /* JourneyGuidance.swift in Sources */,
 				DA7A0204F00D0204F00D0204 /* JourneyGuidance+Planner.swift in Sources */,
 				DA7A0208F00D0208F00D0208 /* GoJourneyViewModel.swift in Sources */,
@@ -1083,6 +1090,7 @@
 				3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */,
 				02CA5092C4E9490DBFD4C185 /* AirportServiceTests.swift in Sources */,
 				2611916041EE42F7AEA6576E /* DepartureGroupingTests.swift in Sources */,
+				FE0000000000000000000B03 /* SavedJourneyStoreTests.swift in Sources */,
 				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
 				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
 				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,

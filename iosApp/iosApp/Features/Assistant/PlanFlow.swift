@@ -192,6 +192,13 @@ struct PlanView: View {
     @State private var mode: JourneyPlanAdapter.Mode = .now
     @State private var arriveByTime = Date()
 
+    // Saved journeys (S08 / J05): locally owned, no account.
+    @ObservedObject private var savedStore = SavedJourneysStore.shared
+    @State private var pendingUndo: SavedJourney?
+    @State private var undoWork: DispatchWorkItem?
+    @State private var renameTarget: SavedJourney?
+    @State private var renameText = ""
+
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
@@ -249,8 +256,17 @@ struct PlanView: View {
                                 : t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.")
                     ).foregroundStyle(.secondary)
                 } else if !usable.isEmpty {
-                    Text("\(usable.count) " + (usable.count == 1 ? t("route", "διαδρομή", "rrugë", "percorso") : t("routes", "διαδρομές", "rrugë", "percorsi")))
-                        .font(.headline)
+                    HStack {
+                        Text("\(usable.count) " + (usable.count == 1 ? t("route", "διαδρομή", "rrugë", "percorso") : t("routes", "διαδρομές", "rrugë", "percorsi")))
+                            .font(.headline)
+                        Spacer()
+                        let alreadySaved = fromId != nil && toId != nil && savedStore.isSaved(fromId: fromId!, toId: toId!)
+                        Button(alreadySaved
+                            ? t("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                            : t("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio")) { saveCurrent() }
+                            .buttonStyle(.bordered)
+                            .disabled(alreadySaved)
+                    }
                     ForEach(Array(usable.enumerated()), id: \.offset) { i, r in
                         let leaveByLabel: String? = (mode == .now) ? nil : r.leaveBy.map { lb in
                             let label = mode == .lastConnection
@@ -261,6 +277,8 @@ struct PlanView: View {
                         optionCard(r, selected: i == selectedIdx, leaveByLabel: leaveByLabel) { selectedIdx = i }
                     }
                 }
+
+                savedSection
 
                 Spacer()
             }
@@ -273,7 +291,101 @@ struct PlanView: View {
                 }
             }
         }
-        .onAppear { if stations.isEmpty { stations = JourneyPlanAdapter.allStations() } }
+        .onAppear {
+            if stations.isEmpty { stations = JourneyPlanAdapter.allStations() }
+            savedStore.refresh()
+        }
+        .alert(t("Name this journey", "Ονόμασε τη διαδρομή", "Emërto këtë udhëtim", "Nomina questo viaggio"),
+               isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
+            TextField(t("Name", "Όνομα", "Emri", "Nome"), text: $renameText)
+            Button(t("Save", "Αποθήκευση", "Ruaj", "Salva")) {
+                if let target = renameTarget { savedStore.rename(id: target.id, label: renameText) }
+                renameTarget = nil
+            }
+            Button(t("Cancel", "Άκυρο", "Anulo", "Annulla"), role: .cancel) { renameTarget = nil }
+        }
+    }
+
+    // MARK: - Saved journeys (S08 / J05)
+
+    @ViewBuilder
+    private var savedSection: some View {
+        Divider()
+        Text(t("Saved journeys", "Αποθηκευμένες διαδρομές", "Udhëtimet e ruajtura", "Viaggi salvati"))
+            .font(.headline)
+        if let undo = pendingUndo {
+            HStack {
+                Text(t("Journey deleted", "Η διαδρομή διαγράφηκε", "Udhëtimi u fshi", "Viaggio eliminato"))
+                Spacer()
+                Button(t("Undo", "Αναίρεση", "Zhbëj", "Annulla")) {
+                    savedStore.save(undo)
+                    pendingUndo = nil
+                    undoWork?.cancel(); undoWork = nil
+                }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.12)))
+        }
+        if savedStore.items.isEmpty {
+            Text(t(
+                "No saved journeys yet. Plan a route and tap Save.",
+                "Καμία αποθηκευμένη διαδρομή. Σχεδίασε μια διαδρομή και πάτα Αποθήκευση.",
+                "Ende s'ka udhëtime të ruajtura. Planifiko një rrugë dhe shtyp Ruaj.",
+                "Nessun viaggio salvato. Pianifica un percorso e tocca Salva."))
+                .font(.subheadline).foregroundStyle(.secondary)
+        } else {
+            ForEach(savedStore.items) { entry in
+                savedRow(entry)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func savedRow(_ entry: SavedJourney) -> some View {
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.label ?? pairName(entry.fromId, entry.toId))
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                if entry.label != nil {
+                    Text(pairName(entry.fromId, entry.toId)).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.08)))
+            .contentShape(Rectangle())
+            .onTapGesture { loadSaved(entry) }
+            Button { renameTarget = entry; renameText = entry.label ?? "" } label: {
+                Image(systemName: "pencil")
+            }.buttonStyle(.bordered)
+            Button(role: .destructive) { deleteSaved(entry) } label: {
+                Image(systemName: "trash")
+            }.buttonStyle(.bordered)
+        }
+    }
+
+    private func pairName(_ from: String, _ to: String) -> String {
+        name(from) + " → " + name(to)
+    }
+    private func saveCurrent() {
+        guard let f = fromId, let to = toId, f != to else { return }
+        savedStore.save(SavedJourney(
+            id: savedStore.newId(), fromId: f, toId: to,
+            createdAt: ISO8601DateFormatter().string(from: Date()),
+            label: nil, preferences: SavedJourneyPreferences(),
+        ))
+    }
+    private func loadSaved(_ entry: SavedJourney) {
+        fromId = entry.fromId; toId = entry.toId; opening = nil; query = ""
+        runPlan()
+    }
+    private func deleteSaved(_ entry: SavedJourney) {
+        savedStore.remove(id: entry.id)
+        pendingUndo = entry
+        undoWork?.cancel()
+        let work = DispatchWorkItem { pendingUndo = nil; undoWork = nil }
+        undoWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: work)
     }
 
     private var matches: [TransitStation] {
