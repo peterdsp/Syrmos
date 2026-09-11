@@ -202,7 +202,9 @@ struct PlanView: View {
         let schedule: (String, String) -> [Date] = { lineId, boardId in
             let lineIds = lineId == "M3" ? ["M3", "M3_AIR"] : [lineId]
             let now = Date()
-            return ScheduleProjector.nextDepartures(for: boardId, lineIds: lineIds, limit: 8)
+            // Long horizon (20, not 8) so a LATER leg still has a catchable
+            // departure once the rider has ridden earlier legs + transferred.
+            return ScheduleProjector.nextDepartures(for: boardId, lineIds: lineIds, limit: 20)
                 .filter { $0.lineId == lineId || (lineId == "M3" && $0.lineId == "M3_AIR") }
                 .map { now.addingTimeInterval(Double($0.minutesAway) * 60) }
         }
