@@ -42,7 +42,11 @@ import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
+import com.syrmos.core.domain.journey.SchedulePlanner
+import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
+import com.syrmos.core.model.planner.JourneyResult
+import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.journey.FeasibilityStatus
 import com.syrmos.core.model.journey.JourneyOption
 import com.syrmos.core.model.journey.LegKind
@@ -53,14 +57,17 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.minutes
 import org.koin.compose.koinInject
 
 /**
  * Android mirror of the web Plan flow (Phase P). Pick From/To, Find routes, and
  * see a ranked option with feasibility, powered by the SAME Kotlin engines the
  * web build mirrors (PlanJourneyUseCase -> JourneyPlanAdapter -> feasibility +
- * ranker). Times are estimated (no schedule), shown honestly with a "~" and an
- * "Estimated times" chip, never a fabricated clock.
+ * ranker). When the live departure projection covers the route it feeds a real
+ * timetable so feasibility is real (comfortable/tight); otherwise it falls back to
+ * an honest estimated option ("~" duration, "Estimated times" chip), never a
+ * fabricated clock.
  */
 class PlanScreenRoute : Screen {
     @Composable
@@ -68,6 +75,7 @@ class PlanScreenRoute : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val stationRepo = koinInject<StationRepositoryImpl>()
         val lineRepo = koinInject<LineRepositoryImpl>()
+        val departuresUseCase = koinInject<ComputeDeparturesFromBandsUseCase>()
         val useCase = remember { PlanJourneyUseCase(stationRepo, lineRepo) }
         val scope = rememberCoroutineScope()
         val lang by LocalizationManager.language.collectAsState()
@@ -96,7 +104,12 @@ class PlanScreenRoute : Screen {
             scope.launch {
                 val result = useCase.invoke(f, to).first()
                 val serviceDate = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens")).date
-                option = JourneyPlanAdapter.toOptions(result, Ranking.FASTEST, serviceDate).firstOrNull()
+                // Feed a real timetable from the live projection so feasibility is
+                // real (comfortable/tight) rather than estimated; null-safe, and the
+                // adapter keeps the estimated option when no projection is available.
+                val now = Clock.System.now()
+                val timetable = result?.let { buildTimetable(it, departuresUseCase, now) }
+                option = JourneyPlanAdapter.toOptions(result, Ranking.FASTEST, serviceDate, timetable, now).firstOrNull()
                 planned = true
             }
         }
@@ -207,4 +220,36 @@ class PlanScreenRoute : Screen {
             Text(feas, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         }
     }
+}
+
+/**
+ * Build a real timetable for a planned [JourneyResult] from the live departure
+ * projection, the Android peer of the web `buildTimetable`. For each ride segment
+ * it projects the next departures of that line at the board station (both
+ * directions, filtered by line, feasibility-grade) as absolute instants, and uses
+ * the segment's own estimated minutes for the leg travel time. Empty when no
+ * projection is available, so the adapter keeps the honest estimated option.
+ */
+private fun buildTimetable(
+    result: JourneyResult,
+    departures: ComputeDeparturesFromBandsUseCase,
+    now: kotlinx.datetime.Instant,
+): SchedulePlanner.Timetable {
+    val depMap = HashMap<String, MutableList<kotlinx.datetime.Instant>>()
+    val legSeconds = HashMap<String, Int>()
+    for (seg in result.segments) {
+        val lineIds = if (seg.lineId == "M3") listOf("M3", "M3_AIR") else listOf(seg.lineId)
+        val list = depMap.getOrPut(seg.lineId + "|" + seg.fromStationId) { ArrayList() }
+        for (dir in listOf(Direction.OUTBOUND, Direction.INBOUND)) {
+            val ups = runCatching { departures.invoke(lineIds, dir, 8, seg.fromStationId) }.getOrElse { emptyList() }
+            for (u in ups) {
+                if (u.lineId == seg.lineId || (seg.lineId == "M3" && u.lineId == "M3_AIR")) {
+                    list.add(now + u.minutesAway.minutes)
+                }
+            }
+        }
+        legSeconds[seg.lineId + "|" + seg.fromStationId + "|" + seg.toStationId] = seg.estimatedMinutes * 60
+    }
+    depMap.entries.removeAll { it.value.isEmpty() }
+    return SchedulePlanner.Timetable(departures = depMap, legSeconds = legSeconds)
 }
