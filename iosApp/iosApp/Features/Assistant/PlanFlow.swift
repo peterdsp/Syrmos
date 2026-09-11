@@ -343,6 +343,17 @@ struct PlanView: View {
     @ViewBuilder
     private func savedRow(_ entry: SavedJourney) -> some View {
         HStack(spacing: 6) {
+            // Drag handle: only the grip is draggable so tapping the row still loads.
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+                .accessibilityLabel(t("Drag to reorder", "Σύρε για αναδιάταξη", "Zvarrit për të risistemuar", "Trascina per riordinare"))
+                .draggable(entry.id) {
+                    // Lightweight drag preview.
+                    Text(entry.label ?? pairName(entry.fromId, entry.toId))
+                        .font(.subheadline).padding(8)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.gray.opacity(0.2)))
+                }
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.label ?? pairName(entry.fromId, entry.toId))
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
@@ -362,6 +373,24 @@ struct PlanView: View {
                 Image(systemName: "trash")
             }.buttonStyle(.bordered)
         }
+        // Dropping a dragged id onto this row moves it just before this row, then
+        // persists the whole order through the shared reorder op.
+        .dropDestination(for: String.self) { dropped, _ in
+            guard let draggedId = dropped.first, draggedId != entry.id else { return false }
+            reorderSaved(move: draggedId, before: entry.id)
+            return true
+        }
+    }
+
+    private func reorderSaved(move draggedId: String, before targetId: String) {
+        var ids = savedStore.items.map { $0.id }
+        ids.removeAll { $0 == draggedId }
+        if let targetIdx = ids.firstIndex(of: targetId) {
+            ids.insert(draggedId, at: targetIdx)
+        } else {
+            ids.append(draggedId)
+        }
+        savedStore.reorder(ids)
     }
 
     private func pairName(_ from: String, _ to: String) -> String {
