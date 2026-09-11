@@ -2,12 +2,15 @@ package com.syrmos.app.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,8 +39,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -338,17 +347,17 @@ class PlanScreenRoute : Screen {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    savedItems.forEach { entry ->
-                        SavedRow(
-                            title = entry.label ?: pairName(entry.fromId, entry.toId),
-                            subtitle = if (entry.label != null) pairName(entry.fromId, entry.toId) else null,
-                            renameLabel = t("Rename", "Μετονομασία", "Riemërto", "Rinomina"),
-                            deleteLabel = t("Delete", "Διαγραφή", "Fshi", "Elimina"),
-                            onOpen = { loadSaved(entry) },
-                            onRename = { renameTarget = entry; renameText = entry.label ?: "" },
-                            onDelete = { deleteSaved(entry) },
-                        )
-                    }
+                    SavedJourneysList(
+                        items = savedItems,
+                        pairName = ::pairName,
+                        renameLabel = t("Rename", "Μετονομασία", "Riemërto", "Rinomina"),
+                        deleteLabel = t("Delete", "Διαγραφή", "Fshi", "Elimina"),
+                        dragLabel = t("Drag to reorder", "Σύρε για αναδιάταξη", "Zvarrit për të risistemuar", "Trascina per riordinare"),
+                        onOpen = { loadSaved(it) },
+                        onRename = { renameTarget = it; renameText = it.label ?: "" },
+                        onDelete = { deleteSaved(it) },
+                        onReorder = { SavedJourneysRepository.reorder(it) },
+                    )
                 }
             }
         }
@@ -381,36 +390,115 @@ class PlanScreenRoute : Screen {
         }
     }
 
+    /**
+     * Drag-to-reorder saved journeys (S08). A long-press on the grip handle lifts a
+     * row; dragging past a neighbour's mid-point swaps them in a local id order, and
+     * on release the new order is persisted through the shared `reorder` op. Rows are
+     * a fixed height so the swap threshold is stable; display always pulls fresh
+     * label/pair from `items` (order is kept as ids, so a rename mid-session shows).
+     */
     @Composable
-    private fun SavedRow(
-        title: String,
-        subtitle: String?,
+    private fun SavedJourneysList(
+        items: List<SavedJourney>,
+        pairName: (String, String) -> String,
         renameLabel: String,
         deleteLabel: String,
-        onOpen: () -> Unit,
-        onRename: () -> Unit,
-        onDelete: () -> Unit,
+        dragLabel: String,
+        onOpen: (SavedJourney) -> Unit,
+        onRename: (SavedJourney) -> Unit,
+        onDelete: (SavedJourney) -> Unit,
+        onReorder: (List<String>) -> Unit,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                    .clickable(onClick = onOpen)
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                if (subtitle != null) {
-                    Text(subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val rowHeight = 64.dp
+        val spacing = 6.dp
+        val density = LocalDensity.current
+        val pitchPx = with(density) { (rowHeight + spacing).toPx() }
+
+        // Order kept as ids; resets only when the set of journeys changes (add/delete),
+        // not on a rename or on the persist that echoes our own reorder back.
+        var orderIds by remember(items.map { it.id }.toSet()) { mutableStateOf(items.map { it.id }) }
+        var draggingId by remember { mutableStateOf<String?>(null) }
+        var dragOffset by remember { mutableStateOf(0f) }
+
+        val entries = orderIds.mapNotNull { id -> items.firstOrNull { it.id == id } }
+
+        Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+            entries.forEach { entry ->
+                val isDragging = entry.id == draggingId
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(rowHeight)
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer { translationY = if (isDragging) dragOffset else 0f },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        "⠿",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .pointerInput(entry.id) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = { draggingId = entry.id; dragOffset = 0f },
+                                    onDragEnd = { draggingId = null; dragOffset = 0f; onReorder(orderIds) },
+                                    onDragCancel = { draggingId = null; dragOffset = 0f; onReorder(orderIds) },
+                                    onDrag = { change, amount ->
+                                        change.consume()
+                                        dragOffset += amount.y
+                                        val cur = orderIds.indexOf(draggingId)
+                                        if (cur < 0) return@detectDragGesturesAfterLongPress
+                                        if (dragOffset > pitchPx / 2 && cur < orderIds.lastIndex) {
+                                            val next = orderIds.toMutableList()
+                                            next.add(cur + 1, next.removeAt(cur))
+                                            orderIds = next
+                                            dragOffset -= pitchPx
+                                            // Persist on each swap so the saved order always matches
+                                            // what is shown, even if the release ends as a cancel.
+                                            onReorder(next)
+                                        } else if (dragOffset < -pitchPx / 2 && cur > 0) {
+                                            val next = orderIds.toMutableList()
+                                            next.add(cur - 1, next.removeAt(cur))
+                                            orderIds = next
+                                            dragOffset += pitchPx
+                                            onReorder(next)
+                                        }
+                                    },
+                                )
+                            }
+                            .semantics { contentDescription = dragLabel },
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                            .clickable { onOpen(entry) }
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            entry.label ?: pairName(entry.fromId, entry.toId),
+                            style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                        )
+                        if (entry.label != null) {
+                            Text(
+                                pairName(entry.fromId, entry.toId),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    IconButton(onClick = { onRename(entry) }, modifier = Modifier.semantics { contentDescription = renameLabel }) {
+                        Text("✎", style = MaterialTheme.typography.titleMedium)
+                    }
+                    IconButton(onClick = { onDelete(entry) }, modifier = Modifier.semantics { contentDescription = deleteLabel }) {
+                        Text("🗑", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
-            IconButton(onClick = onRename) { Text("✎", style = MaterialTheme.typography.titleMedium) }
-            IconButton(onClick = onDelete) { Text("🗑", style = MaterialTheme.typography.titleMedium) }
         }
     }
 
