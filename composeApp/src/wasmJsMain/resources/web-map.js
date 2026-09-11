@@ -4576,9 +4576,46 @@
                     return;
                 }
 
+                // Drag-to-reorder: only the grip handle is draggable so tapping the
+                // row still loads. On drop we read the DOM order and persist it
+                // through the shared reorder op.
+                let draggingRow = null;
+                const persistOrder = () => {
+                    const order = Array.from(savedEl.querySelectorAll(".plan-saved__row"))
+                        .map((r) => r.dataset.id).filter(Boolean);
+                    savedStore.reorder(order);
+                    renderSaved();
+                };
+
                 list.forEach((entry) => {
                     const row = document.createElement("div");
                     row.className = "plan-saved__row";
+                    row.dataset.id = entry.id;
+                    row.addEventListener("dragover", (e) => {
+                        if (!draggingRow || draggingRow === row) return;
+                        e.preventDefault();
+                        const box = row.getBoundingClientRect();
+                        const after = e.clientY > box.top + box.height / 2;
+                        savedEl.insertBefore(draggingRow, after ? row.nextSibling : row);
+                    });
+
+                    const handle = document.createElement("span");
+                    handle.className = "plan-saved__grip";
+                    handle.textContent = "⠿";
+                    handle.setAttribute("draggable", "true");
+                    handle.title = T("Drag to reorder", "Σύρε για αναδιάταξη", "Zvarrit për të risistemuar", "Trascina per riordinare");
+                    handle.setAttribute("aria-label", handle.title);
+                    handle.addEventListener("dragstart", (e) => {
+                        draggingRow = row;
+                        row.classList.add("plan-saved__row--dragging");
+                        if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", entry.id); }
+                    });
+                    handle.addEventListener("dragend", () => {
+                        row.classList.remove("plan-saved__row--dragging");
+                        draggingRow = null;
+                        persistOrder();
+                    });
+                    row.appendChild(handle);
 
                     const main = document.createElement("button");
                     main.type = "button";

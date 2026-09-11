@@ -2090,6 +2090,21 @@ body.has-store-banner .app-shell {
     align-items: stretch;
     gap: 6px;
 }
+.plan-saved__row--dragging {
+    opacity: 0.6;
+}
+.plan-saved__grip {
+    flex: 0 0 auto;
+    align-self: center;
+    padding: 0 6px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--sy-text-secondary);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+.plan-saved__grip:active { cursor: grabbing; }
 .plan-saved__load {
     flex: 1 1 auto;
     min-height: 56px;
