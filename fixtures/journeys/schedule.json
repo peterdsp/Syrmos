@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for the Syrmos 3.0 schedule-aware planning pass (prompt 7.2/7.3). Kotlin SchedulePlanner.assignSchedule and web SyrmosSchedulePlan.assignSchedule must assign the same scheduled instants; feeding the result to the feasibility engine must yield the expected status/margin. Instants are absolute (Europe/Athens; +02:00 winter). A fresh forward plan is never 'missed' (it only assigns catchable departures); 'missed' is exercised by feasibility.json with externally-fixed delayed instants. Times are synthetic, not a real timetable.",
+  "defaultTransferSeconds": 120,
+  "cases": [
+    {
+      "id": "direct_scheduled",
+      "note": "single ride gets a real clock: earliest departure at/after 08:00 is 08:05, +900s travel -> 08:20; feasibility=direct",
+      "requestedInstant": "2026-01-15T08:00:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T07:58:00+02:00", "2026-01-15T08:05:00+02:00", "2026-01-15T08:12:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900 }
+      },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" }
+      ] },
+      "expectedDepartureInstant": "2026-01-15T08:05:00+02:00",
+      "expectedArrivalInstant": "2026-01-15T08:20:00+02:00",
+      "expectedTimingKind": "scheduled",
+      "expectedFeasibility": { "status": "comfortable", "explanationCode": "direct" }
+    },
+    {
+      "id": "tight_transfer",
+      "note": "arr OMO 08:15; ready 08:17 (+120 transfer); next M2 dep 08:19; margin=(08:19-08:15)-120=120 -> tight",
+      "requestedInstant": "2026-01-15T08:00:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T08:00:00+02:00"], "M2|OMO": ["2026-01-15T08:19:00+02:00", "2026-01-15T08:31:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900, "M2|OMO|SYN": 300 }
+      },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO", "toId": "SYN" }
+      ] },
+      "expectedFeasibility": { "status": "tight", "minimumMarginSeconds": 120, "explanationCode": "transfer_tight" }
+    },
+    {
+      "id": "comfortable_transfer",
+      "note": "same as tight but next M2 dep is 08:22; margin=(08:22-08:15)-120=300 -> comfortable",
+      "requestedInstant": "2026-01-15T08:00:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T08:00:00+02:00"], "M2|OMO": ["2026-01-15T08:22:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900, "M2|OMO|SYN": 300 }
+      },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO", "toId": "SYN" }
+      ] },
+      "expectedFeasibility": { "status": "comfortable", "minimumMarginSeconds": 300, "explanationCode": "transfer_comfortable" }
+    },
+    {
+      "id": "no_service_after_transfer",
+      "note": "no M2 departure after the transfer window -> second leg unscheduled -> feasibility unknown",
+      "requestedInstant": "2026-01-15T08:00:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T08:00:00+02:00"], "M2|OMO": [] },
+        "legSeconds": { "M1|PIR|OMO": 900, "M2|OMO|SYN": 300 }
+      },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO", "toId": "SYN" }
+      ] },
+      "expectedTimingKind": "unknown",
+      "expectedFeasibility": { "status": "unknown", "explanationCode": "transfer_unknown" }
+    },
+    {
+      "id": "overnight_past_midnight",
+      "note": "requested 23:50; earliest departure is 00:10 the NEXT service date (do not assume a 24h day)",
+      "requestedInstant": "2026-01-15T23:50:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-16T00:10:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900 }
+      },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" }
+      ] },
+      "expectedDepartureInstant": "2026-01-16T00:10:00+02:00",
+      "expectedArrivalInstant": "2026-01-16T00:25:00+02:00",
+      "expectedTimingKind": "scheduled",
+      "expectedFeasibility": { "status": "comfortable", "explanationCode": "direct" }
+    }
+  ]
+}

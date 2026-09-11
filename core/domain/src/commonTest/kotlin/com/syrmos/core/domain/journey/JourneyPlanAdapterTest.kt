@@ -74,6 +74,35 @@ class JourneyPlanAdapterTest {
     }
 
     @Test
+    fun aSuppliedTimetableUpgradesFeasibilityFromEstimatedToReal() {
+        val result = JourneyResult(
+            segments = listOf(
+                seg("M1", "PIR", "OMONIA", 8, 16),
+                seg("M2", "OMONIA", "ELL", 10, 20),
+            ),
+            totalMinutes = 36,
+            transferCount = 1,
+        )
+        val timetable = SchedulePlanner.Timetable(
+            departures = mapOf(
+                "M1|PIR" to listOf(kotlinx.datetime.Instant.parse("2026-01-15T08:00:00+02:00")),
+                // arr OMONIA 08:15, ready 08:17 (+120), next dep 08:19 -> margin 120 -> tight
+                "M2|OMONIA" to listOf(kotlinx.datetime.Instant.parse("2026-01-15T08:19:00+02:00")),
+            ),
+            legSeconds = mapOf("M1|PIR|OMONIA" to 900, "M2|OMONIA|ELL" to 300),
+        )
+        val opt = JourneyPlanAdapter.toOptions(
+            result, Ranking.FASTEST, date,
+            timetable = timetable,
+            requestedInstant = kotlinx.datetime.Instant.parse("2026-01-15T08:00:00+02:00"),
+        ).single()
+        // No longer estimated/unknown: a real tight connection with a 120s margin.
+        assertEquals(FeasibilityStatus.TIGHT, opt.feasibility.status)
+        assertEquals(120, opt.feasibility.minimumMarginSeconds)
+        assertEquals(TimingKind.SCHEDULED, opt.legs.first { it.kind == LegKind.RIDE }.timingKind)
+    }
+
+    @Test
     fun nullOrEmptyResultYieldsNoOptions() {
         assertTrue(JourneyPlanAdapter.toOptions(null, Ranking.FASTEST, date).isEmpty())
         assertTrue(JourneyPlanAdapter.toOptions(

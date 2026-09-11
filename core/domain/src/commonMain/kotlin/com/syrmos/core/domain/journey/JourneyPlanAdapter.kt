@@ -33,6 +33,10 @@ object JourneyPlanAdapter {
         result: JourneyResult?,
         ranking: Ranking,
         serviceDate: LocalDate,
+        // Optional schedule upgrade: when a timetable + requested instant are given,
+        // the estimated option is turned into a scheduled one (real feasibility).
+        timetable: SchedulePlanner.Timetable? = null,
+        requestedInstant: kotlinx.datetime.Instant? = null,
     ): List<JourneyOption> {
         if (result == null || result.segments.isEmpty()) return emptyList()
 
@@ -82,6 +86,9 @@ object JourneyPlanAdapter {
             feasibility = Feasibility(com.syrmos.core.model.journey.FeasibilityStatus.UNKNOWN, explanationCode = "pending"),
             rankingBadge = null,
         )
+        if (timetable != null && requestedInstant != null) {
+            option = SchedulePlanner.assignSchedule(option, requestedInstant, timetable)
+        }
         option = option.copy(feasibility = FeasibilityCalculator.forOption(option))
         return JourneyRanker.rank(listOf(option), ranking)
     }
