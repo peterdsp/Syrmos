@@ -62,12 +62,17 @@ enum JourneyPlanner {
 
     /// The fastest route as a `DetailedPlan` (per-leg ordered stop ids), for the
     /// GO live-guidance engine. Operational lines only, like `plan`.
-    static func planDetailed(from fromId: String, to toId: String, language: AppLanguage) -> DetailedPlan? {
+    static func planDetailed(from fromId: String, to toId: String, language: AppLanguage,
+                             bannedLineIds: Set<String> = []) -> DetailedPlan? {
         guard fromId != toId else { return nil }
         let stations = allStations()
         let byId = Dictionary(uniqueKeysWithValues: stations.map { ($0.id, $0) })
         guard byId[fromId] != nil, byId[toId] != nil else { return nil }
-        let graph = buildGraph(SyrmosData.operationalLines, stations: stations)
+        // Banning lines the base route used yields materially distinct alternatives
+        // (k-shortest via line-banning), mirroring web/KMP.
+        let usable = bannedLineIds.isEmpty ? SyrmosData.operationalLines
+            : SyrmosData.operationalLines.filter { !bannedLineIds.contains($0.id) }
+        let graph = buildGraph(usable, stations: stations)
         guard let result = shortestPath(from: fromId, to: toId, graph: graph) else { return nil }
 
         // Group the (stationId, edge) path into per-line legs, keeping every stop

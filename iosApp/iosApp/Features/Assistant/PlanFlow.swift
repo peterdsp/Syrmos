@@ -50,6 +50,47 @@ enum JourneyPlanAdapter {
         arriveBy: Date? = nil
     ) -> PlannedJourney? {
         guard let detailed = JourneyPlanner.planDetailed(from: fromId, to: toId, language: language) else { return nil }
+        return buildPlanned(detailed: detailed, departuresFor: departuresFor, mode: mode, arriveBy: arriveBy)
+    }
+
+    /// Up to 3 materially distinct alternatives via line-banning (re-plan with each
+    /// line the base uses removed), deduped by line chain, ordered by duration,
+    /// capped at 3. Mirrors web/Android k-shortest.
+    static func planAll(
+        from fromId: String,
+        to toId: String,
+        language: AppLanguage,
+        departuresFor: ((_ lineId: String, _ boardId: String) -> [Date])? = nil,
+        mode: Mode = .now,
+        arriveBy: Date? = nil
+    ) -> [PlannedJourney] {
+        guard let base = JourneyPlanner.planDetailed(from: fromId, to: toId, language: language) else { return [] }
+        var used: [String] = []
+        for l in base.legs where !used.contains(l.lineId) { used.append(l.lineId) }
+        var routes = [base]
+        for banned in used {
+            if let alt = JourneyPlanner.planDetailed(from: fromId, to: toId, language: language, bannedLineIds: [banned]) {
+                routes.append(alt)
+            }
+        }
+        let built = routes
+            .map { buildPlanned(detailed: $0, departuresFor: departuresFor, mode: mode, arriveBy: arriveBy) }
+            .sorted { $0.durationSeconds < $1.durationSeconds }
+        var seen = Set<String>()
+        var distinct: [PlannedJourney] = []
+        for p in built {
+            let sig = p.lineChain.joined(separator: "-")
+            if !seen.contains(sig) { seen.insert(sig); distinct.append(p) }
+        }
+        return Array(distinct.prefix(3))
+    }
+
+    private static func buildPlanned(
+        detailed: JourneyPlanner.DetailedPlan,
+        departuresFor: ((_ lineId: String, _ boardId: String) -> [Date])?,
+        mode: Mode,
+        arriveBy: Date?
+    ) -> PlannedJourney {
         let transfers = max(0, detailed.legs.count - 1)
         let chain = detailed.legs.map { $0.lineId }
 
@@ -145,7 +186,8 @@ struct PlanView: View {
     @State private var toId: String?
     @State private var opening: String?   // "from" | "to" | nil
     @State private var query = ""
-    @State private var result: JourneyPlanAdapter.PlannedJourney?
+    @State private var results: [JourneyPlanAdapter.PlannedJourney] = []
+    @State private var selectedIdx = 0
     @State private var planned = false
     @State private var mode: JourneyPlanAdapter.Mode = .now
     @State private var arriveByTime = Date()
@@ -196,25 +238,27 @@ struct PlanView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(fromId == nil || toId == nil || opening != nil)
 
-                if planned, result == nil {
-                    Text(t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato."))
-                        .foregroundStyle(.secondary)
-                } else if let r = result {
-                    if mode != .now && r.noJourney {
-                        Text(mode == .lastConnection
-                             ? t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
-                             : t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo."))
-                            .foregroundStyle(.secondary)
-                    } else {
-                        resultCard(r)
-                        if mode != .now, let lb = r.leaveBy {
+                // In a backward mode only options that actually scheduled are usable.
+                let usable = mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
+                if planned && usable.isEmpty {
+                    Text(
+                        mode == .lastConnection
+                            ? t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                            : mode == .arriveBy
+                                ? t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo.")
+                                : t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.")
+                    ).foregroundStyle(.secondary)
+                } else if !usable.isEmpty {
+                    Text("\(usable.count) " + (usable.count == 1 ? t("route", "διαδρομή", "rrugë", "percorso") : t("routes", "διαδρομές", "rrugë", "percorsi")))
+                        .font(.headline)
+                    ForEach(Array(usable.enumerated()), id: \.offset) { i, r in
+                        let leaveByLabel: String? = (mode == .now) ? nil : r.leaveBy.map { lb in
                             let label = mode == .lastConnection
                                 ? t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
                                 : t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
-                            Text("\(label) \(athensClock(lb))")
-                                .font(.headline)
-                                .foregroundStyle(Color.syrmosPrimary)
+                            return "\(label) \(athensClock(lb))"
                         }
+                        optionCard(r, selected: i == selectedIdx, leaveByLabel: leaveByLabel) { selectedIdx = i }
                     }
                 }
 
@@ -272,8 +316,9 @@ struct PlanView: View {
                 .map { now.addingTimeInterval(Double($0.minutesAway) * 60) }
         }
         let arriveBy = mode == .arriveBy ? nextOccurrence(of: arriveByTime) : nil
-        result = JourneyPlanAdapter.plan(from: f, to: t, language: language,
-                                         departuresFor: schedule, mode: mode, arriveBy: arriveBy)
+        results = JourneyPlanAdapter.planAll(from: f, to: t, language: language,
+                                             departuresFor: schedule, mode: mode, arriveBy: arriveBy)
+        selectedIdx = 0
         planned = true
     }
 
@@ -311,20 +356,30 @@ struct PlanView: View {
     }
 
     @ViewBuilder
-    private func resultCard(_ r: JourneyPlanAdapter.PlannedJourney) -> some View {
+    private func optionCard(
+        _ r: JourneyPlanAdapter.PlannedJourney,
+        selected: Bool,
+        leaveByLabel: String?,
+        onTap: @escaping () -> Void
+    ) -> some View {
         let minutes = max(1, r.durationSeconds / 60)
         let changes = r.transferCount == 1
             ? t("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
             : "\(r.transferCount) " + t("changes", "αλλαγές", "ndërrime", "cambi")
         VStack(alignment: .leading, spacing: 4) {
-            Text("1 " + t("route", "διαδρομή", "rrugë", "percorso")).font(.headline)
             Text("~\(minutes) " + t("min", "λεπ", "min", "min") + " · \(changes) · " + r.lineChain.joined(separator: " → "))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
             Text(feasLabel(r.feasibility)).font(.subheadline).foregroundStyle(Color.syrmosPrimary)
+            if let lb = leaveByLabel {
+                Text(lb).font(.subheadline.weight(.semibold)).foregroundStyle(Color.syrmosPrimary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color.gray.opacity(0.08)))
+        .background(RoundedRectangle(cornerRadius: 16).fill(selected ? Color.syrmosPrimary.opacity(0.12) : Color.gray.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? Color.syrmosPrimary : Color.clear, lineWidth: 2))
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
     }
 
     private func feasLabel(_ f: JourneyPlanAdapter.Feasibility) -> String {
