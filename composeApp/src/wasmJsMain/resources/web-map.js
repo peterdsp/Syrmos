@@ -4450,6 +4450,48 @@
                     });
                 }
             }
+            // Build a real timetable for a planned route from the live departure
+            // projection: for each ride leg, the next departures of that line at the
+            // board station (as absolute instants = now + minutesAway) plus an
+            // estimated per-leg travel time. Feeds SyrmosSchedulePlan so feasibility
+            // is real (comfortable/tight) instead of estimated. Returns null when no
+            // projection is available (the adapter then keeps the estimated option).
+            function buildTimetable(detailed) {
+                if (!detailed || typeof buildStationDepartures !== "function") return null;
+                const nowMs = Date.now();
+                const departures = {};
+                const legSeconds = {};
+                for (const leg of detailed.legs) {
+                    const stops = leg.stops || [];
+                    if (stops.length < 2) continue;
+                    const boardId = stops[0].id;
+                    const alightId = stops[stops.length - 1].id;
+                    let node = null;
+                    try {
+                        const nid = (typeof rawIdToNodeId !== "undefined" && rawIdToNodeId.get(boardId)) ||
+                            (typeof nodeIdFor === "function" ? nodeIdFor(boardId) : null);
+                        node = (nid && typeof stationNodeMap !== "undefined") ? stationNodeMap.get(nid) : null;
+                    } catch (_) { node = null; }
+                    if (node) {
+                        let deps = [];
+                        try { deps = buildStationDepartures(node) || []; } catch (_) { deps = []; }
+                        const instants = [];
+                        for (const d of deps) {
+                            const lid = (d.line && d.line.id) || d.lineId;
+                            const norm = lid === "M3_AIR" ? "M3" : lid;
+                            if (norm !== leg.lineId) continue;
+                            if (!Number.isFinite(d.minutesAway)) continue;
+                            instants.push(new Date(nowMs + d.minutesAway * 60000).toISOString());
+                        }
+                        if (instants.length) departures[leg.lineId + "|" + boardId] = instants;
+                    }
+                    const type = (lines.find((l) => l.id === leg.lineId) || {}).type;
+                    const perHop = (window.SyrmosPlanner && window.SyrmosPlanner._travelTime)
+                        ? window.SyrmosPlanner._travelTime(type) : 3;
+                    legSeconds[leg.lineId + "|" + boardId + "|" + alightId] = (stops.length - 1) * perHop * 60;
+                }
+                return Object.keys(departures).length ? { departures, legSeconds } : null;
+            }
             function runPlan() {
                 try {
                     if (!window.SyrmosPlanner || !window.SyrmosJourneyPlan) return;
@@ -4458,7 +4500,11 @@
                     const fromId = fromSel && fromSel.value;
                     const toId = toSel && toSel.value;
                     const detailed = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
-                    const planned = window.SyrmosJourneyPlan.plan(stations, lines, { fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang });
+                    const timetable = buildTimetable(detailed);
+                    const planned = window.SyrmosJourneyPlan.plan(stations, lines, {
+                        fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
+                        timetable, requestedInstant: new Date().toISOString(), defaultTransferSeconds: 120,
+                    });
                     const coords = {};
                     if (detailed) {
                         const byId = new Map(stations.map((s) => [s.id, s]));
