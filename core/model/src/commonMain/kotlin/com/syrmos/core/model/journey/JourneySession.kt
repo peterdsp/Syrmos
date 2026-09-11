@@ -66,6 +66,18 @@ data class SavedJourney(
 )
 
 /**
+ * The persisted saved-journeys list root. One versioned blob holds the whole
+ * ordered list (display order == array order). `schemaVersion` is declared first
+ * so the encoded JSON is byte-parity with the web `SyrmosSavedJourneys` store and
+ * iOS `SavedJourneyStore`, per fixtures/journeys/saved.json.
+ */
+@Serializable
+data class SavedJourneysRoot(
+    val schemaVersion: Int = JourneyContract.SCHEMA_VERSION,
+    val savedJourneys: List<SavedJourney> = emptyList(),
+)
+
+/**
  * The single, globally-shared live GO session. The itinerary snapshot is FROZEN
  * during active guidance; new service data raises a warning/revision proposal
  * rather than mutating it silently. `revision` bumps on an accepted replacement,
