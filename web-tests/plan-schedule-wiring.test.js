@@ -18,12 +18,15 @@ test('web-schedule-plan is loaded before the plan adapter', () => {
 });
 
 test('runPlan builds a timetable from the live projection and passes it in', () => {
-  assert.match(js, /function buildTimetable\(detailed\)/, 'buildTimetable missing');
-  // projects each leg's OWN line directly from its bundle with a long horizon,
+  assert.match(js, /function buildTimetable\(detailed, horizon\)/, 'buildTimetable missing');
+  // projects each leg's OWN line directly from its bundle with a horizon,
   // so a later leg still has a catchable departure (the old node path capped at
   // ~10 near-term slots across all lines and starved later legs).
-  assert.match(js, /projectFromBundle\(bundle, nowDate, lid, out, 30\)/,
+  assert.match(js, /projectFromBundle\(bundle, nowDate, lid, out, limit\)/,
     'must project the leg line directly with a long horizon');
+  // backward modes (arrive-by / last connection) project the whole service day
+  assert.match(js, /planMode === "now" \? 30 : 400/, 'backward modes need the full-day horizon');
+  assert.match(js, /timeMode: planMode, arriveByInstant/, 'plan() must receive the time mode');
   // absolute instants = now + minutesAway (not the shifted athensNow epoch)
   assert.match(js, /new Date\(nowMs \+ d\.minutesAway \* 60000\)\.toISOString\(\)/,
     'departures must be real instants from Date.now()+minutesAway');

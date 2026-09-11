@@ -513,16 +513,16 @@
 <script src="/web-departures.js"></script>
 <!-- Pure connection-feasibility engine (SyrmosFeasibility.forOption); mirrors
      the Kotlin FeasibilityCalculator. Loaded before the planner/panel that read it. -->
-<script src="/web-feasibility.js"></script>
+<script src="/web-feasibility.js?v=3"></script>
 <!-- Pure itinerary ranking/dedup/cap (SyrmosJourneyRanker); mirrors Kotlin JourneyRanker. -->
-<script src="/web-journey-ranker.js"></script>
+<script src="/web-journey-ranker.js?v=3"></script>
 <script src="/web-planner.js"></script>
 <!-- Schedule-aware pass: assigns real scheduled instants so feasibility is real.
      Loaded before the plan adapter, which uses it when a timetable is supplied. -->
-<script src="/web-schedule-plan.js"></script>
+<script src="/web-schedule-plan.js?v=3"></script>
 <!-- Composes the planner into ranked JourneyOptions with feasibility (Phase P).
      Loaded after planner/feasibility/ranker/schedule, before web-map.js. -->
-<script src="/web-journey-plan.js"></script>
+<script src="/web-journey-plan.js?v=3"></script>
 <script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
