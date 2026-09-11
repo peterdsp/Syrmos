@@ -85,7 +85,8 @@ class PlanScreenRoute : Screen {
         var toId by remember { mutableStateOf<String?>(null) }
         var open by remember { mutableStateOf<String?>(null) } // "from" | "to" | null
         var query by remember { mutableStateOf("") }
-        var option by remember { mutableStateOf<JourneyOption?>(null) }
+        var options by remember { mutableStateOf<List<JourneyOption>>(emptyList()) }
+        var selectedIdx by remember { mutableStateOf(0) }
         var planned by remember { mutableStateOf(false) }
         var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
         var arriveByText by remember { mutableStateOf("") } // "HH:MM"
@@ -104,22 +105,26 @@ class PlanScreenRoute : Screen {
             val f = fromId; val to = toId
             if (f == null || to == null) return
             scope.launch {
-                val result = useCase.invoke(f, to).first()
                 val serviceDate = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens")).date
-                // Feed a real timetable from the live projection so feasibility is
-                // real (comfortable/tight) rather than estimated; null-safe, and the
-                // adapter keeps the estimated option when no projection is available.
                 val now = Clock.System.now()
-                // Backward modes need the whole remaining service day to find the
-                // true latest train; forward "leave now" only needs the next handful.
                 val horizon = if (mode == "now") 8 else 60
-                val timetable = result?.let { buildTimetable(it, departuresUseCase, now, horizon) }
+                // k-shortest via line-banning: base route + one re-plan per line the
+                // base uses removed. Each candidate is scheduled with its own timetable
+                // and ranked together (dedup + cap 3).
+                val base = useCase.invoke(f, to).first()
+                val candidates = mutableListOf(base)
+                base?.segments?.map { it.lineId }?.distinct()?.forEach { banned ->
+                    candidates += useCase.invoke(f, to, setOf(banned)).first()
+                }
                 val arriveBy = if (mode == "arriveBy") parseArriveBy(arriveByText, now) else null
-                option = JourneyPlanAdapter.toOptions(
-                    result, Ranking.FASTEST, serviceDate, timetable, now,
+                options = JourneyPlanAdapter.rankCandidates(
+                    candidates, Ranking.FASTEST, serviceDate,
+                    requestedInstant = now,
                     arriveByInstant = arriveBy,
                     lastConnection = (mode == "lastConnection"),
-                ).firstOrNull()
+                    timetableFor = { r -> buildTimetable(r, departuresUseCase, now, horizon) },
+                )
+                selectedIdx = 0
                 planned = true
             }
         }
@@ -207,31 +212,36 @@ class PlanScreenRoute : Screen {
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
 
-                val opt = option
+                // In a backward mode only options that actually scheduled are usable.
+                val usable = if (mode == "now") options else options.filter { it.departureInstant != null }
                 when {
-                    planned && opt == null -> Text(
-                        t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato."),
+                    planned && usable.isEmpty() -> Text(
+                        when {
+                            mode == "lastConnection" -> t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                            mode == "arriveBy" -> t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo.")
+                            else -> t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.")
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    opt != null && mode != "now" && opt.departureInstant == null -> Text(
-                        if (mode == "lastConnection")
-                            t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
-                        else
-                            t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo."),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    opt != null -> {
-                        ResultCard(opt, lang, ::t)
-                        val dep = opt.departureInstant
-                        if (mode != "now" && dep != null) {
-                            val label = if (mode == "lastConnection")
-                                t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
-                            else t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
-                            Text(
-                                "$label ${athensHm(dep)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
+                    usable.isNotEmpty() -> {
+                        val count = usable.size
+                        Text(
+                            "$count " + (if (count == 1) t("route", "διαδρομή", "rrugë", "percorso") else t("routes", "διαδρομές", "rrugë", "percorsi")),
+                            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                        )
+                        usable.forEachIndexed { i, opt ->
+                            OptionCard(
+                                opt = opt, selected = i == selectedIdx, lang = lang, t = ::t,
+                                leaveByLabel = if (mode == "now") null else {
+                                    val dep = opt.departureInstant
+                                    if (dep == null) null else {
+                                        val lbl = if (mode == "lastConnection")
+                                            t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
+                                        else t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
+                                        "$lbl ${athensHm(dep)}"
+                                    }
+                                },
+                                onClick = { selectedIdx = i },
                             )
                         }
                     }
@@ -255,7 +265,14 @@ class PlanScreenRoute : Screen {
     }
 
     @Composable
-    private fun ResultCard(opt: JourneyOption, lang: AppLanguage, t: (String, String, String, String) -> String) {
+    private fun OptionCard(
+        opt: JourneyOption,
+        selected: Boolean,
+        lang: AppLanguage,
+        t: (String, String, String, String) -> String,
+        leaveByLabel: String?,
+        onClick: () -> Unit,
+    ) {
         val minutes = ((opt.durationSeconds ?: 0) / 60).coerceAtLeast(1)
         val chain = opt.legs.filter { it.kind == LegKind.RIDE }.mapNotNull { it.lineId }.joinToString(" → ")
         val changes = if (opt.transferCount == 1) t("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
@@ -269,13 +286,19 @@ class PlanScreenRoute : Screen {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .background(
+                    if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    RoundedCornerShape(16.dp),
+                )
+                .clickable(onClick = onClick)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text("1 " + t("route", "διαδρομή", "rrugë", "percorso"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text("~$minutes " + t("min", "λεπ", "min", "min") + " · $changes · $chain", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("~$minutes " + t("min", "λεπ", "min", "min") + " · $changes · $chain", color = MaterialTheme.colorScheme.onSurface)
             Text(feas, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            if (leaveByLabel != null) {
+                Text(leaveByLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
