@@ -14,6 +14,7 @@ struct LinesView: View {
     @State private var segment: ExploreSegment = .destinations
     @State private var recentStations: [RecentStation] = RecentStationStore.load()
     @State private var presentedSheet: ExploreSheet?
+    @State private var showPlan = false
     @State private var railPulseDestination: RailPulseDestination?
     @State private var manualOrigin: MapStationNode?
     @StateObject private var stasyService = STASYService()
@@ -26,6 +27,15 @@ struct LinesView: View {
     private var exploreOriginName: String? {
         guard let exploreOrigin else { return nil }
         return loc.language == .greek ? exploreOrigin.nameEl : exploreOrigin.displayName
+    }
+
+    private var planLabel: String {
+        switch loc.language {
+        case .greek: return "Σχεδίασε διαδρομή"
+        case .albanian: return "Planifiko udhëtim"
+        case .italian: return "Pianifica un viaggio"
+        default: return "Plan a journey"
+        }
     }
 
     private var filteredLines: [TransitLine] {
@@ -78,6 +88,24 @@ struct LinesView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
+            .overlay(alignment: .bottomTrailing) {
+                // Entry into the 3.0 Plan flow (interim, until Journeys is a
+                // primary destination). Sits above the tab bar / Ariadne pill.
+                Button { showPlan = true } label: {
+                    Text(planLabel)
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(Capsule().fill(Color.syrmosPrimary))
+                        .foregroundStyle(.white)
+                        .shadow(radius: 6, y: 2)
+                }
+                .padding(.trailing, 16)
+                .padding(.bottom, 80)
+            }
+            .sheet(isPresented: $showPlan) {
+                PlanView(language: loc.language)
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 exploreHeader
             }

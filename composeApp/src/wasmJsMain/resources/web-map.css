@@ -77,6 +77,14 @@ html, body {
 body.dark-mode .nav-item--active {
     background: rgba(142,202,255,.10);
 }
+/* Text label under the icon. Hidden on the desktop icon rail; shown in the
+   compact bottom bar (see the <=599px block) so phone users get labelled tabs. */
+.nav-item__label {
+    display: none;
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 500;
+}
 
 /* ===== Context Rail (352px) ===== */
 .context-rail {
@@ -1743,9 +1751,12 @@ body.dark-mode .leaflet-tile-pane {
     border: 2px solid;
 }
 
-/* ===== Responsive: Collapse layout below 960px ===== */
+/* ===== Responsive: Collapse layout below 960px =====
+   The nav rail STAYS reachable (was `display:none` with no replacement, which
+   stranded every workspace root on phones/tablets). 600-959px keeps a left rail
+   (widened to 80px per the 3.0 spec); under 600px it becomes a bottom bar below. */
 @media (max-width: 960px) {
-    .nav-rail { display: none; }
+    .nav-rail { flex: 0 0 80px; }
     .context-rail {
         flex: 0 0 300px;
         border-right: none;
@@ -1780,6 +1791,67 @@ body.dark-mode .leaflet-tile-pane {
     .ariadne-launcher { top: 56px; right: 12px; }
 }
 
+/* ===== Compact (<600px): the rail becomes a bottom navigation bar =====
+   Replaces the old "nav vanishes" behaviour. Five equal workspace slots plus a
+   trailing More utility, labelled, fixed to the bottom with a safe-area inset,
+   above the context bottom sheet. Reuses the same .nav-rail element and buttons
+   so web-nav.js routing/aria-current keep working untouched. */
+@media (max-width: 599px) {
+    .nav-rail {
+        flex: none;
+        flex-direction: row;
+        align-items: stretch;
+        position: fixed;
+        left: 0; right: 0; bottom: 0; top: auto;
+        width: 100vw;
+        height: calc(64px + env(safe-area-inset-bottom));
+        padding: 0 4px env(safe-area-inset-bottom);
+        border-right: none;
+        border-top: 1px solid var(--sy-border-subtle);
+        z-index: 1200;
+    }
+    .nav-rail__logo { display: none; }
+    .nav-rail__items {
+        flex-direction: row;
+        flex: 1;
+        gap: 0;
+        align-items: stretch;
+    }
+    .nav-rail__footer {
+        flex-direction: row;
+        width: auto;
+        margin-top: 0;
+        padding-top: 0;
+        padding-left: 4px;
+        margin-left: 4px;
+        border-top: none;
+        border-left: 1px solid var(--sy-border-subtle);
+        align-items: stretch;
+    }
+    .nav-item {
+        flex: 1;
+        flex-direction: column;
+        gap: 2px;
+        width: auto;
+        min-width: 44px;
+        height: 100%;
+        border-radius: 0;
+    }
+    .nav-rail__footer .nav-item { flex: 0 0 56px; }
+    .nav-item__label { display: block; }
+    .nav-item .ic { width: 20px; height: 20px; }
+
+    /* Header shrinks to 56px per spec; the context sheet and map controls lift
+       above the 64px bar so nothing is hidden behind it. */
+    .context-rail {
+        bottom: calc(64px + env(safe-area-inset-bottom));
+        max-height: 40vh;
+    }
+    .map-chrome--br { bottom: calc(40vh + 64px + 12px); }
+    .map-chrome--bl { bottom: calc(40vh + 64px + 12px); }
+    .ariadne-launcher { top: 12px; right: 12px; }
+}
+
 /* ===== Severe Weather Banner (JS-injected but base here) ===== */
 .severe-weather-banner {
     position: fixed;
@@ -1791,4 +1863,305 @@ body.dark-mode .leaflet-tile-pane {
     background: var(--sy-warning-container);
     border: 1px solid var(--sy-status-warning);
     box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+
+/* ===== Store-promotion banner (S-web, secondary + dismissible) =====
+   Replaces the old mobile user-agent blockade. Secondary by design: a slim
+   strip, phone-width only (JS toggles [hidden] via a max-width:599px match),
+   never overlapping or gating the app. Dismissed state persists in
+   localStorage so it does not nag. */
+.store-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1300;
+    box-sizing: border-box;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--sy-background-raised);
+    border-bottom: 1px solid var(--sy-border-subtle);
+    color: var(--sy-text-primary);
+    font-size: 13px;
+    line-height: 16px;
+    overflow: hidden;
+}
+/* Class beats the bare [hidden] attribute at equal specificity, so the JS
+   toggle needs this explicit rule to actually hide the strip (mirrors the
+   .offline-pill[hidden] pattern used elsewhere in this file). */
+.store-banner[hidden] { display: none; }
+/* Reserve the strip's height only while it is actually shown (the controller
+   toggles this class in lockstep with the banner). */
+body.has-store-banner .app-shell {
+    margin-top: 48px;
+    height: calc(100dvh - 48px);
+}
+.store-banner__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.store-banner__links {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.store-banner__link {
+    color: var(--sy-accent);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+}
+.store-banner__close {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--sy-radius-md);
+    color: var(--sy-text-secondary);
+    cursor: pointer;
+}
+.store-banner__close .ic {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+}
+
+/* ===== Plan workspace draft + results (3.0 Phase P) ===== */
+.plan-draft {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 12px 0;
+}
+.plan-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.plan-field__label {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--sy-text-secondary);
+}
+.plan-field__select {
+    min-height: 44px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-primary);
+    font-size: 16px;
+    padding: 8px 12px;
+}
+.plan-draft__find {
+    min-height: 44px;
+    align-self: stretch;
+}
+.plan-results {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0 12px;
+}
+.plan-results__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 600;
+    color: var(--sy-text-primary);
+}
+.plan-results__save {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 6px 14px;
+    border-radius: var(--sy-radius-pill);
+    border: 1px solid var(--sy-accent);
+    background: var(--sy-surface);
+    color: var(--sy-accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.plan-results__save:disabled {
+    border-color: var(--sy-border);
+    color: var(--sy-text-secondary);
+    cursor: default;
+}
+.plan-results__meta {
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--sy-text-secondary);
+}
+.plan-results__empty {
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--sy-text-secondary);
+}
+.plan-results__chip {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 4px 10px;
+    border-radius: var(--sy-radius-pill);
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    background: var(--sy-background-subtle);
+    color: var(--sy-text-secondary);
+}
+.plan-results__chip--comfortable { background: rgba(5,150,105,.12); color: #059669; }
+.plan-results__chip--tight { background: rgba(180,83,9,.12); color: #b45309; }
+.plan-results__chip--missed { background: rgba(220,38,38,.12); color: #dc2626; }
+
+/* ===== Plan travel-time mode (Leave now / Arrive by / Last train home) ===== */
+.plan-mode { display: flex; gap: 8px; flex-wrap: wrap; }
+.plan-mode__btn {
+    flex: 1 1 auto; min-height: 44px; padding: 8px 10px;
+    border-radius: var(--sy-radius-md); border: 1px solid var(--sy-border);
+    background: var(--sy-surface); color: var(--sy-text-secondary);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.plan-mode__btn--active { background: rgba(20,102,184,.10); border-color: var(--sy-accent); color: var(--sy-accent); }
+.plan-time__input {
+    min-height: 44px; width: 100%; border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border); background: var(--sy-surface);
+    color: var(--sy-text-primary); font-size: 16px; padding: 8px 12px;
+}
+.plan-results__leaveby { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--sy-accent); }
+
+/* ===== Plan option cards (k-shortest alternatives, selectable) ===== */
+.plan-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    text-align: left;
+    padding: 12px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    cursor: pointer;
+}
+.plan-option--selected {
+    border-color: var(--sy-accent);
+    border-width: 2px;
+    background: rgba(20,102,184,.06);
+}
+
+/* ===== Saved journeys (S08 / J05) ===== */
+.plan-saved {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--sy-border);
+}
+.plan-saved__heading {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+    color: var(--sy-text-primary);
+}
+.plan-saved__empty {
+    font-size: 14px;
+    line-height: 19px;
+    color: var(--sy-text-secondary);
+}
+.plan-saved__row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+.plan-saved__row--dragging {
+    opacity: 0.6;
+}
+.plan-saved__grip {
+    flex: 0 0 auto;
+    align-self: center;
+    padding: 0 6px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--sy-text-secondary);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+.plan-saved__grip:active { cursor: grabbing; }
+.plan-saved__load {
+    flex: 1 1 auto;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-primary);
+    cursor: pointer;
+}
+.plan-saved__name {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+}
+.plan-saved__pair {
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--sy-text-secondary);
+}
+.plan-saved__action {
+    flex: 0 0 auto;
+    width: 44px;
+    min-height: 56px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+}
+.plan-saved__action--danger:hover { color: #dc2626; border-color: #dc2626; }
+.plan-saved__undo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--sy-radius-md);
+    background: var(--sy-background-subtle);
+    font-size: 14px;
+    color: var(--sy-text-primary);
+}
+.plan-saved__undobtn {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 6px 14px;
+    border-radius: var(--sy-radius-pill);
+    border: 1px solid var(--sy-accent);
+    background: var(--sy-surface);
+    color: var(--sy-accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
 }

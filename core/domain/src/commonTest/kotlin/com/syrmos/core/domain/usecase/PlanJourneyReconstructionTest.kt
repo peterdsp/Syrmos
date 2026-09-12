@@ -80,6 +80,48 @@ class PlanJourneyReconstructionTest {
     }
 
     @Test
+    fun transferEdgeSplitsIntoTwoLegsAtCoLocatedStations() {
+        // Real cross-line model: A->B->C on line 1, a TRANSFER to the co-located
+        // C2 (same physical interchange, different per-line id), then C2->D->E on
+        // line 2. The transfer is never its own segment.
+        val transfer = Edge(
+            toStationId = "C2", lineId = PlanJourneyUseCase.TRANSFER_LINE_ID,
+            lineName = "", weight = PlanJourneyUseCase.TRANSFER_MINUTES, isTransfer = true,
+        )
+        val names2 = names + ("C2" to "Gamma") // co-located: same display name as C
+        val path = listOf(
+            "B" to edge("B", "1"),
+            "C" to edge("C", "1"),
+            "C2" to transfer,
+            "D" to edge("D", "2"),
+            "E" to edge("E", "2"),
+        )
+
+        val segments = reconstructSegments(path, fromStationId = "A", toStationId = "E", stationNames = names2)
+
+        assertEquals(2, segments.size, "one transfer -> two legs")
+        val first = segments[0]
+        assertEquals("A", first.fromStationId)
+        assertEquals("C", first.toStationId, "leg 1 ends at the interchange on the old line")
+        assertEquals("Line 1", first.lineName)
+        val second = segments[1]
+        assertEquals("C2", second.fromStationId, "leg 2 starts at the co-located station on the new line")
+        assertEquals("Gamma", second.fromStationName)
+        assertEquals("E", second.toStationId)
+        assertEquals("Line 2", second.lineName)
+        assertEquals(2, second.stationCount)
+    }
+
+    @Test
+    fun foldNameGroupsAccentedAndPunctuatedVariantsTogether() {
+        // "Πειραιάς", "Πειραιας" and "Piraeus " must not fold identically across
+        // scripts, but accent + case + punctuation within a script must.
+        assertEquals(foldStationName("Σύνταγμα"), foldStationName("συνταγμα"))
+        assertEquals(foldStationName("Piraeus"), foldStationName("  piraeus "))
+        assertEquals(foldStationName("Aghios Antonios"), foldStationName("aghios-antonios"))
+    }
+
+    @Test
     fun samePlaceJourneyProducesNoSegments() {
         val segments = reconstructSegments(emptyList(), fromStationId = "A", toStationId = "A", stationNames = names)
         assertEquals(0, segments.size)

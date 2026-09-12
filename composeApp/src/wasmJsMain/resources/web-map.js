@@ -91,6 +91,14 @@
             live_unknown_age: "Live, age unknown",
             estimated: "Estimated",
             offline_snapshot: "Offline snapshot",
+            get_the_app: "Get the free Syrmos app",
+            dismiss: "Dismiss",
+            ws_now: "Now",
+            ws_plan: "Plan",
+            ws_explore: "Explore",
+            ws_departures: "Departures",
+            ws_tickets: "Tickets",
+            ws_more: "More",
             airport_bus_live: "Live to the airport stop",
             check_operator: "Check operator",
             unknown: "unknown",
@@ -192,6 +200,14 @@
             live_unknown_age: "Ζωντανά, άγνωστη ώρα",
             estimated: "Εκτίμηση",
             offline_snapshot: "Εκτός σύνδεσης",
+            get_the_app: "Κατεβάστε τη δωρεάν εφαρμογή Syrmos",
+            dismiss: "Κλείσιμο",
+            ws_now: "Τώρα",
+            ws_plan: "Σχέδιο",
+            ws_explore: "Εξερεύνηση",
+            ws_departures: "Αναχωρήσεις",
+            ws_tickets: "Εισιτήρια",
+            ws_more: "Περισσότερα",
             airport_bus_live: "Ζωντανά στη στάση του αεροδρομίου",
             check_operator: "Δείτε πάροχο",
             unknown: "άγνωστο",
@@ -293,6 +309,14 @@
             live_unknown_age: "Drejtpërdrejt, kohë e panjohur",
             estimated: "Vlerësim",
             offline_snapshot: "Pa internet",
+            get_the_app: "Merr aplikacionin falas Syrmos",
+            dismiss: "Mbyll",
+            ws_now: "Tani",
+            ws_plan: "Plani",
+            ws_explore: "Eksploro",
+            ws_departures: "Nisjet",
+            ws_tickets: "Bileta",
+            ws_more: "Më shumë",
             airport_bus_live: "Drejtpërdrejt te stacioni i aeroportit",
             check_operator: "Kontrolloni operatorin",
             unknown: "i panjohur",
@@ -394,6 +418,14 @@
             live_unknown_age: "In tempo reale, età sconosciuta",
             estimated: "Stimato",
             offline_snapshot: "Snapshot offline",
+            get_the_app: "Scarica l'app gratuita Syrmos",
+            dismiss: "Chiudi",
+            ws_now: "Ora",
+            ws_plan: "Pianifica",
+            ws_explore: "Esplora",
+            ws_departures: "Partenze",
+            ws_tickets: "Biglietti",
+            ws_more: "Altro",
             airport_bus_live: "In tempo reale alla fermata dell'aeroporto",
             check_operator: "Verifica operatore",
             unknown: "sconosciuto",
@@ -4268,7 +4300,53 @@
         // when the user is in Plan. Every path is wrapped so a failure only hides
         // the GO card and leaves Ariadne and the rest of Plan untouched.
         const goPlan = (function () {
-            let card = null, panelEl = null, mounted = false;
+            // Real endpoint-driven plan (Phase P). Replaces the old fixed
+            // M1->M2 showcase: the rider picks From/To, we plan through the
+            // shared adapter (planner -> ranked JourneyOptions + feasibility),
+            // show an honest results summary, and mount the selected route in
+            // the GO panel. Times are estimated (no schedule), so nothing is
+            // labelled with a fabricated clock.
+            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null;
+            let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
+            let undoTimer = null, pendingUndo = null; // last-deleted journey for the 5s Undo
+            let saveBtnRef = null; // the results "Save journey" button, kept in sync with the store
+            const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
+            const savedStore = (window.SyrmosSavedJourneys && typeof window.SyrmosSavedJourneys.createStore === "function")
+                ? window.SyrmosSavedJourneys.createStore() : null;
+
+            function stationName(s) {
+                if (currentLang === "el" && (s.name_el || s.nameEl)) return s.name_el || s.nameEl;
+                return s.name || s.id;
+            }
+            function fillSelect(sel, selectedId) {
+                sel.innerHTML = "";
+                stations.slice()
+                    .sort((a, b) => stationName(a).localeCompare(stationName(b)))
+                    .forEach((s) => {
+                        const o = document.createElement("option");
+                        o.value = s.id; o.textContent = stationName(s);
+                        if (s.id === selectedId) o.selected = true;
+                        sel.appendChild(o);
+                    });
+            }
+            function defaults() {
+                const m1 = lines.find((l) => l.id === "M1");
+                const m2 = lines.find((l) => l.id === "M2");
+                return {
+                    from: m1 && m1.stations && m1.stations[0] && m1.stations[0].id,
+                    to: m2 && m2.stations && m2.stations.length && m2.stations[m2.stations.length - 1].id,
+                };
+            }
+            function field(labelText) {
+                const wrap = document.createElement("label");
+                wrap.className = "plan-field";
+                const lbl = document.createElement("span");
+                lbl.className = "plan-field__label"; lbl.textContent = labelText;
+                const sel = document.createElement("select");
+                sel.className = "plan-field__select";
+                wrap.appendChild(lbl); wrap.appendChild(sel);
+                return { wrap, sel };
+            }
             function container() {
                 if (card) return card;
                 try {
@@ -4280,54 +4358,490 @@
                     card.style.display = "none";
                     const title = document.createElement("div");
                     title.className = "panel-card__title";
-                    title.textContent = ({ el: "GO — καθοδηγούμενο ταξίδι", sq: "GO — udhëtim i udhëhequr", it: "GO — viaggio guidato" }[currentLang]) || "GO — guided journey";
+                    title.textContent = T("Plan a journey", "Σχεδίασε διαδρομή", "Planifiko udhëtim", "Pianifica un viaggio");
+
+                    const draft = document.createElement("div");
+                    draft.className = "plan-draft";
+                    const f = field(T("From", "Από", "Nga", "Da"));
+                    const t = field(T("To", "Προς", "Për", "A"));
+                    fromSel = f.sel; toSel = t.sel;
+                    const find = document.createElement("button");
+                    find.type = "button";
+                    find.className = "primary-button plan-draft__find";
+                    find.textContent = T("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi");
+                    find.addEventListener("click", () => runPlan());
+
+                    // Travel-time mode: Leave now / Arrive by (time input) / Last train home.
+                    const timeWrap = document.createElement("div");
+                    timeWrap.className = "plan-time";
+                    timeWrap.style.display = "none";
+                    timeInput = document.createElement("input");
+                    timeInput.type = "time";
+                    timeInput.className = "plan-time__input";
+                    timeWrap.appendChild(timeInput);
+
+                    const modeRow = document.createElement("div");
+                    modeRow.className = "plan-mode";
+                    [["now", T("Leave now", "Τώρα", "Tani", "Ora")],
+                     ["arriveBy", T("Arrive by", "Άφιξη έως", "Mbërri deri", "Arriva entro")],
+                     ["lastConnection", T("Last train home", "Τελευταίο τρένο", "Treni i fundit", "Ultimo treno")]]
+                        .forEach(([id, label]) => {
+                            const b = document.createElement("button");
+                            b.type = "button";
+                            b.className = "plan-mode__btn" + (id === "now" ? " plan-mode__btn--active" : "");
+                            b.dataset.mode = id;
+                            b.textContent = label;
+                            b.addEventListener("click", () => {
+                                planMode = id;
+                                modeRow.querySelectorAll(".plan-mode__btn").forEach((x) =>
+                                    x.classList.toggle("plan-mode__btn--active", x.dataset.mode === id));
+                                timeWrap.style.display = (id === "arriveBy") ? "" : "none";
+                            });
+                            modeRow.appendChild(b);
+                        });
+
+                    draft.appendChild(f.wrap);
+                    draft.appendChild(t.wrap);
+                    draft.appendChild(modeRow);
+                    draft.appendChild(timeWrap);
+                    draft.appendChild(find);
+
+                    resultsEl = document.createElement("div");
+                    resultsEl.id = "planResults";
+                    resultsEl.className = "plan-results";
+
+                    savedEl = document.createElement("div");
+                    savedEl.id = "planSaved";
+                    savedEl.className = "plan-saved";
+
                     panelEl = document.createElement("div");
                     panelEl.id = "goPlanPanel";
+
                     card.appendChild(title);
+                    card.appendChild(draft);
+                    card.appendChild(resultsEl);
+                    card.appendChild(savedEl);
                     card.appendChild(panelEl);
                     const cards = document.getElementById("contextPanelCards");
                     if (cards && cards.parentNode) cards.parentNode.insertBefore(card, cards);
                     else rail.appendChild(card);
+
+                    ensureSelectsFilled();
                     return card;
                 } catch (_) { return null; }
             }
-            function build() {
-                try {
-                    if (!window.SyrmosPlanner) return null;
-                    // Showcase route: M1 origin -> M2 terminus, a real transfer.
-                    const m1 = lines.find((l) => l.id === "M1");
-                    const m2 = lines.find((l) => l.id === "M2");
-                    const fromId = m1 && m1.stations && m1.stations[0] && m1.stations[0].id;
-                    const toId = m2 && m2.stations && m2.stations.length && m2.stations[m2.stations.length - 1].id;
-                    if (!fromId || !toId) return null;
-                    const journey = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
-                    if (!journey) return null;
-                    const coords = {};
-                    const byId = new Map(stations.map((s) => [s.id, s]));
-                    for (const leg of journey.legs) for (const stop of leg.stops) {
-                        const rec = byId.get(stop.id);
-                        if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
-                    }
-                    return { journey, coords };
-                } catch (_) { return null; }
+            // Seed data (stations/lines) loads asynchronously, so the selects may
+            // be empty when the panel is first built. Fill them the first time
+            // data is present (on show / before planning), never clobbering a
+            // choice the rider already made.
+            function ensureSelectsFilled() {
+                if (!fromSel || !toSel) return;
+                if (fromSel.options.length || !stations.length) return;
+                const d = defaults();
+                fillSelect(fromSel, d.from);
+                fillSelect(toSel, d.to);
             }
-            function mount() {
-                try {
-                    if (!window.SyrmosGoPanel) return false;
-                    if (!container()) return false;
-                    const built = build();
-                    if (!built) return false;
-                    window.SyrmosGoPanel.mount(panelEl, built.journey, {
+            function fmtDuration(seconds) {
+                const m = Math.max(1, Math.round(seconds / 60));
+                if (m < 60) return "~" + m + " " + T("min", "λεπ", "min", "min");
+                return "~" + Math.floor(m / 60) + T("h", "ω", "h", "h") + " " + (m % 60) + " " + T("min", "λεπ", "min", "min");
+            }
+            function feasibilityLabel(status) {
+                return {
+                    comfortable: T("Comfortable", "Άνετη", "Komode", "Comoda"),
+                    tight: T("Tight", "Στενή", "E ngushtë", "Stretta"),
+                    missed: T("Missed", "Χαμένη", "Humbur", "Persa"),
+                    unknown: T("Estimated times", "Εκτιμώμενοι χρόνοι", "Kohë të vlerësuara", "Orari stimato"),
+                }[status] || status;
+            }
+            // Reconstruct a GO-panel journey ({legs:[{lineId, towards, stops}]})
+            // from a JourneyOption's ride legs, so a selected alternative can be
+            // shown without carrying the topology route around.
+            function optionToJourney(opt, byId) {
+                const nm = (id) => {
+                    const s = byId.get(id);
+                    if (!s) return id;
+                    return (currentLang === "el" && (s.name_el || s.nameEl)) ? (s.name_el || s.nameEl) : (s.name || id);
+                };
+                const rides = opt.legs.filter((l) => l.kind === "ride");
+                const legs = rides.map((l) => {
+                    const ids = (l.orderedStopIds && l.orderedStopIds.length) ? l.orderedStopIds : [l.fromId, l.toId];
+                    return { lineId: l.lineId, towards: nm(ids[ids.length - 1]), stops: ids.map((id) => ({ id, name: nm(id) })) };
+                });
+                return { legs };
+            }
+            function coordsFor(journey, byId) {
+                const coords = {};
+                for (const leg of journey.legs) for (const stop of leg.stops) {
+                    const rec = byId.get(stop.id);
+                    if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
+                }
+                return coords;
+            }
+            // --- Saved journeys (S08 / J05) ---------------------------------
+            // Locally owned, no account: the current From/To pair is stored through
+            // the shared SyrmosSavedJourneys store (one versioned localStorage root,
+            // HARD de-dup by pair). A saved row loads back into the draft and plans.
+            function pairName(fromId, toId) {
+                const byId = new Map(stations.map((s) => [s.id, s]));
+                const nm = (id) => { const s = byId.get(id); return s ? stationName(s) : id; };
+                return nm(fromId) + " → " + nm(toId);
+            }
+            function isCurrentSaved() {
+                if (!savedStore || !fromSel || !toSel) return false;
+                const f = fromSel.value, t = toSel.value;
+                return savedStore.list().some((s) => s.fromId === f && s.toId === t);
+            }
+            // Keep the results "Save journey" button in sync with the store without a
+            // full re-render (so a delete/undo elsewhere flips it back to enabled).
+            function syncSaveButton() {
+                if (!saveBtnRef) return;
+                const saved = isCurrentSaved();
+                saveBtnRef.disabled = saved;
+                saveBtnRef.textContent = saved
+                    ? T("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                    : T("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio");
+            }
+            function saveCurrent() {
+                if (!savedStore || !fromSel || !toSel) return;
+                const f = fromSel.value, t = toSel.value;
+                if (!f || !t || f === t) return;
+                savedStore.save({
+                    id: window.SyrmosSavedJourneys.newId(),
+                    fromId: f, toId: t,
+                    createdAt: new Date().toISOString(),
+                    label: null,
+                    preferences: { ranking: "fastest", accessibilityPreference: "none" },
+                });
+                renderSaved();
+            }
+            function loadSaved(entry) {
+                if (!fromSel || !toSel) return;
+                ensureSelectsFilled();
+                fromSel.value = entry.fromId;
+                toSel.value = entry.toId;
+                runPlan();
+            }
+            function deleteSaved(entry) {
+                if (!savedStore) return;
+                savedStore.remove(entry.id);
+                // 5s Undo: keep the deleted row available to restore.
+                pendingUndo = entry;
+                if (undoTimer) clearTimeout(undoTimer);
+                undoTimer = setTimeout(() => { pendingUndo = null; undoTimer = null; renderSaved(); }, 5000);
+                renderSaved();
+            }
+            function undoDelete() {
+                if (!savedStore || !pendingUndo) return;
+                savedStore.save(pendingUndo);
+                pendingUndo = null;
+                if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+                renderSaved();
+            }
+            function renderSaved() {
+                if (!savedEl) return;
+                syncSaveButton();
+                savedEl.innerHTML = "";
+                if (!savedStore) return;
+                const heading = document.createElement("div");
+                heading.className = "plan-saved__heading";
+                heading.textContent = T("Saved journeys", "Αποθηκευμένες διαδρομές", "Udhëtimet e ruajtura", "Viaggi salvati");
+                savedEl.appendChild(heading);
+
+                // 5s Undo banner for the most recent delete.
+                if (pendingUndo) {
+                    const undo = document.createElement("div");
+                    undo.className = "plan-saved__undo";
+                    const label = document.createElement("span");
+                    label.textContent = T("Journey deleted", "Η διαδρομή διαγράφηκε", "Udhëtimi u fshi", "Viaggio eliminato");
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "plan-saved__undobtn";
+                    btn.textContent = T("Undo", "Αναίρεση", "Zhbëj", "Annulla");
+                    btn.addEventListener("click", () => undoDelete());
+                    undo.appendChild(label); undo.appendChild(btn);
+                    savedEl.appendChild(undo);
+                }
+
+                const list = savedStore.list();
+                if (!list.length) {
+                    const empty = document.createElement("div");
+                    empty.className = "plan-saved__empty";
+                    empty.textContent = T(
+                        "No saved journeys yet. Plan a route and tap Save.",
+                        "Καμία αποθηκευμένη διαδρομή. Σχεδίασε μια διαδρομή και πάτα Αποθήκευση.",
+                        "Ende s'ka udhëtime të ruajtura. Planifiko një rrugë dhe shtyp Ruaj.",
+                        "Nessun viaggio salvato. Pianifica un percorso e tocca Salva.");
+                    savedEl.appendChild(empty);
+                    return;
+                }
+
+                // Drag-to-reorder: only the grip handle is draggable so tapping the
+                // row still loads. On drop we read the DOM order and persist it
+                // through the shared reorder op.
+                let draggingRow = null;
+                const persistOrder = () => {
+                    const order = Array.from(savedEl.querySelectorAll(".plan-saved__row"))
+                        .map((r) => r.dataset.id).filter(Boolean);
+                    savedStore.reorder(order);
+                    renderSaved();
+                };
+
+                list.forEach((entry) => {
+                    const row = document.createElement("div");
+                    row.className = "plan-saved__row";
+                    row.dataset.id = entry.id;
+                    row.addEventListener("dragover", (e) => {
+                        if (!draggingRow || draggingRow === row) return;
+                        e.preventDefault();
+                        const box = row.getBoundingClientRect();
+                        const after = e.clientY > box.top + box.height / 2;
+                        savedEl.insertBefore(draggingRow, after ? row.nextSibling : row);
+                    });
+
+                    const handle = document.createElement("span");
+                    handle.className = "plan-saved__grip";
+                    handle.textContent = "⠿";
+                    handle.setAttribute("draggable", "true");
+                    handle.title = T("Drag to reorder", "Σύρε για αναδιάταξη", "Zvarrit për të risistemuar", "Trascina per riordinare");
+                    handle.setAttribute("aria-label", handle.title);
+                    handle.addEventListener("dragstart", (e) => {
+                        draggingRow = row;
+                        row.classList.add("plan-saved__row--dragging");
+                        if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", entry.id); }
+                    });
+                    handle.addEventListener("dragend", () => {
+                        row.classList.remove("plan-saved__row--dragging");
+                        draggingRow = null;
+                        persistOrder();
+                    });
+                    row.appendChild(handle);
+
+                    const main = document.createElement("button");
+                    main.type = "button";
+                    main.className = "plan-saved__load";
+                    const title = document.createElement("div");
+                    title.className = "plan-saved__name";
+                    title.textContent = entry.label || pairName(entry.fromId, entry.toId);
+                    main.appendChild(title);
+                    if (entry.label) {
+                        const sub = document.createElement("div");
+                        sub.className = "plan-saved__pair";
+                        sub.textContent = pairName(entry.fromId, entry.toId);
+                        main.appendChild(sub);
+                    }
+                    main.addEventListener("click", () => loadSaved(entry));
+                    row.appendChild(main);
+
+                    const renameBtn = document.createElement("button");
+                    renameBtn.type = "button";
+                    renameBtn.className = "plan-saved__action";
+                    renameBtn.title = T("Rename", "Μετονομασία", "Riemërto", "Rinomina");
+                    renameBtn.setAttribute("aria-label", renameBtn.title);
+                    renameBtn.textContent = "✎";
+                    renameBtn.addEventListener("click", () => {
+                        const current = entry.label || "";
+                        const next = window.prompt(T("Name this journey", "Ονόμασε τη διαδρομή", "Emërto këtë udhëtim", "Nomina questo viaggio"), current);
+                        if (next === null) return; // cancelled
+                        savedStore.rename(entry.id, next);
+                        renderSaved();
+                    });
+                    row.appendChild(renameBtn);
+
+                    const delBtn = document.createElement("button");
+                    delBtn.type = "button";
+                    delBtn.className = "plan-saved__action plan-saved__action--danger";
+                    delBtn.title = T("Delete", "Διαγραφή", "Fshi", "Elimina");
+                    delBtn.setAttribute("aria-label", delBtn.title);
+                    delBtn.textContent = "🗑";
+                    delBtn.addEventListener("click", () => deleteSaved(entry));
+                    row.appendChild(delBtn);
+
+                    savedEl.appendChild(row);
+                });
+            }
+            let lastPlanned = null, lastHasTimetable = false;
+            function renderResults(planned, hasTimetable) {
+                lastPlanned = planned; lastHasTimetable = hasTimetable;
+                saveBtnRef = null;
+                resultsEl.innerHTML = "";
+                const byId = new Map(stations.map((s) => [s.id, s]));
+                // In a backward mode only options that actually scheduled are usable.
+                let opts = (planned && planned.options) ? planned.options : [];
+                if (planMode !== "now") opts = opts.filter((o) => o.departureInstant);
+
+                if (!opts.length) {
+                    const empty = document.createElement("div");
+                    empty.className = "plan-results__empty";
+                    empty.textContent = (planMode !== "now" && !hasTimetable)
+                        ? T("Schedules still loading — try again.", "Φόρτωση δρομολογίων — δοκίμασε ξανά.", "Oraret po ngarkohen — provo sërish.", "Orari in caricamento — riprova.")
+                        : (planMode === "lastConnection"
+                            ? T("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                            : planMode === "arriveBy"
+                                ? T("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo.")
+                                : T("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato."));
+                    resultsEl.appendChild(empty);
+                    if (window.SyrmosGoPanel) panelEl.innerHTML = "";
+                    return;
+                }
+
+                const summary = document.createElement("div");
+                summary.className = "plan-results__summary";
+                const count = document.createElement("span");
+                count.textContent = opts.length + " " +
+                    (opts.length === 1 ? T("route", "διαδρομή", "rrugë", "percorso") : T("routes", "διαδρομές", "rrugë", "percorsi"));
+                summary.appendChild(count);
+                // Save action on a plan result (S08): store the current From/To pair.
+                if (savedStore) {
+                    const saveBtn = document.createElement("button");
+                    saveBtn.type = "button";
+                    saveBtn.className = "plan-results__save";
+                    const saved = isCurrentSaved();
+                    saveBtn.textContent = saved
+                        ? T("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                        : T("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio");
+                    saveBtn.disabled = saved;
+                    saveBtn.addEventListener("click", () => saveCurrent());
+                    summary.appendChild(saveBtn);
+                    saveBtnRef = saveBtn;
+                }
+                resultsEl.appendChild(summary);
+
+                const mountSelected = (opt) => {
+                    if (!window.SyrmosGoPanel || !panelEl) return;
+                    const journey = optionToJourney(opt, byId);
+                    window.SyrmosGoPanel.mount(panelEl, journey, {
                         language: currentLang,
-                        coords: built.coords,
+                        coords: coordsFor(journey, byId),
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                     });
-                    mounted = true;
-                    return true;
-                } catch (_) { return false; }
+                };
+
+                const cardEls = [];
+                opts.forEach((opt, i) => {
+                    const chain = opt.legs.filter((l) => l.kind === "ride").map((l) => l.lineId).join(" → ");
+                    const changes = opt.transferCount === 1
+                        ? T("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
+                        : opt.transferCount + " " + T("changes", "αλλαγές", "ndërrime", "cambi");
+                    const el = document.createElement("button");
+                    el.type = "button";
+                    el.className = "plan-option" + (i === 0 ? " plan-option--selected" : "");
+
+                    const meta = document.createElement("div");
+                    meta.className = "plan-results__meta";
+                    meta.textContent = fmtDuration(opt.durationSeconds || 0) + " · " + changes + " · " + chain;
+                    el.appendChild(meta);
+
+                    if (planMode !== "now" && opt.departureInstant) {
+                        const hhmm = new Date(opt.departureInstant).toLocaleTimeString(
+                            "en-GB", { timeZone: "Europe/Athens", hour: "2-digit", minute: "2-digit" });
+                        const lb = document.createElement("div");
+                        lb.className = "plan-results__leaveby";
+                        const label = planMode === "lastConnection"
+                            ? T("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
+                            : T("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro");
+                        lb.textContent = label + " " + hhmm;
+                        el.appendChild(lb);
+                    }
+
+                    const chip = document.createElement("span");
+                    chip.className = "plan-results__chip plan-results__chip--" + opt.feasibility.status;
+                    chip.textContent = feasibilityLabel(opt.feasibility.status);
+                    el.appendChild(chip);
+
+                    el.addEventListener("click", () => {
+                        cardEls.forEach((c) => c.classList.remove("plan-option--selected"));
+                        el.classList.add("plan-option--selected");
+                        mountSelected(opt);
+                    });
+                    cardEls.push(el);
+                    resultsEl.appendChild(el);
+                });
+
+                mountSelected(opts[0]); // first (best) selected by default
+            }
+            // Build a real timetable for a planned route from the live departure
+            // projection: for each ride leg, the next departures of that line at the
+            // board station (as absolute instants = now + minutesAway) plus an
+            // estimated per-leg travel time. Feeds SyrmosSchedulePlan so feasibility
+            // is real (comfortable/tight) instead of estimated. Returns null when no
+            // projection is available (the adapter then keeps the estimated option).
+            function buildTimetable(detailed, horizon) {
+                if (!detailed || typeof projectFromBundle !== "function" || typeof apiSchedules === "undefined") return null;
+                // Forward "leave now" needs only the next ~30 departures; arrive-by
+                // and last-connection need the WHOLE remaining service day so the
+                // backward search finds the real latest train, not the next 2 hours.
+                const limit = Number.isFinite(horizon) ? horizon : 30;
+                const nowMs = Date.now();
+                const nowDate = (typeof athensNow === "function") ? athensNow() : new Date();
+                const departures = {};
+                const legSeconds = {};
+                for (const leg of detailed.legs) {
+                    const stops = leg.stops || [];
+                    if (stops.length < 2) continue;
+                    const boardId = stops[0].id;
+                    const alightId = stops[stops.length - 1].id;
+                    // Project the leg's OWN line directly from its bundle with a long
+                    // horizon (limit 30 ~= the next 1-2 hours). The old node path used
+                    // buildStationDepartures, which caps at 10 near-term slots ACROSS
+                    // all lines at an interchange, so a later leg (rider arrives 15+
+                    // min out) had no catchable departure left and stayed unscheduled.
+                    const bundleLineIds = leg.lineId === "M3" ? ["M3", "M3_AIR"] : [leg.lineId];
+                    const out = [];
+                    for (const lid of bundleLineIds) {
+                        const bundle = apiSchedules.get(lid);
+                        if (bundle) {
+                            try { projectFromBundle(bundle, nowDate, lid, out, limit); } catch (_) { /* skip */ }
+                        }
+                    }
+                    const instants = out
+                        .filter((d) => Number.isFinite(d.minutesAway))
+                        .map((d) => new Date(nowMs + d.minutesAway * 60000).toISOString());
+                    if (instants.length) departures[leg.lineId + "|" + boardId] = instants;
+                    const type = (lines.find((l) => l.id === leg.lineId) || {}).type;
+                    const perHop = (window.SyrmosPlanner && window.SyrmosPlanner._travelTime)
+                        ? window.SyrmosPlanner._travelTime(type) : 3;
+                    legSeconds[leg.lineId + "|" + boardId + "|" + alightId] = (stops.length - 1) * perHop * 60;
+                }
+                return Object.keys(departures).length ? { departures, legSeconds } : null;
+            }
+            function runPlan() {
+                try {
+                    if (!window.SyrmosPlanner || !window.SyrmosJourneyPlan) return;
+                    if (!container()) return;
+                    ensureSelectsFilled();
+                    const fromId = fromSel && fromSel.value;
+                    const toId = toSel && toSel.value;
+                    const base = window.SyrmosPlanner.planDetailed(stations, lines, fromId, toId, currentLang);
+                    // Backward modes need the whole day's departures to find the true
+                    // latest train; forward "leave now" only needs the next handful.
+                    const horizon = planMode === "now" ? 30 : 400;
+                    // Each candidate route gets its OWN timetable (different lines).
+                    const perCandidate = (d) => buildTimetable(d, horizon);
+                    const hasTimetable = !!(base && buildTimetable(base, horizon));
+                    // Arrive-by target: interpret HH:MM as the next occurrence in Athens
+                    // time, expressed as a real instant (now + minutes-until).
+                    let arriveByInstant = null;
+                    if (planMode === "arriveBy" && timeInput && timeInput.value) {
+                        const m = /^(\d{1,2}):(\d{2})$/.exec(timeInput.value);
+                        if (m) {
+                            const anow = (typeof athensNow === "function") ? athensNow() : new Date();
+                            const nowMin = anow.getHours() * 60 + anow.getMinutes();
+                            let delta = (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) - nowMin;
+                            if (delta < 0) delta += 24 * 60;
+                            arriveByInstant = new Date(Date.now() + delta * 60000).toISOString();
+                        }
+                    }
+                    const planned = window.SyrmosJourneyPlan.plan(stations, lines, {
+                        fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
+                        buildTimetable: perCandidate, requestedInstant: new Date().toISOString(),
+                        defaultTransferSeconds: 120, timeMode: planMode, arriveByInstant,
+                    });
+                    renderResults(planned, hasTimetable);
+                } catch (_) { /* leave prior results intact */ }
             }
             return {
-                show() { try { if (!mounted) mount(); if (card) card.style.display = ""; } catch (_) {} },
+                show() { try { if (container()) { card.style.display = ""; ensureSelectsFilled(); renderSaved(); if (resultsEl && !resultsEl.childNodes.length && fromSel && fromSel.options.length) runPlan(); } } catch (_) {} },
                 hide() { try { if (card) card.style.display = "none"; } catch (_) {} },
             };
         })();
