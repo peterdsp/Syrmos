@@ -4309,6 +4309,22 @@
             let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null, resumeEl = null;
             let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
             let planStepFree = false; // Phase R rider accessibility preference
+            let planNotices = []; // live service notices for disruption exclusion
+            let planDisruption = null; // last DisruptionExclusion outcome
+            // Load the live announcement feed once so disruption exclusion has data.
+            // CLOSURE notices suspend their lines; anything else is informational.
+            function loadPlanNotices() {
+                fetch("https://api-syrmos.peterdsp.dev/api/announcements")
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((j) => {
+                        if (!j || !j.announcements) return;
+                        planNotices = j.announcements
+                            .filter((a) => a.category === "serviceAlert" || a.severity !== "info")
+                            .map((a) => ({ id: a.id, severity: a.severity, affectedLineIds: a.affectedLines || [] }));
+                    })
+                    .catch(() => { /* offline: no disruption data, plan normally */ });
+            }
+            loadPlanNotices();
             let undoTimer = null, pendingUndo = null; // last-deleted journey for the 5s Undo
             let saveBtnRef = null; // the results "Save journey" button, kept in sync with the store
             const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
@@ -4880,6 +4896,35 @@
                 lastPlanned = planned; lastHasTimetable = hasTimetable;
                 saveBtnRef = null;
                 resultsEl.innerHTML = "";
+
+                // Phase R disruption surfaces (S10 suspended segment / routed-around).
+                if (planDisruption && planDisruption.kind === "suspended") {
+                    const list = (planDisruption.affectedLineIds || []).map((x) => String(x).toUpperCase()).sort().join(", ");
+                    const box = document.createElement("div");
+                    box.className = "plan-suspended";
+                    const h = document.createElement("div");
+                    h.className = "plan-suspended__title";
+                    h.textContent = T(list + " is suspended", "Η " + list + " έχει ανασταλεί", list + " është pezulluar", list + " è sospesa");
+                    const p = document.createElement("div");
+                    p.className = "plan-suspended__body";
+                    p.textContent = T("No route avoids the closed section. Check the operator for alternatives and updates.",
+                        "Καμία διαδρομή δεν παρακάμπτει το κλειστό τμήμα. Δες τον πάροχο για εναλλακτικές και ενημερώσεις.",
+                        "Asnjë rrugë s'e shmang pjesën e mbyllur. Shiko operatorin për alternativa dhe përditësime.",
+                        "Nessun percorso evita il tratto chiuso. Controlla l'operatore per alternative e aggiornamenti.");
+                    box.appendChild(h); box.appendChild(p);
+                    resultsEl.appendChild(box);
+                    if (window.SyrmosGoPanel) panelEl.innerHTML = "";
+                    return;
+                }
+                if (planDisruption && planDisruption.kind === "routed" && (planDisruption.excludedLineIds || []).length) {
+                    const list = planDisruption.excludedLineIds.map((x) => String(x).toUpperCase()).sort().join(", ");
+                    const chip = document.createElement("div");
+                    chip.className = "plan-routing-around";
+                    chip.textContent = T("Routing around suspended " + list + ".", "Παράκαμψη της ανασταλμένης " + list + ".",
+                        "Duke anashkaluar " + list + " të pezulluar.", "Percorso che evita " + list + " sospesa.");
+                    resultsEl.appendChild(chip);
+                }
+
                 const byId = new Map(stations.map((s) => [s.id, s]));
                 // In a backward mode only options that actually scheduled are usable.
                 let opts = (planned && planned.options) ? planned.options : [];
@@ -5062,12 +5107,26 @@
                             arriveByInstant = new Date(Date.now() + delta * 60000).toISOString();
                         }
                     }
-                    const planned = window.SyrmosJourneyPlan.plan(stations, lines, {
+                    const planOpts = {
                         fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
                         buildTimetable: perCandidate, requestedInstant: new Date().toISOString(),
                         defaultTransferSeconds: 120, timeMode: planMode, arriveByInstant,
-                    });
-                    renderResults(planned, hasTimetable);
+                    };
+                    // Phase R disruption exclusion: never plan through a suspended
+                    // (CLOSURE) line. Plan naive + avoiding, then classify.
+                    const D = window.SyrmosDisruption;
+                    const suspended = D ? D.suspendedLineIds(planNotices) : [];
+                    const naive = window.SyrmosJourneyPlan.plan(stations, lines, planOpts);
+                    let avoiding = naive;
+                    if (D && suspended.length) {
+                        const avoidingLines = lines.filter((l) => !suspended.includes(D.normalizeLine(l.id)));
+                        avoiding = window.SyrmosJourneyPlan.plan(stations, avoidingLines, planOpts);
+                    }
+                    planDisruption = D
+                        ? D.classify((avoiding && avoiding.options) || [], (naive && naive.options) || [], planNotices)
+                        : { kind: "routed", excludedLineIds: [] };
+                    const shown = (planDisruption.kind === "suspended") ? { options: [] } : avoiding;
+                    renderResults(shown, hasTimetable);
                 } catch (_) { /* leave prior results intact */ }
             }
             return {
