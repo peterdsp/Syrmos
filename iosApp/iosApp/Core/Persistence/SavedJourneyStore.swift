@@ -295,14 +295,7 @@ enum GoActiveJourneyContract {
     /// Rebuild a GuidanceJourney from a snapshot, re-resolving names in `language`
     /// (the resume seam). Mirrors `GuidanceJourney.from(_:language:)`.
     static func guidance(from option: GoOptionSnapshot, language: AppLanguage) -> GuidanceJourney {
-        var byId: [String: TransitStation] = [:]
-        for line in SyrmosData.lines {
-            for st in SyrmosData.stations(for: line.id) where byId[st.id] == nil { byId[st.id] = st }
-        }
-        func name(_ id: String) -> String {
-            guard let st = byId[id] else { return id }
-            return language == .greek && !st.nameEl.isEmpty ? st.nameEl : st.name
-        }
+        let name = GuidanceJourney.stationName(language: language)
         let legs = rideLegs(option).map { leg -> GuidanceLeg in
             let stops = leg.orderedStopIds.map { GuidanceStop(id: $0, name: name($0)) }
             return GuidanceLeg(lineId: leg.lineId ?? "", towards: stops.last?.name ?? "", stops: stops)
