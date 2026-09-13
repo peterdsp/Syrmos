@@ -68,7 +68,13 @@ final class SavedJourneyStoreTests: XCTestCase {
     }
 
     func testEncodeMatchesFixtureEmptyRootShapeAndRoundTrips() {
-        XCTAssertEqual(SavedJourneyContract.encode([]), "{\"schemaVersion\":1,\"savedJourneys\":[]}")
+        // JSONEncoder key order is not guaranteed (Swift's per-process randomized
+        // hashing), so assert the empty-root SHAPE semantically rather than an exact
+        // byte string, which flakes. Decode is order-independent, so parity holds.
+        let emptyObj = try? JSONSerialization.jsonObject(
+            with: Data(SavedJourneyContract.encode([]).utf8)) as? [String: Any]
+        XCTAssertEqual(emptyObj?["schemaVersion"] as? Int, 1)
+        XCTAssertEqual((emptyObj?["savedJourneys"] as? [Any])?.count, 0)
         let list = SavedJourneyContract.save([], sj("a", "M1_PIR", "M1_OMO", "2026-01-15T08:00:00+02:00"))
         if case .ok(let round) = SavedJourneyContract.decode(SavedJourneyContract.encode(list)) {
             XCTAssertEqual(ids(round), ["a"])
