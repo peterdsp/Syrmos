@@ -70,7 +70,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         configurationForConnecting connectingSceneSession: UISceneSession,
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
-        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        let config = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
     }
@@ -192,19 +192,21 @@ struct ContentView: View {
         ZStack {
             Color.syrmosBackground.ignoresSafeArea()
             TabView(selection: $selectedTab) {
-                // Each non-Settings tab reserves 60pt at the bottom via a
-                // safeAreaInset so the last row/item in its scrollable
-                // never disappears under the floating Ask Ariadne pill.
-                // Settings hides the pill entirely so no clearance needed.
+                // Constrain reading surfaces to their available container;
+                // the native tab bar and map still use the whole window.
+                // Insets follow the tab bar when iPadOS moves it to the top
+                // and follow the keyboard when a field becomes active.
                 HomeView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
+                    .modifier(ReadableTabContent())
+                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher }
                     .tabItem {
                         Label(loc[.home], systemImage: "house")
                     }
                     .tag(SyrmosTab.home)
 
                 LinesView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
+                    .modifier(ReadableTabContent())
+                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher }
                     .tabItem {
                         Label(loc[.explore], systemImage: "safari")
                     }
@@ -217,42 +219,21 @@ struct ContentView: View {
                     .tag(SyrmosTab.map)
 
                 TimetablesView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 60) }
+                    .modifier(ReadableTabContent())
+                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher }
                     .tabItem {
                         Label(loc[.departures], systemImage: "airplane")
                     }
                     .tag(SyrmosTab.departures)
 
                 SyrmosSettingsView()
+                    .modifier(ReadableTabContent())
                     .tabItem {
                         Label(loc[.moreTab], systemImage: "ellipsis.circle")
                     }
                     .tag(SyrmosTab.more)
             }
             .tint(.syrmosPrimary)
-
-            // Ariadne launcher lives at the app level so it's available on
-            // Home / Explore / Departures. Hidden on More (the pill would
-            // sit on top of the settings scroll controls) AND on Map
-            // (the Locate + Vehicles buttons already own that bottom-
-            // right corner). The pill fades and slides on tab change so
-            // it never abruptly appears mid-transition.
-            if selectedTab != .more && selectedTab != .map {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        AriadneLauncherPill(
-                            label: askAriadneLabel,
-                            onTap: { showAriadne = true }
-                        )
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 90)
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .allowsHitTesting(true)
-            }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
         .sheet(isPresented: $showAriadne) {
@@ -291,6 +272,19 @@ struct ContentView: View {
         }
     }
 
+    private var assistantLauncher: some View {
+        AriadneLauncherPill(
+            label: askAriadneLabel,
+            onTap: { showAriadne = true }
+        )
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: ReadableTabContent.maximumWidth)
+        .frame(maxWidth: .infinity)
+        .background(Color.syrmosBackground)
+    }
+
     private var askAriadneLabel: String {
         switch loc.language {
         case .greek: return "Ρώτα την Αριάδνη"
@@ -319,6 +313,19 @@ private func routeNotification(category: String, alertId: String, stationId: Str
 
 enum SyrmosTab: String {
     case home, explore, map, departures, more
+}
+
+/// A single reading column is a safe baseline for large/resizable windows.
+/// The same view tree remains mounted as its proposed width changes.
+private struct ReadableTabContent: ViewModifier {
+    static let maximumWidth: CGFloat = 760
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: Self.maximumWidth)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.syrmosBackground)
+    }
 }
 
 /// The launcher pill users tap to open Ariadne. Springs on press so the

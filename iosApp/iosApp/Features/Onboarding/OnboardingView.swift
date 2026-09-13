@@ -75,7 +75,8 @@ struct OnboardingView: View {
 
                 actionRow
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 36)
+                    .padding(.bottom, 24)
+                    .frame(maxWidth: 560)
             }
         }
     }
@@ -122,6 +123,7 @@ struct OnboardingView: View {
                     Text(loc[.onboardSkip])
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .frame(minHeight: 44)
                 }
             }
         }
@@ -149,6 +151,8 @@ private struct OnboardingPage: View {
     let page: Page
 
     var body: some View {
+        GeometryReader { geometry in
+        ScrollView {
         VStack(spacing: 28) {
             Spacer()
 
@@ -187,6 +191,12 @@ private struct OnboardingPage: View {
 
             Spacer()
             Spacer()
+        }
+        .padding(.vertical, 24)
+        .frame(maxWidth: 560)
+        .frame(maxWidth: .infinity, minHeight: geometry.size.height)
+        }
+        .scrollBounceBehavior(.basedOnSize)
         }
     }
 }
