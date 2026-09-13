@@ -63,10 +63,12 @@ import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
+import com.syrmos.app.journey.ActiveJourneyRepository
 import com.syrmos.app.journey.SavedJourneysRepository
 import com.syrmos.core.domain.go.GuidanceJourney
 import com.syrmos.core.domain.go.GuidanceLeg
 import com.syrmos.core.domain.go.GuidanceStop
+import com.syrmos.core.domain.journey.ActiveJourneyStore
 import com.syrmos.core.domain.journey.JourneyDetail
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
 import com.syrmos.core.domain.journey.SchedulePlanner
@@ -123,12 +125,15 @@ class PlanScreenRoute : Screen {
 
         // Saved journeys (S08 / J05): locally owned, no account.
         val savedItems by SavedJourneysRepository.items.collectAsState()
+        // The single live GO session (S06): shown as a resume banner when present.
+        val activeJourney by ActiveJourneyRepository.active.collectAsState()
         var pendingUndo by remember { mutableStateOf<SavedJourney?>(null) }
         var renameTarget by remember { mutableStateOf<SavedJourney?>(null) }
         var renameText by remember { mutableStateOf("") }
 
         LaunchedEffect(Unit) {
             SavedJourneysRepository.refresh()
+            ActiveJourneyRepository.refresh()
             stations = stationRepo.getAllStations().first()
         }
         // 5s Undo window for the most recent delete.
@@ -194,27 +199,24 @@ class PlanScreenRoute : Screen {
             SavedJourneysRepository.remove(entry.id)
             pendingUndo = entry
         }
-        // S05 -> S06: build a GuidanceJourney from the option's ride legs (each
-        // leg's full ordered stops reconstructed from its line) and open GO.
+        // S05 -> S06: build a GuidanceJourney from the option's ride legs, persist a
+        // fresh live session (so it survives a kill / navigation), and open GO.
         fun startGo(opt: JourneyOption) {
             scope.launch {
-                val gLegs = mutableListOf<GuidanceLeg>()
-                for (leg in opt.legs.filter { it.kind == LegKind.RIDE }) {
-                    val lineId = leg.lineId ?: continue
-                    val lineStations = stationRepo.getStationsOnLine(lineId).first()
-                    val fromIdx = lineStations.indexOfFirst { it.id == leg.fromId }
-                    val toIdx = lineStations.indexOfFirst { it.id == leg.toId }
-                    val slice = if (fromIdx >= 0 && toIdx >= 0) {
-                        if (fromIdx <= toIdx) lineStations.subList(fromIdx, toIdx + 1)
-                        else lineStations.subList(toIdx, fromIdx + 1).reversed()
-                    } else {
-                        listOfNotNull(lineStations.firstOrNull { it.id == leg.fromId },
-                                      lineStations.firstOrNull { it.id == leg.toId })
-                    }
-                    val stops = slice.map { GuidanceStop(it.id, if (lang == AppLanguage.GREEK) it.nameEl else it.name) }
-                    if (stops.size >= 2) gLegs.add(GuidanceLeg(lineId = lineId, towards = stops.last().name, stops = stops))
-                }
-                if (gLegs.isNotEmpty()) navigator.push(GoJourneyScreenRoute(GuidanceJourney(gLegs)))
+                val guidance = buildGuidanceJourney(opt, stationRepo, lang)
+                if (guidance.legs.isEmpty()) return@launch
+                ActiveJourneyRepository.set(
+                    ActiveJourneyStore.start(ActiveJourneyRepository.newId(), opt, guidance, Clock.System.now()),
+                )
+                navigator.push(GoJourneyScreenRoute(guidance))
+            }
+        }
+        // Resume an in-progress session: rebuild guidance from the frozen snapshot
+        // (names re-resolved in the current language) and reopen GO where it left off.
+        fun resumeGo(active: com.syrmos.core.model.journey.ActiveJourney) {
+            scope.launch {
+                val guidance = buildGuidanceJourney(active.itinerarySnapshot, stationRepo, lang)
+                if (guidance.legs.isNotEmpty()) navigator.push(GoJourneyScreenRoute(guidance))
             }
         }
 
@@ -241,6 +243,41 @@ class PlanScreenRoute : Screen {
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Resume banner (S06): a live GO session survives a kill / navigation.
+                activeJourney?.let { active ->
+                    val fromId2 = active.itinerarySnapshot.legs.firstOrNull()?.fromId
+                    val toId2 = active.itinerarySnapshot.legs.lastOrNull()?.toId
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp))
+                            .clickable { resumeGo(active) }
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                t("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso"),
+                                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                name(fromId2) + " → " + name(toId2),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = { ActiveJourneyRepository.clear() }) {
+                                Text(t("End", "Τέλος", "Përfundo", "Termina"))
+                            }
+                            Button(onClick = { resumeGo(active) }) {
+                                Text(t("Resume", "Συνέχεια", "Vazhdo", "Riprendi"))
+                            }
+                        }
+                    }
+                }
+
                 endpointRow(t("From", "Από", "Nga", "Da"), name(fromId)) { open = if (open == "from") null else "from" }
                 endpointRow(t("To", "Προς", "Për", "A"), name(toId)) { open = if (open == "to") null else "to" }
 
@@ -730,6 +767,37 @@ class PlanScreenRoute : Screen {
             }
         }
     }
+}
+
+/**
+ * Build a [GuidanceJourney] from a planned option's ride legs, reconstructing each
+ * leg's full ordered stops from its line (so an interchange is never collapsed) and
+ * resolving stop names in the active language. Used both to start GO and to resume a
+ * persisted session, so a resumed trip is rebuilt identically (ids match; only names
+ * follow the current language). Empty when no ride leg yields two or more stops.
+ */
+private suspend fun buildGuidanceJourney(
+    opt: JourneyOption,
+    stationRepo: StationRepositoryImpl,
+    lang: AppLanguage,
+): GuidanceJourney {
+    val gLegs = mutableListOf<GuidanceLeg>()
+    for (leg in opt.legs.filter { it.kind == LegKind.RIDE }) {
+        val lineId = leg.lineId ?: continue
+        val lineStations = stationRepo.getStationsOnLine(lineId).first()
+        val fromIdx = lineStations.indexOfFirst { it.id == leg.fromId }
+        val toIdx = lineStations.indexOfFirst { it.id == leg.toId }
+        val slice = if (fromIdx >= 0 && toIdx >= 0) {
+            if (fromIdx <= toIdx) lineStations.subList(fromIdx, toIdx + 1)
+            else lineStations.subList(toIdx, fromIdx + 1).reversed()
+        } else {
+            listOfNotNull(lineStations.firstOrNull { it.id == leg.fromId },
+                          lineStations.firstOrNull { it.id == leg.toId })
+        }
+        val stops = slice.map { GuidanceStop(it.id, if (lang == AppLanguage.GREEK) it.nameEl else it.name) }
+        if (stops.size >= 2) gLegs.add(GuidanceLeg(lineId = lineId, towards = stops.last().name, stops = stops))
+    }
+    return GuidanceJourney(gLegs)
 }
 
 /**
