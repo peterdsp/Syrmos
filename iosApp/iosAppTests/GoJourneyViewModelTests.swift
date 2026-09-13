@@ -123,3 +123,101 @@ final class GoJourneyViewModelTests: XCTestCase {
         XCTAssertEqual(alerts, ["Syntagma", "board:Airport"])
     }
 }
+
+/// Pins the iOS live-session lifecycle (GoActiveJourneyContract) against the same
+/// cases as the shared Kotlin ActiveJourneyStore and the web SyrmosActiveJourney:
+/// start/advance/back/end, phase derivation, and id-anchored resume that survives a
+/// name change (language switch). Persistence is checked through an isolated store.
+@MainActor
+final class GoActiveJourneyStoreTests: XCTestCase {
+
+    // Two ride legs with a transfer semantics: leg-0 (4 stops) so an interior stop is
+    // a real RIDING state; leg-1 (2 stops). `suffix` varies names but never ids.
+    private func journey(_ suffix: String = "") -> GuidanceJourney {
+        GuidanceJourney(legs: [
+            GuidanceLeg(lineId: "line-A", towards: "S4" + suffix, stops: [
+                GuidanceStop(id: "s1", name: "S1" + suffix),
+                GuidanceStop(id: "s2", name: "S2" + suffix),
+                GuidanceStop(id: "s3", name: "S3" + suffix),
+                GuidanceStop(id: "s4", name: "S4" + suffix),
+            ]),
+            GuidanceLeg(lineId: "line-B", towards: "S5" + suffix, stops: [
+                GuidanceStop(id: "s4", name: "S4" + suffix),
+                GuidanceStop(id: "s5", name: "S5" + suffix),
+            ]),
+        ])
+    }
+
+    func test_start_beginsAtOriginReadyToBoard() {
+        let g = journey()
+        let a = GoActiveJourneyContract.start(journey: g, language: .english)
+        XCTAssertEqual(a.phase, GoActiveJourneyContract.phaseReadyToBoard)
+        XCTAssertEqual(a.legId, "leg-0")
+        XCTAssertEqual(a.confirmedStopId, "s1")
+        XCTAssertEqual(GoActiveJourneyContract.positionOf(a, g), GuidancePosition(legIndex: 0, stopIndex: 0))
+    }
+
+    func test_advance_walksEveryPhaseThenArrives() {
+        let g = journey()
+        var a = GoActiveJourneyContract.start(journey: g, language: .english)
+        a = GoActiveJourneyContract.advance(a, g); XCTAssertEqual(a.phase, GoActiveJourneyContract.phaseRiding); XCTAssertEqual(a.confirmedStopId, "s2")
+        a = GoActiveJourneyContract.advance(a, g); XCTAssertEqual(a.phase, GoActiveJourneyContract.phaseAlightSoon)
+        a = GoActiveJourneyContract.advance(a, g); XCTAssertEqual(a.phase, GoActiveJourneyContract.phaseTransfer); XCTAssertEqual(a.legId, "leg-0"); XCTAssertEqual(a.confirmedStopId, "s4")
+        a = GoActiveJourneyContract.advance(a, g); XCTAssertEqual(a.phase, GoActiveJourneyContract.phaseReadyToBoard); XCTAssertEqual(a.legId, "leg-1"); XCTAssertEqual(a.confirmedStopId, "s4")
+        a = GoActiveJourneyContract.advance(a, g); XCTAssertEqual(a.phase, GoActiveJourneyContract.phaseArrived); XCTAssertEqual(a.confirmedStopId, "s5")
+        let end = GoActiveJourneyContract.advance(a, g) // past destination is a no-op
+        XCTAssertEqual(GoActiveJourneyContract.positionOf(end, g), GoActiveJourneyContract.positionOf(a, g))
+    }
+
+    func test_back_stepsAcrossLegBoundary() {
+        let g = journey()
+        var a = GoActiveJourneyContract.start(journey: g, language: .english)
+        for _ in 0..<4 { a = GoActiveJourneyContract.advance(a, g) } // (1,0)
+        XCTAssertEqual(GoActiveJourneyContract.positionOf(a, g), GuidancePosition(legIndex: 1, stopIndex: 0))
+        a = GoActiveJourneyContract.back(a, g)
+        XCTAssertEqual(GoActiveJourneyContract.positionOf(a, g), GuidancePosition(legIndex: 0, stopIndex: 3))
+        XCTAssertEqual(a.confirmedStopId, "s4")
+    }
+
+    func test_resume_landsOnSameStopWhenNamesChange() {
+        let g = journey("")
+        var a = GoActiveJourneyContract.start(journey: g, language: .english)
+        a = GoActiveJourneyContract.advance(a, g); a = GoActiveJourneyContract.advance(a, g) // (0,2)
+        guard case .ok(let decodedOpt) = GoActiveJourneyContract.decode(GoActiveJourneyContract.encode(a)),
+              let decoded = decodedOpt else { return XCTFail("decode failed") }
+        let relabelled = journey(" (EL)")
+        XCTAssertEqual(GoActiveJourneyContract.positionOf(decoded, relabelled), GuidancePosition(legIndex: 0, stopIndex: 2))
+    }
+
+    func test_unknownStop_fallsBackToLegOrigin() {
+        let g = journey()
+        var a = GoActiveJourneyContract.start(journey: g, language: .english)
+        a.legId = "leg-1"; a.confirmedStopId = "ghost"
+        XCTAssertEqual(GoActiveJourneyContract.positionOf(a, g), GuidancePosition(legIndex: 1, stopIndex: 0))
+    }
+
+    func test_end_marksEndedAndNotResumable() {
+        let g = journey()
+        let a = GoActiveJourneyContract.start(journey: g, language: .english)
+        XCTAssertTrue(GoActiveJourneyContract.isResumable(a))
+        let ended = GoActiveJourneyContract.end(a)
+        XCTAssertEqual(ended.phase, GoActiveJourneyContract.phaseEnded)
+        XCTAssertTrue(GoActiveJourneyContract.isEnded(ended))
+        XCTAssertFalse(GoActiveJourneyContract.isResumable(ended))
+    }
+
+    func test_store_roundTripsLiveSessionAndDropsEnded() {
+        let defaults = UserDefaults(suiteName: "test.activejourney.\(UUID().uuidString)")!
+        let store = GoActiveJourneyStore(defaults: defaults)
+        XCTAssertNil(store.active)
+        let g = journey()
+        let a = GoActiveJourneyContract.advance(GoActiveJourneyContract.start(journey: g, language: .english), g)
+        store.set(a)
+        XCTAssertEqual(store.active?.confirmedStopId, "s2")
+        store.set(GoActiveJourneyContract.end(a))
+        XCTAssertNil(store.active, "an ended session is not offered for resume")
+        // A fresh store reading the same defaults sees no resumable session either.
+        XCTAssertNil(GoActiveJourneyStore(defaults: defaults).active)
+        store.clear()
+    }
+}

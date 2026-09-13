@@ -233,11 +233,16 @@ struct PlanView: View {
     @State private var savedEditMode: EditMode = .inactive
     /// The option whose GO session is being started (S05 -> S06 sheet).
     @State private var startPlan: JourneyPlanAdapter.PlannedJourney?
+    /// The single live GO session (S06): drives the resume banner.
+    @ObservedObject private var activeStore = GoActiveJourneyStore.shared
+    /// A resumed session being reopened (drives the resume sheet).
+    @State private var resumeLaunch: GoResumeLaunch?
 
     var body: some View {
         NavigationStack {
             ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                if let active = activeStore.active { resumeBanner(active) }
                 endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
                 endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
 
@@ -333,6 +338,7 @@ struct PlanView: View {
         .onAppear {
             if stations.isEmpty { stations = JourneyPlanAdapter.allStations() }
             savedStore.refresh()
+            activeStore.refresh()
         }
         .alert(t("Name this journey", "Ονόμασε τη διαδρομή", "Emërto këtë udhëtim", "Nomina questo viaggio"),
                isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
@@ -343,12 +349,64 @@ struct PlanView: View {
             }
             Button(t("Cancel", "Άκυρο", "Anulo", "Annulla"), role: .cancel) { renameTarget = nil }
         }
-        // S05 -> S06: Start journey opens the GO live-guidance screen for the option.
+        // S05 -> S06: Start journey opens the GO live-guidance screen for the option,
+        // starting (and persisting) a fresh live session so it survives a kill.
         .sheet(item: $startPlan) { plan in
             if let detailed = plan.detailed {
-                GoJourneyView(journey: GuidanceJourney.from(detailed, language: language), language: language)
+                GoJourneyView(
+                    journey: GuidanceJourney.from(detailed, language: language),
+                    language: language, store: .shared, resuming: false
+                ) { startPlan = nil }
             }
         }
+        // Resume an in-progress session where it left off (guidance rebuilt from the
+        // frozen snapshot, names re-resolved in the current language).
+        .sheet(item: $resumeLaunch) { launch in
+            GoJourneyView(
+                journey: launch.journey, language: language,
+                store: .shared, resuming: true
+            ) { resumeLaunch = nil }
+        }
+    }
+
+    /// A resumable launch: wraps the rebuilt GuidanceJourney with a stable id so it
+    /// can drive an `item`-based sheet.
+    struct GoResumeLaunch: Identifiable {
+        let id = UUID()
+        let journey: GuidanceJourney
+    }
+
+    // MARK: - Resume live GO session (S06)
+
+    @ViewBuilder
+    private func resumeBanner(_ active: GoActiveJourney) -> some View {
+        let fromId = active.itinerarySnapshot.legs.first?.fromId
+        let toId = active.itinerarySnapshot.legs.last?.toId
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso"))
+                    .font(.subheadline.weight(.semibold))
+                Text("\(name(fromId)) → \(name(toId))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { resume(active) }
+
+            Button(t("End", "Τέλος", "Përfundo", "Termina")) { activeStore.clear() }
+                .buttonStyle(.bordered)
+            Button(t("Resume", "Συνέχεια", "Vazhdo", "Riprendi")) { resume(active) }
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.accentColor.opacity(0.12)))
+    }
+
+    private func resume(_ active: GoActiveJourney) {
+        let journey = GoActiveJourneyContract.guidance(from: active.itinerarySnapshot, language: language)
+        guard !journey.legs.isEmpty else { return }
+        resumeLaunch = GoResumeLaunch(journey: journey)
     }
 
     // MARK: - Saved journeys (S08 / J05)
