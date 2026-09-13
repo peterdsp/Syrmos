@@ -377,20 +377,23 @@ struct PlanView: View {
         // persists the whole order through the shared reorder op.
         .dropDestination(for: String.self) { dropped, _ in
             guard let draggedId = dropped.first, draggedId != entry.id else { return false }
-            reorderSaved(move: draggedId, before: entry.id)
+            reorderSaved(move: draggedId, onto: entry.id)
             return true
         }
     }
 
-    private func reorderSaved(move draggedId: String, before targetId: String) {
-        var ids = savedStore.items.map { $0.id }
-        ids.removeAll { $0 == draggedId }
-        if let targetIdx = ids.firstIndex(of: targetId) {
-            ids.insert(draggedId, at: targetIdx)
-        } else {
-            ids.append(draggedId)
-        }
-        savedStore.reorder(ids)
+    /// Move `draggedId` to the slot currently held by `targetId`. Inserting at the
+    /// target's ORIGINAL index means an upward drag lands the row before the target
+    /// and a downward drag lands it after, so reordering works in both directions
+    /// (the earlier "insert before target" only ever moved a row up).
+    private func reorderSaved(move draggedId: String, onto targetId: String) {
+        let ids = savedStore.items.map { $0.id }
+        guard let from = ids.firstIndex(of: draggedId),
+              let to = ids.firstIndex(of: targetId), from != to else { return }
+        var next = ids
+        next.remove(at: from)
+        next.insert(draggedId, at: min(to, next.count))
+        savedStore.reorder(next)
     }
 
     private func pairName(_ from: String, _ to: String) -> String {
