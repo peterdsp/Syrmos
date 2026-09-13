@@ -781,9 +781,15 @@ private suspend fun buildGuidanceJourney(
     stationRepo: StationRepositoryImpl,
     lang: AppLanguage,
 ): GuidanceJourney {
+    // The guidance legs MUST stay 1:1 with the snapshot's ride legs, in order:
+    // ActiveJourneyStore maps a persisted legId/confirmedStopId by ride-leg index
+    // into guidance.legs. So if ANY ride leg fails to resolve two or more stops we
+    // return an empty journey (GO simply does not start / resume) rather than
+    // silently dropping one leg and desyncing every position after it.
+    val rideLegs = opt.legs.filter { it.kind == LegKind.RIDE }
     val gLegs = mutableListOf<GuidanceLeg>()
-    for (leg in opt.legs.filter { it.kind == LegKind.RIDE }) {
-        val lineId = leg.lineId ?: continue
+    for (leg in rideLegs) {
+        val lineId = leg.lineId ?: return GuidanceJourney(emptyList())
         val lineStations = stationRepo.getStationsOnLine(lineId).first()
         val fromIdx = lineStations.indexOfFirst { it.id == leg.fromId }
         val toIdx = lineStations.indexOfFirst { it.id == leg.toId }
@@ -795,7 +801,8 @@ private suspend fun buildGuidanceJourney(
                           lineStations.firstOrNull { it.id == leg.toId })
         }
         val stops = slice.map { GuidanceStop(it.id, if (lang == AppLanguage.GREEK) it.nameEl else it.name) }
-        if (stops.size >= 2) gLegs.add(GuidanceLeg(lineId = lineId, towards = stops.last().name, stops = stops))
+        if (stops.size < 2) return GuidanceJourney(emptyList())
+        gLegs.add(GuidanceLeg(lineId = lineId, towards = stops.last().name, stops = stops))
     }
     return GuidanceJourney(gLegs)
 }

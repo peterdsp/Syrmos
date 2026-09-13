@@ -4897,6 +4897,7 @@
                     if (activeStore && window.SyrmosActiveJourney) {
                         activeStore.set(window.SyrmosActiveJourney.start(
                             window.SyrmosActiveJourney.newId(), opt, journey, new Date().toISOString()));
+                        renderResume(); // refresh the banner to this trip, not the prior one
                     }
                     window.SyrmosGoPanel.mount(panelEl, journey, {
                         language: currentLang,
