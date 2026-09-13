@@ -223,6 +223,9 @@ struct PlanView: View {
     @State private var planned = false
     @State private var mode: JourneyPlanAdapter.Mode = .now
     @State private var arriveByTime = Date()
+    // Phase R: rider accessibility preference. When on, each route discloses its
+    // step-free confidence honestly (unknown until per-station data is plumbed).
+    @State private var stepFree = false
 
     // Saved journeys (S08 / J05): locally owned, no account.
     @ObservedObject private var savedStore = SavedJourneysStore.shared
@@ -278,6 +281,12 @@ struct PlanView: View {
                         selection: $arriveByTime, displayedComponents: .hourAndMinute
                     )
                 }
+
+                Toggle(isOn: $stepFree) {
+                    Text(t("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini"))
+                        .font(.subheadline)
+                }
+                .tint(.syrmosPrimary)
 
                 Button { runPlan() } label: {
                     Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi"))
@@ -559,6 +568,45 @@ struct PlanView: View {
 
     // MARK: - S05 selected-journey detail
 
+    /// Phase R accessibility-unknown disclosure for one option. No per-station
+    /// step-free data is plumbed on iOS yet, so every leg reads `unknown` and the
+    /// honest disclosure is "not confirmed" — never a fabricated "accessible".
+    /// Uses the shared `AccessibilityDisclosure` engine (mirrored on web/KMP).
+    private func stepFreeInfo(_ p: JourneyPlanAdapter.PlannedJourney) -> AccessibilityInfo {
+        let legs = p.detailLegs.enumerated().map { i, _ in
+            AccessibilityLeg(id: "leg-\(i)", accessibility: "unknown")
+        }
+        return AccessibilityDisclosure.forOption(legs: legs, preference: "stepFree")
+    }
+
+    @ViewBuilder
+    private func stepFreeDisclosure(_ p: JourneyPlanAdapter.PlannedJourney) -> some View {
+        let info = stepFreeInfo(p)
+        let (icon, tint, text): (String, Color, String) = {
+            switch info.confidence {
+            case .verified:
+                return ("figure.roll", .green,
+                    t("Step-free the whole way.", "Χωρίς σκαλιά σε όλη τη διαδρομή.",
+                      "Pa shkallë gjatë gjithë rrugës.", "Senza gradini per tutto il percorso."))
+            case .unavailable:
+                return ("exclamationmark.triangle.fill", .orange,
+                    t("This route isn't step-free.", "Αυτή η διαδρομή δεν είναι χωρίς σκαλιά.",
+                      "Kjo rrugë nuk është pa shkallë.", "Questo percorso non è senza gradini."))
+            case .unknown:
+                return ("questionmark.circle.fill", .secondary,
+                    t("Step-free access isn't confirmed for this route.",
+                      "Η πρόσβαση χωρίς σκαλιά δεν επιβεβαιώνεται για αυτή τη διαδρομή.",
+                      "Qasja pa shkallë nuk është konfirmuar për këtë rrugë.",
+                      "L'accesso senza gradini non è confermato per questo percorso."))
+            }
+        }()
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon).foregroundStyle(tint)
+            Text(text).font(.footnote).foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     /// The S05 detail for the chosen option: summary + leg-by-leg timeline (from
     /// the shared JourneyDetail.timeline) + honest source line + Start journey.
     @ViewBuilder
@@ -583,6 +631,7 @@ struct PlanView: View {
                 ? t("Times from the published timetable.", "Χρόνοι από το επίσημο δρομολόγιο.", "Kohët nga orari zyrtar.", "Orari dal calendario ufficiale.")
                 : t("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso."))
                 .font(.footnote).foregroundStyle(.secondary)
+            if stepFree { stepFreeDisclosure(p) }
             Button { startPlan = p } label: {
                 Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))
                     .frame(maxWidth: .infinity)
