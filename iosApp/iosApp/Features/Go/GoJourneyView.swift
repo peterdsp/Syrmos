@@ -80,7 +80,11 @@ struct GoJourneyView: View {
                 .tint(tint)
                 .padding(.horizontal)
             controls
-            if model.canGoLive { liveToggle }
+            if location.isDenied {
+                locationDeniedNote
+            } else if model.canGoLive {
+                liveToggle
+            }
             Spacer()
             footnote
         }
@@ -114,6 +118,36 @@ struct GoJourneyView: View {
             let text = [headline, detail].filter { !$0.isEmpty }.joined(separator: ". ")
             UIAccessibility.post(notification: .announcement, argument: text)
         }
+    }
+
+    /// Phase R S10 permission-denied capability state: location off changes the
+    /// capability (no auto-advance), not the availability of the journey. Manual
+    /// stepping stays fully usable; offer Settings to re-enable.
+    private var locationDeniedNote: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label {
+                Text(t("Location is off", "Η τοποθεσία είναι ανενεργή", "Vendndodhja është joaktive", "La posizione è disattivata"))
+                    .font(.subheadline.weight(.semibold))
+            } icon: {
+                Image(systemName: "location.slash")
+            }
+            .foregroundStyle(.secondary)
+            Text(t("Keep stepping through your journey manually, or turn location on in Settings.",
+                   "Συνέχισε τη διαδρομή χειροκίνητα ή ενεργοποίησε την τοποθεσία στις Ρυθμίσεις.",
+                   "Vazhdo udhëtimin manualisht, ose aktivizo vendndodhjen te Cilësimet.",
+                   "Continua il viaggio manualmente o attiva la posizione in Impostazioni."))
+                .font(.caption).foregroundStyle(.secondary)
+            Button(t("Open Settings", "Άνοιγμα Ρυθμίσεων", "Hap Cilësimet", "Apri Impostazioni")) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.subheadline).buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.12)))
+        .accessibilityElement(children: .combine)
     }
 
     private var liveToggle: some View {
