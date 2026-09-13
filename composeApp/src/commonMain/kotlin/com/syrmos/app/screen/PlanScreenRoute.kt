@@ -64,6 +64,9 @@ import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.app.journey.SavedJourneysRepository
+import com.syrmos.core.domain.go.GuidanceJourney
+import com.syrmos.core.domain.go.GuidanceLeg
+import com.syrmos.core.domain.go.GuidanceStop
 import com.syrmos.core.domain.journey.JourneyDetail
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
 import com.syrmos.core.domain.journey.SchedulePlanner
@@ -190,6 +193,29 @@ class PlanScreenRoute : Screen {
         fun deleteSaved(entry: SavedJourney) {
             SavedJourneysRepository.remove(entry.id)
             pendingUndo = entry
+        }
+        // S05 -> S06: build a GuidanceJourney from the option's ride legs (each
+        // leg's full ordered stops reconstructed from its line) and open GO.
+        fun startGo(opt: JourneyOption) {
+            scope.launch {
+                val gLegs = mutableListOf<GuidanceLeg>()
+                for (leg in opt.legs.filter { it.kind == LegKind.RIDE }) {
+                    val lineId = leg.lineId ?: continue
+                    val lineStations = stationRepo.getStationsOnLine(lineId).first()
+                    val fromIdx = lineStations.indexOfFirst { it.id == leg.fromId }
+                    val toIdx = lineStations.indexOfFirst { it.id == leg.toId }
+                    val slice = if (fromIdx >= 0 && toIdx >= 0) {
+                        if (fromIdx <= toIdx) lineStations.subList(fromIdx, toIdx + 1)
+                        else lineStations.subList(toIdx, fromIdx + 1).reversed()
+                    } else {
+                        listOfNotNull(lineStations.firstOrNull { it.id == leg.fromId },
+                                      lineStations.firstOrNull { it.id == leg.toId })
+                    }
+                    val stops = slice.map { GuidanceStop(it.id, if (lang == AppLanguage.GREEK) it.nameEl else it.name) }
+                    if (stops.size >= 2) gLegs.add(GuidanceLeg(lineId = lineId, towards = stops.last().name, stops = stops))
+                }
+                if (gLegs.isNotEmpty()) navigator.push(GoJourneyScreenRoute(GuidanceJourney(gLegs)))
+            }
         }
 
         Scaffold(
@@ -326,7 +352,7 @@ class PlanScreenRoute : Screen {
                         // S05 selected-journey detail: summary + leg-by-leg timeline
                         // for the chosen option, from the shared JourneyDetail transform.
                         usable.getOrNull(selectedIdx)?.let { sel ->
-                            SelectedJourneyDetail(option = sel, lang = lang, nm = ::name, t = ::t)
+                            SelectedJourneyDetail(option = sel, lang = lang, nm = ::name, t = ::t, onStart = { startGo(sel) })
                         }
                     }
                 }
@@ -587,10 +613,10 @@ class PlanScreenRoute : Screen {
         lang: AppLanguage,
         nm: (String?) -> String,
         t: (String, String, String, String) -> String,
+        onStart: () -> Unit,
     ) {
         val rows = remember(option.id) { JourneyDetail.timeline(option) }
         val legById = remember(option.id) { option.legs.associateBy { it.id } }
-        var startNotice by remember(option.id) { mutableStateOf(false) }
         val minutes = ((option.durationSeconds ?: 0) / 60).coerceAtLeast(1)
         val anyScheduled = rows.any { it.timingKind == "scheduled" || it.timingKind == "live" }
 
@@ -628,14 +654,8 @@ class PlanScreenRoute : Screen {
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Button(onClick = { startNotice = true }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
                 Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))
-            }
-            if (startNotice) {
-                Text(
-                    t("Live guidance is coming to Android soon.", "Η ζωντανή καθοδήγηση έρχεται σύντομα στο Android.", "Udhëzimi i drejtpërdrejtë vjen së shpejti në Android.", "La guida dal vivo arriverà presto su Android."),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }
