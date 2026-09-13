@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // iOS mirror of the web/Android Plan flow (Phase P). Pick From/To, Find routes,
 // and see a ranked option with honest estimated timing + feasibility, driven by
@@ -9,7 +10,7 @@ import SwiftUI
 enum JourneyPlanAdapter {
     enum Feasibility { case comfortable, tight, missed, unknown }
 
-    struct PlannedJourney: Equatable {
+    struct PlannedJourney: Equatable, Identifiable {
         let lineChain: [String]
         let transferCount: Int
         let durationSeconds: Int
@@ -18,6 +19,13 @@ enum JourneyPlanAdapter {
         var leaveBy: Date? = nil
         /// True in a backward mode when nothing could be scheduled (no train).
         var noJourney: Bool = false
+        /// The topology plan behind this option, kept so GO can be started (S05 -> S06).
+        var detailed: JourneyPlanner.DetailedPlan? = nil
+        /// The S05 timeline input (ride + synthesized transfer legs, with clocks).
+        var detailLegs: [JourneyDetail.DetailLeg] = []
+
+        /// Stable-ish identity for SwiftUI sheet presentation.
+        var id: String { lineChain.joined(separator: "-") + (leaveBy.map { "|\(Int($0.timeIntervalSince1970))" } ?? "|e") }
     }
 
     enum Mode { case now, arriveBy, lastConnection }
@@ -93,58 +101,59 @@ enum JourneyPlanAdapter {
     ) -> PlannedJourney {
         let transfers = max(0, detailed.legs.count - 1)
         let chain = detailed.legs.map { $0.lineId }
-
-        guard let departuresFor = departuresFor else {
-            return PlannedJourney(lineChain: chain, transferCount: transfers,
-                                  durationSeconds: detailed.totalMinutes * 60,
-                                  feasibility: transfers == 0 ? .comfortable : .unknown)
-        }
-
         let transferMin: TimeInterval = 120
-        let hops = { (leg: JourneyPlanner.DetailedLeg) in max(1, leg.stationIds.count - 1) }
-        let travelOf = { (leg: JourneyPlanner.DetailedLeg) in Double(hops(leg) * perHopSeconds(leg.lineId)) }
-        func depsOf(_ leg: JourneyPlanner.DetailedLeg) -> [TimeInterval] {
-            departuresFor(leg.lineId, leg.boardId).map { $0.timeIntervalSince1970 }.sorted()
-        }
 
+        // Per-leg dep/arr epoch seconds; stay nil when unscheduled or not fully timed.
         var depByLeg = [TimeInterval?](repeating: nil, count: detailed.legs.count)
         var arrByLeg = [TimeInterval?](repeating: nil, count: detailed.legs.count)
-        var timedAll = true
+        var timedAll = false
 
-        if mode == .now {
-            // Forward: earliest catchable departure per leg from now.
-            var ready = Date().timeIntervalSince1970
-            for (i, leg) in detailed.legs.enumerated() {
-                let target = (i == 0) ? ready : ready + transferMin
-                guard let dep = depsOf(leg).first(where: { $0 >= target }) else { timedAll = false; break }
-                let arr = dep + travelOf(leg)
-                depByLeg[i] = dep; arrByLeg[i] = arr; ready = arr
+        if let departuresFor = departuresFor {
+            let hops = { (leg: JourneyPlanner.DetailedLeg) in max(1, leg.stationIds.count - 1) }
+            let travelOf = { (leg: JourneyPlanner.DetailedLeg) in Double(hops(leg) * perHopSeconds(leg.lineId)) }
+            func depsOf(_ leg: JourneyPlanner.DetailedLeg) -> [TimeInterval] {
+                departuresFor(leg.lineId, leg.boardId).map { $0.timeIntervalSince1970 }.sorted()
             }
-        } else {
-            // Backward: latest departures that still arrive by the deadline. For
-            // last-connection the last leg takes the latest available departure.
-            var deadline = arriveBy?.timeIntervalSince1970 ?? .greatestFiniteMagnitude
-            for i in stride(from: detailed.legs.count - 1, through: 0, by: -1) {
-                let leg = detailed.legs[i]
-                let travel = travelOf(leg)
-                guard let dep = depsOf(leg).filter({ $0 + travel <= deadline }).max() else { timedAll = false; break }
-                depByLeg[i] = dep; arrByLeg[i] = dep + travel
-                deadline = dep - transferMin
+            timedAll = true
+            if mode == .now {
+                // Forward: earliest catchable departure per leg from now.
+                var ready = Date().timeIntervalSince1970
+                for (i, leg) in detailed.legs.enumerated() {
+                    let target = (i == 0) ? ready : ready + transferMin
+                    guard let dep = depsOf(leg).first(where: { $0 >= target }) else { timedAll = false; break }
+                    let arr = dep + travelOf(leg)
+                    depByLeg[i] = dep; arrByLeg[i] = arr; ready = arr
+                }
+            } else {
+                // Backward: latest departures that still arrive by the deadline.
+                var deadline = arriveBy?.timeIntervalSince1970 ?? .greatestFiniteMagnitude
+                for i in stride(from: detailed.legs.count - 1, through: 0, by: -1) {
+                    let leg = detailed.legs[i]
+                    let travel = travelOf(leg)
+                    guard let dep = depsOf(leg).filter({ $0 + travel <= deadline }).max() else { timedAll = false; break }
+                    depByLeg[i] = dep; arrByLeg[i] = dep + travel
+                    deadline = dep - transferMin
+                }
+            }
+            if !timedAll {
+                // Don't show partial clocks: the timeline stays honestly estimated.
+                for i in 0..<depByLeg.count { depByLeg[i] = nil; arrByLeg[i] = nil }
             }
         }
 
-        if !timedAll {
-            if mode != .now {
-                return PlannedJourney(lineChain: chain, transferCount: transfers,
-                                      durationSeconds: detailed.totalMinutes * 60,
-                                      feasibility: .unknown, leaveBy: nil, noJourney: true)
-            }
-            return PlannedJourney(lineChain: chain, transferCount: transfers,
-                                  durationSeconds: detailed.totalMinutes * 60,
-                                  feasibility: transfers == 0 ? .comfortable : .unknown)
+        let detailLegs = makeDetailLegs(detailed, dep: depByLeg, arr: arrByLeg, scheduled: timedAll)
+
+        // Estimated (no timetable) or not-fully-timed: honest estimate, no clocks.
+        if departuresFor == nil || !timedAll {
+            let noJourney = departuresFor != nil && !timedAll && mode != .now
+            return PlannedJourney(
+                lineChain: chain, transferCount: transfers,
+                durationSeconds: detailed.totalMinutes * 60,
+                feasibility: noJourney ? .unknown : (transfers == 0 ? .comfortable : .unknown),
+                leaveBy: nil, noJourney: noJourney, detailed: detailed, detailLegs: detailLegs)
         }
 
-        // Worst transfer margin across consecutive rides.
+        // Fully timed: worst transfer margin across consecutive rides.
         var worst: Feasibility = .comfortable
         for i in 1..<detailed.legs.count {
             let margin = (depByLeg[i]! - arrByLeg[i - 1]! - transferMin)
@@ -157,8 +166,31 @@ enum JourneyPlanAdapter {
             lineChain: chain, transferCount: transfers,
             durationSeconds: Int(lastArr - firstDep),
             feasibility: transfers == 0 ? .comfortable : worst,
-            leaveBy: Date(timeIntervalSince1970: firstDep)
-        )
+            leaveBy: Date(timeIntervalSince1970: firstDep),
+            detailed: detailed, detailLegs: detailLegs)
+    }
+
+    /// Build the S05 timeline legs: each ride plus a synthesized transfer leg
+    /// between consecutive rides (the topology plan has no explicit transfers).
+    private static func makeDetailLegs(
+        _ detailed: JourneyPlanner.DetailedPlan, dep: [TimeInterval?], arr: [TimeInterval?], scheduled: Bool
+    ) -> [JourneyDetail.DetailLeg] {
+        var out: [JourneyDetail.DetailLeg] = []
+        for (i, leg) in detailed.legs.enumerated() {
+            if i > 0 {
+                let prev = detailed.legs[i - 1]
+                out.append(JourneyDetail.DetailLeg(
+                    id: "transfer-\(i)", kind: "transfer", fromId: prev.alightId, toId: leg.boardId,
+                    orderedStopIds: [prev.alightId, leg.boardId], transferMinimumSeconds: 120, timingKind: "estimated"))
+            }
+            out.append(JourneyDetail.DetailLeg(
+                id: "ride-\(i)", kind: "ride", lineId: leg.lineId, fromId: leg.boardId, toId: leg.alightId,
+                orderedStopIds: leg.stationIds,
+                departure: scheduled ? dep[i].map { Date(timeIntervalSince1970: $0) } : nil,
+                arrival: scheduled ? arr[i].map { Date(timeIntervalSince1970: $0) } : nil,
+                timingKind: scheduled ? "scheduled" : "estimated"))
+        }
+        return out
     }
 
     private static func severity(_ f: Feasibility) -> Int {
@@ -199,9 +231,12 @@ struct PlanView: View {
     @State private var renameTarget: SavedJourney?
     @State private var renameText = ""
     @State private var savedEditMode: EditMode = .inactive
+    /// The option whose GO session is being started (S05 -> S06 sheet).
+    @State private var startPlan: JourneyPlanAdapter.PlannedJourney?
 
     var body: some View {
         NavigationStack {
+            ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
                 endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
@@ -277,13 +312,16 @@ struct PlanView: View {
                         }
                         optionCard(r, selected: i == selectedIdx, leaveByLabel: leaveByLabel) { selectedIdx = i }
                     }
+                    // S05 selected-journey detail for the chosen option.
+                    if let sel = usable.indices.contains(selectedIdx) ? usable[selectedIdx] : nil {
+                        journeyDetail(sel)
+                    }
                 }
 
                 savedSection
-
-                Spacer()
             }
             .padding(16)
+            }
             .navigationTitle(t("Plan a journey", "Σχεδίασε διαδρομή", "Planifiko udhëtim", "Pianifica un viaggio"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -304,6 +342,12 @@ struct PlanView: View {
                 renameTarget = nil
             }
             Button(t("Cancel", "Άκυρο", "Anulo", "Annulla"), role: .cancel) { renameTarget = nil }
+        }
+        // S05 -> S06: Start journey opens the GO live-guidance screen for the option.
+        .sheet(item: $startPlan) { plan in
+            if let detailed = plan.detailed {
+                GoJourneyView(journey: GuidanceJourney.from(detailed, language: language), language: language)
+            }
         }
     }
 
@@ -451,6 +495,95 @@ struct PlanView: View {
         language == .greek && !st.nameEl.isEmpty ? st.nameEl : st.name
     }
 
+    private func stationName(_ id: String) -> String {
+        stations.first(where: { $0.id == id }).map(displayName) ?? id
+    }
+
+    // MARK: - S05 selected-journey detail
+
+    /// The S05 detail for the chosen option: summary + leg-by-leg timeline (from
+    /// the shared JourneyDetail.timeline) + honest source line + Start journey.
+    @ViewBuilder
+    private func journeyDetail(_ p: JourneyPlanAdapter.PlannedJourney) -> some View {
+        let rows = JourneyDetail.timeline(p.detailLegs)
+        let dep = rows.first(where: { $0.kind == "board" })?.clock
+        let arr = rows.last(where: { $0.kind == "alight" })?.clock
+        let anyScheduled = rows.contains { $0.timingKind == "scheduled" || $0.timingKind == "live" }
+        let minutes = max(1, p.durationSeconds / 60)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("~\(minutes) " + t("min", "λεπ", "min", "min")).font(.title2.weight(.bold))
+                if let dep, let arr {
+                    Text("\(athensClock(dep)) – \(athensClock(arr))")
+                        .font(.headline).foregroundStyle(.secondary)
+                }
+            }
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, r in
+                timelineRow(r, legs: p.detailLegs)
+            }
+            Text(anyScheduled
+                ? t("Times from the published timetable.", "Χρόνοι από το επίσημο δρομολόγιο.", "Kohët nga orari zyrtar.", "Orari dal calendario ufficiale.")
+                : t("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso."))
+                .font(.footnote).foregroundStyle(.secondary)
+            Button { startPlan = p } label: {
+                Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(p.detailed == nil)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color.gray.opacity(0.08)))
+    }
+
+    @ViewBuilder
+    private func timelineRow(_ r: JourneyDetail.TimelineRow, legs: [JourneyDetail.DetailLeg]) -> some View {
+        let major = r.node == .origin || r.node == .destination || r.node == .interchange
+        HStack(alignment: .top, spacing: 10) {
+            // Clock column.
+            Text(r.clock.map(athensClock) ?? ((r.kind == "board" || r.kind == "alight") ? "~" : ""))
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(width: 46, alignment: .trailing)
+            // Node column: rail line + dot.
+            ZStack(alignment: .top) {
+                Rectangle()
+                    .fill(Color.secondary.opacity(r.kind == "board" || r.kind == "alight" ? 0.9 : 0.35))
+                    .frame(width: 3).frame(maxHeight: .infinity)
+                if r.kind == "board" || r.kind == "alight" {
+                    Circle()
+                        .fill(major ? Color(uiColor: .systemBackground) : Color.syrmosPrimary)
+                        .frame(width: major ? 14 : 10, height: major ? 14 : 10)
+                        .overlay(Circle().stroke(Color.syrmosPrimary, lineWidth: major ? 2 : 0))
+                        .padding(.top, 3)
+                }
+            }
+            .frame(width: 16)
+            // Instruction column.
+            VStack(alignment: .leading, spacing: 2) {
+                switch r.kind {
+                case "board":
+                    Text(t("Board", "Επιβίβαση", "Hip", "Sali") + " \(r.lineId ?? "") "
+                        + t("toward", "προς", "drejt", "verso") + " " + stationName(r.towardsId ?? ""))
+                        .font(.subheadline)
+                case "alight":
+                    Text(t("Alight", "Αποβίβαση", "Zbrit", "Scendi") + " " + stationName(r.stationId ?? ""))
+                        .font(.subheadline)
+                case "stops":
+                    StopsDisclosure(count: r.count ?? 0, legId: r.legId, legs: legs, nm: stationName, t: t)
+                default:
+                    let mins = r.seconds.map { max(1, $0 / 60) }
+                    let word = r.kind == "walk" ? t("Walk", "Περπάτημα", "Ecje", "Cammina") : t("Transfer", "Μετεπιβίβαση", "Ndërrim", "Cambio")
+                    Text(word + (mins.map { " · \($0) " + t("min", "λεπ", "min", "min") } ?? ""))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 12)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
     private func runPlan() {
         guard let f = fromId, let t = toId else { return }
         // Real timetable from the iOS projector: next departures of the leg's line
@@ -548,6 +681,35 @@ struct PlanView: View {
         case .albanian: return sq
         case .italian: return it
         default: return en
+        }
+    }
+}
+
+/// The "N stops" disclosure in the S05 timeline: a tap reveals the intermediate
+/// station names of the ride leg (kept out of the way by default).
+private struct StopsDisclosure: View {
+    let count: Int
+    let legId: String
+    let legs: [JourneyDetail.DetailLeg]
+    let nm: (String) -> String
+    let t: (String, String, String, String) -> String
+    @State private var expanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Button { expanded.toggle() } label: {
+                Text("\(count) " + (count == 1
+                    ? t("stop", "στάση", "ndalesë", "fermata")
+                    : t("stops", "στάσεις", "ndalesa", "fermate")))
+                    .font(.footnote).foregroundStyle(Color.syrmosPrimary)
+            }
+            .buttonStyle(.plain)
+            if expanded {
+                let leg = legs.first { $0.id == legId }
+                let mid = leg.map { Array($0.orderedStopIds.dropFirst().dropLast()) } ?? []
+                Text(mid.map(nm).joined(separator: " · "))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 }
