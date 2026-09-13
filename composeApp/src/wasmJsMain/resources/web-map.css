@@ -2165,3 +2165,58 @@ body.has-store-banner .app-shell {
     font-weight: 600;
     cursor: pointer;
 }
+
+/* ===== Selected-journey detail (S05) ===== */
+.plan-detail { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.plan-detail__summary {
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px;
+    padding: 12px; border-radius: var(--sy-radius-md);
+    background: var(--sy-background-subtle);
+}
+.plan-detail__duration { font-size: 22px; line-height: 28px; font-weight: 700; color: var(--sy-text-primary); }
+.plan-detail__range { font-size: 17px; line-height: 22px; color: var(--sy-text-secondary); font-variant-numeric: tabular-nums; }
+.plan-detail__source { font-size: 13px; line-height: 18px; color: var(--sy-text-secondary); }
+.plan-detail__start { width: 100%; min-height: 52px; }
+
+.plan-timeline { display: flex; flex-direction: column; }
+.plan-timeline__row {
+    display: grid; grid-template-columns: 48px 16px 1fr; column-gap: 12px;
+    align-items: start; min-height: 44px;
+}
+.plan-timeline__clock {
+    font-size: 13px; line-height: 20px; color: var(--sy-text-secondary);
+    font-variant-numeric: tabular-nums; text-align: right; padding-top: 2px;
+}
+/* Node column draws the rail (a vertical line) with a dot centered on it. */
+.plan-timeline__node { position: relative; width: 16px; align-self: stretch; }
+.plan-timeline__node::before {
+    content: ""; position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 3px; transform: translateX(-50%); background: var(--sy-border);
+}
+.plan-timeline__node::after {
+    content: ""; position: absolute; left: 50%; top: 4px;
+    width: 10px; height: 10px; transform: translateX(-50%);
+    border-radius: 50%; background: var(--node-color, var(--sy-text-secondary));
+}
+.plan-timeline__node--origin::after,
+.plan-timeline__node--destination::after,
+.plan-timeline__node--interchange::after {
+    width: 14px; height: 14px; border: 2px solid var(--sy-surface);
+    box-shadow: 0 0 0 2px var(--node-color, var(--sy-accent));
+    background: var(--sy-surface);
+}
+/* Dashed rail for transfer/walk/stops segments. */
+.plan-timeline__row--dashed .plan-timeline__node::before {
+    background: repeating-linear-gradient(var(--sy-border) 0 4px, transparent 4px 8px);
+}
+.plan-timeline__row--transfer .plan-timeline__node::after,
+.plan-timeline__row--walk .plan-timeline__node::after,
+.plan-timeline__row--stops .plan-timeline__node::after { display: none; }
+.plan-timeline__ins { font-size: 15px; line-height: 20px; color: var(--sy-text-primary); padding-bottom: 12px; }
+.plan-timeline__row--transfer .plan-timeline__ins,
+.plan-timeline__row--walk .plan-timeline__ins { color: var(--sy-text-secondary); }
+.plan-timeline__stops {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--sy-accent); font-size: 14px; text-decoration: underline;
+}
+.plan-timeline__stoplist { margin-top: 4px; font-size: 13px; line-height: 18px; color: var(--sy-text-secondary); }
