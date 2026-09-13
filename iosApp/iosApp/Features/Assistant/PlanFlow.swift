@@ -283,6 +283,9 @@ struct PlanView: View {
     // segment). A CLOSURE-affected line is never routed through.
     @StateObject private var alerts = STASYService()
     @State private var disruption: DisruptionOutcome? = nil
+    // Phase R S10: offline-with-usable-data. Plans still work from the bundled
+    // schedule; the banner just discloses the mode + offers Retry.
+    @ObservedObject private var freshness = LiveDataFreshness.shared
 
     // Saved journeys (S08 / J05): locally owned, no account.
     @ObservedObject private var savedStore = SavedJourneysStore.shared
@@ -303,6 +306,7 @@ struct PlanView: View {
             ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if let active = activeStore.active { resumeBanner(active) }
+                if !freshness.isNetworkAvailable { offlineBanner }
                 endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
                 endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
 
@@ -465,6 +469,29 @@ struct PlanView: View {
     }
 
     // MARK: - Resume live GO session (S06)
+
+    /// Phase R S10 offline-with-usable-data banner: compact, discloses that plans
+    /// come from the saved timetable, and offers Retry. Never blocks planning.
+    private var offlineBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "wifi.slash").foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline"))
+                    .font(.subheadline.weight(.semibold))
+                Text(t("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.",
+                       "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(t("Retry", "Επανάληψη", "Riprovo", "Riprova")) { freshness.requestRetry() }
+                .font(.subheadline).buttonStyle(.bordered)
+        }
+        .frame(minHeight: 48)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.12)))
+        .accessibilityElement(children: .combine)
+    }
 
     @ViewBuilder
     private func resumeBanner(_ active: GoActiveJourney) -> some View {
