@@ -4535,6 +4535,13 @@
                     lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                     store: activeStore,
                     active,
+                    transferRisks: optionTransferRisks(active.itinerarySnapshot),
+                    onFindAlternatives: (fromId, toId) => {
+                        if (panelEl) panelEl.innerHTML = "";
+                        if (fromSel && fromId) fromSel.value = fromId;
+                        if (toSel && toId) toSel.value = toId;
+                        runPlan();
+                    },
                     onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
                 });
             }
@@ -4891,6 +4898,37 @@
                     savedEl.appendChild(row);
                 });
             }
+            // Phase R S07: per-transfer risk from the option's real leg clocks,
+            // aligned with the journey's ride legs (mirrors iOS/Android).
+            function transferMinBetween(legs, prev, next) {
+                const pi = legs.indexOf(prev), ni = legs.indexOf(next);
+                if (pi < 0 || ni < 0 || pi >= ni) return null;
+                for (let j = pi + 1; j < ni; j++) {
+                    if ((legs[j].kind === "transfer" || legs[j].kind === "walk") && legs[j].transferMinimumSeconds != null) {
+                        return legs[j].transferMinimumSeconds;
+                    }
+                }
+                return null;
+            }
+            function optionTransferRisks(opt) {
+                const rides = ((opt && opt.legs) || []).filter((l) => l.kind === "ride");
+                if (rides.length < 2) return [];
+                const secs = (iso) => { const ms = Date.parse(iso); return Number.isFinite(ms) ? Math.floor(ms / 1000) : null; };
+                const out = [];
+                for (let i = 0; i < rides.length - 1; i++) {
+                    const minSec = transferMinBetween(opt.legs, rides[i], rides[i + 1]) != null
+                        ? transferMinBetween(opt.legs, rides[i], rides[i + 1]) : 120;
+                    const a = secs(rides[i].arrivalInstant), d = secs(rides[i + 1].departureInstant);
+                    if (a != null && d != null) {
+                        const gap = Math.max(0, d - a), margin = gap - minSec;
+                        const status = margin < 0 ? "missed" : (margin <= 179 ? "tight" : "comfortable");
+                        out.push({ status, availableSeconds: gap, minimumSeconds: minSec });
+                    } else {
+                        out.push({ status: "unknown", availableSeconds: null, minimumSeconds: minSec });
+                    }
+                }
+                return out;
+            }
             let lastPlanned = null, lastHasTimetable = false;
             function renderResults(planned, hasTimetable) {
                 lastPlanned = planned; lastHasTimetable = hasTimetable;
@@ -4984,6 +5022,13 @@
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                         store: activeStore,
                         option: opt,
+                        transferRisks: optionTransferRisks(opt),
+                        onFindAlternatives: (fromId, toId) => {
+                            if (panelEl) panelEl.innerHTML = "";
+                            if (fromSel && fromId) fromSel.value = fromId;
+                            if (toSel && toId) toSel.value = toId;
+                            runPlan();
+                        },
                         onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
                     });
                 };

@@ -69,6 +69,10 @@
     // (and writes every step to) the persisted ActiveJourney, so progress survives a
     // reload / navigation. Without a store it stays in-memory (used by unit tests).
     const store = (opts.store && AJ) ? opts.store : null;
+    // Phase R S07: per-transfer risk (transferRisks[i] = leg i -> i+1) + a callback
+    // that opens fresh results from the current station to the destination.
+    const transferRisks = opts.transferRisks || [];
+    const onFindAlternatives = opts.onFindAlternatives || null;
     const nowISO = () => new Date().toISOString();
     let active = null;
     if (store) {
@@ -118,6 +122,29 @@
       const tint = g.kind === 'arrived' ? '#2E7D32' : color(g.lineId || (journey.legs[pos.legIndex] && journey.legs[pos.legIndex].lineId));
       const canBack = pos.legIndex > 0 || pos.stopIndex > 0;
 
+      // Phase R S07: inline connection-risk warning at a tight/missed transfer.
+      const transferMoment = g.kind === 'transfer' || (g.kind === 'getOffNext' && g.transferTo);
+      const rr = (transferMoment && transferRisks[pos.legIndex]) ? transferRisks[pos.legIndex] : null;
+      const risk = (rr && (rr.status === 'tight' || rr.status === 'missed')) ? rr : null;
+      let riskHtml = '';
+      if (risk) {
+        const missed = risk.status === 'missed';
+        const rTitle = missed
+          ? t(lang, 'This connection may be missed', 'Αυτή η ανταπόκριση μπορεί να χαθεί', 'Kjo lidhje mund të humbasë', 'Questa coincidenza potrebbe saltare')
+          : t(lang, 'This connection is tight', 'Αυτή η ανταπόκριση είναι στενή', 'Kjo lidhje është e ngushtë', 'Questa coincidenza è stretta');
+        const mn = (s) => (s == null ? null : Math.max(0, Math.round(s / 60)));
+        const avail = mn(risk.availableSeconds), allow = mn(risk.minimumSeconds);
+        const expl = (avail != null && allow != null)
+          ? t(lang, `${avail} min available; allow ${allow} min to change.`, `${avail} λεπ διαθέσιμα, χρειάζονται ${allow} λεπ για αλλαγή.`, `${avail} min në dispozicion, duhen ${allow} min për ndërrim.`, `${avail} min disponibili, servono ${allow} min per cambiare.`)
+          : '';
+        riskHtml = `
+          <div class="go-risk" style="border-radius:14px;padding:16px;margin-top:12px;background:rgba(230,126,34,.12);">
+            <div style="font-weight:700;color:#c05a00;">⚠ ${esc(rTitle)}</div>
+            ${expl ? `<div style="font-size:14px;opacity:.8;margin-top:4px;">${esc(expl)}</div>` : ''}
+            ${onFindAlternatives ? `<button class="go-alt" style="margin-top:8px;padding:8px 12px;border-radius:10px;border:1px solid #e08a3c;background:transparent;color:#c05a00;font-weight:600;cursor:pointer;">${esc(t(lang, 'Find alternatives', 'Βρες εναλλακτικές', 'Gjej alternativa', 'Trova alternative'))}</button>` : ''}
+          </div>`;
+      }
+
       // Announce the current instruction to screen readers (headline + detail).
       srEl.textContent = [d.headline, d.detail, d.sub].filter(Boolean).join('. ');
 
@@ -133,6 +160,7 @@
             ${d.detail ? `<div style="font-size:17px;font-weight:700;margin-top:8px;">${esc(d.detail)}</div>` : ''}
             ${d.sub ? `<div style="font-size:14px;opacity:.85;margin-top:4px;">${esc(d.sub)}</div>` : ''}
           </div>
+          ${riskHtml}
           <div class="go-progress" style="height:6px;border-radius:3px;background:#e5e5e5;margin:14px 0;overflow:hidden;">
             <div style="height:100%;width:${Math.round(progress() * 100)}%;background:${tint};"></div>
           </div>
@@ -158,6 +186,14 @@
       if (next) next.onclick = () => { arrived ? api.reset() : api.advance(); };
       if (liveBtn) liveBtn.onclick = () => { live ? api.stopLive() : api.startLive(); };
       if (endBtn) endBtn.onclick = () => { api.end(); };
+      const altBtn = contentEl.querySelector('.go-alt');
+      if (altBtn && onFindAlternatives) altBtn.onclick = () => {
+        const leg = journey.legs[pos.legIndex];
+        const fromId = (leg && leg.stops[pos.stopIndex]) ? leg.stops[pos.stopIndex].id : null;
+        const dLeg = journey.legs[journey.legs.length - 1];
+        const toId = dLeg ? dLeg.stops[dLeg.stops.length - 1].id : null;
+        onFindAlternatives(fromId, toId);
+      };
     }
 
     const api = {
