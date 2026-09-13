@@ -73,8 +73,8 @@ function loadSW(net) {
 async function install(h) { let p; h.install({ waitUntil: (x) => { p = x; } }); await p; }
 async function activate(h) { let p; h.activate({ waitUntil: (x) => { p = x; } }); await p; }
 async function doFetch(h, request) { let r; h.fetch({ request, respondWith: (x) => { r = x; } }); return r ? await r : undefined; }
-const shellCache = (caches) => caches.map.get('syrmos-v1');
-const tileCache = (caches) => caches.map.get('syrmos-tiles-v1');
+const shellCache = (caches) => caches.map.get('syrmos-v2');
+const tileCache = (caches) => caches.map.get('syrmos-tiles-v2');
 
 // --- Tests ------------------------------------------------------------------
 
@@ -144,5 +144,5 @@ test('activate purges stale caches from a previous version', async () => {
   const keys = await caches.keys();
   assert.ok(!keys.includes('syrmos-v0'), 'stale shell cache deleted');
   assert.ok(!keys.includes('syrmos-tiles-v0'), 'stale tile cache deleted');
-  assert.ok(keys.includes('syrmos-v1'), 'current cache retained');
+  assert.ok(keys.includes('syrmos-v2'), 'current cache retained');
 });

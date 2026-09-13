@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for the Syrmos 3.0 selected-journey detail timeline (prompt S05). A JourneyOption's legs are transformed into an ordered list of timeline rows the S05 view renders: a board row per ride (naming the line + direction and the departure clock), an optional intermediate-stops disclosure row, an alight row (station + arrival clock), and a dashed transfer/walk row between rides. Node roles: the first board is 'origin', the last alight is 'destination', and any board/alight next to a transfer is an 'interchange'; the hidden intermediate stops are counted, never invented. Kotlin JourneyDetail.timeline, web SyrmosJourneyDetail.timeline and iOS JourneyDetail.timeline must all return these exact rows. Clocks are absolute (Europe/Athens, +02:00 winter); a null clock stays null (unknown), never a fabricated 0. Times are synthetic, not a real timetable.",
+  "cases": [
+    {
+      "id": "two_rides_one_transfer",
+      "note": "M1 Piraeus->Monastiraki (2 intermediate stops), 3-min transfer, M3 Monastiraki->Syntagma (no intermediate stops).",
+      "option": {
+        "legs": [
+          {
+            "id": "ride-0", "kind": "ride", "lineId": "M1", "fromId": "M1_PIR", "toId": "M1_MON",
+            "orderedStopIds": ["M1_PIR", "M1_FAL", "M1_TAV", "M1_MON"],
+            "departureInstant": "2026-01-15T08:00:00+02:00", "arrivalInstant": "2026-01-15T08:15:00+02:00",
+            "timingKind": "scheduled"
+          },
+          {
+            "id": "transfer-1", "kind": "transfer", "fromId": "M1_MON", "toId": "M3_MON",
+            "orderedStopIds": ["M1_MON", "M3_MON"], "transferMinimumSeconds": 180, "timingKind": "estimated"
+          },
+          {
+            "id": "ride-2", "kind": "ride", "lineId": "M3", "fromId": "M3_MON", "toId": "M3_SYN",
+            "orderedStopIds": ["M3_MON", "M3_SYN"],
+            "departureInstant": "2026-01-15T08:20:00+02:00", "arrivalInstant": "2026-01-15T08:25:00+02:00",
+            "timingKind": "scheduled"
+          }
+        ]
+      },
+      "expectedRows": [
+        { "kind": "board", "legId": "ride-0", "stationId": "M1_PIR", "lineId": "M1", "towardsId": "M1_MON", "clock": "2026-01-15T08:00:00+02:00", "timingKind": "scheduled", "node": "origin" },
+        { "kind": "stops", "legId": "ride-0", "lineId": "M1", "count": 2 },
+        { "kind": "alight", "legId": "ride-0", "stationId": "M1_MON", "clock": "2026-01-15T08:15:00+02:00", "timingKind": "scheduled", "node": "interchange" },
+        { "kind": "transfer", "legId": "transfer-1", "fromId": "M1_MON", "toId": "M3_MON", "seconds": 180, "node": "interchange" },
+        { "kind": "board", "legId": "ride-2", "stationId": "M3_MON", "lineId": "M3", "towardsId": "M3_SYN", "clock": "2026-01-15T08:20:00+02:00", "timingKind": "scheduled", "node": "interchange" },
+        { "kind": "alight", "legId": "ride-2", "stationId": "M3_SYN", "clock": "2026-01-15T08:25:00+02:00", "timingKind": "scheduled", "node": "destination" }
+      ]
+    },
+    {
+      "id": "direct_ride_estimated",
+      "note": "A single estimated ride (no schedule): clocks are null, one board + one alight, origin then destination, one stops disclosure.",
+      "option": {
+        "legs": [
+          {
+            "id": "ride-0", "kind": "ride", "lineId": "M2", "fromId": "M2_SYN", "toId": "M2_ELL",
+            "orderedStopIds": ["M2_SYN", "M2_SYG", "M2_ELL"],
+            "departureInstant": null, "arrivalInstant": null, "timingKind": "estimated"
+          }
+        ]
+      },
+      "expectedRows": [
+        { "kind": "board", "legId": "ride-0", "stationId": "M2_SYN", "lineId": "M2", "towardsId": "M2_ELL", "clock": null, "timingKind": "estimated", "node": "origin" },
+        { "kind": "stops", "legId": "ride-0", "lineId": "M2", "count": 1 },
+        { "kind": "alight", "legId": "ride-0", "stationId": "M2_ELL", "clock": null, "timingKind": "estimated", "node": "destination" }
+      ]
+    },
+    {
+      "id": "walk_transfer_gap_seconds",
+      "note": "When a transfer/walk leg has no explicit minimum, its seconds fall back to the gap between the previous arrival and next departure (08:20 - 08:15 = 300s). No intermediate-stops row when a ride has <=2 ordered stops.",
+      "option": {
+        "legs": [
+          {
+            "id": "ride-0", "kind": "ride", "lineId": "M1", "fromId": "M1_PIR", "toId": "M1_MON",
+            "orderedStopIds": ["M1_PIR", "M1_MON"],
+            "departureInstant": "2026-01-15T08:05:00+02:00", "arrivalInstant": "2026-01-15T08:15:00+02:00",
+            "timingKind": "scheduled"
+          },
+          {
+            "id": "walk-1", "kind": "walk", "fromId": "M1_MON", "toId": "M3_MON",
+            "orderedStopIds": ["M1_MON", "M3_MON"], "timingKind": "estimated"
+          },
+          {
+            "id": "ride-2", "kind": "ride", "lineId": "M3", "fromId": "M3_MON", "toId": "M3_SYN",
+            "orderedStopIds": ["M3_MON", "M3_SYN"],
+            "departureInstant": "2026-01-15T08:20:00+02:00", "arrivalInstant": "2026-01-15T08:24:00+02:00",
+            "timingKind": "scheduled"
+          }
+        ]
+      },
+      "expectedRows": [
+        { "kind": "board", "legId": "ride-0", "stationId": "M1_PIR", "lineId": "M1", "towardsId": "M1_MON", "clock": "2026-01-15T08:05:00+02:00", "timingKind": "scheduled", "node": "origin" },
+        { "kind": "alight", "legId": "ride-0", "stationId": "M1_MON", "clock": "2026-01-15T08:15:00+02:00", "timingKind": "scheduled", "node": "interchange" },
+        { "kind": "walk", "legId": "walk-1", "fromId": "M1_MON", "toId": "M3_MON", "seconds": 300, "node": "interchange" },
+        { "kind": "board", "legId": "ride-2", "stationId": "M3_MON", "lineId": "M3", "towardsId": "M3_SYN", "clock": "2026-01-15T08:20:00+02:00", "timingKind": "scheduled", "node": "interchange" },
+        { "kind": "alight", "legId": "ride-2", "stationId": "M3_SYN", "clock": "2026-01-15T08:24:00+02:00", "timingKind": "scheduled", "node": "destination" }
+      ]
+    }
+  ]
+}

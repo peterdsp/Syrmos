@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for Syrmos 3.0 saved journeys (prompt S08 / J05). The store is a single versioned root persisted locally (localStorage on web, UserDefaults on iOS, prefs/DataStore on Android): { schemaVersion, savedJourneys: [SavedJourney...] }. Display order is the array order; a fresh save is prepended (newest first). The de-duplication invariant is HARD and shared: at most one saved journey per (fromId,toId) pair. Saving an existing pair updates its label/preferences/createdAt, keeps its id, and moves it to the top, never creating a duplicate row. Kotlin SavedJourneyStore, web SyrmosSavedJourneys, and iOS SavedJourneyStore must produce byte-parity roots and identical ordered ids for every case.",
+  "storageKey": "syrmos.saved-journeys.v1",
+  "emptyRoot": { "schemaVersion": 1, "savedJourneys": [] },
+  "sample": {
+    "id": "sj-1",
+    "fromId": "M1_PIR",
+    "toId": "M2_ELL",
+    "createdAt": "2026-01-15T08:00:00+02:00",
+    "label": "Work",
+    "preferences": { "ranking": "fastest", "accessibilityPreference": "none" },
+    "schemaVersion": 1
+  },
+  "cases": [
+    {
+      "id": "save_prepends_newest_first",
+      "op": "save",
+      "note": "a fresh pair is prepended so the newest saved journey shows at the top",
+      "before": [
+        { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": null, "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+      ],
+      "entry": { "id": "b", "fromId": "M2_SYN", "toId": "M2_ELL", "createdAt": "2026-01-15T09:00:00+02:00", "label": "Home", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 },
+      "expectedOrder": ["b", "a"]
+    },
+    {
+      "id": "save_dedups_same_pair_keeps_id_moves_to_top",
+      "op": "save",
+      "note": "saving the same (fromId,toId) again must NOT create a duplicate; it updates the existing row in place (keeping its original id), refreshes label/createdAt, and moves it to the top",
+      "before": [
+        { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": null, "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 },
+        { "id": "b", "fromId": "M2_SYN", "toId": "M2_ELL", "createdAt": "2026-01-15T08:30:00+02:00", "label": "Home", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+      ],
+      "entry": { "id": "c", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T09:00:00+02:00", "label": "Office", "preferences": { "ranking": "fewestChanges", "accessibilityPreference": "none" }, "schemaVersion": 1 },
+      "expectedOrder": ["a", "b"],
+      "expectedTop": { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T09:00:00+02:00", "label": "Office", "preferences": { "ranking": "fewestChanges", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+    },
+    {
+      "id": "rename_sets_label",
+      "op": "rename",
+      "note": "rename sets a new label on the matching id; a blank label clears back to null (no invented name)",
+      "before": [
+        { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": "Work", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+      ],
+      "targetId": "a",
+      "label": "Gym",
+      "expectedOrder": ["a"],
+      "expectedTop": { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": "Gym", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+    },
+    {
+      "id": "rename_blank_clears_to_null",
+      "op": "rename",
+      "before": [
+        { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": "Work", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+      ],
+      "targetId": "a",
+      "label": "   ",
+      "expectedOrder": ["a"],
+      "expectedTop": { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": null, "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+    },
+    {
+      "id": "remove_deletes_by_id",
+      "op": "remove",
+      "before": [
+        { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": null, "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 },
+        { "id": "b", "fromId": "M2_SYN", "toId": "M2_ELL", "createdAt": "2026-01-15T08:30:00+02:00", "label": "Home", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+      ],
+      "targetId": "a",
+      "expectedOrder": ["b"]
+    },
+    {
+      "id": "reorder_applies_id_sequence",
+      "op": "reorder",
+      "note": "reorder applies an explicit id sequence; ids not present are dropped, unknown ids ignored",
+      "before": [
+        { "id": "a", "fromId": "M1_PIR", "toId": "M1_OMO", "createdAt": "2026-01-15T08:00:00+02:00", "label": null, "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 },
+        { "id": "b", "fromId": "M2_SYN", "toId": "M2_ELL", "createdAt": "2026-01-15T08:30:00+02:00", "label": "Home", "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 },
+        { "id": "c", "fromId": "M3_AIR", "toId": "M3_SYN", "createdAt": "2026-01-15T09:00:00+02:00", "label": null, "preferences": { "ranking": "fastest", "accessibilityPreference": "none" }, "schemaVersion": 1 }
+      ],
+      "order": ["c", "a", "b", "zzz"],
+      "expectedOrder": ["c", "a", "b"]
+    }
+  ],
+  "decode": {
+    "ok": {
+      "raw": "{\"schemaVersion\":1,\"savedJourneys\":[{\"id\":\"a\",\"fromId\":\"M1_PIR\",\"toId\":\"M1_OMO\",\"createdAt\":\"2026-01-15T08:00:00+02:00\",\"label\":null,\"preferences\":{\"ranking\":\"fastest\",\"accessibilityPreference\":\"none\"},\"schemaVersion\":1}]}",
+      "expectedOrder": ["a"]
+    },
+    "unsupported": {
+      "raw": "{\"schemaVersion\":2,\"savedJourneys\":[]}",
+      "foundVersion": 2
+    },
+    "corrupt": {
+      "raw": "{not json",
+      "note": "unparseable root returns corrupt; the caller must keep the blob and never overwrite a valid store"
+    }
+  }
+}

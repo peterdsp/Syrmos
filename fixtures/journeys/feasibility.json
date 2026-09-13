@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for Syrmos 3.0 connection feasibility (prompt 7.3). Kotlin FeasibilityCalculator and web SyrmosFeasibility.forOption must produce the EXACT expected object for each case. Instants are absolute (Europe/Athens, +02:00 winter). Policy is the default { tightMaxSeconds: 179, defaultTransferBufferSeconds: 120 } unless a case overrides it. margin = nextDeparture - previousArrival - transferMinimum - uncertaintyAllowance, in seconds.",
+  "policy": { "tightMaxSeconds": 179, "defaultTransferBufferSeconds": 120 },
+  "cases": [
+    {
+      "id": "direct",
+      "note": "single ride leg shows schedule status, not a transfer calc",
+      "expected": { "status": "comfortable", "minimumMarginSeconds": null, "explanationCode": "direct", "limitingLegId": null },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "departureInstant": "2026-01-15T08:42:00+02:00", "arrivalInstant": "2026-01-15T09:12:00+02:00" }
+      ] }
+    },
+    {
+      "id": "comfortable_240",
+      "note": "gap 300s - min 60 = 240 >= 180",
+      "expected": { "status": "comfortable", "minimumMarginSeconds": 240, "explanationCode": "transfer_comfortable", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:05:00+02:00" }
+      ] }
+    },
+    {
+      "id": "tight_120",
+      "note": "gap 180s - min 60 = 120 in 0..179",
+      "expected": { "status": "tight", "minimumMarginSeconds": 120, "explanationCode": "transfer_tight", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:03:00+02:00" }
+      ] }
+    },
+    {
+      "id": "boundary_179_tight",
+      "note": "exactly 179 is still tight",
+      "expected": { "status": "tight", "minimumMarginSeconds": 179, "explanationCode": "transfer_tight", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 0 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:02:59+02:00" }
+      ] }
+    },
+    {
+      "id": "boundary_180_comfortable",
+      "note": "exactly 180 tips to comfortable",
+      "expected": { "status": "comfortable", "minimumMarginSeconds": 180, "explanationCode": "transfer_comfortable", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 0 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:03:00+02:00" }
+      ] }
+    },
+    {
+      "id": "missed_negative",
+      "note": "gap 60s - min 120 = -60 < 0",
+      "expected": { "status": "missed", "minimumMarginSeconds": -60, "explanationCode": "transfer_missed", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:01:00+02:00" }
+      ] }
+    },
+    {
+      "id": "unknown_missing_arrival",
+      "note": "a required term (previous arrival) is unknown -> unknown, margin null",
+      "expected": { "status": "unknown", "minimumMarginSeconds": null, "explanationCode": "transfer_unknown", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": null },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:05:00+02:00" }
+      ] }
+    },
+    {
+      "id": "default_buffer_tight",
+      "note": "no transferMinimumSeconds -> default 120; gap 180 - 120 = 60 -> tight",
+      "expected": { "status": "tight", "minimumMarginSeconds": 60, "explanationCode": "transfer_tight", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer" },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:03:00+02:00" }
+      ] }
+    },
+    {
+      "id": "uncertainty_reduces_margin",
+      "note": "gap 300 - min 60 - uncertainty 120 = 120 -> tight",
+      "expected": { "status": "tight", "minimumMarginSeconds": 120, "explanationCode": "transfer_tight", "limitingLegId": "t1" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00", "uncertaintySeconds": 120 },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:05:00+02:00" }
+      ] }
+    },
+    {
+      "id": "worst_of_two_transfers",
+      "note": "first transfer comfortable (240), second tight (120); option takes the worst",
+      "expected": { "status": "tight", "minimumMarginSeconds": 120, "explanationCode": "transfer_tight", "limitingLegId": "t2" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r2", "kind": "ride", "arrivalInstant": "2026-01-15T09:20:00+02:00", "departureInstant": "2026-01-15T09:05:00+02:00" },
+        { "id": "t2", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r3", "kind": "ride", "departureInstant": "2026-01-15T09:23:00+02:00" }
+      ] }
+    },
+    {
+      "id": "closure_overrides",
+      "note": "a closed leg makes the plan unusable regardless of timing",
+      "closedLegIds": ["r2"],
+      "expected": { "status": "missed", "minimumMarginSeconds": null, "explanationCode": "segment_closed", "limitingLegId": "r2" },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "arrivalInstant": "2026-01-15T09:00:00+02:00" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 60 },
+        { "id": "r2", "kind": "ride", "departureInstant": "2026-01-15T09:05:00+02:00" }
+      ] }
+    }
+  ]
+}

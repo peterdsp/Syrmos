@@ -14,7 +14,7 @@
  * automatically. Navigations are network-first (an online user always gets the
  * latest index.html -> latest hashes), so there is no stale-app trap.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `syrmos-${VERSION}`;
 const TILE_CACHE = `syrmos-tiles-${VERSION}`;
 const TILE_MAX = 300; // opportunistic, capped: only tiles the user actually viewed
@@ -36,6 +36,7 @@ const PRECACHE = [
   "/web-airport.js",
   "/web-departures.js",
   "/web-planner.js",
+  "/web-active-journey.js",
   "/web-go-panel.js",
   "/shapes.json",
   "/files/seed/stations.json",
