@@ -26,3 +26,4 @@ targets:
         CURRENT_PROJECT_VERSION: "138"
         INFOPLIST_FILE: iosApp/Info.plist
         SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
