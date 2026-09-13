@@ -4437,8 +4437,30 @@
                     stepFreeRow.appendChild(stepFreeInput);
                     stepFreeRow.appendChild(stepFreeText);
 
+                    // Phase R S10: offline-with-usable-data banner. Plans still work
+                    // from the cached seed; the banner discloses the mode + Retry.
+                    const offlineBanner = document.createElement("div");
+                    offlineBanner.className = "plan-offline";
+                    offlineBanner.innerHTML = `<div class="plan-offline__text">
+                            <div class="plan-offline__title">${T("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline")}</div>
+                            <div class="plan-offline__sub">${T("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.", "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato.")}</div>
+                        </div>`;
+                    const offlineRetry = document.createElement("button");
+                    offlineRetry.type = "button";
+                    offlineRetry.className = "plan-offline__retry";
+                    offlineRetry.textContent = T("Retry", "Επανάληψη", "Riprovo", "Riprova");
+                    offlineRetry.addEventListener("click", () => { if (navigator.onLine) runPlan(); });
+                    offlineBanner.appendChild(offlineRetry);
+                    const syncOffline = () => { offlineBanner.style.display = (typeof navigator !== "undefined" && navigator.onLine === false) ? "" : "none"; };
+                    syncOffline();
+                    if (typeof window !== "undefined") {
+                        window.addEventListener("online", syncOffline);
+                        window.addEventListener("offline", syncOffline);
+                    }
+
                     draft.appendChild(f.wrap);
                     draft.appendChild(t.wrap);
+                    draft.appendChild(offlineBanner);
                     draft.appendChild(modeRow);
                     draft.appendChild(timeWrap);
                     draft.appendChild(stepFreeRow);
