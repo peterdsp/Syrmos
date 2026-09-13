@@ -21,10 +21,42 @@ final class GoJourneyViewModel: ObservableObject {
     /// stays free of NotificationService and unit-testable.
     var onGetOffAlert: ((JourneyGuidance) -> Void)?
 
+    // Persistent live session (S06): when bound, every step is written back so the
+    // trip survives a kill / navigation. Unbound (demo/tests) it stays in-memory.
+    private var store: GoActiveJourneyStore?
+    private var active: GoActiveJourney?
+    private var didBegin = false
+
     init(journey: GuidanceJourney, coords: [String: GoLocationAdvancer.Coord] = [:]) {
         self.journey = journey
         self.coords = coords
         self.position = GuidancePosition(legIndex: 0, stopIndex: 0)
+    }
+
+    /// Bind to the session store. On a fresh start this overwrites the single live
+    /// session; on resume it restores the saved position. Idempotent across the
+    /// view's repeated `onAppear`s so returning to the screen never rewinds progress.
+    func begin(store: GoActiveJourneyStore, resuming: Bool, language: AppLanguage) {
+        guard !didBegin else { return }
+        didBegin = true
+        self.store = store
+        if resuming, let a = store.active {
+            active = a
+            position = GoActiveJourneyContract.positionOf(a, journey)
+        } else {
+            active = store.startSession(journey: journey, language: language)
+            position = GuidancePosition(legIndex: 0, stopIndex: 0)
+        }
+    }
+
+    /// End the live session so no stale trip is offered for resume.
+    func end() { store?.clear(); active = nil }
+
+    private func persist(_ source: String) {
+        guard let store, let a = active else { return }
+        let updated = GoActiveJourneyContract.withPosition(a, journey, position, source: source)
+        active = updated
+        store.set(updated)
     }
 
     var canGoLive: Bool { !coords.isEmpty }
@@ -64,6 +96,7 @@ final class GoJourneyViewModel: ObservableObject {
     func advance() {
         guard canAdvance else { return }
         position = JourneyGuidance.advance(journey, position)
+        persist("manual")
     }
 
     func back() {
@@ -73,11 +106,13 @@ final class GoJourneyViewModel: ObservableObject {
             let prev = position.legIndex - 1
             position = GuidancePosition(legIndex: prev, stopIndex: journey.legs[prev].stops.count - 1)
         }
+        persist("manual")
     }
 
     func reset() {
         position = GuidancePosition(legIndex: 0, stopIndex: 0)
         alertedLegs.removeAll()
+        persist("manual")
     }
 
     // MARK: Live GO
@@ -90,7 +125,7 @@ final class GoJourneyViewModel: ObservableObject {
     func applyLocation(lat: Double, lon: Double) {
         guard isLive, !coords.isEmpty else { return }
         let next = GoLocationAdvancer.advancedPosition(journey: journey, current: position, coords: coords, lat: lat, lon: lon)
-        if next != position { position = next }
+        if next != position { position = next; persist("gps") }
         if JourneyGuidance.shouldAlertGetOff(journey, position), !alertedLegs.contains(position.legIndex) {
             alertedLegs.insert(position.legIndex)
             if let g = try? JourneyGuidance.at(journey, position) { onGetOffAlert?(g) }
