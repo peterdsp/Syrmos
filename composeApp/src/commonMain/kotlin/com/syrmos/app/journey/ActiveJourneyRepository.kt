@@ -48,8 +48,10 @@ object ActiveJourneyRepository {
     /** Reload from disk (e.g. on screen appear) in case another surface changed it. */
     fun refresh() { _active.value = load() }
 
-    /** Persist (or clear, when null) the live session and publish it. */
+    /** Persist and publish a live session. An ENDED session is not a live session,
+     *  so setting one clears the store (mirrors what a reload would return). */
     fun set(journey: ActiveJourney) {
+        if (!ActiveJourneyStore.isResumable(journey)) { clear(); return }
         persistStringPref(KEY, JourneyContract.encodeActiveJourney(journey))
         lastDecodeFailed = false
         _active.value = journey
