@@ -4308,6 +4308,7 @@
             // labelled with a fabricated clock.
             let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null, resumeEl = null;
             let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
+            let planStepFree = false; // Phase R rider accessibility preference
             let undoTimer = null, pendingUndo = null; // last-deleted journey for the 5s Undo
             let saveBtnRef = null; // the results "Save journey" button, kept in sync with the store
             const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
@@ -4403,10 +4404,28 @@
                             modeRow.appendChild(b);
                         });
 
+                    // Phase R: step-free preference. When on, each route discloses
+                    // its accessibility confidence honestly below the detail.
+                    const stepFreeRow = document.createElement("label");
+                    stepFreeRow.className = "plan-stepfree";
+                    const stepFreeInput = document.createElement("input");
+                    stepFreeInput.type = "checkbox";
+                    stepFreeInput.className = "plan-stepfree__input";
+                    stepFreeInput.checked = planStepFree;
+                    stepFreeInput.addEventListener("change", () => {
+                        planStepFree = stepFreeInput.checked;
+                        if (lastPlanned) renderResults(lastPlanned, lastHasTimetable);
+                    });
+                    const stepFreeText = document.createElement("span");
+                    stepFreeText.textContent = T("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini");
+                    stepFreeRow.appendChild(stepFreeInput);
+                    stepFreeRow.appendChild(stepFreeText);
+
                     draft.appendChild(f.wrap);
                     draft.appendChild(t.wrap);
                     draft.appendChild(modeRow);
                     draft.appendChild(timeWrap);
+                    draft.appendChild(stepFreeRow);
                     draft.appendChild(find);
 
                     resumeEl = document.createElement("div");
@@ -4648,6 +4667,21 @@
                     ? T("Times from the published timetable.", "Χρόνοι από το επίσημο δρομολόγιο.", "Kohët nga orari zyrtar.", "Orari dal calendario ufficiale.")
                     : T("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso.");
                 detail.appendChild(src);
+
+                // Phase R accessibility-unknown disclosure. Shared engine; no
+                // per-station step-free data is plumbed yet, so an honest
+                // "not confirmed" is shown rather than a fabricated "accessible".
+                if (planStepFree && window.SyrmosAccessibility) {
+                    const info = window.SyrmosAccessibility.forOption(opt, "stepFree");
+                    const a11y = document.createElement("div");
+                    a11y.className = "plan-detail__source plan-detail__a11y";
+                    a11y.textContent = info.confidence === "verified"
+                        ? T("Step-free the whole way.", "Χωρίς σκαλιά σε όλη τη διαδρομή.", "Pa shkallë gjatë gjithë rrugës.", "Senza gradini per tutto il percorso.")
+                        : info.confidence === "unavailable"
+                            ? T("This route isn't step-free.", "Αυτή η διαδρομή δεν είναι χωρίς σκαλιά.", "Kjo rrugë nuk është pa shkallë.", "Questo percorso non è senza gradini.")
+                            : T("Step-free access isn't confirmed for this route.", "Η πρόσβαση χωρίς σκαλιά δεν επιβεβαιώνεται για αυτή τη διαδρομή.", "Qasja pa shkallë nuk është konfirmuar për këtë rrugë.", "L'accesso senza gradini non è confermato per questo percorso.");
+                    detail.appendChild(a11y);
+                }
 
                 // Start journey -> GO panel.
                 const start = document.createElement("button");
