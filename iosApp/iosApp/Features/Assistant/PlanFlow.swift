@@ -112,6 +112,40 @@ enum JourneyPlanAdapter {
         return Array(distinct.prefix(3))
     }
 
+    /// Phase R S07: per-transfer connection risk for a scheduled option, computed
+    /// from the real leg clocks. transferRisks[i] describes the change from ride
+    /// leg i to ride leg i+1, aligned with the GuidanceJourney legs GO steps
+    /// through. Empty when the option carries no clocks (honest: no warning).
+    static func transferRisks(for p: PlannedJourney) -> [TransferRisk] {
+        let rides = p.detailLegs.filter { $0.kind == "ride" }
+        guard rides.count > 1 else { return [] }
+        var out: [TransferRisk] = []
+        for i in 0..<(rides.count - 1) {
+            let minSec = transferMinBetween(p.detailLegs, rides[i], rides[i + 1]) ?? 120
+            if let a = rides[i].arrival, let d = rides[i + 1].departure {
+                let gap = max(0, Int(d.timeIntervalSince(a)))
+                let margin = gap - minSec
+                let status = margin < 0 ? "missed" : (margin <= 179 ? "tight" : "comfortable")
+                out.append(TransferRisk(status: status, availableSeconds: gap, minimumSeconds: minSec))
+            } else {
+                out.append(TransferRisk(status: "unknown", availableSeconds: nil, minimumSeconds: minSec))
+            }
+        }
+        return out
+    }
+
+    private static func transferMinBetween(
+        _ legs: [JourneyDetail.DetailLeg],
+        _ prev: JourneyDetail.DetailLeg,
+        _ next: JourneyDetail.DetailLeg
+    ) -> Int? {
+        guard let pi = legs.firstIndex(of: prev), let ni = legs.firstIndex(of: next), pi < ni else { return nil }
+        for j in (pi + 1)..<ni where legs[j].kind == "transfer" || legs[j].kind == "walk" {
+            if let m = legs[j].transferMinimumSeconds { return m }
+        }
+        return nil
+    }
+
     private static func buildPlanned(
         detailed: JourneyPlanner.DetailedPlan,
         departuresFor: ((_ lineId: String, _ boardId: String) -> [Date])?,
@@ -398,7 +432,13 @@ struct PlanView: View {
             if let detailed = plan.detailed {
                 GoJourneyView(
                     journey: GuidanceJourney.from(detailed, language: language),
-                    language: language, store: .shared, resuming: false
+                    language: language, store: .shared, resuming: false,
+                    transferRisks: JourneyPlanAdapter.transferRisks(for: plan),
+                    onFindAlternatives: { from, to in
+                        startPlan = nil
+                        fromId = from; toId = to; opening = nil
+                        runPlan()
+                    }
                 ) { startPlan = nil }
             }
         }
@@ -407,7 +447,12 @@ struct PlanView: View {
         .sheet(item: $resumeLaunch) { launch in
             GoJourneyView(
                 journey: launch.journey, language: language,
-                store: .shared, resuming: true
+                store: .shared, resuming: true,
+                onFindAlternatives: { from, to in
+                    resumeLaunch = nil
+                    fromId = from; toId = to; opening = nil
+                    runPlan()
+                }
             ) { resumeLaunch = nil }
         }
     }
