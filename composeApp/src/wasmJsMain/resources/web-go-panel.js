@@ -82,6 +82,7 @@
     let pos = active ? AJ.positionOf(active, journey) : { legIndex: 0, stopIndex: 0 };
     let live = false;
     let watchId = null;
+    let locDenied = false; // Phase R S10: geolocation permission denied
     const alertedLegs = new Set();
 
     function persist(source) {
@@ -168,7 +169,12 @@
             <button class="go-back" ${canBack ? '' : 'disabled'} style="flex:1;padding:12px;border-radius:12px;border:1px solid #ccc;background:#fff;font-weight:600;">${esc(t(lang, 'Back', 'Πίσω', 'Prapa', 'Indietro'))}</button>
             <button class="go-next" style="flex:1;padding:12px;border-radius:12px;border:0;background:${tint};color:#fff;font-weight:700;">${arrived ? esc(t(lang, 'Restart', 'Επανεκκίνηση', 'Rifillo', 'Ricomincia')) : esc(t(lang, 'Next stop', 'Επόμενη στάση', 'Ndalesa tjetër', 'Fermata succ.'))}</button>
           </div>
-          ${(hasCoords && typeof navigator !== 'undefined' && navigator.geolocation) ? `
+          ${locDenied ? `
+          <div class="go-loc-denied" style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(120,130,150,.14);">
+            <div style="font-weight:600;">${esc(t(lang, 'Location is off', 'Η τοποθεσία είναι ανενεργή', 'Vendndodhja është joaktive', 'La posizione è disattivata'))}</div>
+            <div style="font-size:13px;opacity:.75;margin-top:2px;">${esc(t(lang, 'Keep stepping through your journey manually.', 'Συνέχισε τη διαδρομή χειροκίνητα.', 'Vazhdo udhëtimin manualisht.', 'Continua il viaggio manualmente.'))}</div>
+          </div>` :
+          (hasCoords && typeof navigator !== 'undefined' && navigator.geolocation) ? `
           <button class="go-live" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:12px;border:1px solid ${live ? '#2E7D32' : '#ccc'};background:${live ? 'rgba(46,125,50,.08)' : '#fff'};font-weight:600;color:${live ? '#2E7D32' : '#333'};">
             ${live ? '● ' + esc(t(lang, 'Live guidance on', 'Ζωντανή καθοδήγηση ενεργή', 'Udhëzim i drejtpërdrejtë aktiv', 'Guida dal vivo attiva')) : esc(t(lang, 'Start live guidance', 'Έναρξη ζωντανής καθοδήγησης', 'Nis udhëzimin e drejtpërdrejtë', 'Avvia guida dal vivo'))}
           </button>` : ''}
@@ -225,8 +231,12 @@
         if (live || typeof navigator === 'undefined' || !navigator.geolocation || !hasCoords) return;
         live = true; render();
         watchId = navigator.geolocation.watchPosition(
-          (fx) => api.applyLocation(fx.coords.latitude, fx.coords.longitude),
-          () => {},
+          (fx) => { locDenied = false; api.applyLocation(fx.coords.latitude, fx.coords.longitude); },
+          (err) => {
+            // Permission denied changes capability, not availability: keep manual
+            // stepping usable and disclose it honestly (S10).
+            if (err && err.code === 1) { live = false; locDenied = true; render(); }
+          },
           { enableHighAccuracy: true, maximumAge: 5000 }
         );
       },
