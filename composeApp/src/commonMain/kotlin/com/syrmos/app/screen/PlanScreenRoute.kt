@@ -87,6 +87,7 @@ import com.syrmos.core.model.journey.AccessibilityPreference
 import com.syrmos.core.model.journey.FeasibilityStatus
 import com.syrmos.core.model.journey.JourneyOption
 import com.syrmos.core.model.journey.JourneyPreferences
+import com.syrmos.core.model.journey.Leg
 import com.syrmos.core.model.journey.LegKind
 import com.syrmos.core.model.journey.Ranking
 import com.syrmos.core.model.journey.SavedJourney
@@ -255,7 +256,7 @@ class PlanScreenRoute : Screen {
                 ActiveJourneyRepository.set(
                     ActiveJourneyStore.start(ActiveJourneyRepository.newId(), opt, guidance, Clock.System.now()),
                 )
-                navigator.push(GoJourneyScreenRoute(guidance))
+                navigator.push(GoJourneyScreenRoute(guidance, transferRisksOf(opt)))
             }
         }
         // Resume an in-progress session: rebuild guidance from the frozen snapshot
@@ -910,6 +911,42 @@ class PlanScreenRoute : Screen {
  * persisted session, so a resumed trip is rebuilt identically (ids match; only names
  * follow the current language). Empty when no ride leg yields two or more stops.
  */
+/// Phase R S07: per-transfer connection risk from the option's real leg clocks,
+/// aligned with the GuidanceJourney's ride legs. Empty when clocks are unknown.
+private fun transferRisksOf(opt: JourneyOption): List<TransferRisk> {
+    val rides = opt.legs.filter { it.kind == LegKind.RIDE }
+    if (rides.size < 2) return emptyList()
+    val out = mutableListOf<TransferRisk>()
+    for (i in 0 until rides.size - 1) {
+        val prev = rides[i]
+        val next = rides[i + 1]
+        val minSec = transferMinBetween(opt.legs, prev, next) ?: 120
+        val a = prev.arrivalInstant
+        val d = next.departureInstant
+        if (a != null && d != null) {
+            val gap = (d - a).inWholeSeconds.toInt().coerceAtLeast(0)
+            val margin = gap - minSec
+            val status = if (margin < 0) "missed" else if (margin <= 179) "tight" else "comfortable"
+            out += TransferRisk(status, gap, minSec)
+        } else {
+            out += TransferRisk("unknown", null, minSec)
+        }
+    }
+    return out
+}
+
+private fun transferMinBetween(legs: List<Leg>, prev: Leg, next: Leg): Int? {
+    val pi = legs.indexOf(prev)
+    val ni = legs.indexOf(next)
+    if (pi < 0 || ni < 0 || pi >= ni) return null
+    for (j in (pi + 1) until ni) {
+        if (legs[j].kind == LegKind.TRANSFER || legs[j].kind == LegKind.WALK) {
+            legs[j].transferMinimumSeconds?.let { return it }
+        }
+    }
+    return null
+}
+
 private suspend fun buildGuidanceJourney(
     opt: JourneyOption,
     stationRepo: StationRepositoryImpl,
