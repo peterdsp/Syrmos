@@ -60,6 +60,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
@@ -143,6 +144,8 @@ class PlanScreenRoute : Screen {
         val savedItems by SavedJourneysRepository.items.collectAsState()
         // The single live GO session (S06): shown as a resume banner when present.
         val activeJourney by ActiveJourneyRepository.active.collectAsState()
+        // Phase R S10: offline-with-usable-data banner signal.
+        val networkAvailable by LiveDataFreshness.isNetworkAvailable.collectAsState()
         var pendingUndo by remember { mutableStateOf<SavedJourney?>(null) }
         var renameTarget by remember { mutableStateOf<SavedJourney?>(null) }
         var renameText by remember { mutableStateOf("") }
@@ -322,6 +325,31 @@ class PlanScreenRoute : Screen {
                             Button(onClick = { resumeGo(active) }) {
                                 Text(t("Resume", "Συνέχεια", "Vazhdo", "Riprendi"))
                             }
+                        }
+                    }
+                }
+
+                // Phase R S10: offline-with-usable-data. Plans still work from the
+                // bundled schedule; the banner discloses the mode + offers Retry.
+                if (!networkAvailable) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(t("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline"),
+                                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(t("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.",
+                                "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato."),
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        OutlinedButton(onClick = { LiveDataFreshness.requestRetry() }) {
+                            Text(t("Retry", "Επανάληψη", "Riprovo", "Riprova"))
                         }
                     }
                 }
