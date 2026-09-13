@@ -26,6 +26,11 @@ enum JourneyPlanAdapter {
 
         /// Stable-ish identity for SwiftUI sheet presentation.
         var id: String { lineChain.joined(separator: "-") + (leaveBy.map { "|\(Int($0.timeIntervalSince1970))" } ?? "|e") }
+
+        /// Reduced shape for the shared DisruptionExclusion engine (ride legs only).
+        var disruptionOption: DisruptionOption {
+            DisruptionOption(legs: lineChain.map { DisruptionLeg(kind: "ride", lineId: $0) })
+        }
     }
 
     enum Mode { case now, arriveBy, lastConnection }
@@ -70,14 +75,28 @@ enum JourneyPlanAdapter {
         language: AppLanguage,
         departuresFor: ((_ lineId: String, _ boardId: String) -> [Date])? = nil,
         mode: Mode = .now,
-        arriveBy: Date? = nil
+        arriveBy: Date? = nil,
+        // Phase R: lines the operator has suspended (CLOSURE notices). Every route
+        // is planned with these banned so we never hand back a plan through closed
+        // track. Normalized ids (see DisruptionExclusion.normalizeLine).
+        suspendedLineIds: Set<String> = []
     ) -> [PlannedJourney] {
-        guard let base = JourneyPlanner.planDetailed(from: fromId, to: toId, language: language) else { return [] }
+        // Suspended ids arrive normalized; JourneyPlanner bans by raw Line.id, so
+        // map them back to the real ids of the operational lines.
+        let rawSuspended = Set(SyrmosData.operationalLines
+            .filter { suspendedLineIds.contains(DisruptionExclusion.normalizeLine($0.id)) }
+            .map { $0.id })
+        func planAvoiding(_ extraBanned: Set<String>) -> JourneyPlanner.DetailedPlan? {
+            JourneyPlanner.planDetailed(
+                from: fromId, to: toId, language: language,
+                bannedLineIds: rawSuspended.union(extraBanned))
+        }
+        guard let base = planAvoiding([]) else { return [] }
         var used: [String] = []
         for l in base.legs where !used.contains(l.lineId) { used.append(l.lineId) }
         var routes = [base]
         for banned in used {
-            if let alt = JourneyPlanner.planDetailed(from: fromId, to: toId, language: language, bannedLineIds: [banned]) {
+            if let alt = planAvoiding([banned]) {
                 routes.append(alt)
             }
         }
@@ -226,6 +245,10 @@ struct PlanView: View {
     // Phase R: rider accessibility preference. When on, each route discloses its
     // step-free confidence honestly (unknown until per-station data is plumbed).
     @State private var stepFree = false
+    // Phase R: live service notices drive disruption exclusion (S10 suspended
+    // segment). A CLOSURE-affected line is never routed through.
+    @StateObject private var alerts = STASYService()
+    @State private var disruption: DisruptionOutcome? = nil
 
     // Saved journeys (S08 / J05): locally owned, no account.
     @ObservedObject private var savedStore = SavedJourneysStore.shared
@@ -295,9 +318,16 @@ struct PlanView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(fromId == nil || toId == nil || opening != nil)
 
+                // Phase R: disclose when we routed around a suspended line.
+                if planned, case .routed(_, let excluded)? = disruption, !excluded.isEmpty {
+                    routingAroundChip(excluded)
+                }
+
                 // In a backward mode only options that actually scheduled are usable.
                 let usable = mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
-                if planned && usable.isEmpty {
+                if planned, case .suspended(let suspLines, let suspNotices)? = disruption {
+                    suspendedState(lines: suspLines, notices: suspNotices)
+                } else if planned && usable.isEmpty {
                     Text(
                         mode == .lastConnection
                             ? t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
@@ -348,6 +378,10 @@ struct PlanView: View {
             if stations.isEmpty { stations = JourneyPlanAdapter.allStations() }
             savedStore.refresh()
             activeStore.refresh()
+        }
+        .task {
+            // Load live service notices so disruption exclusion has data to act on.
+            await alerts.fetchAnnouncements()
         }
         .alert(t("Name this journey", "Ονόμασε τη διαδρομή", "Emërto këtë udhëtim", "Nomina questo viaggio"),
                isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
@@ -607,6 +641,54 @@ struct PlanView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// Phase R S10 "Suspended segment": the only path rode a closed line and no
+    /// route avoids it. Name the affected line(s) and the operator source; offer
+    /// the official update. Never fabricate a replacement.
+    @ViewBuilder
+    private func suspendedState(lines: Set<String>, notices: [DisruptionNotice]) -> some View {
+        let lineList = lines.map { $0.uppercased() }.sorted().joined(separator: ", ")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.octagon.fill").foregroundStyle(.orange)
+                Text(t("\(lineList) is suspended", "Η \(lineList) έχει ανασταλεί", "\(lineList) është pezulluar", "\(lineList) è sospesa"))
+                    .font(.headline)
+            }
+            Text(t("No route avoids the closed section. Check the operator for alternatives and updates.",
+                   "Καμία διαδρομή δεν παρακάμπτει το κλειστό τμήμα. Δες τον πάροχο για εναλλακτικές και ενημερώσεις.",
+                   "Asnjë rrugë s'e shmang pjesën e mbyllur. Shiko operatorin për alternativa dhe përditësime.",
+                   "Nessun percorso evita il tratto chiuso. Controlla l'operatore per alternative e aggiornamenti."))
+                .font(.subheadline).foregroundStyle(.secondary)
+            ForEach(notices, id: \.id) { n in
+                if let ann = alerts.announcements.first(where: { $0.id == n.id }) {
+                    Text(ann.displayTitle(language: language))
+                        .font(.footnote).foregroundStyle(.secondary)
+                    if let url = ann.url {
+                        Link(t("Official update", "Επίσημη ενημέρωση", "Përditësim zyrtar", "Aggiornamento ufficiale"), destination: url)
+                            .font(.footnote)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color.orange.opacity(0.12)))
+    }
+
+    /// Phase R: a compact chip disclosing that the plan detours around a suspended line.
+    @ViewBuilder
+    private func routingAroundChip(_ excluded: Set<String>) -> some View {
+        let list = excluded.map { $0.uppercased() }.sorted().joined(separator: ", ")
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.triangle.branch").foregroundStyle(.orange)
+            Text(t("Routing around suspended \(list).", "Παράκαμψη της ανασταλμένης \(list).",
+                   "Duke anashkaluar \(list) të pezulluar.", "Percorso che evita \(list) sospesa."))
+                .font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 6).padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.orange.opacity(0.12)))
+    }
+
     /// The S05 detail for the chosen option: summary + leg-by-leg timeline (from
     /// the shared JourneyDetail.timeline) + honest source line + Start journey.
     @ViewBuilder
@@ -707,10 +789,44 @@ struct PlanView: View {
                 .map { now.addingTimeInterval(Double($0.minutesAway) * 60) }
         }
         let arriveBy = mode == .arriveBy ? nextOccurrence(of: arriveByTime) : nil
-        results = JourneyPlanAdapter.planAll(from: f, to: t, language: language,
-                                             departuresFor: schedule, mode: mode, arriveBy: arriveBy)
+
+        // Phase R disruption exclusion. Suspended lines (CLOSURE notices) are
+        // banned so no route rides closed track. If a route around them exists we
+        // show it (disclosing the detour); if the only path used a suspended line
+        // we surface the S10 suspended state instead of a plan we can't travel.
+        let notices = disruptionNotices()
+        let suspended = DisruptionExclusion.suspendedLineIds(notices)
+        let naive = JourneyPlanAdapter.planAll(from: f, to: t, language: language,
+                                               departuresFor: schedule, mode: mode, arriveBy: arriveBy)
+        let avoiding = suspended.isEmpty ? naive : JourneyPlanAdapter.planAll(
+            from: f, to: t, language: language, departuresFor: schedule,
+            mode: mode, arriveBy: arriveBy, suspendedLineIds: suspended)
+        let outcome = DisruptionExclusion.classify(
+            avoidingOptions: avoiding.map { $0.disruptionOption },
+            naiveOptions: naive.map { $0.disruptionOption },
+            notices: notices)
+        disruption = outcome
+        if case .suspended = outcome {
+            results = []          // show the suspended state, not an untravellable plan
+        } else {
+            results = avoiding
+        }
         selectedIdx = 0
         planned = true
+    }
+
+    /// Projects the live STASY announcements into the disruption engine's notice
+    /// shape (severity token + affected line ids). Pure mapping.
+    private func disruptionNotices() -> [DisruptionNotice] {
+        alerts.announcements.map { a in
+            let token: String
+            switch AdvisorySeverity.fromRaw(a.severity) {
+            case .closure: token = "closure"
+            case .warning: token = "warning"
+            case .info: token = "info"
+            }
+            return DisruptionNotice(id: a.id, severity: token, affectedLineIds: a.affectedLines)
+        }
     }
 
     /// The next occurrence of the picked HH:MM in Athens time as an absolute Date.
