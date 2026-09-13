@@ -526,6 +526,9 @@
 <!-- Locally-owned saved journeys (SyrmosSavedJourneys, S08/J05): one versioned
      localStorage root, HARD de-dup by (fromId,toId); mirrors Kotlin SavedJourney. -->
 <script src="/web-saved-journeys.js?v=4"></script>
+<!-- Selected-journey detail timeline (SyrmosJourneyDetail, S05): pure legs->rows
+     transform; mirrors Kotlin JourneyDetail.timeline. -->
+<script src="/web-journey-detail.js?v=4"></script>
 <script src="/web-go-panel.js"></script>
 <script src="/web-map.js"></script>
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a

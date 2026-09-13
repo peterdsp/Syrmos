@@ -4478,6 +4478,114 @@
                 }
                 return coords;
             }
+            // S05 selected-journey detail: summary + leg-by-leg timeline (via the
+            // shared SyrmosJourneyDetail transform) + honest source line + Start.
+            function athensHHMM(iso) {
+                return new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Europe/Athens", hour: "2-digit", minute: "2-digit" });
+            }
+            function renderDetail(opt, byId, container, onStart) {
+                container.innerHTML = "";
+                const nm = (id) => {
+                    const s = byId.get(id);
+                    if (!s) return id;
+                    return (currentLang === "el" && (s.name_el || s.nameEl)) ? (s.name_el || s.nameEl) : (s.name || id);
+                };
+                const legById = {}; (opt.legs || []).forEach((l) => { legById[l.id] = l; });
+                const rows = window.SyrmosJourneyDetail ? window.SyrmosJourneyDetail.timeline(opt) : [];
+
+                const detail = document.createElement("div");
+                detail.className = "plan-detail";
+
+                // Summary card.
+                const summary = document.createElement("div");
+                summary.className = "plan-detail__summary";
+                const dur = document.createElement("div");
+                dur.className = "plan-detail__duration";
+                dur.textContent = fmtDuration(opt.durationSeconds || 0);
+                summary.appendChild(dur);
+                if (opt.departureInstant && opt.arrivalInstant) {
+                    const range = document.createElement("div");
+                    range.className = "plan-detail__range";
+                    range.textContent = athensHHMM(opt.departureInstant) + " – " + athensHHMM(opt.arrivalInstant);
+                    summary.appendChild(range);
+                }
+                const sChip = document.createElement("span");
+                sChip.className = "plan-results__chip plan-results__chip--" + opt.feasibility.status;
+                sChip.textContent = feasibilityLabel(opt.feasibility.status);
+                summary.appendChild(sChip);
+                detail.appendChild(summary);
+
+                // Itinerary timeline.
+                const tl = document.createElement("div");
+                tl.className = "plan-timeline";
+                rows.forEach((r) => {
+                    const row = document.createElement("div");
+                    row.className = "plan-timeline__row plan-timeline__row--" + r.kind;
+                    const clock = document.createElement("div");
+                    clock.className = "plan-timeline__clock";
+                    if (r.clock) clock.textContent = athensHHMM(r.clock);
+                    else if (r.kind === "board" || r.kind === "alight") clock.textContent = "~";
+                    row.appendChild(clock);
+
+                    const node = document.createElement("div");
+                    node.className = "plan-timeline__node plan-timeline__node--" + (r.node || r.kind);
+                    if (r.kind === "board") {
+                        const l = lines.find((x) => x.id === r.lineId);
+                        if (l && l.color) node.style.setProperty("--node-color", l.color);
+                    }
+                    row.appendChild(node);
+
+                    const ins = document.createElement("div");
+                    ins.className = "plan-timeline__ins";
+                    if (r.kind === "board") {
+                        ins.textContent = T("Board", "Επιβίβαση", "Hip", "Sali") + " " + (r.lineId || "") + " "
+                            + T("toward", "προς", "drejt", "verso") + " " + nm(r.towardsId);
+                    } else if (r.kind === "alight") {
+                        ins.textContent = T("Alight", "Αποβίβαση", "Zbrit", "Scendi") + " " + nm(r.stationId);
+                    } else if (r.kind === "stops") {
+                        row.classList.add("plan-timeline__row--dashed");
+                        const btn = document.createElement("button");
+                        btn.type = "button"; btn.className = "plan-timeline__stops";
+                        btn.textContent = r.count + " " + (r.count === 1
+                            ? T("stop", "στάση", "ndalesë", "fermata") : T("stops", "στάσεις", "ndalesa", "fermate"));
+                        const leg = legById[r.legId];
+                        const mid = (leg && leg.orderedStopIds) ? leg.orderedStopIds.slice(1, -1) : [];
+                        const list = document.createElement("div");
+                        list.className = "plan-timeline__stoplist"; list.hidden = true;
+                        list.textContent = mid.map(nm).join(" · ");
+                        btn.addEventListener("click", () => { list.hidden = !list.hidden; });
+                        ins.appendChild(btn); ins.appendChild(list);
+                    } else { // transfer | walk
+                        row.classList.add("plan-timeline__row--dashed");
+                        const mins = (r.seconds != null) ? Math.max(1, Math.round(r.seconds / 60)) : null;
+                        const word = r.kind === "walk"
+                            ? T("Walk", "Περπάτημα", "Ecje", "Cammina") : T("Transfer", "Μετεπιβίβαση", "Ndërrim", "Cambio");
+                        ins.textContent = word + (mins != null ? " · " + mins + " " + T("min", "λεπ", "min", "min") : "");
+                    }
+                    row.appendChild(ins);
+                    tl.appendChild(row);
+                });
+                detail.appendChild(tl);
+
+                // Honest source line.
+                const src = document.createElement("div");
+                src.className = "plan-detail__source";
+                const anyScheduled = rows.some((r) => r.timingKind === "scheduled" || r.timingKind === "live");
+                src.textContent = anyScheduled
+                    ? T("Times from the published timetable.", "Χρόνοι από το επίσημο δρομολόγιο.", "Kohët nga orari zyrtar.", "Orari dal calendario ufficiale.")
+                    : T("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso.");
+                detail.appendChild(src);
+
+                // Start journey -> GO panel.
+                const start = document.createElement("button");
+                start.type = "button";
+                start.className = "primary-button plan-detail__start";
+                start.textContent = T("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio");
+                start.addEventListener("click", () => onStart());
+                detail.appendChild(start);
+
+                container.appendChild(detail);
+            }
             // --- Saved journeys (S08 / J05) ---------------------------------
             // Locally owned, no account: the current From/To pair is stored through
             // the shared SyrmosSavedJourneys store (one versioned localStorage root,
@@ -4707,7 +4815,9 @@
                 }
                 resultsEl.appendChild(summary);
 
-                const mountSelected = (opt) => {
+                // S04 -> S05 -> S06: selecting an option shows its DETAIL (summary +
+                // timeline + source + Start journey); Start then mounts the GO panel.
+                const startJourney = (opt) => {
                     if (!window.SyrmosGoPanel || !panelEl) return;
                     const journey = optionToJourney(opt, byId);
                     window.SyrmosGoPanel.mount(panelEl, journey, {
@@ -4715,6 +4825,10 @@
                         coords: coordsFor(journey, byId),
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                     });
+                };
+                const mountSelected = (opt) => {
+                    if (!panelEl) return;
+                    renderDetail(opt, byId, panelEl, () => startJourney(opt));
                 };
 
                 const cardEls = [];
