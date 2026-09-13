@@ -20,9 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -32,11 +29,14 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.app.journey.ActiveJourneyRepository
 import com.syrmos.core.domain.go.GoGuidance
 import com.syrmos.core.domain.go.GuidanceJourney
 import com.syrmos.core.domain.go.GuidancePosition
 import com.syrmos.core.domain.go.JourneyGuidance
+import com.syrmos.core.domain.journey.ActiveJourneyStore
 import androidx.compose.runtime.collectAsState
+import kotlinx.datetime.Clock
 
 /**
  * GO live-guidance screen (Phase G / S06), the Android peer of the web
@@ -52,11 +52,17 @@ class GoJourneyScreenRoute(private val journey: GuidanceJourney) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val lang by LocalizationManager.language.collectAsState()
-        var position by remember { mutableStateOf(GuidancePosition(0, 0)) }
+        // Position is derived from the persisted live session so it survives a kill /
+        // navigation; every step is written back through the shared lifecycle store.
+        val active by ActiveJourneyRepository.active.collectAsState()
+        val position = active?.let { ActiveJourneyStore.positionOf(it, journey) } ?: GuidancePosition(0, 0)
 
         fun t(en: String, el: String, sq: String, it: String) = when (lang) {
             AppLanguage.GREEK -> el; AppLanguage.ALBANIAN -> sq; AppLanguage.ITALIAN -> it; else -> en
         }
+        fun endJourney() { ActiveJourneyRepository.clear(); navigator.pop() }
+        fun advance() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.advance(it, journey, Clock.System.now())) } }
+        fun stepBack() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.back(it, journey, Clock.System.now())) } }
 
         val guidance = GoGuidance.guidance(journey, position)
         val arrived = GoGuidance.isArrived(journey, position)
@@ -88,7 +94,7 @@ class GoJourneyScreenRoute(private val journey: GuidanceJourney) : Screen {
                             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                         )
                     }
-                    OutlinedButton(onClick = { navigator.pop() }) {
+                    OutlinedButton(onClick = { endJourney() }) {
                         Text(t("End", "Τέλος", "Përfundo", "Termina"))
                     }
                 }
@@ -106,24 +112,17 @@ class GoJourneyScreenRoute(private val journey: GuidanceJourney) : Screen {
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
 
                 if (arrived) {
-                    Button(onClick = { navigator.pop() }, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { endJourney() }, modifier = Modifier.fillMaxWidth()) {
                         Text(t("Finish journey", "Ολοκλήρωση", "Përfundo udhëtimin", "Concludi viaggio"))
                     }
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
-                            onClick = {
-                                position = if (position.stopIndex > 0) {
-                                    GuidancePosition(position.legIndex, position.stopIndex - 1)
-                                } else if (position.legIndex > 0) {
-                                    val prev = position.legIndex - 1
-                                    GuidancePosition(prev, journey.legs[prev].stops.lastIndex)
-                                } else position
-                            },
+                            onClick = { stepBack() },
                             enabled = canBack, modifier = Modifier.weight(1f),
                         ) { Text(t("Back", "Πίσω", "Prapa", "Indietro")) }
                         Button(
-                            onClick = { position = GoGuidance.advance(journey, position) },
+                            onClick = { advance() },
                             modifier = Modifier.weight(1f),
                         ) { Text(t("Next stop", "Επόμενη στάση", "Ndalesa tjetër", "Prossima fermata")) }
                     }
