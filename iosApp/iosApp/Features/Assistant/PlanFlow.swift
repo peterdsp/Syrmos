@@ -198,6 +198,7 @@ struct PlanView: View {
     @State private var undoWork: DispatchWorkItem?
     @State private var renameTarget: SavedJourney?
     @State private var renameText = ""
+    @State private var savedEditMode: EditMode = .inactive
 
     var body: some View {
         NavigationStack {
@@ -311,8 +312,21 @@ struct PlanView: View {
     @ViewBuilder
     private var savedSection: some View {
         Divider()
-        Text(t("Saved journeys", "Αποθηκευμένες διαδρομές", "Udhëtimet e ruajtura", "Viaggi salvati"))
-            .font(.headline)
+        HStack {
+            Text(t("Saved journeys", "Αποθηκευμένες διαδρομές", "Udhëtimet e ruajtura", "Viaggi salvati"))
+                .font(.headline)
+            Spacer()
+            // Native reorder: toggling edit mode reveals the List's drag handles and
+            // delete controls. Only shown with more than one journey to reorder.
+            if savedStore.items.count > 1 {
+                Button(savedEditMode == .active
+                    ? t("Done", "Τέλος", "U krye", "Fine")
+                    : t("Reorder", "Αναδιάταξη", "Risistemo", "Riordina")) {
+                    withAnimation { savedEditMode = (savedEditMode == .active) ? .inactive : .active }
+                }
+                .font(.subheadline)
+            }
+        }
         if let undo = pendingUndo {
             HStack {
                 Text(t("Journey deleted", "Η διαδρομή διαγράφηκε", "Udhëtimi u fshi", "Viaggio eliminato"))
@@ -334,26 +348,27 @@ struct PlanView: View {
                 "Nessun viaggio salvato. Pianifica un percorso e tocca Salva."))
                 .font(.subheadline).foregroundStyle(.secondary)
         } else {
-            ForEach(savedStore.items) { entry in
-                savedRow(entry)
+            // A List gives native drag-to-reorder (.onMove) and swipe/edit delete
+            // (.onDelete). Height is bound to the row count so it sits inside the
+            // non-scrolling Plan layout without a greedy List grabbing all space.
+            List {
+                ForEach(savedStore.items) { entry in
+                    savedRow(entry)
+                }
+                .onMove { source, destination in moveSaved(from: source, to: destination) }
+                .onDelete { indices in deleteSaved(at: indices) }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .environment(\.editMode, $savedEditMode)
+            .frame(height: CGFloat(savedStore.items.count) * 68 + 4)
         }
     }
 
     @ViewBuilder
     private func savedRow(_ entry: SavedJourney) -> some View {
-        HStack(spacing: 6) {
-            // Drag handle: only the grip is draggable so tapping the row still loads.
-            Image(systemName: "line.3.horizontal")
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-                .accessibilityLabel(t("Drag to reorder", "Σύρε για αναδιάταξη", "Zvarrit për të risistemuar", "Trascina per riordinare"))
-                .draggable(entry.id) {
-                    // Lightweight drag preview.
-                    Text(entry.label ?? pairName(entry.fromId, entry.toId))
-                        .font(.subheadline).padding(8)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.gray.opacity(0.2)))
-                }
+        HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.label ?? pairName(entry.fromId, entry.toId))
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
@@ -362,38 +377,30 @@ struct PlanView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.08)))
             .contentShape(Rectangle())
-            .onTapGesture { loadSaved(entry) }
+            .onTapGesture { if savedEditMode != .active { loadSaved(entry) } }
+            // Borderless so the List row doesn't treat the whole row as one button.
             Button { renameTarget = entry; renameText = entry.label ?? "" } label: {
                 Image(systemName: "pencil")
-            }.buttonStyle(.bordered)
-            Button(role: .destructive) { deleteSaved(entry) } label: {
-                Image(systemName: "trash")
-            }.buttonStyle(.bordered)
-        }
-        // Dropping a dragged id onto this row moves it just before this row, then
-        // persists the whole order through the shared reorder op.
-        .dropDestination(for: String.self) { dropped, _ in
-            guard let draggedId = dropped.first, draggedId != entry.id else { return false }
-            reorderSaved(move: draggedId, onto: entry.id)
-            return true
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(t("Rename", "Μετονομασία", "Riemërto", "Rinomina"))
         }
     }
 
-    /// Move `draggedId` to the slot currently held by `targetId`. Inserting at the
-    /// target's ORIGINAL index means an upward drag lands the row before the target
-    /// and a downward drag lands it after, so reordering works in both directions
-    /// (the earlier "insert before target" only ever moved a row up).
-    private func reorderSaved(move draggedId: String, onto targetId: String) {
-        let ids = savedStore.items.map { $0.id }
-        guard let from = ids.firstIndex(of: draggedId),
-              let to = ids.firstIndex(of: targetId), from != to else { return }
-        var next = ids
-        next.remove(at: from)
-        next.insert(draggedId, at: min(to, next.count))
-        savedStore.reorder(next)
+    /// Native List reorder: `Array.move` handles up/down moves in one call, then the
+    /// new id order is persisted through the shared store.
+    private func moveSaved(from source: IndexSet, to destination: Int) {
+        var ids = savedStore.items.map { $0.id }
+        ids.move(fromOffsets: source, toOffset: destination)
+        savedStore.reorder(ids)
+    }
+
+    /// List swipe/edit delete, routed through the same 5s-Undo delete as the button.
+    private func deleteSaved(at indices: IndexSet) {
+        for idx in indices where savedStore.items.indices.contains(idx) {
+            deleteSaved(savedStore.items[idx])
+        }
     }
 
     private func pairName(_ from: String, _ to: String) -> String {
