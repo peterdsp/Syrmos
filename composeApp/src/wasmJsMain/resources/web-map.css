@@ -2065,6 +2065,48 @@ body.has-store-banner .app-shell {
     background: rgba(20,102,184,.06);
 }
 
+/* ===== Resume live GO session (S06) ===== */
+.plan-resume { display: block; }
+.plan-resume__banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--sy-radius-md);
+    border: 1px solid var(--sy-accent);
+    background: rgba(20,102,184,.06);
+}
+.plan-resume__info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+}
+.plan-resume__title { font-size: 15px; font-weight: 600; color: var(--sy-text-primary); }
+.plan-resume__pair { font-size: 13px; color: var(--sy-text-secondary); }
+.plan-resume__actions { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; }
+.plan-resume__end {
+    min-height: 36px; padding: 6px 12px;
+    border-radius: var(--sy-radius-pill);
+    border: 1px solid var(--sy-border);
+    background: var(--sy-surface);
+    color: var(--sy-text-secondary);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.plan-resume__resume {
+    min-height: 36px; padding: 6px 14px;
+    border-radius: var(--sy-radius-pill);
+    border: 0;
+    background: var(--sy-accent);
+    color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+}
+
 /* ===== Saved journeys (S08 / J05) ===== */
 .plan-saved {
     display: flex;

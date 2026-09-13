@@ -4306,13 +4306,16 @@
             // show an honest results summary, and mount the selected route in
             // the GO panel. Times are estimated (no schedule), so nothing is
             // labelled with a fabricated clock.
-            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null;
+            let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null, resumeEl = null;
             let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
             let undoTimer = null, pendingUndo = null; // last-deleted journey for the 5s Undo
             let saveBtnRef = null; // the results "Save journey" button, kept in sync with the store
             const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
             const savedStore = (window.SyrmosSavedJourneys && typeof window.SyrmosSavedJourneys.createStore === "function")
                 ? window.SyrmosSavedJourneys.createStore() : null;
+            // The single live GO session (S06): survives a reload, offered as a resume banner.
+            const activeStore = (window.SyrmosActiveJourney && typeof window.SyrmosActiveJourney.createStore === "function")
+                ? window.SyrmosActiveJourney.createStore() : null;
 
             function stationName(s) {
                 if (currentLang === "el" && (s.name_el || s.nameEl)) return s.name_el || s.nameEl;
@@ -4406,6 +4409,10 @@
                     draft.appendChild(timeWrap);
                     draft.appendChild(find);
 
+                    resumeEl = document.createElement("div");
+                    resumeEl.id = "planResume";
+                    resumeEl.className = "plan-resume";
+
                     resultsEl = document.createElement("div");
                     resultsEl.id = "planResults";
                     resultsEl.className = "plan-results";
@@ -4419,6 +4426,7 @@
 
                     card.appendChild(title);
                     card.appendChild(draft);
+                    card.appendChild(resumeEl);
                     card.appendChild(resultsEl);
                     card.appendChild(savedEl);
                     card.appendChild(panelEl);
@@ -4477,6 +4485,71 @@
                     if (rec) coords[stop.id] = { lat: rec.latitude, lon: rec.longitude };
                 }
                 return coords;
+            }
+            // Reopen an in-progress session where it left off: rebuild the journey from
+            // the frozen snapshot (names re-resolved in the current language) and mount
+            // the panel bound to the SAME persisted session (never a fresh one).
+            function resumeJourney(active) {
+                if (!window.SyrmosGoPanel || !panelEl || !active) return;
+                const byId = new Map(stations.map((s) => [s.id, s]));
+                const journey = optionToJourney(active.itinerarySnapshot, byId);
+                if (!journey.legs.length) return;
+                window.SyrmosGoPanel.mount(panelEl, journey, {
+                    language: currentLang,
+                    coords: coordsFor(journey, byId),
+                    lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                    store: activeStore,
+                    active,
+                    onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
+                });
+            }
+            // The resume banner (S06): shown when a live session is persisted. Clicking
+            // it (or Resume) reopens GO; End clears the session so it is not offered again.
+            function renderResume() {
+                if (!resumeEl) return;
+                resumeEl.innerHTML = "";
+                const active = activeStore ? activeStore.get() : null;
+                if (!active) return;
+                const byId = new Map(stations.map((s) => [s.id, s]));
+                const nm = (id) => {
+                    const s = byId.get(id);
+                    if (!s) return id;
+                    return (currentLang === "el" && (s.name_el || s.nameEl)) ? (s.name_el || s.nameEl) : (s.name || id);
+                };
+                const legs = active.itinerarySnapshot.legs || [];
+                const fromId = legs.length ? legs[0].fromId : null;
+                const toId = legs.length ? legs[legs.length - 1].toId : null;
+
+                const banner = document.createElement("div");
+                banner.className = "plan-resume__banner";
+                const info = document.createElement("button");
+                info.type = "button";
+                info.className = "plan-resume__info";
+                const title = document.createElement("div");
+                title.className = "plan-resume__title";
+                title.textContent = T("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso");
+                const pair = document.createElement("div");
+                pair.className = "plan-resume__pair";
+                pair.textContent = nm(fromId) + " → " + nm(toId);
+                info.appendChild(title); info.appendChild(pair);
+                info.addEventListener("click", () => resumeJourney(active));
+                banner.appendChild(info);
+
+                const actions = document.createElement("div");
+                actions.className = "plan-resume__actions";
+                const endBtn = document.createElement("button");
+                endBtn.type = "button";
+                endBtn.className = "plan-resume__end";
+                endBtn.textContent = T("End", "Τέλος", "Përfundo", "Termina");
+                endBtn.addEventListener("click", () => { activeStore.clear(); if (panelEl) panelEl.innerHTML = ""; renderResume(); });
+                const resumeBtn = document.createElement("button");
+                resumeBtn.type = "button";
+                resumeBtn.className = "plan-resume__resume";
+                resumeBtn.textContent = T("Resume", "Συνέχεια", "Vazhdo", "Riprendi");
+                resumeBtn.addEventListener("click", () => resumeJourney(active));
+                actions.appendChild(endBtn); actions.appendChild(resumeBtn);
+                banner.appendChild(actions);
+                resumeEl.appendChild(banner);
             }
             // S05 selected-journey detail: summary + leg-by-leg timeline (via the
             // shared SyrmosJourneyDetail transform) + honest source line + Start.
@@ -4820,10 +4893,18 @@
                 const startJourney = (opt) => {
                     if (!window.SyrmosGoPanel || !panelEl) return;
                     const journey = optionToJourney(opt, byId);
+                    // Persist a fresh live session so it survives a reload / navigation.
+                    if (activeStore && window.SyrmosActiveJourney) {
+                        activeStore.set(window.SyrmosActiveJourney.start(
+                            window.SyrmosActiveJourney.newId(), opt, journey, new Date().toISOString()));
+                    }
                     window.SyrmosGoPanel.mount(panelEl, journey, {
                         language: currentLang,
                         coords: coordsFor(journey, byId),
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                        store: activeStore,
+                        option: opt,
+                        onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
                     });
                 };
                 const mountSelected = (opt) => {
@@ -4955,7 +5036,7 @@
                 } catch (_) { /* leave prior results intact */ }
             }
             return {
-                show() { try { if (container()) { card.style.display = ""; ensureSelectsFilled(); renderSaved(); if (resultsEl && !resultsEl.childNodes.length && fromSel && fromSel.options.length) runPlan(); } } catch (_) {} },
+                show() { try { if (container()) { card.style.display = ""; ensureSelectsFilled(); renderSaved(); renderResume(); if (resultsEl && !resultsEl.childNodes.length && fromSel && fromSel.options.length) runPlan(); } } catch (_) {} },
                 hide() { try { if (card) card.style.display = "none"; } catch (_) {} },
             };
         })();
