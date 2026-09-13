@@ -10,15 +10,27 @@ import UIKit
 struct GoJourneyView: View {
     @StateObject private var model: GoJourneyViewModel
     @StateObject private var location = LocationService()
+    @Environment(\.dismiss) private var dismiss
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
+    private let store: GoActiveJourneyStore?
+    private let resuming: Bool
+    private let onEnd: (() -> Void)?
 
-    init(journey: GuidanceJourney, language: AppLanguage, coords: [String: GoLocationAdvancer.Coord] = [:]) {
+    init(
+        journey: GuidanceJourney, language: AppLanguage,
+        coords: [String: GoLocationAdvancer.Coord] = [:],
+        store: GoActiveJourneyStore? = nil, resuming: Bool = false,
+        onEnd: (() -> Void)? = nil
+    ) {
         _model = StateObject(wrappedValue: GoJourneyViewModel(journey: journey, coords: coords))
         self.language = language
         self.originName = journey.legs.first?.stops.first?.name ?? ""
         self.destinationName = journey.legs.last?.stops.last?.name ?? ""
+        self.store = store
+        self.resuming = resuming
+        self.onEnd = onEnd
     }
 
     private var tint: Color {
@@ -42,8 +54,21 @@ struct GoJourneyView: View {
         .navigationTitle("GO")
         .navigationBarTitleDisplayMode(.inline)
         .animation(.easeInOut(duration: 0.2), value: model.position)
+        .toolbar {
+            if store != nil {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(model.isArrived
+                        ? t("Finish", "Τέλος", "Përfundo", "Concludi")
+                        : t("End", "Τέλος", "Përfundo", "Termina")) {
+                        model.end()
+                        if let onEnd { onEnd() } else { dismiss() }
+                    }
+                }
+            }
+        }
         .onAppear {
             model.onGetOffAlert = { guidance in fireGetOff(guidance) }
+            if let store { model.begin(store: store, resuming: resuming, language: language) }
             Task { await NotificationService.shared.requestAuthorization() }
         }
         .onReceive(location.$currentLocation) { loc in

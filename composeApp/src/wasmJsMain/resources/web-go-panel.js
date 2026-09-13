@@ -12,6 +12,7 @@
   else root.SyrmosGoPanel = factory(root);
 })(typeof self !== 'undefined' ? self : this, function (root) {
   const GO = (typeof require === 'function') ? require('./web-go.js') : root.SyrmosGO;
+  const AJ = (typeof require === 'function') ? require('./web-active-journey.js') : root.SyrmosActiveJourney;
 
   function t(lang, en, el, sq, it) {
     return lang === 'el' ? el : lang === 'sq' ? sq : lang === 'it' ? it : en;
@@ -64,10 +65,24 @@
     const color = (id) => (opts.lineColor ? opts.lineColor(id) || '#0072CE' : '#0072CE');
     const coords = opts.coords || {}; // { [stopId]: {lat, lon} } for live advance
     const hasCoords = Object.keys(coords).length > 0;
-    let pos = { legIndex: 0, stopIndex: 0 };
+    // Persistent live session (S06): when a store is supplied the panel resumes from
+    // (and writes every step to) the persisted ActiveJourney, so progress survives a
+    // reload / navigation. Without a store it stays in-memory (used by unit tests).
+    const store = (opts.store && AJ) ? opts.store : null;
+    const nowISO = () => new Date().toISOString();
+    let active = null;
+    if (store) {
+      active = (opts.active && AJ.isResumable(opts.active)) ? opts.active : store.get();
+      if (!active && opts.option) { active = AJ.start(AJ.newId(), opts.option, journey, nowISO()); store.set(active); }
+    }
+    let pos = active ? AJ.positionOf(active, journey) : { legIndex: 0, stopIndex: 0 };
     let live = false;
     let watchId = null;
     const alertedLegs = new Set();
+
+    function persist(source) {
+      if (store && active) { active = AJ.withPosition(active, journey, pos, nowISO(), source || 'manual'); store.set(active); }
+    }
 
     const origin = journey.legs[0] && journey.legs[0].stops[0] ? journey.legs[0].stops[0].name : '';
     const destLeg = journey.legs[journey.legs.length - 1];
@@ -129,31 +144,42 @@
           <button class="go-live" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:12px;border:1px solid ${live ? '#2E7D32' : '#ccc'};background:${live ? 'rgba(46,125,50,.08)' : '#fff'};font-weight:600;color:${live ? '#2E7D32' : '#333'};">
             ${live ? '● ' + esc(t(lang, 'Live guidance on', 'Ζωντανή καθοδήγηση ενεργή', 'Udhëzim i drejtpërdrejtë aktiv', 'Guida dal vivo attiva')) : esc(t(lang, 'Start live guidance', 'Έναρξη ζωντανής καθοδήγησης', 'Nis udhëzimin e drejtpërdrejtë', 'Avvia guida dal vivo'))}
           </button>` : ''}
+          ${store ? `
+          <button class="go-end" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:12px;border:1px solid #ccc;background:#fff;font-weight:600;color:#666;">
+            ${esc(arrived ? t(lang, 'Finish journey', 'Ολοκλήρωση', 'Përfundo udhëtimin', 'Concludi viaggio') : t(lang, 'End journey', 'Τέλος διαδρομής', 'Përfundo udhëtimin', 'Termina viaggio'))}
+          </button>` : ''}
         </div>`;
 
       const back = contentEl.querySelector('.go-back');
       const next = contentEl.querySelector('.go-next');
       const liveBtn = contentEl.querySelector('.go-live');
+      const endBtn = contentEl.querySelector('.go-end');
       if (back) back.onclick = () => { api.back(); };
       if (next) next.onclick = () => { arrived ? api.reset() : api.advance(); };
       if (liveBtn) liveBtn.onclick = () => { live ? api.stopLive() : api.startLive(); };
+      if (endBtn) endBtn.onclick = () => { api.end(); };
     }
 
     const api = {
-      advance() { if (!GO.isArrived(journey, pos)) { pos = GO.advance(journey, pos); render(); } },
+      advance() { if (!GO.isArrived(journey, pos)) { pos = GO.advance(journey, pos); persist('manual'); render(); } },
       back() {
         if (pos.stopIndex > 0) pos = { legIndex: pos.legIndex, stopIndex: pos.stopIndex - 1 };
         else if (pos.legIndex > 0) { const p = pos.legIndex - 1; pos = { legIndex: p, stopIndex: journey.legs[p].stops.length - 1 }; }
-        render();
+        persist('manual'); render();
       },
-      reset() { pos = { legIndex: 0, stopIndex: 0 }; alertedLegs.clear(); render(); },
+      reset() { pos = { legIndex: 0, stopIndex: 0 }; alertedLegs.clear(); persist('manual'); render(); },
+      // End the live session: clear the persisted trip and hand control back so no
+      // stale journey is offered again. In-memory panels just fire the callback.
+      end() { if (store) store.clear(); if (opts.onEnd) { try { opts.onEnd(); } catch (_) {} } },
+      // The persisted session (or null when the panel runs in-memory).
+      session() { return active; },
       position() { return pos; },
       // Live GO: feed a GPS fix; auto-advance the position and fire onGetOff once
       // per leg when the rider is one stop from a leg's alight point.
       applyLocation(lat, lon) {
         if (!hasCoords) return;
         const np = GO.advancedPosition(journey, pos, coords, lat, lon);
-        if (np.legIndex !== pos.legIndex || np.stopIndex !== pos.stopIndex) { pos = np; render(); }
+        if (np.legIndex !== pos.legIndex || np.stopIndex !== pos.stopIndex) { pos = np; persist('gps'); render(); }
         if (GO.shouldAlertGetOff(journey, pos) && !alertedLegs.has(pos.legIndex)) {
           alertedLegs.add(pos.legIndex);
           if (opts.onGetOff) { try { opts.onGetOff(GO.guidance(journey, pos)); } catch (_) {} }

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "description": "Golden cases for the Syrmos 3.0 backward (arrive-by) schedule pass and last-connection-home (prompt 7.2). Kotlin SchedulePlanner.assignScheduleArriveBy/lastConnection and web SyrmosSchedulePlan must assign the same LATEST-feasible departures. Arrive-by is a real backward search, not a static duration subtracted from the target. Instants absolute (Europe/Athens, +02:00 winter). Times synthetic.",
+  "defaultTransferSeconds": 120,
+  "cases": [
+    {
+      "id": "arrive_by_direct",
+      "mode": "arriveBy",
+      "note": "arrive by 09:00; latest M1 departure with +900s travel <= 09:00 is 08:45 -> arrive 09:00",
+      "arriveByInstant": "2026-01-15T09:00:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T08:30:00+02:00", "2026-01-15T08:40:00+02:00", "2026-01-15T08:45:00+02:00", "2026-01-15T08:50:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900 }
+      },
+      "option": { "legs": [ { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" } ] },
+      "expectedDepartureInstant": "2026-01-15T08:45:00+02:00",
+      "expectedArrivalInstant": "2026-01-15T09:00:00+02:00",
+      "expectedFeasibility": { "status": "comfortable", "explanationCode": "direct" }
+    },
+    {
+      "id": "arrive_by_transfer",
+      "mode": "arriveBy",
+      "note": "arrive by 09:00; leg2 M2 latest dep 08:55 (arr 09:00), leg1 must arrive by 08:53 so latest M1 dep is 08:35 (arr 08:50); margin=(08:55-08:50)-120=180 -> comfortable; leave by 08:35",
+      "arriveByInstant": "2026-01-15T09:00:00+02:00",
+      "timetable": {
+        "departures": {
+          "M1|PIR": ["2026-01-15T08:30:00+02:00", "2026-01-15T08:35:00+02:00", "2026-01-15T08:40:00+02:00"],
+          "M2|OMO": ["2026-01-15T08:50:00+02:00", "2026-01-15T08:55:00+02:00", "2026-01-15T09:00:00+02:00"]
+        },
+        "legSeconds": { "M1|PIR|OMO": 900, "M2|OMO|SYN": 300 }
+      },
+      "option": { "legs": [
+        { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" },
+        { "id": "t1", "kind": "transfer", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO", "toId": "SYN" }
+      ] },
+      "expectedDepartureInstant": "2026-01-15T08:35:00+02:00",
+      "expectedArrivalInstant": "2026-01-15T09:00:00+02:00",
+      "expectedFeasibility": { "status": "comfortable", "minimumMarginSeconds": 180, "explanationCode": "transfer_comfortable" }
+    },
+    {
+      "id": "arrive_by_impossible",
+      "mode": "arriveBy",
+      "note": "arrive by 08:10 but the earliest departure (08:00) still arrives 08:15 > 08:10 -> no journey (unscheduled)",
+      "arriveByInstant": "2026-01-15T08:10:00+02:00",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T08:00:00+02:00", "2026-01-15T08:05:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900 }
+      },
+      "option": { "legs": [ { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" } ] },
+      "expectedTimingKind": "unknown",
+      "expectedNullDeparture": true
+    },
+    {
+      "id": "last_connection_direct",
+      "mode": "lastConnection",
+      "note": "no arrive-by target: take the latest available departure. Last M1 is 00:05 the NEXT day -> the last connection home, arriving 00:20",
+      "timetable": {
+        "departures": { "M1|PIR": ["2026-01-15T23:30:00+02:00", "2026-01-15T23:45:00+02:00", "2026-01-16T00:05:00+02:00"] },
+        "legSeconds": { "M1|PIR|OMO": 900 }
+      },
+      "option": { "legs": [ { "id": "r1", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO" } ] },
+      "expectedDepartureInstant": "2026-01-16T00:05:00+02:00",
+      "expectedArrivalInstant": "2026-01-16T00:20:00+02:00",
+      "expectedFeasibility": { "status": "comfortable", "explanationCode": "direct" }
+    }
+  ]
+}
