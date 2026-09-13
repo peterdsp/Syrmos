@@ -68,6 +68,8 @@ import com.syrmos.app.journey.SavedJourneysRepository
 import com.syrmos.core.domain.go.GuidanceJourney
 import com.syrmos.core.domain.go.GuidanceLeg
 import com.syrmos.core.domain.go.GuidanceStop
+import com.syrmos.core.domain.journey.AccessibilityConfidence
+import com.syrmos.core.domain.journey.AccessibilityDisclosure
 import com.syrmos.core.domain.journey.ActiveJourneyStore
 import com.syrmos.core.domain.journey.JourneyDetail
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
@@ -76,6 +78,7 @@ import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
 import com.syrmos.core.model.planner.JourneyResult
 import com.syrmos.core.model.transit.Direction
+import com.syrmos.core.model.journey.AccessibilityPreference
 import com.syrmos.core.model.journey.FeasibilityStatus
 import com.syrmos.core.model.journey.JourneyOption
 import com.syrmos.core.model.journey.JourneyPreferences
@@ -122,6 +125,9 @@ class PlanScreenRoute : Screen {
         var planned by remember { mutableStateOf(false) }
         var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
         var arriveByText by remember { mutableStateOf("") } // "HH:MM"
+        // Phase R: rider accessibility preference. When on, each route discloses
+        // its step-free confidence honestly (unknown until per-station data lands).
+        var stepFree by remember { mutableStateOf(false) }
 
         // Saved journeys (S08 / J05): locally owned, no account.
         val savedItems by SavedJourneysRepository.items.collectAsState()
@@ -334,6 +340,15 @@ class PlanScreenRoute : Screen {
                     )
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(t("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini"))
+                    androidx.compose.material3.Switch(checked = stepFree, onCheckedChange = { stepFree = it })
+                }
+
                 Button(
                     onClick = { runPlan() },
                     enabled = fromId != null && toId != null && open == null,
@@ -389,7 +404,7 @@ class PlanScreenRoute : Screen {
                         // S05 selected-journey detail: summary + leg-by-leg timeline
                         // for the chosen option, from the shared JourneyDetail transform.
                         usable.getOrNull(selectedIdx)?.let { sel ->
-                            SelectedJourneyDetail(option = sel, lang = lang, nm = ::name, t = ::t, onStart = { startGo(sel) })
+                            SelectedJourneyDetail(option = sel, stepFree = stepFree, lang = lang, nm = ::name, t = ::t, onStart = { startGo(sel) })
                         }
                     }
                 }
@@ -647,6 +662,7 @@ class PlanScreenRoute : Screen {
     @Composable
     private fun SelectedJourneyDetail(
         option: JourneyOption,
+        stepFree: Boolean,
         lang: AppLanguage,
         nm: (String?) -> String,
         t: (String, String, String, String) -> String,
@@ -690,6 +706,24 @@ class PlanScreenRoute : Screen {
                     t("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            // Phase R accessibility-unknown disclosure. Shared engine; no per-station
+            // step-free data is plumbed yet, so an honest "not confirmed" is shown
+            // rather than a fabricated "accessible".
+            if (stepFree) {
+                val info = remember(option.id) {
+                    AccessibilityDisclosure.forOption(option, AccessibilityPreference.STEP_FREE)
+                }
+                val text = when (info.confidence) {
+                    AccessibilityConfidence.VERIFIED ->
+                        t("Step-free the whole way.", "Χωρίς σκαλιά σε όλη τη διαδρομή.", "Pa shkallë gjatë gjithë rrugës.", "Senza gradini per tutto il percorso.")
+                    AccessibilityConfidence.UNAVAILABLE ->
+                        t("This route isn't step-free.", "Αυτή η διαδρομή δεν είναι χωρίς σκαλιά.", "Kjo rrugë nuk është pa shkallë.", "Questo percorso non è senza gradini.")
+                    AccessibilityConfidence.UNKNOWN ->
+                        t("Step-free access isn't confirmed for this route.", "Η πρόσβαση χωρίς σκαλιά δεν επιβεβαιώνεται για αυτή τη διαδρομή.", "Qasja pa shkallë nuk është konfirmuar për këtë rrugë.", "L'accesso senza gradini non è confermato per questo percorso.")
+                }
+                Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
             Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
                 Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))

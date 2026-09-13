@@ -2032,6 +2032,9 @@ body.has-store-banner .app-shell {
 
 /* ===== Plan travel-time mode (Leave now / Arrive by / Last train home) ===== */
 .plan-mode { display: flex; gap: 8px; flex-wrap: wrap; }
+.plan-stepfree { display: flex; align-items: center; gap: 8px; margin: 4px 0; cursor: pointer; font-size: 14px; }
+.plan-stepfree__input { width: 18px; height: 18px; accent-color: var(--sy-primary); }
+.plan-detail__a11y { margin-top: 2px; }
 .plan-mode__btn {
     flex: 1 1 auto; min-height: 44px; padding: 8px 10px;
     border-radius: var(--sy-radius-md); border: 1px solid var(--sy-border);

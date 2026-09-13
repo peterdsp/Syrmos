@@ -529,6 +529,11 @@
 <!-- Selected-journey detail timeline (SyrmosJourneyDetail, S05): pure legs->rows
      transform; mirrors Kotlin JourneyDetail.timeline. -->
 <script src="/web-journey-detail.js?v=4"></script>
+<!-- Phase R: disruption exclusions (SyrmosDisruption) + accessibility-unknown
+     disclosure (SyrmosAccessibility); mirror Kotlin DisruptionExclusion /
+     AccessibilityDisclosure. Loaded before web-map.js reads them. -->
+<script src="/web-disruption.js?v=4"></script>
+<script src="/web-accessibility.js?v=4"></script>
 <!-- Persistent live GO session (SyrmosActiveJourney, S06): one versioned
      localStorage root; mirrors Kotlin ActiveJourney + ActiveJourneyStore. Loaded
      after the GO engine and before the panel, which resumes/persists through it. -->
