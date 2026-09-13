@@ -1,18 +1,26 @@
 package com.syrmos.app.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -55,6 +64,7 @@ import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.app.journey.SavedJourneysRepository
+import com.syrmos.core.domain.journey.JourneyDetail
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
 import com.syrmos.core.domain.journey.SchedulePlanner
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
@@ -200,7 +210,9 @@ class PlanScreenRoute : Screen {
             },
         ) { padding ->
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize().padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 endpointRow(t("From", "Από", "Nga", "Da"), name(fromId)) { open = if (open == "from") null else "from" }
@@ -311,6 +323,11 @@ class PlanScreenRoute : Screen {
                                 onClick = { selectedIdx = i },
                             )
                         }
+                        // S05 selected-journey detail: summary + leg-by-leg timeline
+                        // for the chosen option, from the shared JourneyDetail transform.
+                        usable.getOrNull(selectedIdx)?.let { sel ->
+                            SelectedJourneyDetail(option = sel, lang = lang, nm = ::name, t = ::t)
+                        }
                     }
                 }
 
@@ -359,6 +376,8 @@ class PlanScreenRoute : Screen {
                         onReorder = { SavedJourneysRepository.reorder(it) },
                     )
                 }
+                // Bottom clearance so the S05 action + saved list clear the tab bar.
+                Spacer(Modifier.height(96.dp))
             }
         }
 
@@ -550,6 +569,144 @@ class PlanScreenRoute : Screen {
             Text(feas, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             if (leaveByLabel != null) {
                 Text(leaveByLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+
+    // MARK: - S05 selected-journey detail
+
+    /**
+     * Android mirror of the web S05 detail: summary card + leg-by-leg timeline
+     * (from the shared [JourneyDetail.timeline]) + honest source line + Start.
+     * GO guidance is not built on Android yet (Phase G), so Start surfaces an
+     * honest notice rather than a dead control.
+     */
+    @Composable
+    private fun SelectedJourneyDetail(
+        option: JourneyOption,
+        lang: AppLanguage,
+        nm: (String?) -> String,
+        t: (String, String, String, String) -> String,
+    ) {
+        val rows = remember(option.id) { JourneyDetail.timeline(option) }
+        val legById = remember(option.id) { option.legs.associateBy { it.id } }
+        var startNotice by remember(option.id) { mutableStateOf(false) }
+        val minutes = ((option.durationSeconds ?: 0) / 60).coerceAtLeast(1)
+        val anyScheduled = rows.any { it.timingKind == "scheduled" || it.timingKind == "live" }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Summary.
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("~$minutes " + t("min", "λεπ", "min", "min"),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                val dep = option.departureInstant; val arr = option.arrivalInstant
+                if (dep != null && arr != null) {
+                    Text("${athensHm(dep)} – ${athensHm(arr)}",
+                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            // Timeline.
+            Column {
+                rows.forEach { r ->
+                    TimelineRowView(r, legById[r.legId], lang, nm, t)
+                }
+            }
+
+            // Honest source line.
+            Text(
+                if (anyScheduled)
+                    t("Times from the published timetable.", "Χρόνοι από το επίσημο δρομολόγιο.", "Kohët nga orari zyrtar.", "Orari dal calendario ufficiale.")
+                else
+                    t("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso."),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Button(onClick = { startNotice = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))
+            }
+            if (startNotice) {
+                Text(
+                    t("Live guidance is coming to Android soon.", "Η ζωντανή καθοδήγηση έρχεται σύντομα στο Android.", "Udhëzimi i drejtpërdrejtë vjen së shpejti në Android.", "La guida dal vivo arriverà presto su Android."),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun TimelineRowView(
+        r: JourneyDetail.TimelineRow,
+        leg: com.syrmos.core.model.journey.Leg?,
+        lang: AppLanguage,
+        nm: (String?) -> String,
+        t: (String, String, String, String) -> String,
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        val dashed = r.kind == "transfer" || r.kind == "walk" || r.kind == "stops"
+        val major = r.node == JourneyDetail.Node.ORIGIN || r.node == JourneyDetail.Node.DESTINATION || r.node == JourneyDetail.Node.INTERCHANGE
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            // Clock column.
+            Text(
+                text = r.clock?.let { athensHm(it) } ?: if (r.kind == "board" || r.kind == "alight") "~" else "",
+                modifier = Modifier.width(46.dp).padding(top = 2.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(10.dp))
+            // Node column: rail line + dot.
+            Box(modifier = Modifier.width(16.dp).fillMaxHeight()) {
+                val railColor = MaterialTheme.colorScheme.outline.copy(alpha = if (dashed) 0.4f else 1f)
+                Box(Modifier.align(Alignment.TopCenter).width(3.dp).fillMaxHeight().background(railColor))
+                if (r.kind == "board" || r.kind == "alight") {
+                    val dot = if (major) 14.dp else 10.dp
+                    Box(
+                        Modifier.align(Alignment.TopCenter).padding(top = 3.dp).size(dot)
+                            .clip(CircleShape)
+                            .background(if (major) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primary)
+                            .then(if (major) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) else Modifier),
+                    )
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            // Instruction column.
+            Column(modifier = Modifier.weight(1f).padding(bottom = 12.dp)) {
+                when (r.kind) {
+                    "board" -> Text(
+                        t("Board", "Επιβίβαση", "Hip", "Sali") + " ${r.lineId ?: ""} " +
+                            t("toward", "προς", "drejt", "verso") + " " + nm(r.towardsId),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    "alight" -> Text(
+                        t("Alight", "Αποβίβαση", "Zbrit", "Scendi") + " " + nm(r.stationId),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    "stops" -> {
+                        val count = r.count ?: 0
+                        val label = "$count " + if (count == 1) t("stop", "στάση", "ndalesë", "fermata") else t("stops", "στάσεις", "ndalesa", "fermate")
+                        Text(
+                            label, modifier = Modifier.clickable { expanded = !expanded },
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (expanded) {
+                            val mid = leg?.orderedStopIds?.drop(1)?.dropLast(1).orEmpty()
+                            Text(mid.joinToString(" · ") { nm(it) },
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    else -> {
+                        val mins = r.seconds?.let { (it / 60).coerceAtLeast(1) }
+                        val word = if (r.kind == "walk") t("Walk", "Περπάτημα", "Ecje", "Cammina") else t("Transfer", "Μετεπιβίβαση", "Ndërrim", "Cambio")
+                        Text(word + (mins?.let { " · $it " + t("min", "λεπ", "min", "min") } ?: ""),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
     }
