@@ -107,13 +107,8 @@
     container.appendChild(srEl);
     container.appendChild(contentEl);
 
-    function progress() {
-      const total = Math.max(1, journey.legs.reduce((n, l) => n + Math.max(0, l.stops.length - 1), 0));
-      let done = 0;
-      for (let i = 0; i < pos.legIndex; i++) done += Math.max(0, journey.legs[i].stops.length - 1);
-      done += pos.stopIndex;
-      return Math.min(1, done / total);
-    }
+    // Journey completion from the one shared cross-client definition (web-go.js).
+    function progress() { return GO.progress(journey, pos); }
 
     function render() {
       const g = GO.guidance(journey, pos);

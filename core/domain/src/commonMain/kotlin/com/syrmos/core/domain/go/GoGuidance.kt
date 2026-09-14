@@ -115,4 +115,21 @@ object GoGuidance {
         val lastLeg = position.legIndex == journey.legs.lastIndex
         return lastLeg && position.stopIndex == leg.stops.lastIndex
     }
+
+    /**
+     * Journey completion in 0..1 by stops travelled over total inter-stop hops
+     * across every leg. The single shared definition the glance surfaces read (GO
+     * progress bar, iOS Live Activity, Android ongoing notification, web GO panel),
+     * so the fraction cannot drift between clients. A leg's alight stop and the next
+     * leg's board stop are the same physical point, so a transfer boundary maps to
+     * one fraction, not two. Total is floored at 1 so a degenerate single-stop
+     * journey reports 0 at the start and 1 on arrival rather than dividing by zero.
+     */
+    fun progress(journey: GuidanceJourney, position: GuidancePosition): Double {
+        val total = journey.legs.sumOf { maxOf(0, it.stops.size - 1) }.coerceAtLeast(1)
+        var done = 0
+        for (i in 0 until position.legIndex) done += maxOf(0, journey.legs[i].stops.size - 1)
+        done += position.stopIndex
+        return (done.toDouble() / total.toDouble()).coerceIn(0.0, 1.0)
+    }
 }

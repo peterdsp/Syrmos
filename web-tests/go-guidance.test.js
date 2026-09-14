@@ -29,6 +29,28 @@ test('GO engine matches every golden fixture case', () => {
       c.alert,
       `[${c.name}] shouldAlertGetOff should be ${c.alert}`
     );
+    assert.ok(
+      Math.abs(GO.progress(journey, c.position) - c.progress) < 1e-9,
+      `[${c.name}] progress: got ${GO.progress(journey, c.position)}, want ${c.progress}`
+    );
+  }
+});
+
+test('progress() is monotonic and bounded across a full journey', () => {
+  for (const [name, journey] of Object.entries(FIX.journeys)) {
+    let pos = { legIndex: 0, stopIndex: 0 };
+    let last = GO.progress(journey, pos);
+    assert.ok(Math.abs(last - 0) < 1e-9, `[${name}] should start at 0`);
+    let steps = 0;
+    while (!GO.isArrived(journey, pos)) {
+      pos = GO.advance(journey, pos);
+      const cur = GO.progress(journey, pos);
+      assert.ok(cur >= last - 1e-9, `[${name}] progress must not go backwards`);
+      assert.ok(cur >= 0 && cur <= 1, `[${name}] progress must stay in 0..1`);
+      last = cur;
+      if (++steps > 50) assert.fail(`[${name}] did not converge`);
+    }
+    assert.ok(Math.abs(last - 1) < 1e-9, `[${name}] should end at 1`);
   }
 });
 
