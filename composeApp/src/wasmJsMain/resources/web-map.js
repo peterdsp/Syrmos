@@ -2664,6 +2664,12 @@
         console.error("region chips wiring failed", e);
     }
 
+    // Poll backoff cap (see pollBackoffMs below). Declared BEFORE the init steps:
+    // connectLiveTrainStream / connectAirportBusStream call startPollLoop
+    // synchronously, and its default `maxMs = POLL_MAX_BACKOFF_MS` would otherwise
+    // read this const in its temporal dead zone and throw, so neither loop started.
+    const POLL_MAX_BACKOFF_MS = 60_000;
+
     // Each guarded so one panel's failure can't cascade and abort the rest of
     // init (this is what previously left the bottom sheet uninitialised on the
     // live build). Failures surface in the console instead of silently breaking.
@@ -2737,7 +2743,6 @@
     // A healthy loop waits its base interval; after consecutive failures it waits
     // min(base * 2^failures, max), jittered so many clients never retry a down Pi
     // in lockstep. Reset failures to 0 on the next success.
-    const POLL_MAX_BACKOFF_MS = 60_000;
     function pollBackoffMs(consecutiveFailures, baseMs, maxMs = POLL_MAX_BACKOFF_MS, jitterFraction = 0.25, random01 = Math.random()) {
         const failures = Math.max(0, Math.min(consecutiveFailures | 0, 16));
         const raw = Math.min(failures === 0 ? baseMs : baseMs * Math.pow(2, failures), maxMs);
