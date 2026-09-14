@@ -29,6 +29,8 @@ function stage(withProduct) {
     fs.mkdirSync(path.join(src, 'product'));
     fs.copyFileSync(path.join(PRODUCT, 'index.html'), path.join(src, 'product', 'index.html'));
   }
+  fs.mkdirSync(path.join(src, 'get-app'));
+  fs.copyFileSync(path.join(RES, 'get-app', 'index.html'), path.join(src, 'get-app', 'index.html'));
   return { tmp, src, out };
 }
 
@@ -44,6 +46,7 @@ test('staging emits a standalone product/index.html next to the app routes', () 
       assert.equal(fs.readFileSync(path.join(out, route, 'index.html'), 'utf8'), shell, `${route} still serves the app`);
     }
     assert.ok(fs.existsSync(path.join(out, 'privacy', 'index.html')), 'privacy route still staged');
+    assert.ok(fs.existsSync(path.join(out, 'get-app', 'index.html')), 'handheld download screen staged');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -93,7 +96,7 @@ test('every local asset reference is root-absolute and exists', () => {
 test('platform destinations are the verified store and web URLs', () => {
   assert.match(html, /href="https:\/\/apps\.apple\.com\/app\/id6777650671"/);
   assert.match(html, /href="https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.syrmos\.android"/);
-  assert.match(html, /class="btn btn--primary btn--lg" href="\/">Open web app/);
+  assert.match(html, /class="btn btn--primary btn--lg web-only" href="\/">Open web app/);
   const external = [...html.matchAll(/href="(https:[^"]+)"/g)].map((m) => m[1]);
   for (const url of external) {
     assert.ok(/^https:\/\/(apps\.apple\.com|play\.google\.com|syrmos\.peterdsp\.dev|peterdsp\.dev|github\.com\/peterdsp)/.test(url), `unexpected destination ${url}`);
@@ -105,6 +108,16 @@ test('one H1, canonical URL, and no fabricated social proof', () => {
   assert.match(html, /<link rel="canonical" href="https:\/\/syrmos\.peterdsp\.dev\/product\/">/);
   assert.doesNotMatch(html, /aggregateRating|reviewCount|ratingValue|testimonial/i);
   assert.doesNotMatch(html, /google-analytics|gtag\(|plausible|matomo/i);
+});
+
+test('the web card shows the desktop web app, and no phone web screenshots remain', () => {
+  // The web app is desktop only, so the product page never shows it on a phone.
+  assert.doesNotMatch(html, /web-mobile-/, 'phone captures of the web app must not be used');
+  assert.match(html, /<div class="device laptop"><div class="laptop__screen"><img src="\/product\/img\/web-now-960\.webp"/, 'web card shows a laptop');
+  assert.match(html, /For laptops and desktop computers\./);
+  assert.match(html, /class="choice__note handheld-only"/, 'handheld visitors get an app note instead of the web button');
+  // Every download-card device sits in the fixed stage, so no screenshot is cropped.
+  assert.equal((html.match(/<div class="choice__device">/g) || []).length, 3);
 });
 
 test('the product URL is in the sitemap', () => {

@@ -49,7 +49,7 @@
           "name": "Syrmos",
           "url": "https://syrmos.peterdsp.dev/",
           "applicationCategory": "TravelApplication",
-          "operatingSystem": "Any (web)",
+          "operatingSystem": "Windows, macOS, Linux, ChromeOS",
           "isAccessibleForFree": true,
           "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}
         },
@@ -84,6 +84,14 @@
         (function () {
             var root = document.documentElement;
             root.classList.add("js");
+            // Same rule as the app shell (index.html): phones and tablets get the
+            // native apps, so "Open web app" actions become "Get the app" there.
+            function isHandheldDevice(ua, maxTouchPoints) {
+                ua = ua || "";
+                if (/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|KFAPWI|PlayBook|BlackBerry|BB10|webOS|Opera Mini|IEMobile|Windows Phone/i.test(ua)) return true;
+                return /Macintosh/.test(ua) && (maxTouchPoints || 0) > 1;
+            }
+            if (isHandheldDevice(navigator.userAgent, navigator.maxTouchPoints)) root.classList.add("is-handheld");
             var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             if (!reduce) root.classList.add("motion");
             setTimeout(function () { if (!window.syrmosProductReady) root.classList.remove("motion"); }, 2500);
@@ -110,7 +118,7 @@
         </nav>
         <div class="site-header__actions">
             <a class="btn btn--ghost site-header__get" href="#download">Get the app</a>
-            <a class="btn btn--primary" href="/">Open web app</a>
+            <a class="btn btn--primary web-only" href="/">Open web app</a>
             <details class="menu">
                 <summary class="menu__toggle" aria-label="Menu">
                     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -136,7 +144,7 @@
                 <h1 id="hero-title">Your next connection. <span>Beautifully clear.</span></h1>
                 <p class="hero__lead">Explore routes, check departures, and keep essential travel information close, with Syrmos for iOS, Android, and web.</p>
                 <div class="platforms" role="group" aria-label="Get Syrmos">
-                    <a class="btn btn--primary btn--lg" href="/">Open web app</a>
+                    <a class="btn btn--primary btn--lg web-only" href="/">Open web app</a>
                     <a class="badge" href="https://apps.apple.com/app/id6777650671">
                         <img src="/app-store.svg" alt="Download on the App Store" width="144" height="48">
                     </a>
@@ -144,7 +152,8 @@
                         <img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48">
                     </a>
                 </div>
-                <p class="hero__note">Free. The web app needs no install.</p>
+                <p class="hero__note web-only">Free. On a laptop or desktop computer, the web app runs in your browser with no install.</p>
+                <p class="hero__note handheld-only">Free on the App Store and Google Play. The web app is for laptops and desktop computers.</p>
             </div>
 
             <div class="hero__visual">
@@ -230,10 +239,9 @@
                         <h3>Keep the essentials with you.</h3>
                         <p>Schedules and station information are stored with the app, so departures still appear when the signal drops underground.</p>
                         <p class="fine">Live updates need a connection. On the web, offline use starts after one online visit and depends on your browser keeping the stored data.</p>
-                        <figure class="story__media story__media--phone">
-                            <div class="device phone">
-                                <img src="/product/img/web-mobile-offline-420.webp" srcset="/product/img/web-mobile-offline-420.webp 420w, /product/img/web-mobile-offline-720.webp 720w" sizes="62vw" width="720" height="1558" loading="lazy" decoding="async" alt="The web app on a phone with no connection: Syntagma departures still listed, each labelled Offline snapshot.">
-                            </div>
+                        <figure class="story__media device browser">
+                            <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
+                            <img src="/product/img/web-desktop-offline-960.webp" srcset="/product/img/web-desktop-offline-960.webp 960w, /product/img/web-desktop-offline-1600.webp 1600w" sizes="92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The web app on a desktop with no connection: Syntagma departures still listed, each labelled Offline snapshot.">
                         </figure>
                     </li>
                 </ol>
@@ -250,7 +258,10 @@
                             <div class="device phone"><img src="/product/img/android-map-720.webp" width="720" height="1600" loading="lazy" decoding="async" alt=""></div>
                         </div>
                         <div class="story__slide" data-slide="2">
-                            <div class="device phone"><img src="/product/img/web-mobile-offline-720.webp" width="720" height="1558" loading="lazy" decoding="async" alt=""></div>
+                            <div class="device browser">
+                                <div class="browser__bar"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
+                                <img src="/product/img/web-desktop-offline-960.webp" srcset="/product/img/web-desktop-offline-960.webp 960w, /product/img/web-desktop-offline-1600.webp 1600w" sizes="600px" width="1600" height="1000" loading="lazy" decoding="async" alt="">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -439,22 +450,23 @@
 
             <div class="choices">
                 <article class="choice" data-reveal>
-                    <div class="device phone phone--sm"><img src="/product/img/ios-home-420.webp" width="420" height="913" loading="lazy" decoding="async" alt="Syrmos Home screen on iPhone."></div>
+                    <div class="choice__device"><div class="device phone phone--sm"><img src="/product/img/ios-home-420.webp" width="420" height="913" loading="lazy" decoding="async" alt="Syrmos Home screen on iPhone."></div></div>
                     <h3>iPhone</h3>
                     <p>Departures, the network map and Ariadne, plus Home Screen widgets and an Apple Watch app.</p>
                     <a class="badge" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="144" height="48" loading="lazy"></a>
                 </article>
                 <article class="choice" data-reveal>
-                    <div class="device phone phone--sm"><img src="/product/img/android-map-420.webp" width="420" height="933" loading="lazy" decoding="async" alt="Syrmos map screen on Android."></div>
+                    <div class="choice__device"><div class="device phone phone--sm"><img src="/product/img/android-map-420.webp" width="420" height="933" loading="lazy" decoding="async" alt="Syrmos map screen on Android."></div></div>
                     <h3>Android</h3>
                     <p>Departures, the network map and Ariadne, built natively for Android phones.</p>
                     <a class="badge" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48" loading="lazy"></a>
                 </article>
                 <article class="choice" data-reveal>
-                    <div class="device phone phone--sm"><img src="/product/img/web-mobile-now-420.webp" width="420" height="909" loading="lazy" decoding="async" alt="Syrmos web app on a phone browser."></div>
+                    <div class="choice__device"><div class="device laptop"><div class="laptop__screen"><img src="/product/img/web-now-960.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Syrmos web app on a laptop: the Athens network map with trains and the next Line 2 departure."></div><div class="laptop__base" aria-hidden="true"></div></div></div>
                     <h3>Web</h3>
-                    <p>Runs in your browser on any device, with nothing to install. After one visit, schedules stay available offline.</p>
-                    <a class="btn btn--primary btn--lg" href="/">Open web app</a>
+                    <p>For laptops and desktop computers. Runs in your browser with nothing to install, and schedules stay available offline after one visit.</p>
+                    <a class="btn btn--primary btn--lg web-only" href="/">Open web app</a>
+                    <p class="choice__note handheld-only">Open syrmos.peterdsp.dev on a laptop or desktop computer. On this device, use the iPhone or Android app.</p>
                 </article>
             </div>
 
@@ -462,7 +474,7 @@
                 <h2 id="faq-title" class="faq__title">Questions</h2>
                 <details>
                     <summary>Does Syrmos work offline?</summary>
-                    <p>Yes, for stored information. Schedules and station details are stored with the iOS and Android apps. The web app stores them after your first online visit, as long as your browser keeps site data. Live updates, real-time positions and service alerts need a connection. Offline times are labelled so you can tell them apart.</p>
+                    <p>Yes, for stored information. Schedules and station details are stored with the iOS and Android apps. The web app for laptops and desktop computers stores them after your first online visit, as long as your browser keeps site data. Live updates, real-time positions and service alerts need a connection. Offline times are labelled so you can tell them apart.</p>
                 </details>
                 <details>
                     <summary>Which regions are supported?</summary>
@@ -488,7 +500,7 @@
             <span>Syrmos</span>
         </div>
         <nav class="site-footer__links" aria-label="Footer">
-            <a href="/">Open web app</a>
+            <a class="web-only" href="/">Open web app</a>
             <a href="/privacy">Privacy policy</a>
             <a href="/press.html">Press kit</a>
             <a href="https://peterdsp.dev">Developer: Petros Dhespollari</a>
