@@ -110,6 +110,7 @@
             reduced: "Reduced",
             verify_on: "Verify on {op} ↗",
             privacy_policy: "Privacy Policy",
+            about_syrmos: "About Syrmos",
             ask_ariadne: "Ask Ariadne",
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Ask Ariadne...",
@@ -219,6 +220,7 @@
             reduced: "Μειωμένο",
             verify_on: "Επιβεβαίωση στο {op} ↗",
             privacy_policy: "Πολιτική απορρήτου",
+            about_syrmos: "Σχετικά με το Syrmos",
             ask_ariadne: "Ρώτα την Αριάδνη",
             ariadne_title: "Αριάδνη",
             ariadne_placeholder: "Ρώτα την Αριάδνη...",
@@ -328,6 +330,7 @@
             reduced: "Me zbritje",
             verify_on: "Verifiko në {op} ↗",
             privacy_policy: "Politika e privatësisë",
+            about_syrmos: "Rreth Syrmos",
             ask_ariadne: "Pyet Ariadnen",
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Pyet Ariadnen...",
@@ -437,6 +440,7 @@
             reduced: "Ridotto",
             verify_on: "Verifica su {op} ↗",
             privacy_policy: "Informativa sulla privacy",
+            about_syrmos: "Informazioni su Syrmos",
             ask_ariadne: "Chiedi ad Ariadne",
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Chiedi ad Ariadne...",
@@ -1137,7 +1141,9 @@
         const links = (payload && payload.infoLinks) || [];
         // Always expose the privacy policy here (the footer "more" utility jumps
         // to this list), independent of the server-provided operator links.
-        const privacyLink = `<a class="info-link__privacy" href="/privacy" rel="noopener">${escapeHtml(t("privacy_policy"))}</a>`;
+        // The About link opens the standalone product page (/product/).
+        const privacyLink = `<a class="info-link__privacy" href="/product/">${escapeHtml(t("about_syrmos"))}</a>`
+            + `<a class="info-link__privacy" href="/privacy" rel="noopener">${escapeHtml(t("privacy_policy"))}</a>`;
         if (!links.length) {
             infoLinksList.innerHTML = privacyLink;
             return;

@@ -56,6 +56,16 @@ if [[ -f "$TARGET_DIR/privacy.html" ]]; then
     cp "$TARGET_DIR/privacy.html" "$TARGET_DIR/privacy/index.html"
 fi
 
+# The product showcase is also a STANDALONE static page, shipped from
+# wasmJsMain/resources/product/ as product/index.html with its own scoped
+# assets. It is deliberately NOT in the workspace loop above (that would replace
+# it with the app shell). Pages serves /product/ as 200 and redirects /product
+# there. Fail the release if it is missing rather than silently shipping a 404.
+if [[ ! -f "$TARGET_DIR/product/index.html" ]]; then
+    echo "error: product/index.html is missing from the web release" >&2
+    exit 1
+fi
+
 # 404.html is recovery only. It lets a mistyped or stale deep path still boot
 # the app and route client-side, but the canonical entry points above already
 # return 200, so a custom 404 (which stays an HTTP 404 on GitHub Pages) is never
