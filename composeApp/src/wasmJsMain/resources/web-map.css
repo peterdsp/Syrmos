@@ -1262,6 +1262,33 @@ body.dark-mode .live-status-pill {
 .fare-tile__price--soft { font-size: 13px; font-weight: 600; color: var(--sy-text-secondary); }
 .fare-tile__sub { font-size: 11px; color: var(--sy-text-secondary); }
 
+/* Phase N J09 leave-by reminders: departure-card action + board + opt-in. */
+.departure-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.dep-remind {
+    flex: none; font-size: 11px; font-weight: 600;
+    color: var(--sy-accent, #2563eb);
+    background: transparent; border: 1px solid var(--sy-border-subtle);
+    border-radius: var(--sy-radius-pill); padding: 3px 10px; cursor: pointer;
+    transition: background var(--sy-duration-fast-ms) ease;
+}
+.dep-remind:hover { background: var(--sy-background-subtle); }
+.dep-remind:disabled { color: var(--sy-text-secondary); border-color: transparent; cursor: default; }
+
+.leaveby-optin { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--sy-text-primary); padding: 2px 0 10px; cursor: pointer; }
+.leaveby-optin input { position: absolute; opacity: 0; width: 0; height: 0; }
+.leaveby-switch { position: relative; width: 38px; height: 22px; border-radius: 999px; background: var(--sy-border-subtle); transition: background var(--sy-duration-fast-ms) ease; flex: none; }
+.leaveby-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform var(--sy-duration-fast-ms) ease; }
+.leaveby-optin input:checked + .leaveby-switch { background: var(--sy-accent, #2563eb); }
+.leaveby-optin input:checked + .leaveby-switch::after { transform: translateX(16px); }
+.leaveby-optin input:focus-visible + .leaveby-switch { outline: 2px solid var(--sy-accent, #2563eb); outline-offset: 2px; }
+
+.leaveby-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--sy-border-subtle); border-radius: var(--sy-radius-md); margin-bottom: 6px; }
+.leaveby-item__body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.leaveby-item__title { font-size: 13px; font-weight: 600; color: var(--sy-text-primary); }
+.leaveby-item__state { font-size: 11px; font-weight: 600; color: var(--sy-accent, #2563eb); margin-top: 2px; }
+.leaveby-del { flex: none; border: none; background: transparent; color: var(--sy-text-secondary); font-size: 14px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: var(--sy-radius-sm); }
+.leaveby-del:hover { background: var(--sy-background-subtle); color: var(--sy-text-primary); }
+
 .fare-planner {
     padding: 10px;
     border-radius: var(--sy-radius-md);
