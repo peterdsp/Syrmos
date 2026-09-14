@@ -4467,7 +4467,9 @@
                     offlineRetry.type = "button";
                     offlineRetry.className = "plan-offline__retry";
                     offlineRetry.textContent = T("Retry", "Επανάληψη", "Riprovo", "Riprova");
-                    offlineRetry.addEventListener("click", () => { if (navigator.onLine) runPlan(); });
+                    // Retry re-plans and re-reads notices; if still offline it falls
+                    // back to the cached seed (never a dead no-op).
+                    offlineRetry.addEventListener("click", () => { loadPlanNotices(); runPlan(); syncOffline(); });
                     offlineBanner.appendChild(offlineRetry);
                     const syncOffline = () => { offlineBanner.style.display = (typeof navigator !== "undefined" && navigator.onLine === false) ? "" : "none"; };
                     syncOffline();

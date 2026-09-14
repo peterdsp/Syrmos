@@ -936,7 +936,11 @@ struct PlanView: View {
     /// Projects the live STASY announcements into the disruption engine's notice
     /// shape (severity token + affected line ids). Pure mapping.
     private func disruptionNotices() -> [DisruptionNotice] {
-        alerts.announcements.map { a in
+        // Same pre-filter as the Android/web callers: service alerts or any
+        // non-info severity (only CLOSURE ultimately suspends a line).
+        alerts.announcements.filter {
+            $0.category == .serviceAlert || AdvisorySeverity.fromRaw($0.severity) != .info
+        }.map { a in
             let token: String
             switch AdvisorySeverity.fromRaw(a.severity) {
             case .closure: token = "closure"
