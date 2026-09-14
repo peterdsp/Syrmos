@@ -12,6 +12,7 @@ struct SyrmosWidgetBundle: WidgetBundle {
     var body: some Widget {
         if #available(iOS 16.2, *) {
             SyrmosLiveActivity()
+            SyrmosGoJourneyLiveActivity()
         }
         if #available(iOS 17.0, *) {
             NextTrainWidget()

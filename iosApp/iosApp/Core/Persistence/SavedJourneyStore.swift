@@ -447,6 +447,10 @@ final class GoActiveJourneyStore: ObservableObject {
         defaults.removeObject(forKey: GoActiveJourneyContract.storageKey)
         lastDecodeFailed = false
         active = nil
+        // Phase N J08: end the Live Activity on EVERY session-end path (GO screen
+        // End, the Plan resume-banner End, or any programmatic clear), so it is
+        // never orphaned in the Dynamic Island / Lock Screen.
+        Task { @MainActor in GoJourneyActivityController.shared.end() }
     }
 
     /// Start (overwriting any prior) a fresh session from a GuidanceJourney.
