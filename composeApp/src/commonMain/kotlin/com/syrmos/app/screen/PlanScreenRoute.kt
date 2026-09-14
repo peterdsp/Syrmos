@@ -147,8 +147,13 @@ class PlanScreenRoute : Screen {
         val savedItems by SavedJourneysRepository.items.collectAsState()
         // The single live GO session (S06): shown as a resume banner when present.
         val activeJourney by ActiveJourneyRepository.active.collectAsState()
-        // Phase R S10: offline-with-usable-data banner signal.
+        // Phase N J07: freshness banner signals. Collect both network + last-live so
+        // the banner recomposes when live data lands (markLive), and a 30s tick so an
+        // idle live->predicted staleness transition also refreshes (parity with iOS).
         val networkAvailable by LiveDataFreshness.isNetworkAvailable.collectAsState()
+        val lastLiveUpdate by LiveDataFreshness.lastLiveUpdate.collectAsState()
+        var freshnessTick by remember { mutableStateOf(0) }
+        LaunchedEffect(Unit) { while (true) { delay(30_000); freshnessTick++ } }
         // Phase R S10: set when a loaded saved journey references a gone station.
         var invalidSavedNote by remember { mutableStateOf<String?>(null) }
         var pendingUndo by remember { mutableStateOf<SavedJourney?>(null) }
@@ -367,9 +372,12 @@ class PlanScreenRoute : Screen {
                 // FreshnessPresentation rule so it also shows when online but no live
                 // data is available (predicted), not connectivity-only. Wording reuses
                 // RUNNING_OFFLINE / PREDICTED_FROM_SCHEDULE. Plans are never blocked.
+                val isLive = remember(networkAvailable, lastLiveUpdate, freshnessTick) {
+                    LiveDataFreshness.freshnessNow() == DataFreshness.LIVE
+                }
                 val freshnessState = FreshnessPresentation.evaluate(
                     isNetworkAvailable = networkAvailable,
-                    isLive = LiveDataFreshness.freshnessNow() == DataFreshness.LIVE,
+                    isLive = isLive,
                 )
                 if (FreshnessPresentation.showsBanner(freshnessState)) {
                     val offline = freshnessState == FreshnessBannerState.OFFLINE
