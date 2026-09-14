@@ -29,8 +29,12 @@
       .trim();
   }
 
+  // Mirror Kotlin AdvisorySeverity.fromRaw: both "closure" and "closed" are a
+  // closure. Comparing the raw string against only "closure" would let a
+  // "closed" feed value slip through and route a rider through a shut line.
   function isClosure(notice) {
-    return String(notice && notice.severity || '').trim().toLowerCase() === 'closure';
+    const s = String(notice && notice.severity || '').trim().toLowerCase();
+    return s === 'closure' || s === 'closed';
   }
 
   function unique(list) {
@@ -71,7 +75,11 @@
   function classify(avoidingOptions, naiveOptions, notices) {
     const suspended = suspendedLineIds(notices);
     if ((avoidingOptions || []).length > 0) {
-      return { kind: 'routed', excludedLineIds: suspended.length === 0 ? [] : suspended };
+      // Only disclose lines the naive (unrestricted) plan actually rode, so an
+      // unrelated closure does not show a false "routing around" chip.
+      const naive0 = (naiveOptions || [])[0];
+      const excluded = (suspended.length === 0 || !naive0) ? [] : optionUsesSuspended(naive0, suspended);
+      return { kind: 'routed', excludedLineIds: excluded };
     }
     const naive = (naiveOptions || [])[0];
     if (naive) {

@@ -89,10 +89,14 @@ object DisruptionExclusion {
     ): DisruptionOutcome {
         val suspended = suspendedLineIds(notices)
         if (avoidingOptions.isNotEmpty()) {
-            return DisruptionOutcome.Routed(
-                options = avoidingOptions,
-                excludedLineIds = if (suspended.isEmpty()) emptySet() else suspended,
-            )
+            // Only claim a detour for lines the naive (unrestricted) plan actually
+            // rode: an unrelated closure must not show a "routing around" chip.
+            val excluded = if (suspended.isEmpty()) {
+                emptySet()
+            } else {
+                naiveOptions.firstOrNull()?.let { optionUsesSuspended(it, suspended) } ?: emptySet()
+            }
+            return DisruptionOutcome.Routed(options = avoidingOptions, excludedLineIds = excluded)
         }
         // No route avoids the suspension. Only call it a suspension when the sole
         // available path genuinely rides suspended track; otherwise it is a plain

@@ -36,6 +36,10 @@ final class DisruptionExclusionTests: XCTestCase {
             ["m1", "t6"]
         )
     }
+    func testSuspendedClosedVariant() {
+        // The engine treats the feed's "closed" as a closure too.
+        XCTAssertEqual(DisruptionExclusion.suspendedLineIds([notice("n6", "closed", ["M1"])]), ["m1"])
+    }
 
     // MARK: optionUsesSuspended
 
@@ -74,6 +78,16 @@ final class DisruptionExclusionTests: XCTestCase {
         guard case let .routed(_, excluded) = out else { return XCTFail("expected routed") }
         XCTAssertEqual(excluded, ["m1"])
     }
+    func testClassifyRoutedUnrelatedClosure() {
+        let out = DisruptionExclusion.classify(
+            avoidingOptions: [option(ride("M1"), transfer(), ride("M2"))],
+            naiveOptions: [option(ride("M1"), transfer(), ride("M2"))],
+            notices: [notice("c9", "closure", ["T6"])]
+        )
+        guard case let .routed(_, excluded) = out else { return XCTFail("expected routed") }
+        XCTAssertEqual(excluded, [])
+    }
+
     func testClassifySuspendedNoAlternative() {
         let out = DisruptionExclusion.classify(
             avoidingOptions: [],

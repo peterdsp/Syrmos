@@ -291,6 +291,17 @@ class PlanScreenRoute : Screen {
             }
         }
 
+        // Phase R S07: honor a "Find alternatives" re-plan request from GO (re-plan
+        // from the rider's current confirmed station to the destination).
+        val replanRequest by PlanReplanRequest.pending.collectAsState()
+        LaunchedEffect(replanRequest) {
+            replanRequest?.let { (f, t) ->
+                fromId = f; toId = t; open = null; invalidSavedNote = null
+                PlanReplanRequest.consume()
+                runPlan()
+            }
+        }
+
         Scaffold(
             topBar = {
                 Row(

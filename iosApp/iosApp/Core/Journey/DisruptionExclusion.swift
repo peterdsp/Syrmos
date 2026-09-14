@@ -64,8 +64,11 @@ enum DisruptionExclusion {
             .trimmingCharacters(in: .whitespaces)
     }
 
+    // Mirror Kotlin AdvisorySeverity.fromRaw: both "closure" and "closed" are a
+    // closure, so the engine is robust even if a caller passes the raw feed value.
     private static func isClosure(_ notice: DisruptionNotice) -> Bool {
-        notice.severity.trimmingCharacters(in: .whitespaces).lowercased() == "closure"
+        let s = notice.severity.trimmingCharacters(in: .whitespaces).lowercased()
+        return s == "closure" || s == "closed"
     }
 
     /// Line ids the operator has SUSPENDED, from CLOSURE notices only.
@@ -100,7 +103,10 @@ enum DisruptionExclusion {
     ) -> DisruptionOutcome {
         let suspended = suspendedLineIds(notices)
         if !avoidingOptions.isEmpty {
-            return .routed(options: avoidingOptions, excludedLineIds: suspended.isEmpty ? [] : suspended)
+            // Only claim a detour for lines the naive (unrestricted) plan actually
+            // rode: an unrelated closure must not show a "routing around" chip.
+            let excluded = suspended.isEmpty ? [] : (naiveOptions.first.map { optionUsesSuspended($0, suspended) } ?? [])
+            return .routed(options: avoidingOptions, excludedLineIds: excluded)
         }
         if let naive = naiveOptions.first {
             let hit = optionUsesSuspended(naive, suspended)
