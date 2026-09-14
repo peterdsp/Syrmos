@@ -314,8 +314,40 @@
                 </div>
 
                 <div class="panel" role="tabpanel" id="panel-fares" aria-labelledby="tab-fares" tabindex="0">
-                    <figure class="panel__media panel__media--tall">
-                        <img src="/product/img/fares-list-630.webp" width="630" height="1795" loading="lazy" decoding="async" alt="The fares list in the web app: Athens OASA passes and single tickets with full and reduced prices, followed by Thessaloniki OSETH tickets and Patras suburban fares.">
+                    <figure class="panel__media panel__media--app" aria-hidden="true">
+                        <div class="appshot appshot--fares">
+                            <div class="appshot__bar">
+                                <span class="appshot__title">Fares</span>
+                                <span class="appshot__pill">Athens · OASA</span>
+                            </div>
+                            <div class="fare-grid">
+                                <div class="fare-card">
+                                    <span class="fare-card__name">90-minute ticket</span>
+                                    <span class="fare-card__price">€1.20</span>
+                                    <span class="fare-card__reduced">Reduced €0.60</span>
+                                </div>
+                                <div class="fare-card">
+                                    <span class="fare-card__name">24-hour ticket</span>
+                                    <span class="fare-card__price">€4.10</span>
+                                    <span class="fare-card__reduced">Reduced €2.00</span>
+                                </div>
+                                <div class="fare-card">
+                                    <span class="fare-card__name">5-day ticket</span>
+                                    <span class="fare-card__price">€8.20</span>
+                                    <span class="fare-card__reduced">Reduced €4.10</span>
+                                </div>
+                                <div class="fare-card">
+                                    <span class="fare-card__name">30-day pass</span>
+                                    <span class="fare-card__price">€27.00</span>
+                                    <span class="fare-card__reduced">Reduced €13.50</span>
+                                </div>
+                                <div class="fare-card fare-card--wide">
+                                    <span class="fare-card__name">Airport metro · Line 3</span>
+                                    <span class="fare-card__price">€9.00</span>
+                                    <span class="fare-card__reduced">Reduced €4.50</span>
+                                </div>
+                            </div>
+                        </div>
                     </figure>
                     <div class="panel__copy">
                         <h3>Fares</h3>
@@ -328,9 +360,26 @@
                 </div>
 
                 <div class="panel" role="tabpanel" id="panel-ariadne" aria-labelledby="tab-ariadne" tabindex="0">
-                    <figure class="panel__media panel__media--ariadne">
-                        <img src="/product/img/ariadne-fare-760.webp" srcset="/product/img/ariadne-fare-420.webp 420w, /product/img/ariadne-fare-760.webp 760w" sizes="(min-width: 1024px) 460px, 92vw" width="760" height="772" loading="lazy" decoding="async" alt="An Ariadne conversation in the web app. Question: How much from Syntagma to Airport? Answer: €9.00, reduced €4.50, Airport Metro ticket, Line 3, OASA.">
-                        <figcaption>Example conversation captured in the web app, September 2026. Fares can change.</figcaption>
+                    <figure class="panel__media panel__media--app" aria-hidden="true">
+                        <div class="appshot appshot--chat">
+                            <div class="appshot__bar">
+                                <span class="appshot__title">Ariadne</span>
+                                <span class="appshot__done">Done</span>
+                            </div>
+                            <div class="chat">
+                                <div class="chat__bubble chat__bubble--in">Hi, I'm Ariadne. Ask me about Athens transit: next departures, the last train tonight, a trip A to B, service alerts or ticket prices.</div>
+                                <div class="chat__bubble chat__bubble--out">How much from Syntagma to Airport?</div>
+                                <div class="chat__bubble chat__bubble--in">
+                                    Syntagma → Airport: €9.00 (Reduced €4.50). Airport Metro ticket, Line 3 · OASA.
+                                    <span class="chat__tag">Offline snapshot</span>
+                                </div>
+                            </div>
+                            <div class="chat__composer">
+                                <span class="chat__field">Ask Ariadne</span>
+                                <span class="chat__send">Send</span>
+                            </div>
+                        </div>
+                        <figcaption>Example conversation. Fares can change.</figcaption>
                     </figure>
                     <div class="panel__copy">
                         <img class="ariadne-lockup" src="/ariadne-lockup.png" alt="Ariadne" width="120" height="79" loading="lazy">
