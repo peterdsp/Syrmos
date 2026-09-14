@@ -335,4 +335,12 @@ enum NotificationPreferences {
         get { UserDefaults.standard.object(forKey: morningDigestKey) as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: morningDigestKey) }
     }
+
+    // Phase N J09 master opt-in for leave-by reminders. Off by default: the rider
+    // asks to be reminded, so reminders never appear unrequested.
+    private static let leaveByKey = "syrmos.notif.leaveBy"
+    static var leaveByRemindersEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: leaveByKey) as? Bool ?? false }
+        set { UserDefaults.standard.set(newValue, forKey: leaveByKey) }
+    }
 }
