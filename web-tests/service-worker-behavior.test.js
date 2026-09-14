@@ -22,6 +22,7 @@ class ResMock {
     this.type = init.type || 'basic';
     this._headers = init.headers || {};
   }
+  static error() { return new ResMock('', { status: 0, type: 'error' }); }
   clone() { return new ResMock(this.body, { status: this.status, type: this.type, headers: this._headers }); }
   async text() { return this.body; }
 }
@@ -73,8 +74,9 @@ function loadSW(net) {
 async function install(h) { let p; h.install({ waitUntil: (x) => { p = x; } }); await p; }
 async function activate(h) { let p; h.activate({ waitUntil: (x) => { p = x; } }); await p; }
 async function doFetch(h, request) { let r; h.fetch({ request, respondWith: (x) => { r = x; } }); return r ? await r : undefined; }
-const shellCache = (caches) => caches.map.get('syrmos-v2');
-const tileCache = (caches) => caches.map.get('syrmos-tiles-v2');
+const SW_VERSION = fs.readFileSync(SW_PATH, 'utf8').match(/const VERSION = "(v\d+)";/)[1];
+const shellCache = (caches) => caches.map.get(`syrmos-${SW_VERSION}`);
+const tileCache = (caches) => caches.map.get(`syrmos-tiles-${SW_VERSION}`);
 
 // --- Tests ------------------------------------------------------------------
 
@@ -144,5 +146,80 @@ test('activate purges stale caches from a previous version', async () => {
   const keys = await caches.keys();
   assert.ok(!keys.includes('syrmos-v0'), 'stale shell cache deleted');
   assert.ok(!keys.includes('syrmos-tiles-v0'), 'stale tile cache deleted');
-  assert.ok(keys.includes('syrmos-v2'), 'current cache retained');
+  assert.ok(keys.includes(`syrmos-${SW_VERSION}`), 'current cache retained');
+});
+
+// --- Standalone documents (/product/, /privacy) vs the app shell -------------
+const APP_HTML = '<main class="map-canvas"><div id="map"></div></main>';
+const PRODUCT_HTML = '<body class="product">Your journey starts here.</body>';
+const PRIVACY_HTML = '<title>Privacy Policy</title>';
+function siteBody(url) {
+  const p = new URL(url, 'http://localhost').pathname;
+  if (p.startsWith('/product')) return PRODUCT_HTML;
+  if (p.startsWith('/privacy')) return PRIVACY_HTML;
+  return APP_HTML;
+}
+const nav = (url) => new ReqMock(url, { mode: 'navigate' });
+
+test('app online -> product page -> offline: the app is still the app', async () => {
+  const net = { online: true, body: siteBody };
+  const { handlers } = loadSW(net);
+  await install(handlers);
+  await activate(handlers);
+  await doFetch(handlers, nav('http://localhost:8791/'));
+  const product = await doFetch(handlers, nav('http://localhost:8791/product/'));
+  assert.equal(await product.text(), PRODUCT_HTML, 'online product navigation returns the product page');
+  net.online = false;
+  for (const appUrl of ['http://localhost:8791/', 'http://localhost:8791/plan/', 'http://localhost:8791/line/?id=M3']) {
+    const res = await doFetch(handlers, nav(appUrl));
+    assert.equal(await res.text(), APP_HTML, `${appUrl} must still open the app shell offline`);
+  }
+});
+
+test('privacy visits never replace the cached app shell either', async () => {
+  const net = { online: true, body: siteBody };
+  const { handlers } = loadSW(net);
+  await install(handlers);
+  for (const p of ['/privacy', '/privacy/', '/privacy.html']) await doFetch(handlers, nav(`http://localhost:8791${p}`));
+  net.online = false;
+  assert.equal(await (await doFetch(handlers, nav('http://localhost:8791/'))).text(), APP_HTML);
+});
+
+test('an offline standalone page falls back to its own cached copy, never the app', async () => {
+  const net = { online: true, body: siteBody };
+  const { handlers } = loadSW(net);
+  await install(handlers);
+  await doFetch(handlers, nav('http://localhost:8791/product/'));
+  net.online = false;
+  for (const p of ['/product', '/product/', '/product/index.html']) {
+    const res = await doFetch(handlers, nav(`http://localhost:8791${p}`));
+    assert.equal(await res.text(), PRODUCT_HTML, `${p} offline serves the cached product page`);
+  }
+  const privacy = await doFetch(handlers, nav('http://localhost:8791/privacy'));
+  assert.equal(privacy.type, 'error', 'a never-visited standalone page offline is an honest network error, not the app');
+});
+
+test('a shell poisoned by an older worker is discarded on upgrade', async () => {
+  const net = { online: true, body: siteBody };
+  const { handlers, caches } = loadSW(net);
+  const old = await caches.open('syrmos-v2'); // old worker stored the product page as the shell
+  await old.put('/index.html', new ResMock(PRODUCT_HTML));
+  await install(handlers);
+  await activate(handlers);
+  assert.ok(!(await caches.keys()).includes('syrmos-v2'), 'old v2 cache is removed');
+  net.online = false;
+  assert.equal(await (await doFetch(handlers, nav('http://localhost:8791/'))).text(), APP_HTML, 'offline app shell is the real app');
+});
+
+test('product page assets are network-first, so a deploy is never masked by cache', async () => {
+  let version = 'one';
+  const net = { online: true, body: (u) => `${u}#${version}` };
+  const { handlers } = loadSW(net);
+  await install(handlers);
+  const url = 'http://localhost:8791/product/product.css';
+  assert.match(await (await doFetch(handlers, new ReqMock(url))).text(), /#one$/);
+  version = 'two';
+  assert.match(await (await doFetch(handlers, new ReqMock(url))).text(), /#two$/, 'online returns the new deploy');
+  net.online = false;
+  assert.match(await (await doFetch(handlers, new ReqMock(url))).text(), /#two$/, 'offline returns the last copy');
 });
