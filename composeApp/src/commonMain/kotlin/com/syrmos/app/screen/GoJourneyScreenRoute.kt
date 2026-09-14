@@ -1,6 +1,9 @@
 package com.syrmos.app.screen
 
 import androidx.compose.foundation.background
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +52,16 @@ import kotlinx.datetime.Clock
  */
 /// Phase R S07: connection risk of one transfer, from the real route model.
 data class TransferRisk(val status: String, val availableSeconds: Int?, val minimumSeconds: Int?)
+
+/// Phase R S07: one-shot request from GO's "Find alternatives" to re-plan from the
+/// rider's current confirmed station to the destination once Plan resumes. Voyager
+/// pop cannot carry a result, so the Plan screen consumes this on the way back.
+object PlanReplanRequest {
+    private val _pending = MutableStateFlow<Pair<String, String>?>(null)
+    val pending: StateFlow<Pair<String, String>?> = _pending.asStateFlow()
+    fun request(fromId: String, toId: String) { _pending.value = fromId to toId }
+    fun consume() { _pending.value = null }
+}
 
 class GoJourneyScreenRoute(
     private val journey: GuidanceJourney,
@@ -124,7 +137,20 @@ class GoJourneyScreenRoute(
                     null
                 }
                 if (activeRisk != null) {
-                    ConnectionRiskCard(activeRisk, onFindAlternatives = { navigator.pop() }, t = ::t)
+                    ConnectionRiskCard(
+                        activeRisk,
+                        onFindAlternatives = {
+                            // Re-plan from the current confirmed station to the
+                            // destination (parity with iOS/web), handed to the Plan
+                            // screen as a one-shot request before popping back.
+                            val fromId = journey.legs.getOrNull(position.legIndex)
+                                ?.stops?.getOrNull(position.stopIndex)?.id
+                            val toId = journey.legs.lastOrNull()?.stops?.lastOrNull()?.id
+                            if (fromId != null && toId != null) PlanReplanRequest.request(fromId, toId)
+                            navigator.pop()
+                        },
+                        t = ::t,
+                    )
                 }
 
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())

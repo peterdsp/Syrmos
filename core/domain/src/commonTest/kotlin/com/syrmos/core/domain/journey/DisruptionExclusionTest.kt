@@ -70,6 +70,16 @@ class DisruptionExclusionTest {
             ),
         )
 
+    @Test fun suspended_closed_variant() =
+        // The feed's "closed" maps to CLOSURE via fromRaw, so the caller-normalized
+        // notice suspends the line (parity with the fixture's closed_variant case).
+        assertEquals(
+            setOf("m1"),
+            DisruptionExclusion.suspendedLineIds(
+                listOf(notice("n6", AdvisorySeverity.fromRaw("closed"), listOf("M1"))),
+            ),
+        )
+
     // ---- optionUsesSuspended ----
 
     @Test fun uses_clear_of_suspension() =
@@ -107,6 +117,16 @@ class DisruptionExclusionTest {
         )
         assertTrue(out is DisruptionOutcome.Routed)
         assertEquals(setOf("m1"), out.excludedLineIds)
+    }
+
+    @Test fun classify_routed_unrelated_closure() {
+        val out = DisruptionExclusion.classify(
+            avoidingOptions = listOf(option(ride("M1"), transfer(), ride("M2"))),
+            naiveOptions = listOf(option(ride("M1"), transfer(), ride("M2"))),
+            notices = listOf(notice("c9", AdvisorySeverity.CLOSURE, listOf("T6"))),
+        )
+        assertTrue(out is DisruptionOutcome.Routed)
+        assertEquals(emptySet(), out.excludedLineIds)
     }
 
     @Test fun classify_suspended_no_alternative() {
