@@ -60,4 +60,30 @@ final class JourneyDetailTests: XCTestCase {
         XCTAssertFalse(rows.contains { $0.kind == "stops" })
         XCTAssertEqual(rows.first { $0.kind == "walk" }?.seconds, 300)
     }
+
+    // MARK: - S07 connection risk (mirrors fixtures/journeys/connection-risk.json)
+
+    func testConnectionRiskStatusMatchesFixtureCases() {
+        // tight: gap 180, allow 120 -> margin 60
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 180, recommendedSeconds: 120), "tight")
+        // missed (spec example): 120 available, allow 300
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 120, recommendedSeconds: 300), "missed")
+        // comfortable: gap 600, allow 120
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 600, recommendedSeconds: 120), "comfortable")
+        // unknown: no gap
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: nil, recommendedSeconds: 120), "unknown")
+    }
+
+    func testConnectionRiskTightBoundaryInclusiveAt179() {
+        // gap 299, allow 120 -> margin 179 -> tight; gap 300 -> 180 -> comfortable
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 299, recommendedSeconds: 120), "tight")
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 300, recommendedSeconds: 120), "comfortable")
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 119, recommendedSeconds: 120), "missed")
+    }
+
+    func testConnectionRiskUncertaintyErodesMargin() {
+        // gap 300, allow 120, uncertainty 120 -> margin 60 -> tight (comfortable at unc 0)
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 300, recommendedSeconds: 120, uncertaintySeconds: 120), "tight")
+        XCTAssertEqual(ConnectionRisk.status(availableSeconds: 300, recommendedSeconds: 120, uncertaintySeconds: 0), "comfortable")
+    }
 }
