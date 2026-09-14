@@ -13,11 +13,9 @@ import ActivityKit
 final class GoJourneyActivityController {
     static let shared = GoJourneyActivityController()
 
-    /// One freshness window; matches LiveDataFreshness.windowSeconds.
-    private let staleAfter: TimeInterval = 90
-
     #if canImport(ActivityKit)
     private var activityId: String?
+    private var isStarting = false
     #endif
 
     func start(
@@ -28,6 +26,15 @@ final class GoJourneyActivityController {
         #if canImport(ActivityKit)
         guard #available(iOS 16.2, *) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        // Idempotent: a re-appear (nav pop-back, tab switch) must not tear down and
+        // recreate the activity or briefly double it. If one is running (or a
+        // request is in flight) just push the latest state instead.
+        if activityId != nil || isStarting {
+            update(stateLabel: stateLabel, instruction: instruction, context: context,
+                   progress: progress, lineId: lineId, arrived: arrived)
+            return
+        }
+        isStarting = true
         let attrs = GoJourneyActivityAttributes(origin: origin, destination: destination)
         let state = GoJourneyActivityAttributes.ContentState(
             stateLabel: stateLabel, instruction: instruction, context: context,
@@ -41,13 +48,18 @@ final class GoJourneyActivityController {
                 await a.end(nil, dismissalPolicy: .immediate)
             }
             do {
+                // No staleDate: a manually-stepped journey has no time-based expiry,
+                // so the current instruction stays valid until the rider advances —
+                // greying it out on a fixed timer would be dishonest the other way.
+                // A time/GPS-driven staleness signal can set this in a later phase.
                 let activity = try Activity.request(
                     attributes: attrs,
-                    content: ActivityContent(state: state, staleDate: Date().addingTimeInterval(staleAfter)))
+                    content: ActivityContent(state: state, staleDate: nil))
                 activityId = activity.id
             } catch {
                 // Without the widget extension this throws; the in-app GO screen still works.
             }
+            isStarting = false
         }
         #endif
     }
@@ -61,11 +73,9 @@ final class GoJourneyActivityController {
         let state = GoJourneyActivityAttributes.ContentState(
             stateLabel: stateLabel, instruction: instruction, context: context,
             progress: progress, lineId: lineId, arrived: arrived)
-        // Arrived is a terminal, non-stale state; otherwise keep the honest window.
-        let staleDate = arrived ? nil : Date().addingTimeInterval(staleAfter)
         Task {
             for activity in Activity<GoJourneyActivityAttributes>.activities where activity.id == id {
-                await activity.update(ActivityContent(state: state, staleDate: staleDate))
+                await activity.update(ActivityContent(state: state, staleDate: nil))
             }
         }
         #endif

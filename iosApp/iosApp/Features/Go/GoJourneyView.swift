@@ -98,8 +98,10 @@ struct GoJourneyView: View {
                     Button(model.isArrived
                         ? t("Finish", "Τέλος", "Përfundo", "Concludi")
                         : t("End", "Τέλος", "Përfundo", "Termina")) {
+                        // model.end() clears the active-journey store, which ends the
+                        // Live Activity (see GoActiveJourneyStore.clear) on every
+                        // end path, so no separate controller.end() is needed here.
                         model.end()
-                        GoJourneyActivityController.shared.end()
                         if let onEnd { onEnd() } else { dismiss() }
                     }
                 }
