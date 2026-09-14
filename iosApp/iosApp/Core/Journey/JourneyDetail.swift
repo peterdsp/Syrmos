@@ -80,3 +80,24 @@ enum JourneyDetail {
         return rows
     }
 }
+
+/// Connection risk (S07 / Phase R), the Swift peer of web `SyrmosConnectionRisk`
+/// and Kotlin `ConnectionRisk`. Pure rule for one transfer: given the real gap
+/// available, the change time to allow, and any uncertainty, return the honest
+/// status. Reuses the shared feasibility margin EXACTLY so the S07 warning cannot
+/// drift from the option's feasibility chip (margin = available - recommended -
+/// uncertainty; < 0 missed, 0..179 tight, else comfortable; a nil gap -> unknown).
+/// Mirrors fixtures/journeys/connection-risk.json.
+enum ConnectionRisk {
+    static let tightMaxSeconds = 179
+    static let defaultRecommendedSeconds = 120
+
+    /// Status string ("comfortable" | "tight" | "missed" | "unknown").
+    static func status(availableSeconds: Int?, recommendedSeconds: Int, uncertaintySeconds: Int = 0) -> String {
+        guard let available = availableSeconds else { return "unknown" }
+        let margin = available - recommendedSeconds - uncertaintySeconds
+        if margin < 0 { return "missed" }
+        if margin <= tightMaxSeconds { return "tight" }
+        return "comfortable"
+    }
+}
