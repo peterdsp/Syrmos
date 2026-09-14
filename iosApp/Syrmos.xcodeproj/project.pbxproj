@@ -119,6 +119,10 @@
 		DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */; };
 		DA7A010BF00D010BF00D010B /* SyrmosWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DA7A0120F00D0120F00D0120 /* SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */; };
+		FE0000000000000000000C10 /* GoJourneyActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0F /* GoJourneyActivityAttributes.swift */; };
+		FE0000000000000000000C11 /* GoJourneyActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0F /* GoJourneyActivityAttributes.swift */; };
+		FE0000000000000000000C13 /* GoJourneyActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C12 /* GoJourneyActivityController.swift */; };
+		FE0000000000000000000C15 /* SyrmosGoJourneyLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C14 /* SyrmosGoJourneyLiveActivity.swift */; };
 		DA7A0121F00D0121F00D0121 /* SyrmosTrackingAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */; };
 		DA7A0122F00D0122F00D0122 /* SyrmosLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0111F00D0111F00D0111 /* SyrmosLiveActivity.swift */; };
 		DA7A0123F00D0123F00D0123 /* SyrmosWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */; };
@@ -340,6 +344,9 @@
 		DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapRouteGeometryTests.swift; sourceTree = "<group>"; };
 		DA7A0107F00D0107F00D0107 /* SyrmosWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SyrmosWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SyrmosTrackingAttributes.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C0F /* GoJourneyActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Journey/GoJourneyActivityAttributes.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C12 /* GoJourneyActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Journey/GoJourneyActivityController.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C14 /* SyrmosGoJourneyLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosGoJourneyLiveActivity.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0111F00D0111F00D0111 /* SyrmosLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosLiveActivity.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyrmosWidget/SyrmosWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0113F00D0113F00D0113 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SyrmosWidget/Info.plist; sourceTree = SOURCE_ROOT; };
@@ -732,6 +739,8 @@
 				FE0000000000000000000A02 /* PlanFlow.swift */,
 				FE0000000000000000000B02 /* SavedJourneyStore.swift */,
 				FE0000000000000000000C02 /* JourneyDetail.swift */,
+				FE0000000000000000000C0F /* GoJourneyActivityAttributes.swift */,
+				FE0000000000000000000C12 /* GoJourneyActivityController.swift */,
 				FE0000000000000000000C06 /* DisruptionExclusion.swift */,
 				FE0000000000000000000C08 /* AccessibilityDisclosure.swift */,
 				DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */,
@@ -797,6 +806,7 @@
 				DA7A0110F00D0110F00D0110 /* SyrmosTrackingAttributes.swift */,
 				DA7A0112F00D0112F00D0112 /* SyrmosWidgetBundle.swift */,
 				DA7A0111F00D0111F00D0111 /* SyrmosLiveActivity.swift */,
+				FE0000000000000000000C14 /* SyrmosGoJourneyLiveActivity.swift */,
 				DA7A0113F00D0113F00D0113 /* Info.plist */,
 			);
 			name = SyrmosWidget;
@@ -1054,6 +1064,8 @@
 				DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */,
 				DA7A0021F00D0021F00D0021 /* DepartureTracking.swift in Sources */,
 				DA7A0120F00D0120F00D0120 /* SyrmosTrackingAttributes.swift in Sources */,
+				FE0000000000000000000C10 /* GoJourneyActivityAttributes.swift in Sources */,
+				FE0000000000000000000C13 /* GoJourneyActivityController.swift in Sources */,
 				3F12F021ECD240BE97B74BB9 /* SyrmosSchedulesStore.swift in Sources */,
 				002709A0C1454019B429939D /* SyrmosSchedulesService.swift in Sources */,
 				E1A2B3C4D5E60718293A4B5C /* SyrmosDeparturesService.swift in Sources */,
@@ -1166,6 +1178,8 @@
 				AC74A75A5E7742A6A2AC71B3 /* SyrmosWidgets.swift in Sources */,
 				DA7A0121F00D0121F00D0121 /* SyrmosTrackingAttributes.swift in Sources */,
 				DA7A0122F00D0122F00D0122 /* SyrmosLiveActivity.swift in Sources */,
+				FE0000000000000000000C11 /* GoJourneyActivityAttributes.swift in Sources */,
+				FE0000000000000000000C15 /* SyrmosGoJourneyLiveActivity.swift in Sources */,
 				AA26BB37CC48DD59EE70FF84 /* RailPulseLiveActivityIntent.swift in Sources */,
 				DA7A0123F00D0123F00D0123 /* SyrmosWidgetBundle.swift in Sources */,
 			);
