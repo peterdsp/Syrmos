@@ -70,3 +70,18 @@ test('a self-scheduling backoff loop replaced fixed setInterval polling', () => 
   assert.match(js, /updateLiveTrains\(payload\.trains \|\| \[\], payload\.updatedAt\);\s*\n\s*markApiOk\(\);\s*\n\s*return true;/,
     'trains pollOnce must return true on success');
 });
+
+// initStep runs each step synchronously, and connectLiveTrainStream /
+// connectAirportBusStream call startPollLoop immediately. Its default
+// `maxMs = POLL_MAX_BACKOFF_MS` throws a ReferenceError (temporal dead zone) if
+// the const is declared further down, which silently stopped the /api/trains
+// and airport-bus loops on the live site.
+test('POLL_MAX_BACKOFF_MS is declared before the init steps that start the poll loops', () => {
+  const decl = js.indexOf('const POLL_MAX_BACKOFF_MS');
+  assert.notEqual(decl, -1, 'POLL_MAX_BACKOFF_MS declaration missing');
+  for (const step of ['connectLiveTrainStream', 'connectAirportBusStream', 'pollLivePositions']) {
+    const call = js.indexOf(`initStep("${step}"`);
+    assert.notEqual(call, -1, `initStep("${step}") not found`);
+    assert.ok(decl < call, `POLL_MAX_BACKOFF_MS must be declared before initStep("${step}")`);
+  }
+});
