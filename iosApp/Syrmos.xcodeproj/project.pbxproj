@@ -138,6 +138,8 @@
 		FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0E /* FreshnessPresentationTests.swift */; };
 		FE0000000000000000000C17 /* LeaveByReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C16 /* LeaveByReminder.swift */; };
 		FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C18 /* LeaveByReminderTests.swift */; };
+		FE0000000000000000000C1B /* SavedDeparture.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C1A /* SavedDeparture.swift */; };
+		FE0000000000000000000C1D /* SavedDepartureStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */; };
 		FE0000000000000000000C0B /* AccessibilityDisclosureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */; };
 		DA7A0200F00D0200F00D0200 /* JourneyGuidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */; };
 		DA7A0204F00D0204F00D0204 /* JourneyGuidance+Planner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */; };
@@ -334,6 +336,7 @@
 		D96A7A6C57AF22F4BB957EE6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = SyrmosWatch/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		DA7A0002F00D0002F00D0002 /* DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C16 /* LeaveByReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/LeaveByReminder.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C1A /* SavedDeparture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SavedDeparture.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeFeaturesTests.swift; sourceTree = "<group>"; };
 		DA7A0012F00D0012F00D0012 /* AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0014F00D0014F00D0014 /* AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
@@ -364,6 +367,7 @@
 		FE0000000000000000000C0A /* DisruptionExclusionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DisruptionExclusionTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0E /* FreshnessPresentationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreshnessPresentationTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C18 /* LeaveByReminderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LeaveByReminderTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SavedDepartureStoreTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityDisclosureTests.swift; sourceTree = "<group>"; };
 		DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyGuidance.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Features/Assistant/JourneyGuidance+Planner.swift"; sourceTree = SOURCE_ROOT; };
@@ -457,6 +461,7 @@
 				FE0000000000000000000C0A /* DisruptionExclusionTests.swift */,
 				FE0000000000000000000C0E /* FreshnessPresentationTests.swift */,
 				FE0000000000000000000C18 /* LeaveByReminderTests.swift */,
+				FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */,
 				FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */,
 				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
 				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
@@ -664,6 +669,7 @@
 				AA11BB22CC33DD44EE55FF60 /* NationalVehicleProjector.swift */,
 				DA7A0002F00D0002F00D0002 /* DataFreshness.swift */,
 				FE0000000000000000000C16 /* LeaveByReminder.swift */,
+				FE0000000000000000000C1A /* SavedDeparture.swift */,
 				DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
 				0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */,
@@ -1069,6 +1075,7 @@
 				AA11BB22CC33DD44EE55FF61 /* NationalVehicleProjector.swift in Sources */,
 				DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */,
 				FE0000000000000000000C17 /* LeaveByReminder.swift in Sources */,
+				FE0000000000000000000C1B /* SavedDeparture.swift in Sources */,
 				DA7A0021F00D0021F00D0021 /* DepartureTracking.swift in Sources */,
 				DA7A0120F00D0120F00D0120 /* SyrmosTrackingAttributes.swift in Sources */,
 				FE0000000000000000000C10 /* GoJourneyActivityAttributes.swift in Sources */,
@@ -1138,6 +1145,7 @@
 				FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */,
 				FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */,
 				FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */,
+				FE0000000000000000000C1D /* SavedDepartureStoreTests.swift in Sources */,
 				FE0000000000000000000C0B /* AccessibilityDisclosureTests.swift in Sources */,
 				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
 				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
