@@ -80,8 +80,86 @@
     return { toSchedule, toCancel, unchanged };
   }
 
+  // ---- Saved-departure board store (Phase N J09) --------------------------
+  // Pure list ops over saved departures plus the byte-parity persistence blob
+  // that mirrors Kotlin ReminderContract / SavedDepartureStore exactly (validated
+  // against fixtures/reminders/saved.json). A saved departure is
+  // { lineId, stationId, stationName, destination, scheduledTime,
+  //   departureEpochSeconds, leadSeconds, createdAt, schemaVersion }.
+  const SCHEMA_VERSION = 1;
+
+  function savedId(d) { return idFor(d.lineId, d.stationId, d.departureEpochSeconds); }
+
+  // Prepend + dedupe by id; a re-save moves the id to the top and replaces it.
+  function saveDeparture(list, entry) {
+    return [entry].concat(list.filter((d) => savedId(d) !== savedId(entry)));
+  }
+
+  function removeDeparture(list, id) { return list.filter((d) => savedId(d) !== id); }
+
+  function containsDeparture(list, id) { return list.some((d) => savedId(d) === id); }
+
+  function pruneDeparted(list, nowEpochSeconds) {
+    return list.filter((d) => d.departureEpochSeconds > nowEpochSeconds);
+  }
+
+  function reorderDepartures(list, order) {
+    const byId = new Map(list.map((d) => [savedId(d), d]));
+    return order.map((id) => byId.get(id)).filter((d) => d != null);
+  }
+
+  // A saved departure maps 1:1 onto the reminder shape the engine consumes.
+  function toReminders(list) {
+    return list.map((d) => ({
+      lineId: d.lineId, stationId: d.stationId, stationName: d.stationName,
+      destination: d.destination, scheduledTime: d.scheduledTime,
+      departureEpochSeconds: d.departureEpochSeconds, leadSeconds: d.leadSeconds,
+    }));
+  }
+
+  // Canonical wire form: fixed key order, compact (no spaces), matching the
+  // Kotlin serializer so the persisted blob round-trips byte-for-byte.
+  function encodeRoot(root) {
+    const items = (root.savedDepartures || []).map((d) => ({
+      lineId: d.lineId,
+      stationId: d.stationId,
+      stationName: d.stationName,
+      destination: d.destination,
+      scheduledTime: d.scheduledTime,
+      departureEpochSeconds: d.departureEpochSeconds,
+      leadSeconds: d.leadSeconds,
+      createdAt: d.createdAt,
+      schemaVersion: d.schemaVersion == null ? SCHEMA_VERSION : d.schemaVersion,
+    }));
+    return JSON.stringify({
+      schemaVersion: root.schemaVersion == null ? SCHEMA_VERSION : root.schemaVersion,
+      savedDepartures: items,
+    });
+  }
+
+  // Returns { ok, value } | { unsupported, foundVersion } | { corrupt, reason }.
+  // A blank blob is a fresh, valid empty list (not corrupt).
+  function decodeRoot(raw) {
+    if (raw == null || String(raw).trim() === '') {
+      return { ok: true, value: { schemaVersion: SCHEMA_VERSION, savedDepartures: [] } };
+    }
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { return { corrupt: true, reason: String(e) }; }
+    const v = parsed && parsed.schemaVersion;
+    if (typeof v === 'number' && v > SCHEMA_VERSION) return { unsupported: true, foundVersion: v };
+    return {
+      ok: true,
+      value: {
+        schemaVersion: v == null ? SCHEMA_VERSION : v,
+        savedDepartures: Array.isArray(parsed.savedDepartures) ? parsed.savedDepartures : [],
+      },
+    };
+  }
+
   return {
     idFor, reminderId, leaveByEpochSeconds, state, fireAtEpochSeconds,
     minutesUntilLeave, dedupe, active, reconcile,
+    SCHEMA_VERSION, savedId, saveDeparture, removeDeparture, containsDeparture,
+    pruneDeparted, reorderDepartures, toReminders, encodeRoot, decodeRoot,
   };
 });
