@@ -32,6 +32,21 @@ enum DataFreshness {
     }
 }
 
+/// Phase N J07: the single rule for offline/predicted BANNER presentation, derived
+/// from the shared freshness rule. Mirrors Kotlin
+/// `com.syrmos.core.common.FreshnessPresentation` and web `web-freshness.js`,
+/// covered by `fixtures/freshness/presentation.json`. Offline always wins over a
+/// stale live flag; online-but-not-live is `predicted` (not silently hidden).
+enum FreshnessBannerState: String, Equatable { case live, predicted, offline }
+
+enum FreshnessPresentation {
+    static func evaluate(isNetworkAvailable: Bool, isLive: Bool) -> FreshnessBannerState {
+        if !isNetworkAvailable { return .offline }
+        return isLive ? .live : .predicted
+    }
+    static func showsBanner(_ state: FreshnessBannerState) -> Bool { state != .live }
+}
+
 @MainActor
 final class LiveDataFreshness: ObservableObject {
     static let shared = LiveDataFreshness()

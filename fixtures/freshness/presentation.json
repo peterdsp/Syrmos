@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for Syrmos 3.0 Phase N J07 unified freshness/offline presentation. One shared rule derives the banner state from the existing DataFreshness rule: evaluate(isNetworkAvailable, isLive) -> live | predicted | offline. Offline (no network) always wins over liveness; online-but-not-live is predicted (the 'online yet the API is unreachable/stale' case a connectivity-only check would miss); online + live is live. showsBanner is true whenever the state is not live. Kotlin com.syrmos.core.common.FreshnessPresentation, web web-freshness.js and iOS FreshnessPresentation must produce the EXACT expected result for each case.",
+  "cases": [
+    { "id": "online_live", "note": "online with fresh live data: no banner", "isNetworkAvailable": true, "isLive": true, "expected": { "state": "live", "showsBanner": false } },
+    { "id": "online_predicted", "note": "online but no fresh live data (API unreachable/stale): predicted, banner shown", "isNetworkAvailable": true, "isLive": false, "expected": { "state": "predicted", "showsBanner": true } },
+    { "id": "offline_wins_over_live", "note": "no network overrides a stale 'live' flag", "isNetworkAvailable": false, "isLive": true, "expected": { "state": "offline", "showsBanner": true } },
+    { "id": "offline_predicted", "note": "no network and no live data: offline", "isNetworkAvailable": false, "isLive": false, "expected": { "state": "offline", "showsBanner": true } }
+  ]
+}

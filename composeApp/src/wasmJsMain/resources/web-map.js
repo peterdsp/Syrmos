@@ -4455,14 +4455,22 @@
                     stepFreeRow.appendChild(stepFreeInput);
                     stepFreeRow.appendChild(stepFreeText);
 
-                    // Phase R S10: offline-with-usable-data banner. Plans still work
-                    // from the cached seed; the banner discloses the mode + Retry.
+                    // Phase R S10 / N J07 freshness banner. Driven by the shared
+                    // SyrmosFreshness rule (connectivity + liveness), so it also shows
+                    // when online but the API is unreachable/stale (predicted), not
+                    // connectivity-only. Plans still work from the cached seed.
                     const offlineBanner = document.createElement("div");
                     offlineBanner.className = "plan-offline";
-                    offlineBanner.innerHTML = `<div class="plan-offline__text">
-                            <div class="plan-offline__title">${T("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline")}</div>
-                            <div class="plan-offline__sub">${T("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.", "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato.")}</div>
-                        </div>`;
+                    const offlineTextEl = document.createElement("div");
+                    offlineTextEl.className = "plan-offline__text";
+                    const offlineTitleEl = document.createElement("div");
+                    offlineTitleEl.className = "plan-offline__title";
+                    const offlineSubEl = document.createElement("div");
+                    offlineSubEl.className = "plan-offline__sub";
+                    offlineSubEl.textContent = T("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.", "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato.");
+                    offlineTextEl.appendChild(offlineTitleEl);
+                    offlineTextEl.appendChild(offlineSubEl);
+                    offlineBanner.appendChild(offlineTextEl);
                     const offlineRetry = document.createElement("button");
                     offlineRetry.type = "button";
                     offlineRetry.className = "plan-offline__retry";
@@ -4471,11 +4479,25 @@
                     // back to the cached seed (never a dead no-op).
                     offlineRetry.addEventListener("click", () => { loadPlanNotices(); runPlan(); syncOffline(); });
                     offlineBanner.appendChild(offlineRetry);
-                    const syncOffline = () => { offlineBanner.style.display = (typeof navigator !== "undefined" && navigator.onLine === false) ? "" : "none"; };
+                    const syncOffline = () => {
+                        const online = !(typeof navigator !== "undefined" && navigator.onLine === false);
+                        const isLive = (Date.now() - lastApiOkMs) <= LIVE_STALE_MS;
+                        const state = window.SyrmosFreshness ? window.SyrmosFreshness.evaluate(online, isLive) : (online ? "live" : "offline");
+                        const show = window.SyrmosFreshness ? window.SyrmosFreshness.showsBanner(state) : !online;
+                        offlineTitleEl.textContent = (state === "offline")
+                            ? T("Running offline", "Εκτός σύνδεσης", "Pa internet", "Offline")
+                            : T("Predicted from schedule", "Πρόβλεψη από το πρόγραμμα", "Parashikuar nga orari", "Previsto dall'orario");
+                        offlineBanner.style.display = show ? "" : "none";
+                    };
                     syncOffline();
                     if (typeof window !== "undefined") {
                         window.addEventListener("online", syncOffline);
                         window.addEventListener("offline", syncOffline);
+                        // Re-evaluate staleness while the panel is open so an idle
+                        // live->predicted (or a poll landing predicted->live) is
+                        // reflected without a connectivity event. container() runs once
+                        // (guarded), so this interval is registered a single time.
+                        setInterval(syncOffline, 15_000);
                     }
 
                     // Phase R S10 invalid saved/deep-link id: named recovery note.

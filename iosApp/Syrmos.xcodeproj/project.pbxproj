@@ -131,6 +131,7 @@
 		FE0000000000000000000C07 /* AccessibilityDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C08 /* AccessibilityDisclosure.swift */; };
 		FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C04 /* JourneyDetailTests.swift */; };
 		FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0A /* DisruptionExclusionTests.swift */; };
+		FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0E /* FreshnessPresentationTests.swift */; };
 		FE0000000000000000000C0B /* AccessibilityDisclosureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */; };
 		DA7A0200F00D0200F00D0200 /* JourneyGuidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */; };
 		DA7A0204F00D0204F00D0204 /* JourneyGuidance+Planner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */; };
@@ -351,6 +352,7 @@
 		FE0000000000000000000C08 /* AccessibilityDisclosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Journey/AccessibilityDisclosure.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C04 /* JourneyDetailTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyDetailTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0A /* DisruptionExclusionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DisruptionExclusionTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C0E /* FreshnessPresentationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreshnessPresentationTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityDisclosureTests.swift; sourceTree = "<group>"; };
 		DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/JourneyGuidance.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iosApp/Features/Assistant/JourneyGuidance+Planner.swift"; sourceTree = SOURCE_ROOT; };
@@ -442,6 +444,7 @@
 				FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */,
 				FE0000000000000000000C04 /* JourneyDetailTests.swift */,
 				FE0000000000000000000C0A /* DisruptionExclusionTests.swift */,
+				FE0000000000000000000C0E /* FreshnessPresentationTests.swift */,
 				FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */,
 				DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */,
 				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
@@ -1114,6 +1117,7 @@
 				FE0000000000000000000B03 /* SavedJourneyStoreTests.swift in Sources */,
 				FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */,
 				FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */,
+				FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */,
 				FE0000000000000000000C0B /* AccessibilityDisclosureTests.swift in Sources */,
 				DA7A0003F00D0003F00D0003 /* HomeFeaturesTests.swift in Sources */,
 				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
