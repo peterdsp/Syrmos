@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "description": "Phase N J09 saved-departure board persistence parity. `root` is the decoded SavedDeparturesRoot; `encoded` is the canonical compact wire blob Kotlin ReminderContract.encodeSavedDeparturesRoot produces. web web-reminders.js and the iOS store must encode `root` to exactly `encoded` and decode `encoded` back to `root`, so the persisted blob round-trips byte-for-byte across clients. Field order is fixed (root: schemaVersion, savedDepartures; item: lineId, stationId, stationName, destination, scheduledTime, departureEpochSeconds, leadSeconds, createdAt, schemaVersion). An empty or blank blob decodes to a fresh empty list (never corrupt); a schemaVersion greater than the build's is Unsupported, not Corrupt.",
+  "root": {
+    "schemaVersion": 1,
+    "savedDepartures": [
+      {
+        "lineId": "M1",
+        "stationId": "M1_VIC",
+        "stationName": "Victoria",
+        "destination": "Kifisia",
+        "scheduledTime": "08:00",
+        "departureEpochSeconds": 1000000,
+        "leadSeconds": 900,
+        "createdAt": "2026-01-01T08:00:00Z",
+        "schemaVersion": 1
+      }
+    ]
+  },
+  "encoded": "{\"schemaVersion\":1,\"savedDepartures\":[{\"lineId\":\"M1\",\"stationId\":\"M1_VIC\",\"stationName\":\"Victoria\",\"destination\":\"Kifisia\",\"scheduledTime\":\"08:00\",\"departureEpochSeconds\":1000000,\"leadSeconds\":900,\"createdAt\":\"2026-01-01T08:00:00Z\",\"schemaVersion\":1}]}"
+}
