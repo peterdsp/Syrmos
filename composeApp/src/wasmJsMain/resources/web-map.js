@@ -4307,6 +4307,13 @@
             // the GO panel. Times are estimated (no schedule), so nothing is
             // labelled with a fabricated clock.
             let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null, resumeEl = null;
+            let invalidSavedEl = null; // Phase R S10 invalid saved/deep-link id note
+            const stationExists = (id) => !!id && stations.some((s) => s.id === id);
+            function setInvalidSavedNote(text) {
+                if (!invalidSavedEl) return;
+                if (text) { invalidSavedEl.textContent = text; invalidSavedEl.style.display = ""; }
+                else { invalidSavedEl.textContent = ""; invalidSavedEl.style.display = "none"; }
+            }
             let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
             let planStepFree = false; // Phase R rider accessibility preference
             let planNotices = []; // live service notices for disruption exclusion
@@ -4385,6 +4392,17 @@
                     const f = field(T("From", "Από", "Nga", "Da"));
                     const t = field(T("To", "Προς", "Për", "A"));
                     fromSel = f.sel; toSel = t.sel;
+                    // Phase R S10: clear the invalid-saved note once both endpoints
+                    // resolve again, then plan.
+                    const onEndpointChange = () => {
+                        if (invalidSavedEl && invalidSavedEl.style.display !== "none" &&
+                            stationExists(fromSel.value) && stationExists(toSel.value)) {
+                            setInvalidSavedNote(null);
+                            runPlan();
+                        }
+                    };
+                    fromSel.addEventListener("change", onEndpointChange);
+                    toSel.addEventListener("change", onEndpointChange);
                     const find = document.createElement("button");
                     find.type = "button";
                     find.className = "primary-button plan-draft__find";
@@ -4458,8 +4476,14 @@
                         window.addEventListener("offline", syncOffline);
                     }
 
+                    // Phase R S10 invalid saved/deep-link id: named recovery note.
+                    invalidSavedEl = document.createElement("div");
+                    invalidSavedEl.className = "plan-invalid-saved";
+                    invalidSavedEl.style.display = "none";
+
                     draft.appendChild(f.wrap);
                     draft.appendChild(t.wrap);
+                    draft.appendChild(invalidSavedEl);
                     draft.appendChild(offlineBanner);
                     draft.appendChild(modeRow);
                     draft.appendChild(timeWrap);
@@ -4778,9 +4802,20 @@
             function loadSaved(entry) {
                 if (!fromSel || !toSel) return;
                 ensureSelectsFilled();
-                fromSel.value = entry.fromId;
-                toSel.value = entry.toId;
-                runPlan();
+                // Phase R S10: preserve resolvable endpoints, name the missing one.
+                const fromOk = stationExists(entry.fromId), toOk = stationExists(entry.toId);
+                fromSel.value = fromOk ? entry.fromId : "";
+                toSel.value = toOk ? entry.toId : "";
+                if (fromOk && toOk) {
+                    setInvalidSavedNote(null);
+                    runPlan();
+                } else {
+                    setInvalidSavedNote(T(
+                        "A station in this saved journey is no longer available. Choose a replacement.",
+                        "Ένας σταθμός σε αυτή την αποθηκευμένη διαδρομή δεν είναι πλέον διαθέσιμος. Επίλεξε αντικατάσταση.",
+                        "Një stacion në këtë udhëtim të ruajtur nuk është më i disponueshëm. Zgjidh një zëvendësim.",
+                        "Una stazione di questo viaggio salvato non è più disponibile. Scegli un'alternativa."));
+                }
             }
             function deleteSaved(entry) {
                 if (!savedStore) return;

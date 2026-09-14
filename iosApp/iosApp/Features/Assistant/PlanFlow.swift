@@ -286,6 +286,9 @@ struct PlanView: View {
     // Phase R S10: offline-with-usable-data. Plans still work from the bundled
     // schedule; the banner just discloses the mode + offers Retry.
     @ObservedObject private var freshness = LiveDataFreshness.shared
+    // Phase R S10: set when a loaded saved journey references a station that no
+    // longer exists; the rider is asked to choose a replacement.
+    @State private var invalidSavedNote: String? = nil
 
     // Saved journeys (S08 / J05): locally owned, no account.
     @ObservedObject private var savedStore = SavedJourneysStore.shared
@@ -307,6 +310,7 @@ struct PlanView: View {
             VStack(alignment: .leading, spacing: 12) {
                 if let active = activeStore.active { resumeBanner(active) }
                 if !freshness.isNetworkAvailable { offlineBanner }
+                if let note = invalidSavedNote { invalidSavedBanner(note) }
                 endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
                 endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
 
@@ -494,6 +498,20 @@ struct PlanView: View {
     }
 
     @ViewBuilder
+    /// Phase R S10 invalid saved/deep-link id: names the missing selection and
+    /// points the rider at the empty picker to choose a replacement.
+    private func invalidSavedBanner(_ note: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "questionmark.circle.fill").foregroundStyle(.orange)
+            Text(note).font(.subheadline).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.orange.opacity(0.12)))
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
     private func resumeBanner(_ active: GoActiveJourney) -> some View {
         let fromId = active.itinerarySnapshot.legs.first?.fromId
         let toId = active.itinerarySnapshot.legs.last?.toId
@@ -631,9 +649,32 @@ struct PlanView: View {
             label: nil, preferences: SavedJourneyPreferences(),
         ))
     }
+    private func stationExists(_ id: String?) -> Bool {
+        guard let id else { return false }
+        return stations.contains { $0.id == id }
+    }
+
+    /// Phase R S10 invalid saved/deep-link id: preserve the endpoints that still
+    /// resolve, name the missing one, and prompt for a replacement rather than
+    /// silently planning an impossible trip or crashing.
     private func loadSaved(_ entry: SavedJourney) {
-        fromId = entry.fromId; toId = entry.toId; opening = nil; query = ""
-        runPlan()
+        let fromOk = stationExists(entry.fromId)
+        let toOk = stationExists(entry.toId)
+        fromId = fromOk ? entry.fromId : nil
+        toId = toOk ? entry.toId : nil
+        opening = nil; query = ""
+        if fromOk && toOk {
+            invalidSavedNote = nil
+            runPlan()
+        } else {
+            planned = false
+            results = []
+            invalidSavedNote = t(
+                "A station in this saved journey is no longer available. Choose a replacement.",
+                "Ένας σταθμός σε αυτή την αποθηκευμένη διαδρομή δεν είναι πλέον διαθέσιμος. Επίλεξε αντικατάσταση.",
+                "Një stacion në këtë udhëtim të ruajtur nuk është më i disponueshëm. Zgjidh një zëvendësim.",
+                "Una stazione di questo viaggio salvato non è più disponibile. Scegli un'alternativa.")
+        }
     }
     private func deleteSaved(_ entry: SavedJourney) {
         savedStore.remove(id: entry.id)
@@ -657,6 +698,11 @@ struct PlanView: View {
         if opening == "from" { fromId = st.id } else { toId = st.id }
         opening = nil
         query = ""
+        // S10 recovery: once both endpoints resolve again, clear the note and plan.
+        if invalidSavedNote != nil, stationExists(fromId), stationExists(toId) {
+            invalidSavedNote = nil
+            runPlan()
+        }
     }
 
     private func name(_ id: String?) -> String {
