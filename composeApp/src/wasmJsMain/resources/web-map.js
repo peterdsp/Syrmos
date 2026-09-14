@@ -4508,7 +4508,7 @@
                                 renderResume();
                             }
                         };
-                        window.addEventListener("visibilitychange", onForeground);
+                        document.addEventListener("visibilitychange", onForeground);
                         window.addEventListener("pageshow", onForeground);
                         window.addEventListener("focus", onForeground);
                     }
@@ -4662,7 +4662,7 @@
                 // content honestly rather than implying it's current).
                 const updatedMs = active.updatedAt ? Date.parse(active.updatedAt) : NaN;
                 if (Number.isFinite(updatedMs) && (Date.now() - updatedMs) > 90_000) {
-                    const mins = Math.max(1, Math.round((Date.now() - updatedMs) / 60000));
+                    const mins = Math.max(1, Math.floor((Date.now() - updatedMs) / 60000));
                     const stale = document.createElement("div");
                     stale.className = "plan-resume__stale";
                     stale.textContent = T(
