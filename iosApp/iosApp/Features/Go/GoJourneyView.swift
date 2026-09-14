@@ -1,6 +1,15 @@
 import SwiftUI
 import UIKit
 
+/// Phase R S07: the connection risk of one transfer, computed from the real route
+/// model (scheduled clocks). `availableSeconds` is the actual gap between arriving
+/// and the next departure; `minimumSeconds` the change time the plan allowed.
+struct TransferRisk: Equatable {
+    let status: String            // "comfortable" | "tight" | "missed" | "unknown"
+    let availableSeconds: Int?
+    let minimumSeconds: Int?
+}
+
 // The GO screen: guide the rider through a planned journey one instruction at a
 // time (board / stay on / get off next / change here / arrived). The current
 // instruction is the hero; the get-off cue is emphasised because it is the one
@@ -17,11 +26,18 @@ struct GoJourneyView: View {
     private let store: GoActiveJourneyStore?
     private let resuming: Bool
     private let onEnd: (() -> Void)?
+    // Phase R S07: per-transfer risk (transferRisks[i] = leg i -> i+1). Empty when
+    // unknown (e.g. resumed session), which shows no warning.
+    private let transferRisks: [TransferRisk]
+    /// Opens fresh results from the current confirmed station to the destination.
+    private let onFindAlternatives: ((_ fromStationId: String, _ toStationId: String) -> Void)?
 
     init(
         journey: GuidanceJourney, language: AppLanguage,
         coords: [String: GoLocationAdvancer.Coord] = [:],
         store: GoActiveJourneyStore? = nil, resuming: Bool = false,
+        transferRisks: [TransferRisk] = [],
+        onFindAlternatives: ((String, String) -> Void)? = nil,
         onEnd: (() -> Void)? = nil
     ) {
         _model = StateObject(wrappedValue: GoJourneyViewModel(journey: journey, coords: coords))
@@ -30,7 +46,24 @@ struct GoJourneyView: View {
         self.destinationName = journey.legs.last?.stops.last?.name ?? ""
         self.store = store
         self.resuming = resuming
+        self.transferRisks = transferRisks
+        self.onFindAlternatives = onFindAlternatives
         self.onEnd = onEnd
+    }
+
+    /// The risk of the transfer the rider is currently approaching or at, when it
+    /// is tight or missed. nil otherwise (comfortable / not a transfer moment).
+    private var activeTransferRisk: TransferRisk? {
+        let idx = model.position.legIndex
+        let atTransferMoment: Bool
+        switch model.current {
+        case .getOffNext(_, false, let to): atTransferMoment = (to != nil)
+        case .transfer: atTransferMoment = true
+        default: atTransferMoment = false
+        }
+        guard atTransferMoment, transferRisks.indices.contains(idx) else { return nil }
+        let r = transferRisks[idx]
+        return (r.status == "tight" || r.status == "missed") ? r : nil
     }
 
     private var tint: Color {
@@ -42,11 +75,16 @@ struct GoJourneyView: View {
         VStack(spacing: 20) {
             header
             heroCard
+            if let risk = activeTransferRisk { connectionRiskCard(risk) }
             ProgressView(value: model.progress)
                 .tint(tint)
                 .padding(.horizontal)
             controls
-            if model.canGoLive { liveToggle }
+            if location.isDenied {
+                locationDeniedNote
+            } else if model.canGoLive {
+                liveToggle
+            }
             Spacer()
             footnote
         }
@@ -80,6 +118,36 @@ struct GoJourneyView: View {
             let text = [headline, detail].filter { !$0.isEmpty }.joined(separator: ". ")
             UIAccessibility.post(notification: .announcement, argument: text)
         }
+    }
+
+    /// Phase R S10 permission-denied capability state: location off changes the
+    /// capability (no auto-advance), not the availability of the journey. Manual
+    /// stepping stays fully usable; offer Settings to re-enable.
+    private var locationDeniedNote: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label {
+                Text(t("Location is off", "Η τοποθεσία είναι ανενεργή", "Vendndodhja është joaktive", "La posizione è disattivata"))
+                    .font(.subheadline.weight(.semibold))
+            } icon: {
+                Image(systemName: "location.slash")
+            }
+            .foregroundStyle(.secondary)
+            Text(t("Keep stepping through your journey manually, or turn location on in Settings.",
+                   "Συνέχισε τη διαδρομή χειροκίνητα ή ενεργοποίησε την τοποθεσία στις Ρυθμίσεις.",
+                   "Vazhdo udhëtimin manualisht, ose aktivizo vendndodhjen te Cilësimet.",
+                   "Continua il viaggio manualmente o attiva la posizione in Impostazioni."))
+                .font(.caption).foregroundStyle(.secondary)
+            Button(t("Open Settings", "Άνοιγμα Ρυθμίσεων", "Hap Cilësimet", "Apri Impostazioni")) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.subheadline).buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.12)))
+        .accessibilityElement(children: .combine)
     }
 
     private var liveToggle: some View {
@@ -160,6 +228,59 @@ struct GoJourneyView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(headline). \(detail). \(subdetail)")
     }
+
+    /// Phase R S07: inline connection-risk warning directly below the instruction.
+    /// Values are real (from the route model); never switches trains automatically.
+    @ViewBuilder
+    private func connectionRiskCard(_ risk: TransferRisk) -> some View {
+        let missed = risk.status == "missed"
+        let title = missed
+            ? t("This connection may be missed", "Αυτή η ανταπόκριση μπορεί να χαθεί", "Kjo lidhje mund të humbasë", "Questa coincidenza potrebbe saltare")
+            : t("This connection is tight", "Αυτή η ανταπόκριση είναι στενή", "Kjo lidhje është e ngushtë", "Questa coincidenza è stretta")
+        let mins = { (s: Int?) -> Int? in s.map { max(0, Int(($0 + 30) / 60)) } }
+        let explanation: String? = {
+            guard let avail = mins(risk.availableSeconds), let allow = mins(risk.minimumSeconds) else { return nil }
+            return t(
+                "\(avail) min available; allow \(allow) min to change.",
+                "\(avail) λεπ διαθέσιμα, χρειάζονται \(allow) λεπ για αλλαγή.",
+                "\(avail) min në dispozicion, duhen \(allow) min për ndërrim.",
+                "\(avail) min disponibili, servono \(allow) min per cambiare.")
+        }()
+        VStack(alignment: .leading, spacing: 8) {
+            Label {
+                Text(title).font(.headline)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+            }
+            .foregroundStyle(.orange)
+            if let explanation {
+                Text(explanation).font(.subheadline).foregroundStyle(.secondary)
+            }
+            if let onFindAlternatives, let from = currentStationId, let to = destinationId {
+                Button {
+                    onFindAlternatives(from, to)
+                } label: {
+                    Text(t("Find alternatives", "Βρες εναλλακτικές", "Gjej alternativa", "Trova alternative"))
+                }
+                .buttonStyle(.bordered)
+                .tint(.orange)
+            }
+        }
+        .frame(minHeight: 88, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.orange.opacity(0.12)))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Current confirmed station id (for a re-plan origin).
+    private var currentStationId: String? {
+        let p = model.position
+        guard model.journey.legs.indices.contains(p.legIndex),
+              model.journey.legs[p.legIndex].stops.indices.contains(p.stopIndex) else { return nil }
+        return model.journey.legs[p.legIndex].stops[p.stopIndex].id
+    }
+    private var destinationId: String? { model.journey.legs.last?.stops.last?.id }
 
     private var controls: some View {
         HStack(spacing: 12) {
