@@ -1118,20 +1118,24 @@
             const items = rows.map((p) => {
                 // Dynamic (intercity) products have no fixed price: show a
                 // "price at booking" chip and lean on the note, never a number.
-                const eur = p.fullPriceEur != null ? `€${p.fullPriceEur.toFixed(2)}` : t("fare_at_booking");
+                const hasPrice = p.fullPriceEur != null;
+                const eur = hasPrice ? `€${p.fullPriceEur.toFixed(2)}` : t("fare_at_booking");
                 const validityLocalised = pickLocalised(p, "validity") || p.validity || "";
-                const sub = p.discountedPriceEur != null
+                const reduced = p.discountedPriceEur != null
                     ? `${t("reduced")} €${p.discountedPriceEur.toFixed(2)}`
-                    : validityLocalised;
+                    : "";
+                // Reduced fare is the primary subline; validity fills in when there
+                // is no reduced price so a tile is never empty below its price.
+                const sub = reduced || validityLocalised;
                 return `
-                    <div class="panel-item">
-                        <div class="panel-item__title">${escapeHtml(pickLocalised(p, "title"))}</div>
-                        <div class="panel-item__meta">${escapeHtml(sub)}</div>
-                        <div class="panel-item__count">${escapeHtml(eur)}</div>
+                    <div class="fare-tile">
+                        <div class="fare-tile__name">${escapeHtml(pickLocalised(p, "title"))}</div>
+                        <div class="fare-tile__price${hasPrice ? "" : " fare-tile__price--soft"}">${escapeHtml(eur)}</div>
+                        ${sub ? `<div class="fare-tile__sub">${escapeHtml(sub)}</div>` : ""}
                     </div>`;
             }).join("");
             const label = g.label[currentLang] || g.label.en;
-            return `<div class="fares-group__head">${escapeHtml(label)}</div>${items}`;
+            return `<div class="fares-group__head">${escapeHtml(label)}</div><div class="fares-grid">${items}</div>`;
         }).join("");
         faresList.innerHTML = html;
     }
