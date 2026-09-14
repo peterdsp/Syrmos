@@ -43,8 +43,11 @@ import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
+import com.syrmos.core.common.NotificationSettings
 import com.syrmos.core.common.TrackedDeparture
 import com.syrmos.core.common.TrackedRouteStop
+import com.syrmos.core.domain.reminder.SavedDepartureRepository
+import com.syrmos.core.model.reminder.SavedDeparture
 import com.syrmos.core.designsystem.component.toComposeColor
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
@@ -257,6 +260,34 @@ fun TrackPickerSheet(
                                     lang = lang,
                                 ),
                                 directionKey = dirKey,
+                            ),
+                        )
+                        onDismiss()
+                    },
+                    onRemind = { dep ->
+                        val line = selectedLine ?: return@DepartureList
+                        val station = selectedStation ?: return@DepartureList
+                        val nowEpoch = Clock.System.now().epochSeconds
+                        val pickDir = selectedDirection ?: TrackDir.OUTBOUND
+                        val destination = when (pickDir) {
+                            TrackDir.OUTBOUND -> line.terminalB
+                            TrackDir.INBOUND -> line.terminalA
+                            TrackDir.AIRPORT -> airportLabel(lang)
+                        }
+                        // Asking for a reminder is the opt-in: enable the master
+                        // switch and save the departure to the board. The scheduler
+                        // then fires the "leave now" cue LEAVE_LEAD before departure.
+                        NotificationSettings.setLeaveByReminders(true)
+                        SavedDepartureRepository.save(
+                            SavedDeparture(
+                                lineId = line.id,
+                                stationId = station.id,
+                                stationName = if (lang == AppLanguage.GREEK) station.nameEl else station.name,
+                                destination = destination,
+                                scheduledTime = dep.time,
+                                departureEpochSeconds = nowEpoch + dep.minutesAway * 60L,
+                                leadSeconds = LEAVE_LEAD_SECONDS,
+                                createdAt = Clock.System.now(),
                             ),
                         )
                         onDismiss()
@@ -531,6 +562,7 @@ private fun DepartureList(
     departures: List<UpcomingDeparture>,
     lang: AppLanguage,
     onSelect: (UpcomingDeparture) -> Unit,
+    onRemind: (UpcomingDeparture) -> Unit,
 ) {
     if (departures.isEmpty()) {
         Text(
@@ -550,6 +582,7 @@ private fun DepartureList(
                     .clickable { onSelect(dep) }
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -563,6 +596,17 @@ private fun DepartureList(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                // Secondary action: set a leave-by reminder for this departure.
+                Text(
+                    text = remindVerbLabel(lang),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onRemind(dep) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
                 Text(
                     text = trackVerbLabel(lang),
                     style = MaterialTheme.typography.labelMedium,
@@ -627,6 +671,15 @@ private fun trackVerbLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.ITALIAN -> "Traccia"
     else -> "Track"
 }
+private fun remindVerbLabel(lang: AppLanguage) = when (lang) {
+    AppLanguage.GREEK -> "Υπενθύμιση"
+    AppLanguage.ALBANIAN -> "Kujto"
+    AppLanguage.ITALIAN -> "Ricorda"
+    else -> "Remind"
+}
+
+/** Default lead before departure for a leave-by reminder: 15 minutes. */
+private const val LEAVE_LEAD_SECONDS = 900L
 private fun airportLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Αεροδρόμιο"
     AppLanguage.ALBANIAN -> "Aeroporti"

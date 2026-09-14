@@ -41,4 +41,15 @@ object NotificationSettings {
         _morningDigest.value = enabled
         persistNotifPref("notif_morning_digest", enabled)
     }
+
+    // Phase N J09: master opt-in for leave-by reminders. Off by default: the rider
+    // asks to be reminded, reminders never appear unrequested. When off, no
+    // leave-by notification is scheduled regardless of the saved-departure board.
+    private val _leaveByReminders = MutableStateFlow(loadNotifPref("notif_leave_by", false))
+    val leaveByReminders: StateFlow<Boolean> = _leaveByReminders.asStateFlow()
+
+    fun setLeaveByReminders(enabled: Boolean) {
+        _leaveByReminders.value = enabled
+        persistNotifPref("notif_leave_by", enabled)
+    }
 }
