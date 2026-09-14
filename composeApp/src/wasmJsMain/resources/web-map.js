@@ -4498,6 +4498,19 @@
                         // reflected without a connectivity event. container() runs once
                         // (guarded), so this interval is registered a single time.
                         setInterval(syncOffline, 15_000);
+                        // Phase N J08: foreground-resume cue. When the tab returns to the
+                        // foreground, re-read the persisted active journey and refresh the
+                        // resume banner (+ its stale marker) so an in-progress trip
+                        // resumes visibly on return. Registered once (container guarded).
+                        const onForeground = () => {
+                            if (typeof document === "undefined" || document.visibilityState === "visible") {
+                                syncOffline();
+                                renderResume();
+                            }
+                        };
+                        window.addEventListener("visibilitychange", onForeground);
+                        window.addEventListener("pageshow", onForeground);
+                        window.addEventListener("focus", onForeground);
                     }
 
                     // Phase R S10 invalid saved/deep-link id: named recovery note.
@@ -4644,6 +4657,21 @@
                 pair.className = "plan-resume__pair";
                 pair.textContent = nm(fromId) + " → " + nm(toId);
                 info.appendChild(title); info.appendChild(pair);
+                // Phase N J08: honest-stale marker. If the session hasn't advanced within
+                // the freshness window, disclose it (the glance surface shows stale
+                // content honestly rather than implying it's current).
+                const updatedMs = active.updatedAt ? Date.parse(active.updatedAt) : NaN;
+                if (Number.isFinite(updatedMs) && (Date.now() - updatedMs) > 90_000) {
+                    const mins = Math.max(1, Math.round((Date.now() - updatedMs) / 60000));
+                    const stale = document.createElement("div");
+                    stale.className = "plan-resume__stale";
+                    stale.textContent = T(
+                        "May be out of date · updated " + mins + "m ago",
+                        "Ίσως παλιό · ενημερώθηκε πριν " + mins + " λεπτά",
+                        "Mund të jetë e vjetruar · përditësuar " + mins + "min më parë",
+                        "Forse non aggiornato · aggiornato " + mins + " min fa");
+                    info.appendChild(stale);
+                }
                 info.addEventListener("click", () => resumeJourney(active));
                 banner.appendChild(info);
 
