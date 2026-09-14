@@ -55,6 +55,22 @@ test('SW precaches the app shell and the bundled seed', () => {
   }
 });
 
+test('every departure-row vehicle icon is same-origin, bundled and precached', () => {
+  const fn = extractFunction(map, 'vehicleIconFor');
+  const base = fn.match(/const base = "([^"]+)";/)[1];
+  const paths = [...new Set([...fn.matchAll(/`\$\{base\}([^`]+\.svg)`/g)].map((m) => base + m[1]))];
+  assert.ok(paths.length >= 18, `expected the full directional icon set, found ${paths.length}`);
+  for (const p of paths) {
+    assert.ok(p.startsWith('/icons/vehicles/'), `${p} must be a bundled same-origin path`);
+    assert.ok(fs.existsSync(path.join(RES, p)), `${p} must exist in the bundle`);
+    assert.ok(sw.includes(`"${p}"`), `${p} must be precached so it renders offline`);
+  }
+  // The row must not load icons from the API host: that route is network-first
+  // and answers offline with a JSON 503, which rendered as a broken image.
+  assert.doesNotMatch(map, /src="https:\/\/api-syrmos\.peterdsp\.dev\$\{iconSrc\}"/);
+  assert.match(map, /<img class="departure-card__icon" src="\$\{iconSrc\}"/);
+});
+
 test('SW uses network-first for navigations and the live API, cache-first otherwise', () => {
   assert.match(sw, /req\.mode === "navigate"[\s\S]*?networkFirstNavigation/, 'navigations must be network-first');
   assert.match(sw, /url\.hostname === "api-syrmos\.peterdsp\.dev"[\s\S]*?networkFirstApi/, 'API must be network-first');

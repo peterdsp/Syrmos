@@ -1934,11 +1934,12 @@
     }
 
     function vehicleIconFor(lineId, direction) {
-        // Maps (lineId, destination text) to the operator directional SVG
-        // served at /icons/directional_vehicle_icons/. Mirrors the iOS
-        // TimetablesIcons helper so all three platforms pick the same artwork.
+        // Maps (lineId, destination text) to the operator directional SVG.
+        // Mirrors the iOS TimetablesIcons helper so all three platforms pick
+        // the same artwork. Served same-origin from the bundle (byte-identical
+        // to the API copies) and precached by sw.js, so rows render offline.
         const d = (direction || "").toLowerCase();
-        const base = "/icons/directional_vehicle_icons/directional";
+        const base = "/icons/vehicles/directional";
         switch (lineId) {
             case "M1":
                 return d.includes("piraeus")
@@ -2188,7 +2189,7 @@
             const destination = group.destination || "";
             const iconSrc = vehicleIconFor(lineId, destination);
             const iconHtml = iconSrc
-                ? `<img class="departure-card__icon" src="https://api-syrmos.peterdsp.dev${iconSrc}" alt="${lineId}" loading="lazy" />`
+                ? `<img class="departure-card__icon" src="${iconSrc}" alt="${lineId}" loading="lazy" />`
                 : `<span class="line-dot" style="background:${group.line?.color || 'var(--accent)'};"></span>`;
             // Airport pill: serviceType=="airport" covers both outbound (to
             // Airport) and inbound (from Airport → Dimotiko Theatro). Keeps
