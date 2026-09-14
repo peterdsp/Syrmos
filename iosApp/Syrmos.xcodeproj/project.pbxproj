@@ -140,6 +140,8 @@
 		FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C18 /* LeaveByReminderTests.swift */; };
 		FE0000000000000000000C1B /* SavedDeparture.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C1A /* SavedDeparture.swift */; };
 		FE0000000000000000000C1D /* SavedDepartureStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */; };
+		FE0000000000000000000C1F /* LeaveByReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C1E /* LeaveByReminderScheduler.swift */; };
+		FE0000000000000000000C21 /* SavedDeparturesBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C20 /* SavedDeparturesBoardView.swift */; };
 		FE0000000000000000000C0B /* AccessibilityDisclosureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */; };
 		DA7A0200F00D0200F00D0200 /* JourneyGuidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0201F00D0201F00D0201 /* JourneyGuidance.swift */; };
 		DA7A0204F00D0204F00D0204 /* JourneyGuidance+Planner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0205F00D0205F00D0205 /* JourneyGuidance+Planner.swift */; };
@@ -337,6 +339,8 @@
 		DA7A0002F00D0002F00D0002 /* DataFreshness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DataFreshness.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C16 /* LeaveByReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/LeaveByReminder.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C1A /* SavedDeparture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SavedDeparture.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C1E /* LeaveByReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/LeaveByReminderScheduler.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C20 /* SavedDeparturesBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedDeparturesBoardView.swift; sourceTree = "<group>"; };
 		DA7A0004F00D0004F00D0004 /* HomeFeaturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeFeaturesTests.swift; sourceTree = "<group>"; };
 		DA7A0012F00D0012F00D0012 /* AriadneParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneParser.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0014F00D0014F00D0014 /* AriadneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneModel.swift; sourceTree = SOURCE_ROOT; };
@@ -559,6 +563,7 @@
 			isa = PBXGroup;
 			children = (
 				836DE84E99C06ABA19E71805 /* SettingsView.swift */,
+				FE0000000000000000000C20 /* SavedDeparturesBoardView.swift */,
 				E1A2B3C4D5E60718293A4C71 /* ContactDeveloperView.swift */,
 				E1A2B3C4D5E60718293A4E91 /* StasyMapView.swift */,
 			);
@@ -670,6 +675,7 @@
 				DA7A0002F00D0002F00D0002 /* DataFreshness.swift */,
 				FE0000000000000000000C16 /* LeaveByReminder.swift */,
 				FE0000000000000000000C1A /* SavedDeparture.swift */,
+				FE0000000000000000000C1E /* LeaveByReminderScheduler.swift */,
 				DA7A0022F00D0022F00D0022 /* DepartureTracking.swift */,
 				748CC40BCBDC9D468CD371B8 /* TransitData.swift */,
 				0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */,
@@ -1076,6 +1082,8 @@
 				DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */,
 				FE0000000000000000000C17 /* LeaveByReminder.swift in Sources */,
 				FE0000000000000000000C1B /* SavedDeparture.swift in Sources */,
+				FE0000000000000000000C1F /* LeaveByReminderScheduler.swift in Sources */,
+				FE0000000000000000000C21 /* SavedDeparturesBoardView.swift in Sources */,
 				DA7A0021F00D0021F00D0021 /* DepartureTracking.swift in Sources */,
 				DA7A0120F00D0120F00D0120 /* SyrmosTrackingAttributes.swift in Sources */,
 				FE0000000000000000000C10 /* GoJourneyActivityAttributes.swift in Sources */,

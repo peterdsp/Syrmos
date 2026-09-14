@@ -320,67 +320,95 @@ struct TrackPickerSheet: View {
                         .padding()
                 } else {
                     ForEach(departures) { dep in
-                        Button {
-                            let terminal: String
+                        let terminal: String = {
                             switch direction {
-                            case .outbound: terminal = line.terminalB
-                            case .inbound: terminal = line.terminalA
-                            case .airport: terminal = airportLabel
+                            case .outbound: return line.terminalB
+                            case .inbound: return line.terminalA
+                            case .airport: return airportLabel
                             }
-                            let stationName = loc.language == .greek ? station.nameEl : station.name
-                            let route = TrackedDeparture.computeRouteStations(
-                                stations: SyrmosData.stations(for: line.id),
-                                targetStationId: station.id,
-                                direction: direction,
-                                language: loc.language
-                            )
-                            let dirKey: String
-                            switch direction {
-                            case .outbound: dirKey = "outbound"
-                            case .inbound: dirKey = "inbound"
-                            case .airport: dirKey = "airport"
-                            }
-                            DepartureTracking.shared.track(
-                                TrackedDeparture(
-                                    lineId: line.id,
-                                    stationId: station.id,
-                                    stationName: stationName,
-                                    destination: terminal,
-                                    scheduledTime: dep.time,
-                                    targetEpoch: Date().timeIntervalSince1970 + Double(dep.minutesAway) * 60,
-                                    routeStations: route,
-                                    directionKey: dirKey
+                        }()
+                        let stationName = loc.language == .greek ? station.nameEl : station.name
+                        HStack(spacing: 10) {
+                            Button {
+                                let route = TrackedDeparture.computeRouteStations(
+                                    stations: SyrmosData.stations(for: line.id),
+                                    targetStationId: station.id,
+                                    direction: direction,
+                                    language: loc.language
                                 )
-                            )
-                            onDismiss()
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 4) {
-                                        Text(dep.time)
-                                            .font(.body).fontWeight(.semibold)
-                                            .foregroundStyle(.primary)
-                                        if let trainNo = dep.trainNo {
-                                            Text("#\(trainNo)")
-                                                .font(.caption2).fontWeight(.medium)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    Text(dep.minutesAwayDisplay(language: loc.language))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                let dirKey: String
+                                switch direction {
+                                case .outbound: dirKey = "outbound"
+                                case .inbound: dirKey = "inbound"
+                                case .airport: dirKey = "airport"
                                 }
-                                Spacer(minLength: 0)
-                                Text(trackVerbLabel)
-                                    .font(.caption).fontWeight(.semibold)
-                                    .foregroundStyle(line.color)
+                                DepartureTracking.shared.track(
+                                    TrackedDeparture(
+                                        lineId: line.id,
+                                        stationId: station.id,
+                                        stationName: stationName,
+                                        destination: terminal,
+                                        scheduledTime: dep.time,
+                                        targetEpoch: Date().timeIntervalSince1970 + Double(dep.minutesAway) * 60,
+                                        routeStations: route,
+                                        directionKey: dirKey
+                                    )
+                                )
+                                onDismiss()
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 4) {
+                                            Text(dep.time)
+                                                .font(.body).fontWeight(.semibold)
+                                                .foregroundStyle(.primary)
+                                            if let trainNo = dep.trainNo {
+                                                Text("#\(trainNo)")
+                                                    .font(.caption2).fontWeight(.medium)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                        Text(dep.minutesAwayDisplay(language: loc.language))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer(minLength: 0)
+                                    Text(trackVerbLabel)
+                                        .font(.caption).fontWeight(.semibold)
+                                        .foregroundStyle(line.color)
+                                }
                             }
-                            .padding(.horizontal, 12).padding(.vertical, 10)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.syrmosSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .buttonStyle(.plain)
+                            // Secondary action: set a leave-by reminder for this departure.
+                            Button {
+                                // Asking for a reminder is the opt-in: enable the
+                                // master switch, save the departure, reschedule.
+                                NotificationPreferences.leaveByRemindersEnabled = true
+                                SavedDepartureBoard.shared.save(
+                                    SavedDeparture(
+                                        lineId: line.id,
+                                        stationId: station.id,
+                                        stationName: stationName,
+                                        destination: terminal,
+                                        scheduledTime: dep.time,
+                                        departureEpochSeconds: Int64(Date().timeIntervalSince1970) + Int64(dep.minutesAway) * 60,
+                                        leadSeconds: 900,
+                                        createdAt: ISO8601DateFormatter().string(from: Date())
+                                    )
+                                )
+                                Task { await NotificationService.shared.requestAuthorization() }
+                                onDismiss()
+                            } label: {
+                                Text(remindVerbLabel)
+                                    .font(.caption).fontWeight(.semibold)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.syrmosSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                 }
             }
@@ -515,6 +543,15 @@ struct TrackPickerSheet: View {
         case .albanian: return "Ndiq"
         case .italian: return "Traccia"
         case .english: return "Track"
+        }
+    }
+
+    private var remindVerbLabel: String {
+        switch loc.language {
+        case .greek: return "Υπενθύμιση"
+        case .albanian: return "Kujto"
+        case .italian: return "Ricorda"
+        case .english: return "Remind"
         }
     }
 }
