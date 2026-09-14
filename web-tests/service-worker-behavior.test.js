@@ -28,7 +28,9 @@ class ResMock {
 class ReqMock {
   constructor(url, init = {}) { this.url = typeof url === 'string' ? url : url.url; this.method = init.method || 'GET'; this.mode = init.mode; }
 }
-const keyOf = (req) => (typeof req === 'string' ? req : req.url);
+// Like the real Cache API, relative keys ("/index.html") resolve against the
+// worker's origin, so a precached "/x" matches a page request for origin + "/x".
+const keyOf = (req) => new URL(typeof req === 'string' ? req : req.url, 'http://localhost:8791').href;
 class CacheMock {
   constructor() { this.store = new Map(); }
   async match(req) { return this.store.get(keyOf(req)); }
@@ -108,6 +110,18 @@ test('OFFLINE static asset is served from cache after a prior online load', asyn
   net.online = false;
   const offline = await doFetch(handlers, new ReqMock(url));
   assert.ok(offline && offline.ok, 'the hashed bundle is served from cache offline');
+});
+
+test('OFFLINE departure-row vehicle icons render for a station never opened online', async () => {
+  const net = { online: true, body: (u) => (u.endsWith('.svg') ? '<svg/>' : `body:${u}`) };
+  const { handlers } = loadSW(net);
+  await install(handlers);
+  await activate(handlers);
+  net.online = false; // the user goes offline before ever opening this station
+  const icon = 'http://localhost:8791/icons/vehicles/directional/metro/m2_anthoupoli_elliniko/metro_m2_right_to_elliniko.svg';
+  const res = await doFetch(handlers, new ReqMock(icon));
+  assert.ok(res && res.ok, 'the precached icon is served from cache, not an error');
+  assert.equal(await res.text(), '<svg/>', 'the icon body is the SVG, not an offline JSON 503');
 });
 
 test('live API is network-first and falls back to a cached response, else 503', async () => {
