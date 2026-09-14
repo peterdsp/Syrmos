@@ -491,6 +491,11 @@ body.dark-mode .nav-item--active {
        below its content width (which would clip the label). */
     white-space: nowrap;
     flex-shrink: 0;
+    /* Size to the label. In a column container (the departure row's text
+       column stretches its children) an auto width became a full-width bar;
+       a content width is never stretched, and rows keep their alignment. */
+    width: fit-content;
+    max-width: 100%;
 }
 
 .src-chip__dot {

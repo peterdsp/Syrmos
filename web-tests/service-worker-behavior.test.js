@@ -237,3 +237,18 @@ test('product page assets are network-first, so a deploy is never masked by cach
   net.online = false;
   assert.match(await (await doFetch(handlers, new ReqMock(url))).text(), /#two$/, 'offline returns the last copy');
 });
+
+test('the handheld download screen is standalone: cached under its own key, never the shell', async () => {
+  const GET_APP_HTML = '<h1>On phones and tablets, Syrmos is an app</h1>';
+  const body = (u) => (new URL(u, 'http://localhost').pathname.startsWith('/get-app') ? GET_APP_HTML : siteBody(u));
+  const net = { online: true, body };
+  const { handlers } = loadSW(net);
+  await install(handlers);
+  await doFetch(handlers, nav('http://localhost:8791/'));
+  await doFetch(handlers, nav('http://localhost:8791/get-app/'));
+  net.online = false;
+  assert.equal(await (await doFetch(handlers, nav('http://localhost:8791/'))).text(), APP_HTML, 'the app shell is untouched');
+  for (const p of ['/get-app', '/get-app/', '/get-app/index.html']) {
+    assert.equal(await (await doFetch(handlers, nav(`http://localhost:8791${p}`))).text(), GET_APP_HTML, `${p} offline serves the download screen`);
+  }
+});

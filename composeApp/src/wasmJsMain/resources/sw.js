@@ -29,6 +29,9 @@ const TILE_MAX = 300; // opportunistic, capped: only tiles the user actually vie
 const PRECACHE = [
   "/",
   "/index.html",
+  // Phones and tablets are redirected from the app shell to this standalone
+  // download screen, so it must also open offline on an already-installed worker.
+  "/get-app/",
   "/manifest.webmanifest",
   "/favicon.png",
   "/design-tokens.css",
@@ -147,7 +150,7 @@ function isTile(url) {
 
 // Standalone static documents that are NOT the app shell. Every other
 // navigation (/, /plan/, /line/?id=M3, ...) serves the same app document.
-const STANDALONE_DOCUMENTS = ["/product", "/privacy"];
+const STANDALONE_DOCUMENTS = ["/product", "/privacy", "/get-app"];
 const STANDALONE_FILES = ["/privacy.html", "/press.html"];
 
 function standaloneDocumentKey(pathname) {
