@@ -66,6 +66,14 @@ if [[ ! -f "$TARGET_DIR/product/index.html" ]]; then
     exit 1
 fi
 
+# The web app is desktop only: index.html redirects phones and tablets to the
+# standalone download screen get-app/index.html (also kept out of the route
+# loop). Without it, every handheld visit would land on a 404.
+if [[ ! -f "$TARGET_DIR/get-app/index.html" ]]; then
+    echo "error: get-app/index.html is missing from the web release" >&2
+    exit 1
+fi
+
 # 404.html is recovery only. It lets a mistyped or stale deep path still boot
 # the app and route client-side, but the canonical entry points above already
 # return 200, so a custom 404 (which stays an HTTP 404 on GitHub Pages) is never

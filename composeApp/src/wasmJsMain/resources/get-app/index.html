@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Get the Syrmos app</title>
+    <meta name="description" content="On phones and tablets, Syrmos is a free app for iOS and Android. The Syrmos web app is made for laptops and desktop computers.">
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://syrmos.peterdsp.dev/get-app/">
+    <meta name="theme-color" content="#07142B">
+    <link rel="icon" type="image/png" sizes="48x48" href="/product/img/syrmos-icon-48.png">
+    <link rel="apple-touch-icon" href="/product/img/syrmos-icon-180.png">
+    <meta name="apple-itunes-app" content="app-id=6777650671">
+    <!--
+      Standalone page (like /privacy and /product): phones and tablets that open
+      the web app are redirected here before any app code loads. It never
+      registers the service worker and never loads the transit app.
+    -->
+    <style>
+        :root {
+            --midnight: #07142B;
+            --midnight-2: #0C1E3F;
+            --brand: #1466B8;
+            --brand-light: #8ECAFF;
+            --on-dark: #E9EFF8;
+            --on-dark-muted: #A9B7CC;
+            --line-dark: rgba(255, 255, 255, 0.14);
+            color-scheme: dark;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; min-height: 100dvh;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+            font-size: 17px; line-height: 1.55; color: var(--on-dark);
+            background:
+                radial-gradient(700px 420px at 80% 0%, rgba(20, 102, 184, 0.38), transparent 70%),
+                radial-gradient(600px 360px at 0% 100%, rgba(111, 45, 168, 0.25), transparent 70%),
+                var(--midnight);
+        }
+        img { max-width: 100%; height: auto; display: block; }
+        a { color: var(--brand-light); text-underline-offset: 3px; }
+        :focus-visible { outline: 3px solid var(--brand-light); outline-offset: 3px; border-radius: 8px; }
+        .wrap {
+            max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+            padding: max(20px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; gap: 24px;
+        }
+        .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; text-decoration: none; min-height: 44px; }
+        .brand img { width: 36px; height: 36px; border-radius: 9px; }
+        .langs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid var(--line-dark); background: rgba(255,255,255,0.05); }
+        .langs button {
+            font: inherit; font-size: 0.8rem; font-weight: 700; min-width: 44px; min-height: 38px; border: 0; border-radius: 999px;
+            color: var(--on-dark-muted); background: transparent; cursor: pointer;
+        }
+        .langs button[aria-pressed="true"] { background: #fff; color: var(--midnight); }
+        .hero { text-align: center; display: grid; justify-items: center; gap: 14px; }
+        h1 { margin: 8px 0 0; font-size: clamp(1.9rem, 1.2rem + 3.6vw, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; color: #fff; }
+        .lead { margin: 0; color: var(--on-dark-muted); max-width: 460px; }
+        .phone {
+            width: min(46vw, 200px); background: #0B0F17; padding: 7px; border-radius: 34px;
+            box-shadow: 0 0 0 1px var(--line-dark), 0 26px 60px rgba(0,0,0,0.5);
+        }
+        .phone img { border-radius: 27px; }
+        .stores { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+        .stores a { display: inline-flex; border-radius: 10px; }
+        .stores img { height: 52px; width: auto; border-radius: 8px; box-shadow: 0 0 0 1px rgba(255,255,255,0.28); }
+        .more { display: grid; gap: 10px; text-align: center; font-size: 0.95rem; color: var(--on-dark-muted); }
+        .more a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; font-weight: 600; }
+        footer { margin-top: auto; text-align: center; font-size: 0.78rem; color: #8494AC; }
+        footer a { color: #C3D0E2; }
+    </style>
+</head>
+<body>
+<main class="wrap">
+    <div class="top">
+        <a class="brand" href="/product/"><img src="/product/img/syrmos-icon-96.webp" alt="" width="36" height="36"><span>Syrmos</span></a>
+        <div class="langs" role="group" aria-label="Language" data-i18n-aria="language">
+            <button type="button" data-lang="en" aria-pressed="true" aria-label="English">EN</button>
+            <button type="button" data-lang="el" aria-pressed="false" aria-label="Ελληνικά">EL</button>
+            <button type="button" data-lang="sq" aria-pressed="false" aria-label="Shqip">SQ</button>
+            <button type="button" data-lang="it" aria-pressed="false" aria-label="Italiano">IT</button>
+        </div>
+    </div>
+
+    <section class="hero" aria-labelledby="title">
+        <div class="phone">
+            <img id="shot" src="/product/img/ios-home-420.webp" width="420" height="913" alt="Syrmos on iPhone: the Home screen with network status and live trains." data-i18n-alt="shot_alt_ios">
+        </div>
+        <h1 id="title" data-i18n="title_h1">On phones and tablets, Syrmos is an app</h1>
+        <p class="lead" data-i18n="lead">The Syrmos web app is made for laptops and desktop computers. Download the free app for next departures, the network map and Ariadne on your phone or tablet.</p>
+        <div class="stores" id="stores">
+            <a id="storeIos" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="156" height="52"></a>
+            <a id="storeAndroid" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="176" height="52"></a>
+        </div>
+    </section>
+
+    <div class="more">
+        <a href="/product/" data-i18n="learn">See what Syrmos does</a>
+        <p data-i18n="desktop">On a computer? Open syrmos.peterdsp.dev in your browser.</p>
+    </div>
+
+    <footer>
+        <a href="/privacy" data-i18n="privacy">Privacy policy</a>
+    </footer>
+</main>
+
+<script>
+(function () {
+    "use strict";
+    var I18N = {
+        en: {
+            doc_title: "Get the Syrmos app",
+            title_h1: "On phones and tablets, Syrmos is an app",
+            lead: "The Syrmos web app is made for laptops and desktop computers. Download the free app for next departures, the network map and Ariadne on your phone or tablet.",
+            learn: "See what Syrmos does",
+            desktop: "On a computer? Open syrmos.peterdsp.dev in your browser.",
+            privacy: "Privacy policy",
+            language: "Language",
+            shot_alt_ios: "Syrmos on iPhone: the Home screen with network status and live trains.",
+            shot_alt_android: "Syrmos on Android: the Athens map with metro, tram and suburban lines."
+        },
+        el: {
+            doc_title: "Κατέβασε την εφαρμογή Syrmos",
+            title_h1: "Σε κινητά και tablet, το Syrmos είναι εφαρμογή",
+            lead: "Η διαδικτυακή εφαρμογή Syrmos είναι σχεδιασμένη για φορητούς και επιτραπέζιους υπολογιστές. Κατέβασε τη δωρεάν εφαρμογή για τις επόμενες αναχωρήσεις, τον χάρτη του δικτύου και την Αριάδνη στο κινητό ή το tablet σου.",
+            learn: "Δες τι κάνει το Syrmos",
+            desktop: "Σε υπολογιστή; Άνοιξε το syrmos.peterdsp.dev στο πρόγραμμα περιήγησής σου.",
+            privacy: "Πολιτική απορρήτου",
+            language: "Γλώσσα",
+            shot_alt_ios: "Το Syrmos σε iPhone: η αρχική οθόνη με την κατάσταση του δικτύου και τα ζωντανά τρένα.",
+            shot_alt_android: "Το Syrmos σε Android: ο χάρτης της Αθήνας με μετρό, τραμ και προαστιακό."
+        },
+        sq: {
+            doc_title: "Shkarko aplikacionin Syrmos",
+            title_h1: "Në telefona dhe tableta, Syrmos është aplikacion",
+            lead: "Aplikacioni web i Syrmos është krijuar për laptopë dhe kompjuterë desktop. Shkarko aplikacionin falas për nisjet e ardhshme, hartën e rrjetit dhe Ariadnën në telefonin ose tabletin tënd.",
+            learn: "Shiko çfarë bën Syrmos",
+            desktop: "Në kompjuter? Hap syrmos.peterdsp.dev në shfletuesin tënd.",
+            privacy: "Politika e privatësisë",
+            language: "Gjuha",
+            shot_alt_ios: "Syrmos në iPhone: ekrani kryesor me gjendjen e rrjetit dhe trenat në kohë reale.",
+            shot_alt_android: "Syrmos në Android: harta e Athinës me metro, tramvaj dhe hekurudhë periferike."
+        },
+        it: {
+            doc_title: "Scarica l'app Syrmos",
+            title_h1: "Su telefoni e tablet, Syrmos è un'app",
+            lead: "La web app di Syrmos è pensata per laptop e computer desktop. Scarica l'app gratuita per le prossime partenze, la mappa della rete e Ariadne sul tuo telefono o tablet.",
+            learn: "Scopri cosa fa Syrmos",
+            desktop: "Sei su un computer? Apri syrmos.peterdsp.dev nel browser.",
+            privacy: "Informativa sulla privacy",
+            language: "Lingua",
+            shot_alt_ios: "Syrmos su iPhone: la schermata Home con lo stato della rete e i treni in tempo reale.",
+            shot_alt_android: "Syrmos su Android: la mappa di Atene con metro, tram e ferrovia suburbana."
+        }
+    };
+    // Same key the web app uses, so a language chosen in either place carries over.
+    var LANG_STORAGE_KEY = "syrmos_lang";
+    var isAndroid = /Android/i.test(navigator.userAgent || "");
+
+    function initialLang() {
+        try {
+            var saved = localStorage.getItem(LANG_STORAGE_KEY);
+            if (saved && I18N[saved]) return saved;
+        } catch (_) {}
+        var prefs = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || "en"];
+        for (var i = 0; i < prefs.length; i++) {
+            var code = String(prefs[i] || "").toLowerCase().slice(0, 2);
+            if (I18N[code]) return code;
+        }
+        return "en";
+    }
+
+    function apply(lang) {
+        var t = I18N[lang] || I18N.en;
+        document.documentElement.lang = lang;
+        document.title = t.doc_title;
+        document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t[el.getAttribute("data-i18n")]; });
+        document.querySelectorAll("[data-i18n-aria]").forEach(function (el) { el.setAttribute("aria-label", t[el.getAttribute("data-i18n-aria")]); });
+        var shot = document.getElementById("shot");
+        shot.alt = isAndroid ? t.shot_alt_android : t.shot_alt_ios;
+        document.querySelectorAll(".langs button").forEach(function (b) {
+            b.setAttribute("aria-pressed", b.getAttribute("data-lang") === lang ? "true" : "false");
+        });
+    }
+
+    // Lead with the store for this device, and show that platform's real screen.
+    if (isAndroid) {
+        var stores = document.getElementById("stores");
+        stores.insertBefore(document.getElementById("storeAndroid"), stores.firstChild);
+        var shot = document.getElementById("shot");
+        shot.src = "/product/img/android-map-420.webp";
+        shot.width = 420; shot.height = 933;
+    }
+
+    document.querySelectorAll(".langs button").forEach(function (b) {
+        b.addEventListener("click", function () {
+            var lang = b.getAttribute("data-lang");
+            try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch (_) {}
+            apply(lang);
+        });
+    });
+    apply(initialLang());
+})();
+</script>
+</body>
+</html>

@@ -50,6 +50,7 @@ test('SW precaches the app shell and the bundled seed', () => {
     '"/files/seed/schedules-v2/lines.json"',
     '"/files/seed/routes.json"',
     '"/files/seed/station-offsets.json"',
+    '"/get-app/"',
   ]) {
     assert.ok(sw.includes(asset), `precache must include ${asset}`);
   }

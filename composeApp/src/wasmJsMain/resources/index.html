@@ -4,6 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
+    <!-- Desktop only: phones and tablets use the native iOS / Android apps. This
+         runs first, before any stylesheet, map or app script is requested, and
+         sends handheld devices to the standalone download screen (/get-app/).
+         iPadOS reports a desktop Mac user agent, so a Mac UA with multi-touch
+         counts as a tablet. Desktop browsers of any window width are unaffected. -->
+    <script>
+        (function () {
+            function isHandheldDevice(ua, maxTouchPoints) {
+                ua = ua || "";
+                if (/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|KFAPWI|PlayBook|BlackBerry|BB10|webOS|Opera Mini|IEMobile|Windows Phone/i.test(ua)) return true;
+                return /Macintosh/.test(ua) && (maxTouchPoints || 0) > 1;
+            }
+            if (isHandheldDevice(navigator.userAgent, navigator.maxTouchPoints)) {
+                // Stop parsing first: it also cancels the stylesheets and scripts
+                // the browser's preload scanner already started fetching. Then
+                // navigate (calling stop() after replace() would cancel the redirect).
+                if (window.stop) window.stop();
+                location.replace("/get-app/");
+            }
+        })();
+    </script>
+
     <!-- Primary -->
     <title>Syrmos - Greece Rail Map</title>
     <meta name="description" content="Syrmos is a free, offline-first companion for the Athens public transit network. Live departure countdowns, GPS nearest station, live train map, and bilingual EN/EL interface for Metro Lines 1, 2, 3, Tram T6/T7, and Suburban Railway A1–A4.">
