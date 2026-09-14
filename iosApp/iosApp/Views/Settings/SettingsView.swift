@@ -333,6 +333,27 @@ struct SyrmosSettingsView: View {
                     systemImage: "sunrise"
                 )
             }
+            Toggle(isOn: Binding(
+                get: { NotificationPreferences.leaveByRemindersEnabled },
+                set: {
+                    NotificationPreferences.leaveByRemindersEnabled = $0
+                    if $0 { Task { await NotificationService.shared.requestAuthorization() } }
+                    LeaveByReminderScheduler.shared.sync()
+                }
+            )) {
+                Label(
+                    loc.language == .greek ? "Υπενθυμισεις αναχωρησης" : loc.language == .albanian ? "Kujtues nisjeje" : loc.language == .italian ? "Promemoria di partenza" : "Leave-by reminders",
+                    systemImage: "figure.walk.departure"
+                )
+            }
+            NavigationLink {
+                SavedDeparturesBoardView()
+            } label: {
+                Label(
+                    loc.language == .greek ? "Αποθηκευμένες αναχωρήσεις" : loc.language == .albanian ? "Nisjet e ruajtura" : loc.language == .italian ? "Partenze salvate" : "Saved departures",
+                    systemImage: "clock.badge.checkmark"
+                )
+            }
         }
     }
 

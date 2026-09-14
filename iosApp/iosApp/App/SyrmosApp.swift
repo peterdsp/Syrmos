@@ -37,6 +37,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         Task { @MainActor in
             await NotificationService.shared.requestAuthorization()
             NotificationService.shared.scheduleMorningDigest()
+            // Phase N J09: reconcile leave-by alarms with the persisted board on
+            // launch, so a board changed while the app was closed (or after a
+            // reboot) re-schedules correctly. Prunes departed entries first.
+            SavedDepartureBoard.shared.pruneDeparted(now: Int64(Date().timeIntervalSince1970))
+            LeaveByReminderScheduler.shared.sync()
         }
 
         return true
