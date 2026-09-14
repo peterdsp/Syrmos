@@ -2044,6 +2044,7 @@ body.has-store-banner .app-shell {
 .plan-offline__title { font-weight: 600; font-size: 14px; }
 .plan-offline__sub { font-size: 12px; opacity: .7; }
 .plan-offline__retry { border: 1px solid var(--sy-border, #ccc); background: transparent; color: inherit; border-radius: 999px; padding: 6px 14px; font-weight: 600; cursor: pointer; }
+.plan-invalid-saved { border-radius: 12px; padding: 12px; background: rgba(230, 126, 34, .12); font-size: 14px; }
 .plan-mode__btn {
     flex: 1 1 auto; min-height: 44px; padding: 8px 10px;
     border-radius: var(--sy-radius-md); border: 1px solid var(--sy-border);

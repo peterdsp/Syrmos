@@ -146,6 +146,8 @@ class PlanScreenRoute : Screen {
         val activeJourney by ActiveJourneyRepository.active.collectAsState()
         // Phase R S10: offline-with-usable-data banner signal.
         val networkAvailable by LiveDataFreshness.isNetworkAvailable.collectAsState()
+        // Phase R S10: set when a loaded saved journey references a gone station.
+        var invalidSavedNote by remember { mutableStateOf<String?>(null) }
         var pendingUndo by remember { mutableStateOf<SavedJourney?>(null) }
         var renameTarget by remember { mutableStateOf<SavedJourney?>(null) }
         var renameText by remember { mutableStateOf("") }
@@ -242,9 +244,27 @@ class PlanScreenRoute : Screen {
                 ),
             )
         }
+        fun stationExists(id: String?): Boolean = id != null && stations.any { it.id == id }
+        // Phase R S10 invalid saved/deep-link id: preserve the endpoints that still
+        // resolve, name the missing one, and prompt for a replacement.
         fun loadSaved(entry: SavedJourney) {
-            fromId = entry.fromId; toId = entry.toId; open = null; query = ""
-            runPlan()
+            val fromOk = stationExists(entry.fromId)
+            val toOk = stationExists(entry.toId)
+            fromId = if (fromOk) entry.fromId else null
+            toId = if (toOk) entry.toId else null
+            open = null; query = ""
+            if (fromOk && toOk) {
+                invalidSavedNote = null
+                runPlan()
+            } else {
+                planned = false
+                options = emptyList()
+                invalidSavedNote = t(
+                    "A station in this saved journey is no longer available. Choose a replacement.",
+                    "Ένας σταθμός σε αυτή την αποθηκευμένη διαδρομή δεν είναι πλέον διαθέσιμος. Επίλεξε αντικατάσταση.",
+                    "Një stacion në këtë udhëtim të ruajtur nuk është më i disponueshëm. Zgjidh një zëvendësim.",
+                    "Una stazione di questo viaggio salvato non è più disponibile. Scegli un'alternativa.")
+            }
         }
         fun deleteSaved(entry: SavedJourney) {
             SavedJourneysRepository.remove(entry.id)
@@ -354,6 +374,18 @@ class PlanScreenRoute : Screen {
                     }
                 }
 
+                invalidSavedNote?.let { note ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(note, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+
                 endpointRow(t("From", "Από", "Nga", "Da"), name(fromId)) { open = if (open == "from") null else "from" }
                 endpointRow(t("To", "Προς", "Për", "A"), name(toId)) { open = if (open == "to") null else "to" }
 
@@ -376,6 +408,11 @@ class PlanScreenRoute : Screen {
                                 modifier = Modifier.fillMaxWidth().clickable {
                                     if (open == "from") fromId = st.id else toId = st.id
                                     open = null; query = ""
+                                    // S10 recovery: once both endpoints resolve, clear + plan.
+                                    if (invalidSavedNote != null && stationExists(fromId) && stationExists(toId)) {
+                                        invalidSavedNote = null
+                                        runPlan()
+                                    }
                                 }.padding(vertical = 14.dp, horizontal = 4.dp),
                             )
                         }
