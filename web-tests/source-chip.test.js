@@ -29,7 +29,12 @@ test('source chips size to their label instead of stretching', () => {
 });
 
 test('the departure row still renders the chip inside its text column', () => {
-  // This is the stretching context the width rule protects against.
-  assert.match(js, /<div class="departure-card__times">\$\{timesHtml\}\$\{moreHtml\}<\/div>\s*\n\s*\$\{sourceChip\}/,
-    'departure rows render the source chip directly in the text column');
+  // The chip sits in the card foot (a flex row it shares with the J09 "Remind"
+  // action), still inside the stretching text column the width rule protects.
+  assert.match(js, /<div class="departure-card__foot">\s*\n\s*\$\{sourceChip\}/,
+    'departure rows render the source chip in the card foot within the text column');
+  // The foot is a flex row so the chip keeps its natural width (belt-and-braces
+  // with .src-chip width:fit-content) and the Remind action sits opposite it.
+  const foot = block('.departure-card__foot');
+  assert.match(foot, /display:\s*flex/, '.departure-card__foot must be a flex row');
 });

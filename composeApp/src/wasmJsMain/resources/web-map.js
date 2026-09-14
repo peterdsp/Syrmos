@@ -108,6 +108,14 @@
             the_station: "Station",
             open_details: "Open details",
             reduced: "Reduced",
+            leave_by_title: "Leave-by reminders",
+            leave_by_optin: "Remind me when to leave",
+            leave_by_empty: "No reminders yet. Tap Remind on a departure.",
+            remind: "Remind",
+            leave_now: "Time to leave",
+            leave_in: "Leave in {min} min",
+            departed_label: "Departed",
+            remind_added: "Reminder set",
             verify_on: "Verify on {op} ↗",
             privacy_policy: "Privacy Policy",
             about_syrmos: "About Syrmos",
@@ -218,6 +226,14 @@
             the_station: "Σταθμός",
             open_details: "Άνοιγμα λεπτομερειών",
             reduced: "Μειωμένο",
+            leave_by_title: "Υπενθυμίσεις αναχώρησης",
+            leave_by_optin: "Θύμισέ μου πότε να φύγω",
+            leave_by_empty: "Καμία υπενθύμιση ακόμη. Πάτησε Υπενθύμιση σε μια αναχώρηση.",
+            remind: "Υπενθύμιση",
+            leave_now: "Ώρα να φύγεις",
+            leave_in: "Φύγε σε {min} λεπτά",
+            departed_label: "Αναχώρησε",
+            remind_added: "Η υπενθύμιση ορίστηκε",
             verify_on: "Επιβεβαίωση στο {op} ↗",
             privacy_policy: "Πολιτική απορρήτου",
             about_syrmos: "Σχετικά με το Syrmos",
@@ -328,6 +344,14 @@
             the_station: "Stacioni",
             open_details: "Hap detajet",
             reduced: "Me zbritje",
+            leave_by_title: "Kujtues nisjeje",
+            leave_by_optin: "Më kujto kur të nisem",
+            leave_by_empty: "Ende asnjë kujtues. Prek Kujto te një nisje.",
+            remind: "Kujto",
+            leave_now: "Koha për të nisur",
+            leave_in: "Nisu për {min} min",
+            departed_label: "U nis",
+            remind_added: "Kujtuesi u vendos",
             verify_on: "Verifiko në {op} ↗",
             privacy_policy: "Politika e privatësisë",
             about_syrmos: "Rreth Syrmos",
@@ -438,6 +462,14 @@
             the_station: "Stazione",
             open_details: "Apri i dettagli",
             reduced: "Ridotto",
+            leave_by_title: "Promemoria di partenza",
+            leave_by_optin: "Ricordami quando partire",
+            leave_by_empty: "Nessun promemoria. Tocca Ricorda su una partenza.",
+            remind: "Ricorda",
+            leave_now: "Ora di partire",
+            leave_in: "Parti tra {min} min",
+            departed_label: "Partito",
+            remind_added: "Promemoria impostato",
             verify_on: "Verifica su {op} ↗",
             privacy_policy: "Informativa sulla privacy",
             about_syrmos: "Informazioni su Syrmos",
@@ -1182,6 +1214,87 @@
             renderInfoLinksPanel(lastFaresPayload);
         }
     });
+
+    // Phase N J09: leave-by reminders. The board + opt-in read the foreground
+    // runtime (localStorage + setTimeout + Notification), and each station
+    // departure carries a "Remind" action. Web fires only while a tab is open;
+    // that honest limit aside, the scheduling engine is the shared one.
+    (function wireLeaveByReminders() {
+        const RT = window.SyrmosRemindersRuntime;
+        const RE = window.SyrmosReminders;
+        const board = document.getElementById("leaveByBoard");
+        const optIn = document.getElementById("leaveByOptIn");
+        if (!RT || !RE || !board) return;
+
+        const DEFAULT_LEAD_SECONDS = 900; // 15 min, matching iOS/Android
+
+        function stateLabel(reminder, now) {
+            const st = RE.state(reminder, now);
+            if (st === "leaveNow") return t("leave_now");
+            if (st === "departed") return t("departed_label");
+            return t("leave_in").replace("{min}", String(RE.minutesUntilLeave(reminder, now)));
+        }
+
+        function renderBoard() {
+            if (optIn) optIn.checked = RT.isEnabled();
+            const list = RT.list();
+            if (!list.length) {
+                board.innerHTML = `<div class="panel-item__meta">${escapeHtml(t("leave_by_empty"))}</div>`;
+                return;
+            }
+            const now = Math.floor(Date.now() / 1000);
+            board.innerHTML = list.map((d) => {
+                const reminder = RE.toReminders([d])[0];
+                const id = RE.savedId(d);
+                const sub = [d.destination ? `→ ${d.destination}` : "", d.scheduledTime].filter(Boolean).join(" · ");
+                return `
+                    <div class="leaveby-item">
+                        <div class="leaveby-item__body">
+                            <div class="leaveby-item__title">${escapeHtml(d.lineId)} · ${escapeHtml(d.stationName)}</div>
+                            ${sub ? `<div class="panel-item__meta">${escapeHtml(sub)}</div>` : ""}
+                            <div class="leaveby-item__state">${escapeHtml(stateLabel(reminder, now))}</div>
+                        </div>
+                        <button type="button" class="leaveby-del" data-id="${escapeHtml(id)}" aria-label="${escapeHtml(t("remind"))}">✕</button>
+                    </div>`;
+            }).join("");
+        }
+
+        // "Remind" on a departure card (delegated: cards re-render often).
+        document.addEventListener("click", (e) => {
+            const btn = e.target.closest && e.target.closest(".dep-remind");
+            if (!btn) return;
+            const min = Number(btn.dataset.min);
+            if (!Number.isFinite(min)) return;
+            const now = Math.floor(Date.now() / 1000);
+            RT.add({
+                lineId: btn.dataset.line || "",
+                stationId: btn.dataset.sid || "",
+                stationName: btn.dataset.sname || "",
+                destination: btn.dataset.dest || "",
+                scheduledTime: btn.dataset.time || "",
+                departureEpochSeconds: now + Math.round(min) * 60,
+                leadSeconds: DEFAULT_LEAD_SECONDS,
+                createdAt: new Date().toISOString(),
+                schemaVersion: RE.SCHEMA_VERSION,
+            });
+            btn.textContent = t("remind_added");
+            btn.disabled = true;
+        });
+
+        board.addEventListener("click", (e) => {
+            const del = e.target.closest && e.target.closest(".leaveby-del");
+            if (!del) return;
+            RT.remove(del.dataset.id);
+        });
+
+        if (optIn) optIn.addEventListener("change", () => RT.setEnabled(optIn.checked));
+
+        RT.onChange(renderBoard);
+        window.addEventListener("syrmos:leave-by", renderBoard);
+        onLanguageChange(renderBoard);
+        RT.init();
+        renderBoard();
+    })();
 
     // The live-trains + simulated-trains panel renders on the simulation timer,
     // not on language change, so a flip left its rows (titles, meta, and the
@@ -2197,6 +2310,7 @@
             const entranceCls = idx <= 8 ? ` sy-entrance sy-entrance-${idx}` : "";
             const lineId = group.lineId || group.line?.id || "";
             const destination = group.destination || "";
+            const soonest = group.times[0] || {};
             const iconSrc = vehicleIconFor(lineId, destination);
             const iconHtml = iconSrc
                 ? `<img class="departure-card__icon" src="${iconSrc}" alt="${lineId}" loading="lazy" />`
@@ -2238,7 +2352,10 @@
                                 <span class="departure-card__dest-inline">${destination}</span>
                             </div>
                             <div class="departure-card__times">${timesHtml}${moreHtml}</div>
-                            ${sourceChip}
+                            <div class="departure-card__foot">
+                                ${sourceChip}
+                                ${Number.isFinite(Number(soonest.minutesAway)) ? `<button type="button" class="dep-remind" data-line="${escapeHtml(lineId)}" data-dest="${escapeHtml(destination)}" data-min="${escapeHtml(String(soonest.minutesAway))}" data-time="${escapeHtml(soonest.time || "")}" data-sid="${escapeHtml(station.id)}" data-sname="${escapeHtml(stationDisplayName(station))}" aria-label="${escapeHtml(t("remind"))} ${escapeHtml(lineId)} ${escapeHtml(destination)}">${escapeHtml(t("remind"))}</button>` : ""}
+                            </div>
                         </div>
                     </div>
                 </div>
