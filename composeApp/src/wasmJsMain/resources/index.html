@@ -280,6 +280,16 @@
                 <a id="faresLink" class="panel-link" href="https://www.oasa.gr/en/tickets/prices-of-products/" target="_blank" rel="noopener" data-i18n="view_on_oasa">View on OASA</a>
             </div>
 
+            <div class="panel-card panel-card--right-on-desktop" id="leaveByCard">
+                <div class="panel-card__title" data-i18n="leave_by_title">Leave-by reminders</div>
+                <label class="leaveby-optin">
+                    <span data-i18n="leave_by_optin">Remind me when to leave</span>
+                    <input type="checkbox" id="leaveByOptIn" role="switch">
+                    <span class="leaveby-switch" aria-hidden="true"></span>
+                </label>
+                <div id="leaveByBoard" class="panel-list"></div>
+            </div>
+
             <div class="panel-card panel-card--right-on-desktop">
                 <div class="panel-card__title" data-i18n="useful_information">Useful information</div>
                 <div id="infoLinksList" class="info-links-list"></div>
@@ -564,6 +574,12 @@
      after the GO engine and before the panel, which resumes/persists through it. -->
 <script src="/web-active-journey.js?v=4"></script>
 <script src="/web-go-panel.js?v=2"></script>
+<!-- Phase N J09 leave-by reminders: the pure engine + store (mirrors Kotlin
+     LeaveByReminder / SavedDepartureStore) and the foreground runtime that
+     schedules setTimeout cues + Notifications while a tab is open. Loaded before
+     web-map.js, which wires the board, opt-in and the departure-card action. -->
+<script src="/web-reminders.js"></script>
+<script src="/web-reminders-runtime.js"></script>
 <script src="/web-map.js"></script>
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
      dropped connection keeps the app usable with no network. Registered on load
