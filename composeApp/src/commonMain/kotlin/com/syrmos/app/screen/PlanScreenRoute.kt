@@ -60,6 +60,9 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.DataFreshness
+import com.syrmos.core.common.FreshnessBannerState
+import com.syrmos.core.common.FreshnessPresentation
 import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
@@ -360,9 +363,16 @@ class PlanScreenRoute : Screen {
                     }
                 }
 
-                // Phase R S10: offline-with-usable-data. Plans still work from the
-                // bundled schedule; the banner discloses the mode + offers Retry.
-                if (!networkAvailable) {
+                // Phase R S10 / N J07 freshness banner. Driven by the shared
+                // FreshnessPresentation rule so it also shows when online but no live
+                // data is available (predicted), not connectivity-only. Wording reuses
+                // RUNNING_OFFLINE / PREDICTED_FROM_SCHEDULE. Plans are never blocked.
+                val freshnessState = FreshnessPresentation.evaluate(
+                    isNetworkAvailable = networkAvailable,
+                    isLive = LiveDataFreshness.freshnessNow() == DataFreshness.LIVE,
+                )
+                if (FreshnessPresentation.showsBanner(freshnessState)) {
+                    val offline = freshnessState == FreshnessBannerState.OFFLINE
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -373,8 +383,11 @@ class PlanScreenRoute : Screen {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(t("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline"),
-                                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (offline) t("Running offline", "Εκτός σύνδεσης", "Pa internet", "Offline")
+                                else t("Predicted from schedule", "Πρόβλεψη από το πρόγραμμα", "Parashikuar nga orari", "Previsto dall'orario"),
+                                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                            )
                             Text(t("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.",
                                 "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato."),
                                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
