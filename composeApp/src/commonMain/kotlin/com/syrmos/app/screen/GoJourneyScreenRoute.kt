@@ -1,6 +1,9 @@
 package com.syrmos.app.screen
 
 import androidx.compose.foundation.background
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,7 +50,23 @@ import kotlinx.datetime.Clock
  * MANUAL for now (GPS / live-position auto-advance is a later phase), so the
  * primary control is honestly labelled "Next stop", not implied live tracking.
  */
-class GoJourneyScreenRoute(private val journey: GuidanceJourney) : Screen {
+/// Phase R S07: connection risk of one transfer, from the real route model.
+data class TransferRisk(val status: String, val availableSeconds: Int?, val minimumSeconds: Int?)
+
+/// Phase R S07: one-shot request from GO's "Find alternatives" to re-plan from the
+/// rider's current confirmed station to the destination once Plan resumes. Voyager
+/// pop cannot carry a result, so the Plan screen consumes this on the way back.
+object PlanReplanRequest {
+    private val _pending = MutableStateFlow<Pair<String, String>?>(null)
+    val pending: StateFlow<Pair<String, String>?> = _pending.asStateFlow()
+    fun request(fromId: String, toId: String) { _pending.value = fromId to toId }
+    fun consume() { _pending.value = null }
+}
+
+class GoJourneyScreenRoute(
+    private val journey: GuidanceJourney,
+    private val transferRisks: List<TransferRisk> = emptyList(),
+) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -109,6 +128,31 @@ class GoJourneyScreenRoute(private val journey: GuidanceJourney) : Screen {
 
                 heroCard(guidance, ::t)
 
+                // Phase R S07: inline connection-risk warning below the instruction.
+                val transferMoment = guidance is JourneyGuidance.Transfer ||
+                    (guidance is JourneyGuidance.GetOffNext && guidance.transferTo != null)
+                val activeRisk = if (transferMoment && transferRisks.indices.contains(position.legIndex)) {
+                    transferRisks[position.legIndex].takeIf { it.status == "tight" || it.status == "missed" }
+                } else {
+                    null
+                }
+                if (activeRisk != null) {
+                    ConnectionRiskCard(
+                        activeRisk,
+                        onFindAlternatives = {
+                            // Re-plan from the current confirmed station to the
+                            // destination (parity with iOS/web), handed to the Plan
+                            // screen as a one-shot request before popping back.
+                            val fromId = journey.legs.getOrNull(position.legIndex)
+                                ?.stops?.getOrNull(position.stopIndex)?.id
+                            val toId = journey.legs.lastOrNull()?.stops?.lastOrNull()?.id
+                            if (fromId != null && toId != null) PlanReplanRequest.request(fromId, toId)
+                            navigator.pop()
+                        },
+                        t = ::t,
+                    )
+                }
+
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
 
                 if (arrived) {
@@ -135,6 +179,43 @@ class GoJourneyScreenRoute(private val journey: GuidanceJourney) : Screen {
                       "Procedi passo passo. Gli avvisi di discesa dal vivo arrivano presto."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+
+    /// Phase R S07: inline connection-risk warning with real values + Find alternatives.
+    @Composable
+    private fun ConnectionRiskCard(
+        risk: TransferRisk,
+        onFindAlternatives: () -> Unit,
+        t: (String, String, String, String) -> String,
+    ) {
+        val missed = risk.status == "missed"
+        val title = if (missed)
+            t("This connection may be missed", "Αυτή η ανταπόκριση μπορεί να χαθεί", "Kjo lidhje mund të humbasë", "Questa coincidenza potrebbe saltare")
+        else
+            t("This connection is tight", "Αυτή η ανταπόκριση είναι στενή", "Kjo lidhje është e ngushtë", "Questa coincidenza è stretta")
+        fun mins(s: Int?): Int? = s?.let { maxOf(0, (it + 30) / 60) }
+        val avail = mins(risk.availableSeconds); val allow = mins(risk.minimumSeconds)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("⚠ $title", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (avail != null && allow != null) {
+                Text(
+                    t("$avail min available; allow $allow min to change.",
+                        "$avail λεπ διαθέσιμα, χρειάζονται $allow λεπ για αλλαγή.",
+                        "$avail min në dispozicion, duhen $allow min për ndërrim.",
+                        "$avail min disponibili, servono $allow min per cambiare."),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            OutlinedButton(onClick = onFindAlternatives) {
+                Text(t("Find alternatives", "Βρες εναλλακτικές", "Gjej alternativa", "Trova alternative"))
             }
         }
     }

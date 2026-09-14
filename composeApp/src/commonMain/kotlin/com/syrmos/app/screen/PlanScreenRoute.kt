@@ -60,6 +60,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LiveDataFreshness
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
@@ -68,7 +69,14 @@ import com.syrmos.app.journey.SavedJourneysRepository
 import com.syrmos.core.domain.go.GuidanceJourney
 import com.syrmos.core.domain.go.GuidanceLeg
 import com.syrmos.core.domain.go.GuidanceStop
+import com.syrmos.core.data.sync.AnnouncementsRepository
+import com.syrmos.core.domain.assistant.AdvisorySeverity
+import com.syrmos.core.domain.assistant.ServiceNotice
+import com.syrmos.core.domain.journey.AccessibilityConfidence
+import com.syrmos.core.domain.journey.AccessibilityDisclosure
 import com.syrmos.core.domain.journey.ActiveJourneyStore
+import com.syrmos.core.domain.journey.DisruptionExclusion
+import com.syrmos.core.domain.journey.DisruptionOutcome
 import com.syrmos.core.domain.journey.JourneyDetail
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
 import com.syrmos.core.domain.journey.SchedulePlanner
@@ -76,9 +84,11 @@ import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
 import com.syrmos.core.model.planner.JourneyResult
 import com.syrmos.core.model.transit.Direction
+import com.syrmos.core.model.journey.AccessibilityPreference
 import com.syrmos.core.model.journey.FeasibilityStatus
 import com.syrmos.core.model.journey.JourneyOption
 import com.syrmos.core.model.journey.JourneyPreferences
+import com.syrmos.core.model.journey.Leg
 import com.syrmos.core.model.journey.LegKind
 import com.syrmos.core.model.journey.Ranking
 import com.syrmos.core.model.journey.SavedJourney
@@ -108,6 +118,7 @@ class PlanScreenRoute : Screen {
         val stationRepo = koinInject<StationRepositoryImpl>()
         val lineRepo = koinInject<LineRepositoryImpl>()
         val departuresUseCase = koinInject<ComputeDeparturesFromBandsUseCase>()
+        val announcementsRepo = koinInject<AnnouncementsRepository>()
         val useCase = remember { PlanJourneyUseCase(stationRepo, lineRepo) }
         val scope = rememberCoroutineScope()
         val lang by LocalizationManager.language.collectAsState()
@@ -122,11 +133,21 @@ class PlanScreenRoute : Screen {
         var planned by remember { mutableStateOf(false) }
         var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
         var arriveByText by remember { mutableStateOf("") } // "HH:MM"
+        // Phase R: rider accessibility preference. When on, each route discloses
+        // its step-free confidence honestly (unknown until per-station data lands).
+        var stepFree by remember { mutableStateOf(false) }
+        // Phase R: disruption exclusion outcome (S10 suspended segment). Never route
+        // through a CLOSURE-affected line.
+        var disruption by remember { mutableStateOf<DisruptionOutcome?>(null) }
 
         // Saved journeys (S08 / J05): locally owned, no account.
         val savedItems by SavedJourneysRepository.items.collectAsState()
         // The single live GO session (S06): shown as a resume banner when present.
         val activeJourney by ActiveJourneyRepository.active.collectAsState()
+        // Phase R S10: offline-with-usable-data banner signal.
+        val networkAvailable by LiveDataFreshness.isNetworkAvailable.collectAsState()
+        // Phase R S10: set when a loaded saved journey references a gone station.
+        var invalidSavedNote by remember { mutableStateOf<String?>(null) }
         var pendingUndo by remember { mutableStateOf<SavedJourney?>(null) }
         var renameTarget by remember { mutableStateOf<SavedJourney?>(null) }
         var renameText by remember { mutableStateOf("") }
@@ -149,6 +170,20 @@ class PlanScreenRoute : Screen {
             AppLanguage.GREEK -> el; AppLanguage.ALBANIAN -> sq; AppLanguage.ITALIAN -> it; else -> en
         }
 
+        // Projects the live announcement feed into the disruption engine's notice
+        // shape (severity + affected line ids). Pure mapping over the current feed.
+        suspend fun disruptionNotices(repo: AnnouncementsRepository): List<ServiceNotice> =
+            repo.feed.first().announcements
+                .filter { it.isServiceAlert || it.severity != "info" }
+                .map { a ->
+                    ServiceNotice(
+                        id = a.id,
+                        text = a.title,
+                        affectedLineIds = a.affectedLines,
+                        severity = AdvisorySeverity.fromRaw(a.severity),
+                    )
+                }
+
         fun runPlan() {
             val f = fromId; val to = toId
             if (f == null || to == null) return
@@ -156,22 +191,40 @@ class PlanScreenRoute : Screen {
                 val serviceDate = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens")).date
                 val now = Clock.System.now()
                 val horizon = if (mode == "now") 8 else 60
-                // k-shortest via line-banning: base route + one re-plan per line the
-                // base uses removed. Each candidate is scheduled with its own timetable
-                // and ranked together (dedup + cap 3).
-                val base = useCase.invoke(f, to).first()
-                val candidates = mutableListOf(base)
-                base?.segments?.map { it.lineId }?.distinct()?.forEach { banned ->
-                    candidates += useCase.invoke(f, to, setOf(banned)).first()
-                }
+                // Phase R disruption exclusion: suspended (CLOSURE) lines are banned
+                // so no candidate rides closed track. Map normalized suspended ids
+                // back to real Line ids for the planner's exact-id ban.
+                val notices = disruptionNotices(announcementsRepo)
+                val suspended = DisruptionExclusion.suspendedLineIds(notices)
+                val rawSuspended = if (suspended.isEmpty()) emptySet() else
+                    lineRepo.getAllLines().first()
+                        .filter { suspended.contains(DisruptionExclusion.normalizeLine(it.id)) }
+                        .map { it.id }.toSet()
+
                 val arriveBy = if (mode == "arriveBy") parseArriveBy(arriveByText, now) else null
-                options = JourneyPlanAdapter.rankCandidates(
-                    candidates, Ranking.FASTEST, serviceDate,
-                    requestedInstant = now,
-                    arriveByInstant = arriveBy,
-                    lastConnection = (mode == "lastConnection"),
-                    timetableFor = { r -> buildTimetable(r, departuresUseCase, now, horizon) },
-                )
+                suspend fun optionsFor(extraBan: Set<String>): List<JourneyOption> {
+                    // k-shortest via line-banning: base route + one re-plan per line the
+                    // base uses removed. Each candidate is scheduled with its own timetable
+                    // and ranked together (dedup + cap 3).
+                    val base = useCase.invoke(f, to, extraBan).first()
+                    val candidates = mutableListOf(base)
+                    base?.segments?.map { it.lineId }?.distinct()?.forEach { banned ->
+                        candidates += useCase.invoke(f, to, extraBan + banned).first()
+                    }
+                    return JourneyPlanAdapter.rankCandidates(
+                        candidates, Ranking.FASTEST, serviceDate,
+                        requestedInstant = now,
+                        arriveByInstant = arriveBy,
+                        lastConnection = (mode == "lastConnection"),
+                        timetableFor = { r -> buildTimetable(r, departuresUseCase, now, horizon) },
+                    )
+                }
+
+                val naive = optionsFor(emptySet())
+                val avoiding = if (rawSuspended.isEmpty()) naive else optionsFor(rawSuspended)
+                val outcome = DisruptionExclusion.classify(avoiding, naive, notices)
+                disruption = outcome
+                options = if (outcome is DisruptionOutcome.Suspended) emptyList() else avoiding
                 selectedIdx = 0
                 planned = true
             }
@@ -191,9 +244,27 @@ class PlanScreenRoute : Screen {
                 ),
             )
         }
+        fun stationExists(id: String?): Boolean = id != null && stations.any { it.id == id }
+        // Phase R S10 invalid saved/deep-link id: preserve the endpoints that still
+        // resolve, name the missing one, and prompt for a replacement.
         fun loadSaved(entry: SavedJourney) {
-            fromId = entry.fromId; toId = entry.toId; open = null; query = ""
-            runPlan()
+            val fromOk = stationExists(entry.fromId)
+            val toOk = stationExists(entry.toId)
+            fromId = if (fromOk) entry.fromId else null
+            toId = if (toOk) entry.toId else null
+            open = null; query = ""
+            if (fromOk && toOk) {
+                invalidSavedNote = null
+                runPlan()
+            } else {
+                planned = false
+                options = emptyList()
+                invalidSavedNote = t(
+                    "A station in this saved journey is no longer available. Choose a replacement.",
+                    "Ένας σταθμός σε αυτή την αποθηκευμένη διαδρομή δεν είναι πλέον διαθέσιμος. Επίλεξε αντικατάσταση.",
+                    "Një stacion në këtë udhëtim të ruajtur nuk është më i disponueshëm. Zgjidh një zëvendësim.",
+                    "Una stazione di questo viaggio salvato non è più disponibile. Scegli un'alternativa.")
+            }
         }
         fun deleteSaved(entry: SavedJourney) {
             SavedJourneysRepository.remove(entry.id)
@@ -208,7 +279,7 @@ class PlanScreenRoute : Screen {
                 ActiveJourneyRepository.set(
                     ActiveJourneyStore.start(ActiveJourneyRepository.newId(), opt, guidance, Clock.System.now()),
                 )
-                navigator.push(GoJourneyScreenRoute(guidance))
+                navigator.push(GoJourneyScreenRoute(guidance, transferRisksOf(opt)))
             }
         }
         // Resume an in-progress session: rebuild guidance from the frozen snapshot
@@ -217,6 +288,17 @@ class PlanScreenRoute : Screen {
             scope.launch {
                 val guidance = buildGuidanceJourney(active.itinerarySnapshot, stationRepo, lang)
                 if (guidance.legs.isNotEmpty()) navigator.push(GoJourneyScreenRoute(guidance))
+            }
+        }
+
+        // Phase R S07: honor a "Find alternatives" re-plan request from GO (re-plan
+        // from the rider's current confirmed station to the destination).
+        val replanRequest by PlanReplanRequest.pending.collectAsState()
+        LaunchedEffect(replanRequest) {
+            replanRequest?.let { (f, t) ->
+                fromId = f; toId = t; open = null; invalidSavedNote = null
+                PlanReplanRequest.consume()
+                runPlan()
             }
         }
 
@@ -278,6 +360,43 @@ class PlanScreenRoute : Screen {
                     }
                 }
 
+                // Phase R S10: offline-with-usable-data. Plans still work from the
+                // bundled schedule; the banner discloses the mode + offers Retry.
+                if (!networkAvailable) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(t("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline"),
+                                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(t("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.",
+                                "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato."),
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        OutlinedButton(onClick = { LiveDataFreshness.requestRetry() }) {
+                            Text(t("Retry", "Επανάληψη", "Riprovo", "Riprova"))
+                        }
+                    }
+                }
+
+                invalidSavedNote?.let { note ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(note, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+
                 endpointRow(t("From", "Από", "Nga", "Da"), name(fromId)) { open = if (open == "from") null else "from" }
                 endpointRow(t("To", "Προς", "Për", "A"), name(toId)) { open = if (open == "to") null else "to" }
 
@@ -300,6 +419,11 @@ class PlanScreenRoute : Screen {
                                 modifier = Modifier.fillMaxWidth().clickable {
                                     if (open == "from") fromId = st.id else toId = st.id
                                     open = null; query = ""
+                                    // S10 recovery: once both endpoints resolve, clear + plan.
+                                    if (invalidSavedNote != null && stationExists(fromId) && stationExists(toId)) {
+                                        invalidSavedNote = null
+                                        runPlan()
+                                    }
                                 }.padding(vertical = 14.dp, horizontal = 4.dp),
                             )
                         }
@@ -334,15 +458,33 @@ class PlanScreenRoute : Screen {
                     )
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(t("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini"))
+                    androidx.compose.material3.Switch(checked = stepFree, onCheckedChange = { stepFree = it })
+                }
+
                 Button(
                     onClick = { runPlan() },
                     enabled = fromId != null && toId != null && open == null,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
 
+                // Phase R: disclose when we routed around a suspended line.
+                (disruption as? DisruptionOutcome.Routed)?.let { r ->
+                    if (planned && r.excludedLineIds.isNotEmpty()) RoutingAroundChip(r.excludedLineIds, ::t)
+                }
+
                 // In a backward mode only options that actually scheduled are usable.
                 val usable = if (mode == "now") options else options.filter { it.departureInstant != null }
                 when {
+                    planned && disruption is DisruptionOutcome.Suspended -> {
+                        val s = disruption as DisruptionOutcome.Suspended
+                        SuspendedState(s.affectedLineIds, s.notices, ::t)
+                    }
                     planned && usable.isEmpty() -> Text(
                         when {
                             mode == "lastConnection" -> t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
@@ -389,7 +531,7 @@ class PlanScreenRoute : Screen {
                         // S05 selected-journey detail: summary + leg-by-leg timeline
                         // for the chosen option, from the shared JourneyDetail transform.
                         usable.getOrNull(selectedIdx)?.let { sel ->
-                            SelectedJourneyDetail(option = sel, lang = lang, nm = ::name, t = ::t, onStart = { startGo(sel) })
+                            SelectedJourneyDetail(option = sel, stepFree = stepFree, lang = lang, nm = ::name, t = ::t, onStart = { startGo(sel) })
                         }
                     }
                 }
@@ -644,9 +786,60 @@ class PlanScreenRoute : Screen {
      * GO guidance is not built on Android yet (Phase G), so Start surfaces an
      * honest notice rather than a dead control.
      */
+    /// Phase R S10 "Suspended segment": the only path rode a closed line and no
+    /// route avoids it. Name the line(s) + operator source. Never fabricate a route.
+    @Composable
+    private fun SuspendedState(
+        lines: Set<String>,
+        notices: List<ServiceNotice>,
+        t: (String, String, String, String) -> String,
+    ) {
+        val lineList = lines.map { it.uppercase() }.sorted().joinToString(", ")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                t("$lineList is suspended", "Η $lineList έχει ανασταλεί", "$lineList është pezulluar", "$lineList è sospesa"),
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+            )
+            Text(
+                t("No route avoids the closed section. Check the operator for alternatives and updates.",
+                    "Καμία διαδρομή δεν παρακάμπτει το κλειστό τμήμα. Δες τον πάροχο για εναλλακτικές και ενημερώσεις.",
+                    "Asnjë rrugë s'e shmang pjesën e mbyllur. Shiko operatorin për alternativa dhe përditësime.",
+                    "Nessun percorso evita il tratto chiuso. Controlla l'operatore per alternative e aggiornamenti."),
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            notices.forEach { n ->
+                if (n.text.isNotBlank()) {
+                    Text(n.text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+
+    /// Phase R: a compact chip disclosing that the plan detours around a suspended line.
+    @Composable
+    private fun RoutingAroundChip(excluded: Set<String>, t: (String, String, String, String) -> String) {
+        val list = excluded.map { it.uppercase() }.sorted().joinToString(", ")
+        Text(
+            t("Routing around suspended $list.", "Παράκαμψη της ανασταλμένης $list.",
+                "Duke anashkaluar $list të pezulluar.", "Percorso che evita $list sospesa."),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
     @Composable
     private fun SelectedJourneyDetail(
         option: JourneyOption,
+        stepFree: Boolean,
         lang: AppLanguage,
         nm: (String?) -> String,
         t: (String, String, String, String) -> String,
@@ -690,6 +883,24 @@ class PlanScreenRoute : Screen {
                     t("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            // Phase R accessibility-unknown disclosure. Shared engine; no per-station
+            // step-free data is plumbed yet, so an honest "not confirmed" is shown
+            // rather than a fabricated "accessible".
+            if (stepFree) {
+                val info = remember(option.id) {
+                    AccessibilityDisclosure.forOption(option, AccessibilityPreference.STEP_FREE)
+                }
+                val text = when (info.confidence) {
+                    AccessibilityConfidence.VERIFIED ->
+                        t("Step-free the whole way.", "Χωρίς σκαλιά σε όλη τη διαδρομή.", "Pa shkallë gjatë gjithë rrugës.", "Senza gradini per tutto il percorso.")
+                    AccessibilityConfidence.UNAVAILABLE ->
+                        t("This route isn't step-free.", "Αυτή η διαδρομή δεν είναι χωρίς σκαλιά.", "Kjo rrugë nuk është pa shkallë.", "Questo percorso non è senza gradini.")
+                    AccessibilityConfidence.UNKNOWN ->
+                        t("Step-free access isn't confirmed for this route.", "Η πρόσβαση χωρίς σκαλιά δεν επιβεβαιώνεται για αυτή τη διαδρομή.", "Qasja pa shkallë nuk është konfirmuar për këtë rrugë.", "L'accesso senza gradini non è confermato per questo percorso.")
+                }
+                Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
             Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
                 Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))
@@ -776,6 +987,42 @@ class PlanScreenRoute : Screen {
  * persisted session, so a resumed trip is rebuilt identically (ids match; only names
  * follow the current language). Empty when no ride leg yields two or more stops.
  */
+/// Phase R S07: per-transfer connection risk from the option's real leg clocks,
+/// aligned with the GuidanceJourney's ride legs. Empty when clocks are unknown.
+private fun transferRisksOf(opt: JourneyOption): List<TransferRisk> {
+    val rides = opt.legs.filter { it.kind == LegKind.RIDE }
+    if (rides.size < 2) return emptyList()
+    val out = mutableListOf<TransferRisk>()
+    for (i in 0 until rides.size - 1) {
+        val prev = rides[i]
+        val next = rides[i + 1]
+        val minSec = transferMinBetween(opt.legs, prev, next) ?: 120
+        val a = prev.arrivalInstant
+        val d = next.departureInstant
+        if (a != null && d != null) {
+            val gap = (d - a).inWholeSeconds.toInt().coerceAtLeast(0)
+            val margin = gap - minSec
+            val status = if (margin < 0) "missed" else if (margin <= 179) "tight" else "comfortable"
+            out += TransferRisk(status, gap, minSec)
+        } else {
+            out += TransferRisk("unknown", null, minSec)
+        }
+    }
+    return out
+}
+
+private fun transferMinBetween(legs: List<Leg>, prev: Leg, next: Leg): Int? {
+    val pi = legs.indexOf(prev)
+    val ni = legs.indexOf(next)
+    if (pi < 0 || ni < 0 || pi >= ni) return null
+    for (j in (pi + 1) until ni) {
+        if (legs[j].kind == LegKind.TRANSFER || legs[j].kind == LegKind.WALK) {
+            legs[j].transferMinimumSeconds?.let { return it }
+        }
+    }
+    return null
+}
+
 private suspend fun buildGuidanceJourney(
     opt: JourneyOption,
     stationRepo: StationRepositoryImpl,

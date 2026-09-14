@@ -69,6 +69,10 @@
     // (and writes every step to) the persisted ActiveJourney, so progress survives a
     // reload / navigation. Without a store it stays in-memory (used by unit tests).
     const store = (opts.store && AJ) ? opts.store : null;
+    // Phase R S07: per-transfer risk (transferRisks[i] = leg i -> i+1) + a callback
+    // that opens fresh results from the current station to the destination.
+    const transferRisks = opts.transferRisks || [];
+    const onFindAlternatives = opts.onFindAlternatives || null;
     const nowISO = () => new Date().toISOString();
     let active = null;
     if (store) {
@@ -78,6 +82,7 @@
     let pos = active ? AJ.positionOf(active, journey) : { legIndex: 0, stopIndex: 0 };
     let live = false;
     let watchId = null;
+    let locDenied = false; // Phase R S10: geolocation permission denied
     const alertedLegs = new Set();
 
     function persist(source) {
@@ -118,6 +123,29 @@
       const tint = g.kind === 'arrived' ? '#2E7D32' : color(g.lineId || (journey.legs[pos.legIndex] && journey.legs[pos.legIndex].lineId));
       const canBack = pos.legIndex > 0 || pos.stopIndex > 0;
 
+      // Phase R S07: inline connection-risk warning at a tight/missed transfer.
+      const transferMoment = g.kind === 'transfer' || (g.kind === 'getOffNext' && g.transferTo);
+      const rr = (transferMoment && transferRisks[pos.legIndex]) ? transferRisks[pos.legIndex] : null;
+      const risk = (rr && (rr.status === 'tight' || rr.status === 'missed')) ? rr : null;
+      let riskHtml = '';
+      if (risk) {
+        const missed = risk.status === 'missed';
+        const rTitle = missed
+          ? t(lang, 'This connection may be missed', 'Αυτή η ανταπόκριση μπορεί να χαθεί', 'Kjo lidhje mund të humbasë', 'Questa coincidenza potrebbe saltare')
+          : t(lang, 'This connection is tight', 'Αυτή η ανταπόκριση είναι στενή', 'Kjo lidhje është e ngushtë', 'Questa coincidenza è stretta');
+        const mn = (s) => (s == null ? null : Math.max(0, Math.round(s / 60)));
+        const avail = mn(risk.availableSeconds), allow = mn(risk.minimumSeconds);
+        const expl = (avail != null && allow != null)
+          ? t(lang, `${avail} min available; allow ${allow} min to change.`, `${avail} λεπ διαθέσιμα, χρειάζονται ${allow} λεπ για αλλαγή.`, `${avail} min në dispozicion, duhen ${allow} min për ndërrim.`, `${avail} min disponibili, servono ${allow} min per cambiare.`)
+          : '';
+        riskHtml = `
+          <div class="go-risk" style="border-radius:14px;padding:16px;margin-top:12px;background:rgba(230,126,34,.12);">
+            <div style="font-weight:700;color:#c05a00;">⚠ ${esc(rTitle)}</div>
+            ${expl ? `<div style="font-size:14px;opacity:.8;margin-top:4px;">${esc(expl)}</div>` : ''}
+            ${onFindAlternatives ? `<button class="go-alt" style="margin-top:8px;padding:8px 12px;border-radius:10px;border:1px solid #e08a3c;background:transparent;color:#c05a00;font-weight:600;cursor:pointer;">${esc(t(lang, 'Find alternatives', 'Βρες εναλλακτικές', 'Gjej alternativa', 'Trova alternative'))}</button>` : ''}
+          </div>`;
+      }
+
       // Announce the current instruction to screen readers (headline + detail).
       srEl.textContent = [d.headline, d.detail, d.sub].filter(Boolean).join('. ');
 
@@ -133,6 +161,7 @@
             ${d.detail ? `<div style="font-size:17px;font-weight:700;margin-top:8px;">${esc(d.detail)}</div>` : ''}
             ${d.sub ? `<div style="font-size:14px;opacity:.85;margin-top:4px;">${esc(d.sub)}</div>` : ''}
           </div>
+          ${riskHtml}
           <div class="go-progress" style="height:6px;border-radius:3px;background:#e5e5e5;margin:14px 0;overflow:hidden;">
             <div style="height:100%;width:${Math.round(progress() * 100)}%;background:${tint};"></div>
           </div>
@@ -140,7 +169,12 @@
             <button class="go-back" ${canBack ? '' : 'disabled'} style="flex:1;padding:12px;border-radius:12px;border:1px solid #ccc;background:#fff;font-weight:600;">${esc(t(lang, 'Back', 'Πίσω', 'Prapa', 'Indietro'))}</button>
             <button class="go-next" style="flex:1;padding:12px;border-radius:12px;border:0;background:${tint};color:#fff;font-weight:700;">${arrived ? esc(t(lang, 'Restart', 'Επανεκκίνηση', 'Rifillo', 'Ricomincia')) : esc(t(lang, 'Next stop', 'Επόμενη στάση', 'Ndalesa tjetër', 'Fermata succ.'))}</button>
           </div>
-          ${(hasCoords && typeof navigator !== 'undefined' && navigator.geolocation) ? `
+          ${locDenied ? `
+          <div class="go-loc-denied" style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(120,130,150,.14);">
+            <div style="font-weight:600;">${esc(t(lang, 'Location is off', 'Η τοποθεσία είναι ανενεργή', 'Vendndodhja është joaktive', 'La posizione è disattivata'))}</div>
+            <div style="font-size:13px;opacity:.75;margin-top:2px;">${esc(t(lang, 'Keep stepping through your journey manually.', 'Συνέχισε τη διαδρομή χειροκίνητα.', 'Vazhdo udhëtimin manualisht.', 'Continua il viaggio manualmente.'))}</div>
+          </div>` :
+          (hasCoords && typeof navigator !== 'undefined' && navigator.geolocation) ? `
           <button class="go-live" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:12px;border:1px solid ${live ? '#2E7D32' : '#ccc'};background:${live ? 'rgba(46,125,50,.08)' : '#fff'};font-weight:600;color:${live ? '#2E7D32' : '#333'};">
             ${live ? '● ' + esc(t(lang, 'Live guidance on', 'Ζωντανή καθοδήγηση ενεργή', 'Udhëzim i drejtpërdrejtë aktiv', 'Guida dal vivo attiva')) : esc(t(lang, 'Start live guidance', 'Έναρξη ζωντανής καθοδήγησης', 'Nis udhëzimin e drejtpërdrejtë', 'Avvia guida dal vivo'))}
           </button>` : ''}
@@ -158,6 +192,14 @@
       if (next) next.onclick = () => { arrived ? api.reset() : api.advance(); };
       if (liveBtn) liveBtn.onclick = () => { live ? api.stopLive() : api.startLive(); };
       if (endBtn) endBtn.onclick = () => { api.end(); };
+      const altBtn = contentEl.querySelector('.go-alt');
+      if (altBtn && onFindAlternatives) altBtn.onclick = () => {
+        const leg = journey.legs[pos.legIndex];
+        const fromId = (leg && leg.stops[pos.stopIndex]) ? leg.stops[pos.stopIndex].id : null;
+        const dLeg = journey.legs[journey.legs.length - 1];
+        const toId = dLeg ? dLeg.stops[dLeg.stops.length - 1].id : null;
+        onFindAlternatives(fromId, toId);
+      };
     }
 
     const api = {
@@ -189,8 +231,12 @@
         if (live || typeof navigator === 'undefined' || !navigator.geolocation || !hasCoords) return;
         live = true; render();
         watchId = navigator.geolocation.watchPosition(
-          (fx) => api.applyLocation(fx.coords.latitude, fx.coords.longitude),
-          () => {},
+          (fx) => { locDenied = false; api.applyLocation(fx.coords.latitude, fx.coords.longitude); },
+          (err) => {
+            // Permission denied changes capability, not availability: keep manual
+            // stepping usable and disclose it honestly (S10).
+            if (err && err.code === 1) { live = false; locDenied = true; render(); }
+          },
           { enableHighAccuracy: true, maximumAge: 5000 }
         );
       },

@@ -4307,7 +4307,31 @@
             // the GO panel. Times are estimated (no schedule), so nothing is
             // labelled with a fabricated clock.
             let card = null, panelEl = null, resultsEl = null, fromSel = null, toSel = null, timeInput = null, savedEl = null, resumeEl = null;
+            let invalidSavedEl = null; // Phase R S10 invalid saved/deep-link id note
+            const stationExists = (id) => !!id && stations.some((s) => s.id === id);
+            function setInvalidSavedNote(text) {
+                if (!invalidSavedEl) return;
+                if (text) { invalidSavedEl.textContent = text; invalidSavedEl.style.display = ""; }
+                else { invalidSavedEl.textContent = ""; invalidSavedEl.style.display = "none"; }
+            }
             let planMode = "now"; // "now" | "arriveBy" | "lastConnection"
+            let planStepFree = false; // Phase R rider accessibility preference
+            let planNotices = []; // live service notices for disruption exclusion
+            let planDisruption = null; // last DisruptionExclusion outcome
+            // Load the live announcement feed once so disruption exclusion has data.
+            // CLOSURE notices suspend their lines; anything else is informational.
+            function loadPlanNotices() {
+                fetch("https://api-syrmos.peterdsp.dev/api/announcements")
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((j) => {
+                        if (!j || !j.announcements) return;
+                        planNotices = j.announcements
+                            .filter((a) => a.category === "serviceAlert" || a.severity !== "info")
+                            .map((a) => ({ id: a.id, severity: a.severity, affectedLineIds: a.affectedLines || [] }));
+                    })
+                    .catch(() => { /* offline: no disruption data, plan normally */ });
+            }
+            loadPlanNotices();
             let undoTimer = null, pendingUndo = null; // last-deleted journey for the 5s Undo
             let saveBtnRef = null; // the results "Save journey" button, kept in sync with the store
             const T = (en, el, sq, it) => ({ el, sq, it }[currentLang]) || en;
@@ -4368,6 +4392,17 @@
                     const f = field(T("From", "Από", "Nga", "Da"));
                     const t = field(T("To", "Προς", "Për", "A"));
                     fromSel = f.sel; toSel = t.sel;
+                    // Phase R S10: clear the invalid-saved note once both endpoints
+                    // resolve again, then plan.
+                    const onEndpointChange = () => {
+                        if (invalidSavedEl && invalidSavedEl.style.display !== "none" &&
+                            stationExists(fromSel.value) && stationExists(toSel.value)) {
+                            setInvalidSavedNote(null);
+                            runPlan();
+                        }
+                    };
+                    fromSel.addEventListener("change", onEndpointChange);
+                    toSel.addEventListener("change", onEndpointChange);
                     const find = document.createElement("button");
                     find.type = "button";
                     find.className = "primary-button plan-draft__find";
@@ -4403,10 +4438,58 @@
                             modeRow.appendChild(b);
                         });
 
+                    // Phase R: step-free preference. When on, each route discloses
+                    // its accessibility confidence honestly below the detail.
+                    const stepFreeRow = document.createElement("label");
+                    stepFreeRow.className = "plan-stepfree";
+                    const stepFreeInput = document.createElement("input");
+                    stepFreeInput.type = "checkbox";
+                    stepFreeInput.className = "plan-stepfree__input";
+                    stepFreeInput.checked = planStepFree;
+                    stepFreeInput.addEventListener("change", () => {
+                        planStepFree = stepFreeInput.checked;
+                        if (lastPlanned) renderResults(lastPlanned, lastHasTimetable);
+                    });
+                    const stepFreeText = document.createElement("span");
+                    stepFreeText.textContent = T("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini");
+                    stepFreeRow.appendChild(stepFreeInput);
+                    stepFreeRow.appendChild(stepFreeText);
+
+                    // Phase R S10: offline-with-usable-data banner. Plans still work
+                    // from the cached seed; the banner discloses the mode + Retry.
+                    const offlineBanner = document.createElement("div");
+                    offlineBanner.className = "plan-offline";
+                    offlineBanner.innerHTML = `<div class="plan-offline__text">
+                            <div class="plan-offline__title">${T("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline")}</div>
+                            <div class="plan-offline__sub">${T("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.", "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato.")}</div>
+                        </div>`;
+                    const offlineRetry = document.createElement("button");
+                    offlineRetry.type = "button";
+                    offlineRetry.className = "plan-offline__retry";
+                    offlineRetry.textContent = T("Retry", "Επανάληψη", "Riprovo", "Riprova");
+                    // Retry re-plans and re-reads notices; if still offline it falls
+                    // back to the cached seed (never a dead no-op).
+                    offlineRetry.addEventListener("click", () => { loadPlanNotices(); runPlan(); syncOffline(); });
+                    offlineBanner.appendChild(offlineRetry);
+                    const syncOffline = () => { offlineBanner.style.display = (typeof navigator !== "undefined" && navigator.onLine === false) ? "" : "none"; };
+                    syncOffline();
+                    if (typeof window !== "undefined") {
+                        window.addEventListener("online", syncOffline);
+                        window.addEventListener("offline", syncOffline);
+                    }
+
+                    // Phase R S10 invalid saved/deep-link id: named recovery note.
+                    invalidSavedEl = document.createElement("div");
+                    invalidSavedEl.className = "plan-invalid-saved";
+                    invalidSavedEl.style.display = "none";
+
                     draft.appendChild(f.wrap);
                     draft.appendChild(t.wrap);
+                    draft.appendChild(invalidSavedEl);
+                    draft.appendChild(offlineBanner);
                     draft.appendChild(modeRow);
                     draft.appendChild(timeWrap);
+                    draft.appendChild(stepFreeRow);
                     draft.appendChild(find);
 
                     resumeEl = document.createElement("div");
@@ -4500,6 +4583,13 @@
                     lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                     store: activeStore,
                     active,
+                    transferRisks: optionTransferRisks(active.itinerarySnapshot),
+                    onFindAlternatives: (fromId, toId) => {
+                        if (panelEl) panelEl.innerHTML = "";
+                        if (fromSel && fromId) fromSel.value = fromId;
+                        if (toSel && toId) toSel.value = toId;
+                        runPlan();
+                    },
                     onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
                 });
             }
@@ -4649,6 +4739,21 @@
                     : T("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso.");
                 detail.appendChild(src);
 
+                // Phase R accessibility-unknown disclosure. Shared engine; no
+                // per-station step-free data is plumbed yet, so an honest
+                // "not confirmed" is shown rather than a fabricated "accessible".
+                if (planStepFree && window.SyrmosAccessibility) {
+                    const info = window.SyrmosAccessibility.forOption(opt, "stepFree");
+                    const a11y = document.createElement("div");
+                    a11y.className = "plan-detail__source plan-detail__a11y";
+                    a11y.textContent = info.confidence === "verified"
+                        ? T("Step-free the whole way.", "Χωρίς σκαλιά σε όλη τη διαδρομή.", "Pa shkallë gjatë gjithë rrugës.", "Senza gradini per tutto il percorso.")
+                        : info.confidence === "unavailable"
+                            ? T("This route isn't step-free.", "Αυτή η διαδρομή δεν είναι χωρίς σκαλιά.", "Kjo rrugë nuk është pa shkallë.", "Questo percorso non è senza gradini.")
+                            : T("Step-free access isn't confirmed for this route.", "Η πρόσβαση χωρίς σκαλιά δεν επιβεβαιώνεται για αυτή τη διαδρομή.", "Qasja pa shkallë nuk është konfirmuar për këtë rrugë.", "L'accesso senza gradini non è confermato per questo percorso.");
+                    detail.appendChild(a11y);
+                }
+
                 // Start journey -> GO panel.
                 const start = document.createElement("button");
                 start.type = "button";
@@ -4699,9 +4804,20 @@
             function loadSaved(entry) {
                 if (!fromSel || !toSel) return;
                 ensureSelectsFilled();
-                fromSel.value = entry.fromId;
-                toSel.value = entry.toId;
-                runPlan();
+                // Phase R S10: preserve resolvable endpoints, name the missing one.
+                const fromOk = stationExists(entry.fromId), toOk = stationExists(entry.toId);
+                fromSel.value = fromOk ? entry.fromId : "";
+                toSel.value = toOk ? entry.toId : "";
+                if (fromOk && toOk) {
+                    setInvalidSavedNote(null);
+                    runPlan();
+                } else {
+                    setInvalidSavedNote(T(
+                        "A station in this saved journey is no longer available. Choose a replacement.",
+                        "Ένας σταθμός σε αυτή την αποθηκευμένη διαδρομή δεν είναι πλέον διαθέσιμος. Επίλεξε αντικατάσταση.",
+                        "Një stacion në këtë udhëtim të ruajtur nuk është më i disponueshëm. Zgjidh një zëvendësim.",
+                        "Una stazione di questo viaggio salvato non è più disponibile. Scegli un'alternativa."));
+                }
             }
             function deleteSaved(entry) {
                 if (!savedStore) return;
@@ -4841,11 +4957,71 @@
                     savedEl.appendChild(row);
                 });
             }
+            // Phase R S07: per-transfer risk from the option's real leg clocks,
+            // aligned with the journey's ride legs (mirrors iOS/Android).
+            function transferMinBetween(legs, prev, next) {
+                const pi = legs.indexOf(prev), ni = legs.indexOf(next);
+                if (pi < 0 || ni < 0 || pi >= ni) return null;
+                for (let j = pi + 1; j < ni; j++) {
+                    if ((legs[j].kind === "transfer" || legs[j].kind === "walk") && legs[j].transferMinimumSeconds != null) {
+                        return legs[j].transferMinimumSeconds;
+                    }
+                }
+                return null;
+            }
+            function optionTransferRisks(opt) {
+                const rides = ((opt && opt.legs) || []).filter((l) => l.kind === "ride");
+                if (rides.length < 2) return [];
+                const secs = (iso) => { const ms = Date.parse(iso); return Number.isFinite(ms) ? Math.floor(ms / 1000) : null; };
+                const out = [];
+                for (let i = 0; i < rides.length - 1; i++) {
+                    const minSec = transferMinBetween(opt.legs, rides[i], rides[i + 1]) != null
+                        ? transferMinBetween(opt.legs, rides[i], rides[i + 1]) : 120;
+                    const a = secs(rides[i].arrivalInstant), d = secs(rides[i + 1].departureInstant);
+                    if (a != null && d != null) {
+                        const gap = Math.max(0, d - a), margin = gap - minSec;
+                        const status = margin < 0 ? "missed" : (margin <= 179 ? "tight" : "comfortable");
+                        out.push({ status, availableSeconds: gap, minimumSeconds: minSec });
+                    } else {
+                        out.push({ status: "unknown", availableSeconds: null, minimumSeconds: minSec });
+                    }
+                }
+                return out;
+            }
             let lastPlanned = null, lastHasTimetable = false;
             function renderResults(planned, hasTimetable) {
                 lastPlanned = planned; lastHasTimetable = hasTimetable;
                 saveBtnRef = null;
                 resultsEl.innerHTML = "";
+
+                // Phase R disruption surfaces (S10 suspended segment / routed-around).
+                if (planDisruption && planDisruption.kind === "suspended") {
+                    const list = (planDisruption.affectedLineIds || []).map((x) => String(x).toUpperCase()).sort().join(", ");
+                    const box = document.createElement("div");
+                    box.className = "plan-suspended";
+                    const h = document.createElement("div");
+                    h.className = "plan-suspended__title";
+                    h.textContent = T(list + " is suspended", "Η " + list + " έχει ανασταλεί", list + " është pezulluar", list + " è sospesa");
+                    const p = document.createElement("div");
+                    p.className = "plan-suspended__body";
+                    p.textContent = T("No route avoids the closed section. Check the operator for alternatives and updates.",
+                        "Καμία διαδρομή δεν παρακάμπτει το κλειστό τμήμα. Δες τον πάροχο για εναλλακτικές και ενημερώσεις.",
+                        "Asnjë rrugë s'e shmang pjesën e mbyllur. Shiko operatorin për alternativa dhe përditësime.",
+                        "Nessun percorso evita il tratto chiuso. Controlla l'operatore per alternative e aggiornamenti.");
+                    box.appendChild(h); box.appendChild(p);
+                    resultsEl.appendChild(box);
+                    if (window.SyrmosGoPanel) panelEl.innerHTML = "";
+                    return;
+                }
+                if (planDisruption && planDisruption.kind === "routed" && (planDisruption.excludedLineIds || []).length) {
+                    const list = planDisruption.excludedLineIds.map((x) => String(x).toUpperCase()).sort().join(", ");
+                    const chip = document.createElement("div");
+                    chip.className = "plan-routing-around";
+                    chip.textContent = T("Routing around suspended " + list + ".", "Παράκαμψη της ανασταλμένης " + list + ".",
+                        "Duke anashkaluar " + list + " të pezulluar.", "Percorso che evita " + list + " sospesa.");
+                    resultsEl.appendChild(chip);
+                }
+
                 const byId = new Map(stations.map((s) => [s.id, s]));
                 // In a backward mode only options that actually scheduled are usable.
                 let opts = (planned && planned.options) ? planned.options : [];
@@ -4905,6 +5081,13 @@
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
                         store: activeStore,
                         option: opt,
+                        transferRisks: optionTransferRisks(opt),
+                        onFindAlternatives: (fromId, toId) => {
+                            if (panelEl) panelEl.innerHTML = "";
+                            if (fromSel && fromId) fromSel.value = fromId;
+                            if (toSel && toId) toSel.value = toId;
+                            runPlan();
+                        },
                         onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
                     });
                 };
@@ -5028,12 +5211,26 @@
                             arriveByInstant = new Date(Date.now() + delta * 60000).toISOString();
                         }
                     }
-                    const planned = window.SyrmosJourneyPlan.plan(stations, lines, {
+                    const planOpts = {
                         fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
                         buildTimetable: perCandidate, requestedInstant: new Date().toISOString(),
                         defaultTransferSeconds: 120, timeMode: planMode, arriveByInstant,
-                    });
-                    renderResults(planned, hasTimetable);
+                    };
+                    // Phase R disruption exclusion: never plan through a suspended
+                    // (CLOSURE) line. Plan naive + avoiding, then classify.
+                    const D = window.SyrmosDisruption;
+                    const suspended = D ? D.suspendedLineIds(planNotices) : [];
+                    const naive = window.SyrmosJourneyPlan.plan(stations, lines, planOpts);
+                    let avoiding = naive;
+                    if (D && suspended.length) {
+                        const avoidingLines = lines.filter((l) => !suspended.includes(D.normalizeLine(l.id)));
+                        avoiding = window.SyrmosJourneyPlan.plan(stations, avoidingLines, planOpts);
+                    }
+                    planDisruption = D
+                        ? D.classify((avoiding && avoiding.options) || [], (naive && naive.options) || [], planNotices)
+                        : { kind: "routed", excludedLineIds: [] };
+                    const shown = (planDisruption.kind === "suspended") ? { options: [] } : avoiding;
+                    renderResults(shown, hasTimetable);
                 } catch (_) { /* leave prior results intact */ }
             }
             return {
