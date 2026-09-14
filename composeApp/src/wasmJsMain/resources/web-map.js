@@ -4493,6 +4493,11 @@
                     if (typeof window !== "undefined") {
                         window.addEventListener("online", syncOffline);
                         window.addEventListener("offline", syncOffline);
+                        // Re-evaluate staleness while the panel is open so an idle
+                        // live->predicted (or a poll landing predicted->live) is
+                        // reflected without a connectivity event. container() runs once
+                        // (guarded), so this interval is registered a single time.
+                        setInterval(syncOffline, 15_000);
                     }
 
                     // Phase R S10 invalid saved/deep-link id: named recovery note.
