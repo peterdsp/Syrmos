@@ -12,6 +12,28 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+Web: desktop only, a product page, and three web fixes.
+
+- **The web app is desktop only.** Phones and tablets that open
+  syrmos.peterdsp.dev are sent to a new standalone download screen (`/get-app/`,
+  English, Greek, Albanian and Italian) before any app stylesheet, map or data
+  loads; iPadOS desktop-class Safari counts as a tablet. Desktop browsers keep the
+  web app at any window width. This reverses the 3.0 F1 decision that removed the
+  mobile blockade. One shared `isHandheldDevice` rule drives the redirect and the
+  product page, and a test keeps both copies identical.
+- **Product page at `/product/`.** A standalone showcase (hero, how it works,
+  feature explorer, coverage by region, download options, FAQ) built from real
+  captures. It never boots the app or registers the service worker. The service
+  worker became route-aware (v3), so standalone pages (`/product`, `/privacy`,
+  `/get-app`) can no longer overwrite the offline app shell. The web card shows the
+  web app on a laptop, and on phones and tablets "Open web app" becomes "Get the app".
+- **Source chips size to their label.** "Scheduled", "Live", "Estimated" and
+  "Offline snapshot" chips on departure rows no longer stretch into a full-width bar.
+- **Departure icons render offline.** Rows load their vehicle SVGs from the bundle
+  instead of the API host, and the 18 icons are precached.
+- **Live trains and airport buses poll again.** A constant read before it was
+  declared stopped both poll loops at init on every page load.
+
 Honest live-vehicle freshness on the map, an offline-aware livestream, a web
 offline Service Worker, and a subtle map offline indicator, across every client.
 Answers the offline-first data-status rule that an aged position must never be
