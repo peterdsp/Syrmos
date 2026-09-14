@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for Syrmos 3.0 Phase N J09 user-enabled leave-by reminders. One shared engine computes, for a departure at departureEpochSeconds and a rider lead of leadSeconds (walk + buffer): leaveByEpochSeconds = departureEpochSeconds - max(0, leadSeconds); state(now) = departed when now >= departure, else leaveNow when now >= leaveBy, else scheduled; fireAtEpochSeconds(now) = leaveBy when leaveBy > now else null (never schedule into the past); minutesUntilLeave(now) rounds up, 0 once leave-by passed. id = 'lineId|stationId|departureEpochSeconds' is the dedup key. reconcile(current, desired, now) collapses duplicates, drops departed, and returns toSchedule (new or leave-by moved), toCancel (removed, departed, or leave-by moved) and unchanged (same id + same leaveBy). Kotlin com.syrmos.core.common.LeaveByReminder/LeaveByReminders, web web-reminders.js and iOS LeaveByReminder.swift must produce the EXACT expected result for each case.",
+  "stateCases": [
+    { "id": "before_leaveby_scheduled", "note": "well before leave-by: pending, fires at leave-by", "departureEpochSeconds": 1000000, "leadSeconds": 900, "now": 998000, "expected": { "leaveByEpochSeconds": 999100, "state": "scheduled", "fireAtEpochSeconds": 999100, "minutesUntilLeave": 19 } },
+    { "id": "exactly_at_leaveby_leavenow", "note": "at leave-by moment: leave now, nothing left to schedule", "departureEpochSeconds": 1000000, "leadSeconds": 900, "now": 999100, "expected": { "leaveByEpochSeconds": 999100, "state": "leaveNow", "fireAtEpochSeconds": null, "minutesUntilLeave": 0 } },
+    { "id": "between_leaveby_and_departure_leavenow", "note": "past leave-by, before departure: leave now", "departureEpochSeconds": 1000000, "leadSeconds": 900, "now": 999500, "expected": { "leaveByEpochSeconds": 999100, "state": "leaveNow", "fireAtEpochSeconds": null, "minutesUntilLeave": 0 } },
+    { "id": "exactly_at_departure_departed", "note": "at departure: spent", "departureEpochSeconds": 1000000, "leadSeconds": 900, "now": 1000000, "expected": { "leaveByEpochSeconds": 999100, "state": "departed", "fireAtEpochSeconds": null, "minutesUntilLeave": 0 } },
+    { "id": "after_departure_departed", "note": "past departure: spent", "departureEpochSeconds": 1000000, "leadSeconds": 900, "now": 1000600, "expected": { "leaveByEpochSeconds": 999100, "state": "departed", "fireAtEpochSeconds": null, "minutesUntilLeave": 0 } },
+    { "id": "rounds_up_partial_minute", "note": "90s to leave rounds up to 2 min", "departureEpochSeconds": 1000000, "leadSeconds": 900, "now": 999010, "expected": { "leaveByEpochSeconds": 999100, "state": "scheduled", "fireAtEpochSeconds": 999100, "minutesUntilLeave": 2 } },
+    { "id": "zero_lead_leaveby_is_departure", "note": "no lead: leave-by equals departure, so scheduled until the train leaves", "departureEpochSeconds": 1000000, "leadSeconds": 0, "now": 999940, "expected": { "leaveByEpochSeconds": 1000000, "state": "scheduled", "fireAtEpochSeconds": 1000000, "minutesUntilLeave": 1 } },
+    { "id": "negative_lead_clamped", "note": "a negative lead is clamped to 0, so leave-by equals departure", "departureEpochSeconds": 1000000, "leadSeconds": -300, "now": 999900, "expected": { "leaveByEpochSeconds": 1000000, "state": "scheduled", "fireAtEpochSeconds": 1000000, "minutesUntilLeave": 2 } }
+  ],
+  "reconcileCases": [
+    {
+      "name": "empty to two: both scheduled",
+      "now": 998000,
+      "current": [],
+      "desired": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 },
+        { "lineId": "M3", "stationId": "M3_SYN", "stationName": "Syntagma", "destination": "Airport", "scheduledTime": "08:10", "departureEpochSeconds": 1000600, "leadSeconds": 600 }
+      ],
+      "expected": { "toSchedule": ["M1|M1_VIC|1000000", "M3|M3_SYN|1000600"], "toCancel": [], "unchanged": [] }
+    },
+    {
+      "name": "duplicate desired collapses to one",
+      "now": 998000,
+      "current": [],
+      "desired": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 },
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "expected": { "toSchedule": ["M1|M1_VIC|1000000"], "toCancel": [], "unchanged": [] }
+    },
+    {
+      "name": "unchanged stays untouched",
+      "now": 998000,
+      "current": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "desired": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "expected": { "toSchedule": [], "toCancel": [], "unchanged": ["M1|M1_VIC|1000000"] }
+    },
+    {
+      "name": "removed desired is cancelled",
+      "now": 998000,
+      "current": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "desired": [],
+      "expected": { "toSchedule": [], "toCancel": ["M1|M1_VIC|1000000"], "unchanged": [] }
+    },
+    {
+      "name": "leave-by moved (live delay) reschedules same id",
+      "note": "same departure id but lead grew, so leave-by moved: cancel old, schedule new",
+      "now": 998000,
+      "current": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "desired": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 1200 }
+      ],
+      "expected": { "toSchedule": ["M1|M1_VIC|1000000"], "toCancel": ["M1|M1_VIC|1000000"], "unchanged": [] }
+    },
+    {
+      "name": "departed desired is dropped, not scheduled",
+      "now": 1000600,
+      "current": [],
+      "desired": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "expected": { "toSchedule": [], "toCancel": [], "unchanged": [] }
+    },
+    {
+      "name": "scheduled reminder whose train departed is cancelled",
+      "now": 1000600,
+      "current": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "desired": [
+        { "lineId": "M1", "stationId": "M1_VIC", "stationName": "Victoria", "destination": "Kifisia", "scheduledTime": "08:00", "departureEpochSeconds": 1000000, "leadSeconds": 900 }
+      ],
+      "expected": { "toSchedule": [], "toCancel": ["M1|M1_VIC|1000000"], "unchanged": [] }
+    }
+  ]
+}
