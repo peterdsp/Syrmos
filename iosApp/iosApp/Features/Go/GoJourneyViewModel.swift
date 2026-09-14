@@ -76,14 +76,9 @@ final class GoJourneyViewModel: ObservableObject {
     var canAdvance: Bool { !isArrived }
     var canGoBack: Bool { position.legIndex > 0 || position.stopIndex > 0 }
 
-    /// 0...1 progress across the whole journey by stops visited.
-    var progress: Double {
-        let total = max(1, journey.legs.reduce(0) { $0 + max(0, $1.stops.count - 1) })
-        var done = 0
-        for i in 0..<position.legIndex { done += max(0, journey.legs[i].stops.count - 1) }
-        done += position.stopIndex
-        return min(1, Double(done) / Double(total))
-    }
+    /// 0...1 progress across the whole journey by stops visited, from the one
+    /// shared cross-client definition (see `JourneyGuidance.progress`).
+    var progress: Double { JourneyGuidance.progress(journey, position) }
 
     /// The line id for the current leg (for tint), nil once arrived at the end.
     var currentLineId: String? {

@@ -135,6 +135,43 @@ class GoGuidanceTest {
     }
 
     @Test
+    fun progress_matchesCrossClientContract() {
+        // Mirrors the `progress` field in fixtures/go-guidance/cases.json.
+        assertEquals(0.0, GoGuidance.progress(m2Direct3, pos(0, 0)), 1e-9)
+        assertEquals(0.5, GoGuidance.progress(m2Direct3, pos(0, 1)), 1e-9)
+        assertEquals(1.0, GoGuidance.progress(m2Direct3, pos(0, 2)), 1e-9)
+
+        assertEquals(0.0, GoGuidance.progress(m1Hop2, pos(0, 0)), 1e-9)
+        assertEquals(1.0, GoGuidance.progress(m1Hop2, pos(0, 1)), 1e-9)
+
+        assertEquals(0.0, GoGuidance.progress(m2m3Transfer, pos(0, 0)), 1e-9)
+        assertEquals(0.2, GoGuidance.progress(m2m3Transfer, pos(0, 1)), 1e-9)
+        assertEquals(0.4, GoGuidance.progress(m2m3Transfer, pos(0, 2)), 1e-9)
+        assertEquals(0.6, GoGuidance.progress(m2m3Transfer, pos(0, 3)), 1e-9)
+        // The interchange: leg 0 alight and leg 1 board are the same point -> one fraction.
+        assertEquals(0.6, GoGuidance.progress(m2m3Transfer, pos(1, 0)), 1e-9)
+        assertEquals(0.8, GoGuidance.progress(m2m3Transfer, pos(1, 1)), 1e-9)
+        assertEquals(1.0, GoGuidance.progress(m2m3Transfer, pos(1, 2)), 1e-9)
+    }
+
+    @Test
+    fun progress_isMonotonicAndBoundedAcrossAdvance() {
+        for (journey in listOf(m2Direct3, m1Hop2, m2m3Transfer)) {
+            var p = GuidancePosition(0, 0)
+            var last = GoGuidance.progress(journey, p)
+            assertEquals(0.0, last, 1e-9)
+            while (!GoGuidance.isArrived(journey, p)) {
+                p = GoGuidance.advance(journey, p)
+                val cur = GoGuidance.progress(journey, p)
+                assertTrue(cur >= last - 1e-9, "progress must not go backwards")
+                assertTrue(cur in 0.0..1.0, "progress must stay in 0..1")
+                last = cur
+            }
+            assertEquals(1.0, last, 1e-9)
+        }
+    }
+
+    @Test
     fun guidance_rejectsOutOfRange() {
         assertFailsWith<IllegalArgumentException> { GoGuidance.guidance(m2Direct3, pos(9, 0)) }
         assertFailsWith<IllegalArgumentException> { GoGuidance.guidance(m2Direct3, pos(0, 9)) }
