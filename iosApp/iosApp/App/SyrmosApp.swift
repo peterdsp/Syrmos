@@ -273,6 +273,13 @@ struct ContentView: View {
     }
 
     private var assistantLauncher: some View {
+        // Floating launcher only: the pill carries its own circular surface,
+        // so the bottom inset itself stays transparent. An opaque full-width
+        // background here painted a dark bar over the scroll content and, by
+        // making the whole band hit-testable, swallowed taps meant for the
+        // content underneath (e.g. the trailing airport-route chips). Keep the
+        // inset clear so content scrolls behind the button and taps pass
+        // through the empty region.
         AriadneLauncherPill(
             label: askAriadneLabel,
             onTap: { showAriadne = true }
@@ -282,7 +289,6 @@ struct ContentView: View {
         .padding(.vertical, 12)
         .frame(maxWidth: ReadableTabContent.maximumWidth)
         .frame(maxWidth: .infinity)
-        .background(Color.syrmosBackground)
     }
 
     private var askAriadneLabel: String {
