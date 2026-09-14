@@ -24,6 +24,10 @@ class SyrmosApplication : Application() {
         // Phase N J08: the active-journey ongoing notification (peer of the iOS
         // journey Live Activity), driven by the shared ActiveJourneyRepository.
         JourneyNotifier(this, org.koin.core.context.GlobalContext.get().get()).start()
+        // Phase N J09: leave-by reminder alarms for the saved-departure board,
+        // driven by the shared SavedDepartureRepository + opt-in via the leave-by
+        // engine's reconcile.
+        LeaveByReminderScheduler(this).start()
         // Keep the Glance widget snapshot fresh: a 30-minute periodic refresh
         // plus an immediate one so a freshly added widget has data quickly.
         com.syrmos.android.widget.SnapshotWorker.enqueuePeriodic(this)

@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Phase N J09 leave-by reminders: exact alarms so "leave now" fires on time.
+         Revocable on Android 13+; the scheduler checks canScheduleExactAlarms() and
+         falls back to an inexact alarm when the user has not granted it. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.location.network" android:required="false" />
@@ -21,6 +25,9 @@
         android:theme="@style/Theme.Syrmos">
         <receiver
             android:name=".RailPulseNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".LeaveByReminderReceiver"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
