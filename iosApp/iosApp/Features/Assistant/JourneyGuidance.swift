@@ -111,4 +111,21 @@ enum JourneyGuidance: Equatable, Sendable {
         let leg = journey.legs[position.legIndex]
         return lastLeg && position.stopIndex == leg.stops.count - 1
     }
+
+    /// Journey completion in 0...1 by stops travelled over total inter-stop hops
+    /// across every leg. The single shared definition mirrored from the Kotlin
+    /// `GoGuidance.progress` and web `SyrmosGO.progress`, validated against
+    /// `fixtures/go-guidance/cases.json`, so the glance progress (bar + Live
+    /// Activity) cannot drift from Android and web. A leg's alight stop and the
+    /// next leg's board stop are the same physical point, so a transfer boundary
+    /// maps to one fraction, not two.
+    static func progress(_ journey: GuidanceJourney, _ position: GuidancePosition) -> Double {
+        let total = max(1, journey.legs.reduce(0) { $0 + max(0, $1.stops.count - 1) })
+        var done = 0
+        for i in 0..<position.legIndex where journey.legs.indices.contains(i) {
+            done += max(0, journey.legs[i].stops.count - 1)
+        }
+        done += position.stopIndex
+        return min(1, max(0, Double(done) / Double(total)))
+    }
 }

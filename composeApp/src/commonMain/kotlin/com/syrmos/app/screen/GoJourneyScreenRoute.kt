@@ -87,12 +87,8 @@ class GoJourneyScreenRoute(
         val arrived = GoGuidance.isArrived(journey, position)
         val canBack = position.legIndex > 0 || position.stopIndex > 0
 
-        // Progress = stops travelled / total stops across all legs.
-        val total = journey.legs.sumOf { maxOf(0, it.stops.size - 1) }.coerceAtLeast(1)
-        var done = 0
-        for (i in 0 until position.legIndex) done += maxOf(0, journey.legs[i].stops.size - 1)
-        done += position.stopIndex
-        val progress = (done.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+        // Journey completion, from the one shared cross-client definition.
+        val progress = GoGuidance.progress(journey, position).toFloat()
 
         val origin = journey.legs.firstOrNull()?.stops?.firstOrNull()?.name ?: ""
         val destination = journey.legs.lastOrNull()?.stops?.lastOrNull()?.name ?: ""
