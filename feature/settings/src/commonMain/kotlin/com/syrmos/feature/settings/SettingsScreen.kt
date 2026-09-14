@@ -74,6 +74,7 @@ fun SettingsScreen(
     val isRefreshing by scheduleSync.isRefreshing.collectAsState()
     val scheduleVersion by scheduleSync.scheduleVersion.collectAsState()
     var showContact by remember { mutableStateOf(false) }
+    var showSavedDepartures by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val showVehicles by MapPreferences.showLiveVehicles.collectAsState()
@@ -82,6 +83,11 @@ fun SettingsScreen(
 
     if (showFares) {
         FaresScreen(onBack = { showFares = false })
+        return
+    }
+
+    if (showSavedDepartures) {
+        SavedDeparturesBoardScreen(onBack = { showSavedDepartures = false })
         return
     }
 
@@ -329,6 +335,7 @@ fun SettingsScreen(
             val serviceAlertsOn by NotificationSettings.serviceAlerts.collectAsState()
             val weatherAlertsOn by NotificationSettings.weatherAlerts.collectAsState()
             val nearbyAlertsOn by NotificationSettings.nearbyAlerts.collectAsState()
+            val leaveByOn by NotificationSettings.leaveByReminders.collectAsState()
             // Morning digest (07:00) is implemented and wired on iOS but has no
             // consumer on Android yet: nothing schedules a 07:00 worker that reads
             // notif_morning_digest, so the toggle only persisted a dead flag. Hide
@@ -372,6 +379,29 @@ fun SettingsScreen(
                     },
                     checked = nearbyAlertsOn,
                     onCheckedChange = { NotificationSettings.setNearbyAlerts(it) },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                NotifToggleRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Υπενθυμισεις αναχωρησης"
+                        AppLanguage.ALBANIAN -> "Kujtues nisjeje"
+                        AppLanguage.ITALIAN -> "Promemoria di partenza"
+                        else -> "Leave-by reminders"
+                    },
+                    checked = leaveByOn,
+                    onCheckedChange = { NotificationSettings.setLeaveByReminders(it) },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                SettingsRow(
+                    title = when (lang) {
+                        AppLanguage.GREEK -> "Αποθηκευμένες αναχωρήσεις"
+                        AppLanguage.ALBANIAN -> "Nisjet e ruajtura"
+                        AppLanguage.ITALIAN -> "Partenze salvate"
+                        else -> "Saved departures"
+                    },
+                    value = "",
+                    interactive = true,
+                    onClick = { showSavedDepartures = true },
                 )
             }
         }
