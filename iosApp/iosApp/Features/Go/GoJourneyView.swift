@@ -98,6 +98,9 @@ struct GoJourneyView: View {
                     Button(model.isArrived
                         ? t("Finish", "Τέλος", "Përfundo", "Concludi")
                         : t("End", "Τέλος", "Përfundo", "Termina")) {
+                        // model.end() clears the active-journey store, which ends the
+                        // Live Activity (see GoActiveJourneyStore.clear) on every
+                        // end path, so no separate controller.end() is needed here.
                         model.end()
                         if let onEnd { onEnd() } else { dismiss() }
                     }
@@ -106,7 +109,14 @@ struct GoJourneyView: View {
         }
         .onAppear {
             model.onGetOffAlert = { guidance in fireGetOff(guidance) }
-            if let store { model.begin(store: store, resuming: resuming, language: language) }
+            if let store {
+                model.begin(store: store, resuming: resuming, language: language)
+                // Phase N J08: surface the active journey as a Live Activity.
+                GoJourneyActivityController.shared.start(
+                    origin: originName, destination: destinationName,
+                    stateLabel: goStateLabel, instruction: headline, context: glanceContext,
+                    progress: model.progress, lineId: model.currentLineId, arrived: model.isArrived)
+            }
             Task { await NotificationService.shared.requestAuthorization() }
         }
         .onReceive(location.$currentLocation) { loc in
@@ -117,6 +127,12 @@ struct GoJourneyView: View {
             // next" hands-free, the iOS analog of the web panel's aria-live region.
             let text = [headline, detail].filter { !$0.isEmpty }.joined(separator: ". ")
             UIAccessibility.post(notification: .announcement, argument: text)
+            // Phase N J08: push the new step to the Live Activity.
+            if store != nil {
+                GoJourneyActivityController.shared.update(
+                    stateLabel: goStateLabel, instruction: headline, context: glanceContext,
+                    progress: model.progress, lineId: model.currentLineId, arrived: model.isArrived)
+            }
         }
     }
 
@@ -337,6 +353,23 @@ struct GoJourneyView: View {
         case .transfer: return "arrow.triangle.swap"
         case .arrived: return "checkmark.circle.fill"
         }
+    }
+
+    /// Phase N J08: short state word for the Live Activity glance.
+    private var goStateLabel: String {
+        switch model.current {
+        case .board: return t("Board", "Επιβίβαση", "Hip", "Sali")
+        case .ride: return t("Riding", "Σε κίνηση", "Në lëvizje", "In viaggio")
+        case .getOffNext: return t("Get off next", "Κατέβα στην επόμενη", "Zbrit në tjetrën", "Scendi alla prossima")
+        case .transfer: return t("Transfer", "Μετεπιβίβαση", "Ndërrim", "Cambio")
+        case .arrived: return t("Arrived", "Άφιξη", "Mbërritur", "Arrivato")
+        }
+    }
+
+    /// Secondary context for the glance (prefer the subdetail, else the detail).
+    private var glanceContext: String? {
+        let c = subdetail.isEmpty ? detail : subdetail
+        return c.isEmpty ? nil : c
     }
 
     private var headline: String {
