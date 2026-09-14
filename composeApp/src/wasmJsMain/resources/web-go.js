@@ -122,6 +122,20 @@
     return Boolean(lastLeg && l && position.stopIndex === l.stops.length - 1);
   }
 
+  // Journey completion in 0..1 by stops travelled over total inter-stop hops
+  // across every leg. The single shared definition mirrored from the Kotlin
+  // GoGuidance.progress and iOS JourneyGuidance.progress, validated against
+  // fixtures/go-guidance/cases.json, so the glance progress cannot drift between
+  // clients. A leg's alight stop and the next leg's board stop are the same
+  // physical point, so a transfer boundary maps to one fraction, not two.
+  function progress(journey, position) {
+    const total = Math.max(1, journey.legs.reduce((n, l) => n + Math.max(0, l.stops.length - 1), 0));
+    let done = 0;
+    for (let i = 0; i < position.legIndex; i++) done += Math.max(0, journey.legs[i].stops.length - 1);
+    done += position.stopIndex;
+    return Math.min(1, Math.max(0, done / total));
+  }
+
   // Live GO: given the rider's GPS fix and the journey's stop coordinates
   // ({ [stopId]: {lat, lon} }), return the forward-most position they've reached,
   // so the guidance advances on its own. Forward-only (jitter never rewinds),
@@ -167,7 +181,7 @@
   }
 
   return {
-    guidance, shouldAlertGetOff, advance, isArrived, advancedPosition, haversine,
+    guidance, shouldAlertGetOff, advance, isArrived, progress, advancedPosition, haversine,
     KIND: { BOARD, RIDE, GET_OFF_NEXT, TRANSFER, ARRIVED },
   };
 });

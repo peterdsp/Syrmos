@@ -90,6 +90,9 @@ final class JourneyGuidanceTests: XCTestCase {
             }
             let alert = try XCTUnwrap(c["alert"] as? Bool)
             XCTAssertEqual(JourneyGuidance.shouldAlertGetOff(journey, pos), alert, "[\(name)] alert")
+
+            let progress = try XCTUnwrap((c["progress"] as? NSNumber)?.doubleValue)
+            XCTAssertEqual(JourneyGuidance.progress(journey, pos), progress, accuracy: 1e-9, "[\(name)] progress")
         }
     }
 
