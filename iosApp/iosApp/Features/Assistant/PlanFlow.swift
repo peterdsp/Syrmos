@@ -309,7 +309,9 @@ struct PlanView: View {
             ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if let active = activeStore.active { resumeBanner(active) }
-                if !freshness.isNetworkAvailable { offlineBanner }
+                let freshnessState = FreshnessPresentation.evaluate(
+                    isNetworkAvailable: freshness.isNetworkAvailable, isLive: freshness.freshness == .live)
+                if FreshnessPresentation.showsBanner(freshnessState) { offlineBanner(freshnessState) }
                 if let note = invalidSavedNote { invalidSavedBanner(note) }
                 endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
                 endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
@@ -474,14 +476,22 @@ struct PlanView: View {
 
     // MARK: - Resume live GO session (S06)
 
-    /// Phase R S10 offline-with-usable-data banner: compact, discloses that plans
-    /// come from the saved timetable, and offers Retry. Never blocks planning.
-    private var offlineBanner: some View {
+    /// Phase R S10 / N J07 freshness banner: compact, discloses that plans come from
+    /// the saved timetable and offers Retry. Driven by the shared FreshnessPresentation
+    /// rule so it also shows when online but no live data is available (predicted),
+    /// not connectivity-only. Wording reuses the app's runningOffline /
+    /// predictedFromSchedule set. Never blocks planning.
+    @ViewBuilder
+    private func offlineBanner(_ state: FreshnessBannerState) -> some View {
+        let offline = state == .offline
+        let icon = offline ? "wifi.slash" : "clock.arrow.circlepath"
+        let title = offline
+            ? t("Running offline", "Εκτός σύνδεσης", "Pa internet", "Offline")
+            : t("Predicted from schedule", "Πρόβλεψη από το πρόγραμμα", "Parashikuar nga orari", "Previsto dall'orario")
         HStack(spacing: 10) {
-            Image(systemName: "wifi.slash").foregroundStyle(.secondary)
+            Image(systemName: icon).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
-                Text(t("You're offline", "Είσαι εκτός σύνδεσης", "Je jashtë linje", "Sei offline"))
-                    .font(.subheadline.weight(.semibold))
+                Text(title).font(.subheadline.weight(.semibold))
                 Text(t("Routes use the saved timetable.", "Οι διαδρομές χρησιμοποιούν το αποθηκευμένο δρομολόγιο.",
                        "Rrugët përdorin orarin e ruajtur.", "I percorsi usano l'orario salvato."))
                     .font(.caption).foregroundStyle(.secondary)
