@@ -136,6 +136,7 @@
 		FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C04 /* JourneyDetailTests.swift */; };
 		FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0A /* DisruptionExclusionTests.swift */; };
 		FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0E /* FreshnessPresentationTests.swift */; };
+		FE0000000000000000000C22 /* AnnouncementLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C23 /* AnnouncementLocalizationTests.swift */; };
 		FE0000000000000000000C17 /* LeaveByReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C16 /* LeaveByReminder.swift */; };
 		FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C18 /* LeaveByReminderTests.swift */; };
 		FE0000000000000000000C1B /* SavedDeparture.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C1A /* SavedDeparture.swift */; };
@@ -370,6 +371,7 @@
 		FE0000000000000000000C04 /* JourneyDetailTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyDetailTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0A /* DisruptionExclusionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DisruptionExclusionTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0E /* FreshnessPresentationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreshnessPresentationTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C23 /* AnnouncementLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnnouncementLocalizationTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C18 /* LeaveByReminderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LeaveByReminderTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SavedDepartureStoreTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityDisclosureTests.swift; sourceTree = "<group>"; };
@@ -464,6 +466,7 @@
 				FE0000000000000000000C04 /* JourneyDetailTests.swift */,
 				FE0000000000000000000C0A /* DisruptionExclusionTests.swift */,
 				FE0000000000000000000C0E /* FreshnessPresentationTests.swift */,
+				FE0000000000000000000C23 /* AnnouncementLocalizationTests.swift */,
 				FE0000000000000000000C18 /* LeaveByReminderTests.swift */,
 				FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */,
 				FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */,
@@ -1152,6 +1155,7 @@
 				FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */,
 				FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */,
 				FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */,
+				FE0000000000000000000C22 /* AnnouncementLocalizationTests.swift in Sources */,
 				FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */,
 				FE0000000000000000000C1D /* SavedDepartureStoreTests.swift in Sources */,
 				FE0000000000000000000C0B /* AccessibilityDisclosureTests.swift in Sources */,
