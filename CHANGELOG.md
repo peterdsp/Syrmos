@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 uses **225**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-224; the next release must use 225+.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 uses **226**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-226; the next release must use 227+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
@@ -11,6 +11,31 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
 ## Unreleased
+
+## 3.0.0-beta.3 - 2026-09-15
+
+3.0 "Journeys" grows from the GO engine into an end-to-end companion: an adaptive
+iPad shell, honest recovery when a journey degrades, native glance surfaces for an
+active journey, and leave-by reminders, on every client. Web changes below already
+shipped continuously to syrmos.peterdsp.dev.
+
+- **Journeys foundation and adaptive shell.** The Journeys planning core with
+  cross-client golden fixtures (#152), and an iPad-adaptive shell with onboarding
+  on iOS (#153).
+- **Recovery (Phase R).** Disruption exclusions, connection-risk warnings,
+  accessibility unknowns disclosed honestly, and explicit degraded states, one pure
+  rule per case mirrored across KMP, iOS and web (#155).
+- **Unified freshness and offline banner (J07).** The Plan banner now follows the
+  shared freshness rule instead of connectivity alone (#156).
+- **Glance surfaces for an active journey (J08).** An iOS Live Activity on the Lock
+  Screen and Dynamic Island (#158), an Android ongoing journey notification (#159),
+  web foreground-resume with honest stale markers (#157), and one shared GO progress
+  definition behind all of them (#160).
+- **Leave-by reminders (J09).** A shared reminder engine and saved-departure board
+  (#165, #166) with "leave now" scheduling on Android (#167), iOS (#168) and web
+  while a tab is open (#170).
+- **Fixes.** The floating Ariadne launcher on iOS no longer paints a dark bar over
+  content (#154).
 
 Web: desktop only, a product page, and three web fixes.
 
@@ -83,6 +108,8 @@ data. See [docs/OFFLINE_FIRST_AND_DATA_SOURCES.md](docs/OFFLINE_FIRST_AND_DATA_S
   `live-train-freshness.test.js` (8) plus `service-worker.test.js` /
   `service-worker-behavior.test.js` (13, the latter executing the real `sw.js`
   handlers). Full suites green: iOS 173, web 81, Android build + unit tests.
+
+iOS 3.0.0 (build auto-stamped) / Android 3.0.0 versionCode 226. Tagged as `v3.0.0-beta.3`.
 
 ## 3.0.0-beta.2 - 2026-09-03
 
