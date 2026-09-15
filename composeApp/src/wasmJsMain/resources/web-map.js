@@ -5140,36 +5140,17 @@
                     savedEl.appendChild(row);
                 });
             }
-            // Phase R S07: per-transfer risk from the option's real leg clocks,
-            // aligned with the journey's ride legs (mirrors iOS/Android).
-            function transferMinBetween(legs, prev, next) {
-                const pi = legs.indexOf(prev), ni = legs.indexOf(next);
-                if (pi < 0 || ni < 0 || pi >= ni) return null;
-                for (let j = pi + 1; j < ni; j++) {
-                    if ((legs[j].kind === "transfer" || legs[j].kind === "walk") && legs[j].transferMinimumSeconds != null) {
-                        return legs[j].transferMinimumSeconds;
-                    }
-                }
-                return null;
-            }
+            // Phase R S07: per-transfer risk from the shared SyrmosConnectionRisk
+            // transform (one fixture-backed rule mirrored on Kotlin/iOS, and aligned
+            // with the feasibility chip since both subtract the uncertainty term).
+            // Kept returning the local `minimumSeconds` shape the callers read.
             function optionTransferRisks(opt) {
-                const rides = ((opt && opt.legs) || []).filter((l) => l.kind === "ride");
-                if (rides.length < 2) return [];
-                const secs = (iso) => { const ms = Date.parse(iso); return Number.isFinite(ms) ? Math.floor(ms / 1000) : null; };
-                const out = [];
-                for (let i = 0; i < rides.length - 1; i++) {
-                    const minSec = transferMinBetween(opt.legs, rides[i], rides[i + 1]) != null
-                        ? transferMinBetween(opt.legs, rides[i], rides[i + 1]) : 120;
-                    const a = secs(rides[i].arrivalInstant), d = secs(rides[i + 1].departureInstant);
-                    if (a != null && d != null) {
-                        const gap = Math.max(0, d - a), margin = gap - minSec;
-                        const status = margin < 0 ? "missed" : (margin <= 179 ? "tight" : "comfortable");
-                        out.push({ status, availableSeconds: gap, minimumSeconds: minSec });
-                    } else {
-                        out.push({ status: "unknown", availableSeconds: null, minimumSeconds: minSec });
-                    }
-                }
-                return out;
+                if (!window.SyrmosConnectionRisk) return [];
+                return window.SyrmosConnectionRisk.risks(opt).map((r) => ({
+                    status: r.status,
+                    availableSeconds: r.availableSeconds,
+                    minimumSeconds: r.recommendedSeconds,
+                }));
             }
             let lastPlanned = null, lastHasTimetable = false;
             function renderResults(planned, hasTimetable) {
