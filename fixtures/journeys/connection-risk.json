@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "description": "Language-neutral golden cases for Syrmos 3.0 connection risk (prompt S07 / Phase R). For each transfer in a JourneyOption, the risk transform exposes the ACTUAL numbers the S07 warning shows: availableSeconds = the real gap (nextDeparture - previousArrival) and recommendedSeconds = the change time to allow (the transfer leg's minimum, or the policy default of 120s when it carries none). status reuses the feasibility policy exactly: margin = available - recommended - uncertainty; margin < 0 -> missed, 0..179 -> tight, > 179 -> comfortable; a missing required instant -> unknown (availableSeconds null). The whole option's worst upcoming transfer drives the inline GO warning. Kotlin ConnectionRisk, web SyrmosConnectionRisk and iOS ConnectionRisk must return these exact rows. Instants absolute (Europe/Athens, +02:00). Synthetic, not a real timetable.",
+  "defaultRecommendedSeconds": 120,
+  "cases": [
+    {
+      "id": "tight_transfer",
+      "note": "arr OMO 08:15; next M2 dep 08:18 -> gap 180; allow 120; margin 60 -> tight",
+      "option": { "legs": [
+        { "id": "r0", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO", "arrivalInstant": "2026-01-15T08:15:00+02:00" },
+        { "id": "t1", "kind": "transfer", "fromId": "OMO", "toId": "OMO3", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO3", "toId": "SYN", "departureInstant": "2026-01-15T08:18:00+02:00" }
+      ] },
+      "expectedRisks": [
+        { "transferIndex": 0, "fromLegId": "r0", "toLegId": "r2", "atStationId": "OMO", "toLineId": "M2", "status": "tight", "availableSeconds": 180, "recommendedSeconds": 120 }
+      ],
+      "expectedWorstStatus": "tight"
+    },
+    {
+      "id": "missed_transfer",
+      "note": "arr 08:15; next dep 08:17 -> gap 120; allow 300; margin -180 -> missed (the spec's '2 min available; allow 5 min')",
+      "option": { "legs": [
+        { "id": "r0", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO", "arrivalInstant": "2026-01-15T08:15:00+02:00" },
+        { "id": "t1", "kind": "transfer", "fromId": "OMO", "toId": "OMO3", "transferMinimumSeconds": 300 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO3", "toId": "SYN", "departureInstant": "2026-01-15T08:17:00+02:00" }
+      ] },
+      "expectedRisks": [
+        { "transferIndex": 0, "fromLegId": "r0", "toLegId": "r2", "atStationId": "OMO", "toLineId": "M2", "status": "missed", "availableSeconds": 120, "recommendedSeconds": 300 }
+      ],
+      "expectedWorstStatus": "missed"
+    },
+    {
+      "id": "comfortable_transfer",
+      "note": "gap 600; allow 120; margin 480 -> comfortable",
+      "option": { "legs": [
+        { "id": "r0", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO", "arrivalInstant": "2026-01-15T08:15:00+02:00" },
+        { "id": "t1", "kind": "transfer", "fromId": "OMO", "toId": "OMO3", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO3", "toId": "SYN", "departureInstant": "2026-01-15T08:25:00+02:00" }
+      ] },
+      "expectedRisks": [
+        { "transferIndex": 0, "fromLegId": "r0", "toLegId": "r2", "atStationId": "OMO", "toLineId": "M2", "status": "comfortable", "availableSeconds": 600, "recommendedSeconds": 120 }
+      ],
+      "expectedWorstStatus": "comfortable"
+    },
+    {
+      "id": "two_transfers_worst_wins",
+      "note": "first transfer comfortable (gap 600), second missed (gap 60, allow 120); the option's worst is missed",
+      "option": { "legs": [
+        { "id": "r0", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO", "arrivalInstant": "2026-01-15T08:15:00+02:00" },
+        { "id": "t1", "kind": "transfer", "fromId": "OMO", "toId": "OMO2", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO2", "toId": "SYN", "departureInstant": "2026-01-15T08:25:00+02:00", "arrivalInstant": "2026-01-15T08:35:00+02:00" },
+        { "id": "t3", "kind": "transfer", "fromId": "SYN", "toId": "SYN3", "transferMinimumSeconds": 120 },
+        { "id": "r4", "kind": "ride", "lineId": "M3", "fromId": "SYN3", "toId": "AIR", "departureInstant": "2026-01-15T08:36:00+02:00" }
+      ] },
+      "expectedRisks": [
+        { "transferIndex": 0, "fromLegId": "r0", "toLegId": "r2", "atStationId": "OMO", "toLineId": "M2", "status": "comfortable", "availableSeconds": 600, "recommendedSeconds": 120 },
+        { "transferIndex": 1, "fromLegId": "r2", "toLegId": "r4", "atStationId": "SYN", "toLineId": "M3", "status": "missed", "availableSeconds": 60, "recommendedSeconds": 120 }
+      ],
+      "expectedWorstStatus": "missed"
+    },
+    {
+      "id": "unknown_missing_departure",
+      "note": "next departure unknown -> status unknown, availableSeconds null; recommended still disclosed",
+      "option": { "legs": [
+        { "id": "r0", "kind": "ride", "lineId": "M1", "fromId": "PIR", "toId": "OMO", "arrivalInstant": "2026-01-15T08:15:00+02:00" },
+        { "id": "t1", "kind": "transfer", "fromId": "OMO", "toId": "OMO3", "transferMinimumSeconds": 120 },
+        { "id": "r2", "kind": "ride", "lineId": "M2", "fromId": "OMO3", "toId": "SYN", "departureInstant": null }
+      ] },
+      "expectedRisks": [
+        { "transferIndex": 0, "fromLegId": "r0", "toLegId": "r2", "atStationId": "OMO", "toLineId": "M2", "status": "unknown", "availableSeconds": null, "recommendedSeconds": 120 }
+      ],
+      "expectedWorstStatus": "unknown"
+    },
+    {
+      "id": "direct_no_transfers",
+      "note": "a single ride has no transfers -> no risks and a comfortable option",
+      "option": { "legs": [
+        { "id": "r0", "kind": "ride", "lineId": "M2", "fromId": "SYN", "toId": "ELL", "departureInstant": "2026-01-15T08:00:00+02:00", "arrivalInstant": "2026-01-15T08:20:00+02:00" }
+      ] },
+      "expectedRisks": [],
+      "expectedWorstStatus": "comfortable"
+    }
+  ]
+}
