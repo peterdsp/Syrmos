@@ -205,9 +205,17 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                     " affected_lines, severity, valid_from, valid_until)"
                     " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     " ON CONFLICT(id) DO UPDATE SET"
-                    " title=excluded.title, title_en=excluded.title_en, title_sq=excluded.title_sq,"
+                    " title=excluded.title,"
+                    # A provider outage returns "" for every string; never let that
+                    # blank a translation we already have. Italian has always been
+                    # written this way, English and Albanian were not, so one rate
+                    # limited run wiped them for every item.
+                    " title_en=COALESCE(NULLIF(excluded.title_en, ''), announcements.title_en),"
+                    " title_sq=COALESCE(NULLIF(excluded.title_sq, ''), announcements.title_sq),"
                     " title_it=COALESCE(NULLIF(excluded.title_it, ''), announcements.title_it),"
-                    " summary=excluded.summary, summary_en=excluded.summary_en, summary_sq=excluded.summary_sq,"
+                    " summary=excluded.summary,"
+                    " summary_en=COALESCE(NULLIF(excluded.summary_en, ''), announcements.summary_en),"
+                    " summary_sq=COALESCE(NULLIF(excluded.summary_sq, ''), announcements.summary_sq),"
                     " summary_it=COALESCE(NULLIF(excluded.summary_it, ''), announcements.summary_it),"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
@@ -227,8 +235,10 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                     " affected_lines, severity, valid_from, valid_until)"
                     " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     " ON CONFLICT(id) DO UPDATE SET"
-                    " title=excluded.title, title_en=excluded.title_en,"
-                    " summary=excluded.summary, summary_en=excluded.summary_en,"
+                    " title=excluded.title,"
+                    " title_en=COALESCE(NULLIF(excluded.title_en, ''), announcements.title_en),"
+                    " summary=excluded.summary,"
+                    " summary_en=COALESCE(NULLIF(excluded.summary_en, ''), announcements.summary_en),"
                     " url=excluded.url, category=excluded.category, sort_order=excluded.sort_order,"
                     " affected_lines=excluded.affected_lines, severity=excluded.severity,"
                     " valid_from=excluded.valid_from, valid_until=excluded.valid_until",
