@@ -26,25 +26,22 @@ data class RailNewsItem(
     val thumbnailUrl: String = "",
     val categories: List<String> = emptyList(),
 ) {
+    /** Same order as [STASYAnnouncement.localizedTitle]: a headline nobody can read
+     *  still says which story this is, a generic label says nothing. */
     fun localizedTitle(language: AppLanguage): String = when (language) {
         AppLanguage.GREEK -> title
-        AppLanguage.ALBANIAN -> titleSq.takeIf { it.isUsableLocalizedContent() }
-            ?: "Njoftim hekurudhor"
-        AppLanguage.ITALIAN -> titleIt.takeIf { it.isUsableLocalizedContent() }
-            ?: "Avviso ferroviario"
-        else -> titleEn.takeIf { it.isUsableLocalizedContent() }
-            ?: title.takeIf { it.isUsableLocalizedContent() }
-            ?: "Rail announcement"
+        AppLanguage.ALBANIAN -> bestText(titleSq, titleEn, title) ?: "Njoftim hekurudhor"
+        AppLanguage.ITALIAN -> bestText(titleIt, titleEn, title) ?: "Avviso ferroviario"
+        else -> bestText(titleEn, title) ?: "Rail announcement"
     }
 
     fun localizedSummary(language: AppLanguage): String = when (language) {
         AppLanguage.GREEK -> summary
-        AppLanguage.ALBANIAN -> summarySq.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ALBANIAN -> bestText(summarySq, summaryEn, summary)
             ?: "Hap njoftimin zyrtar për hollësi të plota."
-        AppLanguage.ITALIAN -> summaryIt.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ITALIAN -> bestText(summaryIt, summaryEn, summary)
             ?: "Apri l'avviso ufficiale per tutti i dettagli."
-        else -> summaryEn.takeIf { it.isUsableLocalizedContent() }
-            ?: summary.takeIf { it.isUsableLocalizedContent() }
+        else -> bestText(summaryEn, summary)
             ?: "Open the official notice for full details."
     }
 }
