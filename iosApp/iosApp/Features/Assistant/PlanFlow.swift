@@ -121,15 +121,12 @@ enum JourneyPlanAdapter {
         guard rides.count > 1 else { return [] }
         var out: [TransferRisk] = []
         for i in 0..<(rides.count - 1) {
-            let minSec = transferMinBetween(p.detailLegs, rides[i], rides[i + 1]) ?? 120
-            if let a = rides[i].arrival, let d = rides[i + 1].departure {
-                let gap = max(0, Int(d.timeIntervalSince(a)))
-                let margin = gap - minSec
-                let status = margin < 0 ? "missed" : (margin <= 179 ? "tight" : "comfortable")
-                out.append(TransferRisk(status: status, availableSeconds: gap, minimumSeconds: minSec))
-            } else {
-                out.append(TransferRisk(status: "unknown", availableSeconds: nil, minimumSeconds: minSec))
-            }
+            let minSec = transferMinBetween(p.detailLegs, rides[i], rides[i + 1]) ?? ConnectionRisk.defaultRecommendedSeconds
+            let available: Int? = (rides[i].arrival != nil && rides[i + 1].departure != nil)
+                ? Int(rides[i + 1].departure!.timeIntervalSince(rides[i].arrival!)) : nil
+            // Shared S07 rule, consistent with web/Kotlin and the feasibility chip.
+            let status = ConnectionRisk.status(availableSeconds: available, recommendedSeconds: minSec)
+            out.append(TransferRisk(status: status, availableSeconds: available, minimumSeconds: minSec))
         }
         return out
     }
