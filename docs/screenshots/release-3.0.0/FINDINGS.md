@@ -8,7 +8,7 @@ Ordered by severity.
 
 ---
 
-## 1. Announcements are content-free in every non-Greek locale (S01)
+## 1. Announcements are content-free in every non-Greek locale (S01) — FIXED
 
 **Evidence:** `S01-home__C402__light__en__default.png`, `S01-home__C402__dark__en__default.png`
 — "What matters now" shows two cards that read only "Service alert", one with a
@@ -30,13 +30,19 @@ So English, Albanian and Italian users get a placeholder instead of any
 information, on the primary screen, for every announcement. Three of the four
 shipped locales are affected. The Greek locale is fine.
 
-The refusal to show untranslated Greek is a deliberate choice, so the fix is a
-product decision, not a one-line patch: either populate the translations upstream,
-or show the Greek source behind an explicit "Greek only" disclosure. A
-content-free card is the one option that helps nobody.
+**Fixed** in peterdsp/Syrmos#176 by reordering the fallback chain to
+reader's language, then English, then the operator's source wording, then the
+generic label. The S01 captures in this directory have been retaken against the
+fixed build and now show two distinct named alerts; the before-images are the
+first revision of these same files in this PR's history.
 
-**Blocks the locale axis of the gate:** S01/S09 baselines in el/sq/it cannot be
-approved while the card content depends on live upstream translation coverage.
+The fix shows untranslated Greek to a non-Greek reader, which is a deliberate
+trade (an unreadable name beats no name). Marking that text as untranslated in
+the UI is still open.
+
+**No longer blocks the locale axis**, though el/sq/it baselines still depend on
+live upstream translation coverage, so they want the fixture layer under
+`README.md` before they are approved.
 
 ---
 
