@@ -19,3 +19,5 @@ ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-exp
 ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-airport-hub	Airport hub ATH, dark	ios/S09-airport-hub__C402__dark__en__default.png
 ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings	More / settings, dark	ios/S09-more-settings__C402__dark__en__default.png
 ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings-scrolled	More scrolled, dark: same rows-under-title-pill overlap as light, so it is not theme specific	ios/S09-more-settings-scrolled__C402__dark__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	7f204489	S01-home	Home / Now, with named announcements after the fallback fix	ios/S01-home__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	7f204489	S01-home	Home / Now, dark, with named announcements after the fallback fix	ios/S01-home__C402__dark__en__default.png
