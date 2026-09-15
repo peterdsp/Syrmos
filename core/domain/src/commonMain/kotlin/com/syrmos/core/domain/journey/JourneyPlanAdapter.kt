@@ -103,7 +103,10 @@ object JourneyPlanAdapter {
                 fromId = seg.fromStationId,
                 toId = seg.toStationId,
                 lineId = seg.lineId,
-                orderedStopIds = listOf(seg.fromStationId, seg.toStationId),
+                // The ride's real ordered stops when the planner supplied them,
+                // matching web (`stops`) and iOS (`stationIds`). Falling back to the
+                // two endpoints keeps an unknown sequence honest rather than fake.
+                orderedStopIds = seg.orderedStopIds.ifEmpty { listOf(seg.fromStationId, seg.toStationId) },
                 serviceDate = serviceDate,
                 timingKind = TimingKind.ESTIMATED,
                 accessibility = LegAccessibility.UNKNOWN,
