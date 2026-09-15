@@ -246,6 +246,9 @@ internal fun reconstructSegments(
     var segmentStationCount = 0
     var segmentMinutes = 0
     var prevStationId = fromStationId
+    // Every station the running leg calls at, start inclusive. Kept alongside
+    // segmentStationCount so a ride carries its real stop sequence, not just ends.
+    val segmentStops = mutableListOf<String>()
 
     for ((stationId, edge) in path) {
         if (edge == null) { prevStationId = stationId; continue }
@@ -265,6 +268,7 @@ internal fun reconstructSegments(
                         stationCount = segmentStationCount,
                         estimatedMinutes = segmentMinutes,
                         isTransfer = false,
+                        orderedStopIds = segmentStops.toList(),
                     )
                 )
                 currentLineId = null
@@ -272,6 +276,7 @@ internal fun reconstructSegments(
             segmentStartStation = stationId
             segmentStationCount = 0
             segmentMinutes = 0
+            segmentStops.clear()
             prevStationId = stationId
             continue
         }
@@ -283,6 +288,9 @@ internal fun reconstructSegments(
                 currentLineName = edge.lineName
                 segmentStationCount = 1
                 segmentMinutes = edge.weight
+                segmentStops.clear()
+                segmentStops += segmentStartStation
+                segmentStops += stationId
             }
             edge.lineId != currentLineId -> {
                 segments.add(
@@ -296,6 +304,7 @@ internal fun reconstructSegments(
                         stationCount = segmentStationCount,
                         estimatedMinutes = segmentMinutes,
                         isTransfer = false,
+                        orderedStopIds = segmentStops.toList(),
                     )
                 )
                 currentLineId = edge.lineId
@@ -303,10 +312,14 @@ internal fun reconstructSegments(
                 segmentStartStation = prevStationId
                 segmentStationCount = 1
                 segmentMinutes = edge.weight
+                segmentStops.clear()
+                segmentStops += prevStationId
+                segmentStops += stationId
             }
             else -> {
                 segmentStationCount++
                 segmentMinutes += edge.weight
+                segmentStops += stationId
             }
         }
         prevStationId = stationId
@@ -324,6 +337,9 @@ internal fun reconstructSegments(
                 stationCount = segmentStationCount,
                 estimatedMinutes = segmentMinutes,
                 isTransfer = false,
+                orderedStopIds = segmentStops.toList().let {
+                    if (it.lastOrNull() == toStationId) it else it + toStationId
+                },
             )
         )
     }

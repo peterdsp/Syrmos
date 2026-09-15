@@ -22,13 +22,43 @@ class JourneyPlanAdapterTest {
 
     private val date = LocalDate.parse("2026-01-15")
 
-    private fun seg(line: String, from: String, to: String, stations: Int, minutes: Int) =
+    private fun seg(
+        line: String, from: String, to: String, stations: Int, minutes: Int,
+        stops: List<String> = emptyList(),
+    ) =
         JourneySegment(
             lineId = line, lineName = line,
             fromStationId = from, fromStationName = from,
             toStationId = to, toStationName = to,
             stationCount = stations, estimatedMinutes = minutes,
+            orderedStopIds = stops,
         )
+
+    @Test
+    fun rideLegCarriesThePlannersRealStopSequence() {
+        // Parity with web (`stops`) and iOS (`stationIds`): the ride leg must keep
+        // every intermediate stop, or S05 shows "0 stops" and GO progress jumps a
+        // whole leg at a time on this client only.
+        val result = JourneyResult(
+            segments = listOf(seg("M1", "PIR", "OMONIA", 3, 6, listOf("PIR", "FAL", "MOS", "OMONIA"))),
+            totalMinutes = 6,
+            transferCount = 0,
+        )
+        val leg = JourneyPlanAdapter.toOptions(result, Ranking.FASTEST, date).first().legs.single()
+        assertEquals(listOf("PIR", "FAL", "MOS", "OMONIA"), leg.orderedStopIds)
+    }
+
+    @Test
+    fun rideLegWithoutAKnownSequenceFallsBackToItsEndpoints() {
+        // Unknown stays honest: two endpoints, never an invented middle.
+        val result = JourneyResult(
+            segments = listOf(seg("M1", "PIR", "OMONIA", 3, 6)),
+            totalMinutes = 6,
+            transferCount = 0,
+        )
+        val leg = JourneyPlanAdapter.toOptions(result, Ranking.FASTEST, date).first().legs.single()
+        assertEquals(listOf("PIR", "OMONIA"), leg.orderedStopIds)
+    }
 
     @Test
     fun crossLineResultBecomesOneEstimatedOptionWithATransfer() {

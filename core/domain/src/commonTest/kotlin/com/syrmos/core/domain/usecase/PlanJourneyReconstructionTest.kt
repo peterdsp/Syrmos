@@ -113,6 +113,49 @@ class PlanJourneyReconstructionTest {
     }
 
     @Test
+    fun everySegmentCarriesItsRealOrderedStops() {
+        // A -> B -> C on line 1, then C -> D -> E on line 2 (implicit line change).
+        val path = listOf(
+            "B" to edge("B", "1"),
+            "C" to edge("C", "1"),
+            "D" to edge("D", "2"),
+            "E" to edge("E", "2"),
+        )
+
+        val segments = reconstructSegments(path, fromStationId = "A", toStationId = "E", stationNames = names)
+
+        assertEquals(listOf("A", "B", "C"), segments[0].orderedStopIds, "leg 1 keeps its intermediate stop B")
+        assertEquals(listOf("C", "D", "E"), segments[1].orderedStopIds, "leg 2 restarts at the interchange")
+        // The sequence and the count are two views of the same ride, so they agree.
+        for (seg in segments) assertEquals(seg.stationCount, seg.orderedStopIds.size - 1)
+        for (seg in segments) {
+            assertEquals(seg.fromStationId, seg.orderedStopIds.first())
+            assertEquals(seg.toStationId, seg.orderedStopIds.last())
+        }
+    }
+
+    @Test
+    fun orderedStopsRestartAtTheCoLocatedStationAfterATransfer() {
+        val transfer = Edge(
+            toStationId = "C2", lineId = PlanJourneyUseCase.TRANSFER_LINE_ID,
+            lineName = "", weight = PlanJourneyUseCase.TRANSFER_MINUTES, isTransfer = true,
+        )
+        val names2 = names + ("C2" to "Gamma")
+        val path = listOf(
+            "B" to edge("B", "1"),
+            "C" to edge("C", "1"),
+            "C2" to transfer,
+            "D" to edge("D", "2"),
+            "E" to edge("E", "2"),
+        )
+
+        val segments = reconstructSegments(path, fromStationId = "A", toStationId = "E", stationNames = names2)
+
+        assertEquals(listOf("A", "B", "C"), segments[0].orderedStopIds)
+        assertEquals(listOf("C2", "D", "E"), segments[1].orderedStopIds, "the walk is never a stop on the ride")
+    }
+
+    @Test
     fun foldNameGroupsAccentedAndPunctuatedVariantsTogether() {
         // "Πειραιάς", "Πειραιας" and "Piraeus " must not fold identically across
         // scripts, but accent + case + punctuation within a script must.
