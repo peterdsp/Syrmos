@@ -48,13 +48,13 @@ struct STASYAnnouncement: Identifiable {
         self.id = id
         self.title = title
         self.titleEn = Self.safeTitle(titleEn, source: title, language: .english, category: category)
-        self.titleSq = Self.safeTitle(titleSq, source: title, language: .albanian, category: category)
-        self.titleIt = Self.safeTitle(titleIt, source: title, language: .italian, category: category)
+        self.titleSq = Self.safeTitle(titleSq, source: title, language: .albanian, category: category, english: titleEn)
+        self.titleIt = Self.safeTitle(titleIt, source: title, language: .italian, category: category, english: titleEn)
         self.date = date
         self.summary = summary
         self.summaryEn = Self.safeSummary(summaryEn, source: summary, language: .english)
-        self.summarySq = Self.safeSummary(summarySq, source: summary, language: .albanian)
-        self.summaryIt = Self.safeSummary(summaryIt, source: summary, language: .italian)
+        self.summarySq = Self.safeSummary(summarySq, source: summary, language: .albanian, english: summaryEn)
+        self.summaryIt = Self.safeSummary(summaryIt, source: summary, language: .italian, english: summaryEn)
         self.url = url
         self.category = category
         self.affectedLines = affectedLines
@@ -93,14 +93,40 @@ struct STASYAnnouncement: Identifiable {
         }
     }
 
+    /// The first candidate worth showing: a real translation if there is one, else
+    /// any non-blank wording at all (in practice the operator's Greek). Nil only
+    /// when every candidate is blank, which is the caller's cue for a generic label.
+    ///
+    /// Mirrors `bestText` in `core/network/.../STASYAnnouncementService.kt`.
+    static func bestText(_ candidates: String...) -> String? {
+        if let translated = candidates.first(where: { isUsableTranslation($0) }) { return translated }
+        return candidates.first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    /// Whether any candidate is a real translation rather than a Greek echo or a blank.
+    static func hasTranslation(_ candidates: String...) -> Bool {
+        candidates.contains { isUsableTranslation($0) }
+    }
+
+    /// The alert's name in the best language we actually have: the reader's
+    /// language, then English, then the operator's own Greek wording, and only
+    /// then a generic label.
+    ///
+    /// That last step used to come third, which meant a reader outside Greece saw
+    /// a card that said nothing but "Service alert": the upstream feed ships every
+    /// announcement with empty `titleEn`/`titleSq`/`titleIt`, so the generic label
+    /// was what everyone got, and adjacent alerts became indistinguishable. An
+    /// untranslated real name tells you which alert this is and can be pasted or
+    /// searched; a placeholder tells you nothing.
     private static func safeTitle(
         _ candidate: String,
         source: String,
         language: AppLanguage,
-        category: AnnouncementCategory
+        category: AnnouncementCategory,
+        english: String = ""
     ) -> String {
-        if isUsableTranslation(candidate) { return candidate }
-        if language == .english, isUsableTranslation(source) { return source }
+        if language == .greek { return source }
+        if let text = bestText(candidate, english, source) { return text }
         let isAlert = category == .serviceAlert
         switch language {
         case .greek: return source
@@ -110,13 +136,15 @@ struct STASYAnnouncement: Identifiable {
         }
     }
 
+    /// Same order as `safeTitle`; see that doc for why the source beats the label.
     private static func safeSummary(
         _ candidate: String,
         source: String,
-        language: AppLanguage
+        language: AppLanguage,
+        english: String = ""
     ) -> String {
-        if isUsableTranslation(candidate) { return candidate }
-        if language == .english, isUsableTranslation(source) { return source }
+        if language == .greek { return source }
+        if let text = bestText(candidate, english, source) { return text }
         switch language {
         case .greek: return source
         case .albanian: return "Hap njoftimin zyrtar për hollësi të plota."

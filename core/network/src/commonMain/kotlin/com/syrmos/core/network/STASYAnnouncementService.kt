@@ -30,28 +30,50 @@ data class STASYAnnouncement(
     val validUntil: String? = null,
     val serviceUntilTime: String? = null,    // "HH:MM" cutoff after which this alert activates
 ) {
+    /**
+     * The alert's name in the best language we actually have.
+     *
+     * Order: the reader's language, then English, then the operator's own Greek
+     * wording, and only then a generic label. That last step used to come third,
+     * which meant a reader outside Greece saw a card that said nothing but
+     * "Service alert": the upstream feed ships every announcement with empty
+     * `titleEn`/`titleSq`/`titleIt`, so the generic label was what everyone got.
+     * An untranslated real name tells you which alert this is and can be pasted
+     * or searched; a placeholder tells you nothing. The generic label now only
+     * appears when the operator published no title at all.
+     */
     fun localizedTitle(language: AppLanguage): String = when (language) {
         AppLanguage.GREEK -> title
-        AppLanguage.ALBANIAN -> titleSq.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ALBANIAN -> bestText(titleSq, titleEn, title)
             ?: if (isServiceAlert) "Njoftim për shërbimin" else "Njoftim hekurudhor"
-        AppLanguage.ITALIAN -> titleIt.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ITALIAN -> bestText(titleIt, titleEn, title)
             ?: if (isServiceAlert) "Avviso sul servizio" else "Avviso ferroviario"
-        else -> titleEn.takeIf { it.isUsableLocalizedContent() }
-            ?: title.takeIf { it.isUsableLocalizedContent() }
+        else -> bestText(titleEn, title)
             ?: if (isServiceAlert) "Service alert" else "Rail announcement"
     }
 
+    /** Same order as [localizedTitle]; see that doc for why the source comes before the label. */
     fun localizedSummary(language: AppLanguage): String = when (language) {
         AppLanguage.GREEK -> summary
-        AppLanguage.ALBANIAN -> summarySq.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ALBANIAN -> bestText(summarySq, summaryEn, summary)
             ?: "Hap njoftimin zyrtar për hollësi të plota."
-        AppLanguage.ITALIAN -> summaryIt.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ITALIAN -> bestText(summaryIt, summaryEn, summary)
             ?: "Apri l'avviso ufficiale per tutti i dettagli."
-        else -> summaryEn.takeIf { it.isUsableLocalizedContent() }
-            ?: summary.takeIf { it.isUsableLocalizedContent() }
+        else -> bestText(summaryEn, summary)
             ?: "Open the official notice for full details."
     }
 }
+
+/**
+ * The first candidate worth showing: a real translation if there is one, else any
+ * non-blank wording at all (in practice the operator's Greek). Returns null only
+ * when every candidate is blank, which is the caller's signal to use a generic
+ * label.
+ */
+internal fun bestText(vararg candidates: String): String? =
+    candidates.firstOrNull { it.isUsableLocalizedContent() }
+        ?: candidates.firstOrNull { it.isNotBlank() }
+
 
 /** Network-wide STASY service-status badge. `status` is `normal`, `alert`,
  *  or `unknown`; `serviceUntil` is "HH:MM" when an alert sets a cutoff. */
@@ -68,11 +90,11 @@ data class STASYServiceStatus(
 
     fun localizedMessage(language: AppLanguage): String = when (language) {
         AppLanguage.GREEK -> rawMessage
-        AppLanguage.ALBANIAN -> rawMessageSq.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ALBANIAN -> bestText(rawMessageSq, rawMessageEn, rawMessage)
             ?: "Njoftim për shërbimin. Hap njoftimin zyrtar për hollësi."
-        AppLanguage.ITALIAN -> rawMessageIt.takeIf { it.isUsableLocalizedContent() }
+        AppLanguage.ITALIAN -> bestText(rawMessageIt, rawMessageEn, rawMessage)
             ?: "Avviso sul servizio. Apri l'avviso ufficiale per i dettagli."
-        else -> rawMessageEn.takeIf { it.isUsableLocalizedContent() }
+        else -> bestText(rawMessageEn, rawMessage)
             ?: "Service alert. Open the official notice for details."
     }
 }
