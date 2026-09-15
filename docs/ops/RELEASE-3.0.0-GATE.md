@@ -104,7 +104,18 @@ capture, `[x]` = captured and inspected this cycle.
   S09 Explore / Departures / Map / Airport / Ariadne · S10 Failure & capability states.
 
 ### Base matrix (per platform: iOS, Android, web)
-- [ ] S01–S10 at C390, **light** and **dark** (20 cells/platform).
+- [~] S01–S10 at C390, **light** and **dark** (20 cells/platform).
+      **iOS started (2026-09-16):** 20 reference cells captured on iPhone 17 /
+      iOS 27.0 at 402x874pt — S01, S02 (draft + filled), S03 (list + keyboard
+      open), S04, S05, S06, S08, S10 (location denied) and S09 (Explore, Map,
+      Airport, More) in `en`, light plus dark on S01/S09. See
+      `docs/screenshots/release-3.0.0/` (`manifest.tsv` carries the per-capture
+      metadata). These are **reference captures, not an approved raster
+      baseline**: the clock was live (02:00 Athens) rather than pinned to the
+      injectable Athens test clock, and content came from the live API, so they
+      cannot be diffed until the capture harness is frozen. Six defects found,
+      recorded in `docs/screenshots/release-3.0.0/FINDINGS.md`. Android and web
+      not started.
 - [ ] S02 / S05 / S06 additionally at C360, M768, E1024, W1360 and Short.
 - [ ] S02 / S04 / S06 in all four locales (en / el / sq / it) with **real**
       localized strings (long Greek/Albanian/Italian must not clip).
@@ -137,7 +148,13 @@ font setting · fixture revision · source commit.
 
 The full C390 light/dark S01–S10 grid, the window/locale/a11y expansions, and the
 raster gate over approved baselines remain to be run in a device lab / CI
-visual-regression job (blocked locally this cycle — see Environment).
+visual-regression job. The iOS reference pass above is the first real progress
+against it; what it proved is that the blocker is no longer the environment (the
+simulator works again) but **capture determinism**: until the Athens test clock is
+injected and the planner reads `fixtures/journeys/` instead of the live seed,
+nothing captured can serve as a diffable baseline. Three findings also block axes
+of the matrix outright — announcements are content-free outside Greek (locale
+axis), and Map cannot reach the network without location permission (Map cells).
 
 ## Environment
 
@@ -152,7 +169,12 @@ visual-regression job (blocked locally this cycle — see Environment).
 
 ## Open items before public release
 
-- [ ] Accept the Xcode licence; commit + push the Phase Z docs.
+- [x] Accept the Xcode licence; commit + push the Phase Z docs. (Done; the
+      simulator, `git` and `xcodebuild` all work on this host again.)
+- [ ] Make the capture harness deterministic (pin the Athens test clock, drive
+      the planner from `fixtures/journeys/`, pre-grant location) before any
+      capture is promoted to an approved baseline.
+- [ ] Triage the six iOS findings in `docs/screenshots/release-3.0.0/FINDINGS.md`.
 - [ ] Run the full visual-baseline capture matrix + raster gate (device lab / CI).
 - [ ] Device-gated behaviours to confirm on hardware: Android 12+ exact-alarm
       permission UX; iOS notification-authorization banner delivery.
