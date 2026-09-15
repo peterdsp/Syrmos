@@ -1,0 +1,23 @@
+platform	os	viewport	scale	locale	theme	font	fixture_rev	commit	screen	label	file
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-explore	Explore / Discover	ios/S09-explore__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S02-plan-draft	Plan draft + resume banner + saved journeys (S08 inline)	ios/S02-plan-draft__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S03-station-selector	From-field station selector expanded	ios/S03-station-selector__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S03-station-selector-keyboard	Selector with keyboard open, query 'Kifis' — DEFECT: duplicate 'Kifisias' rows	ios/S03-station-selector-keyboard__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S02-plan-draft-filled	Plan draft with both endpoints set, Find routes enabled	ios/S02-plan-draft-filled__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S04-route-results	3 ranked routes Piraeus to Kifisias	ios/S04-route-results__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S05-journey-detail	Selected journey detail, 11 intermediate stops, timetable provenance	ios/S05-journey-detail__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S08-saved-journeys	Saved journeys list with reorder and an unresolved saved endpoint	ios/S08-saved-journeys__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S06-go-active	GO active journey, manual stepping, location-off capability state	ios/S06-go-active__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S10-location-denied	S10 capability state: location off, manual stepping offered	ios/S10-location-denied__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-map-no-location	Map tab with no location: falls back to device default (Cupertino), ignores Default region Athens	ios/S09-map-no-location__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-map-trains-on	Map with live-train layer toggled on: camera still off-network, no path back to Athens without location	ios/S09-map-trains-on__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-airport-hub	Airport hub ATH, chips atomic, Ariadne FAB overlaps route-overview stop labels	ios/S09-airport-hub__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-more-settings-scrolled	More scrolled: rows pass under the translucent floating title pill and are left half-legible; Last updated Never	ios/S09-more-settings-scrolled__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S01-home	Home / Now, dark	ios/S01-home__C402__dark__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-explore	Explore / Discover, dark	ios/S09-explore__C402__dark__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-airport-hub	Airport hub ATH, dark	ios/S09-airport-hub__C402__dark__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings	More / settings, dark	ios/S09-more-settings__C402__dark__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings-scrolled	More scrolled, dark: same rows-under-title-pill overlap as light, so it is not theme specific	ios/S09-more-settings-scrolled__C402__dark__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	7f204489	S01-home	Home / Now, with named announcements after the fallback fix	ios/S01-home__C402__light__en__default.png
+ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	7f204489	S01-home	Home / Now, dark, with named announcements after the fallback fix	ios/S01-home__C402__dark__en__default.png
