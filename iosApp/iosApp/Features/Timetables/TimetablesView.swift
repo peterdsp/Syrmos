@@ -297,7 +297,7 @@ private struct AirportHeroCard: View {
                         .font(.caption.weight(.bold))
                         .tracking(1.2)
                         .opacity(0.82)
-                    Text(hub.name)
+                    Text(hub.displayName.text(language))
                         .font(.title2.bold())
                     Text(hub.subtitle.text(language))
                         .font(.caption)
@@ -508,15 +508,15 @@ private struct AirportCalendarHub: View {
 
     private var calendarStatusText: String {
         if calendarEvent != nil {
-            return airportText(language, "From device calendar", "Απο το ημερολογιο συσκευης", "Nga kalendari i pajisjes", "Dal calendario del dispositivo")
+            return airportText(language, "From device calendar", "Από το ημερολόγιο συσκευής", "Nga kalendari i pajisjes", "Dal calendario del dispositivo")
         }
         switch accessState {
         case .connected:
-            return airportText(language, "Calendar connected", "Το ημερολογιο συνδεθηκε", "Kalendari u lidh", "Calendario collegato")
+            return airportText(language, "Calendar connected", "Το ημερολόγιο συνδέθηκε", "Kalendari u lidh", "Calendario collegato")
         case .denied:
-            return airportText(language, "Allow calendar access in Settings", "Επιτρεψε προσβαση ημερολογιου στις Ρυθμισεις", "Lejo kalendarin te Cilësimet", "Consenti il calendario nelle Impostazioni")
+            return airportText(language, "Allow calendar access in Settings", "Επίτρεψε πρόσβαση ημερολογίου στις Ρυθμίσεις", "Lejo kalendarin te Cilësimet", "Consenti il calendario nelle Impostazioni")
         case .unknown:
-            return airportText(language, "Connect device calendar", "Συνδεση ημερολογιου συσκευης", "Lidh kalendarin e pajisjes", "Collega il calendario")
+            return airportText(language, "Connect device calendar", "Σύνδεση ημερολογίου συσκευής", "Lidh kalendarin e pajisjes", "Collega il calendario")
         }
     }
 
@@ -739,7 +739,7 @@ private struct AirportPredictiveCard: View {
                 .font(.headline)
                 Spacer()
                 Text(tripTitle.map { airportText(language, "For \($0)", "Για \($0)", "Per \($0)", "Per \($0)") }
-                    ?? airportText(language, "Manual plan", "Χειροκινητο πλανο", "Plan manual", "Piano manuale"))
+                    ?? airportText(language, "Manual plan", "Χειροκίνητο πλάνο", "Plan manual", "Piano manuale"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(SyrmosTokens.suburban)
                     .lineLimit(1)
@@ -1328,7 +1328,7 @@ private struct LinePickerCard: View {
 
     private var lineHeaderLabel: String {
         switch loc.language {
-        case .greek: return "Γραμμη"
+        case .greek: return "Γραμμή"
         case .albanian: return "Linja"
         case .italian: return "Linea"
         case .english: return "Line"
@@ -1391,7 +1391,7 @@ private struct StationPickerCard: View {
 
     private var stationLabel: String {
         switch loc.language {
-        case .greek: return "Σταθμος"
+        case .greek: return "Σταθμός"
         case .albanian: return "Stacioni"
         case .italian: return "Stazione"
         case .english: return "Station"
@@ -1511,7 +1511,7 @@ private struct DirectionSection: View {
         let count = upcomingDepartures.count
         guard count > 0 else { return nil }
         switch loc.language {
-        case .greek: return "\(count) επομενα δρομολογια"
+        case .greek: return "\(count) επόμενα δρομολόγια"
         case .albanian: return "\(count) nisje te radhes"
         case .italian: return "\(count) partenze imminenti"
         case .english: return "\(count) upcoming departures"
@@ -1520,7 +1520,7 @@ private struct DirectionSection: View {
 
     private var earlierLabel: String {
         switch loc.language {
-        case .greek: return "Προηγουμενα"
+        case .greek: return "Προηγούμενα"
         case .albanian: return "Me pare"
         case .italian: return "Precedenti"
         case .english: return "Earlier"
@@ -1529,7 +1529,7 @@ private struct DirectionSection: View {
 
     private var allUpcomingLabel: String {
         switch loc.language {
-        case .greek: return "Ολα τα επομενα"
+        case .greek: return "Όλα τα επόμενα"
         case .albanian: return "Te gjitha"
         case .italian: return "Tutte le prossime"
         case .english: return "All upcoming"
@@ -1620,7 +1620,7 @@ private struct FeaturedRow: View {
     private var minutesLabel: String {
         if departure.minutesAway <= 1 {
             switch loc.language {
-            case .greek: return "Τωρα"
+            case .greek: return "Τώρα"
             case .albanian: return "Tani"
             case .italian: return "Ora"
             case .english: return "Now"

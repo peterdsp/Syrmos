@@ -158,6 +158,9 @@ struct AirportHub: Identifiable {
     let city: AirportCity
     let code: String
     let name: String
+    /// The airport's proper name, localized (finding 10): Greek shows
+    /// "Ελευθέριος Βενιζέλος", other languages keep the Latin proper name.
+    let displayName: AirportL10n
     let cityName: AirportL10n
     let subtitle: AirportL10n
     let gradient: [UInt]
@@ -184,6 +187,8 @@ struct AirportHub: Identifiable {
         city: .athens,
         code: "ATH",
         name: "Eleftherios Venizelos",
+        displayName: AirportL10n(en: "Eleftherios Venizelos", el: "Ελευθέριος Βενιζέλος",
+                                 al: "Eleftherios Venizelos", it: "Eleftherios Venizelos"),
         cityName: AirportL10n(en: "Athens", el: "Αθήνα", al: "Athinë", it: "Atene"),
         subtitle: AirportL10n(
             en: "Routes, scheduled departures and trip planning",
@@ -208,6 +213,7 @@ struct AirportHub: Identifiable {
         city: .thessaloniki,
         code: "SKG",
         name: "Makedonia",
+        displayName: AirportL10n(en: "Makedonia", el: "Μακεδονία", al: "Makedonia", it: "Makedonia"),
         cityName: AirportL10n(en: "Thessaloniki", el: "Θεσσαλονίκη", al: "Selanik", it: "Salonicco"),
         subtitle: AirportL10n(
             en: "Metro plus a shuttle, or a direct bus to the terminal",

@@ -77,6 +77,51 @@
         { "id": "q", "durationSeconds": null, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:20:00+02:00", "legs": [{ "kind": "ride", "lineId": "q", "fromId": "x", "toId": "y" }] },
         { "id": "p", "durationSeconds": null, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:10:00+02:00", "legs": [{ "kind": "ride", "lineId": "p", "fromId": "x", "toId": "y" }] }
       ]
+    },
+    {
+      "id": "recommended_comfortable_over_faster_tight",
+      "ranking": "recommended",
+      "note": "S04: a comfortable direct and a comfortable slower option both outrank a genuinely faster tight one. Extra time accepted is bounded to the materially-distinct candidates for the same trip, not an invented minute penalty.",
+      "expectedOrder": ["a1_direct", "m1_a2", "m1_a1"],
+      "expectedFirstBadge": "recommended",
+      "options": [
+        { "id": "m1_a1", "durationSeconds": 2880, "transferCount": 1, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:30:00+02:00", "feasibility": { "status": "tight" }, "legs": [{ "kind": "ride", "lineId": "m1_a1", "fromId": "x", "toId": "y" }] },
+        { "id": "a1_direct", "durationSeconds": 2880, "transferCount": 0, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:31:00+02:00", "feasibility": { "status": "comfortable" }, "legs": [{ "kind": "ride", "lineId": "a1_direct", "fromId": "x", "toId": "y" }] },
+        { "id": "m1_a2", "durationSeconds": 3360, "transferCount": 1, "walkingSeconds": 0, "arrivalInstant": "2026-01-15T09:38:00+02:00", "feasibility": { "status": "comfortable" }, "legs": [{ "kind": "ride", "lineId": "m1_a2", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "recommended_missed_never_leads",
+      "ranking": "recommended",
+      "note": "A faster but missed connection is never the recommendation; the comfortable option leads and is badged, the missed one sorts last.",
+      "expectedOrder": ["comfy", "fast_missed"],
+      "expectedFirstBadge": "recommended",
+      "options": [
+        { "id": "fast_missed", "durationSeconds": 1800, "transferCount": 1, "walkingSeconds": 0, "feasibility": { "status": "missed" }, "legs": [{ "kind": "ride", "lineId": "fast_missed", "fromId": "x", "toId": "y" }] },
+        { "id": "comfy", "durationSeconds": 2400, "transferCount": 0, "walkingSeconds": 0, "feasibility": { "status": "comfortable" }, "legs": [{ "kind": "ride", "lineId": "comfy", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "recommended_all_missed_no_badge",
+      "ranking": "recommended",
+      "note": "When every option is missed there is no comfortable recommendation to make, so the top option carries no badge; order stays deterministic (duration, then id).",
+      "expectedOrder": ["m_early", "m_late"],
+      "expectedFirstBadge": null,
+      "options": [
+        { "id": "m_late", "durationSeconds": 2000, "transferCount": 0, "walkingSeconds": 0, "feasibility": { "status": "missed" }, "legs": [{ "kind": "ride", "lineId": "m_late", "fromId": "x", "toId": "y" }] },
+        { "id": "m_early", "durationSeconds": 1800, "transferCount": 0, "walkingSeconds": 0, "feasibility": { "status": "missed" }, "legs": [{ "kind": "ride", "lineId": "m_early", "fromId": "x", "toId": "y" }] }
+      ]
+    },
+    {
+      "id": "recommended_tight_over_unknown",
+      "ranking": "recommended",
+      "note": "A known-tight-but-makeable connection outranks a faster option whose feasibility is unknown: a direct ride without known boarding access time is not evidence of a comfortable connection.",
+      "expectedOrder": ["tight_known", "unknown_direct"],
+      "expectedFirstBadge": "recommended",
+      "options": [
+        { "id": "unknown_direct", "durationSeconds": 1500, "transferCount": 0, "walkingSeconds": 0, "feasibility": { "status": "unknown" }, "legs": [{ "kind": "ride", "lineId": "unknown_direct", "fromId": "x", "toId": "y" }] },
+        { "id": "tight_known", "durationSeconds": 2000, "transferCount": 1, "walkingSeconds": 0, "feasibility": { "status": "tight" }, "legs": [{ "kind": "ride", "lineId": "tight_known", "fromId": "x", "toId": "y" }] }
+      ]
     }
   ]
 }

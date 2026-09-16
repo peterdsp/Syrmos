@@ -205,7 +205,7 @@ struct ContentView: View {
                 // and follow the keyboard when a field becomes active.
                 HomeView()
                     .modifier(ReadableTabContent())
-                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.home], systemImage: "house")
                     }
@@ -213,7 +213,8 @@ struct ContentView: View {
 
                 LinesView()
                     .modifier(ReadableTabContent())
-                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher }
+                    // Explore hosts its own opaque Plan-pill band (finding 4a).
+                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher(occluding: false) }
                     .tabItem {
                         Label(loc[.explore], systemImage: "safari")
                     }
@@ -227,7 +228,7 @@ struct ContentView: View {
 
                 TimetablesView()
                     .modifier(ReadableTabContent())
-                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.departures], systemImage: "airplane")
                     }
@@ -279,14 +280,19 @@ struct ContentView: View {
         }
     }
 
-    private var assistantLauncher: some View {
-        // Floating launcher only: the pill carries its own circular surface,
-        // so the bottom inset itself stays transparent. An opaque full-width
-        // background here painted a dark bar over the scroll content and, by
-        // making the whole band hit-testable, swallowed taps meant for the
-        // content underneath (e.g. the trailing airport-route chips). Keep the
-        // inset clear so content scrolls behind the button and taps pass
-        // through the empty region.
+    // The launcher is a bottom safe-area inset that reserves its height, but a
+    // ScrollView still bleeds its lower rows into that band, so a scrolled airport
+    // route-overview strip showed its tail labels half-under the owl (finding 4b).
+    // When `occluding` is true the band carries a full-width opaque backing so that
+    // bleed is cleanly occluded instead of competing with the button. The backing
+    // is NOT hit-testable, so taps pass straight through the empty region exactly
+    // as before (an earlier hit-testable opaque bar swallowed taps meant for the
+    // content underneath); only the owl pill itself, drawn on top, takes a tap.
+    //
+    // Explore passes `occluding: false`: it hosts its own opaque Plan-pill band
+    // just above this launcher (finding 4a), which already occludes the bleed, and
+    // a second opaque band here would paint over that Plan pill.
+    private func assistantLauncher(occluding: Bool = true) -> some View {
         AriadneLauncherPill(
             label: askAriadneLabel,
             onTap: { showAriadne = true }
@@ -296,6 +302,14 @@ struct ContentView: View {
         .padding(.vertical, 12)
         .frame(maxWidth: ReadableTabContent.maximumWidth)
         .frame(maxWidth: .infinity)
+        .background(alignment: .top) {
+            if occluding {
+                Color.syrmosBackground
+                    .ignoresSafeArea(edges: .bottom)
+                    .overlay(alignment: .top) { Divider().opacity(0.12) }
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     private var askAriadneLabel: String {

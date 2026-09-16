@@ -57,7 +57,7 @@ struct HomeCustomizeSheet: View {
 
     private var titleLabel: String {
         switch loc.language {
-        case .greek: return "Προσαρμογη Αρχικης"
+        case .greek: return "Προσαρμογή Αρχικής"
         case .albanian: return "Personalizo Ballinen"
         case .italian: return "Personalizza Home"
         case .english: return "Customize Home"
@@ -66,7 +66,7 @@ struct HomeCustomizeSheet: View {
 
     private var doneLabel: String {
         switch loc.language {
-        case .greek: return "Τελος"
+        case .greek: return "Τέλος"
         case .albanian: return "Mbylle"
         case .italian: return "Fatto"
         case .english: return "Done"
@@ -75,7 +75,7 @@ struct HomeCustomizeSheet: View {
 
     private var resetLabel: String {
         switch loc.language {
-        case .greek: return "Επαναφορα"
+        case .greek: return "Επαναφορά"
         case .albanian: return "Rivendos"
         case .italian: return "Ripristina"
         case .english: return "Reset"
@@ -84,7 +84,7 @@ struct HomeCustomizeSheet: View {
 
     private var sectionHeader: String {
         switch loc.language {
-        case .greek: return "Ενοτητες"
+        case .greek: return "Ενότητες"
         case .albanian: return "Seksionet"
         case .italian: return "Sezioni"
         case .english: return "Sections"
@@ -93,7 +93,7 @@ struct HomeCustomizeSheet: View {
 
     private var sectionFooter: String {
         switch loc.language {
-        case .greek: return "Συρετε για αλλαγη σειρας. Πατηστε το εικονιδιο ματιου για εμφανιση η αποκρυψη."
+        case .greek: return "Σύρετε για αλλαγή σειράς. Πατήστε το εικονίδιο ματιού για εμφάνιση ή απόκρυψη."
         case .albanian: return "Terheq per te ndryshuar rradhen. Shtyp ikonon e syrit per te shfaqur ose fshehur."
         case .italian: return "Trascina per riordinare. Tocca l'icona dell'occhio per mostrare o nascondere."
         case .english: return "Drag to reorder. Tap the eye icon to show or hide."

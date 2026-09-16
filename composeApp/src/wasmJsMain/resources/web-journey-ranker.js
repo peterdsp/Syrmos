@@ -31,10 +31,25 @@
     return Number.isFinite(ms) ? ms : null;
   }
 
+  // Comfortable-first ordering class for the RECOMMENDED default: comfortable
+  // outranks tight outranks unknown, and a missed connection sorts last so it can
+  // never lead the list (finding 7, product decision option 2). Mirrors Kotlin
+  // JourneyRanker.feasibilityClass.
+  function feasibilityClass(opt) {
+    const s = opt && opt.feasibility && opt.feasibility.status;
+    if (s === 'comfortable') return 0;
+    if (s === 'tight') return 1;
+    if (s === 'missed') return 3;
+    return 2; // unknown / absent
+  }
+
   function primaryCmp(ranking, a, b) {
+    if (ranking === 'recommended') {
+      return (feasibilityClass(a) - feasibilityClass(b)) || numNullsLast(a.durationSeconds, b.durationSeconds);
+    }
     if (ranking === 'fewestChanges') return numNullsLast(a.transferCount, b.transferCount);
     if (ranking === 'leastWalking') return numNullsLast(a.walkingSeconds, b.walkingSeconds);
-    return numNullsLast(a.durationSeconds, b.durationSeconds); // fastest (default)
+    return numNullsLast(a.durationSeconds, b.durationSeconds); // fastest
   }
 
   function comparator(ranking) {
@@ -48,6 +63,10 @@
   }
 
   function badgeFor(ranking, opt) {
+    if (ranking === 'recommended') {
+      const s = opt && opt.feasibility && opt.feasibility.status;
+      return (s === 'missed') ? null : 'recommended';
+    }
     if (ranking === 'fewestChanges') return 'fewestChanges';
     if (ranking === 'leastWalking') return (opt.walkingSeconds != null) ? 'leastWalking' : null;
     return (opt.durationSeconds != null) ? 'fastest' : null;

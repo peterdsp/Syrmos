@@ -100,9 +100,14 @@ enum JourneyPlanAdapter {
                 routes.append(alt)
             }
         }
+        // Default recommendation is comfortable-first (finding 7, product decision
+        // option 2), then the deterministic objective chain that restores parity
+        // with the shared Kotlin/web ranker: duration, arrival, changes, stable id.
+        // A missed/closed connection sorts last so it can never lead the list; an
+        // unknown arrival stays unknown (sorts last among ties), never a fake 0.
         let built = routes
             .map { buildPlanned(detailed: $0, departuresFor: departuresFor, mode: mode, arriveBy: arriveBy) }
-            .sorted { $0.durationSeconds < $1.durationSeconds }
+            .sorted { recommendedSortKey($0) < recommendedSortKey($1) }
         var seen = Set<String>()
         var distinct: [PlannedJourney] = []
         for p in built {
@@ -247,6 +252,16 @@ enum JourneyPlanAdapter {
         switch f { case .missed: return 3; case .unknown: return 2; case .tight: return 1; case .comfortable: return 0 }
     }
 
+    /// Total ordering key for the comfortable-first default recommendation
+    /// (finding 7). Feasibility class first (comfortable < tight < unknown < missed
+    /// via `severity`), then the shared objective chain: duration, arrival (unknown
+    /// last, never a fabricated 0), change count, and a stable id from the line
+    /// chain so the order is deterministic on ties.
+    static func recommendedSortKey(_ p: PlannedJourney) -> (Int, Int, Double, Int, String) {
+        let arrival = p.leaveBy.map { $0.timeIntervalSince1970 + Double(p.durationSeconds) } ?? .greatestFiniteMagnitude
+        return (severity(p.feasibility), p.durationSeconds, arrival, p.transferCount, p.lineChain.joined(separator: "-"))
+    }
+
     // Per-hop travel estimate by line type, mirroring JourneyPlanner.travelTime.
     private static func perHopSeconds(_ lineId: String) -> Int {
         switch SyrmosData.lines.first(where: { $0.id == lineId })?.type {
@@ -318,12 +333,24 @@ struct PlanView: View {
                         .textFieldStyle(.roundedBorder)
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0) {
-                            ForEach(matches) { st in
-                                Text(displayName(st))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 14)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { pick(st) }
+                            ForEach(matches) { group in
+                                HStack(spacing: 8) {
+                                    Text(groupDisplayName(group))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    // Line badges disambiguate a shared physical station
+                                    // and any same-name stations kept separate.
+                                    ForEach(group.lineIds, id: \.self) { lid in
+                                        Text(lid)
+                                            .font(.caption2.weight(.semibold))
+                                            .padding(.horizontal, 6).padding(.vertical, 2)
+                                            .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
+                                            .foregroundStyle(Color.syrmosPrimary)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 14)
+                                .contentShape(Rectangle())
+                                .onTapGesture { pick(group) }
                                 Divider()
                             }
                         }
@@ -692,17 +719,22 @@ struct PlanView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: work)
     }
 
-    private var matches: [TransitStation] {
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
-        return Array(stations.filter {
-            q.isEmpty || $0.name.lowercased().contains(q) || $0.nameEl.lowercased().contains(q)
-        }.prefix(40))
+    // One row per real physical station (finding 2): co-located same-name stops
+    // collapse into a single group with line badges, so the picker never lists the
+    // same station twice, while distinct stations (Kifissia vs Kifisias) stay apart.
+    private var matches: [StationGroup] {
+        let q = StationGrouping.fold(query)
+        return Array(StationGrouping.groups(from: stations)
+            .filter { StationGrouping.matches($0, query: q) }
+            .prefix(40))
     }
 
     private func toggle(_ which: String) { opening = (opening == which) ? nil : which; query = "" }
 
-    private func pick(_ st: TransitStation) {
-        if opening == "from" { fromId = st.id } else { toId = st.id }
+    private func pick(_ group: StationGroup) {
+        // Carry the group's representative stop; the planner reaches every member
+        // line through its co-located transfer edges, so no service is lost.
+        if opening == "from" { fromId = group.representativeId } else { toId = group.representativeId }
         opening = nil
         query = ""
         // S10 recovery: once both endpoints resolve again, clear the note and plan.
@@ -710,6 +742,10 @@ struct PlanView: View {
             invalidSavedNote = nil
             runPlan()
         }
+    }
+
+    private func groupDisplayName(_ g: StationGroup) -> String {
+        language == .greek && !g.nameEl.isEmpty ? g.nameEl : g.name
     }
 
     private func name(_ id: String?) -> String {
@@ -1051,8 +1087,8 @@ private struct StopsDisclosure: View {
         VStack(alignment: .leading, spacing: 2) {
             Button { expanded.toggle() } label: {
                 Text("\(count) " + (count == 1
-                    ? t("stop", "στάση", "ndalesë", "fermata")
-                    : t("stops", "στάσεις", "ndalesa", "fermate")))
+                    ? t("intermediate stop", "ενδιάμεση στάση", "ndalesë e ndërmjetme", "fermata intermedia")
+                    : t("intermediate stops", "ενδιάμεσες στάσεις", "ndalesa të ndërmjetme", "fermate intermedie")))
                     .font(.footnote).foregroundStyle(Color.syrmosPrimary)
             }
             .buttonStyle(.plain)

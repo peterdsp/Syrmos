@@ -18,20 +18,34 @@
     return lang === 'el' ? el : lang === 'sq' ? sq : lang === 'it' ? it : en;
   }
 
+  // "N stops to <alight>" for the ride/board sub-line (S06). Counts the stops
+  // remaining to THIS leg's alight point (an interchange on a transfer journey,
+  // the final destination only on the final leg), and names it explicitly so the
+  // GO number can never be confused with the S05 "intermediate stops" count that
+  // measures a different thing (finding 3). Singular/plural per locale.
+  function stopsToAlight(n, alight, lang) {
+    return n === 1
+      ? t(lang, `1 stop to ${alight}`, `1 στάση μέχρι ${alight}`, `1 ndalesë deri te ${alight}`, `1 fermata fino a ${alight}`)
+      : t(lang, `${n} stops to ${alight}`, `${n} στάσεις μέχρι ${alight}`, `${n} ndalesa deri te ${alight}`, `${n} fermate fino a ${alight}`);
+  }
+
   // The rider-facing text for a guidance object (headline + detail + sub).
-  function describe(g, lang) {
+  // `alightStation` names the current leg's alight point for the ride/board sub;
+  // callers pass it from the journey, falling back to the next station.
+  function describe(g, lang, alightStation) {
+    const alight = alightStation || g.nextStation;
     switch (g.kind) {
       case 'board':
         return {
           icon: '🚶', headline: t(lang, `Board ${g.lineId}`, `Επιβίβαση ${g.lineId}`, `Hip në ${g.lineId}`, `Sali su ${g.lineId}`),
           detail: t(lang, `toward ${g.towards}`, `προς ${g.towards}`, `drejt ${g.towards}`, `verso ${g.towards}`),
-          sub: t(lang, `${g.stopsRemaining} stops · next ${g.nextStation}`, `${g.stopsRemaining} στάσεις · επόμενη ${g.nextStation}`, `${g.stopsRemaining} ndalesa · tjetra ${g.nextStation}`, `${g.stopsRemaining} fermate · prossima ${g.nextStation}`),
+          sub: stopsToAlight(g.stopsRemaining, alight, lang),
         };
       case 'ride':
         return {
           icon: '🚈', headline: t(lang, `Stay on ${g.lineId}`, `Μείνε στη ${g.lineId}`, `Qëndro në ${g.lineId}`, `Resta su ${g.lineId}`),
           detail: t(lang, `toward ${g.towards}`, `προς ${g.towards}`, `drejt ${g.towards}`, `verso ${g.towards}`),
-          sub: t(lang, `${g.stopsRemaining} stops · next ${g.nextStation}`, `${g.stopsRemaining} στάσεις · επόμενη ${g.nextStation}`, `${g.stopsRemaining} ndalesa · tjetra ${g.nextStation}`, `${g.stopsRemaining} fermate · prossima ${g.nextStation}`),
+          sub: stopsToAlight(g.stopsRemaining, alight, lang),
         };
       case 'getOffNext':
         return {
@@ -114,7 +128,9 @@
       const g = GO.guidance(journey, pos);
       const alert = GO.shouldAlertGetOff(journey, pos);
       const arrived = GO.isArrived(journey, pos);
-      const d = describe(g, lang);
+      const curLeg = journey.legs[pos.legIndex];
+      const alightName = (curLeg && curLeg.stops.length) ? curLeg.stops[curLeg.stops.length - 1].name : g.nextStation;
+      const d = describe(g, lang, alightName);
       const tint = g.kind === 'arrived' ? '#2E7D32' : color(g.lineId || (journey.legs[pos.legIndex] && journey.legs[pos.legIndex].lineId));
       const canBack = pos.legIndex > 0 || pos.stopIndex > 0;
 
