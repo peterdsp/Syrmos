@@ -41,7 +41,7 @@ struct ConfirmRailPulseIntent: AppIntent {
         defaults.set(confirmed + 1, forKey: "ichnos_v2_confirmed")
         defaults.set(thisWeek + 1, forKey: "ichnos_v2_week")
         defaults.set(wireSignal, forKey: "ichnos_v2_last_signal")
-        defaults.set(Date().timeIntervalSince1970, forKey: "ichnos_v2_last_signal_epoch")
+        defaults.set(SyrmosClock.now.timeIntervalSince1970, forKey: "ichnos_v2_last_signal_epoch")
         return .result()
     }
 

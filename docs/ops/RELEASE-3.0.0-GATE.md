@@ -171,9 +171,14 @@ axis), and Map cannot reach the network without location permission (Map cells).
 
 - [x] Accept the Xcode licence; commit + push the Phase Z docs. (Done; the
       simulator, `git` and `xcodebuild` all work on this host again.)
-- [ ] Make the capture harness deterministic (pin the Athens test clock, drive
-      the planner from `fixtures/journeys/`, pre-grant location) before any
-      capture is promoted to an approved baseline.
+- [x] Make the capture harness deterministic. `scripts/capture-baselines.sh`
+      pins the clock (verified by a receipt the app writes, so a failed pin
+      cannot pass as a baseline), cuts the network so screens render from the
+      bundled seed, holds looping animations still, resets app state and the
+      first-run gates, pre-grants location, freezes the status bar and settles
+      before the first shot. Proven by two full reinstall cycles producing
+      byte-identical PNGs. Remaining: recorded API fixtures, without which only
+      the offline variant of each screen is diffable.
 - [ ] Triage the six iOS findings in `docs/screenshots/release-3.0.0/FINDINGS.md`.
 - [ ] Run the full visual-baseline capture matrix + raster gate (device lab / CI).
 - [ ] Device-gated behaviours to confirm on hardware: Android 12+ exact-alarm

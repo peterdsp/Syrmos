@@ -6,7 +6,7 @@ struct StationDetailView: View {
     @StateObject private var stasyService = STASYService()
     @State private var departures: [Departure] = []
     @State private var hasLoadedOnce: Bool = false
-    @State private var nowTick = Date()
+    @State private var nowTick = SyrmosClock.now
     @State private var showMapSheet = false
     @State private var safariURL: URL?
     @State private var apiFailed = false
@@ -171,7 +171,7 @@ struct StationDetailView: View {
             reloadDepartures()
         }
         .onReceive(refreshTimer) { _ in
-            nowTick = Date()
+            nowTick = SyrmosClock.now
             reloadDepartures()
         }
         .sheet(isPresented: $showMapSheet) {

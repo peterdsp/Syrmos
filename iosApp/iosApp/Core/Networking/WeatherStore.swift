@@ -86,7 +86,7 @@ final class WeatherStore: ObservableObject {
     func refresh(latitude: Double = athens.latitude,
                  longitude: Double = athens.longitude,
                  placeName: String = "Athens") async {
-        if let last = lastFetch, Date().timeIntervalSince(last) < 60 { return }
+        if let last = lastFetch, SyrmosClock.now.timeIntervalSince(last) < 60 { return }
         guard var comps = URLComponents(string: "https://api.open-meteo.com/v1/forecast") else { return }
         comps.queryItems = [
             .init(name: "latitude", value: String(latitude)),
@@ -106,13 +106,13 @@ final class WeatherStore: ObservableObject {
             let fresh = WeatherSnapshot(
                 current: decoded.current.toDomain(),
                 placeName: placeName,
-                fetchedAt: Date(),
+                fetchedAt: SyrmosClock.now,
                 highC: decoded.daily?.temperature_2m_max.first,
                 lowC: decoded.daily?.temperature_2m_min.first,
                 hourly: decoded.nextHours(6)
             )
             snapshot = fresh
-            lastFetch = Date()
+            lastFetch = SyrmosClock.now
             // Mirror into the App Group so the Weather + Alerts widget shows
             // real conditions instead of the offline placeholder.
             WidgetBridge.publishWeather(

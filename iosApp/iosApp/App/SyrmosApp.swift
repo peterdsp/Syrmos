@@ -29,6 +29,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        SyrmosClock.installCaptureNetworkGate()
+        SyrmosClock.writeCaptureReceipt()
         BackgroundRefresh.register()
         BackgroundRefresh.schedule()
 
@@ -40,7 +42,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
             // Phase N J09: reconcile leave-by alarms with the persisted board on
             // launch, so a board changed while the app was closed (or after a
             // reboot) re-schedules correctly. Prunes departed entries first.
-            SavedDepartureBoard.shared.pruneDeparted(now: Int64(Date().timeIntervalSince1970))
+            SavedDepartureBoard.shared.pruneDeparted(now: Int64(SyrmosClock.now.timeIntervalSince1970))
             LeaveByReminderScheduler.shared.sync()
         }
 
@@ -252,7 +254,7 @@ struct ContentView: View {
             // they render in EN / EL / SQ to match the app.
             WidgetBridge.publishLanguage(loc.language.rawValue)
             LiveTrainService.onLiveDataRefreshed = { count in
-                WidgetBridge.publishLiveTrains(count: count, updatedEpoch: Date().timeIntervalSince1970)
+                WidgetBridge.publishLiveTrains(count: count, updatedEpoch: SyrmosClock.now.timeIntervalSince1970)
             }
             await LivePositionsService.shared.refresh()
             await LiveTrainService.shared.refresh()

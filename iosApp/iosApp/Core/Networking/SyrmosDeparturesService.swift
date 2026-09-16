@@ -25,7 +25,7 @@ enum SyrmosDeparturesService {
     ) async -> [Departure]? {
         if SyrmosSchedulesStore.shared.offlineOnly { return nil }
         let key = cacheKey(stationId: stationId, lineIds: lineIds, limit: limit)
-        if let cached = cache[key], Date().timeIntervalSince(cached.0) < ttl {
+        if let cached = cache[key], SyrmosClock.now.timeIntervalSince(cached.0) < ttl {
             return cached.1
         }
         guard var components = URLComponents(string: "\(base)/api/departures/next") else { return nil }
@@ -53,7 +53,7 @@ enum SyrmosDeparturesService {
                     trainNo: entry.trainNo
                 )
             }
-            cache[key] = (Date(), mapped)
+            cache[key] = (SyrmosClock.now, mapped)
             return mapped
         } catch {
             return nil

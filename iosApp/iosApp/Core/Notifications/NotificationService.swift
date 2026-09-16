@@ -20,6 +20,15 @@ final class NotificationService: ObservableObject {
     // MARK: - Authorization
 
     func requestAuthorization() async {
+        // Under a pinned clock the app is being screenshotted for a visual
+        // baseline, and the system permission alert is chrome that would sit on
+        // top of every capture. Guarded here rather than at each call site
+        // because seven different screens ask for authorization. `isPinned` is
+        // compiled to false in release, so a real user's prompt is untouched.
+        if SyrmosClock.isPinned {
+            isAuthorized = false
+            return
+        }
         do {
             let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
             isAuthorized = granted
@@ -102,7 +111,7 @@ final class NotificationService: ObservableObject {
         guard isAuthorized else { return }
         guard let snapshot, snapshot.current.condition.isSevere else { return }
 
-        let today = Calendar.current.startOfDay(for: Date())
+        let today = Calendar.current.startOfDay(for: SyrmosClock.now)
         let lastNotifDate = UserDefaults.standard.object(forKey: lastWeatherNotifKey) as? Date
         if let last = lastNotifDate, Calendar.current.isDate(last, inSameDayAs: today) {
             return

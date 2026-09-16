@@ -19,21 +19,45 @@ Captures for the S01-S10 matrix defined in
 (platform, OS, viewport, scale, locale, theme, font, fixture revision, source
 commit, screen, label, file).
 
+## The harness
+
+`scripts/capture-baselines.sh` is what makes a capture reproducible. It pins
+everything that otherwise moves under the app between two runs:
+
+| pinned | how |
+|---|---|
+| clock | `SYRMOS_CAPTURE_NOW` read once by `SyrmosClock`, and **verified**: the app writes a receipt into its container and the harness refuses to continue without it, so a launch where the environment never arrived fails loudly instead of quietly producing wall-clock pixels |
+| data | `SYRMOS_CAPTURE_OFFLINE=1` installs a `URLProtocol` that fails every request, so screens render from the bundled seed rather than whatever the API is serving this minute |
+| animation | looping pulses are held still; a countdown that breathes guarantees two captures of the same state differ |
+| state | the app is uninstalled and reinstalled, and onboarding plus the What's New sheet are seeded as already seen |
+| permissions | location pre-granted and set to a fixed point; stale notification prompts reset (the app skips the request under a pinned clock) |
+| chrome | status bar frozen at 09:41, full bars, charged |
+| timing | a settle period before the first shot, because data load and entrance transitions finish over the first few seconds |
+
+```bash
+scripts/capture-baselines.sh setup --app path/to/Syrmos.app
+scripts/capture-baselines.sh shot S01-home "Home / Now"
+scripts/capture-baselines.sh theme dark
+scripts/capture-baselines.sh teardown
+```
+
+**Verified, not assumed:** two full uninstall → install → launch → settle → capture
+cycles produce byte-for-byte identical PNGs (same sha256). That is the property
+the raster gate needs.
+
+What this deliberately does not cover: the **online** variants of every screen.
+Offline is a state we control; the live API is not. Baselining the online
+variants needs recorded response fixtures, which do not exist yet.
+
 ## Honest limitations of this batch
 
-These are **reference captures, not an approved raster baseline**, for three
-reasons that must be fixed before the raster gate can run:
+Most cells here were captured **before the harness existed** and are reference
+captures, not approved baselines: the clock was live (~02:00 Europe/Athens, so
+schedule-bearing screens show overnight state), content came from the live API,
+and location was not granted. They are kept as evidence for `FINDINGS.md`.
 
-1. **The clock is live, not frozen.** Captured at ~02:00 Europe/Athens, so every
-   schedule-bearing screen shows overnight state (the first plan departs 04:00,
-   `0 live` vehicles, no active disruptions). A raster comparison against these
-   would fail at any other hour. The gate needs the injectable Athens test clock
-   pinned and the planner fed from `fixtures/journeys/`, not the live seed.
-2. **Content comes from the live API and leftover local state.** The saved-journey
-   list is whatever a previous session left on the simulator, and the
-   announcement feed is live upstream data.
-3. **Location permission is not granted**, which is itself why the Map cells are
-   off-network (see finding 5 in `FINDINGS.md`).
+`S01-home` has been recaptured through the harness and is deterministic. The
+remaining screens need the same treatment before they can be diffed.
 
 ## Not yet captured
 

@@ -96,6 +96,7 @@
 		BCB2D8DDE0D14B2D8664EC16 /* SyrmosSchedulesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5439E65484C3427EAA190AAB /* SyrmosSchedulesStore.swift */; };
 		C173574BC2DC4C0F9D5C159E /* DepartureRowCompact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933E6F89FEA54214B1B2AE31 /* DepartureRowCompact.swift */; };
 		C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */; };
+		FE0000000000000000000C24 /* SyrmosClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C25 /* SyrmosClock.swift */; };
 		C5D6E7F8A9B0C1D2E3F40506 /* SyrmosLinesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D6E7F8A9B0C1D2E3F40507 /* SyrmosLinesService.swift */; };
 		C7C48BC8C2A3E895472A8FCD /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EF7A1B273F9EE8EBD309C64 /* Foundation.framework */; };
 		CA564E5B6224431DAC6CC3E2 /* AirportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD2789A52441AB0C26BF2 /* AirportData.swift */; };
@@ -136,6 +137,7 @@
 		FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C04 /* JourneyDetailTests.swift */; };
 		FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0A /* DisruptionExclusionTests.swift */; };
 		FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C0E /* FreshnessPresentationTests.swift */; };
+		FE0000000000000000000C27 /* SyrmosClockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C28 /* SyrmosClockTests.swift */; };
 		FE0000000000000000000C22 /* AnnouncementLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C23 /* AnnouncementLocalizationTests.swift */; };
 		FE0000000000000000000C17 /* LeaveByReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C16 /* LeaveByReminder.swift */; };
 		FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C18 /* LeaveByReminderTests.swift */; };
@@ -164,6 +166,7 @@
 		E36B2B66CE3FE430B935D319 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBA71617E0DC88481663507 /* WatchModels.swift */; };
 		E44EAEAEE0954E9F8735761E /* StationStripFull.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EB6C1444B246B3AB9CF185 /* StationStripFull.swift */; };
 		E6BB2EE245424B80AE4241AF /* ScheduleProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */; };
+		FE0000000000000000000C26 /* SyrmosClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C25 /* SyrmosClock.swift */; };
 		ECAA824BE3E518277AB18AB6 /* NearbyStationDestinationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C311F839BA02691F04AB93 /* NearbyStationDestinationTests.swift */; };
 		EDBF9D088F0A46CF90DFAE6B /* DataFreshness.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0002F00D0002F00D0002 /* DataFreshness.swift */; };
 		EEC6AA6A80ADDB9629326CDF /* RailNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E31FFAA5B22EE54B9E980E /* RailNewsService.swift */; };
@@ -280,6 +283,7 @@
 		31E31FFAA5B22EE54B9E980E /* RailNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/RailNewsService.swift; sourceTree = SOURCE_ROOT; };
 		37E20527B3ED48E6806B8138 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/ThemeManager.swift; sourceTree = SOURCE_ROOT; };
 		395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/ScheduleProjector.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C25 /* SyrmosClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/SyrmosClock.swift; sourceTree = SOURCE_ROOT; };
 		3D8B4CA7955E1724CF96A1AD /* llama.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = llama.xcframework; path = Frameworks/llama.xcframework; sourceTree = SOURCE_ROOT; };
 		51972231C37146A79B5760E4 /* SyrmosVisualOverridesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Persistence/SyrmosVisualOverridesStore.swift; sourceTree = SOURCE_ROOT; };
 		53C0854D3D8A40F9A9F267E9 /* LiquidGlassTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/WidgetKit/LiquidGlassTile.swift; sourceTree = SOURCE_ROOT; };
@@ -371,6 +375,7 @@
 		FE0000000000000000000C04 /* JourneyDetailTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyDetailTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0A /* DisruptionExclusionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DisruptionExclusionTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0E /* FreshnessPresentationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreshnessPresentationTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C28 /* SyrmosClockTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyrmosClockTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C23 /* AnnouncementLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnnouncementLocalizationTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C18 /* LeaveByReminderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LeaveByReminderTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SavedDepartureStoreTests.swift; sourceTree = "<group>"; };
@@ -466,6 +471,7 @@
 				FE0000000000000000000C04 /* JourneyDetailTests.swift */,
 				FE0000000000000000000C0A /* DisruptionExclusionTests.swift */,
 				FE0000000000000000000C0E /* FreshnessPresentationTests.swift */,
+				FE0000000000000000000C28 /* SyrmosClockTests.swift */,
 				FE0000000000000000000C23 /* AnnouncementLocalizationTests.swift */,
 				FE0000000000000000000C18 /* LeaveByReminderTests.swift */,
 				FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */,
@@ -674,6 +680,7 @@
 				889F9EDE14524E2DA3F4B3B5 /* WatchSessionManager.swift */,
 				571BD2789A52441AB0C26BF2 /* AirportData.swift */,
 				395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */,
+				FE0000000000000000000C25 /* SyrmosClock.swift */,
 				AA11BB22CC33DD44EE55FF60 /* NationalVehicleProjector.swift */,
 				DA7A0002F00D0002F00D0002 /* DataFreshness.swift */,
 				FE0000000000000000000C16 /* LeaveByReminder.swift */,
@@ -1081,6 +1088,7 @@
 				03FBB75EEE74C7E43F7A609B /* CompactTabHeader.swift in Sources */,
 				8218D06AFB1A4111BBE6A6BA /* SyrmosVisualOverridesStore.swift in Sources */,
 				C5D4C72817CA43BA90F02ADB /* ScheduleProjector.swift in Sources */,
+				FE0000000000000000000C24 /* SyrmosClock.swift in Sources */,
 				AA11BB22CC33DD44EE55FF61 /* NationalVehicleProjector.swift in Sources */,
 				DA7A0001F00D0001F00D0001 /* DataFreshness.swift in Sources */,
 				FE0000000000000000000C17 /* LeaveByReminder.swift in Sources */,
@@ -1155,6 +1163,7 @@
 				FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */,
 				FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */,
 				FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */,
+				FE0000000000000000000C27 /* SyrmosClockTests.swift in Sources */,
 				FE0000000000000000000C22 /* AnnouncementLocalizationTests.swift in Sources */,
 				FE0000000000000000000C19 /* LeaveByReminderTests.swift in Sources */,
 				FE0000000000000000000C1D /* SavedDepartureStoreTests.swift in Sources */,
@@ -1202,6 +1211,7 @@
 				7BA0F0893BD64501A7EAC5A1 /* StationCoordinates.swift in Sources */,
 				D10CE67C95FA4662AB0D160F /* TransitData.swift in Sources */,
 				E6BB2EE245424B80AE4241AF /* ScheduleProjector.swift in Sources */,
+				FE0000000000000000000C26 /* SyrmosClock.swift in Sources */,
 				AA11BB22CC33DD44EE55FF62 /* NationalVehicleProjector.swift in Sources */,
 				AC74A75A5E7742A6A2AC71B3 /* SyrmosWidgets.swift in Sources */,
 				DA7A0121F00D0121F00D0121 /* SyrmosTrackingAttributes.swift in Sources */,

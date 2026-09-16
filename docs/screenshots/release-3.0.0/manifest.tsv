@@ -21,3 +21,8 @@ ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-mor
 ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings-scrolled	More scrolled, dark: same rows-under-title-pill overlap as light, so it is not theme specific	ios/S09-more-settings-scrolled__C402__dark__en__default.png
 ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	7f204489	S01-home	Home / Now, with named announcements after the fallback fix	ios/S01-home__C402__light__en__default.png
 ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	7f204489	S01-home	Home / Now, dark, with named announcements after the fallback fix	ios/S01-home__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now, deterministic harness: clock 08:42 Athens, offline, animations held	ios/S01-home__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now, dark, deterministic harness	ios/S01-home__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now, dark	ios/S01-home__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
