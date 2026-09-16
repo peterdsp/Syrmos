@@ -13,17 +13,18 @@ Captures for the S01-S10 matrix defined in
 | Clock | pinned to **2026-09-16T08:42:00+03:00**, a weekday mid-morning inside Athens service hours |
 | Location | Syntagma, pre-granted |
 | Data | offline: the bundled seed, no live API |
-| Locale | `en` |
-| Themes | light and dark, every cell in both |
+| Locales | `en` (light + dark), `el` (light) |
 | Font | default |
-| Cells | **36** (18 screens x 2 themes) |
+| Cells | **54** (18 screens x 2 themes in `en`, plus 18 in `el`) |
 
 Screens covered: S01 · S02 (draft, filled) · S03 (list, keyboard open) · S04 ·
 S05 · S06 (active, get-off-next) · S07 (risk, alternatives) · S08 · S09
 (Explore, Map, Airport, More, Ariadne) · S10 (offline).
 
-Every cell was captured through `scripts/capture-baselines.sh`, so all 36 are
-reproducible. `manifest.tsv` carries the per-capture metadata the gate requires,
+Every cell was captured through `scripts/capture-baselines.sh`, so all 54 are
+reproducible. The harness sets the app's own `app_language` from the same
+variable that names the file, so a cell cannot be labelled `__el__` while the app
+is still running in English. `manifest.tsv` carries the per-capture metadata the gate requires,
 including the pinned clock and the offline flag as the fixture revision.
 
 ## The harness
@@ -69,14 +70,14 @@ fixtures before it can be diffed.
 ## Not yet captured
 
 - The window expansions: C360, M768, E1024, W1360 and Short.
-- The `el`, `sq` and `it` locales.
+- The `sq` and `it` locales, and `el` in dark.
 - The accessibility sweep: Dynamic Type XXXL, and web zoom / Android font scale
   on those platforms.
 - Android and web: nothing yet.
 
 ## Size note
 
-36 cells at 3x is 22 MB. The full matrix across three platforms at this
+54 cells at 3x is 34 MB. The full matrix across three platforms at this
 resolution is on the order of 150 MB of binaries in git, so the raster job should
 either downscale for storage or move baselines to LFS before the sweep is
 completed.
