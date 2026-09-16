@@ -116,11 +116,15 @@ cmd_setup() {
   fi
   xcrun simctl install "$udid" "$APP"
 
-  # A notification prompt that was never answered is re-presented by SpringBoard
-  # on every reinstall and would then sit on top of every capture. The app skips
-  # the request under a pinned clock, so this only clears a prompt inherited from
-  # an ordinary run of the app on this simulator.
-  xcrun simctl privacy "$udid" reset all "$BUNDLE" 2>/dev/null || true
+  # Reset LOCATION only, never `all`. The app does not ask for notification
+  # permission under a pinned clock, but `privacy reset all` clears the decision
+  # already recorded for this bundle and SpringBoard then re-presents the prompt
+  # it had queued, which lands on top of every capture. Leaving that decision
+  # alone keeps it answered.
+  #
+  # On a brand-new simulator the decision does not exist yet, so the first run
+  # may show the prompt once; dismiss it and every later run is clean.
+  xcrun simctl privacy "$udid" reset location "$BUNDLE" 2>/dev/null || true
   xcrun simctl privacy "$udid" grant location-always "$BUNDLE" 2>/dev/null || true
   xcrun simctl location "$udid" set "$LAT,$LON"
   xcrun simctl ui "$udid" appearance "$THEME"

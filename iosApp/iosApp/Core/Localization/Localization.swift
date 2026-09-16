@@ -16,6 +16,26 @@ enum AppLanguage: String, CaseIterable {
     }
 }
 
+extension String {
+    /// Uppercase this text for display, in the reader's language.
+    ///
+    /// Greek is the reason this exists. Monotonic Greek drops the accent in
+    /// all-caps, so a chip reading ΠΡΩΙΝΉ ΜΕΤΑΚΊΝΗΣΗ is wrong where
+    /// ΠΡΩΙΝΗ ΜΕΤΑΚΙΝΗΣΗ is right, and the plain `uppercased()` keeps the tonos
+    /// because it is locale-unaware. It also turns ΐ into a combining-mark mess
+    /// that the Greek locale resolves cleanly to Ϊ. Latin text is unaffected, so
+    /// every other language we ship behaves exactly as before.
+    ///
+    /// Only for text a reader sees, and only for ALL-CAPS. Do not use it to
+    /// normalize an identifier (a line id is matched, not read), and do not use
+    /// it to capitalize a first letter: Greek *keeps* the accent in title case,
+    /// so `"άμεσο".prefix(1)` must stay on the plain `uppercased()` to give
+    /// Άμεσο rather than Αμεσο.
+    func uppercasedForDisplay(_ language: AppLanguage) -> String {
+        uppercased(with: Locale(identifier: language.rawValue))
+    }
+}
+
 @MainActor
 final class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()

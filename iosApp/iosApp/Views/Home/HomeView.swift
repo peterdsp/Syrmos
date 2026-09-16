@@ -332,7 +332,7 @@ struct HomeView: View {
     }
 
     private func pulseContextTag(_ text: String, color: Color) -> some View {
-        Text(text.uppercased())
+        Text(text.uppercasedForDisplay(loc.language))
             .font(.system(size: SyrmosTokens.Font.contextTagSize, weight: .bold))
             .tracking(0.8)
             .foregroundStyle(color)
@@ -712,7 +712,7 @@ struct HomeView: View {
     private func answerHero(next: Departure?) -> some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
             VStack(alignment: .leading, spacing: 10) {
-                Text(loc[.nextTrain].uppercased())
+                Text(loc[.nextTrain].uppercasedForDisplay(loc.language))
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
