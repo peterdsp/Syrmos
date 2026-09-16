@@ -25,10 +25,19 @@ the release version, upload a build, or deploy.
 | 10 | Home interpolated raw `next.direction`; airport hero showed a plain `name` | `DirectionL10n` resolves the direction to the localized station name; `AirportHub.displayName` localized on iOS + Android hero | `PlaceNameLocalizationTests`; **sim (el): Home "M2 προς Ανθούπολη"; airport hero "Ελευθέριος Βενιζέλος" (ATH kept)** | **fixed and verified (iOS)**; Android build clean | Android runtime capture |
 
 Findings 1, 5, 9 are unchanged by this pass (1 and 9 fixed earlier and guarded; 5
-retracted). Baselines recaptured this pass (el, `C402`, clock pinned 08:42 Athens,
-offline seed): `S01-home`, `S03-station-selector-keyboard`, `S04-route-results`,
-`S05-journey-detail`, `S06-go-active`, `S09-explore`, `S09-airport-hub`,
-`S09-more-rest`, `S09-more-scrolled` (light + dark) under `ios/`.
+retracted). Baselines recaptured (`C402`, clock pinned 08:42 Athens, offline seed)
+under `ios/`:
+- **el** light + dark: `S01-home`, `S03-station-selector-keyboard`,
+  `S04-route-results`, `S05-journey-detail`, `S06-go-active`, `S09-explore`,
+  `S09-airport-hub`, `S09-more-rest`, `S09-more-scrolled`.
+- **en** light (full set): the same S01/S03/S04/S05/S06/S09 screens, confirming
+  findings 2/3/4/6/7/10 in the origin locale.
+- **sq** and **it** light (smoke of the changed labels): `S05` and `S06` (finding 3
+  singular/plural: "14 intermediate stops" / "1 stop", "N stops to <alight>"),
+  `S04` (finding 7 ordering), airport (finding 10), no text overflow.
+- **Dynamic Type accessibility XXXL** (`__el__AX5`): `S09-explore` (finding 4 pill),
+  `S09-airport-hub` (finding 4b launcher), `S09-more-scrolled` (finding 6 header),
+  each occluding content cleanly and expanding without competing text.
 
 ---
 
