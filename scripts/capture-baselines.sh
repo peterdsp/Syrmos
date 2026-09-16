@@ -31,6 +31,7 @@ STATE="${TMPDIR:-/tmp}/syrmos-capture.env"
 
 DEVICE=${SYRMOS_CAPTURE_DEVICE:-iPhone 17}
 THEME=${SYRMOS_CAPTURE_THEME:-light}
+# One of en / el / sq / it, matching AppLanguage's raw values.
 LOCALE=${SYRMOS_CAPTURE_LOCALE:-en}
 # A weekday mid-morning inside Athens service hours, so departures, countdowns
 # and "leave now" plans all have real content. An overnight instant renders the
@@ -93,7 +94,11 @@ cmd_setup() {
   fi
 
   local udid; udid=$(udid_for "$DEVICE")
-  say "device $DEVICE ($udid), bundle $BUNDLE"
+  case "$LOCALE" in
+    en|el|sq|it) ;;
+    *) die "unsupported locale $LOCALE (expected en, el, sq or it)" ;;
+  esac
+  say "device $DEVICE ($udid), bundle $BUNDLE, locale $LOCALE"
 
   xcrun simctl boot "$udid" 2>/dev/null || true
   xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || true
@@ -135,6 +140,11 @@ cmd_setup() {
   # test, and each covers the first screen. Marked as already seen.
   xcrun simctl spawn "$udid" defaults write "$BUNDLE" syrmos.onboarding.completed.v1 -bool true
   xcrun simctl spawn "$udid" defaults write "$BUNDLE" syrmos.whatsnew.version -string "$WHATS_NEW"
+
+  # Set the app's own language rather than the device's, and set it from the same
+  # variable that names the file. Otherwise a cell can be labelled `__el__` while
+  # the app is still running in English, which is worse than no cell at all.
+  xcrun simctl spawn "$udid" defaults write "$BUNDLE" app_language -string "$LOCALE"
 
   say "launching with clock pinned to $AT (offline=$OFFLINE)"
   SIMCTL_CHILD_SYRMOS_CAPTURE_NOW="$AT" \
