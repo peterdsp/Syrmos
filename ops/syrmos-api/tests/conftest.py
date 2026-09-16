@@ -16,6 +16,8 @@ from syrmos_admin import translation
 def _offline_translation():
     translation.USE_ARIADNE = False
     translation._chain_cache = []
-    translation._memo.clear()
+    # Give-up state is process-lifetime by design, so it has to be cleared
+    # between tests or one test's dead provider silently skips another's.
+    translation.reset_run_state()
     yield
-    translation._memo.clear()
+    translation.reset_run_state()
