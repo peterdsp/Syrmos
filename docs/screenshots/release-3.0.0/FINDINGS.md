@@ -8,7 +8,7 @@ Ordered by severity.
 
 ---
 
-## 3.0.0 correction pass — status (2026-09-16)
+## 3.0.0 correction pass, status (2026-09-16)
 
 The historical findings below are preserved as first written. This block records
 what the focused correction pass changed and how it was verified. It does not bump

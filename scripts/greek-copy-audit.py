@@ -34,14 +34,14 @@ MIN_GREEK_LETTERS = 4
 
 # Monosyllables, articles/particles, loanwords and proper single-syllable names
 # that carry no tonos in monotonic Greek. A string every one of whose Greek word
-# tokens is in this set is not flagged.
+# tokens is in this set is not flagged. Only Greek tokens are compared (the token
+# split is Greek-only), so Latin interpolation names and loanwords never reach
+# this set and are not listed here.
 SKIP_WORDS = {
     "και", "της", "τον", "την", "των", "στο", "στη", "στον", "στην", "στα", "στις",
     "του", "για", "απο", "δεν", "ναι", "οχι", "σου", "μου", "μας", "σας", "τους",
     "μια", "μιας", "δυο", "τρεις", "η", "το", "τα", "με", "σε", "να", "θα", "οι",
     "ο", "α", "προς", "τραμ", "ρουφ", "πως", "τι", "ως", "αν", "οτι",
-    "gps", "rail", "ichnos", "syrmos", "stasy", "oasa", "oseth", "ath", "skg",
-    "airport", "name", "station", "line", "top", "estimate", "count", "n",
     "τ",                       # tram line codes: "Τραμ Τ6", "Τραμ Τ7"
     "αεροδρ", "αεροδρο", "πτηση",  # accent-folded match-key prefixes, not display
 }
