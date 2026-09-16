@@ -10,15 +10,25 @@ import Foundation
 /// known stop stays exactly as given: an honest fallback, never an invented
 /// translation.
 enum DirectionL10n {
+    // Home re-renders resolve the same few (line, direction) pairs repeatedly, and
+    // `stations(for:)` rebuilds a line's whole station array on each call. The
+    // station data is static, so memoize the resolved result. Guarded by a lock
+    // because the accessor is not actor-isolated.
+    private static let lock = NSLock()
+    private static var cache: [String: String] = [:]
+
     static func localized(lineId: String, direction: String, language: AppLanguage) -> String {
         let folded = StationGrouping.fold(direction)
         if folded.isEmpty { return direction }
-        let stations = SyrmosData.stations(for: lineId)
-        if let st = stations.first(where: {
+        let key = "\(lineId)|\(language.rawValue)|\(folded)"
+        lock.lock()
+        defer { lock.unlock() }
+        if let hit = cache[key] { return hit }
+        let resolved = SyrmosData.stations(for: lineId).first {
             StationGrouping.fold($0.name) == folded || StationGrouping.fold($0.nameEl) == folded
-        }) {
-            return language == .greek && !st.nameEl.isEmpty ? st.nameEl : st.name
         }
-        return direction
+        let result = resolved.map { language == .greek && !$0.nameEl.isEmpty ? $0.nameEl : $0.name } ?? direction
+        cache[key] = result
+        return result
     }
 }
