@@ -610,6 +610,7 @@
     const zoomInButton = document.getElementById("zoomInButton");
     const zoomOutButton = document.getElementById("zoomOutButton");
     let activeTrainSheet = null;
+    let activeHls = null;
 
     function vehicleCopy(key) {
         const copy = {
@@ -628,12 +629,21 @@
             speed: { en: "Speed", el: "Ταχύτητα", sq: "Shpejtësia", it: "Velocità" },
             status: { en: "Status", el: "Κατάσταση", sq: "Statusi", it: "Stato" },
             positionOnly: { en: "Position only, not in service", el: "Μόνο θέση, εκτός υπηρεσίας", sq: "Vetëm pozicioni, jashtë shërbimit", it: "Solo posizione, fuori servizio" },
+            heading: { en: "Heading", el: "Πορεία", sq: "Drejtimi", it: "Rotta" },
+            altitude: { en: "Altitude", el: "Υψόμετρο", sq: "Lartësia", it: "Altitudine" },
+            corridor: { en: "Corridor", el: "Διάδρομος", sq: "Korridori", it: "Corridoio" },
+            signal: { en: "Signal", el: "Σήμα", sq: "Sinjali", it: "Segnale" },
+            onboardCamera: { en: "Onboard camera", el: "Κάμερα συρμού", sq: "Kamera në bord", it: "Telecamera a bordo" },
+            live: { en: "LIVE", el: "ΖΩΝΤΑΝΑ", sq: "LIVE", it: "LIVE" },
+            fullscreen: { en: "Fullscreen", el: "Πλήρης οθόνη", sq: "Ekran i plotë", it: "Schermo intero" },
+            streamOffline: { en: "Live camera needs an internet connection.", el: "Η ζωντανή κάμερα χρειάζεται σύνδεση στο διαδίκτυο.", sq: "Kamera live kërkon lidhje interneti.", it: "La telecamera live richiede una connessione a internet." },
         };
         return copy[key]?.[currentLang] || copy[key]?.en || key;
     }
 
     function hideTrainSheet() {
         activeTrainSheet = null;
+        teardownTrainStream();
         trainSheet.classList.add("station-sheet--hidden");
     }
 
@@ -710,9 +720,94 @@
                 </div></div>`;
         }
 
-        trainSheetTelemetry.style.display = "none";
-        trainSheetStream.style.display = "none";
+        // Full telemetry grid (parity with the native clients): show every live
+        // datum the feed carries, not just speed. Estimated (non-live) vehicles
+        // have no telemetry, so the grid stays hidden for them.
+        renderTrainTelemetry(isLive ? train : null);
+        // Onboard camera: a live train whose feed carries a playlist gets an
+        // inline HLS player, exactly like the iOS/Android sheet. No url -> hidden.
+        renderTrainStream(isLive ? train : null);
         trainSheet.classList.remove("station-sheet--hidden");
+    }
+
+    // Compass point for a course in degrees, so the heading reads "NE" not a bare
+    // number (mirrors the iOS telemetry cell).
+    function compassLabel(deg) {
+        const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+    }
+
+    function renderTrainTelemetry(train) {
+        if (!train) { trainSheetTelemetry.style.display = "none"; trainSheetTelemetry.innerHTML = ""; return; }
+        const cells = [];
+        if (train.speed != null) cells.push({ v: `${Math.round(Number(train.speed))}`, u: "km/h" });
+        if (train.course != null) cells.push({ v: `${Math.round(Number(train.course))}°`, u: `${vehicleCopy("heading")} ${compassLabel(Number(train.course))}` });
+        if (train.altitude != null) cells.push({ v: `${Math.round(Number(train.altitude))}`, u: `${vehicleCopy("altitude")} (m)` });
+        if (train.signalStatus) cells.push({ v: train.signalStatus.charAt(0).toUpperCase() + train.signalStatus.slice(1), u: vehicleCopy("signal") });
+        if (train.corridor) cells.push({ v: train.corridor, u: vehicleCopy("corridor") });
+        if (!cells.length) { trainSheetTelemetry.style.display = "none"; trainSheetTelemetry.innerHTML = ""; return; }
+        trainSheetTelemetry.innerHTML = `<div class="telemetry-grid">${cells.map((c) =>
+            `<div class="telemetry-cell"><div class="telemetry-value">${escapeHtml(c.v)}</div><div class="telemetry-unit">${escapeHtml(c.u)}</div></div>`
+        ).join("")}</div>`;
+        trainSheetTelemetry.style.display = "";
+    }
+
+    function renderTrainStream(train) {
+        teardownTrainStream();
+        const url = train && train.liveStreamUrl;
+        if (!url) { trainSheetStream.style.display = "none"; trainSheetStream.innerHTML = ""; return; }
+        trainSheetStream.innerHTML = `
+            <div class="inline-stream">
+                <div class="inline-stream-header">
+                    <span class="live-dot-label"><span class="live-dot"></span>${escapeHtml(vehicleCopy("live"))}</span>
+                    <span>${escapeHtml(vehicleCopy("onboardCamera"))}</span>
+                    <span style="flex:1 1 auto"></span>
+                    <button type="button" class="stream-fullscreen-btn">${escapeHtml(vehicleCopy("fullscreen"))}</button>
+                </div>
+                <video class="inline-stream-video" playsinline muted autoplay controls></video>
+            </div>`;
+        trainSheetStream.style.display = "";
+        const video = trainSheetStream.querySelector("video");
+        const fs = trainSheetStream.querySelector(".stream-fullscreen-btn");
+        if (fs) fs.addEventListener("click", () => { if (video.requestFullscreen) video.requestFullscreen().catch(() => {}); });
+        attachHlsSource(video, url);
+    }
+
+    function teardownTrainStream() {
+        if (activeHls) { try { activeHls.destroy(); } catch (_) {} activeHls = null; }
+        const v = trainSheetStream.querySelector && trainSheetStream.querySelector("video");
+        if (v) { try { v.pause(); v.removeAttribute("src"); v.load(); } catch (_) {} }
+    }
+
+    // Play an HLS (.m3u8) stream. Safari plays it natively; other browsers get
+    // hls.js loaded once, on demand, from a CDN (only when a stream is opened).
+    function attachHlsSource(video, url) {
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = url;
+            video.play().catch(() => {});
+            return;
+        }
+        loadHlsLib().then((Hls) => {
+            if (!Hls || !Hls.isSupported()) { video.src = url; video.play().catch(() => {}); return; }
+            activeHls = new Hls({ lowLatencyMode: true });
+            activeHls.loadSource(url);
+            activeHls.attachMedia(video);
+            activeHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        }).catch(() => { video.src = url; });
+    }
+
+    let hlsLibPromise = null;
+    function loadHlsLib() {
+        if (typeof Hls !== "undefined") return Promise.resolve(Hls);
+        if (hlsLibPromise) return hlsLibPromise;
+        hlsLibPromise = new Promise((resolve, reject) => {
+            const s = document.createElement("script");
+            s.src = "https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js";
+            s.onload = () => resolve(typeof Hls !== "undefined" ? Hls : null);
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+        return hlsLibPromise;
     }
 
     onLanguageChange(() => {
@@ -2949,6 +3044,14 @@
                 // never wrongly grey out a normal train.
                 status: t.status || "in_service",
                 inService: t.inService !== false,
+                // Full telemetry + onboard camera, the same /api/trains fields the
+                // iOS and Android clients read. The web sheet renders these too so
+                // it is not stuck showing only speed with no livestream.
+                course: t.course != null ? Number(t.course) : null,
+                altitude: t.altitude != null ? Number(t.altitude) : null,
+                corridor: t.corridor || "",
+                signalStatus: t.signalStatus || "",
+                liveStreamUrl: (t.liveStream && t.liveStream.playlistUrl) || t.liveStreamUrl || null,
                 lat: t.lat,
                 lng: t.lng,
                 timestamp: "",
