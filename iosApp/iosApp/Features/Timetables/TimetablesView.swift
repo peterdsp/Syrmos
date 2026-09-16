@@ -1277,7 +1277,7 @@ private struct LinePickerCard: View {
                     .background(tint.opacity(0.15), in: Circle())
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(lineHeaderLabel.uppercased())
+                    Text(lineHeaderLabel.uppercasedForDisplay(loc.language))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
@@ -1366,7 +1366,7 @@ private struct StationPickerCard: View {
                     .background(.tint.opacity(0.12), in: Circle())
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(stationLabel.uppercased())
+                    Text(stationLabel.uppercasedForDisplay(loc.language))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .tracking(0.6)
@@ -1795,7 +1795,9 @@ private struct DayPickerRow: View {
         let fmt = DateFormatter()
         fmt.locale = Locale(identifier: localeCode)
         fmt.dateFormat = "EEE"
-        return fmt.string(from: date).uppercased()
+        // Uppercased in the formatter's own locale, so a Greek weekday loses
+        // its accent (ΠΕΜ, not ΠΈΜ) the way Greek all-caps should.
+        return fmt.string(from: date).uppercased(with: fmt.locale)
     }
 
     private func dayNumber(_ offset: Int) -> String {
