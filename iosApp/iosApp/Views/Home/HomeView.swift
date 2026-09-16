@@ -226,7 +226,7 @@ struct HomeView: View {
                             size: .small,
                             disruptionSeverity: severity
                         )
-                        Text("\(loc[.to]) \(next.direction)")
+                        Text("\(loc[.to]) \(DirectionL10n.localized(lineId: next.lineId, direction: next.direction, language: loc.language))")
                             .font(.title3.weight(.semibold))
                             .lineLimit(1)
                     }
@@ -328,7 +328,7 @@ struct HomeView: View {
         if (17...20).contains(hour) {
             return homeText("Evening return", "Βραδινή επιστροφή", "Kthimi i mbrëmjes", "Rientro serale")
         }
-        return homeText("Your Ichnos status", "Η κατασταση Ichnos", "Gjendja jote Ichnos", "Il tuo stato Ichnos")
+        return homeText("Your Ichnos status", "Η κατάσταση Ichnos", "Gjendja jote Ichnos", "Il tuo stato Ichnos")
     }
 
     private func pulseContextTag(_ text: String, color: Color) -> some View {
@@ -732,7 +732,7 @@ struct HomeView: View {
                                     size: .small,
                                     disruptionSeverity: stasyService.lineDisruptions[next.lineId]
                                 )
-                                Text("\(loc[.to]) \(next.direction)")
+                                Text("\(loc[.to]) \(DirectionL10n.localized(lineId: next.lineId, direction: next.direction, language: loc.language))")
                                     .font(.headline)
                                     .lineLimit(1)
                                     .foregroundStyle(.primary)
@@ -1116,7 +1116,7 @@ struct HomeView: View {
                 HStack {
                     Image(systemName: "newspaper.fill")
                         .foregroundStyle(.blue)
-                    Text(loc.language == .greek ? "Σιδηροδρομικα Νεα" : loc.language == .albanian ? "Lajme Hekurudhore" : loc.language == .italian ? "Notizie ferroviarie" : "Rail News")
+                    Text(loc.language == .greek ? "Σιδηροδρομικά Νέα" : loc.language == .albanian ? "Lajme Hekurudhore" : loc.language == .italian ? "Notizie ferroviarie" : "Rail News")
                         .font(.title3)
                         .fontWeight(.semibold)
                     Spacer()

@@ -132,6 +132,12 @@
 		FE0000000000000000000B01 /* SavedJourneyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000B02 /* SavedJourneyStore.swift */; };
 		FE0000000000000000000B03 /* SavedJourneyStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */; };
 		FE0000000000000000000C01 /* JourneyDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C02 /* JourneyDetail.swift */; };
+		FE0000000000000000000C31 /* StationGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C30 /* StationGrouping.swift */; };
+		FE0000000000000000000C33 /* DirectionL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C32 /* DirectionL10n.swift */; };
+		FE0000000000000000000C35 /* JourneyRankingOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C34 /* JourneyRankingOrderTests.swift */; };
+		FE0000000000000000000C37 /* StationGroupingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C36 /* StationGroupingTests.swift */; };
+		FE0000000000000000000C39 /* PlaceNameLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C38 /* PlaceNameLocalizationTests.swift */; };
+		FE0000000000000000000C3B /* GreekCopyRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C3A /* GreekCopyRegressionTests.swift */; };
 		FE0000000000000000000C05 /* DisruptionExclusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C06 /* DisruptionExclusion.swift */; };
 		FE0000000000000000000C07 /* AccessibilityDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C08 /* AccessibilityDisclosure.swift */; };
 		FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C04 /* JourneyDetailTests.swift */; };
@@ -374,6 +380,12 @@
 		FE0000000000000000000C06 /* DisruptionExclusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Journey/DisruptionExclusion.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C08 /* AccessibilityDisclosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Journey/AccessibilityDisclosure.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C04 /* JourneyDetailTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyDetailTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C30 /* StationGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/StationGrouping.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C32 /* DirectionL10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DirectionL10n.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C34 /* JourneyRankingOrderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyRankingOrderTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C36 /* StationGroupingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StationGroupingTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C38 /* PlaceNameLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaceNameLocalizationTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C3A /* GreekCopyRegressionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GreekCopyRegressionTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0A /* DisruptionExclusionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DisruptionExclusionTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C0E /* FreshnessPresentationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreshnessPresentationTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C2A /* GreekTypographyTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GreekTypographyTests.swift; sourceTree = "<group>"; };
@@ -471,6 +483,10 @@
 				794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */,
 				FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */,
 				FE0000000000000000000C04 /* JourneyDetailTests.swift */,
+				FE0000000000000000000C34 /* JourneyRankingOrderTests.swift */,
+				FE0000000000000000000C36 /* StationGroupingTests.swift */,
+				FE0000000000000000000C38 /* PlaceNameLocalizationTests.swift */,
+				FE0000000000000000000C3A /* GreekCopyRegressionTests.swift */,
 				FE0000000000000000000C0A /* DisruptionExclusionTests.swift */,
 				FE0000000000000000000C0E /* FreshnessPresentationTests.swift */,
 				FE0000000000000000000C2A /* GreekTypographyTests.swift */,
@@ -682,6 +698,7 @@
 			children = (
 				889F9EDE14524E2DA3F4B3B5 /* WatchSessionManager.swift */,
 				571BD2789A52441AB0C26BF2 /* AirportData.swift */,
+				FE0000000000000000000C32 /* DirectionL10n.swift */,
 				395C38720CDE4C34AC7FA9AD /* ScheduleProjector.swift */,
 				FE0000000000000000000C25 /* SyrmosClock.swift */,
 				AA11BB22CC33DD44EE55FF60 /* NationalVehicleProjector.swift */,
@@ -768,6 +785,7 @@
 				DA7A0016F00D0016F00D0016 /* AriadneView.swift */,
 				DA7A0131F00D0131F00D0131 /* JourneyPlanner.swift */,
 				FE0000000000000000000A02 /* PlanFlow.swift */,
+				FE0000000000000000000C30 /* StationGrouping.swift */,
 				FE0000000000000000000B02 /* SavedJourneyStore.swift */,
 				FE0000000000000000000C02 /* JourneyDetail.swift */,
 				FE0000000000000000000C0F /* GoJourneyActivityAttributes.swift */,
@@ -1074,6 +1092,8 @@
 				DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */,
 				DA7A0130F00D0130F00D0130 /* JourneyPlanner.swift in Sources */,
 				FE0000000000000000000A01 /* PlanFlow.swift in Sources */,
+				FE0000000000000000000C31 /* StationGrouping.swift in Sources */,
+				FE0000000000000000000C33 /* DirectionL10n.swift in Sources */,
 				FE0000000000000000000B01 /* SavedJourneyStore.swift in Sources */,
 				FE0000000000000000000C01 /* JourneyDetail.swift in Sources */,
 				FE0000000000000000000C05 /* DisruptionExclusion.swift in Sources */,
@@ -1164,6 +1184,10 @@
 				2611916041EE42F7AEA6576E /* DepartureGroupingTests.swift in Sources */,
 				FE0000000000000000000B03 /* SavedJourneyStoreTests.swift in Sources */,
 				FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */,
+				FE0000000000000000000C35 /* JourneyRankingOrderTests.swift in Sources */,
+				FE0000000000000000000C37 /* StationGroupingTests.swift in Sources */,
+				FE0000000000000000000C39 /* PlaceNameLocalizationTests.swift in Sources */,
+				FE0000000000000000000C3B /* GreekCopyRegressionTests.swift in Sources */,
 				FE0000000000000000000C09 /* DisruptionExclusionTests.swift in Sources */,
 				FE0000000000000000000C0D /* FreshnessPresentationTests.swift in Sources */,
 				FE0000000000000000000C29 /* GreekTypographyTests.swift in Sources */,

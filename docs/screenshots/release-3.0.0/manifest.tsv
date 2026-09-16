@@ -58,3 +58,16 @@ ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z off
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S09-airport-hub	Airport hub, Greek	ios/S09-airport-hub__C402__light__el__default.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S01-home	Home / Now, Greek	ios/S01-home__C402__light__el__default.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S09-airport-hub	Airport hub, Greek	ios/S09-airport-hub__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S01-home	el-finding8-10	ios/S01-home__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-explore	el-finding4-8	ios/S09-explore__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-more-rest	el-finding6	ios/S09-more-rest__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-more-scrolled	el-finding6	ios/S09-more-scrolled__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-explore	el-finding4-fixed	ios/S09-explore__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S03-station-selector-keyboard	el-finding2-kifis	ios/S03-station-selector-keyboard__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S04-route-results	el-finding7	ios/S04-route-results__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S05-journey-detail	el-finding3-intermediate	ios/S05-journey-detail__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S06-go-active	el-finding3-stopsto	ios/S06-go-active__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-airport-hub	el-finding10	ios/S09-airport-hub__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	dark	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-more-scrolled	el-finding6	ios/S09-more-scrolled__C402__dark__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-airport-hub	el-finding4b-fixed	ios/S09-airport-hub__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	4a8a53d5	S09-airport-hub	el-finding4b-fixed	ios/S09-airport-hub__C402__light__el__default.png

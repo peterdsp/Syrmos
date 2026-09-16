@@ -31,6 +31,11 @@ enum class TimeMode {
 /** The requested ranking objective. Arrival/changes/walking/stable-id break ties. */
 @Serializable
 enum class Ranking {
+    // The default recommendation (finding 7, product decision option 2): prefer a
+    // known-comfortable journey over a genuinely faster but tight/unknown one, with
+    // the objective (fastest) as the in-class tie-break. A slower recommendation is
+    // never labelled "Fastest"; a missed/closed journey is never recommended.
+    @SerialName("recommended") RECOMMENDED,
     @SerialName("fastest") FASTEST,
     @SerialName("fewestChanges") FEWEST_CHANGES,
     @SerialName("leastWalking") LEAST_WALKING,

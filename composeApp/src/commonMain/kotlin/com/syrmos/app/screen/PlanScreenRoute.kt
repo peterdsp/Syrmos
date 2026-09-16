@@ -221,7 +221,8 @@ class PlanScreenRoute : Screen {
                         candidates += useCase.invoke(f, to, extraBan + banned).first()
                     }
                     return JourneyPlanAdapter.rankCandidates(
-                        candidates, Ranking.FASTEST, serviceDate,
+                        // Default recommendation is comfortable-first (finding 7).
+                        candidates, Ranking.RECOMMENDED, serviceDate,
                         requestedInstant = now,
                         arriveByInstant = arriveBy,
                         lastConnection = (mode == "lastConnection"),
@@ -249,7 +250,7 @@ class PlanScreenRoute : Screen {
                     fromId = f, toId = to,
                     createdAt = Clock.System.now(),
                     label = null,
-                    preferences = JourneyPreferences(ranking = Ranking.FASTEST),
+                    preferences = JourneyPreferences(ranking = Ranking.RECOMMENDED),
                 ),
             )
         }
@@ -979,7 +980,7 @@ class PlanScreenRoute : Screen {
                     )
                     "stops" -> {
                         val count = r.count ?: 0
-                        val label = "$count " + if (count == 1) t("stop", "στάση", "ndalesë", "fermata") else t("stops", "στάσεις", "ndalesa", "fermate")
+                        val label = "$count " + if (count == 1) t("intermediate stop", "ενδιάμεση στάση", "ndalesë e ndërmjetme", "fermata intermedia") else t("intermediate stops", "ενδιάμεσες στάσεις", "ndalesa të ndërmjetme", "fermate intermedie")
                         Text(
                             label, modifier = Modifier.clickable { expanded = !expanded },
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
