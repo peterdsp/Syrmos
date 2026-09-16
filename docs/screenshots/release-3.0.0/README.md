@@ -10,14 +10,21 @@ Captures for the S01-S10 matrix defined in
 | Platform | iOS only so far |
 | Device | iPhone 17 simulator, iOS 27.0 |
 | Content rect | **402x874 pt @3x** (the C390 compact bucket; the narrowest stock iPhone 17 is 402pt, so C390 is read as "compact", not as an exact width) |
+| Clock | pinned to **2026-09-16T08:42:00+03:00**, a weekday mid-morning inside Athens service hours |
+| Location | Syntagma, pre-granted |
+| Data | offline: the bundled seed, no live API |
 | Locale | `en` |
-| Themes | light + dark |
-| Font | default (Dynamic Type not yet swept) |
-| Cells | 20 |
+| Themes | light and dark, every cell in both |
+| Font | default |
+| Cells | **36** (18 screens x 2 themes) |
 
-`manifest.tsv` carries the per-capture metadata the gate requires
-(platform, OS, viewport, scale, locale, theme, font, fixture revision, source
-commit, screen, label, file).
+Screens covered: S01 · S02 (draft, filled) · S03 (list, keyboard open) · S04 ·
+S05 · S06 (active, get-off-next) · S07 (risk, alternatives) · S08 · S09
+(Explore, Map, Airport, More, Ariadne) · S10 (offline).
+
+Every cell was captured through `scripts/capture-baselines.sh`, so all 36 are
+reproducible. `manifest.tsv` carries the per-capture metadata the gate requires,
+including the pinned clock and the offline flag as the fixture revision.
 
 ## The harness
 
@@ -51,23 +58,25 @@ variants needs recorded response fixtures, which do not exist yet.
 
 ## Honest limitations of this batch
 
-Most cells here were captured **before the harness existed** and are reference
-captures, not approved baselines: the clock was live (~02:00 Europe/Athens, so
-schedule-bearing screens show overnight state), content came from the live API,
-and location was not granted. They are kept as evidence for `FINDINGS.md`.
+These are reproducible, which is what the raster gate needs, but they are not yet
+**approved** baselines: nobody has inspected all 36 and signed them off. That is
+the next step, and `FINDINGS.md` is what came out of inspecting them so far.
 
-`S01-home` has been recaptured through the harness and is deterministic. The
-remaining screens need the same treatment before they can be diffed.
+The captured state is deliberately the **offline** one. It is a state we control;
+the live API is not. The online variant of each screen needs recorded response
+fixtures before it can be diffed.
 
 ## Not yet captured
 
-- iOS: S07, the window expansions (C360 / M768 / E1024 / W1360 / Short), the
-  el / sq / it locales, and the accessibility sweep (Dynamic Type XXXL).
+- The window expansions: C360, M768, E1024, W1360 and Short.
+- The `el`, `sq` and `it` locales.
+- The accessibility sweep: Dynamic Type XXXL, and web zoom / Android font scale
+  on those platforms.
 - Android and web: nothing yet.
 
 ## Size note
 
-20 cells at 3x is 16 MB. The full matrix across three platforms at this
+36 cells at 3x is 22 MB. The full matrix across three platforms at this
 resolution is on the order of 150 MB of binaries in git, so the raster job should
 either downscale for storage or move baselines to LFS before the sweep is
 completed.

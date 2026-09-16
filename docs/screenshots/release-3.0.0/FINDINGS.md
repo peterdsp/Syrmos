@@ -98,27 +98,26 @@ hidden action" rule:
 
 ---
 
-## 5. Map has no route back to the network without location permission (S09)
+## 5. Map with no location permission — RETRACTED, was a capture artifact
 
-**Evidence:** `S09-map-no-location__C402__light__en__default.png` and
-`S09-map-trains-on__C402__light__en__default.png`.
+Originally reported as "Map has no route back to the network". With location
+pre-granted by the harness, `S09-map__C402__light__en__default.png` shows the
+Athens network rendered correctly and centred on Syntagma, offline. The empty
+Cupertino viewport was the stock simulator's own location with permission never
+granted, not a product defect.
 
-With location denied, the Map tab opens on the device's own coordinates
-(Cupertino on a stock simulator) showing empty streets and no transit content.
-Toggling the live-train layer turns the control on but does not move the camera.
-The `Default region = Athens` preference visible in More is not used as the camera
-fallback, so there is no way to reach the Athens network from this screen.
-
-This also blocks the Map cells of the matrix: they cannot be captured meaningfully
-until either permission is granted in the capture harness or the region fallback
-is fixed.
+What remains true and is worth a separate look: with permission genuinely
+**denied** by a user, the `Default region = Athens` preference is not used as a
+camera fallback. That is a different, smaller claim than the one first made here,
+and it has not been re-tested, so it is recorded as untested rather than
+confirmed.
 
 ---
 
 ## 6. List rows pass under the translucent title pill and are left half-legible (S09)
 
-**Evidence:** `S09-more-settings-scrolled__C402__light__en__default.png` and the
-dark counterpart — "Leave-by reminders" and "Saved departures" are sliced by the
+**Evidence:** captured pre-harness (the scrolled cells are no longer in the
+baseline set; reproduce by scrolling the More tab) — "Leave-by reminders" and "Saved departures" are sliced by the
 floating "More" capsule and cannot be read.
 
 Reproduced in both themes, so it is a layout/inset problem rather than a
@@ -126,6 +125,29 @@ material-contrast one: the scroll view's top inset does not account for the
 floating title.
 
 ---
+
+## 7. The top-ranked option can be the one you are least likely to make (S04)
+
+**Evidence:** `S04-route-results__C402__light__en__default.png` — at the pinned
+08:42 the list reads:
+
+1. ~48 min · 1 change · M1 → A1 · **Tight** (selected)
+2. ~48 min · 0 changes · A1 · Comfortable
+3. ~56 min · 1 change · M1 → A2 · Comfortable
+
+Option 2 has the same rounded duration, no change at all, and a comfortable
+margin, yet is ranked below a tight one. The shared ranker's tie-break is
+duration, then arrival, then change count
+([JourneyRanker.kt:47](../../../core/domain/src/commonMain/kotlin/com/syrmos/core/domain/journey/JourneyRanker.kt:47)),
+so a minute of arrival time outranks both the change and the feasibility, and
+**feasibility is not a ranking input at all**.
+
+That may well be the intended trade, and the rounded "~48 min" label hides the
+real difference, so this is raised as a product question rather than asserted as
+a bug: should an itinerary the rider is likely to miss be offered first?
+
+Note that iOS plans through its own `JourneyPlanner`, so the exact comparator
+above has not been confirmed to be what produced this screen.
 
 ## Checked and NOT a defect
 
@@ -136,3 +158,10 @@ floating title.
   after launch; it is the launch screen during the transition and does not persist.
 - **`Last updated: Never`.** Correct for a freshly installed build that has not
   run a seed refresh.
+- **The GO screen's colour.** First seen entirely red and flagged as alarming; it
+  is the line colour. The same screen is green for M1
+  (`S06-go-active__C402__light__en__default.png`) and was red only because the
+  leg was on A1.
+- **Announcements reading as "Service alert".** Fixed in peterdsp/Syrmos#176 and
+  confirmed on device: the cards now carry their real names, in English, from
+  the bundled seed.

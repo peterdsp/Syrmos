@@ -1,28 +1,37 @@
 platform	os	viewport	scale	locale	theme	font	fixture_rev	commit	screen	label	file
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-explore	Explore / Discover	ios/S09-explore__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S02-plan-draft	Plan draft + resume banner + saved journeys (S08 inline)	ios/S02-plan-draft__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S03-station-selector	From-field station selector expanded	ios/S03-station-selector__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S03-station-selector-keyboard	Selector with keyboard open, query 'Kifis' — DEFECT: duplicate 'Kifisias' rows	ios/S03-station-selector-keyboard__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S02-plan-draft-filled	Plan draft with both endpoints set, Find routes enabled	ios/S02-plan-draft-filled__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S04-route-results	3 ranked routes Piraeus to Kifisias	ios/S04-route-results__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S05-journey-detail	Selected journey detail, 11 intermediate stops, timetable provenance	ios/S05-journey-detail__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S08-saved-journeys	Saved journeys list with reorder and an unresolved saved endpoint	ios/S08-saved-journeys__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S06-go-active	GO active journey, manual stepping, location-off capability state	ios/S06-go-active__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S10-location-denied	S10 capability state: location off, manual stepping offered	ios/S10-location-denied__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-map-no-location	Map tab with no location: falls back to device default (Cupertino), ignores Default region Athens	ios/S09-map-no-location__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-map-trains-on	Map with live-train layer toggled on: camera still off-network, no path back to Athens without location	ios/S09-map-trains-on__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-airport-hub	Airport hub ATH, chips atomic, Ariadne FAB overlaps route-overview stop labels	ios/S09-airport-hub__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	6a15d1c8	S09-more-settings-scrolled	More scrolled: rows pass under the translucent floating title pill and are left half-legible; Last updated Never	ios/S09-more-settings-scrolled__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S01-home	Home / Now, dark	ios/S01-home__C402__dark__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-explore	Explore / Discover, dark	ios/S09-explore__C402__dark__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-airport-hub	Airport hub ATH, dark	ios/S09-airport-hub__C402__dark__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings	More / settings, dark	ios/S09-more-settings__C402__dark__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	6a15d1c8	S09-more-settings-scrolled	More scrolled, dark: same rows-under-title-pill overlap as light, so it is not theme specific	ios/S09-more-settings-scrolled__C402__dark__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	light	default	live-seed	7f204489	S01-home	Home / Now, with named announcements after the fallback fix	ios/S01-home__C402__light__en__default.png
-ios	iOS 27.0 (iPhone 17)	402x874pt	3x	en	dark	default	live-seed	7f204489	S01-home	Home / Now, dark, with named announcements after the fallback fix	ios/S01-home__C402__dark__en__default.png
-ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now, deterministic harness: clock 08:42 Athens, offline, animations held	ios/S01-home__C402__light__en__default.png
-ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now, dark, deterministic harness	ios/S01-home__C402__dark__en__default.png
-ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
-ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now, dark	ios/S01-home__C402__dark__en__default.png
-ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	82f82ae9	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S01-home	Home / Now	ios/S01-home__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-explore	Explore / Discover	ios/S09-explore__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S02-plan-draft	Plan draft, clean state, offline banner, no saved journeys yet	ios/S02-plan-draft__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S03-station-selector	Station selector, From field expanded	ios/S03-station-selector__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S03-station-selector-keyboard	Selector, keyboard open; duplicate indistinguishable 'Kifisias' rows (finding 2)	ios/S03-station-selector-keyboard__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S02-plan-draft-filled	Plan draft, both endpoints set	ios/S02-plan-draft-filled__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S04-route-results	3 ranked routes Piraeus to Kifisias at 08:42	ios/S04-route-results__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S05-journey-detail	Selected journey detail with a real transfer, 3 + 8 intermediate stops	ios/S05-journey-detail__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S08-saved-journeys	Saved journeys empty state	ios/S08-saved-journeys__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S06-go-active	GO active journey, first leg; note '4 stops' vs S05's '3 stops' (finding 3)	ios/S06-go-active__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-airport-hub	Airport hub ATH	ios/S09-airport-hub__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S10-offline	S10: community status unavailable, offline	ios/S10-offline__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S07-connection-risk	Connection risk: tight change at Tavros with Find alternatives	ios/S07-connection-risk__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S06-go-get-off-next	GO get-off-next with progress bar	ios/S06-go-get-off-next__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S07-alternatives	Find alternatives outcome: replanned to comfortable options	ios/S07-alternatives__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-map	Map tab, location granted at Syntagma, offline	ios/S09-map__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-more-settings	More / settings	ios/S09-more-settings__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-ariadne	Ariadne assistant, opened from the Home FAB	ios/S09-ariadne__C402__light__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S01-home	Home / Now	ios/S01-home__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-explore	Explore / Discover	ios/S09-explore__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S10-offline	S10: community status unavailable, offline	ios/S10-offline__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S02-plan-draft	Plan draft, clean state, offline banner	ios/S02-plan-draft__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S08-saved-journeys	Saved journeys empty state	ios/S08-saved-journeys__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S03-station-selector	Station selector, From field expanded	ios/S03-station-selector__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S03-station-selector-keyboard	Selector, keyboard open; duplicate 'Kifisias' rows (finding 2)	ios/S03-station-selector-keyboard__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S02-plan-draft-filled	Plan draft, both endpoints set	ios/S02-plan-draft-filled__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S04-route-results	3 ranked routes Piraeus to Kifisias at 08:42	ios/S04-route-results__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S05-journey-detail	Selected journey detail with a real transfer	ios/S05-journey-detail__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S06-go-active	GO active journey, first leg	ios/S06-go-active__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S07-connection-risk	Connection risk: tight change at Tavros	ios/S07-connection-risk__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S06-go-get-off-next	GO get-off-next with progress bar	ios/S06-go-get-off-next__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S07-alternatives	Find alternatives outcome: replanned to comfortable options	ios/S07-alternatives__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-map	Map tab, Syntagma, offline	ios/S09-map__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-airport-hub	Airport hub ATH	ios/S09-airport-hub__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-more-settings	More / settings	ios/S09-more-settings__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-ariadne	Ariadne assistant	ios/S09-ariadne__C402__dark__en__default.png

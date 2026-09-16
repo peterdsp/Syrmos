@@ -99,7 +99,16 @@ cmd_setup() {
   xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || true
 
   # Wipe prior state so the run does not inherit saved journeys or reminders.
+  # Uninstalling is not enough: saved journeys, the leave-by board and the widget
+  # bridge live in the shared App Group, which survives an uninstall, so a
+  # journey saved during ordinary use would otherwise show up in every baseline.
+  local group
+  group=$(xcrun simctl get_app_container "$udid" "$BUNDLE" groups 2>/dev/null | awk '{print $2}' | head -1 || true)
   xcrun simctl uninstall "$udid" "$BUNDLE" 2>/dev/null || true
+  if [ -n "${group:-}" ] && [ -d "$group" ]; then
+    rm -rf "${group:?}/Library/Preferences" "${group:?}/Documents" 2>/dev/null || true
+    say "cleared shared App Group state"
+  fi
   xcrun simctl install "$udid" "$APP"
 
   # A notification prompt that was never answered is re-presented by SpringBoard
@@ -116,18 +125,16 @@ cmd_setup() {
     --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
   xcrun simctl spawn "$udid" defaults write com.apple.UIKit UIAnimationDragCoefficient -float 0 2>/dev/null || true
 
-  # Onboarding is a first-run flow, not a screen under test, and a fresh
-  # install shows it before everything else. Seed its completion flag straight
-  # into the container so the capture starts on the real app.
-  local data_container prefs
-  data_container=$(xcrun simctl get_app_container "$udid" "$BUNDLE" data)
-  prefs="$data_container/Library/Preferences/$BUNDLE.plist"
-  mkdir -p "$(dirname "$prefs")"
-  /usr/libexec/PlistBuddy -c "Add :syrmos.onboarding.completed.v1 bool true" "$prefs" 2>/dev/null \
-    || /usr/libexec/PlistBuddy -c "Set :syrmos.onboarding.completed.v1 true" "$prefs"
-  # Same for the "What's new" sheet, which otherwise covers the first screen.
-  /usr/libexec/PlistBuddy -c "Add :syrmos.whatsnew.version string $WHATS_NEW" "$prefs" 2>/dev/null \
-    || /usr/libexec/PlistBuddy -c "Set :syrmos.whatsnew.version $WHATS_NEW" "$prefs"
+  # Uninstalling does not clear UserDefaults. cfprefsd keeps the domain in
+  # memory and serves it to the reinstalled app, so saved journeys and leave-by
+  # reminders from ordinary use reappear in a supposedly clean run. Going through
+  # `defaults` talks to cfprefsd itself, which editing the plist on disk does not.
+  xcrun simctl spawn "$udid" defaults delete "$BUNDLE" >/dev/null 2>&1 || true
+
+  # Onboarding and the "What's new" sheet are first-run flows, not screens under
+  # test, and each covers the first screen. Marked as already seen.
+  xcrun simctl spawn "$udid" defaults write "$BUNDLE" syrmos.onboarding.completed.v1 -bool true
+  xcrun simctl spawn "$udid" defaults write "$BUNDLE" syrmos.whatsnew.version -string "$WHATS_NEW"
 
   say "launching with clock pinned to $AT (offline=$OFFLINE)"
   SIMCTL_CHILD_SYRMOS_CAPTURE_NOW="$AT" \
