@@ -519,7 +519,7 @@ final class AriadneModel: ObservableObject {
 
         let cal = Calendar(identifier: .gregorian)
         let tz = TimeZone(identifier: "Europe/Athens") ?? .current
-        var comps = cal.dateComponents(in: tz, from: Date())
+        var comps = cal.dateComponents(in: tz, from: SyrmosClock.now)
         let nowMin = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
 
         let targetMin: Int
@@ -648,7 +648,7 @@ final class AriadneModel: ObservableObject {
         let tempC = Int(snap.current.temperatureC.rounded())
         let feels = Int(snap.current.apparentC.rounded())
         let cond = conditionLabel(snap.current.condition)
-        let ageMin = max(0, Int(Date().timeIntervalSince(snap.fetchedAt)) / 60)
+        let ageMin = max(0, Int(SyrmosClock.now.timeIntervalSince(snap.fetchedAt)) / 60)
         let ageSuffix: String = ageMin >= 5 ? {
             switch loc.language {
             case .greek: return " (πριν \(ageMin) λεπτά)"
@@ -827,7 +827,7 @@ final class AriadneModel: ObservableObject {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Athens") ?? .current
         // Calendar weekday: Sunday = 1 ... Saturday = 7. Convert to ISO Mon=1..Sun=7.
-        let weekday = cal.component(.weekday, from: Date())
+        let weekday = cal.component(.weekday, from: SyrmosClock.now)
         let iso = weekday == 1 ? 7 : weekday - 1
         switch day {
         case .today: return 0
@@ -1227,7 +1227,7 @@ final class AriadneModel: ObservableObject {
     private func currentAthensMonth() -> Int {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Athens") ?? .current
-        return cal.component(.month, from: Date())
+        return cal.component(.month, from: SyrmosClock.now)
     }
 
     private func shelterClause(_ exposure: Exposure) -> String {

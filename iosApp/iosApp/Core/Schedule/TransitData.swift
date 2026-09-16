@@ -164,7 +164,7 @@ private struct LivePulseOptional: ViewModifier {
             content
                 .scaleEffect(pulsing ? 1.15 : 1.0)
                 .opacity(pulsing ? 0.7 : 1.0)
-                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulsing)
+                .animation(SyrmosClock.animationsSuppressed ? nil : .easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulsing)
                 .onAppear { pulsing = true }
         } else {
             content
@@ -624,7 +624,7 @@ enum SyrmosData {
         // e.g. on a 5-minute frequency at 14:31 the next departures are
         // 14:35 (4 min), 14:40 (9 min), 14:45 (14 min), 14:50 (19 min);
         // 30 seconds later they become 14:35 (3 min), and so on.
-        let date = Date()
+        let date = SyrmosClock.now
         let calendar = Calendar.current
         let nowComponents = calendar.dateComponents([.hour, .minute, .second], from: date)
         let nowMinutes = (nowComponents.hour ?? 0) * 60 + (nowComponents.minute ?? 0)
@@ -923,7 +923,7 @@ final class LiveTrainService: ObservableObject, @unchecked Sendable {
             // The feed stamps every snapshot with one generation time. Carry it
             // onto each position so the map can age a marker out honestly; fall
             // back to receive-time when the feed omits it.
-            let stamp = LiveTrainService.parseFeedTimestamp(payload.updatedAt) ?? Date()
+            let stamp = LiveTrainService.parseFeedTimestamp(payload.updatedAt) ?? SyrmosClock.now
             let parsed: [LiveTrain] = payload.trains.compactMap { t -> LiveTrain? in
                 // Skip a coord-less vehicle rather than plot it at (0,0); the
                 // optional lat/lng above already keeps one bad row from failing
@@ -1215,7 +1215,7 @@ final class TrainSimulatorService: ObservableObject, @unchecked Sendable {
         let offsetsByLine = await service.offsets
 
         let stationCoords = StationCoordinateLookup.shared
-        let nowEpoch = Date().timeIntervalSince1970
+        let nowEpoch = SyrmosClock.now.timeIntervalSince1970
 
         var result: [SimulatedTrain] = []
 

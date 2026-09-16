@@ -101,7 +101,7 @@ final class LivePositionsService: ObservableObject {
     }
 
     private func ensureOffsets() async {
-        if !offsets.isEmpty, let last = lastOffsetsFetch, Date().timeIntervalSince(last) < 3600 {
+        if !offsets.isEmpty, let last = lastOffsetsFetch, SyrmosClock.now.timeIntervalSince(last) < 3600 {
             return
         }
         guard let url = URL(string: "\(base)/api/station-offsets") else { return }
@@ -118,7 +118,7 @@ final class LivePositionsService: ObservableObject {
                 grouped[line.lineId, default: [:]][line.direction] = stops
             }
             offsets = grouped
-            lastOffsetsFetch = Date()
+            lastOffsetsFetch = SyrmosClock.now
         } catch {
             // Offline: hydrate offsets from the bundled snapshot so the client
             // can still interpolate the projected metro/tram dots with zero
@@ -155,7 +155,7 @@ final class LivePositionsService: ObservableObject {
             // to today's Athens midnight (negative => yesterday). Convert to
             // a Unix-epoch second so the wall-clock lerp on the next frame is
             // just (now - epoch) in seconds.
-            let serverNow = ISO8601DateFormatter.athensLocal.date(from: decoded.generatedAt) ?? Date()
+            let serverNow = ISO8601DateFormatter.athensLocal.date(from: decoded.generatedAt) ?? SyrmosClock.now
             let athensMidnight = serverNow.athensStartOfDay()
             let mapped: [Train] = decoded.trains.compactMap { raw in
                 let epoch = athensMidnight.timeIntervalSince1970 + raw.originDepartureMinute * 60
@@ -181,7 +181,7 @@ final class LivePositionsService: ObservableObject {
             // positions. Suburban/national keep their own paths.
             let projected = ScheduleProjector.activeTrains()
             if !projected.isEmpty {
-                let athensMidnight = Date().athensStartOfDay()
+                let athensMidnight = SyrmosClock.now.athensStartOfDay()
                 trains = projected.map { p in
                     Train(
                         id: "\(p.lineId)_\(p.directionKey)_\(Int(p.originDepartureMinute * 100))",

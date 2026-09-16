@@ -286,7 +286,7 @@ struct TransitMapView: View {
     // Drives periodic re-evaluation so real-GPS train markers age out even with
     // NO new data (offline / dropped feed): the live-train fleet only changes on
     // a poll, so without this a stale position would freeze on screen as "live".
-    @State private var nowTick = Date()
+    @State private var nowTick = SyrmosClock.now
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
 
@@ -309,7 +309,7 @@ struct TransitMapView: View {
                     CompactTabHeader(loc[.map])
                 }
                 .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
-                    nowTick = Date()
+                    nowTick = SyrmosClock.now
                 }
                 .task { await stasyService.fetchAnnouncements() }
                 .onChange(of: stasyService.stationDisruptions) {
@@ -987,6 +987,7 @@ struct LiveTrainMarker: View {
         }
         .shadow(color: .black.opacity(0.18), radius: 3, y: 2)
         .onAppear {
+            guard !SyrmosClock.animationsSuppressed else { return }
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: false)) {
                 pulsing = true
             }
@@ -1388,7 +1389,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         /// Live train descriptor cache keyed by annotation id. The
         /// CADisplayLink ticks at the device's native refresh rate
         /// (60 / 120 Hz) and recomputes each train's position from
-        /// `Date().timeIntervalSince1970 - originEpoch` against its
+        /// `SyrmosClock.now.timeIntervalSince1970 - originEpoch` against its
         /// stops table on every frame. No tween, no interpolation
         /// between discrete simulator snapshots — the on-screen
         /// position IS the timetable position at this exact moment.
@@ -1511,7 +1512,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
 
         @objc private func tick() {
             guard let mv = mapView, !descriptors.isEmpty else { return }
-            let now = Date().timeIntervalSince1970
+            let now = SyrmosClock.now.timeIntervalSince1970
             let trainAnns = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
             for ann in trainAnns {
                 guard let d = descriptors[ann.id] else { continue }
@@ -1934,7 +1935,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 //    "old position shown as live" the data-status rules forbid,
                 //    so it is muted (and its sheet says how long ago it was seen).
                 let notInService = !t.inService || t.status == "position_only"
-                let stale = LiveVehicleFreshnessRule.classify(updatedAt: t.updatedAt, now: Date()).state == .stale
+                let stale = LiveVehicleFreshnessRule.classify(updatedAt: t.updatedAt, now: SyrmosClock.now).state == .stale
                 let muted = notInService || stale
                 let color = muted
                     ? UIColor(red: 0.61, green: 0.64, blue: 0.69, alpha: 1.0)   // ~#9CA3AF, matches web
@@ -2106,11 +2107,11 @@ struct SimulatedVehicleDetailSheet: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(Int(progress(at: context.date) * 100))%")
+                        Text("\(Int(progress(at: SyrmosClock.now) * 100))%")
                             .font(.caption)
                             .fontWeight(.semibold)
                     }
-                    ProgressView(value: progress(at: context.date))
+                    ProgressView(value: progress(at: SyrmosClock.now))
                         .tint(lineColor)
                 }
 

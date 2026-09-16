@@ -282,7 +282,7 @@ struct TrackPickerSheet: View {
                 stationName: stationName,
                 destination: next.direction,
                 scheduledTime: next.time,
-                targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60,
+                targetEpoch: SyrmosClock.now.timeIntervalSince1970 + Double(next.minutesAway) * 60,
                 routeStations: route,
                 directionKey: dirKey,
                 isStationMode: true,
@@ -349,7 +349,7 @@ struct TrackPickerSheet: View {
                                         stationName: stationName,
                                         destination: terminal,
                                         scheduledTime: dep.time,
-                                        targetEpoch: Date().timeIntervalSince1970 + Double(dep.minutesAway) * 60,
+                                        targetEpoch: SyrmosClock.now.timeIntervalSince1970 + Double(dep.minutesAway) * 60,
                                         routeStations: route,
                                         directionKey: dirKey
                                     )
@@ -391,9 +391,9 @@ struct TrackPickerSheet: View {
                                         stationName: stationName,
                                         destination: terminal,
                                         scheduledTime: dep.time,
-                                        departureEpochSeconds: Int64(Date().timeIntervalSince1970) + Int64(dep.minutesAway) * 60,
+                                        departureEpochSeconds: Int64(SyrmosClock.now.timeIntervalSince1970) + Int64(dep.minutesAway) * 60,
                                         leadSeconds: 900,
-                                        createdAt: ISO8601DateFormatter().string(from: Date())
+                                        createdAt: ISO8601DateFormatter().string(from: SyrmosClock.now)
                                     )
                                 )
                                 Task { await NotificationService.shared.requestAuthorization() }

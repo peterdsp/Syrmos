@@ -68,7 +68,7 @@ private final class AirportCalendarStore: ObservableObject {
     }
 
     private func loadEvents() {
-        let start = Date()
+        let start = SyrmosClock.now
         let end = Calendar.current.date(byAdding: .day, value: 8, to: start) ?? start
         let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
         events = eventStore.events(matching: predicate)
@@ -106,7 +106,7 @@ struct TimetablesView: View {
     /// station id. Athens is fed by direct rail so it uses the two lists above.
     @State private var metroLegDepartures: [String: [Departure]] = [:]
     @State private var flightTime = TimetablesView.defaultFlightTime
-    @State private var nowTick = Date()
+    @State private var nowTick = SyrmosClock.now
     @StateObject private var calendarStore = AirportCalendarStore()
 
     private var hub: AirportHub { AirportHub.hub(selectedCity) }
@@ -114,11 +114,11 @@ struct TimetablesView: View {
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     private static var defaultFlightTime: Date {
-        Calendar.current.date(bySettingHour: 18, minute: 40, second: 0, of: Date()) ?? Date()
+        Calendar.current.date(bySettingHour: 18, minute: 40, second: 0, of: SyrmosClock.now) ?? SyrmosClock.now
     }
 
     private var selectedCalendarEvent: AirportCalendarEvent? {
-        let target = Calendar.current.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+        let target = Calendar.current.date(byAdding: .day, value: dayOffset, to: SyrmosClock.now) ?? SyrmosClock.now
         return calendarStore.events.first { Calendar.current.isDate($0.startDate, inSameDayAs: target) }
     }
 
@@ -213,7 +213,7 @@ struct TimetablesView: View {
                 Task { await calendarStore.refresh() }
             }
             .onReceive(refreshTimer) { _ in
-                nowTick = Date()
+                nowTick = SyrmosClock.now
                 reload()
             }
             .onChange(of: selectedCity) { _, _ in
@@ -499,7 +499,7 @@ private struct AirportCalendarHub: View {
     }
 
     private var selectedDateLabel: String {
-        let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+        let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: SyrmosClock.now) ?? SyrmosClock.now
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: airportLocaleCode(language))
         formatter.setLocalizedDateFormatFromTemplate("EEE d MMM")
@@ -1563,7 +1563,7 @@ private struct DirectionSection: View {
     private var currentTimeString: String {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
-        return f.string(from: Date())
+        return f.string(from: SyrmosClock.now)
     }
 }
 
@@ -1783,7 +1783,7 @@ private struct DayPickerRow: View {
     }
 
     private func dayName(_ offset: Int) -> String {
-        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: SyrmosClock.now) ?? SyrmosClock.now
         if offset == 0 {
             switch loc.language {
             case .greek: return "ΣΗΜ"
@@ -1799,7 +1799,7 @@ private struct DayPickerRow: View {
     }
 
     private func dayNumber(_ offset: Int) -> String {
-        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: SyrmosClock.now) ?? SyrmosClock.now
         let fmt = DateFormatter()
         fmt.dateFormat = "d"
         return fmt.string(from: date)

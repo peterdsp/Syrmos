@@ -49,6 +49,7 @@ struct EmergencyWeatherCard: View {
                 }
                 .frame(width: 44, height: 48)
                 .onAppear {
+                    guard !SyrmosClock.animationsSuppressed else { return }
                     withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: false)) {
                         dropOffset = 16
                         dropOpacity = 0

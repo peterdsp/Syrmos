@@ -161,7 +161,7 @@ struct AriadneView: View {
     ///   - otherwise the default triplet
     private var suggestions: [String] {
         let severe = WeatherStore.shared.snapshot?.current.condition.isSevere == true
-        let hour = Calendar.current.component(.hour, from: Date())
+        let hour = Calendar.current.component(.hour, from: SyrmosClock.now)
 
         switch loc.language {
         case .greek:
@@ -355,6 +355,7 @@ struct TypingIndicator: View {
             Spacer(minLength: 40)
         }
         .onAppear {
+            guard !SyrmosClock.animationsSuppressed else { return }
             withAnimation(.easeInOut(duration: 1.05).repeatForever(autoreverses: false)) {
                 phase = 1
             }
