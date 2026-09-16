@@ -207,16 +207,56 @@ Phase Z documentation is in place; the visual-baseline raster gate and the publi
 store submission are the remaining, operator-gated steps, plus the local Xcode
 licence acceptance needed to resume git/iOS work on this host.
 
-## 3.0.0 correction pass (2026-09-16)
+## 3.0.0 correction pass (2026-09-16) - CLOSED
 
-The seven remaining visual/journey findings (8, 10, 2, 3, 4, 6, 7) were worked in a
-focused correction pass. Status per finding is in
-`docs/screenshots/release-3.0.0/FINDINGS.md` (correction-pass table). Product and
-review records: `docs/qa/3.0.0-ranking-decision.md` (owner chose comfortable-first,
-option 2) and `docs/qa/3.0.0-greek-copy-review.md` (Greek pack; bulk awaiting native
-review). Verification this pass: web suite green (`node --test web-tests/*.test.js`),
-Kotlin `JourneyRankerTest` green, iOS app+tests build clean and the new unit classes
-(`JourneyRankingOrderTests`, `StationGroupingTests`, `PlaceNameLocalizationTests`,
-`GreekCopyRegressionTests`) green on the simulator. Runtime baseline recapture
-(S01/S03/S04/S05/S06/S09 + More scroll) and native Greek review remain open; no
-version bump, upload or deploy was done.
+The seven remaining visual/journey findings (8, 10, 2, 3, 4, 6, 7) were fixed,
+reviewed and merged to `master` in peterdsp/Syrmos#184 (code + tests) and
+peterdsp/Syrmos#185 (locale + Dynamic Type captures), both on green CI. No version
+bump, upload or deploy. Per-finding root cause, change, evidence and status are in
+`docs/screenshots/release-3.0.0/FINDINGS.md` (correction-pass table); the product and
+review records are `docs/qa/3.0.0-ranking-decision.md` (owner chose comfortable-first,
+option 2) and `docs/qa/3.0.0-greek-copy-review.md` (native review applied; detector at 0).
+
+### Automated verification (all green on `master`)
+
+- Web: full `node --test web-tests/*.test.js` (incl. `journey-ranking`, `go-panel`,
+  `journey-detail`).
+- Kotlin: `:core:domain` `JourneyRankerTest` / `JourneyDetailTest` / `GoGuidanceTest`.
+- iOS: app + tests build clean and the new unit classes `JourneyRankingOrderTests`,
+  `StationGroupingTests`, `PlaceNameLocalizationTests`, `GreekCopyRegressionTests`.
+- Android + web build; backend pytest.
+- Greek copy detector `scripts/greek-copy-audit.py` reports 0 display candidates.
+- CI enforces Swift 6 strict concurrency (Xcode 26.6): a `static var` cache that a
+  local build accepted was caught and fixed (`nonisolated(unsafe)`) before merge.
+
+### Runtime capture matrix (iOS, C402, clock 08:42 Athens, offline seed)
+
+Every cell was inspected on the running simulator, not asserted from a build.
+
+| screen / finding | el light | el dark | en light | sq light | it light | XXXL (el) |
+|---|---|---|---|---|---|---|
+| S01 home (10, 8) | done | - | done | done | - | - |
+| S03 selector (2) | done | - | done | - | - | - |
+| S04 results (7) | done | - | done | (in S05) | (in S05) | - |
+| S05 detail (3) | done | - | done | done | done | - |
+| S06 GO (3) | done | - | done | done | done | - |
+| S09 explore (4, 8) | done | - | done | - | - | done |
+| S09 airport (10, 4b) | done | - | done | done | - | done |
+| S09 more scroll (6) | done | done | done | - | - | done |
+
+Confirmed across locales: F3 singular/plural in each language ("14 intermediate
+stops" / "1 intermediate stop" / "15 stops to <alight>", and the el/sq/it forms);
+F7 tight-above-unknown ordering; F10 localized place names with codes kept; F2
+distinguishable badged rows; and F4/F4b/F6 opaque-band occlusion holding at
+accessibility XXXL without half-legible bleed or clipped controls.
+
+### Explicitly still open (not defects, scope of this pass)
+
+- Android and served-web **runtime** captures of the shared-semantics screens (the
+  fixes are in code + shared fixtures and pass the cross-client tests; only iOS was
+  captured at runtime this pass).
+- The **full** Phase Z release matrix beyond these seven finding screens (other
+  cells, larger/resizable and foldable geometries, live/online coverage) is not
+  claimed complete from this focused correction pass.
+- The visual-baseline raster gate and public store submission remain the
+  operator-gated steps noted above.
