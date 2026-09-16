@@ -9,6 +9,11 @@ User=peterdsp
 WorkingDirectory=/home/peterdsp/syrmos-api
 Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
 Environment=SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
+# Translation now prefers the Ariadne provider chain, whose credentials live
+# in admin.env. Without this the chain builds empty here and the scraper
+# silently falls back to the rate-limited free endpoints. Optional (-) so a
+# host without the file still runs.
+EnvironmentFile=-/home/peterdsp/syrmos-api/admin.env
 ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.scraper_ht_important_info
 ExecStartPost=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.generator
 StandardOutput=append:/home/peterdsp/syrmos-api/scraper.log

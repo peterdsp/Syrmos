@@ -95,6 +95,49 @@ import_athens_package  →  SQLite  ←  admin UI (writes)
 Every write triggers `generator.generate()` which atomically replaces the JSON
 files. ETag in the manifest body is the source of truth for client sync.
 
+## Announcement translation
+
+Scraped announcements are Greek. The clients show the operator's Greek wording
+when no translation exists, so a gap is visible rather than hidden, but the
+point is to have translations.
+
+Order of preference in `syrmos_admin/translation.py`:
+
+1. **The Ariadne provider chain** (`build_chain()` in `ariadne_providers.py`):
+   Groq, then Cloudflare Workers AI, then a local brain, then an optional extra
+   endpoint. Same credentials, same per-provider circuit breaker. A strict
+   system prompt asks for the translation alone, and the reply is rejected
+   unless it survives `_clean_llm_translation` (no leftover Greek, no
+   `NO_TRANSLATION`, no chatty paragraph, quotes and `Translation:` labels
+   stripped). Repeated strings are translated once per process.
+2. **deep-translator** (free Google, then MyMemory) as a backstop. These rate
+   limit persistently; they are not something to rely on.
+
+Both can return `""`, which means *no usable translation*, never *the
+translation is empty*. The announcement upsert honours that: `title_en`,
+`title_sq`, `title_it` and their summaries are written with
+`COALESCE(NULLIF(excluded.x, ''), announcements.x)`, so a failed run leaves the
+last good translation in place. Getting this wrong is what emptied every
+translated field in the feed.
+
+### Configuration
+
+The chain reads the same variables as the assistant, from
+`/home/peterdsp/syrmos-api/admin.env`. Every scraper unit that translates loads
+that file with `EnvironmentFile=-`; **without it the chain builds empty in the
+scraper and translation silently degrades to the rate-limited free endpoints.**
+
+- `ARIADNE_GROQ_API_KEY` (or `GROQ_API_KEY`), optional `ARIADNE_GROQ_MODEL`
+- `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_AI_TOKEN`, optional `ARIADNE_CLOUDFLARE_MODEL`
+- `SYRMOS_TRANSLATION_USE_ARIADNE=0` turns the chain off and leaves only the
+  free fallback
+
+To check coverage after a scrape:
+
+```bash
+sqlite3 db/syrmos.db "SELECT COUNT(*) total, SUM(title_en='') missing_en, SUM(title_sq='') missing_sq FROM announcements"
+```
+
 ## Rollback
 
 ```
