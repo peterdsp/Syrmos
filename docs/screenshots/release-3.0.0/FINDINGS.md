@@ -185,7 +185,7 @@ The Albanian strings sitting beside these look the same (`Vonese` for `Vonesë`,
 `per` for `për`), so `sq` probably has the same problem, but that has not been
 captured and is not asserted here.
 
-## 9. Greek loses its accents when uppercased (el)
+## 9. Greek loses its accents when uppercased (el) — FIXED
 
 **Evidence:** `S01-home__C402__light__el__default.png` shows the status chip as
 **ΠΡΩΙΝΉ ΜΕΤΑΚΊΝΗΣΗ**. Correct Greek is **ΠΡΩΙΝΗ ΜΕΤΑΚΙΝΗΣΗ**: monotonic Greek
@@ -200,6 +200,14 @@ is exactly the behaviour wanted.
 
 Same class as finding 8 and just as visible to a native reader, but this one is a
 single mechanical fix rather than a translation pass.
+
+**Fixed** in peterdsp/Syrmos#183: a `uppercasedForDisplay(_:)` helper uppercases in the
+reader's language, applied at the six display call sites. The el cells here are
+retaken against the fix and now read ΠΡΩΙΝΗ ΜΕΤΑΚΙΝΗΣΗ and ΠΕΜ / ΣΑΒ.
+
+Deliberately left on the plain `uppercased()`: line ids and anything matched
+rather than read, and the two `prefix(1).uppercased()` call sites in `MapView`,
+because Greek *keeps* the accent in title case (Άμεσο, not Αμεσο).
 
 ## 10. Place names stay in Latin script while everything around them is Greek (el)
 

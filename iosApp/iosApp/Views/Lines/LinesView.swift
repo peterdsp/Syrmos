@@ -1158,7 +1158,8 @@ private struct DayPickerRow: View {
         let fmt = DateFormatter()
         fmt.locale = Locale(identifier: loc.language == .greek ? "el_GR" : loc.language == .albanian ? "sq_AL" : loc.language == .italian ? "it_IT" : "en_US")
         fmt.dateFormat = "EEE"
-        return fmt.string(from: date).uppercased()
+        // Uppercased in the formatter's own locale; see TimetablesView.
+        return fmt.string(from: date).uppercased(with: fmt.locale)
     }
 
     private func dayNumber(_ offset: Int) -> String {
