@@ -54,3 +54,7 @@ ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z off
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-airport-hub	Airport hub, Greek	ios/S09-airport-hub__C402__light__el__default.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-more-settings	More / settings, Greek	ios/S09-more-settings__C402__light__el__default.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-ariadne	Ariadne assistant, Greek	ios/S09-ariadne__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S01-home	Home / Now, Greek	ios/S01-home__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S09-airport-hub	Airport hub, Greek	ios/S09-airport-hub__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S01-home	Home / Now, Greek	ios/S01-home__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	276f844c	S09-airport-hub	Airport hub, Greek	ios/S09-airport-hub__C402__light__el__default.png
