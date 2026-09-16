@@ -131,6 +131,13 @@ scraper and translation silently degrades to the rate-limited free endpoints.**
 - `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_AI_TOKEN`, optional `ARIADNE_CLOUDFLARE_MODEL`
 - `SYRMOS_TRANSLATION_USE_ARIADNE=0` turns the chain off and leaves only the
   free fallback
+- `SYRMOS_TRANSLATION_GIVE_UP_AFTER` (default 2) is how many failed strings a
+  provider gets before it is skipped for the rest of the run. A provider that is
+  refusing is refusing for the whole run, so without this cap a scrape pays the
+  full attempt-and-backoff ladder for every item in every language: with both
+  free providers down that turned a scraper oneshot into a ten-minute job. A
+  401/403 is dropped after a single string, since a bad key or an org-level
+  model block will still be there for the next one.
 
 To check coverage after a scrape:
 

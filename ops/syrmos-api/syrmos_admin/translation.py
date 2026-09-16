@@ -36,6 +36,13 @@ _LANGUAGE_NAMES = {
 
 logger = logging.getLogger("syrmos.translation")
 
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, "") or default)
+    except ValueError:
+        return default
+
 # The free Google endpoint documents ~5 requests/second and answers a burst with
 # TooManyRequests. A scraper run translates every item into every language, so
 # without pacing a single run trips the limit and every string comes back empty.
@@ -44,10 +51,47 @@ _MAX_ATTEMPTS = 4
 _BACKOFF_BASE_SECONDS = 1.0
 _RATE_LIMIT_MARKERS = ("too many requests", "toomanyrequests", "429", "quota")
 
+# A provider that is refusing is refusing for the whole run, not for one string.
+# Without this cap a scrape pays the full attempt-and-backoff ladder for every
+# item in every language: the first deploy of the backoff code turned a scraper
+# oneshot into a ten-minute job because both free providers were down and each of
+# ~40 strings walked the ladder twice. After GIVE_UP_AFTER failed strings a
+# provider is skipped for the rest of the process, so the cost of an outage is
+# bounded by the number of providers rather than by the size of the feed.
+GIVE_UP_AFTER = max(1, _env_int("SYRMOS_TRANSLATION_GIVE_UP_AFTER", 2))
+
 # Injected in tests so the retry path costs no wall-clock time.
 _sleep = time.sleep
 _monotonic = time.monotonic
 _last_call_at = 0.0
+_failures: dict[str, int] = {}
+_dead: set[str] = set()
+
+
+def reset_run_state() -> None:
+    """Forget which providers gave up. Process-lifetime state, so this exists for
+    tests and for a long-lived process that wants a fresh attempt."""
+    _failures.clear()
+    _dead.clear()
+    _memo.clear()
+
+
+def _is_dead(provider: str) -> bool:
+    return provider in _dead
+
+
+def _record_failure(provider: str) -> None:
+    _failures[provider] = _failures.get(provider, 0) + 1
+    if _failures[provider] >= GIVE_UP_AFTER and provider not in _dead:
+        _dead.add(provider)
+        logger.warning(
+            "translation provider=%s gave up after %d failed strings; "
+            "skipping it for the rest of this run", provider, _failures[provider],
+        )
+
+
+def _record_success(provider: str) -> None:
+    _failures.pop(provider, None)
 
 
 def has_greek(text: str) -> bool:
@@ -78,20 +122,33 @@ def _pace() -> None:
     _last_call_at = _monotonic()
 
 
-def _translate_with(make_translator, text: str) -> str:
+def _translate_with(make_translator, text: str, provider: str) -> str:
     """One provider, paced, with backoff while it is rate limiting us. Returns
     "" for anything we could not turn into a usable translation, so the caller
-    can try the next provider."""
+    can try the next provider.
+
+    A provider that has already given up this run costs nothing: no request, no
+    pacing delay, no backoff.
+    """
+    if _is_dead(provider):
+        return ""
     for attempt in range(_MAX_ATTEMPTS):
         _pace()
         try:
             translated = (make_translator().translate(text) or "").strip()
         except Exception as exc:  # provider-specific types; treated uniformly
             if not is_rate_limited(exc) or attempt == _MAX_ATTEMPTS - 1:
+                _record_failure(provider)
                 return ""
             _sleep(_BACKOFF_BASE_SECONDS * (2 ** attempt))
             continue
-        return translated if is_valid_translation(translated) else ""
+        if is_valid_translation(translated):
+            _record_success(provider)
+            return translated
+        # A reply we cannot use is the provider working but unhelpful, not the
+        # provider being down, so it does not count against it.
+        return ""
+    _record_failure(provider)
     return ""
 
 
@@ -197,6 +254,9 @@ async def _complete_via_chain(text: str, target: str) -> str:
         language=_LANGUAGE_NAMES.get(target, target)
     )
     for provider in chain:
+        key = f"ariadne:{provider.name}"
+        if _is_dead(key):
+            continue
         now = time.monotonic()
         if not breaker_allows(provider.name, now):
             continue
@@ -209,9 +269,23 @@ async def _complete_via_chain(text: str, target: str) -> str:
                 "translation provider=%s failed kind=%s status=%s",
                 provider.name, result.error_kind, result.status,
             )
+            if result.error_kind == "config":
+                # 401/403 is a key or an org-level model block: it will be there
+                # for every remaining string, so stop asking. The assistant's own
+                # breaker deliberately does not trip on this, because a single
+                # chat request should recover the moment the model is enabled;
+                # a batch of forty strings is a different trade.
+                _dead.add(key)
+                logger.warning(
+                    "translation provider=%s is misconfigured (%s); skipping it "
+                    "for the rest of this run", provider.name, result.status,
+                )
+            else:
+                _record_failure(key)
             continue
         cleaned = _clean_llm_translation(result.text, text)
         if cleaned:
+            _record_success(key)
             return cleaned
         logger.info(
             "translation provider=%s returned no usable translation", provider.name
@@ -275,7 +349,7 @@ def _translate_via_deep_translator(text: str, target: str) -> str:
         pass
     else:
         translated = _translate_with(
-            lambda: GoogleTranslator(source="el", target=target), text
+            lambda: GoogleTranslator(source="el", target=target), text, "google"
         )
         if translated:
             return translated
@@ -290,4 +364,5 @@ def _translate_via_deep_translator(text: str, target: str) -> str:
             target=_MYMEMORY_TARGETS.get(target, target),
         ),
         text,
+        "mymemory",
     )
