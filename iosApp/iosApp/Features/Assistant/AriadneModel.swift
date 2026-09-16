@@ -796,8 +796,8 @@ final class AriadneModel: ObservableObject {
                 "Nuk ka më trena nga \(name(station)) tani.",
                 "Nessun altro treno da \(name(station)) adesso."))
         }
-        let header = t("Next from \(name(station)):", "Επομενα απο \(name(station)):", "Te ardhshmet nga \(name(station)):", "Prossimi da \(name(station)):")
-        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
+        let header = t("Next from \(name(station)):", "Επόμενα από \(name(station)):", "Te ardhshmet nga \(name(station)):", "Prossimi da \(name(station)):")
+        let label = t("Open \(name(station))", "Άνοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
         return AriadneMessage(fromUser: false, text: header, departures: Array(deps.prefix(4)), sourceConfidence: .scheduled, action: .openStation(station.id), actionLabel: label)
     }
 
@@ -992,7 +992,7 @@ final class AriadneModel: ObservableObject {
                 "Shërbimi për sonte ka mbaruar te \(name(station)).",
                 "Il servizio per stasera \u{00E8} terminato a \(name(station))."), confidence: .scheduled)
         }
-        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
+        let label = t("Open \(name(station))", "Άνοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
         return bot(t("Last \(displayLine(last.lineId)) from \(name(station)) leaves at \(last.time). Leave by then.",
             "Ο τελευταίος \(displayLine(last.lineId)) από \(name(station)) φεύγει \(last.time). Φύγε ως τότε.",
             "Treni i fundit \(displayLine(last.lineId)) nga \(name(station)) niset \(last.time). Nisu deri atëherë.",
@@ -1013,7 +1013,7 @@ final class AriadneModel: ObservableObject {
                 "Nuk e kam orarin e sotëm për \(name(station)) pa internet.",
                 "Non ho l'orario di oggi per \(name(station)) offline."), confidence: .offline)
         }
-        let label = t("Open \(name(station))", "Ανοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
+        let label = t("Open \(name(station))", "Άνοιγμα \(name(station))", "Hap \(name(station))", "Apri \(name(station))")
         return bot(t("First \(displayLine(first.lineId)) from \(name(station)) is at \(first.time).",
             "Το πρώτο \(displayLine(first.lineId)) από \(name(station)) είναι στις \(first.time).",
             "Treni i parë \(displayLine(first.lineId)) nga \(name(station)) është në \(first.time).",
@@ -1059,7 +1059,7 @@ final class AriadneModel: ObservableObject {
                 "Non ho linee registrate per \(n)."))
         }
         let list = lineIds.joined(separator: ", ")
-        let label = t("Open \(n)", "Ανοιγμα \(n)", "Hap \(n)", "Apri \(n)")
+        let label = t("Open \(n)", "Άνοιγμα \(n)", "Hap \(n)", "Apri \(n)")
         return bot(t("\(n) is served by: \(list).",
             "Ο \(n) εξυπηρετείται από: \(list).",
             "\(n) shërbehet nga: \(list).",
@@ -1330,7 +1330,7 @@ final class AriadneModel: ObservableObject {
                 "Non ho trovato una stazione corrispondente."))
         }
         let names = matches.prefix(3).map { name($0) }.joined(separator: ", ")
-        let label = t("Open \(name(top))", "Ανοιγμα \(name(top))", "Hap \(name(top))", "Apri \(name(top))")
+        let label = t("Open \(name(top))", "Άνοιγμα \(name(top))", "Hap \(name(top))", "Apri \(name(top))")
         return bot(t("Found: \(names).", "Βρέθηκαν: \(names).", "U gjet: \(names).", "Risultati: \(names)."),
             action: .openStation(top.id), actionLabel: label)
     }
@@ -1338,7 +1338,7 @@ final class AriadneModel: ObservableObject {
     private func resolveExplainLine(_ lineId: String) -> AriadneMessage {
         let normalized = normalizeLine(lineId)
         guard let line = SyrmosData.line(for: normalized) else { return bot(outOfScopeText()) }
-        let label = t("Open \(line.name)", "Ανοιγμα \(line.name)", "Hap \(line.name)", "Apri \(line.name)")
+        let label = t("Open \(line.name)", "Άνοιγμα \(line.name)", "Hap \(line.name)", "Apri \(line.name)")
         return bot(t("\(line.name): \(line.terminalA) to \(line.terminalB), \(line.stationCount) stations.",
             "\(line.name): \(line.terminalA) ως \(line.terminalB), \(line.stationCount) σταθμοί.",
             "\(line.name): \(line.terminalA) deri \(line.terminalB), \(line.stationCount) stacione.",

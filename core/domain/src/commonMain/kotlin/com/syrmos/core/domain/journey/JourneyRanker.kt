@@ -1,5 +1,6 @@
 package com.syrmos.core.domain.journey
 
+import com.syrmos.core.model.journey.FeasibilityStatus
 import com.syrmos.core.model.journey.JourneyOption
 import com.syrmos.core.model.journey.Leg
 import com.syrmos.core.model.journey.Ranking
@@ -41,8 +42,25 @@ object JourneyRanker {
         }
     }
 
+    // Comfortable-first ordering class for the RECOMMENDED default: a known
+    // comfortable journey outranks a tight one, a tight one outranks an unknown,
+    // and a missed connection sorts last so it can never lead the list. This keeps
+    // the deterministic total ordering (feasibility class, then the fastest chain),
+    // and bounds the extra journey time accepted to the materially-distinct
+    // candidates the planner returns for the same trip rather than an invented
+    // minute penalty (finding 7, product decision option 2).
+    private fun feasibilityClass(opt: JourneyOption): Int = when (opt.feasibility.status) {
+        FeasibilityStatus.COMFORTABLE -> 0
+        FeasibilityStatus.TIGHT -> 1
+        FeasibilityStatus.UNKNOWN -> 2
+        FeasibilityStatus.MISSED -> 3
+    }
+
     private fun comparatorFor(ranking: Ranking): Comparator<JourneyOption> {
         val primary: Comparator<JourneyOption> = when (ranking) {
+            // Comfortable-first, then the fastest objective as the in-class tie-break.
+            Ranking.RECOMMENDED -> compareBy<JourneyOption> { feasibilityClass(it) }
+                .thenBy(nullsLast()) { it.durationSeconds }
             Ranking.FASTEST -> compareBy(nullsLast()) { it.durationSeconds }
             Ranking.FEWEST_CHANGES -> compareBy { it.transferCount }
             Ranking.LEAST_WALKING -> compareBy(nullsLast()) { it.walkingSeconds }
@@ -54,8 +72,10 @@ object JourneyRanker {
             .thenBy { it.id }
     }
 
-    // The label only holds if the objective metric is actually known.
+    // The label only holds if the objective is genuinely true. For RECOMMENDED the
+    // top option is badged only when it is actually feasible (never a missed one).
     private fun badgeFor(ranking: Ranking, opt: JourneyOption): String? = when (ranking) {
+        Ranking.RECOMMENDED -> if (opt.feasibility.status != FeasibilityStatus.MISSED) "recommended" else null
         Ranking.FASTEST -> if (opt.durationSeconds != null) "fastest" else null
         Ranking.FEWEST_CHANGES -> "fewestChanges"
         Ranking.LEAST_WALKING -> if (opt.walkingSeconds != null) "leastWalking" else null

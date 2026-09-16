@@ -30,12 +30,13 @@ class JourneyRankerTest {
         lineId: String = id,
         fromId: String = "x",
         toId: String = "y",
+        feasibility: FeasibilityStatus = FeasibilityStatus.COMFORTABLE,
     ) = JourneyOption(
         id = id, requestId = "req",
         durationSeconds = durationSeconds, transferCount = transferCount, walkingSeconds = walkingSeconds,
         arrivalInstant = arrival?.let { Instant.parse("2026-01-15T$it+02:00") },
         legs = listOf(Leg(id = "$id-l", kind = LegKind.RIDE, fromId = fromId, toId = toId, lineId = lineId, serviceDate = date)),
-        feasibility = Feasibility(FeasibilityStatus.COMFORTABLE, explanationCode = "seed"),
+        feasibility = Feasibility(feasibility, explanationCode = "seed"),
     )
 
     private fun assertRank(out: List<JourneyOption>, order: List<String>, firstBadge: String?) {
@@ -90,4 +91,34 @@ class JourneyRankerTest {
             opt("q", null, 0, 0, "09:20:00"), opt("p", null, 0, 0, "09:10:00"),
         ), Ranking.FASTEST),
         listOf("p", "q"), null)
+
+    // Finding 7 (product decision option 2): comfortable-first default recommendation.
+    @Test fun recommendedComfortableOverFasterTight() = assertRank(
+        JourneyRanker.rank(listOf(
+            opt("m1_a1", 2880, 1, 0, "09:30:00", feasibility = FeasibilityStatus.TIGHT),
+            opt("a1_direct", 2880, 0, 0, "09:31:00", feasibility = FeasibilityStatus.COMFORTABLE),
+            opt("m1_a2", 3360, 1, 0, "09:38:00", feasibility = FeasibilityStatus.COMFORTABLE),
+        ), Ranking.RECOMMENDED),
+        listOf("a1_direct", "m1_a2", "m1_a1"), "recommended")
+
+    @Test fun recommendedMissedNeverLeads() = assertRank(
+        JourneyRanker.rank(listOf(
+            opt("fast_missed", 1800, 1, 0, feasibility = FeasibilityStatus.MISSED),
+            opt("comfy", 2400, 0, 0, feasibility = FeasibilityStatus.COMFORTABLE),
+        ), Ranking.RECOMMENDED),
+        listOf("comfy", "fast_missed"), "recommended")
+
+    @Test fun recommendedAllMissedNoBadge() = assertRank(
+        JourneyRanker.rank(listOf(
+            opt("m_late", 2000, 0, 0, feasibility = FeasibilityStatus.MISSED),
+            opt("m_early", 1800, 0, 0, feasibility = FeasibilityStatus.MISSED),
+        ), Ranking.RECOMMENDED),
+        listOf("m_early", "m_late"), null)
+
+    @Test fun recommendedTightOverUnknown() = assertRank(
+        JourneyRanker.rank(listOf(
+            opt("unknown_direct", 1500, 0, 0, feasibility = FeasibilityStatus.UNKNOWN),
+            opt("tight_known", 2000, 1, 0, feasibility = FeasibilityStatus.TIGHT),
+        ), Ranking.RECOMMENDED),
+        listOf("tight_known", "unknown_direct"), "recommended")
 }

@@ -64,7 +64,7 @@ struct SyrmosSettingsView: View {
                         DiagnosticsView()
                     } label: {
                         Label(
-                            loc.language == .greek ? "Διαγνωστικα" : loc.language == .albanian ? "Diagnostika" : loc.language == .italian ? "Diagnostica" : "Diagnostics",
+                            loc.language == .greek ? "Διαγνωστικά" : loc.language == .albanian ? "Diagnostika" : loc.language == .italian ? "Diagnostica" : "Diagnostics",
                             systemImage: "stethoscope"
                         )
                     }
@@ -74,7 +74,15 @@ struct SyrmosSettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 8) {
+                // Finding 6: the More list is tall and scrolls its rows up into the
+                // header band. A full-width opaque backing that runs up through the
+                // top safe area occludes those rows, so they never bleed
+                // half-legibly through the translucent "More" capsule. The colour is
+                // the plain tab background (already opaque, so Reduce Transparency is
+                // honoured), and the capsule keeps its floating look on top of it.
                 CompactTabHeader(loc[.moreTab])
+                    .frame(maxWidth: .infinity)
+                    .background(Color.syrmosBackground.ignoresSafeArea(edges: .top))
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showAriadne) {
@@ -85,7 +93,7 @@ struct SyrmosSettingsView: View {
                     ContactDeveloperView()
                         .toolbar {
                             ToolbarItem(placement: .topBarTrailing) {
-                                Button(loc.language == .greek ? "Κλεισιμο" : loc.language == .albanian ? "Mbylle" : loc.language == .italian ? "Chiudi" : "Close") {
+                                Button(loc.language == .greek ? "Κλείσιμο" : loc.language == .albanian ? "Mbylle" : loc.language == .italian ? "Chiudi" : "Close") {
                                     showContactSheet = false
                                 }
                             }
@@ -122,7 +130,7 @@ struct SyrmosSettingsView: View {
                         Text("Ariadne")
                             .font(.headline)
                             .foregroundStyle(.primary)
-                        Text(loc.language == .greek ? "Ο βοηθος σου στα τρενα" :
+                        Text(loc.language == .greek ? "Ο βοηθός σου στα τρένα" :
                              loc.language == .albanian ? "Asistenti yt i trenave" :
                              loc.language == .italian ? "Il tuo assistente ferroviario" :
                              "Your rail assistant")
@@ -166,7 +174,7 @@ struct SyrmosSettingsView: View {
         Section {
             Toggle(isOn: $showLiveVehicles) {
                 Label(
-                    loc.language == .greek ? "Ζωντανα οχηματα" :
+                    loc.language == .greek ? "Ζωντανά οχήματα" :
                     loc.language == .albanian ? "Mjetet e gjalla" :
                     loc.language == .italian ? "Veicoli in tempo reale" :
                     "Live vehicles",
@@ -175,21 +183,21 @@ struct SyrmosSettingsView: View {
             }
 
             Picker(
-                loc.language == .greek ? "Προεπιλεγμενη περιοχη" :
+                loc.language == .greek ? "Προεπιλεγμένη περιοχή" :
                 loc.language == .albanian ? "Rajoni i parazgjedhur" :
                 loc.language == .italian ? "Regione predefinita" :
                 "Default region",
                 selection: $defaultRegionRaw
             ) {
-                Text(loc.language == .greek ? "Αθηνα" : loc.language == .albanian ? "Athine" : loc.language == .italian ? "Atene" : "Athens").tag("athens")
-                Text(loc.language == .greek ? "Θεσσαλονικη" : loc.language == .albanian ? "Selanik" : loc.language == .italian ? "Salonicco" : "Thessaloniki").tag("thessaloniki")
-                Text(loc.language == .greek ? "Πατρα" : loc.language == .albanian ? "Patra" : loc.language == .italian ? "Patrasso" : "Patras").tag("patras")
-                Text(loc.language == .greek ? "Ολη η Ελλαδα" : loc.language == .albanian ? "E gjithe Greqia" : loc.language == .italian ? "Tutta la Grecia" : "All Greece").tag("national")
+                Text(loc.language == .greek ? "Αθήνα" : loc.language == .albanian ? "Athine" : loc.language == .italian ? "Atene" : "Athens").tag("athens")
+                Text(loc.language == .greek ? "Θεσσαλονίκη" : loc.language == .albanian ? "Selanik" : loc.language == .italian ? "Salonicco" : "Thessaloniki").tag("thessaloniki")
+                Text(loc.language == .greek ? "Πάτρα" : loc.language == .albanian ? "Patra" : loc.language == .italian ? "Patrasso" : "Patras").tag("patras")
+                Text(loc.language == .greek ? "Όλη η Ελλάδα" : loc.language == .albanian ? "E gjithe Greqia" : loc.language == .italian ? "Tutta la Grecia" : "All Greece").tag("national")
             }
         } header: {
-            Text(loc.language == .greek ? "Χαρτης" : loc.language == .albanian ? "Harta" : loc.language == .italian ? "Preferenze mappa" : "Map preferences")
+            Text(loc.language == .greek ? "Χάρτης" : loc.language == .albanian ? "Harta" : loc.language == .italian ? "Preferenze mappa" : "Map preferences")
         } footer: {
-            Text(loc.language == .greek ? "Τα ζωντανα οχηματα εμφανιζονται σαν κινουμενα τριγωνα στον χαρτη." :
+            Text(loc.language == .greek ? "Τα ζωντανά οχήματα εμφανίζονται σαν κινούμενα τρίγωνα στον χάρτη." :
                  loc.language == .albanian ? "Mjetet e gjalla shfaqen si trekendsha levizes ne harte." :
                  loc.language == .italian ? "I veicoli in tempo reale appaiono come triangoli in movimento sulla mappa." :
                  "Live vehicles appear as moving triangles on the map.")
@@ -203,7 +211,7 @@ struct SyrmosSettingsView: View {
         Section {
             OperatorRow(
                 name: "STASY",
-                detail: loc.language == .greek ? "Μετρο & Τραμ Αθηνας" :
+                detail: loc.language == .greek ? "Μετρό & Τραμ Αθήνας" :
                         loc.language == .albanian ? "Metro & Tramvaj Athine" :
                         loc.language == .italian ? "Metro e Tram di Atene" :
                         "Athens Metro & Tram",
@@ -213,7 +221,7 @@ struct SyrmosSettingsView: View {
             )
             OperatorRow(
                 name: "OASA",
-                detail: loc.language == .greek ? "Αστικες συγκοινωνιες Αθηνας" :
+                detail: loc.language == .greek ? "Αστικές συγκοινωνίες Αθήνας" :
                         loc.language == .albanian ? "Transporti publik Athine" :
                         loc.language == .italian ? "Trasporto pubblico di Atene" :
                         "Athens public transport",
@@ -223,7 +231,7 @@ struct SyrmosSettingsView: View {
             )
             OperatorRow(
                 name: "Hellenic Train",
-                detail: loc.language == .greek ? "Προαστιακος & Υπεραστικα" :
+                detail: loc.language == .greek ? "Προαστιακός & Υπεραστικά" :
                         loc.language == .albanian ? "Periferike & Nderqytetese" :
                         loc.language == .italian ? "Suburbano e Intercity" :
                         "Suburban & Intercity",
@@ -233,7 +241,7 @@ struct SyrmosSettingsView: View {
             )
             OperatorRow(
                 name: "OSETH",
-                detail: loc.language == .greek ? "Μετρο Θεσσαλονικης" :
+                detail: loc.language == .greek ? "Μετρό Θεσσαλονίκης" :
                         loc.language == .albanian ? "Metro Selanik" :
                         loc.language == .italian ? "Metro di Salonicco" :
                         "Thessaloniki Metro",
@@ -242,9 +250,9 @@ struct SyrmosSettingsView: View {
                 url: "https://www.oseth.gr"
             )
         } header: {
-            Text(loc.language == .greek ? "Διαχειριστες" : loc.language == .albanian ? "Operatoret" : loc.language == .italian ? "Operatori" : "Operators")
+            Text(loc.language == .greek ? "Διαχειριστές" : loc.language == .albanian ? "Operatoret" : loc.language == .italian ? "Operatori" : "Operators")
         } footer: {
-            Text(loc.language == .greek ? "Οι τιμες και τα δρομολογια διαχειριζονται απο τους αντιστοιχους φορεις." :
+            Text(loc.language == .greek ? "Οι τιμές και τα δρομολόγια διαχειρίζονται από τους αντίστοιχους φορείς." :
                  loc.language == .albanian ? "Cmimet dhe oraret menaxhohen nga operatoret perkates." :
                  loc.language == .italian ? "Tariffe e orari sono gestiti dai rispettivi operatori." :
                  "Fares and schedules are managed by their respective operators.")
@@ -284,7 +292,7 @@ struct SyrmosSettingsView: View {
                         }
                     }
                 } header: {
-                    Text(loc.language == .greek ? "Προσφατοι σταθμοι" : loc.language == .albanian ? "Stacionet e fundit" : loc.language == .italian ? "Stazioni recenti" : "Recent stations")
+                    Text(loc.language == .greek ? "Πρόσφατοι σταθμοί" : loc.language == .albanian ? "Stacionet e fundit" : loc.language == .italian ? "Stazioni recenti" : "Recent stations")
                 }
             }
         }
@@ -293,13 +301,13 @@ struct SyrmosSettingsView: View {
     // MARK: - Notifications
 
     private var notificationsSection: some View {
-        Section(loc.language == .greek ? "Ειδοποιησεις" : loc.language == .albanian ? "Njoftimet" : loc.language == .italian ? "Notifiche" : "Notifications") {
+        Section(loc.language == .greek ? "Ειδοποιήσεις" : loc.language == .albanian ? "Njoftimet" : loc.language == .italian ? "Notifiche" : "Notifications") {
             Toggle(isOn: Binding(
                 get: { NotificationPreferences.serviceAlertsEnabled },
                 set: { NotificationPreferences.serviceAlertsEnabled = $0 }
             )) {
                 Label(
-                    loc.language == .greek ? "Ειδοποιησεις υπηρεσιας" : loc.language == .albanian ? "Njoftimet e sherbimit" : loc.language == .italian ? "Avvisi di servizio" : "Service alerts",
+                    loc.language == .greek ? "Ειδοποιήσεις υπηρεσίας" : loc.language == .albanian ? "Njoftimet e sherbimit" : loc.language == .italian ? "Avvisi di servizio" : "Service alerts",
                     systemImage: "exclamationmark.triangle"
                 )
             }
@@ -308,7 +316,7 @@ struct SyrmosSettingsView: View {
                 set: { NotificationPreferences.weatherAlertsEnabled = $0 }
             )) {
                 Label(
-                    loc.language == .greek ? "Καιρικες ειδοποιησεις" : loc.language == .albanian ? "Njoftimet e motit" : loc.language == .italian ? "Avvisi meteo" : "Weather alerts",
+                    loc.language == .greek ? "Καιρικές ειδοποιήσεις" : loc.language == .albanian ? "Njoftimet e motit" : loc.language == .italian ? "Avvisi meteo" : "Weather alerts",
                     systemImage: "cloud.bolt.rain"
                 )
             }
@@ -317,7 +325,7 @@ struct SyrmosSettingsView: View {
                 set: { NotificationPreferences.nearbyAlertsEnabled = $0 }
             )) {
                 Label(
-                    loc.language == .greek ? "Ειδοποιησεις κοντινου σταθμου" : loc.language == .albanian ? "Njoftimet e stacionit te afert" : loc.language == .italian ? "Avvisi stazione vicina" : "Nearby station alerts",
+                    loc.language == .greek ? "Ειδοποιήσεις κοντινού σταθμού" : loc.language == .albanian ? "Njoftimet e stacionit te afert" : loc.language == .italian ? "Avvisi stazione vicina" : "Nearby station alerts",
                     systemImage: "location.circle"
                 )
             }
@@ -329,7 +337,7 @@ struct SyrmosSettingsView: View {
                 }
             )) {
                 Label(
-                    loc.language == .greek ? "Πρωινη ενημερωση (07:00)" : loc.language == .albanian ? "Perditesimi i mengjesit (07:00)" : loc.language == .italian ? "Riepilogo mattutino (07:00)" : "Morning digest (07:00)",
+                    loc.language == .greek ? "Πρωινή ενημέρωση (07:00)" : loc.language == .albanian ? "Perditesimi i mengjesit (07:00)" : loc.language == .italian ? "Riepilogo mattutino (07:00)" : "Morning digest (07:00)",
                     systemImage: "sunrise"
                 )
             }
@@ -342,7 +350,7 @@ struct SyrmosSettingsView: View {
                 }
             )) {
                 Label(
-                    loc.language == .greek ? "Υπενθυμισεις αναχωρησης" : loc.language == .albanian ? "Kujtues nisjeje" : loc.language == .italian ? "Promemoria di partenza" : "Leave-by reminders",
+                    loc.language == .greek ? "Υπενθυμίσεις αναχώρησης" : loc.language == .albanian ? "Kujtues nisjeje" : loc.language == .italian ? "Promemoria di partenza" : "Leave-by reminders",
                     systemImage: "figure.walk.departure"
                 )
             }
@@ -387,16 +395,16 @@ struct SyrmosSettingsView: View {
                 FaresView()
             } label: {
                 Label(
-                    loc.language == .greek ? "Τιμοκαταλογος εισιτηριων" : loc.language == .albanian ? "Cmimet e biletave" : loc.language == .italian ? "Prezzi biglietti" : "Ticket prices",
+                    loc.language == .greek ? "Τιμοκατάλογος εισιτηρίων" : loc.language == .albanian ? "Cmimet e biletave" : loc.language == .italian ? "Prezzi biglietti" : "Ticket prices",
                     systemImage: "eurosign.circle"
                 )
             }
             Label {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(loc.language == .greek ? "Ανεπαφη πληρωμη" : loc.language == .albanian ? "Pagesa pa kontakt" : loc.language == .italian ? "Pagamento contactless" : "Contactless payment")
+                    Text(loc.language == .greek ? "Ανέπαφη πληρωμή" : loc.language == .albanian ? "Pagesa pa kontakt" : loc.language == .italian ? "Pagamento contactless" : "Contactless payment")
                         .font(.body)
                     Text(loc.language == .greek
-                         ? "Πληρωστε στις πυλες μετρο/τραμ η μεσα σε τραμ και τρενα με Apple Pay, Google Wallet η ανεπαφη καρτα."
+                         ? "Πληρώστε στις πύλες μετρό/τραμ ή μέσα σε τραμ και τρένα με Apple Pay, Google Wallet ή ανέπαφη κάρτα."
                          : loc.language == .albanian
                          ? "Paguaj ne portat e metros/tramvajit ose brenda tramvajeve dhe trenave me Apple Pay, Google Wallet ose cdo karte pa kontakt."
                          : loc.language == .italian
@@ -409,7 +417,7 @@ struct SyrmosSettingsView: View {
                 Image(systemName: "wave.3.right.circle")
             }
         } header: {
-            Text(loc.language == .greek ? "Εισιτηρια" : loc.language == .albanian ? "Bileta" : loc.language == .italian ? "Biglietti" : "Tickets")
+            Text(loc.language == .greek ? "Εισιτήρια" : loc.language == .albanian ? "Bileta" : loc.language == .italian ? "Biglietti" : "Tickets")
         }
     }
 
@@ -423,7 +431,7 @@ struct SyrmosSettingsView: View {
             if let url = URL(string: "https://syrmos.peterdsp.dev/privacy") {
                 Link(destination: url) {
                     Label(
-                        loc.language == .greek ? "Πολιτικη απορρητου"
+                        loc.language == .greek ? "Πολιτική απορρήτου"
                             : loc.language == .albanian ? "Politika e privatesise"
                             : loc.language == .italian ? "Informativa sulla privacy"
                             : "Privacy Policy",
@@ -437,10 +445,10 @@ struct SyrmosSettingsView: View {
     // MARK: - Developer
 
     private var developerSection: some View {
-        Section(loc.language == .greek ? "Αναπτυξη" : loc.language == .albanian ? "Zhvillim" : loc.language == .italian ? "Sviluppo" : "Developer") {
+        Section(loc.language == .greek ? "Ανάπτυξη" : loc.language == .albanian ? "Zhvillim" : loc.language == .italian ? "Sviluppo" : "Developer") {
             Toggle(isOn: $forceEmergencyPreview) {
                 Label(
-                    loc.language == .greek ? "Προεπισκοπηση κακοκαιριας"
+                    loc.language == .greek ? "Προεπισκόπηση κακοκαιρίας"
                         : loc.language == .albanian ? "Paraafisho paralajmerim moti"
                         : loc.language == .italian ? "Anteprima allerta maltempo"
                         : "Preview severe-weather card",
@@ -448,7 +456,7 @@ struct SyrmosSettingsView: View {
                 )
             }
             Text(
-                loc.language == .greek ? "Δειχνει την κοκκινη καρτα στην Αρχικη χωρις να χρειαζεται πραγματικη καταιγιδα."
+                loc.language == .greek ? "Δείχνει την κόκκινη κάρτα στην Αρχική χωρίς να χρειάζεται πραγματική καταιγίδα."
                     : loc.language == .albanian ? "Shfaq karten e paralajmerimit ne Home pa nevoje per stuhi te vertete."
                     : loc.language == .italian ? "Mostra la scheda di allerta nella Home senza bisogno di una vera tempesta."
                     : "Forces the amber warning card on Home so you can smoke-test it without waiting for a storm."
@@ -461,13 +469,13 @@ struct SyrmosSettingsView: View {
     // MARK: - Contact
 
     private var contactSection: some View {
-        Section(loc.language == .greek ? "Επικοινωνια" : loc.language == .albanian ? "Kontakt" : loc.language == .italian ? "Contatti" : "Contact") {
+        Section(loc.language == .greek ? "Επικοινωνία" : loc.language == .albanian ? "Kontakt" : loc.language == .italian ? "Contatti" : "Contact") {
             Button {
                 showContactSheet = true
             } label: {
                 HStack {
                     Label(
-                        loc.language == .greek ? "Επικοινωνια με τον μηχανικο" : loc.language == .albanian ? "Kontakto zhvilluesin" : loc.language == .italian ? "Contatta lo sviluppatore" : "Contact engineer",
+                        loc.language == .greek ? "Επικοινωνία με τον μηχανικό" : loc.language == .albanian ? "Kontakto zhvilluesin" : loc.language == .italian ? "Contatta lo sviluppatore" : "Contact engineer",
                         systemImage: "envelope"
                     )
                     Spacer()
@@ -500,9 +508,9 @@ struct SyrmosSettingsView: View {
 
         if after != nil, after != before {
             refreshAlert = RefreshAlert(
-                title: lang == .greek ? "Ενημερωθηκε" : lang == .albanian ? "I perditesuar" : lang == .italian ? "Aggiornato" : "Up to date",
+                title: lang == .greek ? "Ενημερώθηκε" : lang == .albanian ? "I perditesuar" : lang == .italian ? "Aggiornato" : "Up to date",
                 message: lang == .greek
-                    ? "Τα δρομολογια συγχρονιστηκαν με την τελευταια εκδοση."
+                    ? "Τα δρομολόγια συγχρονίστηκαν με την τελευταία έκδοση."
                     : lang == .albanian
                     ? "Oraret u sinkronizuan me versionin me te fundit."
                     : lang == .italian
@@ -512,9 +520,9 @@ struct SyrmosSettingsView: View {
             )
         } else {
             refreshAlert = RefreshAlert(
-                title: lang == .greek ? "Δεν ηταν δυνατη η ενημερωση" : lang == .albanian ? "Perditesimi deshtoi" : lang == .italian ? "Aggiornamento fallito" : "Update failed",
+                title: lang == .greek ? "Δεν ήταν δυνατή η ενημέρωση" : lang == .albanian ? "Perditesimi deshtoi" : lang == .italian ? "Aggiornamento fallito" : "Update failed",
                 message: lang == .greek
-                    ? "Δεν φτασαμε στον διακομιστη. Δοκιμαστε ξανα με συνδεση στο διαδικτυο."
+                    ? "Δεν φτάσαμε στον διακομιστή. Δοκιμάστε ξανά με σύνδεση στο διαδίκτυο."
                     : lang == .albanian
                     ? "Nuk arritem te serveri. Provo perseri me nje lidhje te qendrueshme."
                     : lang == .italian
@@ -527,7 +535,7 @@ struct SyrmosSettingsView: View {
 
     private var lastSyncLabel: String {
         guard let date = schedules.lastSyncAt else {
-            return loc.language == .greek ? "Ποτε" : loc.language == .albanian ? "Asnjehere" : loc.language == .italian ? "Mai" : "Never"
+            return loc.language == .greek ? "Ποτέ" : loc.language == .albanian ? "Asnjehere" : loc.language == .italian ? "Mai" : "Never"
         }
         let f = DateFormatter()
         f.dateStyle = .short
@@ -536,11 +544,11 @@ struct SyrmosSettingsView: View {
     }
 
     private var lastUpdatedLabel: String {
-        loc.language == .greek ? "Τελευταια ενημερωση" : loc.language == .albanian ? "Perditesimi i fundit" : loc.language == .italian ? "Ultimo aggiornamento" : "Last updated"
+        loc.language == .greek ? "Τελευταία ενημέρωση" : loc.language == .albanian ? "Perditesimi i fundit" : loc.language == .italian ? "Ultimo aggiornamento" : "Last updated"
     }
 
     private var checkNowLabel: String {
-        loc.language == .greek ? "Ελεγχος τωρα" : loc.language == .albanian ? "Kontrollo tani" : loc.language == .italian ? "Controlla ora" : "Check now"
+        loc.language == .greek ? "Έλεγχος τώρα" : loc.language == .albanian ? "Kontrollo tani" : loc.language == .italian ? "Controlla ora" : "Check now"
     }
 }
 
@@ -598,13 +606,13 @@ struct DiagnosticsView: View {
                     }
                 } label: {
                     Label(
-                        loc.language == .greek ? "Εξαγωγη διαγνωστικων" : loc.language == .albanian ? "Eksporto diagnostiken" : loc.language == .italian ? "Esporta diagnostica" : "Export diagnostics",
+                        loc.language == .greek ? "Εξαγωγή διαγνωστικών" : loc.language == .albanian ? "Eksporto diagnostiken" : loc.language == .italian ? "Esporta diagnostica" : "Export diagnostics",
                         systemImage: "square.and.arrow.up"
                     )
                 }
             } footer: {
                 Text(loc.language == .greek
-                     ? "Δημιουργει ενα αρχειο JSON με τα τελευταια συμβαντα της εφαρμογης."
+                     ? "Δημιουργεί ένα αρχείο JSON με τα τελευταία συμβάντα της εφαρμογής."
                      : loc.language == .albanian
                      ? "Krijon nje skedar JSON me ngjarjet e fundit te aplikacionit."
                      : loc.language == .italian
@@ -613,7 +621,7 @@ struct DiagnosticsView: View {
             }
 
             if !center.hangs.isEmpty {
-                Section(loc.language == .greek ? "Παγωματα" : loc.language == .albanian ? "Ngrirje" : loc.language == .italian ? "Blocchi" : "Hangs") {
+                Section(loc.language == .greek ? "Παγώματα" : loc.language == .albanian ? "Ngrirje" : loc.language == .italian ? "Blocchi" : "Hangs") {
                     ForEach(center.hangs.reversed()) { hang in
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(hang.durationMs) ms")
@@ -627,7 +635,7 @@ struct DiagnosticsView: View {
                 }
             }
 
-            Section(loc.language == .greek ? "Προσφατα συμβαντα" : loc.language == .albanian ? "Ngjarjet e fundit" : loc.language == .italian ? "Eventi recenti" : "Recent events") {
+            Section(loc.language == .greek ? "Πρόσφατα συμβάντα" : loc.language == .albanian ? "Ngjarjet e fundit" : loc.language == .italian ? "Eventi recenti" : "Recent events") {
                 ForEach(center.breadcrumbs.suffix(40).reversed()) { crumb in
                     VStack(alignment: .leading, spacing: 2) {
                         HStack {
@@ -653,7 +661,7 @@ struct DiagnosticsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color.syrmosBackground)
-        .navigationTitle(loc.language == .greek ? "Διαγνωστικα" : loc.language == .albanian ? "Diagnostika" : loc.language == .italian ? "Diagnostica" : "Diagnostics")
+        .navigationTitle(loc.language == .greek ? "Διαγνωστικά" : loc.language == .albanian ? "Diagnostika" : loc.language == .italian ? "Diagnostica" : "Diagnostics")
         .sheet(item: Binding(
             get: { shareURL.map { IdentifiableURL(url: $0) } },
             set: { shareURL = $0?.url }

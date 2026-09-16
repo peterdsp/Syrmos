@@ -15,16 +15,16 @@ private func railContributorLevel(for confirmed: Int) -> Int {
 
 private func railContributorCallsign(_ level: Int, language: AppLanguage) -> String {
     switch min(max(level, 1), 10) {
-    case 1: return pulseText(language, "Platform Pal", "Φιλος Αποβαθρας", "Miku i Platformes", "Amico di Banchina")
-    case 2: return pulseText(language, "Signal Spotter", "Ανιχνευτης Σηματων", "Vezhgues Sinjalesh", "Osservatore Segnali")
-    case 3: return pulseText(language, "Delay Detective", "Ντετεκτιβ Καθυστερησεων", "Detektivi i Vonesave", "Detective dei Ritardi")
-    case 4: return pulseText(language, "Crowd Scout", "Ανιχνευτης Κοσμου", "Vezhgues Turme", "Esploratore Folla")
+    case 1: return pulseText(language, "Platform Pal", "Φίλος Αποβάθρας", "Miku i Platformes", "Amico di Banchina")
+    case 2: return pulseText(language, "Signal Spotter", "Ανιχνευτής Σημάτων", "Vezhgues Sinjalesh", "Osservatore Segnali")
+    case 3: return pulseText(language, "Delay Detective", "Ντετέκτιβ Καθυστερήσεων", "Detektivi i Vonesave", "Detective dei Ritardi")
+    case 4: return pulseText(language, "Crowd Scout", "Ανιχνευτής Κόσμου", "Vezhgues Turme", "Esploratore Folla")
     case 5: return "Rail Reporter"
-    case 6: return pulseText(language, "Station Guardian", "Φυλακας Σταθμου", "Mbrojtes Stacioni", "Custode di Stazione")
-    case 7: return pulseText(language, "Track Whisperer", "Ψιθυριστης Γραμμων", "Peshperitesi i Shinave", "Sussurratore dei Binari")
-    case 8: return pulseText(language, "Timetable Tamer", "Δαμαστης Δρομολογιων", "Zbutesi i Orareve", "Domatore di Orari")
-    case 9: return pulseText(language, "Platform Legend", "Θρυλος Αποβαθρας", "Legjenda e Platformes", "Leggenda di Banchina")
-    default: return pulseText(language, "Rail Oracle", "Σιδηροδρομικο Μαντειο", "Orakulli Hekurudhor", "Oracolo Ferroviario")
+    case 6: return pulseText(language, "Station Guardian", "Φύλακας Σταθμού", "Mbrojtes Stacioni", "Custode di Stazione")
+    case 7: return pulseText(language, "Track Whisperer", "Ψιθυριστής Γραμμών", "Peshperitesi i Shinave", "Sussurratore dei Binari")
+    case 8: return pulseText(language, "Timetable Tamer", "Δαμαστής Δρομολογίων", "Zbutesi i Orareve", "Domatore di Orari")
+    case 9: return pulseText(language, "Platform Legend", "Θρύλος Αποβάθρας", "Legjenda e Platformes", "Leggenda di Banchina")
+    default: return pulseText(language, "Rail Oracle", "Σιδηροδρομικό Μαντείο", "Orakulli Hekurudhor", "Oracolo Ferroviario")
     }
 }
 
@@ -76,8 +76,8 @@ struct RailPulseStationDetailView: View {
     private var context: RailPulseReportContext {
         RailPulseReportContext(
             scopeId: "A1_AIR",
-            title: pulseText(language, "Airport", "Αεροδρομιο", "Aeroporti", "Aeroporto"),
-            subtitle: pulseText(language, "Athens International Airport, M3", "Διεθνες Αεροδρομιο Αθηνων, M3", "Aeroporti Nderkombetar i Athines, M3", "Aeroporto Internazionale di Atene, M3")
+            title: pulseText(language, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto"),
+            subtitle: pulseText(language, "Athens International Airport, M3", "Διεθνές Αεροδρόμιο Αθηνών, M3", "Aeroporti Nderkombetar i Athines, M3", "Aeroporto Internazionale di Atene, M3")
         )
     }
 
@@ -86,7 +86,7 @@ struct RailPulseStationDetailView: View {
             LazyVStack(alignment: .leading, spacing: 12) {
                 pulseBackHeader(title: context.title, subtitle: context.subtitle, onBack: { dismiss() })
                 IchnosSummaryPanel(language: language, summary: summary, didLoad: didLoad, onReport: { onReport(context) })
-                pulseSectionTitle(pulseText(language, "Current community reports", "Τρεχουσες αναφορες κοινοτητας", "Raportet aktuale te komunitetit", "Segnalazioni attuali della comunita"))
+                pulseSectionTitle(pulseText(language, "Current community reports", "Τρέχουσες αναφορές κοινότητας", "Raportet aktuale te komunitetit", "Segnalazioni attuali della comunita"))
                 communityIssueList(language: language, summary: summary, didLoad: didLoad)
                 communityNotice(language)
             }
@@ -113,8 +113,8 @@ struct RailPulseTrainDetailView: View {
     private var context: RailPulseReportContext {
         RailPulseReportContext(
             scopeId: "train_1635",
-            title: pulseText(language, "Train 1635", "Τρενο 1635", "Treni 1635", "Treno 1635"),
-            subtitle: pulseText(language, "Athens to Kalambaka", "Αθηνα προς Καλαμπακα", "Athine per Kalambaka", "Atene verso Kalambaka")
+            title: pulseText(language, "Train 1635", "Τρένο 1635", "Treni 1635", "Treno 1635"),
+            subtitle: pulseText(language, "Athens to Kalambaka", "Αθήνα προς Καλαμπάκα", "Athine per Kalambaka", "Atene verso Kalambaka")
         )
     }
 
@@ -123,7 +123,7 @@ struct RailPulseTrainDetailView: View {
             LazyVStack(alignment: .leading, spacing: 12) {
                 pulseBackHeader(title: context.title, subtitle: context.subtitle, onBack: { dismiss() })
                 IchnosSummaryPanel(language: language, summary: summary, didLoad: didLoad, onReport: { onReport(context) })
-                pulseSectionTitle(pulseText(language, "Current community reports", "Τρεχουσες αναφορες κοινοτητας", "Raportet aktuale te komunitetit", "Segnalazioni attuali della comunita"))
+                pulseSectionTitle(pulseText(language, "Current community reports", "Τρέχουσες αναφορές κοινότητας", "Raportet aktuale te komunitetit", "Segnalazioni attuali della comunita"))
                 communityIssueList(language: language, summary: summary, didLoad: didLoad)
                 communityNotice(language)
             }
@@ -153,14 +153,14 @@ struct RailPulseAllActivityView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
                 pulseBackHeader(
-                    title: pulseText(language, "Ichnos activity", "Δραστηριοτητα Ichnos", "Aktiviteti Ichnos", "Attivita Ichnos"),
-                    subtitle: pulseText(language, "Across Greece", "Σε ολη την Ελλαδα", "Ne gjithe Greqine", "In tutta la Grecia"),
+                    title: pulseText(language, "Ichnos activity", "Δραστηριότητα Ichnos", "Aktiviteti Ichnos", "Attivita Ichnos"),
+                    subtitle: pulseText(language, "Across Greece", "Σε όλη την Ελλάδα", "Ne gjithe Greqine", "In tutta la Grecia"),
                     onBack: { dismiss() }
                 )
                 communityNotice(language)
                 communityIssueList(language: language, summary: summary, didLoad: didLoad)
-                pulseSectionTitle(pulseText(language, "Greek railway history", "Ιστορικο ελληνικων σιδηροδρομων", "Historia e hekurudhave greke", "Storico ferroviario greco"))
-                Text(pulseText(language, "Actual anonymous user reports are kept as daily totals, then grouped by month or year. Estimated journeys are never added to this history.", "Οι πραγματικες ανωνυμες αναφορες χρηστων κρατουνται ως ημερησια συνολα και ομαδοποιουνται ανα μηνα η ετος. Οι εκτιμωμενες διαδρομες δεν προστιθενται ποτε σε αυτο το ιστορικο.", "Raportet reale anonime te perdoruesve ruhen si totale ditore dhe grupohen sipas muajit ose vitit. Udhetimet e vleresuara nuk shtohen kurre ne kete histori.", "Le segnalazioni anonime reali degli utenti vengono conservate come totali giornalieri e raggruppate per mese o anno. I viaggi stimati non vengono mai aggiunti allo storico."))
+                pulseSectionTitle(pulseText(language, "Greek railway history", "Ιστορικό ελληνικών σιδηροδρόμων", "Historia e hekurudhave greke", "Storico ferroviario greco"))
+                Text(pulseText(language, "Actual anonymous user reports are kept as daily totals, then grouped by month or year. Estimated journeys are never added to this history.", "Οι πραγματικές ανώνυμες αναφορές χρηστών κρατούνται ως ημερήσια σύνολα και ομαδοποιούνται ανά μήνα ή έτος. Οι εκτιμώμενες διαδρομές δεν προστίθενται ποτέ σε αυτό το ιστορικό.", "Raportet reale anonime te perdoruesve ruhen si totale ditore dhe grupohen sipas muajit ose vitit. Udhetimet e vleresuara nuk shtohen kurre ne kete histori.", "Le segnalazioni anonime reali degli utenti vengono conservate come totali giornalieri e raggruppate per mese o anno. I viaggi stimati non vengono mai aggiunti allo storico."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Picker("", selection: $selectedHistoryPeriod) {
@@ -169,7 +169,7 @@ struct RailPulseAllActivityView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .accessibilityLabel(pulseText(language, "History period", "Περιοδος ιστορικου", "Periudha e historise", "Periodo storico"))
+                .accessibilityLabel(pulseText(language, "History period", "Περίοδος ιστορικού", "Periudha e historise", "Periodo storico"))
                 IchnosHistoryContent(language: language, history: history, didLoad: didLoadHistory)
             }
             .padding(.horizontal, 20)
@@ -210,8 +210,8 @@ private enum IchnosHistoryPeriod: String, CaseIterable, Identifiable {
 
     func title(_ language: AppLanguage) -> String {
         switch self {
-        case .day: return pulseText(language, "Days", "Ημερες", "Dite", "Giorni")
-        case .month: return pulseText(language, "Months", "Μηνες", "Muaj", "Mesi")
+        case .day: return pulseText(language, "Days", "Ημέρες", "Dite", "Giorni")
+        case .month: return pulseText(language, "Months", "Μήνες", "Muaj", "Mesi")
         case .year: return pulseText(language, "Years", "Ετη", "Vite", "Anni")
         }
     }
@@ -235,17 +235,17 @@ private struct IchnosHistoryContent: View {
             ForEach(Array(history.buckets.reversed())) { bucket in
                 IchnosHistoryBucketCard(language: language, bucket: bucket)
             }
-            Text(pulseText(language, "Only anonymous aggregate counts are permanent. Individual reports are deleted within seven days.", "Μονο τα ανωνυμα συγκεντρωτικα συνολα παραμενουν μονιμα. Οι μεμονωμενες αναφορες διαγραφονται εντος επτα ημερων.", "Vetem totalet anonime te grumbulluara ruhen pergjithmone. Raportet individuale fshihen brenda shtate ditesh.", "Solo i conteggi aggregati anonimi restano permanenti. Le singole segnalazioni vengono eliminate entro sette giorni."))
+            Text(pulseText(language, "Only anonymous aggregate counts are permanent. Individual reports are deleted within seven days.", "Μόνο τα ανώνυμα συγκεντρωτικά σύνολα παραμένουν μόνιμα. Οι μεμονωμένες αναφορές διαγράφονται εντός επτά ημερών.", "Vetem totalet anonime te grumbulluara ruhen pergjithmone. Raportet individuale fshihen brenda shtate ditesh.", "Solo i conteggi aggregati anonimi restano permanenti. Le singole segnalazioni vengono eliminate entro sette giorni."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
         } else if let history, history.buckets.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "calendar.badge.clock").font(.title2).foregroundStyle(.secondary)
-                Text(pulseText(language, "No reports recorded for this period yet", "Δεν εχουν καταγραφει αναφορες για αυτη την περιοδο", "Ende nuk ka raporte per kete periudhe", "Nessuna segnalazione registrata per questo periodo"))
+                Text(pulseText(language, "No reports recorded for this period yet", "Δεν έχουν καταγραφεί αναφορές για αυτή την περίοδο", "Ende nuk ka raporte per kete periudhe", "Nessuna segnalazione registrata per questo periodo"))
                     .font(.subheadline.weight(.semibold))
                     .multilineTextAlignment(.center)
-                Text(pulseText(language, "History starts with accepted Ichnos reports. It never invents past numbers.", "Το ιστορικο ξεκινα με αποδεκτες αναφορες Ichnos. Δεν επινοει ποτε παλιους αριθμους.", "Historia fillon me raportet e pranuara Ichnos. Nuk shpik kurre numra te kaluar.", "Lo storico inizia con le segnalazioni Ichnos accettate. Non inventa mai numeri passati."))
+                Text(pulseText(language, "History starts with accepted Ichnos reports. It never invents past numbers.", "Το ιστορικό ξεκινά με αποδεκτές αναφορές Ichnos. Δεν επινοεί ποτέ παλιούς αριθμούς.", "Historia fillon me raportet e pranuara Ichnos. Nuk shpik kurre numra te kaluar.", "Lo storico inizia con le segnalazioni Ichnos accettate. Non inventa mai numeri passati."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -256,9 +256,9 @@ private struct IchnosHistoryContent: View {
         } else if didLoad {
             VStack(spacing: 8) {
                 Image(systemName: "wifi.exclamationmark").font(.title2).foregroundStyle(SyrmosTokens.warning)
-                Text(pulseText(language, "History is temporarily unavailable", "Το ιστορικο δεν ειναι προσωρινα διαθεσιμο", "Historia nuk eshte perkohesisht e disponueshme", "Lo storico non e temporaneamente disponibile"))
+                Text(pulseText(language, "History is temporarily unavailable", "Το ιστορικό δεν είναι προσωρινά διαθέσιμο", "Historia nuk eshte perkohesisht e disponueshme", "Lo storico non e temporaneamente disponibile"))
                     .font(.subheadline.weight(.semibold))
-                Text(pulseText(language, "Check your connection and try again.", "Ελεγξε τη συνδεση σου και προσπαθησε ξανα.", "Kontrollo lidhjen dhe provo perseri.", "Controlla la connessione e riprova."))
+                Text(pulseText(language, "Check your connection and try again.", "Έλεγξε τη σύνδεσή σου και προσπάθησε ξανά.", "Kontrollo lidhjen dhe provo perseri.", "Controlla la connessione e riprova."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -347,16 +347,16 @@ private func ichnosHistoryBreakdown(_ counts: [String: Int], language: AppLangua
         guard let count = counts[signal], count > 0 else { return nil }
         let label: String
         switch signal {
-        case "normal": label = pulseText(language, "OK", "Καλα", "Ne rregull", "OK")
-        case "clean": label = pulseText(language, "clean", "καθαρα", "paster", "pulito")
-        case "delayed": label = pulseText(language, "delayed", "καθυστερηση", "vonese", "ritardo")
-        case "crowded": label = pulseText(language, "crowded", "κοσμος", "plot", "affollato")
-        case "stopped": label = pulseText(language, "stopped", "διακοπη", "ndaluar", "fermo")
-        case "too_hot": label = pulseText(language, "too hot", "πολυ ζεστη", "shume nxehte", "troppo caldo")
-        case "access": label = pulseText(language, "access", "προσβαση", "akses", "accesso")
-        case "facilities": label = pulseText(language, "facilities", "παροχες", "sherbime", "servizi")
-        case "safety": label = pulseText(language, "safety", "ασφαλεια", "siguri", "sicurezza")
-        default: label = pulseText(language, "other", "αλλο", "tjeter", "altro")
+        case "normal": label = pulseText(language, "OK", "Καλά", "Ne rregull", "OK")
+        case "clean": label = pulseText(language, "clean", "καθαρά", "paster", "pulito")
+        case "delayed": label = pulseText(language, "delayed", "καθυστέρηση", "vonese", "ritardo")
+        case "crowded": label = pulseText(language, "crowded", "κόσμος", "plot", "affollato")
+        case "stopped": label = pulseText(language, "stopped", "διακοπή", "ndaluar", "fermo")
+        case "too_hot": label = pulseText(language, "too hot", "πολύ ζέστη", "shume nxehte", "troppo caldo")
+        case "access": label = pulseText(language, "access", "πρόσβαση", "akses", "accesso")
+        case "facilities": label = pulseText(language, "facilities", "παροχές", "sherbime", "servizi")
+        case "safety": label = pulseText(language, "safety", "ασφάλεια", "siguri", "sicurezza")
+        default: label = pulseText(language, "other", "άλλο", "tjeter", "altro")
         }
         return "\(label) \(count)"
     }.joined(separator: " · ")
@@ -381,18 +381,18 @@ struct RailPulseContributionView: View {
                     pulseMetric(pulseText(language, "QUALITY", "ΠΟΙΟΤΗΤΑ", "CILESIA", "QUALITA"), store.qualityPercent > 0 ? "\(store.qualityPercent)%" : "-", SyrmosTokens.live)
                     pulseMetric(pulseText(language, "THIS WEEK", "ΑΥΤΗ ΤΗΝ ΕΒΔΟΜΑΔΑ", "KETE JAVE", "QUESTA SETTIMANA"), "\(store.thisWeek)", SyrmosTokens.suburban)
                 }
-                pulseSectionTitle(pulseText(language, "Contributor milestones", "Οροσημα συνεισφορεα", "Arritjet e kontribuesit", "Traguardi del collaboratore"))
+                pulseSectionTitle(pulseText(language, "Contributor milestones", "Ορόσημα συνεισφορέα", "Arritjet e kontribuesit", "Traguardi del collaboratore"))
                 HStack(spacing: 8) {
-                    pulseBadge("✓", pulseText(language, "First\nReport", "Πρωτη\nΑναφορα", "Raporti\ni pare", "Prima\nsegnalazione"), unlocked: store.confirmed >= 1)
-                    pulseBadge("◉", pulseText(language, "Live\nReporter", "Ζωντανος\nReporter", "Raportues\nLive", "Reporter\nLive"), unlocked: store.confirmed >= 10)
-                    pulseBadge("★", pulseText(language, "Station\nGuardian", "Φυλακας\nΣταθμου", "Mbrojtes\nStacioni", "Custode\nStazione"), unlocked: store.confirmed >= 50)
-                    pulseBadge("100", pulseText(language, "100\nReports", "100\nΑναφορες", "100\nRaporte", "100\nReport"), unlocked: store.confirmed >= 100)
+                    pulseBadge("✓", pulseText(language, "First\nReport", "Πρώτη\nΑναφορά", "Raporti\ni pare", "Prima\nsegnalazione"), unlocked: store.confirmed >= 1)
+                    pulseBadge("◉", pulseText(language, "Live\nReporter", "Ζωντανός\nReporter", "Raportues\nLive", "Reporter\nLive"), unlocked: store.confirmed >= 10)
+                    pulseBadge("★", pulseText(language, "Station\nGuardian", "Φύλακας\nΣταθμού", "Mbrojtes\nStacioni", "Custode\nStazione"), unlocked: store.confirmed >= 50)
+                    pulseBadge("100", pulseText(language, "100\nReports", "100\nΑναφορές", "100\nRaporte", "100\nReport"), unlocked: store.confirmed >= 100)
                 }
-                pulseSectionTitle(pulseText(language, "Weekly community activity", "Εβδομαδιαια δραστηριοτητα κοινοτητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunita"))
+                pulseSectionTitle(pulseText(language, "Weekly community activity", "Εβδομαδιαία δραστηριότητα κοινότητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunita"))
                 weeklyActivity
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(pulseText(language, "Private by construction", "Ιδιωτικο απο τον σχεδιασμο", "Privat nga ndertimi", "Privato per costruzione")).font(.subheadline.weight(.semibold))
-                    Text(pulseText(language, "Local progress stays on this device. Individual reports contain no account, device ID, or location and are deleted within seven days. Only anonymous daily totals remain for railway history.", "Η τοπικη προοδος μενει στη συσκευη. Οι μεμονωμενες αναφορες δεν περιεχουν λογαριασμο, αναγνωριστικο συσκευης η τοποθεσια και διαγραφονται εντος επτα ημερων. Μονο τα ανωνυμα ημερησια συνολα παραμενουν για το σιδηροδρομικο ιστορικο.", "Progresi lokal mbetet ne pajisje. Raportet individuale nuk permbajne llogari, ID pajisjeje ose vendndodhje dhe fshihen brenda shtate ditesh. Vetem totalet anonime ditore mbeten per historine hekurudhore.", "I progressi locali restano sul dispositivo. Le singole segnalazioni non contengono account, ID del dispositivo o posizione e vengono eliminate entro sette giorni. Solo i totali giornalieri anonimi restano per lo storico ferroviario.")).font(.caption).foregroundStyle(.secondary)
+                    Text(pulseText(language, "Private by construction", "Ιδιωτικό από τον σχεδιασμό", "Privat nga ndertimi", "Privato per costruzione")).font(.subheadline.weight(.semibold))
+                    Text(pulseText(language, "Local progress stays on this device. Individual reports contain no account, device ID, or location and are deleted within seven days. Only anonymous daily totals remain for railway history.", "Η τοπική πρόοδος μένει στη συσκευή. Οι μεμονωμένες αναφορές δεν περιέχουν λογαριασμό, αναγνωριστικό συσκευής ή τοποθεσία και διαγράφονται εντός επτά ημερών. Μόνο τα ανώνυμα ημερήσια σύνολα παραμένουν για το σιδηροδρομικό ιστορικό.", "Progresi lokal mbetet ne pajisje. Raportet individuale nuk permbajne llogari, ID pajisjeje ose vendndodhje dhe fshihen brenda shtate ditesh. Vetem totalet anonime ditore mbeten per historine hekurudhore.", "I progressi locali restano sul dispositivo. Le singole segnalazioni non contengono account, ID del dispositivo o posizione e vengono eliminate entro sette giorni. Solo i totali giornalieri anonimi restano per lo storico ferroviario.")).font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(16)
                 .background(SyrmosTokens.suburban.opacity(0.10), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -409,7 +409,7 @@ struct RailPulseContributionView: View {
 
     private var profileHeader: some View {
         VStack(alignment: .leading, spacing: 14) {
-            pulseBackHeader(title: pulseText(language, "Local contribution", "Τοπικη συνεισφορα", "Kontributi lokal", "Contributo locale"), subtitle: "", onBack: { dismiss() }, foreground: .white)
+            pulseBackHeader(title: pulseText(language, "Local contribution", "Τοπική συνεισφορά", "Kontributi lokal", "Contributo locale"), subtitle: "", onBack: { dismiss() }, foreground: .white)
             HStack(spacing: 14) {
                 Image(systemName: "tram.fill")
                     .font(.title2.weight(.semibold))
@@ -420,7 +420,7 @@ struct RailPulseContributionView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(currentCallsign).font(.title2.bold())
                     Text("\(pulseText(language, "Local rail contributor", "Τοπικος συνεισφορεας rail", "Kontribues lokal rail", "Collaboratore rail locale")), \(pulseText(language, "Level", "Επιπεδο", "Niveli", "Livello")) \(level)").font(.caption.bold())
-                    Text(pulseText(language, "Progress stored only on this device", "Η προοδος αποθηκευεται μονο στη συσκευη", "Progresi ruhet vetem ne kete pajisje", "Progressi salvati solo su questo dispositivo")).font(.caption2.bold()).padding(.horizontal, 12).padding(.vertical, 6).background(.white.opacity(0.17), in: Capsule())
+                    Text(pulseText(language, "Progress stored only on this device", "Η πρόοδος αποθηκεύεται μόνο στη συσκευή", "Progresi ruhet vetem ne kete pajisje", "Progressi salvati solo su questo dispositivo")).font(.caption2.bold()).padding(.horizontal, 12).padding(.vertical, 6).background(.white.opacity(0.17), in: Capsule())
                 }
             }
             Text(pulseText(language, "NEXT LEVEL", "ΕΠΟΜΕΝΟ ΕΠΙΠΕΔΟ", "NIVELI TJETER", "PROSSIMO LIVELLO")).font(.caption2.bold())
@@ -440,13 +440,13 @@ struct RailPulseContributionView: View {
         let weeklyTotal = networkSummary?.totalReportsThisWeek ?? 0
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(pulseText(language, "Anonymous reports across Greece", "Ανωνυμες αναφορες σε ολη την Ελλαδα", "Raporte anonime ne Greqi", "Segnalazioni anonime in tutta la Grecia")).font(.caption)
+                Text(pulseText(language, "Anonymous reports across Greece", "Ανώνυμες αναφορές σε όλη την Ελλάδα", "Raporte anonime ne Greqi", "Segnalazioni anonime in tutta la Grecia")).font(.caption)
                 Spacer()
-                Text(pulseText(language, "Last 7 days", "Τελευταιες 7 ημερες", "7 ditet e fundit", "Ultimi 7 giorni")).font(.caption2.bold()).foregroundStyle(SyrmosTokens.live)
+                Text(pulseText(language, "Last 7 days", "Τελευταίες 7 ημέρες", "7 ditet e fundit", "Ultimi 7 giorni")).font(.caption2.bold()).foregroundStyle(SyrmosTokens.live)
             }
             Text(weeklyTotal.formatted()).font(.title.bold())
-            Text(pulseText(language, "Your local contribution: \(store.thisWeek)", "Η τοπικη συνεισφορα σου: \(store.thisWeek)", "Kontributi yt lokal: \(store.thisWeek)", "Il tuo contributo locale: \(store.thisWeek)")).font(.caption.weight(.semibold))
-            Text(pulseText(language, "This total comes from accepted anonymous reports, not estimated journeys.", "Αυτο το συνολο προερχεται απο αποδεκτες ανωνυμες αναφορες, οχι εκτιμησεις διαδρομων.", "Ky total vjen nga raporte anonime te pranuara, jo nga udhetime te vleresuara.", "Questo totale proviene da segnalazioni anonime accettate, non da viaggi stimati.")).font(.caption2).foregroundStyle(.secondary)
+            Text(pulseText(language, "Your local contribution: \(store.thisWeek)", "Η τοπική συνεισφορά σου: \(store.thisWeek)", "Kontributi yt lokal: \(store.thisWeek)", "Il tuo contributo locale: \(store.thisWeek)")).font(.caption.weight(.semibold))
+            Text(pulseText(language, "This total comes from accepted anonymous reports, not estimated journeys.", "Αυτό το σύνολο προέρχεται από αποδεκτές ανώνυμες αναφορές, όχι εκτιμήσεις διαδρομών.", "Ky total vjen nga raporte anonime te pranuara, jo nga udhetime te vleresuara.", "Questo totale proviene da segnalazioni anonime accettate, non da viaggi stimati.")).font(.caption2).foregroundStyle(.secondary)
         }
         .padding(18)
         .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -472,7 +472,7 @@ private struct IchnosSummaryPanel: View {
                 }
             }
             Spacer(minLength: 4)
-            Button(pulseText(language, "Report", "Αναφορα", "Raporto", "Segnala"), action: onReport)
+            Button(pulseText(language, "Report", "Αναφορά", "Raporto", "Segnala"), action: onReport)
                 .buttonStyle(.borderedProminent)
                 .tint(Color.syrmosAdaptive(light: SyrmosTokens.onSurface, dark: SyrmosTokens.Dark.onSurface))
                 .foregroundStyle(Color.syrmosAdaptive(light: SyrmosTokens.surface, dark: SyrmosTokens.Dark.surface))
@@ -487,24 +487,24 @@ private struct IchnosSummaryPanel: View {
     private var title: String {
         guard let summary else {
             return didLoad
-                ? pulseText(language, "Community status unavailable", "Η κατασταση κοινοτητας δεν ειναι διαθεσιμη", "Gjendja e komunitetit nuk eshte e disponueshme", "Stato della comunita non disponibile")
-                : pulseText(language, "Loading community status", "Φορτωση καταστασης κοινοτητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunita")
+                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk eshte e disponueshme", "Stato della comunita non disponibile")
+                : pulseText(language, "Loading community status", "Φόρτωση κατάστασης κοινότητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunita")
         }
         return summary.hasIssues
-            ? pulseText(language, "Active community issues", "Ενεργα προβληματα κοινοτητας", "Probleme aktive te komunitetit", "Problemi attivi della comunita")
-            : pulseText(language, "No active issues reported", "Δεν αναφερθηκαν ενεργα προβληματα", "Nuk ka probleme aktive te raportuara", "Nessun problema attivo segnalato")
+            ? pulseText(language, "Active community issues", "Ενεργά προβλήματα κοινότητας", "Probleme aktive te komunitetit", "Problemi attivi della comunita")
+            : pulseText(language, "No active issues reported", "Δεν αναφέρθηκαν ενεργά προβλήματα", "Nuk ka probleme aktive te raportuara", "Nessun problema attivo segnalato")
     }
     private var detail: String {
         guard let summary else {
             return didLoad
-                ? pulseText(language, "Check your connection and try again", "Ελεγξε τη συνδεση και προσπαθησε ξανα", "Kontrollo lidhjen dhe provo perseri", "Controlla la connessione e riprova")
-                : pulseText(language, "Anonymous reports from the last two hours", "Ανωνυμες αναφορες των τελευταιων δυο ωρων", "Raporte anonime nga dy oret e fundit", "Segnalazioni anonime delle ultime due ore")
+                ? pulseText(language, "Check your connection and try again", "Έλεγξε τη σύνδεση και προσπάθησε ξανά", "Kontrollo lidhjen dhe provo perseri", "Controlla la connessione e riprova")
+                : pulseText(language, "Anonymous reports from the last two hours", "Ανώνυμες αναφορές των τελευταίων δυο ωρών", "Raporte anonime nga dy oret e fundit", "Segnalazioni anonime delle ultime due ore")
         }
         if summary.hasIssues {
-            return pulseText(language, "Estimated normal-journey counts are hidden while an issue is active.", "Οι εκτιμησεις κανονικων διαδρομων κρυβονται οσο υπαρχει προβλημα.", "Vleresimet e udhetimeve normale fshihen kur ka problem aktiv.", "Le stime dei viaggi regolari sono nascoste mentre un problema e attivo.")
+            return pulseText(language, "Estimated normal-journey counts are hidden while an issue is active.", "Οι εκτιμήσεις κανονικών διαδρομών κρύβονται όσο υπάρχει πρόβλημα.", "Vleresimet e udhetimeve normale fshihen kur ka problem aktiv.", "Le stime dei viaggi regolari sono nascoste mentre un problema e attivo.")
         }
         let estimate = summary.estimatedJourneysToday ?? 0
-        return pulseText(language, "Estimated \(estimate) journeys so far today. Estimate, not user confirmations.", "Εκτιμωμενες \(estimate) διαδρομες σημερα. Εκτιμηση, οχι επιβεβαιωσεις χρηστων.", "Rreth \(estimate) udhetime sot. Vleresim, jo konfirmime perdoruesish.", "Circa \(estimate) viaggi oggi. Stima, non conferme degli utenti.")
+        return pulseText(language, "Estimated \(estimate) journeys so far today. Estimate, not user confirmations.", "Εκτιμώμενες \(estimate) διαδρομές σήμερα. Εκτίμηση, όχι επιβεβαιώσεις χρηστών.", "Rreth \(estimate) udhetime sot. Vleresim, jo konfirmime perdoruesish.", "Circa \(estimate) viaggi oggi. Stima, non conferme degli utenti.")
     }
 }
 
@@ -525,17 +525,17 @@ private func communityIssueList(language: AppLanguage, summary: IchnosCommunityS
             symbol: "✓",
             title: pulseText(language, "Nothing active to show", "Δεν υπάρχει κάτι ενεργό", "Nuk ka asgjë aktive për të shfaqur", "Nessun elemento attivo da mostrare"),
             detail: summary.normalReportCount > 0
-                ? pulseText(language, "\(summary.normalReportCount) anonymous everything-OK reports remain active", "\(summary.normalReportCount) ανωνυμες αναφορες οτι ολα ειναι καλα παραμενουν ενεργες", "\(summary.normalReportCount) raporte anonime se gjithcka eshte ne rregull jane aktive", "\(summary.normalReportCount) segnalazioni anonime di tutto regolare sono attive")
-                : pulseText(language, "Be the first to report what you can see", "Γινε ο πρωτος που θα αναφερει τι βλεπει", "Raporto i pari ate qe sheh", "Segnala per primo cio che vedi"),
-            status: pulseText(language, "Clear", "Καθαρα", "Ne rregull", "Regolare"),
+                ? pulseText(language, "\(summary.normalReportCount) anonymous everything-OK reports remain active", "\(summary.normalReportCount) ανώνυμες αναφορές ότι όλα είναι καλά παραμένουν ενεργές", "\(summary.normalReportCount) raporte anonime se gjithcka eshte ne rregull jane aktive", "\(summary.normalReportCount) segnalazioni anonime di tutto regolare sono attive")
+                : pulseText(language, "Be the first to report what you can see", "Γίνε ο πρώτος που θα αναφέρει τι βλέπει", "Raporto i pari ate qe sheh", "Segnala per primo cio che vedi"),
+            status: pulseText(language, "Clear", "Καθαρά", "Ne rregull", "Regolare"),
             color: SyrmosTokens.live
         )
     } else {
         pulseActivityRow(
             symbol: didLoad ? "!" : "...",
-            title: didLoad ? pulseText(language, "Unable to load reports", "Αδυνατη η φορτωση αναφορων", "Raportet nuk mund te ngarkohen", "Impossibile caricare le segnalazioni") : pulseText(language, "Loading reports", "Φορτωση αναφορων", "Po ngarkohen raportet", "Caricamento segnalazioni"),
-            detail: didLoad ? pulseText(language, "Check your connection and reopen this screen", "Ελεγξε τη συνδεση και ανοιξε ξανα την οθονη", "Kontrollo lidhjen dhe rihap kete ekran", "Controlla la connessione e riapri questa schermata") : pulseText(language, "Only anonymous reports from the last two hours are shown", "Εμφανιζονται μονο ανωνυμες αναφορες των τελευταιων δυο ωρων", "Shfaqen vetem raporte anonime nga dy oret e fundit", "Sono mostrate solo segnalazioni anonime delle ultime due ore"),
-            status: didLoad ? pulseText(language, "Offline", "Εκτος συνδεσης", "Jashte linje", "Offline") : pulseText(language, "Loading", "Φορτωση", "Ngarkim", "Caricamento"),
+            title: didLoad ? pulseText(language, "Unable to load reports", "Αδύνατη η φόρτωση αναφορών", "Raportet nuk mund te ngarkohen", "Impossibile caricare le segnalazioni") : pulseText(language, "Loading reports", "Φόρτωση αναφορών", "Po ngarkohen raportet", "Caricamento segnalazioni"),
+            detail: didLoad ? pulseText(language, "Check your connection and reopen this screen", "Έλεγξε τη σύνδεση και άνοιξε ξανά την οθόνη", "Kontrollo lidhjen dhe rihap kete ekran", "Controlla la connessione e riapri questa schermata") : pulseText(language, "Only anonymous reports from the last two hours are shown", "Εμφανίζονται μόνο ανώνυμες αναφορές των τελευταίων δυο ωρών", "Shfaqen vetem raporte anonime nga dy oret e fundit", "Sono mostrate solo segnalazioni anonime delle ultime due ore"),
+            status: didLoad ? pulseText(language, "Offline", "Εκτός σύνδεσης", "Jashte linje", "Offline") : pulseText(language, "Loading", "Φόρτωση", "Ngarkim", "Caricamento"),
             color: SyrmosTokens.warning
         )
     }
@@ -590,7 +590,7 @@ private func pulseSectionTitle(_ title: String) -> some View {
 }
 
 private func communityNotice(_ language: AppLanguage) -> some View {
-    Text(pulseText(language, "Community reports are not official operator notices.", "Οι αναφορες κοινοτητας δεν ειναι επισημες ανακοινωσεις φορεα.", "Raportet e komunitetit nuk jane njoftime zyrtare te operatorit.", "Le segnalazioni della comunita non sono avvisi ufficiali."))
+    Text(pulseText(language, "Community reports are not official operator notices.", "Οι αναφορές κοινότητας δεν είναι επίσημες ανακοινώσεις φορέα.", "Raportet e komunitetit nuk jane njoftime zyrtare te operatorit.", "Le segnalazioni della comunita non sono avvisi ufficiali."))
         .font(.caption2.weight(.semibold)).foregroundStyle(SyrmosTokens.warning)
         .frame(maxWidth: .infinity).padding(12)
         .background(SyrmosTokens.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))

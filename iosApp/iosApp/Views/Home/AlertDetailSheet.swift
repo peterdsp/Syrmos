@@ -96,7 +96,7 @@ struct AlertDetailSheet: View {
         switch alert.severity {
         case "closure":
             let label: String = switch language {
-            case .greek: "Κλειστο"
+            case .greek: "Κλειστό"
             case .albanian: "Mbyllur"
             case .italian: "Chiusura"
             default: "Closure"
@@ -104,7 +104,7 @@ struct AlertDetailSheet: View {
             return (label, SyrmosTokens.disruption)
         case "warning":
             let label: String = switch language {
-            case .greek: "Προσοχη"
+            case .greek: "Προσοχή"
             case .albanian: "Kujdes"
             case .italian: "Avviso"
             default: "Warning"
@@ -112,7 +112,7 @@ struct AlertDetailSheet: View {
             return (label, SyrmosTokens.warning)
         default:
             let label: String = switch language {
-            case .greek: "Πληροφοριες"
+            case .greek: "Πληροφορίες"
             case .albanian: "Informacion"
             case .italian: "Info"
             default: "Info"
@@ -134,7 +134,7 @@ struct AlertDetailSheet: View {
 
     private var navTitle: String {
         switch language {
-        case .greek: "Ειδοποιηση"
+        case .greek: "Ειδοποίηση"
         case .albanian: "Njoftim"
         case .italian: "Avviso"
         default: "Alert"
@@ -143,7 +143,7 @@ struct AlertDetailSheet: View {
 
     private var closeLabel: String {
         switch language {
-        case .greek: "Κλεισιμο"
+        case .greek: "Κλείσιμο"
         case .albanian: "Mbylle"
         case .italian: "Chiudi"
         default: "Close"
@@ -152,7 +152,7 @@ struct AlertDetailSheet: View {
 
     private var sourceLabel: String {
         switch language {
-        case .greek: "Δειτε στο stasy.gr"
+        case .greek: "Δείτε στο stasy.gr"
         case .albanian: "Shiko ne stasy.gr"
         case .italian: "Vedi su stasy.gr"
         default: "View on stasy.gr"

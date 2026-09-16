@@ -122,7 +122,11 @@ class GoJourneyScreenRoute(
                 Text("$origin → $destination", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                heroCard(guidance, ::t)
+                // Alight point for THIS leg (an interchange mid-journey, the
+                // destination only on the final leg), named in the GO sub so its
+                // count can never be read as the S05 "intermediate stops" number.
+                val alightStation = journey.legs.getOrNull(position.legIndex)?.stops?.lastOrNull()?.name ?: ""
+                heroCard(guidance, alightStation, ::t)
 
                 // Phase R S07: inline connection-risk warning below the instruction.
                 val transferMoment = guidance is JourneyGuidance.Transfer ||
@@ -217,10 +221,10 @@ class GoJourneyScreenRoute(
     }
 
     @Composable
-    private fun heroCard(g: JourneyGuidance, t: (String, String, String, String) -> String) {
+    private fun heroCard(g: JourneyGuidance, alightStation: String, t: (String, String, String, String) -> String) {
         // The get-off cue is the one moment that matters most, so it is tinted.
         val emphasize = g is JourneyGuidance.GetOffNext
-        val (stateLabel, headline, detail) = describe(g, t)
+        val (stateLabel, headline, detail) = describe(g, alightStation, t)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -242,17 +246,26 @@ class GoJourneyScreenRoute(
     }
 
     /** (stateLabel, headline, detail) for a guidance instruction, localized. */
-    private fun describe(g: JourneyGuidance, t: (String, String, String, String) -> String): Triple<String, String, String> =
+    // "N stops to <alight>" for the ride/board sub (S06): stops remaining to this
+    // leg's alight point, named, so it is never confused with the S05 intermediate
+    // count (finding 3). Singular/plural per locale.
+    private fun stopsToAlight(n: Int, alight: String, t: (String, String, String, String) -> String): String =
+        if (n == 1)
+            t("1 stop to $alight", "1 στάση μέχρι $alight", "1 ndalesë deri te $alight", "1 fermata fino a $alight")
+        else
+            t("$n stops to $alight", "$n στάσεις μέχρι $alight", "$n ndalesa deri te $alight", "$n fermate fino a $alight")
+
+    private fun describe(g: JourneyGuidance, alightStation: String, t: (String, String, String, String) -> String): Triple<String, String, String> =
         when (g) {
             is JourneyGuidance.Board -> Triple(
                 t("Ready to board", "Έτοιμος για επιβίβαση", "Gati për të hipur", "Pronto a salire"),
                 t("Board ${g.lineId} toward ${g.towards}", "Επιβίβαση ${g.lineId} προς ${g.towards}", "Hip në ${g.lineId} drejt ${g.towards}", "Sali su ${g.lineId} verso ${g.towards}"),
-                t("${g.stopsRemaining} stops · next ${g.nextStation}", "${g.stopsRemaining} στάσεις · επόμενη ${g.nextStation}", "${g.stopsRemaining} ndalesa · tjetra ${g.nextStation}", "${g.stopsRemaining} fermate · prossima ${g.nextStation}"),
+                stopsToAlight(g.stopsRemaining, alightStation.ifEmpty { g.nextStation }, t),
             )
             is JourneyGuidance.Ride -> Triple(
                 t("Riding", "Σε κίνηση", "Duke udhëtuar", "In viaggio"),
                 t("Stay on ${g.lineId} toward ${g.towards}", "Μείνε στη ${g.lineId} προς ${g.towards}", "Qëndro në ${g.lineId} drejt ${g.towards}", "Resta su ${g.lineId} verso ${g.towards}"),
-                t("${g.stopsRemaining} stops · next ${g.nextStation}", "${g.stopsRemaining} στάσεις · επόμενη ${g.nextStation}", "${g.stopsRemaining} ndalesa · tjetra ${g.nextStation}", "${g.stopsRemaining} fermate · prossima ${g.nextStation}"),
+                stopsToAlight(g.stopsRemaining, alightStation.ifEmpty { g.nextStation }, t),
             )
             is JourneyGuidance.GetOffNext -> Triple(
                 t("Alight soon", "Αποβίβαση σύντομα", "Zbrit së shpejti", "Scendi a breve"),

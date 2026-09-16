@@ -240,28 +240,28 @@ final class NotificationService: ObservableObject {
         switch key {
         case "morningDigest":
             switch lang {
-            case .greek: return "Ενημερωση Πρωινου"
+            case .greek: return "Ενημέρωση Πρωινού"
             case .albanian: return "Perditesimi i Mengjesit"
             case .italian: return "Aggiornamento mattutino"
             default: return "Morning Update"
             }
         case "serviceAlert":
             switch lang {
-            case .greek: return "Ειδοποιηση Υπηρεσιας"
+            case .greek: return "Ειδοποίηση Υπηρεσίας"
             case .albanian: return "Njoftim Sherbimi"
             case .italian: return "Avviso di servizio"
             default: return "Service Alert"
             }
         case "weatherAlert":
             switch lang {
-            case .greek: return "Καιρικη Ειδοποιηση"
+            case .greek: return "Καιρική Ειδοποίηση"
             case .albanian: return "Njoftim Moti"
             case .italian: return "Avviso meteo"
             default: return "Weather Alert"
             }
         case "nearbyAlert":
             switch lang {
-            case .greek: return "Ειδοποιηση κοντα στο"
+            case .greek: return "Ειδοποίηση κοντά στο"
             case .albanian: return "Njoftim prane"
             case .italian: return "Avviso vicino a"
             default: return "Alert near"
@@ -276,7 +276,7 @@ final class NotificationService: ObservableObject {
         switch key {
         case "morningDigestBody":
             switch lang {
-            case .greek: return "Δειτε τις ειδοποιησεις υπηρεσιας και τον καιρο για σημερα."
+            case .greek: return "Δείτε τις ειδοποιήσεις υπηρεσίας και τον καιρό για σήμερα."
             case .albanian: return "Shikoni njoftimet e sherbimit dhe motin per sot."
             case .italian: return "Controlla gli avvisi di servizio e le condizioni meteo di oggi."
             default: return "Check today's service alerts and weather conditions."
@@ -292,21 +292,21 @@ final class NotificationService: ObservableObject {
         switch weather.condition {
         case .thunderstorm:
             switch lang {
-            case .greek: return "Καταιγιδα στην περιοχη. \(tempStr) C. Προσεξτε στις μετακινησεις."
+            case .greek: return "Καταιγίδα στην περιοχή. \(tempStr) C. Προσέξτε στις μετακινήσεις."
             case .albanian: return "Stuhi ne zone. \(tempStr) C. Kujdes ne udhetim."
             case .italian: return "Temporale nella zona. \(tempStr) C. Attenzione negli spostamenti."
             default: return "Thunderstorm in the area. \(tempStr) C. Take care while traveling."
             }
         case .snow:
             switch lang {
-            case .greek: return "Χιονοπτωση στην περιοχη. \(tempStr) C. Πιθανες καθυστερησεις."
+            case .greek: return "Χιονόπτωση στην περιοχή. \(tempStr) C. Πιθανές καθυστερήσεις."
             case .albanian: return "Debore ne zone. \(tempStr) C. Vonesa te mundshme."
             case .italian: return "Nevicata nella zona. \(tempStr) C. Possibili ritardi."
             default: return "Snowfall in the area. \(tempStr) C. Possible delays."
             }
         case .showers:
             switch lang {
-            case .greek: return "Εντονες βροχοπτωσεις. \(tempStr) C. Πιθανες καθυστερησεις."
+            case .greek: return "Έντονες βροχοπτώσεις. \(tempStr) C. Πιθανές καθυστερήσεις."
             case .albanian: return "Reshje te forta shiu. \(tempStr) C. Vonesa te mundshme."
             case .italian: return "Forti piogge nella zona. \(tempStr) C. Possibili ritardi."
             default: return "Heavy rain in the area. \(tempStr) C. Possible delays."
