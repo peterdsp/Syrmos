@@ -149,6 +149,68 @@ a bug: should an itinerary the rider is likely to miss be offered first?
 Note that iOS plans through its own `JourneyPlanner`, so the exact comparator
 above has not been confirmed to be what produced this screen.
 
+## 8. A third of the Greek UI text has no accents at all (el)
+
+**Evidence:** `S01-home__C402__light__el__default.png`,
+`S09-explore__C402__light__el__default.png`,
+`S09-airport-hub__C402__light__el__default.png`.
+
+Explore reads *"Ελλαδα, ζωντανα και με τη δυναμη της κοινοτητας"* where correct
+Greek is *"Ελλάδα, ζωντανά και με τη δύναμη της κοινότητας"*. In monotonic Greek
+every word of two or more syllables carries exactly one accent, so unaccented
+text does not read as a style choice: it reads as broken Greek, in the app's own
+home market.
+
+Counted over the iOS sources, excluding `AriadneParser.swift` whose unaccented
+strings are deliberate match keys for user input rather than display text:
+
+| Greek display literals of 8+ Greek letters | 802 |
+|---|---|
+| **carrying no accent at all** | **254 (31%)** |
+
+Worst files: `RailPulseDetailViews.swift` (63), `ExploreRailPulseView.swift` (58),
+`SettingsView.swift` (42), `LinesView.swift` (34).
+
+It is not uniform, which is what makes it look careless rather than systematic:
+the planner, the journey detail and the GO screens are fully and correctly
+accented, while Explore, Home, Settings and the rail-pulse views are not.
+
+One case is worse than cosmetic. The Explore search placeholder is
+*"Προορισμος, σταθμος, γραμμη **η** τρενο..."*
+([ExploreRailPulseView.swift:213](../../../iosApp/iosApp/Views/Lines/ExploreRailPulseView.swift:213)).
+Unaccented **η** is the feminine article "the"; the intended word is **ή**, "or".
+Dropping the accent there changes what the sentence says.
+
+The Albanian strings sitting beside these look the same (`Vonese` for `Vonesë`,
+`per` for `për`), so `sq` probably has the same problem, but that has not been
+captured and is not asserted here.
+
+## 9. Greek loses its accents when uppercased (el)
+
+**Evidence:** `S01-home__C402__light__el__default.png` shows the status chip as
+**ΠΡΩΙΝΉ ΜΕΤΑΚΊΝΗΣΗ**. Correct Greek is **ΠΡΩΙΝΗ ΜΕΤΑΚΙΝΗΣΗ**: monotonic Greek
+drops the accent in all-caps. The airport day chips show the same thing (ΠΈΜ,
+ΣΆΒ for ΠΕΜ, ΣΑΒ).
+
+**Cause:** `Text(text.uppercased())`
+([HomeView.swift:335](../../../iosApp/iosApp/Views/Home/HomeView.swift:335)) and
+about a dozen similar call sites use the locale-unaware `uppercased()`, which
+keeps the tonos. `uppercased(with: Locale(identifier: "el"))` removes it, which
+is exactly the behaviour wanted.
+
+Same class as finding 8 and just as visible to a native reader, but this one is a
+single mechanical fix rather than a translation pass.
+
+## 10. Place names stay in Latin script while everything around them is Greek (el)
+
+**Evidence:** `S01-home__C402__light__el__default.png` reads *"προς
+**Anthoupoli**"*, and `S09-airport-hub__C402__light__el__default.png` titles the
+airport ***Eleftherios Venizelos*** inside an otherwise Greek card.
+
+The data has the Greek names and other screens use them: the station selector,
+the journey detail and GO all read Πειραιάς, Ταύρος, Κηφισίας. So this is
+specific screens reading the Latin name field rather than missing data.
+
 ## Checked and NOT a defect
 
 - **Plans departing at 04:00.** Captured at 02:03 Athens, when the metro is not
@@ -162,6 +224,11 @@ above has not been confirmed to be what produced this screen.
   is the line colour. The same screen is green for M1
   (`S06-go-active__C402__light__en__default.png`) and was red only because the
   leg was on A1.
+- **Greek on the planner, detail, GO and selector screens.** Fully accented,
+  correctly localized station names, correct transit vocabulary
+  (Επιβίβαση / Αποβίβαση / Μετεπιβίβαση), correct plurals (1 αλλαγή vs 0
+  αλλαγές), and no clipping anywhere at C402. Greek is longer than English and
+  the layouts hold.
 - **Announcements reading as "Service alert".** Fixed in peterdsp/Syrmos#176 and
   confirmed on device: the cards now carry their real names, in English, from
   the bundled seed.

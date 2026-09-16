@@ -118,8 +118,16 @@ capture, `[x]` = captured and inspected this cycle.
       them off, and only the offline variant of each screen is covered. Android
       and web not started.
 - [ ] S02 / S05 / S06 additionally at C360, M768, E1024, W1360 and Short.
-- [ ] S02 / S04 / S06 in all four locales (en / el / sq / it) with **real**
+- [~] S02 / S04 / S06 in all four locales (en / el / sq / it) with **real**
       localized strings (long Greek/Albanian/Italian must not clip).
+      **`el` done on iOS (2026-09-16):** all 18 screens, not just S02/S04/S06.
+      Nothing clips at C402 and the layouts hold under longer Greek. The pass
+      found three localization defects instead: 31% of Greek display strings
+      carry no accent at all (254 of 802), Greek loses its accents when
+      uppercased because the call sites use the locale-unaware `uppercased()`,
+      and some screens show Latin place names inside otherwise Greek cards. See
+      `docs/screenshots/release-3.0.0/FINDINGS.md` findings 8-10. `sq` and `it`
+      not started; `sq` looks likely to share finding 8.
 - [ ] Accessibility: iOS Dynamic Type XXXL, Android font scale 2.0, web zoom 200%,
       and keyboard-open layouts.
 

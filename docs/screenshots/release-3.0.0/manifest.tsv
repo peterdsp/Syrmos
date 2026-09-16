@@ -35,3 +35,22 @@ ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offl
 ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-airport-hub	Airport hub ATH	ios/S09-airport-hub__C402__dark__en__default.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-more-settings	More / settings	ios/S09-more-settings__C402__dark__en__default.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	en	dark	default	clock=2026-09-16T05:42:00Z offline=1	308f7585	S09-ariadne	Ariadne assistant	ios/S09-ariadne__C402__dark__en__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S01-home	Home / Now, Greek	ios/S01-home__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-explore	Explore / Discover, Greek	ios/S09-explore__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S10-offline	S10 offline, Greek	ios/S10-offline__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S02-plan-draft	Plan draft, Greek	ios/S02-plan-draft__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S08-saved-journeys	Saved journeys empty state, Greek	ios/S08-saved-journeys__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S03-station-selector	Station selector, Greek	ios/S03-station-selector__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S03-station-selector-keyboard	Selector, keyboard open; duplicate 'Κηφισίας' rows (finding 2 in Greek)	ios/S03-station-selector-keyboard__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S02-plan-draft-filled	Plan draft, both endpoints set, Greek	ios/S02-plan-draft-filled__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S04-route-results	3 ranked routes, Greek	ios/S04-route-results__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S05-journey-detail	Selected journey detail, Greek	ios/S05-journey-detail__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S08-saved-journeys	Saved journeys empty state, Greek	ios/S08-saved-journeys__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S06-go-active	GO active journey, Greek	ios/S06-go-active__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S07-connection-risk	Connection risk, Greek	ios/S07-connection-risk__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S06-go-get-off-next	GO get-off-next, Greek	ios/S06-go-get-off-next__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S07-alternatives	Find alternatives outcome, Greek	ios/S07-alternatives__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-map	Map tab, Greek	ios/S09-map__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-airport-hub	Airport hub, Greek	ios/S09-airport-hub__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-more-settings	More / settings, Greek	ios/S09-more-settings__C402__light__el__default.png
+ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z offline=1	053cd7ec	S09-ariadne	Ariadne assistant, Greek	ios/S09-ariadne__C402__light__el__default.png
