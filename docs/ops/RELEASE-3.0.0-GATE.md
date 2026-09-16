@@ -104,18 +104,19 @@ capture, `[x]` = captured and inspected this cycle.
   S09 Explore / Departures / Map / Airport / Ariadne · S10 Failure & capability states.
 
 ### Base matrix (per platform: iOS, Android, web)
-- [~] S01–S10 at C390, **light** and **dark** (20 cells/platform).
-      **iOS started (2026-09-16):** 20 reference cells captured on iPhone 17 /
-      iOS 27.0 at 402x874pt — S01, S02 (draft + filled), S03 (list + keyboard
-      open), S04, S05, S06, S08, S10 (location denied) and S09 (Explore, Map,
-      Airport, More) in `en`, light plus dark on S01/S09. See
-      `docs/screenshots/release-3.0.0/` (`manifest.tsv` carries the per-capture
-      metadata). These are **reference captures, not an approved raster
-      baseline**: the clock was live (02:00 Athens) rather than pinned to the
-      injectable Athens test clock, and content came from the live API, so they
-      cannot be diffed until the capture harness is frozen. Six defects found,
-      recorded in `docs/screenshots/release-3.0.0/FINDINGS.md`. Android and web
-      not started.
+- [x] **S01–S10 at C390, light and dark — iOS complete (2026-09-16).** 36 cells
+      (18 screens x 2 themes) on iPhone 17 / iOS 27.0 at 402x874pt, every one
+      captured through `scripts/capture-baselines.sh` and therefore
+      reproducible: clock pinned to 2026-09-16T08:42+03:00 and verified by a
+      receipt, offline so screens render from the bundled seed, animations held,
+      app state and first-run gates reset, location pre-granted at Syntagma,
+      status bar frozen. Covers S01, S02 (draft + filled), S03 (list + keyboard),
+      S04, S05, S06 (active + get-off-next), S07 (risk + alternatives), S08, S09
+      (Explore, Map, Airport, More, Ariadne) and S10 (offline). See
+      `docs/screenshots/release-3.0.0/` with `manifest.tsv`.
+      **Reproducible, not yet approved:** nobody has inspected all 36 and signed
+      them off, and only the offline variant of each screen is covered. Android
+      and web not started.
 - [ ] S02 / S05 / S06 additionally at C360, M768, E1024, W1360 and Short.
 - [ ] S02 / S04 / S06 in all four locales (en / el / sq / it) with **real**
       localized strings (long Greek/Albanian/Italian must not clip).
