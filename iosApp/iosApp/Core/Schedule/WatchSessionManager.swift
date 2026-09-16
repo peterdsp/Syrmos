@@ -52,7 +52,7 @@ final class WatchSessionManager: NSObject, @unchecked Sendable {
         let payload = Payload(
             stationName: stationName,
             departures: departures.map { .init(lineId: $0.lineId, destination: $0.destination, minutes: $0.minutes, time: $0.time, targetEpoch: $0.targetEpoch) },
-            updatedEpoch: Date().timeIntervalSince1970,
+            updatedEpoch: SyrmosClock.now.timeIntervalSince1970,
             language: language,
             liveTrainCount: liveTrainCount > 0 ? liveTrainCount : nil
         )
@@ -101,7 +101,7 @@ extension WatchSessionManager: WCSessionDelegate {
             defaults.set(confirmed + 1, forKey: "ichnos_v2_confirmed")
             defaults.set(thisWeek + 1, forKey: "ichnos_v2_week")
             defaults.set(signal, forKey: "ichnos_v2_last_signal")
-            defaults.set(Date().timeIntervalSince1970, forKey: "ichnos_v2_last_signal_epoch")
+            defaults.set(SyrmosClock.now.timeIntervalSince1970, forKey: "ichnos_v2_last_signal_epoch")
         }
     }
 

@@ -171,7 +171,7 @@ final class SavedJourneysStore: ObservableObject {
     }
 
     /// Time-based id; de-dup is by (fromId,toId), never by this id.
-    func newId() -> String { "sj-" + String(Int(Date().timeIntervalSince1970 * 1000), radix: 36) }
+    func newId() -> String { "sj-" + String(Int(SyrmosClock.now.timeIntervalSince1970 * 1000), radix: 36) }
 }
 
 
@@ -285,7 +285,7 @@ enum GoActiveJourneyContract {
                 fromId: leg.stops.first?.id ?? "", toId: leg.stops.last?.id ?? "",
                 lineId: leg.lineId, orderedStopIds: leg.stops.map { $0.id }, serviceDate: serviceDate)
         }
-        let rid = "go-" + String(Int(Date().timeIntervalSince1970 * 1000), radix: 36)
+        let rid = "go-" + String(Int(SyrmosClock.now.timeIntervalSince1970 * 1000), radix: 36)
         return GoOptionSnapshot(
             id: rid, requestId: rid, legs: legs,
             transferCount: max(0, legs.count - 1),
@@ -304,7 +304,7 @@ enum GoActiveJourneyContract {
     }
 
     /// Begin a session at the origin (leg 0, board stop).
-    static func start(journey: GuidanceJourney, language: AppLanguage, now: Date = Date()) -> GoActiveJourney {
+    static func start(journey: GuidanceJourney, language: AppLanguage, now: Date = SyrmosClock.now) -> GoActiveJourney {
         let serviceDate = String(iso(now).prefix(10))
         let option = snapshot(from: journey, serviceDate: serviceDate)
         let pos = GuidancePosition(legIndex: 0, stopIndex: 0)
@@ -335,7 +335,7 @@ enum GoActiveJourneyContract {
 
     /// Rewrite the session onto `pos`, refreshing legId/confirmedStopId/phase/clock.
     static func withPosition(_ active: GoActiveJourney, _ journey: GuidanceJourney, _ pos: GuidancePosition,
-                             now: Date = Date(), source: String = "manual") -> GoActiveJourney {
+                             now: Date = SyrmosClock.now, source: String = "manual") -> GoActiveJourney {
         let rides = rideLegs(active.itinerarySnapshot)
         let legId = rides.indices.contains(pos.legIndex) ? rides[pos.legIndex].id : active.legId
         var copy = active
@@ -349,12 +349,12 @@ enum GoActiveJourneyContract {
     }
 
     static func advance(_ active: GoActiveJourney, _ journey: GuidanceJourney,
-                        now: Date = Date(), source: String = "manual") -> GoActiveJourney {
+                        now: Date = SyrmosClock.now, source: String = "manual") -> GoActiveJourney {
         let next = JourneyGuidance.advance(journey, positionOf(active, journey))
         return withPosition(active, journey, next, now: now, source: source)
     }
 
-    static func back(_ active: GoActiveJourney, _ journey: GuidanceJourney, now: Date = Date()) -> GoActiveJourney {
+    static func back(_ active: GoActiveJourney, _ journey: GuidanceJourney, now: Date = SyrmosClock.now) -> GoActiveJourney {
         let cur = positionOf(active, journey)
         var prev = cur
         if cur.stopIndex > 0 {
@@ -366,7 +366,7 @@ enum GoActiveJourneyContract {
         return withPosition(active, journey, prev, now: now, source: "manual")
     }
 
-    static func end(_ active: GoActiveJourney, now: Date = Date()) -> GoActiveJourney {
+    static func end(_ active: GoActiveJourney, now: Date = SyrmosClock.now) -> GoActiveJourney {
         var copy = active
         copy.phase = phaseEnded
         copy.updatedAt = iso(now)

@@ -167,7 +167,7 @@ enum JourneyPlanAdapter {
             timedAll = true
             if mode == .now {
                 // Forward: earliest catchable departure per leg from now.
-                var ready = Date().timeIntervalSince1970
+                var ready = SyrmosClock.now.timeIntervalSince1970
                 for (i, leg) in detailed.legs.enumerated() {
                     let target = (i == 0) ? ready : ready + transferMin
                     guard let dep = depsOf(leg).first(where: { $0 >= target }) else { timedAll = false; break }
@@ -272,7 +272,7 @@ struct PlanView: View {
     @State private var selectedIdx = 0
     @State private var planned = false
     @State private var mode: JourneyPlanAdapter.Mode = .now
-    @State private var arriveByTime = Date()
+    @State private var arriveByTime = SyrmosClock.now
     // Phase R: rider accessibility preference. When on, each route discloses its
     // step-free confidence honestly (unknown until per-station data is plumbed).
     @State private var stepFree = false
@@ -652,7 +652,7 @@ struct PlanView: View {
         guard let f = fromId, let to = toId, f != to else { return }
         savedStore.save(SavedJourney(
             id: savedStore.newId(), fromId: f, toId: to,
-            createdAt: ISO8601DateFormatter().string(from: Date()),
+            createdAt: ISO8601DateFormatter().string(from: SyrmosClock.now),
             label: nil, preferences: SavedJourneyPreferences(),
         ))
     }
@@ -908,7 +908,7 @@ struct PlanView: View {
         let horizon = (mode == .now) ? 20 : 120
         let schedule: (String, String) -> [Date] = { lineId, boardId in
             let lineIds = lineId == "M3" ? ["M3", "M3_AIR"] : [lineId]
-            let now = Date()
+            let now = SyrmosClock.now
             return ScheduleProjector.nextDepartures(for: boardId, lineIds: lineIds, limit: horizon)
                 .filter { $0.lineId == lineId || (lineId == "M3" && $0.lineId == "M3_AIR") }
                 .map { now.addingTimeInterval(Double($0.minutesAway) * 60) }
@@ -963,7 +963,7 @@ struct PlanView: View {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Athens")!
         let hm = cal.dateComponents([.hour, .minute], from: picked)
-        let now = Date()
+        let now = SyrmosClock.now
         let nowHM = cal.dateComponents([.hour, .minute], from: now)
         var delta = ((hm.hour ?? 0) * 60 + (hm.minute ?? 0)) - ((nowHM.hour ?? 0) * 60 + (nowHM.minute ?? 0))
         if delta < 0 { delta += 24 * 60 }

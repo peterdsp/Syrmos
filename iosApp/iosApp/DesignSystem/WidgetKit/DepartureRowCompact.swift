@@ -64,7 +64,7 @@ struct LiveMinutes: View {
                 Text(nowLabel)
                     .foregroundStyle(.red)
             } else {
-                Text(timerInterval: Date()...target, countsDown: true)
+                Text(timerInterval: SyrmosClock.now...target, countsDown: true)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .foregroundStyle(.primary)

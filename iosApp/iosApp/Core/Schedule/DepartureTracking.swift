@@ -125,7 +125,7 @@ final class DepartureTracking: ObservableObject {
 
     func track(_ departure: TrackedDeparture) {
         active = departure
-        startedEpoch = Date().timeIntervalSince1970
+        startedEpoch = SyrmosClock.now.timeIntervalSince1970
         startActivity(departure)
         lastWatchMinute = -1
         pushToWatch(departure)
@@ -160,7 +160,7 @@ final class DepartureTracking: ObservableObject {
 
     private func pollLivePosition() {
         guard let d = active else { return }
-        let now = Date().timeIntervalSince1970
+        let now = SyrmosClock.now.timeIntervalSince1970
         if d.isStationMode && d.isDue(now) {
             advanceToNextDeparture(d)
             return
@@ -210,14 +210,14 @@ final class DepartureTracking: ObservableObject {
             stationName: d.stationName,
             destination: next.direction,
             scheduledTime: next.time,
-            targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60,
+            targetEpoch: SyrmosClock.now.timeIntervalSince1970 + Double(next.minutesAway) * 60,
             routeStations: route,
             directionKey: dirKey,
             isStationMode: true,
             stationLineIds: d.stationLineIds
         )
         active = updated
-        startedEpoch = Date().timeIntervalSince1970
+        startedEpoch = SyrmosClock.now.timeIntervalSince1970
         startActivity(updated)
         lastWatchMinute = -1
         pushToWatch(updated)
@@ -243,7 +243,7 @@ final class DepartureTracking: ObservableObject {
         }
         guard let stops = service.offsets[d.lineId]?[dirKey], !trains.isEmpty else { return nil }
         guard let targetOffset = stops.first(where: { $0.stationId == d.stationId }) else { return nil }
-        let now = Date().timeIntervalSince1970
+        let now = SyrmosClock.now.timeIntervalSince1970
         let bestTrain = trains
             .filter { train in
                 let elapsed = (now - train.originDepartureEpoch) / 60.0
@@ -296,7 +296,7 @@ final class DepartureTracking: ObservableObject {
     /// Push the latest countdown into the Live Activity. The in-app card ticks
     /// itself; this keeps the Lock Screen / Dynamic Island in step and clears
     /// the track once the train is due.
-    func refresh(now: TimeInterval = Date().timeIntervalSince1970) {
+    func refresh(now: TimeInterval = SyrmosClock.now.timeIntervalSince1970) {
         guard let d = active else { return }
         updateActivity(d, now: now)
         // Push to the Watch on minute changes only (not every one-second tick).
@@ -315,7 +315,7 @@ final class DepartureTracking: ObservableObject {
         )
         // Derive an absolute target epoch from the projector's relative
         // minutesAway so the Watch can tick its own countdown locally.
-        let now = Date().timeIntervalSince1970
+        let now = SyrmosClock.now.timeIntervalSince1970
         let rows = deps.prefix(3).map {
             (lineId: SyrmosLineTokens.label(for: $0.lineId),
              destination: $0.direction,
@@ -339,7 +339,7 @@ final class DepartureTracking: ObservableObject {
             let attributes = SyrmosTrackingAttributes(
                 lineId: d.lineId, stationName: d.stationName, destination: d.destination
             )
-            let now = Date().timeIntervalSince1970
+            let now = SyrmosClock.now.timeIntervalSince1970
             let state = SyrmosTrackingAttributes.ContentState(
                 minutesRemaining: d.minutesRemaining(now),
                 scheduledTime: d.scheduledTime,

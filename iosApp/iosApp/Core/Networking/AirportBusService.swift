@@ -30,7 +30,7 @@ enum AirportBusService {
     /// caller falls back to the neutral 24/7 presentation. Never throws to the UI.
     static func fetch() async -> LiveAirportBuses? {
         if SyrmosSchedulesStore.shared.offlineOnly { return nil }
-        if let cached = cache, Date().timeIntervalSince(cached.0) < ttl {
+        if let cached = cache, SyrmosClock.now.timeIntervalSince(cached.0) < ttl {
             return cached.1
         }
         guard let url = URL(string: "\(base)/api/oasa-airport-buses") else { return nil }
@@ -41,7 +41,7 @@ enum AirportBusService {
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
             let payload = try JSONDecoder().decode(Payload.self, from: data)
             let live = reduce(payload)
-            cache = (Date(), live)
+            cache = (SyrmosClock.now, live)
             return live
         } catch {
             return nil

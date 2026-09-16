@@ -808,7 +808,7 @@ enum RecentStationStore {
     static func record(stationId: String, lineId: String) {
         var items = load()
         items.removeAll { $0.stationId == stationId && $0.lineId == lineId }
-        items.insert(RecentStation(stationId: stationId, lineId: lineId, timestamp: Date().timeIntervalSince1970), at: 0)
+        items.insert(RecentStation(stationId: stationId, lineId: lineId, timestamp: SyrmosClock.now.timeIntervalSince1970), at: 0)
         if items.count > maxRecents { items = Array(items.prefix(maxRecents)) }
         if let data = try? JSONEncoder().encode(items) {
             UserDefaults.standard.set(data, forKey: key)
@@ -1154,7 +1154,7 @@ private struct DayPickerRow: View {
             case .english: return "TODAY"
             }
         }
-        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: SyrmosClock.now) ?? SyrmosClock.now
         let fmt = DateFormatter()
         fmt.locale = Locale(identifier: loc.language == .greek ? "el_GR" : loc.language == .albanian ? "sq_AL" : loc.language == .italian ? "it_IT" : "en_US")
         fmt.dateFormat = "EEE"
@@ -1162,7 +1162,7 @@ private struct DayPickerRow: View {
     }
 
     private func dayNumber(_ offset: Int) -> String {
-        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: SyrmosClock.now) ?? SyrmosClock.now
         let fmt = DateFormatter()
         fmt.dateFormat = "d"
         return fmt.string(from: date)
