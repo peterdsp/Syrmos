@@ -4893,7 +4893,8 @@
                         const btn = document.createElement("button");
                         btn.type = "button"; btn.className = "plan-timeline__stops";
                         btn.textContent = r.count + " " + (r.count === 1
-                            ? T("stop", "στάση", "ndalesë", "fermata") : T("stops", "στάσεις", "ndalesa", "fermate"));
+                            ? T("intermediate stop", "ενδιάμεση στάση", "ndalesë e ndërmjetme", "fermata intermedia")
+                            : T("intermediate stops", "ενδιάμεσες στάσεις", "ndalesa të ndërmjetme", "fermate intermedie"));
                         const leg = legById[r.legId];
                         const mid = (leg && leg.orderedStopIds) ? leg.orderedStopIds.slice(1, -1) : [];
                         const list = document.createElement("div");
@@ -4980,7 +4981,7 @@
                     fromId: f, toId: t,
                     createdAt: new Date().toISOString(),
                     label: null,
-                    preferences: { ranking: "fastest", accessibilityPreference: "none" },
+                    preferences: { ranking: "recommended", accessibilityPreference: "none" },
                 });
                 renderSaved();
             }
@@ -5376,7 +5377,7 @@
                         }
                     }
                     const planOpts = {
-                        fromStationId: fromId, toStationId: toId, ranking: "fastest", language: currentLang,
+                        fromStationId: fromId, toStationId: toId, ranking: "recommended", language: currentLang,
                         buildTimetable: perCandidate, requestedInstant: new Date().toISOString(),
                         defaultTransferSeconds: 120, timeMode: planMode, arriveByInstant,
                     };

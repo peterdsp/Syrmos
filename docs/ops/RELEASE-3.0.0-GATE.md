@@ -206,3 +206,17 @@ tier each surface allowed this cycle, deployed to production web and TestFlight.
 Phase Z documentation is in place; the visual-baseline raster gate and the public
 store submission are the remaining, operator-gated steps, plus the local Xcode
 licence acceptance needed to resume git/iOS work on this host.
+
+## 3.0.0 correction pass (2026-09-16)
+
+The seven remaining visual/journey findings (8, 10, 2, 3, 4, 6, 7) were worked in a
+focused correction pass. Status per finding is in
+`docs/screenshots/release-3.0.0/FINDINGS.md` (correction-pass table). Product and
+review records: `docs/qa/3.0.0-ranking-decision.md` (owner chose comfortable-first,
+option 2) and `docs/qa/3.0.0-greek-copy-review.md` (Greek pack; bulk awaiting native
+review). Verification this pass: web suite green (`node --test web-tests/*.test.js`),
+Kotlin `JourneyRankerTest` green, iOS app+tests build clean and the new unit classes
+(`JourneyRankingOrderTests`, `StationGroupingTests`, `PlaceNameLocalizationTests`,
+`GreekCopyRegressionTests`) green on the simulator. Runtime baseline recapture
+(S01/S03/S04/S05/S06/S09 + More scroll) and native Greek review remain open; no
+version bump, upload or deploy was done.

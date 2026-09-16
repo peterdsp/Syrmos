@@ -486,7 +486,7 @@ private struct AriadneModelBanner: View {
     }
     private func downloadingText(_ pct: Int) -> String {
         switch loc.language {
-        case .greek: return "Ληψη μοντελου AI..."
+        case .greek: return "Λήψη μοντέλου AI..."
         case .albanian: return "Po shkarkohet modeli AI..."
         case .italian: return "Download del modello AI..."
         case .english: return "Downloading AI model..."

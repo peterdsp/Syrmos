@@ -405,8 +405,18 @@ struct GoJourneyView: View {
     private var subdetail: String {
         switch model.current {
         case .board(_, _, let remaining, let next), .ride(_, _, let remaining, let next):
-            let stops = t("\(remaining) stops", "\(remaining) στάσεις", "\(remaining) ndalesa", "\(remaining) fermate")
-            return t("\(stops) · next \(next)", "\(stops) · επόμενη \(next)", "\(stops) · tjetra \(next)", "\(stops) · prossima \(next)")
+            // "N stops to <alight>": count the stops remaining to THIS leg's alight
+            // point and name it, so the GO number can never be read as the S05
+            // "intermediate stops" count that measures a different thing (finding 3).
+            // The alight is the current leg's last stop (an interchange mid-journey,
+            // the destination only on the final leg); fall back to the next station.
+            let leg = model.journey.legs.indices.contains(model.position.legIndex)
+                ? model.journey.legs[model.position.legIndex] : nil
+            let alight = leg?.stops.last?.name ?? next
+            if remaining == 1 {
+                return t("1 stop to \(alight)", "1 στάση μέχρι \(alight)", "1 ndalesë deri te \(alight)", "1 fermata fino a \(alight)")
+            }
+            return t("\(remaining) stops to \(alight)", "\(remaining) στάσεις μέχρι \(alight)", "\(remaining) ndalesa deri te \(alight)", "\(remaining) fermate fino a \(alight)")
         case .getOffNext(let next, let isDestination, _):
             return isDestination
                 ? t("Your destination is next", "Ο προορισμός σου είναι η επόμενη", "Destinacioni yt është tjetra", "La tua destinazione è la prossima")

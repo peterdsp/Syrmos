@@ -8,6 +8,30 @@ Ordered by severity.
 
 ---
 
+## 3.0.0 correction pass — status (2026-09-16)
+
+The historical findings below are preserved as first written. This block records
+what the focused correction pass changed and how it was verified. It does not bump
+the release version, upload a build, or deploy.
+
+| # | Root cause | Change | Tests / runtime evidence | Status | Remaining dependency |
+|---|---|---|---|---|---|
+| 2 | Selector deduped by id, not physical station, so co-located same-name stops (`A1_KIF`/`A2_KIF`) each got a row | `StationGrouping` group identity (folded name AND co-location); selector renders one row per group with line badges; pick resolves the representative, planner transfer edges keep every member line routable | `StationGroupingTests`; **sim (el): `Kifis` -> `Κηφισιά [M1]` + `Κηφισίας [A1 A2]`, distinct** | **fixed and verified** | interchanges with distinct coords show distinguishable badged rows |
+| 3 | S05 counted intermediate stops, S06 counted stops-to-alight, both said "stops" | S05 label -> "N intermediate stops"; S06 -> "N stops to <alight>" on all 3 clients; engines unchanged | `go-panel.test.js` (web); **sim (el): S05 "14 ενδιάμεσες στάσεις" + "1 ενδιάμεση στάση"; S06 "15 στάσεις μέχρι Ομόνοια"** | **fixed and verified (iOS+web)**; Android build clean | Android runtime capture |
+| 4 | Plan pill / Ariadne launcher floated over content | 4a Plan pill and 4b Ariadne launcher both host a full-width opaque occluder behind their bottom `safeAreaInset` (non-hit-testable, so taps still pass through), so content bleeding into the band is cleanly occluded, never half-legible; the launcher band is off on Explore, which already has the Plan-pill band | **sim (el): 4a chips clear above / occluded behind the band; 4b airport route strip clear above the owl band, no labels covered; Home + Explore unregressed** | **fixed and verified (4a + 4b)** | Dynamic Type XXXL, other windows |
+| 6 | More list scrolled its rows through the translucent header capsule | Full-width opaque occluder behind the header band (Reduce-Transparency safe) | **sim (el, light + dark): rows cleanly occluded by the capsule, no half-legible bleed** | **fixed and verified (light + dark)** | large-text / other CompactTabHeader users |
+| 7 | iOS sorted by duration only; feasibility was not a ranking input | Restored the deterministic chain on iOS; added comfortable-first `RECOMMENDED` default (owner chose option 2) across shared Kotlin/web + iOS; missed never leads/badged | `JourneyRankerTest` (Kotlin), `journey-ranking.test.js` (web), `JourneyRankingOrderTests` (iOS); **sim (el): tight M1->M2 ranks above unknown-feasibility M1->M3, per policy**; `docs/qa/3.0.0-ranking-decision.md` | **fixed and verified** | S04 case with a comfortable alt |
+| 8 | ~31% of Greek display literals carried no accent | Native reviewer (owner) approved; every flagged Greek display string corrected by exact-literal match. Detector hardened to a 4-letter threshold (catches Χάρτης/Δίκτυο/Αθήνα) with a monosyllable/match-key skip set | `scripts/greek-copy-audit.py` -> **0**, `GreekCopyRegressionTests`; **sim (el): Home/Explore/More/Airport/Plan/S05/S06 all correctly accented** | **applied, reviewed and verified (el)** | Albanian (separate, out of scope) |
+| 10 | Home interpolated raw `next.direction`; airport hero showed a plain `name` | `DirectionL10n` resolves the direction to the localized station name; `AirportHub.displayName` localized on iOS + Android hero | `PlaceNameLocalizationTests`; **sim (el): Home "M2 προς Ανθούπολη"; airport hero "Ελευθέριος Βενιζέλος" (ATH kept)** | **fixed and verified (iOS)**; Android build clean | Android runtime capture |
+
+Findings 1, 5, 9 are unchanged by this pass (1 and 9 fixed earlier and guarded; 5
+retracted). Baselines recaptured this pass (el, `C402`, clock pinned 08:42 Athens,
+offline seed): `S01-home`, `S03-station-selector-keyboard`, `S04-route-results`,
+`S05-journey-detail`, `S06-go-active`, `S09-explore`, `S09-airport-hub`,
+`S09-more-rest`, `S09-more-scrolled` (light + dark) under `ios/`.
+
+---
+
 ## 1. Announcements are content-free in every non-Greek locale (S01) — FIXED
 
 **Evidence:** `S01-home__C402__light__en__default.png`, `S01-home__C402__dark__en__default.png`

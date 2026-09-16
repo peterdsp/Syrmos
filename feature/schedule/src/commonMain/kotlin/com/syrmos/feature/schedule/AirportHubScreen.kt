@@ -269,7 +269,7 @@ private fun AirportHero(hub: AirportHubData, lang: AppLanguage) {
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.82f),
                 )
-                Text(hub.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(hub.displayName.t(lang), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(
                     hub.subtitle.t(lang),
                     style = MaterialTheme.typography.bodySmall,
@@ -929,6 +929,9 @@ private data class AirportHubData(
     val city: AirportCity,
     val code: String,
     val name: String,
+    // The airport's proper name, localized (finding 10): Greek shows the Greek
+    // form, other languages keep the Latin proper name.
+    val displayName: AirportL10n,
     val cityName: AirportL10n,
     val subtitle: AirportL10n,
     val gradient: List<Color>,
@@ -943,6 +946,7 @@ private fun airportHub(city: AirportCity): AirportHubData = when (city) {
         city = city,
         code = "ATH",
         name = "Eleftherios Venizelos",
+        displayName = AirportL10n("Eleftherios Venizelos", "Ελευθέριος Βενιζέλος", "Eleftherios Venizelos", "Eleftherios Venizelos"),
         cityName = AirportL10n("Athens", "Αθήνα", "Athinë", "Atene"),
         subtitle = AirportL10n(
             "Routes, scheduled departures and trip planning",
@@ -965,6 +969,7 @@ private fun airportHub(city: AirportCity): AirportHubData = when (city) {
         city = city,
         code = "SKG",
         name = "Makedonia",
+        displayName = AirportL10n("Makedonia", "Μακεδονία", "Makedonia", "Makedonia"),
         cityName = AirportL10n("Thessaloniki", "Θεσσαλονίκη", "Selanik", "Salonicco"),
         subtitle = AirportL10n(
             "Metro plus a shuttle, or a direct bus to the terminal",
