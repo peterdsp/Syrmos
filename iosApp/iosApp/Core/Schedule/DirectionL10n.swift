@@ -15,7 +15,9 @@ enum DirectionL10n {
     // station data is static, so memoize the resolved result. Guarded by a lock
     // because the accessor is not actor-isolated.
     private static let lock = NSLock()
-    private static var cache: [String: String] = [:]
+    // Manually synchronized by `lock`, so opt out of Swift 6 global-mutable-state
+    // isolation checking (nonisolated(unsafe)); every access below holds the lock.
+    nonisolated(unsafe) private static var cache: [String: String] = [:]
 
     static func localized(lineId: String, direction: String, language: AppLanguage) -> String {
         let folded = StationGrouping.fold(direction)
