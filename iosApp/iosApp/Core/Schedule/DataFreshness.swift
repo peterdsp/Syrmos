@@ -83,7 +83,7 @@ final class LiveDataFreshness: ObservableObject {
         monitor.start(queue: DispatchQueue(label: "syrmos.connectivity"))
     }
 
-    func markLive(at date: Date = Date()) {
+    func markLive(at date: Date = SyrmosClock.now) {
         lastLiveUpdate = date
     }
 
@@ -94,7 +94,7 @@ final class LiveDataFreshness: ObservableObject {
     var freshness: DataFreshness {
         DataFreshness.evaluate(
             lastLiveUpdate: lastLiveUpdate,
-            now: Date(),
+            now: SyrmosClock.now,
             windowSeconds: Self.windowSeconds
         )
     }

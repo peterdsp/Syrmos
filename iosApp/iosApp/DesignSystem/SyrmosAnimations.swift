@@ -47,7 +47,9 @@ struct LivePulse: ViewModifier {
                 .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
                 value: pulsing
             )
-            .onAppear { pulsing = true }
+            // A looping pulse is the enemy of a raster baseline: it guarantees two
+            // captures of the same state differ. Held still while capturing.
+            .onAppear { pulsing = !SyrmosClock.animationsSuppressed }
     }
 }
 
@@ -70,8 +72,8 @@ struct HeroImminentPulse: ViewModifier {
                 value: pulsing
             )
             .onChange(of: active) { _, isActive in
-                pulsing = isActive
+                pulsing = isActive && !SyrmosClock.animationsSuppressed
             }
-            .onAppear { if active { pulsing = true } }
+            .onAppear { if active { pulsing = !SyrmosClock.animationsSuppressed } }
     }
 }

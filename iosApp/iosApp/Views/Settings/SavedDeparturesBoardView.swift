@@ -29,7 +29,7 @@ struct SavedDeparturesBoardView: View {
     @ViewBuilder
     private func row(_ dep: SavedDeparture) -> some View {
         let reminder = dep.toReminder()
-        let now = Int64(Date().timeIntervalSince1970)
+        let now = Int64(SyrmosClock.now.timeIntervalSince1970)
         let state = reminder.state(now)
         let minutes = reminder.minutesUntilLeave(now)
         VStack(alignment: .leading, spacing: 2) {

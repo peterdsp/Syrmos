@@ -38,7 +38,7 @@ enum ScheduleProjector {
         let athens = TimeZone(identifier: "Europe/Athens")!
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = athens
-        let targetDate = cal.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+        let targetDate = cal.date(byAdding: .day, value: dayOffset, to: SyrmosClock.now) ?? SyrmosClock.now
         let nowComp = cal.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: targetDate)
         // For "today" we anchor at the current minute (next departures
         // from now). For a future day we anchor at 00:00 so the user
@@ -193,7 +193,7 @@ enum ScheduleProjector {
         let athens = TimeZone(identifier: "Europe/Athens")!
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = athens
-        let now = Date()
+        let now = SyrmosClock.now
         for dayOffset in 0..<7 {
             guard let date = cal.date(byAdding: .day, value: dayOffset, to: now) else { continue }
             let comp = cal.dateComponents([.month, .day, .weekday], from: date)
@@ -287,7 +287,7 @@ enum ScheduleProjector {
         let athens = TimeZone(identifier: "Europe/Athens")!
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = athens
-        let comp = cal.dateComponents([.month, .day, .weekday], from: Date())
+        let comp = cal.dateComponents([.month, .day, .weekday], from: SyrmosClock.now)
         let holiday = resolveHolidayDayType(month: comp.month ?? 1, day: comp.day ?? 1)
         let dt = dayType(for: comp.weekday ?? 1, holiday: holiday)
         for lineId in lineIds {
@@ -325,7 +325,7 @@ enum ScheduleProjector {
         let athens = TimeZone(identifier: "Europe/Athens")!
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = athens
-        let targetDate = cal.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+        let targetDate = cal.date(byAdding: .day, value: dayOffset, to: SyrmosClock.now) ?? SyrmosClock.now
         let comp = cal.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: targetDate)
         let weekday = comp.weekday ?? 1
         let holiday = resolveHolidayDayType(month: comp.month ?? 1, day: comp.day ?? 1)
@@ -859,7 +859,7 @@ enum ScheduleProjector {
     /// source for the map's moving metro/tram dots: every train currently
     /// somewhere on its line, including Saturday's 24h overnight service after
     /// midnight. Online, /api/live-positions replaces this.
-    static func activeTrains(now: Date = Date()) -> [ActiveTrainProjection] {
+    static func activeTrains(now: Date = SyrmosClock.now) -> [ActiveTrainProjection] {
         let bundles = SyrmosSchedulesStore.shared.service.bundles
         if bundles.isEmpty { return [] }
         let offsetsStore = SyrmosStationOffsetsStore.shared

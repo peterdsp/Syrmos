@@ -29,7 +29,7 @@ enum WidgetBridge {
         guard let d = defaults else { return }
         d.set(lat, forKey: "loc.lat")
         d.set(lon, forKey: "loc.lon")
-        d.set(Date().timeIntervalSince1970, forKey: "loc.ts")
+        d.set(SyrmosClock.now.timeIntervalSince1970, forKey: "loc.ts")
         WidgetCenter.shared.reloadAllTimelines()
     }
 

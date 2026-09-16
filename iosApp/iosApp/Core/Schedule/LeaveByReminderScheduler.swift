@@ -54,7 +54,7 @@ final class LeaveByReminderScheduler {
     func sync() {
         let enabled = NotificationPreferences.leaveByRemindersEnabled
         let desired = enabled ? SavedDepartureBoard.shared.departures.map { $0.toReminder() } : []
-        let now = Int64(Date().timeIntervalSince1970)
+        let now = Int64(SyrmosClock.now.timeIntervalSince1970)
 
         center.getPendingNotificationRequests { [weak self] pending in
             guard let self else { return }

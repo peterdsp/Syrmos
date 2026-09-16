@@ -224,7 +224,7 @@ final class STASYService: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         formatter.timeZone = TimeZone(identifier: "Europe/Athens")
-        let nowHHMM = formatter.string(from: Date())
+        let nowHHMM = formatter.string(from: SyrmosClock.now)
 
         var result: [String: String] = [:]
         for announcement in announcements where announcement.category == .serviceAlert {
@@ -358,7 +358,7 @@ final class STASYService: ObservableObject {
             cacheStatus(payload.status)
             let parsed: [STASYAnnouncement] = payload.announcements.compactMap(Self.mapAnnouncement)
             announcements = parsed
-            lastUpdated = Date()
+            lastUpdated = SyrmosClock.now
             // The feed came back from the API, so we're online. Flip the
             // home offline-alive pill to "live".
             LiveDataFreshness.shared.markLive()
@@ -430,7 +430,7 @@ final class STASYService: ObservableObject {
             ]
         }
         UserDefaults.standard.set(dicts, forKey: cacheKey)
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: cacheTimeKey)
+        UserDefaults.standard.set(SyrmosClock.now.timeIntervalSince1970, forKey: cacheTimeKey)
     }
 
     private func loadCachedAnnouncements() {

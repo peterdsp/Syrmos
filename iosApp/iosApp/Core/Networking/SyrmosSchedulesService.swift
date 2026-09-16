@@ -91,13 +91,13 @@ final class SyrmosSchedulesService: ObservableObject {
             let (data, response) = try await session.data(for: req)
             guard let http = response as? HTTPURLResponse else { return .failure("no http") }
             if http.statusCode == 304 {
-                bump(lastSync: Date())
+                bump(lastSync: SyrmosClock.now)
                 return .upToDate
             }
             guard http.statusCode == 200 else { return .failure("status \(http.statusCode)") }
             let m = try JSONDecoder().decode(Manifest.self, from: data)
             if m.etag == lastSeenETag {
-                bump(lastSync: Date())
+                bump(lastSync: SyrmosClock.now)
                 return .upToDate
             }
             // Fetch each line bundle whose hash changed.
@@ -113,7 +113,7 @@ final class SyrmosSchedulesService: ObservableObject {
             self.manifest = m
             self.bundles = next
             lastSeenETag = m.etag
-            bump(lastSync: Date())
+            bump(lastSync: SyrmosClock.now)
             return .refreshed(refreshed)
         } catch {
             return .failure(error.localizedDescription)

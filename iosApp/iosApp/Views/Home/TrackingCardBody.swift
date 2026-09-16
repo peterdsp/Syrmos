@@ -189,6 +189,7 @@ private struct LivePulseDot: View {
             .frame(width: 10, height: 10)
             .opacity(pulse ? 1.0 : 0.4)
             .onAppear {
+                guard !SyrmosClock.animationsSuppressed else { return }
                 withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
                     pulse = true
                 }

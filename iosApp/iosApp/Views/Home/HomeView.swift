@@ -185,7 +185,9 @@ struct HomeView: View {
     @ViewBuilder
     private func proactivePulse(next: Departure?, last: Departure?) -> some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
-            let hour = Calendar(identifier: .gregorian).component(.hour, from: timeline.date)
+            // TimelineView only drives the redraw; the value comes from SyrmosClock so a
+            // pinned capture renders a still frame instead of a ticking one.
+            let hour = Calendar(identifier: .gregorian).component(.hour, from: SyrmosClock.now)
             let severity = next.flatMap { stasyService.lineDisruptions[$0.lineId] }
             let disrupted = severity == "warning" || severity == "closure"
             let lateNight = last != nil && (hour >= 22 || hour < 5)
@@ -208,7 +210,7 @@ struct HomeView: View {
                 }
 
                 if let next {
-                    let seconds = next.secondsAway(from: timeline.date)
+                    let seconds = next.secondsAway(from: SyrmosClock.now)
                     let countdown = heroCountdownText(secondsAway: seconds, language: loc.language)
                     let accent = SyrmosData.lineColor(for: next.lineId)
 
@@ -614,7 +616,7 @@ struct HomeView: View {
     private func trackingCard(_ tracked: TrackedDeparture) -> some View {
         let accent = SyrmosData.lineColor(for: tracked.lineId)
         return TimelineView(.periodic(from: .now, by: 1)) { context in
-            let now = context.date.timeIntervalSince1970
+            let now = SyrmosClock.now.timeIntervalSince1970
             let remaining = tracked.minutesRemaining(now)
             let due = tracked.isDue(now)
             TrackingCardBody(
@@ -654,7 +656,7 @@ struct HomeView: View {
                 stationName: loc.language == .greek ? node.nameEl : node.displayName,
                 destination: next.direction,
                 scheduledTime: next.time,
-                targetEpoch: Date().timeIntervalSince1970 + Double(next.minutesAway) * 60,
+                targetEpoch: SyrmosClock.now.timeIntervalSince1970 + Double(next.minutesAway) * 60,
                 routeStations: route,
                 isStationMode: true,
                 stationLineIds: allLineIds
@@ -716,7 +718,7 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
 
                 if let next {
-                    let secsAway = next.secondsAway(from: timeline.date)
+                    let secsAway = next.secondsAway(from: SyrmosClock.now)
                     let isImminent = secsAway <= 60
                     let countdownText = heroCountdownText(secondsAway: secsAway, language: loc.language)
                     let lineColor = SyrmosData.lineColor(for: next.lineId)
@@ -1187,7 +1189,7 @@ struct HomeView: View {
         let athens = TimeZone(identifier: "Europe/Athens")!
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = athens
-        let weekday = cal.component(.weekday, from: Date())
+        let weekday = cal.component(.weekday, from: SyrmosClock.now)
         let dayType: String
         switch weekday {
         case 1: dayType = "sun"
