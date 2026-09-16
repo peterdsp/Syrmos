@@ -97,6 +97,7 @@ import com.syrmos.core.model.journey.LegKind
 import com.syrmos.core.model.journey.Ranking
 import com.syrmos.core.model.journey.SavedJourney
 import com.syrmos.core.model.transit.Station
+import com.syrmos.core.domain.station.StationGrouping
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -431,16 +432,23 @@ class PlanScreenRoute : Screen {
                         singleLine = true,
                         label = { Text(t("Search station", "Αναζήτηση σταθμού", "Kërko stacion", "Cerca stazione")) },
                     )
-                    val q = query.trim().lowercase()
-                    val matches = stations.filter {
-                        q.isEmpty() || it.name.lowercase().contains(q) || it.nameEl.lowercase().contains(q)
-                    }.take(40)
+                    // Finding 2: one row per real physical station. Co-located
+                    // same-name stops collapse into a single group with line badges,
+                    // so the picker never lists the same station twice, while
+                    // distinct stations (Kifissia vs Kifisias) stay apart.
+                    val groups = remember(stations) { StationGrouping.groups(stations) }
+                    val q = StationGrouping.fold(query)
+                    val matches = groups.filter { StationGrouping.matches(it, q) }.take(40)
                     LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp)) {
-                        items(matches, key = { it.id }) { st ->
-                            Text(
-                                text = if (lang == AppLanguage.GREEK) st.nameEl else st.name,
+                        items(matches, key = { it.id }) { g ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 modifier = Modifier.fillMaxWidth().clickable {
-                                    if (open == "from") fromId = st.id else toId = st.id
+                                    // Carry the group's representative stop; the planner
+                                    // reaches every member line through its co-located
+                                    // transfer edges, so no service is lost.
+                                    if (open == "from") fromId = g.representativeId else toId = g.representativeId
                                     open = null; query = ""
                                     // S10 recovery: once both endpoints resolve, clear + plan.
                                     if (invalidSavedNote != null && stationExists(fromId) && stationExists(toId)) {
@@ -448,7 +456,27 @@ class PlanScreenRoute : Screen {
                                         runPlan()
                                     }
                                 }.padding(vertical = 14.dp, horizontal = 4.dp),
-                            )
+                            ) {
+                                Text(
+                                    text = if (lang == AppLanguage.GREEK) g.nameEl else g.name,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                // Line badges disambiguate a shared physical station.
+                                g.lineIds.forEach { lid ->
+                                    androidx.compose.material3.Surface(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                    ) {
+                                        Text(
+                                            lid,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
