@@ -217,6 +217,16 @@ bump, upload or deploy. Per-finding root cause, change, evidence and status are 
 review records are `docs/qa/3.0.0-ranking-decision.md` (owner chose comfortable-first,
 option 2) and `docs/qa/3.0.0-greek-copy-review.md` (native review applied; detector at 0).
 
+Follow-ups after the Android and served-web **runtime** captures (which is how the
+gaps surfaced, not a build assertion): finding 2 was only iOS-complete in #184, so
+its selector grouping was ported to Android/shared in peterdsp/Syrmos#188 and to web
+in peterdsp/Syrmos#189 (each with unit tests mirroring the iOS `StationGroupingTests`,
+and each browser/emulator verified: web 393 stations collapse to 369 grouped options,
+"Kifisias · A1, A2" shown once). The web train sheet also gained the onboard
+livestream and full telemetry the native clients already showed
+(peterdsp/Syrmos#187), reaching live parity across all three clients. Finding 2 is now
+closed on iOS, Android and web.
+
 ### Automated verification (all green on `master`)
 
 - Web: full `node --test web-tests/*.test.js` (incl. `journey-ranking`, `go-panel`,
@@ -252,9 +262,11 @@ accessibility XXXL without half-legible bleed or clipped controls.
 
 ### Explicitly still open (not defects, scope of this pass)
 
-- Android and served-web **runtime** captures of the shared-semantics screens (the
-  fixes are in code + shared fixtures and pass the cross-client tests; only iOS was
-  captured at runtime this pass).
+- Android and served-web **runtime** captures of the shared-semantics screens were
+  done this pass (on the emulator and on the seeded served build): they confirmed F3
+  stop-count wording and F7 ordering match iOS, and they surfaced the finding 2
+  selector gaps that #188 (Android) and #189 (web) then closed and re-verified. No
+  runtime gap remains on these seven finding screens.
 - The **full** Phase Z release matrix beyond these seven finding screens (other
   cells, larger/resizable and foldable geometries, live/online coverage) is not
   claimed complete from this focused correction pass.
