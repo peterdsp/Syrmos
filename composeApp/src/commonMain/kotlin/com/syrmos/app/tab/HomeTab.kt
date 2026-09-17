@@ -20,14 +20,20 @@ import com.syrmos.app.AriadneNavEvent
 import com.syrmos.app.NotificationNavBus
 import com.syrmos.app.NotificationNavEvent
 import com.syrmos.app.screen.AlertDetailScreenRoute
+import com.syrmos.app.screen.GoJourneyScreenRoute
 import com.syrmos.app.screen.LineDetailScreenRoute
 import com.syrmos.app.screen.StationDetailScreenRoute
+import com.syrmos.app.screen.buildGuidanceJourney
+import com.syrmos.app.journey.ActiveJourneyRepository
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.app.platform.requestLocationPermission
 import com.syrmos.app.platform.requestUserLocation
 import com.syrmos.feature.home.HomeScreen
 import com.syrmos.feature.home.HomeViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import org.koin.compose.koinInject
 
 object HomeTab : Tab {
@@ -54,6 +60,8 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
         val navigator = LocalNavigator.currentOrThrow
         val tabNavigator = LocalTabNavigator.current
         val viewModel = koinInject<HomeViewModel>()
+        val stationRepo = koinInject<StationRepositoryImpl>()
+        val lang by LocalizationManager.language.collectAsState()
         val scope = rememberCoroutineScope()
         var scrollToWeatherRequest by remember { mutableIntStateOf(0) }
 
@@ -80,6 +88,19 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
                     is NotificationNavEvent.Station -> navigator.push(StationDetailScreenRoute(event.stationId))
                     NotificationNavEvent.Weather -> scrollToWeatherRequest += 1
                     NotificationNavEvent.Home -> Unit
+                    // Cold-launch / process-death continuity: rebuild the live GO
+                    // session from its persisted snapshot and reopen GO where the
+                    // rider left off. No begin flow runs, so no duplicate session.
+                    NotificationNavEvent.ResumeGo -> {
+                        val active = ActiveJourneyRepository.active.value
+                        val alreadyOnGo = navigator.items.lastOrNull() is GoJourneyScreenRoute
+                        if (active != null && !alreadyOnGo) {
+                            val guidance = buildGuidanceJourney(active.itinerarySnapshot, stationRepo, lang)
+                            if (guidance.legs.isNotEmpty()) {
+                                navigator.push(GoJourneyScreenRoute(guidance))
+                            }
+                        }
+                    }
                 }
             }
         }

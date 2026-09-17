@@ -1125,7 +1125,7 @@ private fun transferRisksOf(opt: JourneyOption): List<TransferRisk> =
         TransferRisk(r.status.name.lowercase(), r.availableSeconds, r.recommendedSeconds)
     }
 
-private suspend fun buildGuidanceJourney(
+internal suspend fun buildGuidanceJourney(
     opt: JourneyOption,
     stationRepo: StationRepositoryImpl,
     lang: AppLanguage,

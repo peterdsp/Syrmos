@@ -58,6 +58,22 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: GO session continuity (Phase 2, continuity)
+
+- **Progress already durable** — the GO screen derives its position from the
+  persisted `ActiveJourneyRepository`, so the current instruction/leg already
+  survives an activity recreation (verified: rotating mid-ride kept "Stay on M3,
+  12 stops"). No begin flow runs in the GO screen, so recreation cannot duplicate
+  the session.
+- **Return to GO after process death** — the app landed on the last tab after a
+  cold launch, losing the live session from view. Added a one-shot, per-process
+  gate (`GoResumeGate`) in the root: on a genuine cold start with a persisted
+  session it switches to Home and dispatches `NotificationNavEvent.ResumeGo`; the
+  Home navigator rebuilds guidance from the snapshot (`buildGuidanceJourney`, now
+  reusable) and pushes GO where the rider left off. The gate is a process field so
+  an activity recreation does NOT re-trigger it, and the Home handler skips the
+  push if GO is already on top, so no duplicate GO is ever stacked.
+
 ## Landed: Plan continuity ownership (Phase 2, continuity)
 
 - **Draft + selection survive recreation** — `PlanScreenRoute.kt` moves the small
@@ -100,6 +116,8 @@ scratchpad.
 | Compact window (411dp via `wm size`): Plan single column | Pass | From/To/chips/Find/Saved stacked in the shipped order. |
 | Nav adaptation | Pass | Navigation rail on the wide window, floating bottom bar on the compact window (existing behavior preserved). |
 | Continuity through activity recreation | Pass | Rotated the tablet with a planned Syntagma to Airport route: endpoints, timing mode, and the reconstructed route (M3, timeline, Start journey) all restored, while the layout re-fit from two-pane to single column at 800dp. Before the change the same recreation wiped the screen to empty. |
+| GO session continuity: activity recreation | Pass | Rotated mid-ride: "Stay on M3, 12 stops to Airport" preserved, no duplicate GO, no jump to Home. |
+| GO session continuity: process death | Pass | Killed the process mid-ride and cold-launched: the app auto-restored GO at the same position (12 stops) instead of the last tab. Back from the restored GO returns to Home content (single GO on the stack). |
 | No crash / launch, onboarding, permissions | Pass | Cold launch, onboarding skip, location/notification prompts, no `FATAL`. |
 | Cross-target compile | Pass | `:composeApp:compileKotlinWasmJs` and `compileKotlinIosSimulatorArm64` green; web build and iOS untouched. |
 
@@ -128,16 +146,16 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Android two-pane on a wide running surface (12.1 #19) | Pass | Plan at 1280dp: query/saved task pane + results companion pane on the emulator. |
 | Android compact single column (12.1 #1) | Pass | Plan at 411dp: shipped single scrolling column, floating bottom bar. |
 | Android fold-posture running-surface scenarios (12.1 #2-8) | Pending | No foldable AVD in this environment; the fold path is unit-tested + compile-verified only. |
-| Android continuity through recreation (12.1 #11-13) | Partial | Plan draft + selection + reconstructed results survive an activity recreation (verified by rotation). Other screens not yet covered; process-death restoration via Voyager not separately verified. |
+| Android continuity through recreation (12.1 #11-13) | Partial | Plan draft/selection and the GO session both survive activity recreation; the GO session also survives process death (auto-restored on cold launch). Other screens (Explore, Departures) not yet covered; Plan process-death restoration relies on rememberSaveable and is not separately captured here. |
 | iPhone/iPad running-surface scenarios (12.1 #20) | Pending | iOS mirror + scene wiring not yet implemented. |
 | Duo D01–D24 (12.2) | Pending | Gated on Duo SDK arrangement APIs and a Duo runtime. |
 
 ## Remaining phases (prompt section 11)
 
-1. **Continuity on both platforms** (Plan on Android done) — Plan's draft +
-   selection now survive Android recreation. Remaining: a running GO session
-   through recreation, map camera intent, and the iOS `SceneDelegate` host
-   replacement, plus the other screens' state ownership.
+1. **Continuity on both platforms** (Plan + GO on Android done) — Plan's draft +
+   selection and the live GO session now survive Android recreation, and GO also
+   survives process death. Remaining: map camera intent, the other screens' state
+   ownership, and the iOS `SceneDelegate` host replacement.
 2. **Native geometry + navigation** (Android done for the first flow; iOS not
    started) — the FoldingFeature adapter and the shared policy are wired and Plan
    consumes them. Remaining: adopt the workspace in the Android root itself and
