@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -98,6 +99,10 @@ import com.syrmos.core.model.journey.Ranking
 import com.syrmos.core.model.journey.SavedJourney
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.domain.station.StationGrouping
+import com.syrmos.app.layout.rememberContentWorkspace
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -330,12 +335,11 @@ class PlanScreenRoute : Screen {
                 }
             },
         ) { padding ->
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+            // The editable query + saved journeys form the task pane; the route
+            // results form the companion pane. Both capture the same state and
+            // callbacks, so only their placement changes with the workspace.
+            @Composable
+            fun QueryBlock() {
                 // Resume banner (S06): a live GO session survives a kill / navigation.
                 activeJourney?.let { active ->
                     val fromId2 = active.itinerarySnapshot.legs.firstOrNull()?.fromId
@@ -523,7 +527,10 @@ class PlanScreenRoute : Screen {
                     enabled = fromId != null && toId != null && open == null,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
+            }
 
+            @Composable
+            fun ResultsBlock() {
                 // Phase R: disclose when we routed around a suspended line.
                 (disruption as? DisruptionOutcome.Routed)?.let { r ->
                     if (planned && r.excludedLineIds.isNotEmpty()) RoutingAroundChip(r.excludedLineIds, ::t)
@@ -586,7 +593,10 @@ class PlanScreenRoute : Screen {
                         }
                     }
                 }
+            }
 
+            @Composable
+            fun SavedBlock() {
                 // --- Saved journeys (S08 / J05) -----------------------------
                 HorizontalDivider()
                 Text(
@@ -634,6 +644,51 @@ class PlanScreenRoute : Screen {
                 }
                 // Bottom clearance so the S05 action + saved list clear the tab bar.
                 Spacer(Modifier.height(96.dp))
+            }
+
+            BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+                val ws = rememberContentWorkspace(
+                    task = WorkspaceTask.PLAN,
+                    width = maxWidth.value.toInt(),
+                    height = maxHeight.value.toInt(),
+                )
+                if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) {
+                    // Two-pane: editable query + saved on the left task pane, route
+                    // results on the right companion pane (prompt section 6, Plan).
+                    val taskW = ws.pane(PaneRole.TASK)?.rect?.width ?: 360
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.width(taskW.dp).fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            QueryBlock()
+                            SavedBlock()
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            ResultsBlock()
+                        }
+                    }
+                } else {
+                    // Single column: the shipped order (query, results, saved).
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        QueryBlock()
+                        ResultsBlock()
+                        SavedBlock()
+                    }
+                }
             }
         }
 

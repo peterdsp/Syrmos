@@ -55,6 +55,8 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.Dp
 import com.syrmos.core.common.layout.ContentBreakpoint
 import com.syrmos.core.common.layout.ContentMode
+import com.syrmos.app.layout.LocalReservedRegions
+import com.syrmos.app.platform.rememberReservedRegions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -168,6 +170,9 @@ fun SyrmosApp() {
                     showWhatsNew = false
                 })
             }
+            androidx.compose.runtime.CompositionLocalProvider(
+                LocalReservedRegions provides rememberReservedRegions(),
+            ) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 if (isWebPlatform && maxWidth >= 900.dp) {
                     DesktopWebApp()
@@ -287,6 +292,7 @@ fun SyrmosApp() {
                     }
                     }
                 }
+            }
             }
         }
     }
