@@ -4581,16 +4581,53 @@
                 if (currentLang === "el" && (s.name_el || s.nameEl)) return s.name_el || s.nameEl;
                 return s.name || s.id;
             }
+            // Member stop id -> the group's representative option value, so a saved
+            // journey stored against a specific stop (e.g. the tram A2_KIF) still
+            // selects the merged "Kifisias" option after grouping.
+            let planRepMap = {};
+            function groupLabel(g) {
+                const base = currentLang === "el" && g.nameEl ? g.nameEl : g.name;
+                // Disambiguate only when needed (an interchange/merged group, or two
+                // groups that share a display name), so single-line stations stay
+                // clean while no two options ever read identically (finding 2).
+                return base;
+            }
             function fillSelect(sel, selectedId) {
                 sel.innerHTML = "";
-                stations.slice()
-                    .sort((a, b) => stationName(a).localeCompare(stationName(b)))
-                    .forEach((s) => {
+                const G = window.SyrmosStationGrouping;
+                const groups = G ? G.groups(stations) : stations.map((s) => ({
+                    id: s.id, representativeId: s.id, name: s.name || s.id,
+                    nameEl: s.name_el || s.nameEl || "", memberIds: [s.id],
+                    lineIds: s.line_ids || s.lineIds || [],
+                }));
+                // Rebuild the member -> representative map from the current grouping.
+                planRepMap = {};
+                const nameCounts = {};
+                groups.forEach((g) => {
+                    g.memberIds.forEach((mid) => { planRepMap[mid] = g.representativeId; });
+                    const n = groupLabel(g);
+                    nameCounts[n] = (nameCounts[n] || 0) + 1;
+                });
+                groups.slice()
+                    .sort((a, b) => groupLabel(a).localeCompare(groupLabel(b)))
+                    .forEach((g) => {
                         const o = document.createElement("option");
-                        o.value = s.id; o.textContent = stationName(s);
-                        if (s.id === selectedId) o.selected = true;
+                        o.value = g.representativeId;
+                        const base = groupLabel(g);
+                        // Append the serving lines when this option would otherwise be
+                        // ambiguous: a merged multi-line group, or a name shared with
+                        // another group.
+                        const needLines = g.lineIds.length > 1 || nameCounts[base] > 1;
+                        o.textContent = (needLines && g.lineIds.length) ? base + " · " + g.lineIds.join(", ") : base;
+                        if (g.memberIds.indexOf(selectedId) !== -1 || g.representativeId === selectedId) o.selected = true;
                         sel.appendChild(o);
                     });
+            }
+            // Set a From/To <select> to a station id, resolving a member stop id to
+            // its grouped representative option value.
+            function setEndpoint(sel, id) {
+                if (!sel) return;
+                sel.value = (id != null && planRepMap[id]) ? planRepMap[id] : id;
             }
             function defaults() {
                 const m1 = lines.find((l) => l.id === "M1");
@@ -4857,8 +4894,8 @@
                     transferRisks: optionTransferRisks(active.itinerarySnapshot),
                     onFindAlternatives: (fromId, toId) => {
                         if (panelEl) panelEl.innerHTML = "";
-                        if (fromSel && fromId) fromSel.value = fromId;
-                        if (toSel && toId) toSel.value = toId;
+                        if (fromId) setEndpoint(fromSel, fromId);
+                        if (toId) setEndpoint(toSel, toId);
                         runPlan();
                     },
                     onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
@@ -5093,8 +5130,8 @@
                 ensureSelectsFilled();
                 // Phase R S10: preserve resolvable endpoints, name the missing one.
                 const fromOk = stationExists(entry.fromId), toOk = stationExists(entry.toId);
-                fromSel.value = fromOk ? entry.fromId : "";
-                toSel.value = toOk ? entry.toId : "";
+                if (fromOk) setEndpoint(fromSel, entry.fromId); else fromSel.value = "";
+                if (toOk) setEndpoint(toSel, entry.toId); else toSel.value = "";
                 if (fromOk && toOk) {
                     setInvalidSavedNote(null);
                     runPlan();
@@ -5352,8 +5389,8 @@
                         transferRisks: optionTransferRisks(opt),
                         onFindAlternatives: (fromId, toId) => {
                             if (panelEl) panelEl.innerHTML = "";
-                            if (fromSel && fromId) fromSel.value = fromId;
-                            if (toSel && toId) toSel.value = toId;
+                            if (fromId) setEndpoint(fromSel, fromId);
+                            if (toId) setEndpoint(toSel, toId);
                             runPlan();
                         },
                         onEnd: () => { if (panelEl) panelEl.innerHTML = ""; renderResume(); },
