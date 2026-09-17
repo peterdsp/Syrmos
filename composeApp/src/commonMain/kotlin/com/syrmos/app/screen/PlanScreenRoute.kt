@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -134,18 +135,23 @@ class PlanScreenRoute : Screen {
         val lang by LocalizationManager.language.collectAsState()
 
         var stations by remember { mutableStateOf<List<Station>>(emptyList()) }
-        var fromId by remember { mutableStateOf<String?>(null) }
-        var toId by remember { mutableStateOf<String?>(null) }
-        var open by remember { mutableStateOf<String?>(null) } // "from" | "to" | null
-        var query by remember { mutableStateOf("") }
+        // Continuity contract (prompt section 7): the editable draft + selection are
+        // small restoration keys, so they use rememberSaveable to survive a
+        // configuration change (rotation / fold / resize) AND process death. The
+        // large derived data (stations, options, disruption) stays in remember and
+        // is reconstructed after restoration by the LaunchedEffect(stations) below.
+        var fromId by rememberSaveable { mutableStateOf<String?>(null) }
+        var toId by rememberSaveable { mutableStateOf<String?>(null) }
+        var open by rememberSaveable { mutableStateOf<String?>(null) } // "from" | "to" | null
+        var query by rememberSaveable { mutableStateOf("") }
         var options by remember { mutableStateOf<List<JourneyOption>>(emptyList()) }
-        var selectedIdx by remember { mutableStateOf(0) }
+        var selectedIdx by rememberSaveable { mutableStateOf(0) }
         var planned by remember { mutableStateOf(false) }
-        var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
-        var arriveByText by remember { mutableStateOf("") } // "HH:MM"
+        var mode by rememberSaveable { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
+        var arriveByText by rememberSaveable { mutableStateOf("") } // "HH:MM"
         // Phase R: rider accessibility preference. When on, each route discloses
         // its step-free confidence honestly (unknown until per-station data lands).
-        var stepFree by remember { mutableStateOf(false) }
+        var stepFree by rememberSaveable { mutableStateOf(false) }
         // Phase R: disruption exclusion outcome (S10 suspended segment). Never route
         // through a CLOSURE-affected line.
         var disruption by remember { mutableStateOf<DisruptionOutcome?>(null) }
@@ -199,7 +205,10 @@ class PlanScreenRoute : Screen {
                     )
                 }
 
-        fun runPlan() {
+        // resetSelection = false is used by the restoration path so the option the
+        // rider had selected survives a recreation instead of snapping back to the
+        // top; a fresh Find (or a re-plan request) resets to the recommended option.
+        fun runPlan(resetSelection: Boolean = true) {
             val f = fromId; val to = toId
             if (f == null || to == null) return
             scope.launch {
@@ -241,7 +250,11 @@ class PlanScreenRoute : Screen {
                 val outcome = DisruptionExclusion.classify(avoiding, naive, notices)
                 disruption = outcome
                 options = if (outcome is DisruptionOutcome.Suspended) emptyList() else avoiding
-                selectedIdx = 0
+                selectedIdx = if (resetSelection) {
+                    0
+                } else {
+                    selectedIdx.coerceIn(0, (options.size - 1).coerceAtLeast(0))
+                }
                 planned = true
             }
         }
@@ -304,6 +317,17 @@ class PlanScreenRoute : Screen {
             scope.launch {
                 val guidance = buildGuidanceJourney(active.itinerarySnapshot, stationRepo, lang)
                 if (guidance.legs.isNotEmpty()) navigator.push(GoJourneyScreenRoute(guidance))
+            }
+        }
+
+        // Continuity restoration: after a configuration change or process death the
+        // saved endpoints/mode survive but the derived options do not. Once stations
+        // reload, reconstruct them for the saved endpoints without disturbing the
+        // rider's selected option. Runs once per stations load; a fresh session with
+        // no endpoints does nothing, and a manual Find already set planned = true.
+        LaunchedEffect(stations) {
+            if (!planned && fromId != null && toId != null && stations.isNotEmpty()) {
+                runPlan(resetSelection = false)
             }
         }
 

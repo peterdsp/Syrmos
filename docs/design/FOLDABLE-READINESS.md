@@ -58,6 +58,17 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: Plan continuity ownership (Phase 2, continuity)
+
+- **Draft + selection survive recreation** — `PlanScreenRoute.kt` moves the small
+  restoration keys (from/to ids, open picker, query, timing mode, arrive-by text,
+  step-free, selected option index) from `remember` to `rememberSaveable`, so they
+  survive a configuration change (rotation / fold / resize) and process death.
+  Large derived data (stations, options, disruption) stays in `remember` and is
+  reconstructed after restoration by a `LaunchedEffect(stations)` that re-plans the
+  saved endpoints without disturbing the rider's selected option (`runPlan` gained
+  a `resetSelection` flag; the restoration path clamps instead of snapping to 0).
+
 ## Landed: Android geometry + first pane flow (Phase 2)
 
 - **FoldingFeature adapter** — `composeApp/.../app/platform/ReservedRegions.kt`
@@ -88,6 +99,7 @@ scratchpad.
 | Wide window (1280dp): Plan renders two panes | Pass | Query + saved in the ~360dp task pane; "1 route" + option card + leg timeline + Start journey in the companion pane (Syntagma → Airport, M3, Comfortable). |
 | Compact window (411dp via `wm size`): Plan single column | Pass | From/To/chips/Find/Saved stacked in the shipped order. |
 | Nav adaptation | Pass | Navigation rail on the wide window, floating bottom bar on the compact window (existing behavior preserved). |
+| Continuity through activity recreation | Pass | Rotated the tablet with a planned Syntagma to Airport route: endpoints, timing mode, and the reconstructed route (M3, timeline, Start journey) all restored, while the layout re-fit from two-pane to single column at 800dp. Before the change the same recreation wiped the screen to empty. |
 | No crash / launch, onboarding, permissions | Pass | Cold launch, onboarding skip, location/notification prompts, no `FATAL`. |
 | Cross-target compile | Pass | `:composeApp:compileKotlinWasmJs` and `compileKotlinIosSimulatorArm64` green; web build and iOS untouched. |
 
@@ -116,18 +128,16 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Android two-pane on a wide running surface (12.1 #19) | Pass | Plan at 1280dp: query/saved task pane + results companion pane on the emulator. |
 | Android compact single column (12.1 #1) | Pass | Plan at 411dp: shipped single scrolling column, floating bottom bar. |
 | Android fold-posture running-surface scenarios (12.1 #2-8) | Pending | No foldable AVD in this environment; the fold path is unit-tested + compile-verified only. |
-| Android continuity through recreation (12.1 #11-13) | Pending | Continuity ownership (Phase 2 state work) not yet implemented; a `wm size` change currently recreates Plan and resets its selection. |
+| Android continuity through recreation (12.1 #11-13) | Partial | Plan draft + selection + reconstructed results survive an activity recreation (verified by rotation). Other screens not yet covered; process-death restoration via Voyager not separately verified. |
 | iPhone/iPad running-surface scenarios (12.1 #20) | Pending | iOS mirror + scene wiring not yet implemented. |
 | Duo D01–D24 (12.2) | Pending | Gated on Duo SDK arrangement APIs and a Duo runtime. |
 
 ## Remaining phases (prompt section 11)
 
-1. **Continuity on both platforms** (not started) — surviving task/session
-   ownership, map camera intent, canonical selection, presentation coordination.
-   Validate a selected station and a running GO session through Android activity
-   recreation and iOS `SceneDelegate` host replacement before multiplying panes.
-   The Plan two-pane currently loses its selection on a configuration change; that
-   is the first target of this phase.
+1. **Continuity on both platforms** (Plan on Android done) — Plan's draft +
+   selection now survive Android recreation. Remaining: a running GO session
+   through recreation, map camera intent, and the iOS `SceneDelegate` host
+   replacement, plus the other screens' state ownership.
 2. **Native geometry + navigation** (Android done for the first flow; iOS not
    started) — the FoldingFeature adapter and the shared policy are wired and Plan
    consumes them. Remaining: adopt the workspace in the Android root itself and
