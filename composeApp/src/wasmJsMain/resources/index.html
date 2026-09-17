@@ -546,6 +546,10 @@
 <!-- Pure connection-feasibility engine (SyrmosFeasibility.forOption); mirrors
      the Kotlin FeasibilityCalculator. Loaded before the planner/panel that read it. -->
 <script src="/web-feasibility.js?v=4"></script>
+<!-- Pure station grouping (SyrmosStationGrouping); mirrors iOS StationGrouping /
+     Kotlin StationGrouping. web-map.js uses it to collapse co-located same-name
+     stops into one plan-selector option (finding 2). -->
+<script src="/web-station-grouping.js?v=1"></script>
 <!-- Pure itinerary ranking/dedup/cap (SyrmosJourneyRanker); mirrors Kotlin JourneyRanker. -->
 <script src="/web-journey-ranker.js?v=4"></script>
 <script src="/web-planner.js"></script>
