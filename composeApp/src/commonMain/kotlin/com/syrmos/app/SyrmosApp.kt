@@ -193,6 +193,23 @@ fun SyrmosApp() {
                                 NotificationNavBus.dispatchToHome(event)
                             }
                         }
+                        // Continuity: after a cold launch / process death with a
+                        // persisted live GO session, return the rider to their
+                        // journey instead of the last tab (prompt section 7: do not
+                        // jump to Home during GO). The gate is a per-process field, so
+                        // this fires once on a genuine cold start and NOT on an
+                        // activity recreation (rotation / fold), which would otherwise
+                        // yank the user to Home and stack a duplicate GO. The Home
+                        // navigator rebuilds guidance from the snapshot and pushes GO.
+                        LaunchedEffect(Unit) {
+                            if (!GoResumeGate.consumed) {
+                                GoResumeGate.consumed = true
+                                if (com.syrmos.app.journey.ActiveJourneyRepository.active.value != null) {
+                                    tabNavigator.current = HomeTab
+                                    NotificationNavBus.dispatchToHome(NotificationNavEvent.ResumeGo)
+                                }
+                            }
+                        }
                         LaunchedEffect(currentTab) {
                             writeSelectedTabId(tabId(currentTab))
                         }
@@ -296,6 +313,15 @@ fun SyrmosApp() {
             }
         }
     }
+}
+
+/**
+ * Per-process gate for the one-shot GO resume. A plain field survives an activity
+ * recreation (same process) so rotation does not re-trigger the resume, and resets
+ * on a genuine process death (new process) so a cold launch resumes once.
+ */
+private object GoResumeGate {
+    var consumed: Boolean = false
 }
 
 private fun tabFromId(id: String?): Tab = when (id) {
