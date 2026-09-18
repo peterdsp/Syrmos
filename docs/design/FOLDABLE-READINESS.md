@@ -58,6 +58,17 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: map camera intent continuity (Phase 2, continuity)
+
+- **No reset to Athens on recreation** — `PlatformMapView.android.kt` persisted its
+  camera (center lat/lng + zoom) in `rememberSaveable`, updated live from the map
+  listener and restored when the `MapView` is recreated. The initial Athens fit now
+  only runs when there is no saved camera, so a rotation / fold no longer snaps the
+  map back to the Athens frame. The selection-recenter and locate-me effects gained
+  per-change guards (`lastAnimatedSelectionId`, `lastLocateHandled`) so they fire on
+  a real change, not on every recreation, which would otherwise fight the restored
+  camera. Manual pan/zoom is honored; a NaN sentinel distinguishes "no camera yet".
+
 ## Landed: GO session continuity (Phase 2, continuity)
 
 - **Progress already durable** — the GO screen derives its position from the
@@ -118,6 +129,7 @@ scratchpad.
 | Continuity through activity recreation | Pass | Rotated the tablet with a planned Syntagma to Airport route: endpoints, timing mode, and the reconstructed route (M3, timeline, Start journey) all restored, while the layout re-fit from two-pane to single column at 800dp. Before the change the same recreation wiped the screen to empty. |
 | GO session continuity: activity recreation | Pass | Rotated mid-ride: "Stay on M3, 12 stops to Airport" preserved, no duplicate GO, no jump to Home. |
 | GO session continuity: process death | Pass | Killed the process mid-ride and cold-launched: the app auto-restored GO at the same position (12 stops) instead of the last tab. Back from the restored GO returns to Home content (single GO on the stack). |
+| Map camera intent continuity | Pass | Panned the Map tab far east of Athens, then rotated (recreation): the map stayed at the panned camera instead of re-fitting the Athens frame. The initial Athens fit still runs on a genuine first open. |
 | No crash / launch, onboarding, permissions | Pass | Cold launch, onboarding skip, location/notification prompts, no `FATAL`. |
 | Cross-target compile | Pass | `:composeApp:compileKotlinWasmJs` and `compileKotlinIosSimulatorArm64` green; web build and iOS untouched. |
 
@@ -152,10 +164,10 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 
 ## Remaining phases (prompt section 11)
 
-1. **Continuity on both platforms** (Plan + GO on Android done) — Plan's draft +
-   selection and the live GO session now survive Android recreation, and GO also
-   survives process death. Remaining: map camera intent, the other screens' state
-   ownership, and the iOS `SceneDelegate` host replacement.
+1. **Continuity on both platforms** (Plan + GO + map camera on Android done) —
+   Plan's draft + selection, the live GO session, and the map camera now survive
+   Android recreation (GO also survives process death). Remaining: the other
+   screens' state ownership, and the iOS `SceneDelegate` host replacement.
 2. **Native geometry + navigation** (Android done for the first flow; iOS not
    started) — the FoldingFeature adapter and the shared policy are wired and Plan
    consumes them. Remaining: adopt the workspace in the Android root itself and
