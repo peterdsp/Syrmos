@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
@@ -180,6 +181,17 @@ internal actual fun PlatformMapView(
     val context = LocalContext.current
     var hasFittedBounds by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
+    // Camera continuity (prompt section 7): persist the rider's manual pan/zoom
+    // across an activity recreation (rotation / fold / resize) so the map never
+    // snaps back to Athens. Updated live from the map listener, restored when the
+    // MapView is recreated. NaN means "no manual camera yet" (fit Athens once).
+    val camLat = rememberSaveable { mutableStateOf(Double.NaN) }
+    val camLng = rememberSaveable { mutableStateOf(Double.NaN) }
+    val camZoom = rememberSaveable { mutableStateOf(Double.NaN) }
+    // Guards so the selection-recenter and locate-me effects fire only on a real
+    // change, not on every recreation (which would fight the restored camera).
+    var lastAnimatedSelectionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var lastLocateHandled by rememberSaveable { mutableStateOf(0L) }
     // The single polyline each line is drawn as, has its vehicle markers snapped
     // to, AND is simulated along: MapViewModel computes it once (buses ride their
     // stops loop-closed for PU1, rail/tram keep the OSM shape) and shares it here,
@@ -222,8 +234,13 @@ internal actual fun PlatformMapView(
             MapView(ctx).apply {
                 setTileSource(tileSourceFor(darkMap))
                 setMultiTouchControls(true)
-                controller.setZoom(12.0)
-                controller.setCenter(GeoPoint(37.98, 23.73))
+                // Restore the saved camera on a recreated MapView; otherwise open
+                // on the default Athens frame (a first launch / no manual camera).
+                controller.setZoom(if (camZoom.value.isNaN()) 12.0 else camZoom.value)
+                controller.setCenter(
+                    if (camLat.value.isNaN()) GeoPoint(37.98, 23.73)
+                    else GeoPoint(camLat.value, camLng.value),
+                )
                 zoomController.setVisibility(
                     org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER
                 )
@@ -241,10 +258,21 @@ internal actual fun PlatformMapView(
                     override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
                         val now = System.currentTimeMillis()
                         if (now - lastMoveBump > 350) { lastMoveBump = now; mapMoveTick++ }
+                        // Remember where the rider panned to, so a recreation restores it.
+                        event?.source?.let { src ->
+                            camLat.value = src.mapCenter.latitude
+                            camLng.value = src.mapCenter.longitude
+                            camZoom.value = src.zoomLevelDouble
+                        }
                         return false
                     }
                     override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
                         val z = event?.zoomLevel ?: zoomLevelDouble
+                        event?.source?.let { src ->
+                            camLat.value = src.mapCenter.latitude
+                            camLng.value = src.mapCenter.longitude
+                            camZoom.value = src.zoomLevelDouble
+                        }
                         val next = when {
                             z >= 14.0 -> 3
                             z >= 12.0 -> 2
@@ -598,7 +626,10 @@ internal actual fun PlatformMapView(
         // off-screen and the map looked empty. A fixed Athens frame keeps metro +
         // tram + suburban + live trains on screen at launch; GPS "locate me" still
         // recenters on the user.
-        if (!hasFittedBounds && uiState.mapStations.isNotEmpty()) {
+        // Fit the Athens frame only on a genuine first open; once the rider has a
+        // saved camera (they panned/zoomed, or a prior recreation restored one) do
+        // not re-fit, or a rotation would yank the view back to Athens.
+        if (!hasFittedBounds && camZoom.value.isNaN() && uiState.mapStations.isNotEmpty()) {
             hasFittedBounds = true
             mapView.post {
                 // BoundingBox(north, east, south, west) around the Athens metro core.
@@ -608,15 +639,19 @@ internal actual fun PlatformMapView(
     }
 
     LaunchedEffect(uiState.selectedStation) {
-        if (uiState.selectedStation != null) {
-            mapView.controller.animateTo(
-                GeoPoint(uiState.selectedStation.latitude, uiState.selectedStation.longitude)
-            )
+        // Recenter only when the SELECTION changes, not on every recreation, so a
+        // rotation with a station already selected keeps the restored camera.
+        val sel = uiState.selectedStation
+        if (sel != null && sel.id != lastAnimatedSelectionId) {
+            lastAnimatedSelectionId = sel.id
+            mapView.controller.animateTo(GeoPoint(sel.latitude, sel.longitude))
         }
     }
 
     LaunchedEffect(uiState.locateUserRequest) {
-        if (uiState.locateUserRequest > 0) {
+        // Only act on a NEW locate tap; a recreation must not re-run locate-me.
+        if (uiState.locateUserRequest > 0 && uiState.locateUserRequest != lastLocateHandled) {
+            lastLocateHandled = uiState.locateUserRequest
             val myLocation = mapView.overlays
                 .filterIsInstance<org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay>()
                 .firstOrNull()?.myLocation
