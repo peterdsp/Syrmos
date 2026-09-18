@@ -58,6 +58,22 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: browse + detail screen continuity (Phase 2, continuity)
+
+- **Filters already survive recreation** — verified empirically that the Explore
+  segment (Discover / Network) and its region/type filters persist across a
+  rotation, because `LinesViewModel` (and the other feature view models) are Koin
+  `single`s whose state lives at the process level. Browse-list scroll uses
+  Compose's default saveable `LazyListState`. No change was needed here; a fix
+  would have been invented where none was warranted.
+- **Detail-screen scroll fixed** — a pushed detail screen (`LineDetailScreen`, and
+  defensively `StationDetailScreen`) lost its scroll position on recreation: the
+  route re-loads the entity in a `LaunchedEffect`, which briefly shows the loading
+  spinner, and the `LazyColumn`'s implicit list state (created inside the content
+  branch) was discarded during that flash. Hoisted a saveable `rememberLazyListState`
+  above the loading gate so the visible item and offset survive the flash and the
+  recreation (section 7: "preserve the visible list item and offset").
+
 ## Landed: map camera intent continuity (Phase 2, continuity)
 
 - **No reset to Athens on recreation** — `PlatformMapView.android.kt` persisted its
@@ -130,6 +146,8 @@ scratchpad.
 | GO session continuity: activity recreation | Pass | Rotated mid-ride: "Stay on M3, 12 stops to Airport" preserved, no duplicate GO, no jump to Home. |
 | GO session continuity: process death | Pass | Killed the process mid-ride and cold-launched: the app auto-restored GO at the same position (12 stops) instead of the last tab. Back from the restored GO returns to Home content (single GO on the stack). |
 | Map camera intent continuity | Pass | Panned the Map tab far east of Athens, then rotated (recreation): the map stayed at the panned camera instead of re-fitting the Athens frame. The initial Athens fit still runs on a genuine first open. |
+| Explore filters continuity | Pass | Switched to the Network segment + Tram filter, rotated: both preserved (singleton view model state). |
+| Detail-screen scroll continuity | Pass | Scrolled the Tram T7 line detail near the end (station 30+ of 43), rotated: the visible station/offset was preserved. Before the fix the same rotation reset it to the top. |
 | No crash / launch, onboarding, permissions | Pass | Cold launch, onboarding skip, location/notification prompts, no `FATAL`. |
 | Cross-target compile | Pass | `:composeApp:compileKotlinWasmJs` and `compileKotlinIosSimulatorArm64` green; web build and iOS untouched. |
 
@@ -158,16 +176,18 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Android two-pane on a wide running surface (12.1 #19) | Pass | Plan at 1280dp: query/saved task pane + results companion pane on the emulator. |
 | Android compact single column (12.1 #1) | Pass | Plan at 411dp: shipped single scrolling column, floating bottom bar. |
 | Android fold-posture running-surface scenarios (12.1 #2-8) | Pending | No foldable AVD in this environment; the fold path is unit-tested + compile-verified only. |
-| Android continuity through recreation (12.1 #11-13) | Partial | Plan draft/selection and the GO session both survive activity recreation; the GO session also survives process death (auto-restored on cold launch). Other screens (Explore, Departures) not yet covered; Plan process-death restoration relies on rememberSaveable and is not separately captured here. |
+| Android continuity through recreation (12.1 #11-13) | Partial | Plan draft/selection, the GO session, the map camera, the Explore filters, and detail-screen scroll all survive activity recreation; the GO session also survives process death (auto-restored on cold launch). Residual: singleton view-model browse state (Explore segment/filters) resets on a cold launch after process death, accepted as lower priority than a live journey; the iOS side is separate. |
 | iPhone/iPad running-surface scenarios (12.1 #20) | Pending | iOS mirror + scene wiring not yet implemented. |
 | Duo D01–D24 (12.2) | Pending | Gated on Duo SDK arrangement APIs and a Duo runtime. |
 
 ## Remaining phases (prompt section 11)
 
-1. **Continuity on both platforms** (Plan + GO + map camera on Android done) —
-   Plan's draft + selection, the live GO session, and the map camera now survive
-   Android recreation (GO also survives process death). Remaining: the other
-   screens' state ownership, and the iOS `SceneDelegate` host replacement.
+1. **Continuity on both platforms** (Plan + GO + map camera + browse/detail on
+   Android done) — Plan's draft + selection, the live GO session, the map camera,
+   the Explore filters, and detail-screen scroll now survive Android recreation
+   (GO also survives process death). Remaining: process-death persistence of the
+   browse view models (lower priority), and the iOS `SceneDelegate` host
+   replacement.
 2. **Native geometry + navigation** (Android done for the first flow; iOS not
    started) — the FoldingFeature adapter and the shared policy are wired and Plan
    consumes them. Remaining: adopt the workspace in the Android root itself and
