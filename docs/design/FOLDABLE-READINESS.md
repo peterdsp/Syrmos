@@ -59,6 +59,34 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: iPhone Duo snapshot tests (Phase 5, iOS)
+
+- **`iosAppTests/DuoSnapshotTests`** renders the adaptive two-pane at the iPhone
+  Duo inner-display geometry (measured on the booted Duo sim: 466 x 678 pt) and
+  writes reference PNGs to `iosAppTests/__DuoSnapshots__/` so the Duo layout can be
+  seen without the hardware. Four cases, all green: the probe arrangement pairs at
+  Duo landscape (678pt wide, >= the 640pt threshold) and stays single column at
+  portrait (466pt); the real `GoJourneyView` renders at both postures. Assertions
+  are presence-based (both pane colours when paired, only the combined colour when
+  single; real content, not blank), so they hold whether the split is side-by-side
+  or stacked.
+- **Reference images** (committed): `arrangement-duo-landscape.png` /
+  `-portrait.png` (probe split) and `go-duo-landscape.png` / `-portrait.png`. The
+  GO landscape shot shows the intended two-pane: instruction + controls on the
+  left, the route map (M1 polyline; base tiles blank offline) with the leg/stop
+  timeline on the right.
+- **Native ArrangementView finding (iOS 27.1 Duo runtime):** the 27.1 runtime and
+  an iPhone Duo device (`SimRuntime.iOS-27-1`) are now installed, so
+  `ArrangementView(...).arrangementViewStyle(.split)` executes. On the real Duo it
+  splits the two panes **vertically** (primary top, secondary bottom) and reserves
+  a hinge/occlusion region on one edge, rather than the side-by-side split of the
+  pre-27.1 `HStack` fallback. In a headless `UIHostingController` snapshot the
+  native path also honours that reserved region, which offsets content, so the
+  committed reference images are rendered via the fallback path (27.0) for a clean,
+  faithful view of the two-pane content; the native split is validated separately
+  by the probe (both panes present). Follow-up: have GO/Plan content respect the
+  Duo reserved-region insets so nothing is clipped under the hinge.
+
 ## Landed: iOS GO two-pane (Phase 3/4, iOS)
 
 - **`GoJourneyView`** adopts `SyrmosArrangement`: on a regular-width display the

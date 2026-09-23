@@ -113,6 +113,7 @@
 		DA7A0015F00D0015F00D0015 /* AriadneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0016F00D0016F00D0016 /* AriadneView.swift */; };
 		DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */; };
 		DA7A0202F00D0202F00D0202 /* JourneyGuidanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */; };
+		DA7A0230F00D0230F00D0230 /* DuoSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0231F00D0231F00D0231 /* DuoSnapshotTests.swift */; };
 		DA7A0206F00D0206F00D0206 /* JourneyPlannerConnectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */; };
 		DA7A020EF00D020EF00D020E /* GoJourneyViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */; };
 		DA7A0222F00D0222F00D0222 /* GoLocationAdvancerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */; };
@@ -359,6 +360,7 @@
 		DA7A0016F00D0016F00D0016 /* AriadneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Assistant/AriadneView.swift; sourceTree = SOURCE_ROOT; };
 		DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AriadneParserTests.swift; sourceTree = "<group>"; };
 		DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyGuidanceTests.swift; sourceTree = "<group>"; };
+		DA7A0231F00D0231F00D0231 /* DuoSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DuoSnapshotTests.swift; sourceTree = "<group>"; };
 		DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyPlannerConnectTests.swift; sourceTree = "<group>"; };
 		DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoJourneyViewModelTests.swift; sourceTree = "<group>"; };
 		DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoLocationAdvancerTests.swift; sourceTree = "<group>"; };
@@ -499,6 +501,7 @@
 				DA7A0031F00D0031F00D0031 /* MapRouteGeometryTests.swift */,
 				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
 				DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */,
+				DA7A0231F00D0231F00D0231 /* DuoSnapshotTests.swift */,
 				DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */,
 				DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */,
 				DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */,
@@ -1200,6 +1203,7 @@
 				DA7A0030F00D0030F00D0030 /* MapRouteGeometryTests.swift in Sources */,
 				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,
 				DA7A0202F00D0202F00D0202 /* JourneyGuidanceTests.swift in Sources */,
+				DA7A0230F00D0230F00D0230 /* DuoSnapshotTests.swift in Sources */,
 				DA7A0206F00D0206F00D0206 /* JourneyPlannerConnectTests.swift in Sources */,
 				DA7A020EF00D020EF00D020E /* GoJourneyViewModelTests.swift in Sources */,
 				DA7A0222F00D0222F00D0222 /* GoLocationAdvancerTests.swift in Sources */,
