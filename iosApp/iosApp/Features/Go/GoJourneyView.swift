@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import MapKit
 
 /// Phase R S07: the connection risk of one transfer, computed from the real route
 /// model (scheduled clocks). `availableSeconds` is the actual gap between arriving
@@ -72,23 +73,32 @@ struct GoJourneyView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            header
-            heroCard
-            if let risk = activeTransferRisk { connectionRiskCard(risk) }
-            ProgressView(value: model.progress)
-                .tint(tint)
-                .padding(.horizontal)
-            controls
-            if location.isDenied {
-                locationDeniedNote
-            } else if model.canGoLive {
-                liveToggle
+        NavigationStack {
+        // Two-pane on a regular-width display (iPad, iPhone Duo inner display),
+        // foldables / Duo prompt 9.2: the current instruction + reachable actions
+        // in the task pane, the journey's leg/stop timeline beside it. Compact keeps
+        // the shipped single column. The native ArrangementView split takes over on
+        // iOS 27.1; older systems use the HStack fallback in SyrmosArrangement.
+        SyrmosArrangement(
+            primary: {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        goInstruction
+                        footnote
+                    }
+                    .padding()
+                }
+            },
+            companion: { goCompanion },
+            combined: {
+                VStack(spacing: 20) {
+                    goInstruction
+                    Spacer()
+                    footnote
+                }
+                .padding()
             }
-            Spacer()
-            footnote
-        }
-        .padding()
+        )
         .navigationTitle("GO")
         .navigationBarTitleDisplayMode(.inline)
         .animation(.easeInOut(duration: 0.2), value: model.position)
@@ -133,6 +143,97 @@ struct GoJourneyView: View {
                     stateLabel: goStateLabel, instruction: headline, context: glanceContext,
                     progress: model.progress, lineId: model.currentLineId, arrived: model.isArrived)
             }
+        }
+        }
+    }
+
+    /// Current instruction + reachable actions (task pane / compact top).
+    @ViewBuilder private var goInstruction: some View {
+        header
+        heroCard
+        if let risk = activeTransferRisk { connectionRiskCard(risk) }
+        ProgressView(value: model.progress)
+            .tint(tint)
+            .padding(.horizontal)
+        controls
+        if location.isDenied {
+            locationDeniedNote
+        } else if model.canGoLive {
+            liveToggle
+        }
+    }
+
+    /// Companion pane on a regular-width display (foldables / Duo prompt 9.2):
+    /// the live route map above, the leg/stop timeline below, so the rider sees
+    /// where they are on the map and what is coming up in one glance.
+    @ViewBuilder private var goCompanion: some View {
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                GoRouteMapView(
+                    route: routeCoords,
+                    current: currentCoord,
+                    tint: UIColor(tint)
+                )
+                .frame(height: max(200, geo.size.height * 0.42))
+                .accessibilityLabel(t(
+                    "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
+                Divider()
+                goTimeline
+            }
+        }
+    }
+
+    /// The journey's stops as map coordinates, in ride order, for the route line.
+    private var routeCoords: [CLLocationCoordinate2D] {
+        GoRouteProjection.routeCoordinates(journey: model.journey) {
+            StationCoordinateLookup.shared.coordinate(for: $0)
+        }
+    }
+
+    /// The rider's current stop as a map coordinate, nil when it cannot be placed.
+    private var currentCoord: CLLocationCoordinate2D? {
+        GoRouteProjection.currentCoordinate(journey: model.journey, position: model.position) {
+            StationCoordinateLookup.shared.coordinate(for: $0)
+        }
+    }
+
+    /// Companion pane: the journey's legs and stops with the current position
+    /// highlighted, shown beside the instruction on a regular-width display.
+    @ViewBuilder private var goTimeline: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
+                    .font(.headline)
+                ForEach(Array(model.journey.legs.enumerated()), id: \.offset) { legIdx, leg in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 6) {
+                            Text(leg.lineId)
+                                .font(.caption.weight(.bold))
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
+                                .foregroundStyle(Color.syrmosPrimary)
+                            Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        ForEach(Array(leg.stops.enumerated()), id: \.offset) { stopIdx, stop in
+                            let isCurrent = legIdx == model.position.legIndex && stopIdx == model.position.stopIndex
+                            let isPast = legIdx < model.position.legIndex
+                                || (legIdx == model.position.legIndex && stopIdx < model.position.stopIndex)
+                            HStack(spacing: 10) {
+                                Circle()
+                                    .fill(isCurrent ? tint : Color.secondary.opacity(isPast ? 0.35 : 0.22))
+                                    .frame(width: isCurrent ? 12 : 8, height: isCurrent ? 12 : 8)
+                                Text(stop.name)
+                                    .font(.subheadline)
+                                    .fontWeight(isCurrent ? .semibold : .regular)
+                                    .foregroundStyle(isPast ? .secondary : .primary)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
         }
     }
 
@@ -432,6 +533,146 @@ struct GoJourneyView: View {
         case .albanian: return sq
         case .italian: return it
         default: return en
+        }
+    }
+}
+
+/// Pure projection of a guidance journey into map geometry, so the GO companion
+/// map and its tests share one placement rule. `resolve` turns a stop id into a
+/// coordinate (the app passes StationCoordinateLookup; tests pass a fixture).
+/// Stops with no known coordinate are skipped, so the route line spans only the
+/// stops we can place; consecutive duplicates at an interchange are harmless.
+enum GoRouteProjection {
+    static func routeCoordinates(
+        journey: GuidanceJourney,
+        resolve: (String) -> (lat: Double, lon: Double)?
+    ) -> [CLLocationCoordinate2D] {
+        var out: [CLLocationCoordinate2D] = []
+        for leg in journey.legs {
+            for stop in leg.stops {
+                if let c = resolve(stop.id) {
+                    out.append(CLLocationCoordinate2D(latitude: c.lat, longitude: c.lon))
+                }
+            }
+        }
+        return out
+    }
+
+    static func currentCoordinate(
+        journey: GuidanceJourney,
+        position: GuidancePosition,
+        resolve: (String) -> (lat: Double, lon: Double)?
+    ) -> CLLocationCoordinate2D? {
+        guard journey.legs.indices.contains(position.legIndex),
+              journey.legs[position.legIndex].stops.indices.contains(position.stopIndex),
+              let c = resolve(journey.legs[position.legIndex].stops[position.stopIndex].id)
+        else { return nil }
+        return CLLocationCoordinate2D(latitude: c.lat, longitude: c.lon)
+    }
+}
+
+/// The GO companion map: the journey's route drawn as one line over the app's
+/// Esri gray base, with an emphasised dot at the rider's current stop. Recenters
+/// on the current stop as the rider advances. Wraps MKMapView directly because
+/// the app avoids SwiftUI `Map` (CAMetalLayer lifecycle bug), matching the main
+/// map screen (see SyrmosMKMapView).
+private struct GoRouteMapView: UIViewRepresentable {
+    let route: [CLLocationCoordinate2D]
+    let current: CLLocationCoordinate2D?
+    let tint: UIColor
+
+    func makeCoordinator() -> Coordinator { Coordinator(tint: tint) }
+
+    func makeUIView(context: Context) -> MKMapView {
+        let map = MKMapView()
+        map.delegate = context.coordinator
+        map.pointOfInterestFilter = .excludingAll
+        map.showsCompass = false
+        map.isPitchEnabled = false
+        map.isRotateEnabled = false
+        map.showsUserLocation = false
+        let dark = map.traitCollection.userInterfaceStyle == .dark
+        map.addOverlay(SyrmosMKMapView.makeEsriGrayOverlay(dark: dark), level: .aboveRoads)
+        if route.count >= 2 {
+            map.addOverlay(MKPolyline(coordinates: route, count: route.count), level: .aboveLabels)
+        }
+        if let rect = boundingRect() {
+            map.setVisibleMapRect(
+                rect,
+                edgePadding: UIEdgeInsets(top: 44, left: 44, bottom: 44, right: 44),
+                animated: false)
+        }
+        context.coordinator.syncCurrent(on: map, to: current)
+        return map
+    }
+
+    func updateUIView(_ map: MKMapView, context: Context) {
+        context.coordinator.syncCurrent(on: map, to: current)
+        if let current {
+            map.setCenter(current, animated: true)
+        }
+    }
+
+    /// The map rect that encloses every placed stop, nil when there are none.
+    private func boundingRect() -> MKMapRect? {
+        guard !route.isEmpty else { return nil }
+        var rect = MKMapRect.null
+        for coord in route {
+            let point = MKMapPoint(coord)
+            rect = rect.union(MKMapRect(x: point.x, y: point.y, width: 0, height: 0))
+        }
+        return rect.isNull ? nil : rect
+    }
+
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        private let tint: UIColor
+        private var currentAnnotation: MKPointAnnotation?
+
+        init(tint: UIColor) { self.tint = tint }
+
+        /// Keep exactly one "you are here" annotation at the current stop.
+        func syncCurrent(on map: MKMapView, to coord: CLLocationCoordinate2D?) {
+            if let existing = currentAnnotation {
+                map.removeAnnotation(existing)
+                currentAnnotation = nil
+            }
+            guard let coord else { return }
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = coord
+            map.addAnnotation(annotation)
+            currentAnnotation = annotation
+        }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let tile = overlay as? MKTileOverlay {
+                return MKTileOverlayRenderer(tileOverlay: tile)
+            }
+            if let polyline = overlay as? MKPolyline {
+                let renderer = MKPolylineRenderer(polyline: polyline)
+                renderer.strokeColor = tint
+                renderer.lineWidth = 4
+                renderer.lineCap = .round
+                renderer.lineJoin = .round
+                return renderer
+            }
+            return MKOverlayRenderer(overlay: overlay)
+        }
+
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            let id = "go-current"
+            let view = mapView.dequeueReusableAnnotationView(withIdentifier: id)
+                ?? MKAnnotationView(annotation: annotation, reuseIdentifier: id)
+            view.annotation = annotation
+            let size: CGFloat = 20
+            view.image = UIGraphicsImageRenderer(size: CGSize(width: size, height: size)).image { ctx in
+                let cg = ctx.cgContext
+                cg.setFillColor(UIColor.systemBackground.cgColor)
+                cg.fillEllipse(in: CGRect(x: 0, y: 0, width: size, height: size))
+                cg.setFillColor(tint.cgColor)
+                cg.fillEllipse(in: CGRect(x: 3, y: 3, width: size - 6, height: size - 6))
+            }
+            view.centerOffset = .zero
+            return view
         }
     }
 }

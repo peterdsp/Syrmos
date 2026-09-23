@@ -79,6 +79,9 @@ kotlin {
             implementation(libs.mlkit.genai.proofreading)
             implementation(libs.mlkit.genai.prompt)
             implementation(libs.kotlinx.coroutines.guava)
+            // Foldables: reported window layout (FoldingFeature) for the adaptive
+            // workspace policy. Read through a narrow platform boundary only.
+            implementation(libs.androidx.window)
         }
     }
 }
