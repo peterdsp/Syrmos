@@ -123,4 +123,64 @@ final class JourneyGuidanceTests: XCTestCase {
         XCTAssertThrowsError(try JourneyGuidance.at(j, GuidancePosition(legIndex: 9, stopIndex: 0)))
         XCTAssertThrowsError(try JourneyGuidance.at(j, GuidancePosition(legIndex: 0, stopIndex: 9)))
     }
+
+    // MARK: GO companion-map route projection
+
+    /// A two-leg journey with one interchange, for the projection tests.
+    private func projectionJourney() -> GuidanceJourney {
+        GuidanceJourney(legs: [
+            GuidanceLeg(lineId: "M1", towards: "Kifisia", stops: [
+                GuidanceStop(id: "a", name: "A"),
+                GuidanceStop(id: "b", name: "B"),
+                GuidanceStop(id: "x", name: "X"),  // interchange
+            ]),
+            GuidanceLeg(lineId: "M3", towards: "Airport", stops: [
+                GuidanceStop(id: "x", name: "X"),  // interchange (repeated)
+                GuidanceStop(id: "c", name: "C"),
+            ]),
+        ])
+    }
+
+    private let projectionCoords: [String: (lat: Double, lon: Double)] = [
+        "a": (37.90, 23.70), "b": (37.95, 23.72),
+        "x": (37.98, 23.73), "c": (37.99, 23.74),
+    ]
+
+    func test_routeCoordinates_ordersEveryPlacedStop() {
+        let journey = projectionJourney()
+        let coords = GoRouteProjection.routeCoordinates(journey: journey) { projectionCoords[$0] }
+        // Every stop across both legs is placed, in ride order, including the
+        // repeated interchange stop X (once per leg).
+        XCTAssertEqual(coords.count, 5)
+        XCTAssertEqual(coords.map { $0.latitude }, [37.90, 37.95, 37.98, 37.98, 37.99])
+    }
+
+    func test_routeCoordinates_skipsUnplaceableStops() {
+        let journey = projectionJourney()
+        // Drop B from the lookup: the line spans only the stops we can place.
+        let partial = projectionCoords.filter { $0.key != "b" }
+        let coords = GoRouteProjection.routeCoordinates(journey: journey) { partial[$0] }
+        XCTAssertEqual(coords.count, 4)
+        XCTAssertFalse(coords.contains { $0.latitude == 37.95 })
+    }
+
+    func test_currentCoordinate_followsPosition() {
+        let journey = projectionJourney()
+        let first = GoRouteProjection.currentCoordinate(
+            journey: journey, position: GuidancePosition(legIndex: 0, stopIndex: 1)) { projectionCoords[$0] }
+        XCTAssertEqual(first?.latitude, 37.95)  // stop B
+        let secondLeg = GoRouteProjection.currentCoordinate(
+            journey: journey, position: GuidancePosition(legIndex: 1, stopIndex: 1)) { projectionCoords[$0] }
+        XCTAssertEqual(secondLeg?.latitude, 37.99)  // stop C
+    }
+
+    func test_currentCoordinate_nilWhenOutOfRangeOrUnplaceable() {
+        let journey = projectionJourney()
+        // Out of range.
+        XCTAssertNil(GoRouteProjection.currentCoordinate(
+            journey: journey, position: GuidancePosition(legIndex: 9, stopIndex: 0)) { projectionCoords[$0] })
+        // In range but the stop has no coordinate.
+        XCTAssertNil(GoRouteProjection.currentCoordinate(
+            journey: journey, position: GuidancePosition(legIndex: 0, stopIndex: 0)) { _ in nil })
+    }
 }

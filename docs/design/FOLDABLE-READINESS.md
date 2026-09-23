@@ -73,6 +73,24 @@ Rechecked against current code, all confirmed:
   the two-pane (task pane | divider | timeline); tapping **Next stop** advances the
   instruction AND moves the timeline highlight in sync (Piraeus -> Faliro).
   Screenshots: `go_twopane.png`, `go_twopane_advanced.png`.
+- **Companion is now a live route map above the timeline.** `GoRouteMapView`
+  (`UIViewRepresentable` wrapping `MKMapView`, matching the app's map screen rather
+  than SwiftUI `Map`) draws the journey's stops as one polyline over the shared Esri
+  gray base (`SyrmosMKMapView.makeEsriGrayOverlay`), tinted with the current line
+  colour, and marks the rider's current stop with an emphasised dot; the map
+  recenters on the current stop as the rider advances. The stop-to-coordinate
+  placement is a pure helper (`GoRouteProjection`, resolver-injected) shared with
+  the tests. Companion layout: map on top (~42% height, min 200pt) then the
+  leg/stop timeline, so the rider sees position and upcoming legs in one glance
+  (prompt 9.2 GO: "current progress ... alongside the map").
+- **Runtime-verified on the iPad Pro 13" (iOS 27.0) under Xcode 27.1:** the Piraeus
+  -> Elliniko demo renders the M1 route line over the gray base with a current-stop
+  dot at Piraeus; tapping **Next stop** moves the instruction to "Stay on M1", the
+  timeline highlight to Faliro, and recenters the map on the new current stop.
+  Screenshots: `go_ipad_3.png`, `go_ipad_next_3.png`. Tests:
+  `JourneyGuidanceTests` `test_routeCoordinates_*` / `test_currentCoordinate_*`
+  (4 new, all green) cover ordering, unplaceable-stop skipping, position tracking,
+  and out-of-range/nil.
 
 ## Landed: iOS Duo two-pane for Plan (Phase 3, iOS)
 
