@@ -78,11 +78,21 @@ Duo APIs are now source-visible (`ArrangementView`, `SplitArrangementViewStyle`,
   (prompt section 9.2). The body was split into `planPreamble` / `planQuery` /
   `planResults` blocks with no duplicated source of truth.
 
-Verification: the app **builds and runs under Xcode 27.1** on a 27.0 iPhone sim, and
-the Duo `ArrangementView` path **compiles against the 27.1 SDK** (Duo SDK-integration
-tier). The on-device two-pane screenshot and the D01-D24 runtime cases remain pending
-two gates: the iOS Simulator control permission (for driving taps), and an iOS 27.1
-simulator runtime for the iPhone Duo device (not downloadable here).
+Verification: the app **builds and runs under Xcode 27.1** on 27.0 iPhone and iPad
+sims, and the Duo `ArrangementView` path **compiles against the 27.1 SDK** (Duo
+SDK-integration tier). The **compact single-column Plan is runtime-verified** on both
+the iPhone (full-width sheet) and the iPad (form sheet) — both correctly stay single
+column.
+
+Finding: Plan is presented as a **form sheet**, which UIKit always reports as
+horizontally *compact* regardless of its pixel width, so a size-class gate never
+paired it. `SyrmosArrangement` now decides by **available width** (>= 640 pt to pair),
+mirroring the Android policy, so a wide host (Duo inner display, an iPad full-window
+presentation, or a wide sheet) pairs while a narrow iPhone sheet stays single column.
+Capturing the paired render on the iPad form sheet was interrupted by simulator
+contention at the end of the session; the D01-D24 Duo runtime cases remain gated on an
+iOS 27.1 runtime (not downloadable here), and driving taps needs the iOS Simulator
+control permission (now granted for these sims).
 
 ## Landed: browse + detail screen continuity (Phase 2, continuity)
 
