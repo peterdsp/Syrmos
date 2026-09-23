@@ -75,7 +75,23 @@ enum class WorkspaceTask {
      */
     val pairsWithSecondary: Boolean
         get() = this != FORM
+
+    /**
+     * The axis this task prefers on a tall, medium-width plain window such as the
+     * iPhone Duo inner display held upright (six-posture prompt, P5 Tall canvas).
+     * A planner, a fares form, a departures board or the assistant read well as
+     * two columns; a journey in progress and a browse list want the map above
+     * and the list plus controls below, where the hands are.
+     */
+    val tallCanvasAxis: PairAxis
+        get() = when (this) {
+            GO, EXPLORE -> PairAxis.STACKED
+            else -> PairAxis.SIDE_BY_SIDE
+        }
 }
+
+/** The pairing axis a task prefers when the window itself does not dictate one. */
+enum class PairAxis { SIDE_BY_SIDE, STACKED }
 
 /** How the workspace is arranged. */
 enum class WorkspaceArrangement {
@@ -85,7 +101,10 @@ enum class WorkspaceArrangement {
     /** Task/list beside map/detail (a vertical fold, or a wide flat window). */
     SIDE_BY_SIDE,
 
-    /** Overview above, task + controls below (tabletop / horizontal fold). */
+    /**
+     * Overview above, task + controls below (tabletop / horizontal fold, or a
+     * tall medium-width window such as the Duo inner display held upright).
+     */
     STACKED,
 }
 
@@ -168,6 +187,22 @@ object AdaptiveWorkspacePolicy {
     // Wide-canvas inspector needs at least this total width (task + companion +
     // inspector + gaps + insets) before it is worth showing.
     const val INSPECTOR_MIN_CANVAS = 1280
+
+    // Pane floors on a medium-width plain window (six-posture prompt, section 5),
+    // in logical units at fontScale 1.0. Two side-by-side panes split the width
+    // evenly with no outer inset (each pane carries its own padding, exactly as
+    // the region-driven halves do), so a 669-wide Duo inner display yields two
+    // 334-wide panes, and 640 is the narrowest width that still fits the map.
+    const val MIN_TASK_PANE = 300
+    const val MIN_MAP_PANE = 320
+
+    // A tall stacked canvas keeps the map/overview at least this tall, at about
+    // this share of the height, and the task below at the tabletop task floor.
+    const val TALL_MIN_COMPANION = 360
+    const val TALL_COMPANION_RATIO = 0.45f
+
+    // The medium band starts where ContentBreakpoint stops calling a window compact.
+    const val MEDIUM_MIN_WIDTH = 600
 
     private const val GAP = 24
 
@@ -364,6 +399,19 @@ object AdaptiveWorkspacePolicy {
             base.secondaryPaneWidth != null
 
         if (!wantsTwoPanes) {
+            // A medium-width window that is neither short nor at large text can
+            // still pair a task that wants a companion, on the axis the task
+            // prefers (P5 Tall canvas). A form keeps its bounded column.
+            val mediumCanvas = task.pairsWithSecondary &&
+                !forceSingleColumn &&
+                !largeText &&
+                !base.singleColumnFallback &&
+                base.secondaryPaneWidth == null &&
+                width >= MEDIUM_MIN_WIDTH
+            if (mediumCanvas) {
+                resolveMediumCanvas(width, height, task, scale)?.let { return it }
+            }
+
             // When the window is wide but the task does not pair (a form), keep a
             // readable bounded column instead of a two-pane primary width.
             val single = if (base.secondaryPaneWidth != null) {
@@ -450,6 +498,76 @@ object AdaptiveWorkspacePolicy {
             arrangement = WorkspaceArrangement.SIDE_BY_SIDE,
             panes = panes,
             divider = divider,
+            regionDriven = false,
+            fontScale = scale,
+        )
+    }
+
+    /**
+     * Pair on a medium-width plain window. Tries the task's preferred axis first
+     * and the other axis second; each axis is offered only when both panes meet
+     * their floors at the current text scale. Returns null when neither fits so
+     * the caller keeps the readable single column.
+     */
+    private fun resolveMediumCanvas(
+        width: Int,
+        height: Int,
+        task: WorkspaceTask,
+        scale: Float,
+    ): AdaptiveWorkspace? {
+        val preferred = task.tallCanvasAxis
+        val order = if (preferred == PairAxis.SIDE_BY_SIDE) {
+            listOf(PairAxis.SIDE_BY_SIDE, PairAxis.STACKED)
+        } else {
+            listOf(PairAxis.STACKED, PairAxis.SIDE_BY_SIDE)
+        }
+        for (axis in order) {
+            val ws = when (axis) {
+                PairAxis.SIDE_BY_SIDE -> mediumSideBySide(width, height, scale)
+                PairAxis.STACKED -> mediumStacked(width, height, scale)
+            }
+            if (ws != null) return ws
+        }
+        return null
+    }
+
+    // Two even columns, no outer inset, no draggable divider (the client draws a
+    // hairline). Both the task and the map must clear their floors, judged on
+    // the floored half so the floor is exactly 2 x MIN_MAP_PANE (640 at default
+    // text), the same threshold the shipped iOS SyrmosArrangement pairs at.
+    private fun mediumSideBySide(width: Int, height: Int, scale: Float): AdaptiveWorkspace? {
+        val taskW = width / 2
+        val companionW = width - taskW
+        val minTask = scaled(MIN_TASK_PANE, scale)
+        val minMap = scaled(MIN_MAP_PANE, scale)
+        if (taskW < minTask || taskW < minMap) return null
+        return AdaptiveWorkspace(
+            arrangement = WorkspaceArrangement.SIDE_BY_SIDE,
+            panes = listOf(
+                WorkspacePane(PaneRole.TASK, WorkspaceRect(0, 0, taskW, height)),
+                WorkspacePane(PaneRole.COMPANION, WorkspaceRect(taskW, 0, companionW, height)),
+            ),
+            divider = null,
+            regionDriven = false,
+            fontScale = scale,
+        )
+    }
+
+    // Map/overview above at about TALL_COMPANION_RATIO of the height (never under
+    // its floor), task + controls below at the tabletop task floor or more.
+    private fun mediumStacked(width: Int, height: Int, scale: Float): AdaptiveWorkspace? {
+        val minCompanion = scaled(TALL_MIN_COMPANION, scale)
+        val minTask = scaled(TABLETOP_MIN_TASK, scale)
+        if (height < minCompanion + minTask) return null
+        val companionH = maxOf(minCompanion, (height * TALL_COMPANION_RATIO).toInt())
+        val taskH = height - companionH
+        return AdaptiveWorkspace(
+            arrangement = WorkspaceArrangement.STACKED,
+            panes = listOf(
+                WorkspacePane(PaneRole.TASK, WorkspaceRect(0, companionH, width, taskH)),
+                WorkspacePane(PaneRole.COMPANION, WorkspaceRect(0, 0, width, companionH)),
+            ),
+            divider = null,
             regionDriven = false,
             fontScale = scale,
         )

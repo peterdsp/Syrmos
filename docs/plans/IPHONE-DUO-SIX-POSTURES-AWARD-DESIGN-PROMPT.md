@@ -443,12 +443,25 @@ committed under `iosApp/iosAppTests/__DuoSnapshots__/`):
 | Case | Size (pt) | Regions | Screens |
 | --- | --- | --- | --- |
 | P1 | 466 x 678 | none | Home, Plan, GO |
-| P2 | 669 x 951 and 951 x 669 | horizontal division, active | Home glance, GO glance |
+| P2 | 951 x 669 | horizontal division at 334, active | Home glance, GO glance |
 | P3 | 951 x 669 | none or inactive division | Plan, GO, Explore, Departures |
-| P4 | 951 x 669 | vertical division, active | Plan, GO, Departures |
+| P4 | 669 x 951 | vertical division at 334, active | Plan, GO, Departures |
 | P5 | 669 x 951 | none or inactive division | Home, Plan, GO, Explore |
-| P6 | 669 x 951 | horizontal division, active | Plan with keyboard, GO |
+| P6 | 951 x 669 | horizontal division at 334, active | Plan with keyboard, GO |
 | AX | each of the above | same | Largest accessibility text, longest Greek and Albanian strings |
+
+The physical hinge has one axis, so a book posture is the upright window with a
+vertical division and a laptop or tent posture is the wide window with a
+horizontal division. Which orientation the Duo actually reports for each is a
+runtime fact: observe it on the Duo simulator, record it, and if it differs,
+swap the sizes here and in the twin fixture suites rather than adding cases.
+
+Step 1 of the delivery plan is landed: the shared policy carries these cases as
+`core/common/.../DuoPostureFixturesTest.kt` and the Swift mirror
+`SyrmosAdaptiveWorkspacePolicy` carries them as
+`iosApp/iosAppTests/DuoPostureFixturesTests.swift`, with the same names and
+numbers. The shipped `SyrmosArrangement` is not yet driven by the policy; that
+is delivery step 3.
 
 Also required:
 
