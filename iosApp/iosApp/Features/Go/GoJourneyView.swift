@@ -72,23 +72,32 @@ struct GoJourneyView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            header
-            heroCard
-            if let risk = activeTransferRisk { connectionRiskCard(risk) }
-            ProgressView(value: model.progress)
-                .tint(tint)
-                .padding(.horizontal)
-            controls
-            if location.isDenied {
-                locationDeniedNote
-            } else if model.canGoLive {
-                liveToggle
+        NavigationStack {
+        // Two-pane on a regular-width display (iPad, iPhone Duo inner display),
+        // foldables / Duo prompt 9.2: the current instruction + reachable actions
+        // in the task pane, the journey's leg/stop timeline beside it. Compact keeps
+        // the shipped single column. The native ArrangementView split takes over on
+        // iOS 27.1; older systems use the HStack fallback in SyrmosArrangement.
+        SyrmosArrangement(
+            primary: {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        goInstruction
+                        footnote
+                    }
+                    .padding()
+                }
+            },
+            companion: { goTimeline },
+            combined: {
+                VStack(spacing: 20) {
+                    goInstruction
+                    Spacer()
+                    footnote
+                }
+                .padding()
             }
-            Spacer()
-            footnote
-        }
-        .padding()
+        )
         .navigationTitle("GO")
         .navigationBarTitleDisplayMode(.inline)
         .animation(.easeInOut(duration: 0.2), value: model.position)
@@ -133,6 +142,63 @@ struct GoJourneyView: View {
                     stateLabel: goStateLabel, instruction: headline, context: glanceContext,
                     progress: model.progress, lineId: model.currentLineId, arrived: model.isArrived)
             }
+        }
+        }
+    }
+
+    /// Current instruction + reachable actions (task pane / compact top).
+    @ViewBuilder private var goInstruction: some View {
+        header
+        heroCard
+        if let risk = activeTransferRisk { connectionRiskCard(risk) }
+        ProgressView(value: model.progress)
+            .tint(tint)
+            .padding(.horizontal)
+        controls
+        if location.isDenied {
+            locationDeniedNote
+        } else if model.canGoLive {
+            liveToggle
+        }
+    }
+
+    /// Companion pane: the journey's legs and stops with the current position
+    /// highlighted, shown beside the instruction on a regular-width display.
+    @ViewBuilder private var goTimeline: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
+                    .font(.headline)
+                ForEach(Array(model.journey.legs.enumerated()), id: \.offset) { legIdx, leg in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 6) {
+                            Text(leg.lineId)
+                                .font(.caption.weight(.bold))
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
+                                .foregroundStyle(Color.syrmosPrimary)
+                            Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        ForEach(Array(leg.stops.enumerated()), id: \.offset) { stopIdx, stop in
+                            let isCurrent = legIdx == model.position.legIndex && stopIdx == model.position.stopIndex
+                            let isPast = legIdx < model.position.legIndex
+                                || (legIdx == model.position.legIndex && stopIdx < model.position.stopIndex)
+                            HStack(spacing: 10) {
+                                Circle()
+                                    .fill(isCurrent ? tint : Color.secondary.opacity(isPast ? 0.35 : 0.22))
+                                    .frame(width: isCurrent ? 12 : 8, height: isCurrent ? 12 : 8)
+                                Text(stop.name)
+                                    .font(.subheadline)
+                                    .fontWeight(isCurrent ? .semibold : .regular)
+                                    .foregroundStyle(isPast ? .secondary : .primary)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
         }
     }
 
