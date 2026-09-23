@@ -87,12 +87,14 @@ column.
 Finding: Plan is presented as a **form sheet**, which UIKit always reports as
 horizontally *compact* regardless of its pixel width, so a size-class gate never
 paired it. `SyrmosArrangement` now decides by **available width** (>= 640 pt to pair),
-mirroring the Android policy, so a wide host (Duo inner display, an iPad full-window
-presentation, or a wide sheet) pairs while a narrow iPhone sheet stays single column.
-Capturing the paired render on the iPad form sheet was interrupted by simulator
-contention at the end of the session; the D01-D24 Duo runtime cases remain gated on an
-iOS 27.1 runtime (not downloadable here), and driving taps needs the iOS Simulator
-control permission (now granted for these sims).
+mirroring the Android policy. Measured on the iPad Pro 13" the Plan form sheet is
+~564 pt wide, so it correctly stays single column (a narrow sheet should). The
+two-pane therefore renders only on a genuinely wide host: the iPhone Duo inner
+display, or Plan presented full-window on a regular-width device. **Follow-up to make
+it visible on current hardware:** present the Plan flow full-window (not a form sheet)
+on regular width, then the ArrangementView split renders on iPad. The D01-D24 Duo
+runtime cases remain gated on an iOS 27.1 runtime (not downloadable here); the iOS
+Simulator control permission is now granted, so taps/screenshots work.
 
 ## Landed: browse + detail screen continuity (Phase 2, continuity)
 
