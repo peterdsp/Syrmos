@@ -59,6 +59,21 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: iOS GO two-pane (Phase 3/4, iOS)
+
+- **`GoJourneyView`** adopts `SyrmosArrangement`: on a regular-width display the
+  current instruction + reachable actions (hero, progress, Back / Next stop, live
+  toggle) sit in the task pane, and a new **leg/stop timeline** companion beside it
+  shows every leg (line badge + towards) with the current stop highlighted (prompt
+  9.2 GO: "current instruction ... alongside ... upcoming legs"). Compact keeps the
+  shipped single column. The body is wrapped in a `NavigationStack` so the title +
+  End toolbar render, and the two GO presentations in `PlanFlow` became
+  `fullScreenCover` so GO is full-window (End is now a deliberate toolbar action).
+- **Runtime-verified on the iPad Pro 13" (iOS 27.0) under Xcode 27.1:** GO renders
+  the two-pane (task pane | divider | timeline); tapping **Next stop** advances the
+  instruction AND moves the timeline highlight in sync (Piraeus -> Faliro).
+  Screenshots: `go_twopane.png`, `go_twopane_advanced.png`.
+
 ## Landed: iOS Duo two-pane for Plan (Phase 3, iOS)
 
 Unblocked by **Xcode 27.1** (at `~/Downloads/Xcode_27.1.app`, iOS 27.1 SDK): the

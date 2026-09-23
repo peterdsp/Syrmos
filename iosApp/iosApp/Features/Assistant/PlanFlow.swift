@@ -499,7 +499,9 @@ struct PlanView: View {
         }
         // S05 -> S06: Start journey opens the GO live-guidance screen for the option,
         // starting (and persisting) a fresh live session so it survives a kill.
-        .sheet(item: $startPlan) { plan in
+        // Full-window (not a form sheet) so GO can render its two-pane layout on a
+        // regular-width display, and so ending is a deliberate toolbar action.
+        .fullScreenCover(item: $startPlan) { plan in
             if let detailed = plan.detailed {
                 GoJourneyView(
                     journey: GuidanceJourney.from(detailed, language: language),
@@ -515,7 +517,7 @@ struct PlanView: View {
         }
         // Resume an in-progress session where it left off (guidance rebuilt from the
         // frozen snapshot, names re-resolved in the current language).
-        .sheet(item: $resumeLaunch) { launch in
+        .fullScreenCover(item: $resumeLaunch) { launch in
             GoJourneyView(
                 journey: launch.journey, language: language,
                 store: .shared, resuming: true,
