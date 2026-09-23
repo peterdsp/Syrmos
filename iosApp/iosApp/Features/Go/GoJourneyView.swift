@@ -21,6 +21,7 @@ struct GoJourneyView: View {
     @StateObject private var model: GoJourneyViewModel
     @StateObject private var location = LocationService()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.syrmosReservedGeometryOverride) private var reservedGeometryOverride
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
@@ -168,13 +169,23 @@ struct GoJourneyView: View {
     /// where they are on the map and what is coming up in one glance.
     @ViewBuilder private var goCompanion: some View {
         GeometryReader { geo in
+            // Hinge-aware map padding (six-posture prompt, section 9, item 2): the
+            // companion reads the regions the system reports for its own box
+            // (empty on systems without the Duo API, or injected by a test) and
+            // pads the map so the route and the current stop stay clear of an
+            // occluding hinge or a camera cutout instead of resetting the camera.
+            let geometry = reservedGeometryOverride ?? geo.syrmosReservedGeometry()
+            let mapHeight = max(200, geo.size.height * 0.42)
+            let mapRect = CGRect(x: 0, y: 0, width: geo.size.width, height: mapHeight)
+            let mapInsets = SyrmosMapPadding.insets(mapRect: mapRect, geometry: geometry)
             VStack(spacing: 0) {
                 GoRouteMapView(
                     route: routeCoords,
                     current: currentCoord,
-                    tint: UIColor(tint)
+                    tint: UIColor(tint),
+                    edgeInsets: mapInsets
                 )
-                .frame(height: max(200, geo.size.height * 0.42))
+                .frame(height: mapHeight)
                 .accessibilityLabel(t(
                     "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
                 Divider()
@@ -580,6 +591,15 @@ private struct GoRouteMapView: UIViewRepresentable {
     let route: [CLLocationCoordinate2D]
     let current: CLLocationCoordinate2D?
     let tint: UIColor
+    /// Padding that keeps the route fit and the current stop inside the map's
+    /// visible area (base breathing room plus any hinge or cutout the companion
+    /// reported). See `SyrmosMapPadding`.
+    var edgeInsets: SyrmosEdgeInsets = .all(SyrmosMapPadding.base)
+
+    private var uiEdgeInsets: UIEdgeInsets {
+        UIEdgeInsets(top: edgeInsets.top, left: edgeInsets.left,
+                     bottom: edgeInsets.bottom, right: edgeInsets.right)
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(tint: tint) }
 
@@ -597,20 +617,46 @@ private struct GoRouteMapView: UIViewRepresentable {
             map.addOverlay(MKPolyline(coordinates: route, count: route.count), level: .aboveLabels)
         }
         if let rect = boundingRect() {
-            map.setVisibleMapRect(
-                rect,
-                edgePadding: UIEdgeInsets(top: 44, left: 44, bottom: 44, right: 44),
-                animated: false)
+            map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: false)
         }
+        context.coordinator.lastInsets = edgeInsets
         context.coordinator.syncCurrent(on: map, to: current)
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
         context.coordinator.syncCurrent(on: map, to: current)
+        let insetsChanged = context.coordinator.lastInsets != edgeInsets
+        context.coordinator.lastInsets = edgeInsets
         if let current {
-            map.setCenter(current, animated: true)
+            recenter(map, on: current, animated: true)
+        } else if insetsChanged, let rect = boundingRect() {
+            // No current stop to follow (e.g. a stop without coordinates): keep
+            // the whole route visible inside the new padded area.
+            map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
         }
+    }
+
+    /// Centre `coord` in the PADDED visible area, not the map's geometric centre,
+    /// so a hinge or a cutout never sits on the current stop. The offset between
+    /// the two centres is measured in map points at the current zoom, which a
+    /// pan does not change, so the camera keeps its zoom and bearing.
+    private func recenter(_ map: MKMapView, on coord: CLLocationCoordinate2D, animated: Bool) {
+        let size = map.bounds.size
+        guard size.width > 0, size.height > 0 else {
+            map.setCenter(coord, animated: animated)
+            return
+        }
+        let geometric = CGPoint(x: size.width / 2, y: size.height / 2)
+        let compensating = SyrmosMapPadding.compensatingPoint(size: size, insets: edgeInsets)
+        guard compensating != geometric else {
+            map.setCenter(coord, animated: animated)
+            return
+        }
+        let a = MKMapPoint(map.convert(geometric, toCoordinateFrom: map))
+        let b = MKMapPoint(map.convert(compensating, toCoordinateFrom: map))
+        let target = MKMapPoint(x: MKMapPoint(coord).x + (b.x - a.x), y: MKMapPoint(coord).y + (b.y - a.y))
+        map.setCenter(target.coordinate, animated: animated)
     }
 
     /// The map rect that encloses every placed stop, nil when there are none.
@@ -627,6 +673,8 @@ private struct GoRouteMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         private let tint: UIColor
         private var currentAnnotation: MKPointAnnotation?
+        /// The insets the map was last laid out with, to notice a fold change.
+        var lastInsets: SyrmosEdgeInsets?
 
         init(tint: UIColor) { self.tint = tint }
 
