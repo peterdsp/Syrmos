@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -199,6 +200,12 @@ fun LineDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val line = uiState.line
     val lang by LocalizationManager.language.collectAsState()
+    // Hoisted above the loading gate so the visible station / offset survives an
+    // activity recreation (prompt section 7): the route re-loads the line on
+    // recreation, which briefly shows the spinner, and a list state created inside
+    // the content branch would be discarded during that flash. rememberLazyListState
+    // is saveable, so it also restores across process death.
+    val listState = rememberLazyListState()
 
     Scaffold(
         topBar = {
@@ -231,6 +238,7 @@ fun LineDetailScreen(
             }
         } else if (line != null) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),

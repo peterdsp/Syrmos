@@ -316,124 +316,161 @@ struct PlanView: View {
     /// A resumed session being reopened (drives the resume sheet).
     @State private var resumeLaunch: GoResumeLaunch?
 
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                if let active = activeStore.active { resumeBanner(active) }
-                let freshnessState = FreshnessPresentation.evaluate(
-                    isNetworkAvailable: freshness.isNetworkAvailable, isLive: freshness.freshness == .live)
-                if FreshnessPresentation.showsBanner(freshnessState) { offlineBanner(freshnessState) }
-                if let note = invalidSavedNote { invalidSavedBanner(note) }
-                endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
-                endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
+    // Plan body split into logical blocks (foldables / Duo prompt section 9.2) so
+    // the same content renders as one scrolling column (compact) or two panes
+    // (regular width / iPhone Duo inner display). `combined` uses all three, so
+    // there is no duplicated source of truth.
+    @ViewBuilder private var planPreamble: some View {
+        if let active = activeStore.active { resumeBanner(active) }
+        let freshnessState = FreshnessPresentation.evaluate(
+            isNetworkAvailable: freshness.isNetworkAvailable, isLive: freshness.freshness == .live)
+        if FreshnessPresentation.showsBanner(freshnessState) { offlineBanner(freshnessState) }
+        if let note = invalidSavedNote { invalidSavedBanner(note) }
+    }
 
-                if opening != nil {
-                    TextField(t("Search station", "Αναζήτηση σταθμού", "Kërko stacion", "Cerca stazione"), text: $query)
-                        .textFieldStyle(.roundedBorder)
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 0) {
-                            ForEach(matches) { group in
-                                HStack(spacing: 8) {
-                                    Text(groupDisplayName(group))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    // Line badges disambiguate a shared physical station
-                                    // and any same-name stations kept separate.
-                                    ForEach(group.lineIds, id: \.self) { lid in
-                                        Text(lid)
-                                            .font(.caption2.weight(.semibold))
-                                            .padding(.horizontal, 6).padding(.vertical, 2)
-                                            .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
-                                            .foregroundStyle(Color.syrmosPrimary)
-                                    }
-                                }
+    @ViewBuilder private var planQuery: some View {
+        endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
+        endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
+
+        if opening != nil {
+            TextField(t("Search station", "Αναζήτηση σταθμού", "Kërko stacion", "Cerca stazione"), text: $query)
+                .textFieldStyle(.roundedBorder)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(matches) { group in
+                        HStack(spacing: 8) {
+                            Text(groupDisplayName(group))
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 14)
-                                .contentShape(Rectangle())
-                                .onTapGesture { pick(group) }
-                                Divider()
+                            // Line badges disambiguate a shared physical station
+                            // and any same-name stations kept separate.
+                            ForEach(group.lineIds, id: \.self) { lid in
+                                Text(lid)
+                                    .font(.caption2.weight(.semibold))
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
+                                    .foregroundStyle(Color.syrmosPrimary)
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { pick(group) }
+                        Divider()
                     }
-                    .frame(maxHeight: 280)
                 }
+            }
+            .frame(maxHeight: 280)
+        }
 
-                // Travel-time mode: Leave now / Arrive by / Last train home.
-                Picker("", selection: $mode) {
-                    Text(t("Leave now", "Τώρα", "Tani", "Ora")).tag(JourneyPlanAdapter.Mode.now)
-                    Text(t("Arrive by", "Άφιξη", "Mbërri", "Arriva")).tag(JourneyPlanAdapter.Mode.arriveBy)
-                    Text(t("Last train", "Τελευταίο", "I fundit", "Ultimo")).tag(JourneyPlanAdapter.Mode.lastConnection)
+        // Travel-time mode: Leave now / Arrive by / Last train home.
+        Picker("", selection: $mode) {
+            Text(t("Leave now", "Τώρα", "Tani", "Ora")).tag(JourneyPlanAdapter.Mode.now)
+            Text(t("Arrive by", "Άφιξη", "Mbërri", "Arriva")).tag(JourneyPlanAdapter.Mode.arriveBy)
+            Text(t("Last train", "Τελευταίο", "I fundit", "Ultimo")).tag(JourneyPlanAdapter.Mode.lastConnection)
+        }
+        .pickerStyle(.segmented)
+
+        if mode == .arriveBy {
+            DatePicker(
+                t("Arrive by", "Άφιξη έως", "Mbërri deri", "Arriva entro"),
+                selection: $arriveByTime, displayedComponents: .hourAndMinute
+            )
+        }
+
+        Toggle(isOn: $stepFree) {
+            Text(t("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini"))
+                .font(.subheadline)
+        }
+        .tint(.syrmosPrimary)
+
+        Button { runPlan() } label: {
+            Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi"))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(fromId == nil || toId == nil || opening != nil)
+    }
+
+    @ViewBuilder private var planResults: some View {
+        // Phase R: disclose when we routed around a suspended line.
+        if planned, case .routed(_, let excluded)? = disruption, !excluded.isEmpty {
+            routingAroundChip(excluded)
+        }
+
+        // In a backward mode only options that actually scheduled are usable.
+        let usable = mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
+        if planned, case .suspended(let suspLines, let suspNotices)? = disruption {
+            suspendedState(lines: suspLines, notices: suspNotices)
+        } else if planned && usable.isEmpty {
+            Text(
+                mode == .lastConnection
+                    ? t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
+                    : mode == .arriveBy
+                        ? t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo.")
+                        : t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.")
+            ).foregroundStyle(.secondary)
+        } else if !usable.isEmpty {
+            HStack {
+                Text("\(usable.count) " + (usable.count == 1 ? t("route", "διαδρομή", "rrugë", "percorso") : t("routes", "διαδρομές", "rrugë", "percorsi")))
+                    .font(.headline)
+                Spacer()
+                let alreadySaved = fromId != nil && toId != nil && savedStore.isSaved(fromId: fromId!, toId: toId!)
+                Button(alreadySaved
+                    ? t("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
+                    : t("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio")) { saveCurrent() }
+                    .buttonStyle(.bordered)
+                    .disabled(alreadySaved)
+            }
+            ForEach(Array(usable.enumerated()), id: \.offset) { i, r in
+                let leaveByLabel: String? = (mode == .now) ? nil : r.leaveBy.map { lb in
+                    let label = mode == .lastConnection
+                        ? t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
+                        : t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
+                    return "\(label) \(athensClock(lb))"
                 }
-                .pickerStyle(.segmented)
+                optionCard(r, selected: i == selectedIdx, leaveByLabel: leaveByLabel) { selectedIdx = i }
+            }
+            // S05 selected-journey detail for the chosen option.
+            if let sel = usable.indices.contains(selectedIdx) ? usable[selectedIdx] : nil {
+                journeyDetail(sel)
+            }
+        }
+    }
 
-                if mode == .arriveBy {
-                    DatePicker(
-                        t("Arrive by", "Άφιξη έως", "Mbërri deri", "Arriva entro"),
-                        selection: $arriveByTime, displayedComponents: .hourAndMinute
-                    )
-                }
-
-                Toggle(isOn: $stepFree) {
-                    Text(t("Step-free routes", "Διαδρομές χωρίς σκαλιά", "Rrugë pa shkallë", "Percorsi senza gradini"))
-                        .font(.subheadline)
-                }
-                .tint(.syrmosPrimary)
-
-                Button { runPlan() } label: {
-                    Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi"))
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(fromId == nil || toId == nil || opening != nil)
-
-                // Phase R: disclose when we routed around a suspended line.
-                if planned, case .routed(_, let excluded)? = disruption, !excluded.isEmpty {
-                    routingAroundChip(excluded)
-                }
-
-                // In a backward mode only options that actually scheduled are usable.
-                let usable = mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
-                if planned, case .suspended(let suspLines, let suspNotices)? = disruption {
-                    suspendedState(lines: suspLines, notices: suspNotices)
-                } else if planned && usable.isEmpty {
-                    Text(
-                        mode == .lastConnection
-                            ? t("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
-                            : mode == .arriveBy
-                                ? t("No journey arrives by that time.", "Καμία διαδρομή δεν φτάνει ως τότε.", "Asnjë udhëtim s'mbërrin në kohë.", "Nessun viaggio arriva in tempo.")
-                                : t("No route found.", "Δεν βρέθηκε διαδρομή.", "Nuk u gjet rrugë.", "Nessun percorso trovato.")
-                    ).foregroundStyle(.secondary)
-                } else if !usable.isEmpty {
-                    HStack {
-                        Text("\(usable.count) " + (usable.count == 1 ? t("route", "διαδρομή", "rrugë", "percorso") : t("routes", "διαδρομές", "rrugë", "percorsi")))
-                            .font(.headline)
-                        Spacer()
-                        let alreadySaved = fromId != nil && toId != nil && savedStore.isSaved(fromId: fromId!, toId: toId!)
-                        Button(alreadySaved
-                            ? t("Saved", "Αποθηκεύτηκε", "U ruajt", "Salvato")
-                            : t("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio")) { saveCurrent() }
-                            .buttonStyle(.bordered)
-                            .disabled(alreadySaved)
-                    }
-                    ForEach(Array(usable.enumerated()), id: \.offset) { i, r in
-                        let leaveByLabel: String? = (mode == .now) ? nil : r.leaveBy.map { lb in
-                            let label = mode == .lastConnection
-                                ? t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
-                                : t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
-                            return "\(label) \(athensClock(lb))"
+    var body: some View {
+        NavigationStack {
+            SyrmosArrangement(
+                pairs: true,
+                primary: {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            planPreamble
+                            planQuery
+                            savedSection
                         }
-                        optionCard(r, selected: i == selectedIdx, leaveByLabel: leaveByLabel) { selectedIdx = i }
+                        .padding(16)
                     }
-                    // S05 selected-journey detail for the chosen option.
-                    if let sel = usable.indices.contains(selectedIdx) ? usable[selectedIdx] : nil {
-                        journeyDetail(sel)
+                },
+                companion: {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            planResults
+                        }
+                        .padding(16)
+                    }
+                },
+                combined: {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            planPreamble
+                            planQuery
+                            planResults
+                            savedSection
+                        }
+                        .padding(16)
                     }
                 }
-
-                savedSection
-            }
-            .padding(16)
-            }
+            )
             .navigationTitle(t("Plan a journey", "Σχεδίασε διαδρομή", "Planifiko udhëtim", "Pianifica un viaggio"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -462,7 +499,9 @@ struct PlanView: View {
         }
         // S05 -> S06: Start journey opens the GO live-guidance screen for the option,
         // starting (and persisting) a fresh live session so it survives a kill.
-        .sheet(item: $startPlan) { plan in
+        // Full-window (not a form sheet) so GO can render its two-pane layout on a
+        // regular-width display, and so ending is a deliberate toolbar action.
+        .fullScreenCover(item: $startPlan) { plan in
             if let detailed = plan.detailed {
                 GoJourneyView(
                     journey: GuidanceJourney.from(detailed, language: language),
@@ -478,7 +517,7 @@ struct PlanView: View {
         }
         // Resume an in-progress session where it left off (guidance rebuilt from the
         // frozen snapshot, names re-resolved in the current language).
-        .sheet(item: $resumeLaunch) { launch in
+        .fullScreenCover(item: $resumeLaunch) { launch in
             GoJourneyView(
                 journey: launch.journey, language: language,
                 store: .shared, resuming: true,
@@ -1098,6 +1137,74 @@ private struct StopsDisclosure: View {
                 Text(mid.map(nm).joined(separator: " · "))
                     .font(.caption).foregroundStyle(.secondary)
             }
+        }
+    }
+}
+
+/// Adaptive two-pane container (foldables / iPhone Duo prompt, section 9.2).
+///
+/// On a regular-width container (iPad, large iPhone landscape, and the iPhone Duo
+/// inner display) it places the task pane beside its companion. On iOS 27.1 it
+/// uses the native `ArrangementView` split style, which further adapts to Duo
+/// postures and reserved regions on its own; older systems get a width-split
+/// `HStack` fallback. On a compact width it renders the shipped single scrolling
+/// column (`combined`), so the ordinary iPhone flow is unchanged. `pairs` is false
+/// for single-focus tasks (forms) that never gain a companion.
+struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
+    var pairs: Bool = true
+    /// Minimum container width (pt) to pair. Mirrors the Android policy's
+    /// width-driven decision rather than the size class, so a wide form sheet or
+    /// the Duo inner display pairs while a narrow iPhone sheet stays single column.
+    var minPairWidth: CGFloat = 640
+    /// Task-pane fraction of the width when paired.
+    var taskRatio: CGFloat = 0.42
+    @ViewBuilder var primary: () -> Primary
+    @ViewBuilder var companion: () -> Companion
+    @ViewBuilder var combined: () -> Combined
+
+    var body: some View {
+        GeometryReader { geo in
+            if pairs && geo.size.width >= minPairWidth {
+                paired(width: geo.size.width)
+            } else {
+                combined()
+            }
+        }
+    }
+
+    @ViewBuilder private func paired(width: CGFloat) -> some View {
+        // `ArrangementView` is an iOS 27.1 SDK symbol. `#available` only gates the
+        // runtime, not compilation, and the compiler version does not discriminate
+        // (Xcode 27.0 and 27.1 both ship Swift 6.4, but only the 27.1 SDK exposes the
+        // symbol). Swift has no SDK-version `#if`, so gate on the custom flag
+        // `SYRMOS_DUO_SDK`, which is defined only in a build against the 27.1 SDK
+        // (see docs/design/FOLDABLE-READINESS.md). CI and release builds (Xcode 26.x
+        // / 27.0 SDK) leave it undefined and compile the width-split `HStack`
+        // fallback, which is the shipping two-pane.
+        #if SYRMOS_DUO_SDK
+        if #available(iOS 27.1, *) {
+            ArrangementView {
+                primary()
+            } secondary: {
+                companion()
+            }
+            .arrangementViewStyle(.split)
+            .splitArrangementLayoutRatio(taskRatio)
+        } else {
+            fallbackSplit(width: width)
+        }
+        #else
+        fallbackSplit(width: width)
+        #endif
+    }
+
+    /// Width-split two-pane used on toolchains / systems without the native
+    /// `ArrangementView` (pre iOS 27.1, or a pre-27.1 SDK build).
+    @ViewBuilder private func fallbackSplit(width: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            primary().frame(width: max(320, width * taskRatio))
+            Divider()
+            companion().frame(maxWidth: .infinity)
         }
     }
 }

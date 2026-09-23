@@ -8,6 +8,10 @@ enum ExploreSegment: String, CaseIterable {
 struct LinesView: View {
     let lines = SyrmosData.lines
     @ObservedObject private var loc = LocalizationManager.shared
+    // Present Plan full-window on a regular-width container (iPad, iPhone Duo inner
+    // display) so its two-pane arrangement can render; a compact iPhone keeps the
+    // sheet (a narrow sheet is single column by design). Prompt section 9.2.
+    @Environment(\.horizontalSizeClass) private var hSize
     @State private var searchText = ""
     @State private var selectedRegion: TransitRegion? = nil
     @State private var selectedType: TransitType? = nil
@@ -124,7 +128,19 @@ struct LinesView: View {
                         .overlay(alignment: .top) { Divider().opacity(0.15) }
                 }
             }
-            .sheet(isPresented: $showPlan) {
+            // Compact: a bottom sheet (unchanged iPhone flow). Regular: a full-window
+            // cover, so PlanView occupies the whole width and its ArrangementView
+            // two-pane (query beside results) can render. Only one is ever active.
+            .sheet(isPresented: Binding(
+                get: { showPlan && hSize != .regular },
+                set: { if !$0 { showPlan = false } }
+            )) {
+                PlanView(language: loc.language)
+            }
+            .fullScreenCover(isPresented: Binding(
+                get: { showPlan && hSize == .regular },
+                set: { if !$0 { showPlan = false } }
+            )) {
                 PlanView(language: loc.language)
             }
             .safeAreaInset(edge: .top, spacing: 0) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -44,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,6 +100,10 @@ import com.syrmos.core.model.journey.Ranking
 import com.syrmos.core.model.journey.SavedJourney
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.domain.station.StationGrouping
+import com.syrmos.app.layout.rememberContentWorkspace
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -129,18 +135,23 @@ class PlanScreenRoute : Screen {
         val lang by LocalizationManager.language.collectAsState()
 
         var stations by remember { mutableStateOf<List<Station>>(emptyList()) }
-        var fromId by remember { mutableStateOf<String?>(null) }
-        var toId by remember { mutableStateOf<String?>(null) }
-        var open by remember { mutableStateOf<String?>(null) } // "from" | "to" | null
-        var query by remember { mutableStateOf("") }
+        // Continuity contract (prompt section 7): the editable draft + selection are
+        // small restoration keys, so they use rememberSaveable to survive a
+        // configuration change (rotation / fold / resize) AND process death. The
+        // large derived data (stations, options, disruption) stays in remember and
+        // is reconstructed after restoration by the LaunchedEffect(stations) below.
+        var fromId by rememberSaveable { mutableStateOf<String?>(null) }
+        var toId by rememberSaveable { mutableStateOf<String?>(null) }
+        var open by rememberSaveable { mutableStateOf<String?>(null) } // "from" | "to" | null
+        var query by rememberSaveable { mutableStateOf("") }
         var options by remember { mutableStateOf<List<JourneyOption>>(emptyList()) }
-        var selectedIdx by remember { mutableStateOf(0) }
+        var selectedIdx by rememberSaveable { mutableStateOf(0) }
         var planned by remember { mutableStateOf(false) }
-        var mode by remember { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
-        var arriveByText by remember { mutableStateOf("") } // "HH:MM"
+        var mode by rememberSaveable { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
+        var arriveByText by rememberSaveable { mutableStateOf("") } // "HH:MM"
         // Phase R: rider accessibility preference. When on, each route discloses
         // its step-free confidence honestly (unknown until per-station data lands).
-        var stepFree by remember { mutableStateOf(false) }
+        var stepFree by rememberSaveable { mutableStateOf(false) }
         // Phase R: disruption exclusion outcome (S10 suspended segment). Never route
         // through a CLOSURE-affected line.
         var disruption by remember { mutableStateOf<DisruptionOutcome?>(null) }
@@ -194,7 +205,10 @@ class PlanScreenRoute : Screen {
                     )
                 }
 
-        fun runPlan() {
+        // resetSelection = false is used by the restoration path so the option the
+        // rider had selected survives a recreation instead of snapping back to the
+        // top; a fresh Find (or a re-plan request) resets to the recommended option.
+        fun runPlan(resetSelection: Boolean = true) {
             val f = fromId; val to = toId
             if (f == null || to == null) return
             scope.launch {
@@ -236,7 +250,11 @@ class PlanScreenRoute : Screen {
                 val outcome = DisruptionExclusion.classify(avoiding, naive, notices)
                 disruption = outcome
                 options = if (outcome is DisruptionOutcome.Suspended) emptyList() else avoiding
-                selectedIdx = 0
+                selectedIdx = if (resetSelection) {
+                    0
+                } else {
+                    selectedIdx.coerceIn(0, (options.size - 1).coerceAtLeast(0))
+                }
                 planned = true
             }
         }
@@ -302,6 +320,17 @@ class PlanScreenRoute : Screen {
             }
         }
 
+        // Continuity restoration: after a configuration change or process death the
+        // saved endpoints/mode survive but the derived options do not. Once stations
+        // reload, reconstruct them for the saved endpoints without disturbing the
+        // rider's selected option. Runs once per stations load; a fresh session with
+        // no endpoints does nothing, and a manual Find already set planned = true.
+        LaunchedEffect(stations) {
+            if (!planned && fromId != null && toId != null && stations.isNotEmpty()) {
+                runPlan(resetSelection = false)
+            }
+        }
+
         // Phase R S07: honor a "Find alternatives" re-plan request from GO (re-plan
         // from the rider's current confirmed station to the destination).
         val replanRequest by PlanReplanRequest.pending.collectAsState()
@@ -330,12 +359,11 @@ class PlanScreenRoute : Screen {
                 }
             },
         ) { padding ->
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+            // The editable query + saved journeys form the task pane; the route
+            // results form the companion pane. Both capture the same state and
+            // callbacks, so only their placement changes with the workspace.
+            @Composable
+            fun QueryBlock() {
                 // Resume banner (S06): a live GO session survives a kill / navigation.
                 activeJourney?.let { active ->
                     val fromId2 = active.itinerarySnapshot.legs.firstOrNull()?.fromId
@@ -523,7 +551,10 @@ class PlanScreenRoute : Screen {
                     enabled = fromId != null && toId != null && open == null,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
+            }
 
+            @Composable
+            fun ResultsBlock() {
                 // Phase R: disclose when we routed around a suspended line.
                 (disruption as? DisruptionOutcome.Routed)?.let { r ->
                     if (planned && r.excludedLineIds.isNotEmpty()) RoutingAroundChip(r.excludedLineIds, ::t)
@@ -586,7 +617,10 @@ class PlanScreenRoute : Screen {
                         }
                     }
                 }
+            }
 
+            @Composable
+            fun SavedBlock() {
                 // --- Saved journeys (S08 / J05) -----------------------------
                 HorizontalDivider()
                 Text(
@@ -634,6 +668,51 @@ class PlanScreenRoute : Screen {
                 }
                 // Bottom clearance so the S05 action + saved list clear the tab bar.
                 Spacer(Modifier.height(96.dp))
+            }
+
+            BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+                val ws = rememberContentWorkspace(
+                    task = WorkspaceTask.PLAN,
+                    width = maxWidth.value.toInt(),
+                    height = maxHeight.value.toInt(),
+                )
+                if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) {
+                    // Two-pane: editable query + saved on the left task pane, route
+                    // results on the right companion pane (prompt section 6, Plan).
+                    val taskW = ws.pane(PaneRole.TASK)?.rect?.width ?: 360
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.width(taskW.dp).fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            QueryBlock()
+                            SavedBlock()
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            ResultsBlock()
+                        }
+                    }
+                } else {
+                    // Single column: the shipped order (query, results, saved).
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        QueryBlock()
+                        ResultsBlock()
+                        SavedBlock()
+                    }
+                }
             }
         }
 
@@ -1046,7 +1125,7 @@ private fun transferRisksOf(opt: JourneyOption): List<TransferRisk> =
         TransferRisk(r.status.name.lowercase(), r.availableSeconds, r.recommendedSeconds)
     }
 
-private suspend fun buildGuidanceJourney(
+internal suspend fun buildGuidanceJourney(
     opt: JourneyOption,
     stationRepo: StationRepositoryImpl,
     lang: AppLanguage,

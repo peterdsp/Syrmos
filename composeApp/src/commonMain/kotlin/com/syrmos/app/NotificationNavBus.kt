@@ -9,6 +9,9 @@ sealed interface NotificationNavEvent {
     data class Station(val stationId: String) : NotificationNavEvent
     data object Weather : NotificationNavEvent
     data object Home : NotificationNavEvent
+    /** Cold-launch / process-death continuity: return the rider to the live GO
+     *  session (rebuilt from the persisted snapshot) instead of the last tab. */
+    data object ResumeGo : NotificationNavEvent
 }
 
 object NotificationNavBus {
