@@ -108,6 +108,67 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 3,
   Android therefore pairs only through its reported hinge region, as before;
   the medium-width rule reaches Android windows whose content box clears 640.
 
+## Landed: iOS reserved-region adapter and hinge-aware map padding (six-posture prompt, delivery step 2)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 item 2; parent prompt section 9.4.
+
+- **Adapter** `iosApp/iosApp/DesignSystem/ReservedRegionAdapter.swift`:
+  `SyrmosReservedRegionAdapter.normalize(raw, in: box)` is a PURE function from
+  the regions the system reports (kind, frame, active) to the content box's own
+  coordinates. It translates once, clips to the box, rounds to whole points,
+  drops a fold beside the box (a nav rail's fold never splits the content), keeps
+  the active flag (an inactive division reaches the policy as inactive, never as
+  blank pixels), and separates two outputs: `regions` (bars spanning at least
+  90 percent of the box on their axis, the policy's input) and `cutouts` (active
+  occlusions that do not span, such as a camera cutout, which never split the
+  layout and only steer overlays and map padding).
+- **Gated reader**: `GeometryProxy.syrmosRawReservedRegions()` calls
+  `reservedRegions(kind:options:)` for `.occlusion` and `.division` with
+  `.includeInactive`, inside `#if SYRMOS_DUO_SDK` and `if #available(iOS 27.1, *)`,
+  and returns nothing otherwise. `syrmosReservedGeometry()` normalises into the
+  proxy's own box. The frames are assumed to be in the proxy's local space; the
+  Duo runtime probe below records what the system actually reports.
+- **Test seam**: `\.syrmosReservedGeometryOverride` environment value lets a test
+  or preview inject a geometry on a simulator that reports none.
+- **Map padding** `SyrmosMapPadding.insets(mapRect:geometry:)`: base 44 pt on
+  every edge; an active occluding bar that crosses the map gives up the smaller
+  side of the map (bottom or top, right or left); a cutout that touches the map
+  insets the nearest edge past it; divisions never pad; the padding can never
+  claim more than three quarters of an axis. `visibleCenter` and
+  `compensatingPoint` give the point math for centring a coordinate in the
+  padded area rather than the geometric centre.
+- **GO companion wiring** (`GoJourneyView.swift`): the companion reads its box's
+  geometry (override first, then the system), computes the map insets for the
+  map's rect at the top of the companion, and passes them to `GoRouteMapView`,
+  which now fits the route with those insets, recentres the current stop in the
+  padded visible area (offset measured in map points at the current zoom, so
+  zoom and bearing are kept: parent prompt 9.4 rule 6, no camera reset), and
+  refits the route when the insets change with no current stop to follow.
+- **Tests**: `iosApp/iosAppTests/ReservedRegionAdapterTests.swift`, 26 cases
+  (normalisation, cutouts, clipping, rounding, the P4 book fixture through the
+  adapter into the policy, padding on every side, the no-inversion clamp, the
+  centre math, and the reader returning nothing without the Duo API). New render
+  `iosAppTests/__DuoSnapshots__/go-duo-inner-landscape-hinge.png` from
+  `DuoSnapshotTests.test_goScreen_duoInnerLandscape_hingeAcrossCompanion_render`:
+  an injected occluding bar at 220 to 260 of the companion crosses the lower part
+  of the 281 pt map, so the map pads its bottom by 105 and the current stop
+  (Piraeus) renders at the padded visible centre with the whole route above the
+  bar. Registered through `scripts/add-duo-reserved-region-files.py`.
+- **Evidence tier**: iOS 27.0 simulator (default Xcode 27.0 SDK, the
+  CI-equivalent compile of the gated code): ReservedRegionAdapterTests 26/26,
+  DuoSnapshotTests 6/6, DuoPostureFixturesTests 42/42. Duo runtime under the
+  27.1 SDK with `SYRMOS_DUO_SDK` (Xcode 27.1, booted iPhone Duo simulator,
+  `-destination id=92B2C61A-...`): ReservedRegionAdapterTests 26/26 and
+  DuoSnapshotTests 6/6, so the gated `reservedRegions` reader compiles and
+  executes on the real Duo runtime. The probe (`test_readerIsEmptyWithoutTheDuoApiOrRegions`)
+  hosted a `GeometryReader` in a plain test `UIWindow` at 669 x 951 and the
+  system reported NO regions there (`regions: [], cutouts: []`). So the Duo
+  simulator does not surface its fold to a bare test window; whether a
+  scene-hosted window reports it, and in which coordinate space, is still
+  Pending and is the first thing to read on real Duo hardware. The rendered
+  reference images stay the 27.0 renders (the 27.1 native `ArrangementView`
+  path re-renders them differently, as recorded above).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -374,6 +435,9 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Six-posture policy P1 to P6 and transitions T1 to T6 (six-posture prompt, section 11) | Pass (synthetic) | `DuoPostureFixturesTest.kt` 20/20 and `DuoPostureFixturesTests.swift` twins, same names and numbers on both platforms. |
 | Swift policy mirror reproduces the Kotlin fixtures | Pass (XCTest) | `DuoPostureFixturesTests.swift` on the iOS 27.0 simulator; includes the 640 pairing-floor parity guard against the shipped `SyrmosArrangement`. |
 | Android Plan two-pane on a medium-width plain window (parent prompt section 5, 688 to 839 band) | Pass | Tablet emulator at 768 x 1024 dp: two-pane; at 669 x 951 dp with the rail: single column, unchanged. |
+| Reserved regions normalised into the content box; fold beside the box never splits it; cutout is not a division (parent 9.4 rules 1 to 3) | Pass (synthetic) | `ReservedRegionAdapterTests.swift` normalisation cases. |
+| Map padding from visible panel and occupied regions, no camera reset (parent 9.4 rule 6; D15) | Pass (render) | `SyrmosMapPadding` cases plus `go-duo-inner-landscape-hinge.png`: current stop at the padded centre, route clear of the injected bar. |
+| Gated `reservedRegions` reader on the Duo runtime | Partial | Compiles and runs under 27.1 with `SYRMOS_DUO_SDK` (32/32 on the Duo sim); the headless probe read no regions, so the reported frames and their coordinate space are unconfirmed. |
 
 ## Remaining phases (prompt section 11)
 

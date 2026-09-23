@@ -463,6 +463,14 @@ Step 1 of the delivery plan is landed: the shared policy carries these cases as
 numbers. The shipped `SyrmosArrangement` is not yet driven by the policy; that
 is delivery step 3.
 
+Step 2 is landed too: `iosApp/iosApp/DesignSystem/ReservedRegionAdapter.swift`
+normalises the system's regions into a content box (bars for the policy,
+cutouts for overlays), reads them behind the `SYRMOS_DUO_SDK` gate, and
+`SyrmosMapPadding` keeps the GO route map and its current stop clear of an
+occluding hinge or cutout without resetting the camera. The Duo simulator
+reported no regions to a bare test window, so the reported coordinate space
+is still to be confirmed on hardware (see the readiness record).
+
 Also required:
 
 - Policy fixtures for every row above in both Kotlin and Swift.
