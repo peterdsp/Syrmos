@@ -124,10 +124,12 @@ final class DuoSnapshotTests: XCTestCase {
     @MainActor
     private func render(_ view: some View, size: CGSize) -> UIImage {
         // Let the SwiftUI root fill the host view (no explicit .frame, which would
-        // center and clip content-bearing views); host the controller in a live
-        // window and capture the host view, which renders SwiftUI reliably offscreen
-        // (capturing the window itself yields a blank frame).
-        let host = UIHostingController(rootView: view)
+        // center and clip content-bearing views) and ignore the safe area so the
+        // content reaches the top edge instead of leaving a status-bar strip; host
+        // the controller in a live window and capture the host view, which renders
+        // SwiftUI reliably offscreen (capturing the window itself yields a blank
+        // frame).
+        let host = UIHostingController(rootView: view.ignoresSafeArea())
         host.view.frame = CGRect(origin: .zero, size: size)
         host.view.backgroundColor = UIColor.systemBackground
         let window = UIWindow(frame: CGRect(origin: .zero, size: size))
