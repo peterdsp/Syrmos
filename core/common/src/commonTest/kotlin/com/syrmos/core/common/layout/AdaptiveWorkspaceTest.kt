@@ -305,6 +305,61 @@ class AdaptiveWorkspaceTest {
         assertTrue(available - divider.max >= AdaptiveWorkspacePolicy.MIN_COMPANION)
     }
 
+    // --- iPhone Duo device geometry (parity with iOS DuoSnapshotTests). ---
+    //
+    // The unfolded INNER display is 669 x 951 dp (2007 x 2853 px / scale 3), NOT
+    // the folded cover's 466 x 678. The iOS snapshots first rendered at the cover
+    // size and looked like a cramped phone column; the correction renders at the
+    // inner size and shows the real two-pane. These fixtures pin the same corrected
+    // geometry on the shared policy so the two platforms agree on the Duo.
+    //
+    // Android pairs the Duo by the hinge the window reports (region driven), not by
+    // raw width: 669 dp alone is MEDIUM and would stay single, so the unfolded
+    // cases include the book-posture vertical hinge the Duo reports, and the folded
+    // cover (no fold, a plain phone window) stays a single column.
+
+    private fun duoHinge(width: Int) = ReservedRegion(
+        kind = RegionKind.OCCLUSION,
+        orientation = FoldOrientation.VERTICAL,
+        start = width / 2,
+        size = 40,
+    )
+
+    @Test
+    fun duoInnerLandscapePairsTwoPanes() {
+        // Unfolded inner display, landscape: 951 x 669 dp.
+        val width = 951
+        val ws = resolve(width, 669, task = WorkspaceTask.GO, regions = listOf(duoHinge(width)))
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, ws.arrangement)
+        assertTrue(ws.regionDriven, "the unfolded Duo pairs on its reported hinge")
+        assertNotNull(ws.pane(PaneRole.COMPANION), "the two-pane needs a companion")
+        // The corrected inner width, never the folded cover's 466.
+        assertTrue(width != 466)
+    }
+
+    @Test
+    fun duoInnerPortraitPairsTwoPanes() {
+        // Unfolded inner display, portrait: 669 x 951 dp. iOS shows this as a
+        // left/right two-pane, so the Android book-posture hinge is vertical too.
+        val width = 669
+        val ws = resolve(width, 951, task = WorkspaceTask.GO, regions = listOf(duoHinge(width)))
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, ws.arrangement)
+        assertTrue(ws.regionDriven)
+        val task = ws.pane(PaneRole.TASK)!!
+        val companion = ws.pane(PaneRole.COMPANION)!!
+        // Panes sit either side of the reported hinge, left to right.
+        assertTrue(task.rect.right <= companion.rect.left)
+    }
+
+    @Test
+    fun duoFoldedCoverStaysSingleColumn() {
+        // Folded cover display: 466 x 678 dp, a plain phone window (no fold).
+        val ws = resolve(466, 678, task = WorkspaceTask.PLAN)
+        assertEquals(WorkspaceArrangement.SINGLE, ws.arrangement)
+        assertNull(ws.pane(PaneRole.COMPANION), "the folded cover is a single column")
+        assertFalse(ws.regionDriven)
+    }
+
     private fun assertFalse(value: Boolean, message: String? = null) =
         assertTrue(!value, message ?: "expected false")
 }

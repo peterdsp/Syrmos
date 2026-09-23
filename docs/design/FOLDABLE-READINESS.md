@@ -264,6 +264,15 @@ downloadable here).
   on a `SIDE_BY_SIDE` workspace, renders the editable query + saved journeys in
   the task pane and the route options + selected detail in the companion pane;
   compact keeps the shipped single scrolling column in the shipped order.
+- **Duo device-geometry fixture (parity with iOS)** — `AdaptiveWorkspaceTest`
+  pins the corrected iPhone Duo geometry so the shared policy agrees with the iOS
+  `DuoSnapshotTests`: the unfolded **inner** display is 669 x 951 dp (2007 x 2853
+  px / scale 3), NOT the folded cover's 466 x 678. Android pairs the Duo on the
+  hinge the window reports (region driven), not raw width, so the two inner-display
+  cases (landscape 951 x 669 and portrait 669 x 951) include the book-posture
+  vertical hinge and resolve `SIDE_BY_SIDE`, while the folded cover (466 x 678, a
+  plain phone window) stays `SINGLE`. This mirrors the iOS inner-geometry
+  correction rather than the original cover-size render.
 
 ## Runtime verification (Android, this slice)
 
