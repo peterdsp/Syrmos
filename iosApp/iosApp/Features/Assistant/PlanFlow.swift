@@ -1150,23 +1150,27 @@ private struct StopsDisclosure: View {
 /// for single-focus tasks (forms) that never gain a companion.
 struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     var pairs: Bool = true
+    /// Minimum container width (pt) to pair. Mirrors the Android policy's
+    /// width-driven decision rather than the size class, so a wide form sheet or
+    /// the Duo inner display pairs while a narrow iPhone sheet stays single column.
+    var minPairWidth: CGFloat = 640
     /// Task-pane fraction of the width when paired.
     var taskRatio: CGFloat = 0.42
     @ViewBuilder var primary: () -> Primary
     @ViewBuilder var companion: () -> Companion
     @ViewBuilder var combined: () -> Combined
 
-    @Environment(\.horizontalSizeClass) private var hSize
-
     var body: some View {
-        if pairs && hSize == .regular {
-            paired
-        } else {
-            combined()
+        GeometryReader { geo in
+            if pairs && geo.size.width >= minPairWidth {
+                paired(width: geo.size.width)
+            } else {
+                combined()
+            }
         }
     }
 
-    @ViewBuilder private var paired: some View {
+    @ViewBuilder private func paired(width: CGFloat) -> some View {
         if #available(iOS 27.1, *) {
             ArrangementView {
                 primary()
@@ -1176,12 +1180,10 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
             .arrangementViewStyle(.split)
             .splitArrangementLayoutRatio(taskRatio)
         } else {
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    primary().frame(width: max(320, geo.size.width * taskRatio))
-                    Divider()
-                    companion().frame(maxWidth: .infinity)
-                }
+            HStack(spacing: 0) {
+                primary().frame(width: max(320, width * taskRatio))
+                Divider()
+                companion().frame(maxWidth: .infinity)
             }
         }
     }
