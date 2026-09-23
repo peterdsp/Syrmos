@@ -84,17 +84,21 @@ SDK-integration tier). The **compact single-column Plan is runtime-verified** on
 the iPhone (full-width sheet) and the iPad (form sheet) — both correctly stay single
 column.
 
-Finding: Plan is presented as a **form sheet**, which UIKit always reports as
-horizontally *compact* regardless of its pixel width, so a size-class gate never
-paired it. `SyrmosArrangement` now decides by **available width** (>= 640 pt to pair),
-mirroring the Android policy. Measured on the iPad Pro 13" the Plan form sheet is
-~564 pt wide, so it correctly stays single column (a narrow sheet should). The
-two-pane therefore renders only on a genuinely wide host: the iPhone Duo inner
-display, or Plan presented full-window on a regular-width device. **Follow-up to make
-it visible on current hardware:** present the Plan flow full-window (not a form sheet)
-on regular width, then the ArrangementView split renders on iPad. The D01-D24 Duo
-runtime cases remain gated on an iOS 27.1 runtime (not downloadable here); the iOS
-Simulator control permission is now granted, so taps/screenshots work.
+`SyrmosArrangement` decides by **available width** (>= 640 pt to pair), mirroring the
+Android policy. A UIKit form sheet is always horizontally *compact* regardless of
+pixel width (and the iPad Plan form sheet was only ~564 pt), so `LinesView` now
+presents Plan as a **full-screen cover on regular width** (iPad, iPhone Duo inner
+display) and keeps the bottom sheet on compact (iPhone).
+
+**Runtime-verified on the iPad Pro 13" (iOS 27.0) under Xcode 27.1:** with Plan
+full-window, `SyrmosArrangement` renders the **two-pane split** — the editable query +
+station search + saved journeys in the ~42% task pane, a vertical divider, and the
+route-results companion pane (screenshot in the session scratchpad,
+`ipad_plan_twopane.png`). On the 27.0 runtime this is the `HStack` fallback path;
+the native `ArrangementView` path is compile-verified against 27.1 and would take over
+on an iOS 27.1 / Duo runtime. Compact single-column is verified on the iPhone. The
+D01-D24 Duo-specific runtime cases remain gated on an iOS 27.1 runtime (not
+downloadable here).
 
 ## Landed: browse + detail screen continuity (Phase 2, continuity)
 
