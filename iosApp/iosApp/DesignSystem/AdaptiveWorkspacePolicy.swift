@@ -1,5 +1,32 @@
 import CoreGraphics
 import Foundation
+import SwiftUI
+
+/// Dynamic Type as the policy's font scale: the body text size of each
+/// category over the default 17 pt (UIFontMetrics body sizes), so a larger
+/// setting raises every pane floor by the same factor and the accessibility
+/// sizes (1.35 and above) collapse to one readable column.
+enum SyrmosDynamicType {
+    static func fontScale(_ size: DynamicTypeSize) -> Float {
+        let body: Float
+        switch size {
+        case .xSmall: body = 14
+        case .small: body = 15
+        case .medium: body = 16
+        case .large: body = 17
+        case .xLarge: body = 19
+        case .xxLarge: body = 21
+        case .xxxLarge: body = 23
+        case .accessibility1: body = 28
+        case .accessibility2: body = 33
+        case .accessibility3: body = 40
+        case .accessibility4: body = 47
+        case .accessibility5: body = 53
+        @unknown default: body = 17
+        }
+        return body / 17
+    }
+}
 
 // Syrmos adaptive workspace policy, Swift mirror.
 //
