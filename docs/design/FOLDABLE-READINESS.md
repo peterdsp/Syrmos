@@ -20,19 +20,20 @@ runs from what is gated on tools or hardware. It never marks a gated item as don
 
 ## iOS Duo SDK capability probe (prompt section 9.1)
 
-Targeted searches of the installed iphoneos27.0 SDK Swift interfaces:
+**Update (Xcode 27.1, iphoneos27.1 SDK at `~/Downloads/Xcode_27.1.app`):** the Duo
+APIs are now source-visible, so the arrangement/region tier is unblocked. Use it via
+`DEVELOPER_DIR` (no global switch). The earlier 27.0 probe is kept below for history.
 
-| Symbol | Present in source-visible SDK interface? | Consequence |
-| --- | --- | --- |
-| `ArrangementView` | No | Duo paired-content arrangement API is **gated**. Do not fake it. |
-| `overlayArrangementZIndex` | No | Gated with the arrangement API. |
-| `reservedRegions` | Symbol in `SwiftUICore.tbd`; source visibility unconfirmed | Treat as **gated** until a compile probe confirms it; keep the call behind the iOS adapter. |
-| `ToolbarOverflowMenu` | Yes | Newer toolbar API is **available** to adopt with runtime availability guards. |
-| `visibilityPriority` | Yes | Available to adopt with guards. |
+| Symbol | 27.0 SDK | 27.1 SDK | Consequence |
+| --- | --- | --- | --- |
+| `ArrangementView` (+ `SplitArrangementViewStyle`, `splitArrangementLayoutRatio`) | No | **Yes** | Duo paired content is actionable; adopted in `SyrmosArrangement`. |
+| `overlayArrangementEdge` / `overlayArrangementZIndex` | No | **Yes** | Overlay arrangements available. |
+| `reservedRegions(kind:)` + `ReservedRegion.Kind` + `includeInactive` | `.tbd` only | **Yes** | Region API source-visible; ready for custom-geometry work. |
+| `ToolbarOverflowMenu` / `visibilityPriority` / `toolbarVerticalCompressionBehavior` | Yes | Yes | Toolbar overflow available. |
 
-This matches the prompt's expectation: some newer toolbar APIs land before the Duo
-layout APIs, so the toolbar work is actionable now while true Duo arrangements and
-reserved regions stay behind an explicit gate.
+All `@available(iOS 27.1, *)`; guard adoptions and keep the iOS 17 fallback. The
+iPhone Duo simulator device type exists but needs an iOS 27.1 runtime that is not
+installed and not downloadable here, so Duo **runtime** validation stays gated.
 
 ## Verified baseline (prompt section 2)
 
@@ -57,6 +58,31 @@ Rechecked against current code, all confirmed:
   device resolves exactly as before. No SDK types. The web app is untouched.
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
+
+## Landed: iOS Duo two-pane for Plan (Phase 3, iOS)
+
+Unblocked by **Xcode 27.1** (at `~/Downloads/Xcode_27.1.app`, iOS 27.1 SDK): the
+Duo APIs are now source-visible (`ArrangementView`, `SplitArrangementViewStyle`,
+`splitArrangementLayoutRatio`, `overlayArrangementZIndex`, `reservedRegions(kind:)`,
+`ReservedRegion.Kind`, plus `ToolbarOverflowMenu`/`visibilityPriority`).
+
+- **`SyrmosArrangement`** (in `iosApp/.../Features/Assistant/PlanFlow.swift`): an
+  adaptive two-pane container. On a regular-width container it pairs the task pane
+  with its companion; on iOS 27.1 it uses the native `ArrangementView` split style
+  (`.arrangementViewStyle(.split)` + `.splitArrangementLayoutRatio`), which further
+  adapts to Duo postures/regions itself, with an `HStack` width-split fallback for
+  iOS 17..<27.1. On a compact width it renders the shipped single scrolling column,
+  so the ordinary iPhone flow is unchanged. Gated by `horizontalSizeClass`.
+- **Plan adopts it**: the editable query + saved journeys form the task pane and the
+  route options + selected detail the companion pane, mirroring the Android two-pane
+  (prompt section 9.2). The body was split into `planPreamble` / `planQuery` /
+  `planResults` blocks with no duplicated source of truth.
+
+Verification: the app **builds and runs under Xcode 27.1** on a 27.0 iPhone sim, and
+the Duo `ArrangementView` path **compiles against the 27.1 SDK** (Duo SDK-integration
+tier). The on-device two-pane screenshot and the D01-D24 runtime cases remain pending
+two gates: the iOS Simulator control permission (for driving taps), and an iOS 27.1
+simulator runtime for the iPhone Duo device (not downloadable here).
 
 ## Landed: browse + detail screen continuity (Phase 2, continuity)
 
@@ -156,7 +182,7 @@ scratchpad.
 | Level | Status | Evidence |
 | --- | --- | --- |
 | Supported foundations | In progress | Shared policy + 20 tests green via `:core:common:testDebugUnitTest` (JDK17); `ContentBreakpointTest` 9/9 still green. Android running-surface: Plan two-pane at 1280dp and single-column at 411dp verified on the emulator; wasmJs + iOS compile green. |
-| Duo SDK integration | Pending | `ArrangementView` / arrangement APIs absent from the installed SDK interface. |
+| Duo SDK integration | In progress | Xcode 27.1 (iOS 27.1 SDK) exposes the Duo APIs; the iOS Plan two-pane uses the real `ArrangementView` split style and compiles against 27.1, with the iOS 17 fallback also building. |
 | Duo runtime validation | Pending | No Duo simulator/device runtime available. |
 | Physical-device quality | Pending | No foldable / Duo hardware in this environment. |
 
