@@ -1173,6 +1173,15 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     }
 
     @ViewBuilder private func paired(width: CGFloat) -> some View {
+        // `ArrangementView` is an iOS 27.1 SDK symbol. `#available` only gates the
+        // runtime, not compilation, and the compiler version does not discriminate
+        // (Xcode 27.0 and 27.1 both ship Swift 6.4, but only the 27.1 SDK exposes the
+        // symbol). Swift has no SDK-version `#if`, so gate on the custom flag
+        // `SYRMOS_DUO_SDK`, which is defined only in a build against the 27.1 SDK
+        // (see docs/design/FOLDABLE-READINESS.md). CI and release builds (Xcode 26.x
+        // / 27.0 SDK) leave it undefined and compile the width-split `HStack`
+        // fallback, which is the shipping two-pane.
+        #if SYRMOS_DUO_SDK
         if #available(iOS 27.1, *) {
             ArrangementView {
                 primary()
@@ -1182,11 +1191,20 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
             .arrangementViewStyle(.split)
             .splitArrangementLayoutRatio(taskRatio)
         } else {
-            HStack(spacing: 0) {
-                primary().frame(width: max(320, width * taskRatio))
-                Divider()
-                companion().frame(maxWidth: .infinity)
-            }
+            fallbackSplit(width: width)
+        }
+        #else
+        fallbackSplit(width: width)
+        #endif
+    }
+
+    /// Width-split two-pane used on toolchains / systems without the native
+    /// `ArrangementView` (pre iOS 27.1, or a pre-27.1 SDK build).
+    @ViewBuilder private func fallbackSplit(width: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            primary().frame(width: max(320, width * taskRatio))
+            Divider()
+            companion().frame(maxWidth: .infinity)
         }
     }
 }
