@@ -59,6 +59,28 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
+
+`ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
+27.1, *)` gates only the runtime, not compilation, and the Swift compiler version
+does not discriminate (Xcode 27.0 and 27.1 both ship Swift 6.4, but only the 27.1
+SDK exposes the symbol). Swift has no SDK-version `#if`, so `SyrmosArrangement`
+compiles the native `ArrangementView` split only under the custom flag
+`SYRMOS_DUO_SDK`; otherwise it compiles the width-split `HStack` fallback, which is
+the shipping two-pane.
+
+- **CI and release builds** run on Xcode 26.x / the 27.0 SDK, leave the flag
+  undefined, and build the fallback. Verified: `xcodebuild ... -destination
+  "generic/platform=iOS Simulator" ARCHS=arm64` under `/Applications/Xcode.app`
+  (27.0 SDK) BUILD SUCCEEDED. Without the flag guard the same build failed with
+  "cannot find 'ArrangementView' in scope" (PlanFlow.swift), which is what broke
+  the PR's `iOS build + tests` / `Build app scheme` jobs.
+- **To exercise the native path** build against the 27.1 SDK with the flag defined:
+  `xcodebuild ... SWIFT_ACTIVE_COMPILATION_CONDITIONS="SYRMOS_DUO_SDK"` under
+  `~/Downloads/Xcode_27.1.app`. Verified BUILD SUCCEEDED. All runtime verification
+  and the committed Duo snapshots use the fallback (the shipping path), so nothing
+  above depends on the flag being on.
+
 ## Landed: iPhone Duo snapshot tests (Phase 5, iOS)
 
 - **`iosAppTests/DuoSnapshotTests`** renders the adaptive two-pane at the iPhone
