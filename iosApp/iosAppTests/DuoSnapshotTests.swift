@@ -2,24 +2,36 @@ import XCTest
 import SwiftUI
 @testable import Syrmos
 
-/// Renders the adaptive two-pane at the iPhone Duo inner-display geometry so we can
-/// see how the foldable / Duo layout actually looks, and guards that a regular
-/// width pairs into two panes while a compact width stays a single scrolling
-/// column. When this runs on the iOS 27.1 runtime the native `ArrangementView`
-/// split path executes (the Duo simulator's own runtime); older runtimes take the
-/// `HStack` fallback, and the structural assertions hold for both.
+/// Renders the adaptive two-pane at the real iPhone Duo display geometry so we can
+/// see how the foldable / Duo layout actually looks, and guards that the unfolded
+/// inner display pairs into two panes while the folded cover display stays a single
+/// scrolling column. When this runs on the iOS 27.1 runtime the native
+/// `ArrangementView` split path executes; older runtimes take the `HStack`
+/// fallback, and the structural assertions hold for both.
+///
+/// Geometry matters, and the first cut got it wrong: it rendered at 466 x 678 pt,
+/// which is the Duo's COVER (folded) display, not the unfolded inner screen, so the
+/// "Duo" images were a cramped phone column rather than the two-pane. The real
+/// displays, measured on the booted Duo sim (pixels / scale 3):
+///
+///   inner (unfolded): 2007 x 2853 px -> 669 x 951 pt   the two-pane surface
+///   cover (folded)  : 1398 x 2034 px -> 466 x 678 pt   a single phone column
+///
+/// The inner display is wider than SyrmosArrangement's 640pt pair threshold in both
+/// orientations, so the unfolded Duo always pairs; the cover display is below it, so
+/// the folded phone stays single column.
 ///
 /// The rendered PNGs are written under `iosAppTests/__DuoSnapshots__/` for visual
 /// inspection. The assertions are structural, not pixel-exact, so they survive
-/// cosmetic changes but fail if the arrangement regresses (a wide Duo canvas that
-/// stops pairing, or a compact one that wrongly splits).
+/// cosmetic changes but fail if the arrangement regresses (an unfolded canvas that
+/// stops pairing, or a folded one that wrongly splits).
 final class DuoSnapshotTests: XCTestCase {
 
-    // iPhone Duo inner display, in points (measured on the booted Duo sim): 466 x 678.
-    // Portrait width (466) is below SyrmosArrangement's 640pt pair threshold, so it
-    // is single column; landscape width (678) is above it, so it pairs.
-    private let duoPortrait = CGSize(width: 466, height: 678)
-    private let duoLandscape = CGSize(width: 678, height: 466)
+    // Unfolded inner display (the two-pane surface), both orientations.
+    private let duoInnerPortrait = CGSize(width: 669, height: 951)
+    private let duoInnerLandscape = CGSize(width: 951, height: 669)
+    // Folded cover display (a single phone column).
+    private let duoCover = CGSize(width: 466, height: 678)
 
     private var outputDir: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent()
@@ -30,7 +42,7 @@ final class DuoSnapshotTests: XCTestCase {
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
     }
 
-    // MARK: Structural: the arrangement splits at Duo landscape, collapses at portrait
+    // MARK: Structural: the unfolded inner display pairs, the folded cover collapses
 
     /// A probe arrangement with a solid-red task pane and a solid-blue companion, so
     /// the split is unambiguous to sample regardless of real screen content.
@@ -43,47 +55,56 @@ final class DuoSnapshotTests: XCTestCase {
     }
 
     @MainActor
-    func test_duoLandscape_pairsTwoPanes() throws {
-        let image = render(probeArrangement, size: duoLandscape)
-        try save(image, "arrangement-duo-landscape.png")
+    func test_duoInner_pairsTwoPanes() throws {
+        let image = render(probeArrangement, size: duoInnerLandscape)
+        try save(image, "arrangement-duo-inner.png")
         let grid = sampleGrid(image)
-        // A wide Duo canvas pairs, so BOTH the red task pane and the blue companion
-        // are present (position-agnostic: the OS may split side-by-side or, on the
-        // native Duo ArrangementView, stack the two halves).
-        XCTAssertTrue(grid.contains(where: isRed), "paired canvas should show the red task pane")
-        XCTAssertTrue(grid.contains(where: isBlue), "paired canvas should show the blue companion")
+        // The unfolded inner display pairs, so BOTH the red task pane and the blue
+        // companion are present (position-agnostic: the OS may split side-by-side
+        // or, on the native Duo ArrangementView, stack the two halves).
+        XCTAssertTrue(grid.contains(where: isRed), "unfolded inner display should show the red task pane")
+        XCTAssertTrue(grid.contains(where: isBlue), "unfolded inner display should show the blue companion")
     }
 
     @MainActor
-    func test_duoPortrait_singleColumn() throws {
-        let image = render(probeArrangement, size: duoPortrait)
-        try save(image, "arrangement-duo-portrait.png")
+    func test_duoCover_singleColumn() throws {
+        let image = render(probeArrangement, size: duoCover)
+        try save(image, "arrangement-duo-cover.png")
         let grid = sampleGrid(image)
-        // A compact width shows only the green single column: no blue companion.
-        XCTAssertTrue(grid.contains(where: isGreen), "compact width should show the green single column")
-        XCTAssertFalse(grid.contains(where: isBlue), "compact width must not show a companion")
+        // The folded cover display shows only the green single column: no companion.
+        XCTAssertTrue(grid.contains(where: isGreen), "folded cover display should show the green single column")
+        XCTAssertFalse(grid.contains(where: isBlue), "folded cover display must not show a companion")
     }
 
-    // MARK: Visual: the real GO screen at both Duo postures
+    // MARK: Visual: the real GO screen, unfolded (two-pane) and folded (single column)
 
     @MainActor
-    func test_goScreen_duoLandscape_render() throws {
+    func test_goScreen_duoInnerLandscape_render() throws {
         let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
         let view = GoJourneyView(journey: journey, language: .english, coords: demoCoords(journey))
-        let image = render(view, size: duoLandscape)
-        try save(image, "go-duo-landscape.png")
+        let image = render(view, size: duoInnerLandscape)
+        try save(image, "go-duo-inner-landscape.png")
         // A real two-pane screen is far from uniform: assert visible variance so a
         // blank / crashed render fails rather than silently passing.
-        XCTAssertTrue(hasVisibleVariance(image), "GO landscape render should not be blank")
+        XCTAssertTrue(hasVisibleVariance(image), "GO unfolded landscape render should not be blank")
     }
 
     @MainActor
-    func test_goScreen_duoPortrait_render() throws {
+    func test_goScreen_duoInnerPortrait_render() throws {
         let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
         let view = GoJourneyView(journey: journey, language: .english, coords: demoCoords(journey))
-        let image = render(view, size: duoPortrait)
-        try save(image, "go-duo-portrait.png")
-        XCTAssertTrue(hasVisibleVariance(image), "GO portrait render should not be blank")
+        let image = render(view, size: duoInnerPortrait)
+        try save(image, "go-duo-inner-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "GO unfolded portrait render should not be blank")
+    }
+
+    @MainActor
+    func test_goScreen_duoCover_render() throws {
+        let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
+        let view = GoJourneyView(journey: journey, language: .english, coords: demoCoords(journey))
+        let image = render(view, size: duoCover)
+        try save(image, "go-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "GO folded cover render should not be blank")
     }
 
     // MARK: Journey fixture (mirrors GoDemoEntryView so the snapshot is a real route)
@@ -128,11 +149,14 @@ final class DuoSnapshotTests: XCTestCase {
         // content reaches the top edge instead of leaving a status-bar strip; host
         // the controller in a live window and capture the host view, which renders
         // SwiftUI reliably offscreen (capturing the window itself yields a blank
-        // frame).
+        // frame). Pin light appearance and a system background so the branded UI
+        // renders as shipped rather than on a black default canvas.
         let host = UIHostingController(rootView: view.ignoresSafeArea())
         host.view.frame = CGRect(origin: .zero, size: size)
         host.view.backgroundColor = UIColor.systemBackground
+        host.overrideUserInterfaceStyle = .light
         let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.overrideUserInterfaceStyle = .light
         window.rootViewController = host
         window.isHidden = false
         window.makeKeyAndVisible()

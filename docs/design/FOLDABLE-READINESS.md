@@ -83,20 +83,29 @@ the shipping two-pane.
 
 ## Landed: iPhone Duo snapshot tests (Phase 5, iOS)
 
-- **`iosAppTests/DuoSnapshotTests`** renders the adaptive two-pane at the iPhone
-  Duo inner-display geometry (measured on the booted Duo sim: 466 x 678 pt) and
-  writes reference PNGs to `iosAppTests/__DuoSnapshots__/` so the Duo layout can be
-  seen without the hardware. Four cases, all green: the probe arrangement pairs at
-  Duo landscape (678pt wide, >= the 640pt threshold) and stays single column at
-  portrait (466pt); the real `GoJourneyView` renders at both postures. Assertions
-  are presence-based (both pane colours when paired, only the combined colour when
-  single; real content, not blank), so they hold whether the split is side-by-side
-  or stacked.
-- **Reference images** (committed): `arrangement-duo-landscape.png` /
-  `-portrait.png` (probe split) and `go-duo-landscape.png` / `-portrait.png`. The
-  GO landscape shot shows the intended two-pane: instruction + controls on the
-  left, the route map (M1 polyline; base tiles blank offline) with the leg/stop
-  timeline on the right.
+- **`iosAppTests/DuoSnapshotTests`** renders the adaptive two-pane at the **real**
+  iPhone Duo display geometry and writes reference PNGs to
+  `iosAppTests/__DuoSnapshots__/` so the Duo layout can be seen without the
+  hardware. **Geometry correction (finding):** the first cut rendered at 466 x 678
+  pt, which is the Duo's **cover (folded)** display, not the unfolded inner screen,
+  so the "Duo" images were a cramped phone column instead of the two-pane. Measured
+  on the booted Duo sim (pixels / scale 3): inner (unfolded) 2007 x 2853 px ->
+  **669 x 951 pt**; cover (folded) 1398 x 2034 px -> **466 x 678 pt**. The inner
+  display is wider than the 640pt pair threshold in both orientations, so the
+  unfolded Duo always pairs; the cover is below it, so the folded phone stays single
+  column. Five cases, all green: the probe pairs on the unfolded inner display and
+  stays single column on the folded cover; `GoJourneyView` renders as the two-pane
+  on the inner display (both orientations) and as the single column on the cover.
+  Assertions are presence-based (both pane colours when paired, only the combined
+  colour when single; real content, not blank), so they hold whether the split is
+  side-by-side or stacked.
+- **Reference images** (committed): `arrangement-duo-inner.png` / `-cover.png`
+  (probe split vs single) and `go-duo-inner-landscape.png` / `go-duo-inner-portrait.png`
+  / `go-duo-cover.png`. The inner shots show the intended, branded two-pane:
+  instruction + controls on the left, the live Athens route map (M1 polyline over
+  the Esri gray base) with the full multi-leg journey timeline on the right. The
+  render pins light appearance so the UI is captured as shipped, not on a black
+  default canvas.
 - **Native ArrangementView finding (iOS 27.1 Duo runtime):** the 27.1 runtime and
   an iPhone Duo device (`SimRuntime.iOS-27-1`) are now installed, so
   `ArrangementView(...).arrangementViewStyle(.split)` executes. On the real Duo it
