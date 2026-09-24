@@ -81,6 +81,7 @@ struct GoJourneyView: View {
         // the shipped single column. The native ArrangementView split takes over on
         // iOS 27.1; older systems use the HStack fallback in SyrmosArrangement.
         SyrmosArrangement(
+            task: .go,
             primary: {
                 ScrollView {
                     VStack(spacing: 20) {

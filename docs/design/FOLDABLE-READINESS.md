@@ -169,6 +169,59 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 i
   reference images stay the 27.0 renders (the 27.1 native `ArrangementView`
   path re-renders them differently, as recorded above).
 
+## Landed: policy-driven arrangement, stacked axis for GO (six-posture prompt, delivery step 3)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 item 1; section 5 (P5, P6).
+
+- **`SyrmosArrangement` is now driven by `SyrmosAdaptiveWorkspacePolicy`**
+  (`PlanFlow.swift`): the container measures its box, reads the regions the
+  system reports for it (override first, then the gated reader), maps Dynamic
+  Type to the policy's font scale (`SyrmosDynamicType.fontScale`, body size over
+  17 pt) and resolves the task-aware workspace. `single` renders the shipped
+  `combined` column; `sideBySide` puts the task pane beside the companion;
+  `stacked` puts the companion (map, overview) above and the task with its
+  controls below. GO passes `task: .go` and Plan `task: .plan`; Explore has no
+  iOS two-pane yet, so its stacked preference is policy-only until an Explore
+  companion exists (per-flow work, delivery step 3 continued in a later slice).
+- **Fallback (the shipping path, CI and release builds)**: `HStack` on the
+  horizontal axis with the task column at the policy's task-pane right edge, and
+  `VStack` on the vertical axis with the companion band at the policy's
+  companion bottom edge. An occluding hinge's thickness is left empty between
+  the panes; a division gets a hairline. `SyrmosArrangementRule` holds these
+  numbers so tests can pin them.
+- **Native path (27.1 SDK, `SYRMOS_DUO_SDK`)**: `ArrangementView` with the
+  `.split` style; the policy contributes the pane ORDER (companion first on a
+  stacked decision so it lands on top) and the ratio. FINDING: restricting the
+  axis with `.arrangementViewStyle(.split.axes(.horizontal))` or `.axes(.vertical)`
+  made the Duo runtime HIDE the secondary pane (landscape Plan probe rendered
+  the task pane only; the GO screen rendered its single column), so the axis
+  restriction is not used and the system keeps owning the axis on the Duo.
+- **Outcomes on the Duo inner display (fallback path)**: GO upright is stacked
+  (map band 427 of 951 above, instruction and controls below); Plan upright is
+  side by side at 334 | 335; both wide are side by side (task 384, gap 24, map
+  519); an occluding horizontal hinge stacks any task on the fold and leaves
+  the hinge band empty; the keyboard shrinks the measured box, so Plan on a
+  laptop fold collapses to the query above the keyboard (P6 fixture).
+- **Tests**: `DuoPostureFixturesTests` grew to 49 (arrangement numbers from the
+  P3, P5 and hinge workspaces, share clamps, the Dynamic Type mapping and its
+  collapse threshold at xxxLarge); `DuoSnapshotTests` grew to 9 with three new
+  probes and renders: `arrangement-duo-inner-portrait-go.png` (blue band on
+  top, red below), `arrangement-duo-inner-portrait-plan.png` (red left, blue
+  right), `arrangement-duo-inner-landscape-hinge.png` (blue above, empty band
+  at 314 to 354, red below). Positional assertions apply to the fallback; under
+  `SYRMOS_DUO_SDK` they assert presence only because the native split owns the
+  axis. The committed `go-duo-inner-portrait.png` reference changed on purpose:
+  GO upright is now the stacked map-over-timeline layout.
+- **Evidence tier**: iOS 27.0 simulator (default Xcode 27.0 SDK, CI-equivalent
+  compile): DuoPostureFixturesTests 49/49, DuoSnapshotTests 9/9,
+  ReservedRegionAdapterTests 26/26 (84 total). iOS 27.1 SDK with
+  `SYRMOS_DUO_SDK` on the booted iPhone Duo simulator: DuoPostureFixturesTests
+  49/49 and DuoSnapshotTests 9/9 (58 total) with the presence-only assertions,
+  after the axis-restriction finding above was applied. The committed renders
+  are the 27.0 run's (the Duo run was executed first, then the 27.0 run, so the
+  shipping fallback's images are the ones on disk). Explore two-pane and the
+  Android side of the stacked axis remain open.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -438,6 +491,11 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Reserved regions normalised into the content box; fold beside the box never splits it; cutout is not a division (parent 9.4 rules 1 to 3) | Pass (synthetic) | `ReservedRegionAdapterTests.swift` normalisation cases. |
 | Map padding from visible panel and occupied regions, no camera reset (parent 9.4 rule 6; D15) | Pass (render) | `SyrmosMapPadding` cases plus `go-duo-inner-landscape-hinge.png`: current stop at the padded centre, route clear of the injected bar. |
 | Gated `reservedRegions` reader on the Duo runtime | Partial | Compiles and runs under 27.1 with `SYRMOS_DUO_SDK` (32/32 on the Duo sim); the headless probe read no regions, so the reported frames and their coordinate space are unconfirmed. |
+| GO on the tall inner display stacks map above timeline and controls (P5, section 5) | Pass (render) | `go-duo-inner-portrait.png` and `arrangement-duo-inner-portrait-go.png`, iOS 27.0 simulator. |
+| Plan on the tall inner display pairs side by side at half width (P5) | Pass (render) | `arrangement-duo-inner-portrait-plan.png`. |
+| An occluding horizontal fold stacks on the fold and leaves the band empty (P6, parent 9.4) | Pass (render, injected region) | `arrangement-duo-inner-landscape-hinge.png`; the system's own regions on hardware remain Pending. |
+| Dynamic Type raises pane floors; accessibility sizes collapse to one column (D21) | Pass (synthetic) | `test_dynamicTypeScale_*` in `DuoPostureFixturesTests.swift`. |
+| Native `ArrangementView` honours a requested axis on the Duo runtime | Fail (recorded) | `.split.axes(_:)` hid the secondary pane on the Duo simulator; the unrestricted `.split` shows both panes and the system owns the axis. |
 
 ## Remaining phases (prompt section 11)
 
