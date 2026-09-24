@@ -441,6 +441,7 @@ struct PlanView: View {
         NavigationStack {
             SyrmosArrangement(
                 pairs: true,
+                task: .plan,
                 primary: {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
@@ -1141,70 +1142,173 @@ private struct StopsDisclosure: View {
     }
 }
 
-/// Adaptive two-pane container (foldables / iPhone Duo prompt, section 9.2).
+/// Adaptive two-pane container (foldables / iPhone Duo prompt, section 9.2;
+/// six-posture prompt, section 9, item 1).
 ///
-/// On a regular-width container (iPad, large iPhone landscape, and the iPhone Duo
-/// inner display) it places the task pane beside its companion. On iOS 27.1 it
-/// uses the native `ArrangementView` split style, which further adapts to Duo
-/// postures and reserved regions on its own; older systems get a width-split
-/// `HStack` fallback. On a compact width it renders the shipped single scrolling
-/// column (`combined`), so the ordinary iPhone flow is unchanged. `pairs` is false
-/// for single-focus tasks (forms) that never gain a companion.
+/// The arrangement is decided by `SyrmosAdaptiveWorkspacePolicy`, the Swift twin
+/// of the shared Kotlin policy, from the container's measured size, the regions
+/// the system reports for it (a fold division, an occluding hinge), the Dynamic
+/// Type scale and the task:
+///
+///   single       the shipped single scrolling column (`combined`)
+///   sideBySide   task pane beside its companion (a wide window, a book fold,
+///                a planner on the Duo inner display held upright)
+///   stacked      companion (map, overview) above, task and controls below (a
+///                horizontal fold, GO or Explore on the tall Duo inner display)
+///
+/// On iOS 27.1 the native `ArrangementView` split style renders the pair on the
+/// chosen axis; older systems get an `HStack` / `VStack` fallback that honours
+/// the same pane rectangles. `pairs` is false for single-focus tasks (forms).
 struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     var pairs: Bool = true
-    /// Minimum container width (pt) to pair. Mirrors the Android policy's
-    /// width-driven decision rather than the size class, so a wide form sheet or
-    /// the Duo inner display pairs while a narrow iPhone sheet stays single column.
-    var minPairWidth: CGFloat = 640
-    /// Task-pane fraction of the width when paired.
-    var taskRatio: CGFloat = 0.42
+    /// The task driving the workspace; selects the preferred axis on a tall,
+    /// medium-width window and whether a companion is offered at all.
+    var task: SyrmosWorkspaceTask = .plan
     @ViewBuilder var primary: () -> Primary
     @ViewBuilder var companion: () -> Companion
     @ViewBuilder var combined: () -> Combined
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.syrmosReservedGeometryOverride) private var geometryOverride
+
     var body: some View {
         GeometryReader { geo in
-            if pairs && geo.size.width >= minPairWidth {
-                paired(width: geo.size.width)
-            } else {
-                combined()
-            }
+            let geometry = geometryOverride ?? geo.syrmosReservedGeometry()
+            let workspace = SyrmosAdaptiveWorkspacePolicy.resolve(
+                size: geo.size,
+                task: pairs ? task : .form,
+                regions: geometry.regions,
+                fontScale: SyrmosDynamicType.fontScale(dynamicTypeSize)
+            )
+            content(for: workspace, size: geo.size)
         }
     }
 
-    @ViewBuilder private func paired(width: CGFloat) -> some View {
+    @ViewBuilder private func content(for ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
+        switch ws.arrangement {
+        case .single:
+            combined()
+        case .sideBySide:
+            paired(ws, size: size, axis: .horizontal)
+        case .stacked:
+            paired(ws, size: size, axis: .vertical)
+        }
+    }
+
+    @ViewBuilder private func paired(_ ws: SyrmosAdaptiveWorkspace, size: CGSize, axis: Axis) -> some View {
         // `ArrangementView` is an iOS 27.1 SDK symbol. `#available` only gates the
         // runtime, not compilation, and the compiler version does not discriminate
         // (Xcode 27.0 and 27.1 both ship Swift 6.4, but only the 27.1 SDK exposes the
         // symbol). Swift has no SDK-version `#if`, so gate on the custom flag
         // `SYRMOS_DUO_SDK`, which is defined only in a build against the 27.1 SDK
         // (see docs/design/FOLDABLE-READINESS.md). CI and release builds (Xcode 26.x
-        // / 27.0 SDK) leave it undefined and compile the width-split `HStack`
-        // fallback, which is the shipping two-pane.
+        // / 27.0 SDK) leave it undefined and compile the fallback, which is the
+        // shipping two-pane.
         #if SYRMOS_DUO_SDK
         if #available(iOS 27.1, *) {
+            nativeSplit(ws, size: size, axis: axis)
+        } else {
+            fallbackSplit(ws, size: size, axis: axis)
+        }
+        #else
+        fallbackSplit(ws, size: size, axis: axis)
+        #endif
+    }
+
+    #if SYRMOS_DUO_SDK
+    /// Native paired content. The system's split style owns the axis on the Duo
+    /// runtime (restricting it with `.axes(_:)` hid the secondary pane there, see
+    /// docs/design/FOLDABLE-READINESS.md), so the policy contributes the pane
+    /// ORDER and the ratio: on a stacked decision the companion (map, overview)
+    /// is the arrangement's primary so it lands on top, with its share of the
+    /// height; on a side-by-side decision the task pane leads with its share of
+    /// the width.
+    @available(iOS 27.1, *)
+    @ViewBuilder private func nativeSplit(_ ws: SyrmosAdaptiveWorkspace, size: CGSize, axis: Axis) -> some View {
+        switch axis {
+        case .horizontal:
             ArrangementView {
                 primary()
             } secondary: {
                 companion()
             }
             .arrangementViewStyle(.split)
-            .splitArrangementLayoutRatio(taskRatio)
-        } else {
-            fallbackSplit(width: width)
+            .splitArrangementLayoutRatio(SyrmosArrangementRule.taskShare(ws, size: size))
+        case .vertical:
+            ArrangementView {
+                companion()
+            } secondary: {
+                primary()
+            }
+            .arrangementViewStyle(.split)
+            .splitArrangementLayoutRatio(SyrmosArrangementRule.companionShare(ws, size: size))
         }
-        #else
-        fallbackSplit(width: width)
-        #endif
+    }
+    #endif
+
+    /// Two-pane used on toolchains / systems without the native `ArrangementView`
+    /// (pre iOS 27.1, or a pre-27.1 SDK build). Honours the policy's pane
+    /// rectangles: the task column (or the companion band) takes its fitted
+    /// extent, an occluding hinge is left empty, a division gets a hairline.
+    @ViewBuilder private func fallbackSplit(_ ws: SyrmosAdaptiveWorkspace, size: CGSize, axis: Axis) -> some View {
+        let gap = SyrmosArrangementRule.gap(ws, axis: axis)
+        switch axis {
+        case .horizontal:
+            HStack(spacing: 0) {
+                primary().frame(width: SyrmosArrangementRule.taskExtent(ws, axis: axis))
+                if gap > 0 { Color.clear.frame(width: gap) } else { Divider() }
+                companion().frame(maxWidth: .infinity)
+            }
+        case .vertical:
+            VStack(spacing: 0) {
+                companion().frame(height: SyrmosArrangementRule.companionExtent(ws, axis: axis))
+                if gap > 0 { Color.clear.frame(height: gap) } else { Divider() }
+                primary().frame(maxHeight: .infinity)
+            }
+        }
+    }
+}
+
+/// The pure numbers `SyrmosArrangement` derives from a resolved workspace, kept
+/// out of the generic view so tests can pin them.
+enum SyrmosArrangementRule {
+    /// The narrowest width at which a planner pairs side by side at default
+    /// text: two map-floor halves. Mirrors the shared policy.
+    static var pairFloor: CGFloat { CGFloat(SyrmosAdaptiveWorkspacePolicy.minMapPane * 2) }
+
+    /// Width of the task column on the horizontal axis: the task pane's right
+    /// edge, so any outer inset the policy placed before it stays inside the
+    /// column (the panes carry their own padding).
+    static func taskExtent(_ ws: SyrmosAdaptiveWorkspace, axis: Axis) -> CGFloat {
+        guard let task = ws.pane(.task) else { return 0 }
+        return CGFloat(axis == .horizontal ? task.rect.right : task.rect.bottom)
     }
 
-    /// Width-split two-pane used on toolchains / systems without the native
-    /// `ArrangementView` (pre iOS 27.1, or a pre-27.1 SDK build).
-    @ViewBuilder private func fallbackSplit(width: CGFloat) -> some View {
-        HStack(spacing: 0) {
-            primary().frame(width: max(320, width * taskRatio))
-            Divider()
-            companion().frame(maxWidth: .infinity)
+    /// Height of the companion band on the vertical axis (its bottom edge).
+    static func companionExtent(_ ws: SyrmosAdaptiveWorkspace, axis: Axis) -> CGFloat {
+        guard let companion = ws.pane(.companion) else { return 0 }
+        return CGFloat(axis == .vertical ? companion.rect.bottom : companion.rect.right)
+    }
+
+    /// The empty extent between the two panes: an occluding hinge's thickness,
+    /// or the policy's column gap on a wide window; 0 when the halves abut.
+    static func gap(_ ws: SyrmosAdaptiveWorkspace, axis: Axis) -> CGFloat {
+        guard let task = ws.pane(.task), let companion = ws.pane(.companion) else { return 0 }
+        switch axis {
+        case .horizontal: return CGFloat(max(0, companion.rect.left - task.rect.right))
+        case .vertical: return CGFloat(max(0, task.rect.top - companion.rect.bottom))
         }
+    }
+
+    /// The task pane's share of the width (native horizontal split ratio).
+    static func taskShare(_ ws: SyrmosAdaptiveWorkspace, size: CGSize) -> CGFloat {
+        guard size.width > 0 else { return 0.5 }
+        return min(max(taskExtent(ws, axis: .horizontal) / size.width, 0.2), 0.8)
+    }
+
+    /// The companion band's share of the height (native vertical split ratio).
+    static func companionShare(_ ws: SyrmosAdaptiveWorkspace, size: CGSize) -> CGFloat {
+        guard size.height > 0 else { return 0.5 }
+        return min(max(companionExtent(ws, axis: .vertical) / size.height, 0.2), 0.8)
     }
 }

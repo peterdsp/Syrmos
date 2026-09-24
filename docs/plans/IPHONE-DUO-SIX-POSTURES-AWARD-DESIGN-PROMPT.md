@@ -471,6 +471,14 @@ occluding hinge or cutout without resetting the camera. The Duo simulator
 reported no regions to a bare test window, so the reported coordinate space
 is still to be confirmed on hardware (see the readiness record).
 
+Step 3 is landed for GO and Plan: `SyrmosArrangement` is driven by the Swift
+policy (Dynamic Type, reported regions, task), so GO stacks its map above the
+timeline and controls on the tall inner display and Plan pairs side by side;
+an occluding fold stacks any task with the band left empty. On the Duo runtime
+the native split refused a requested axis (it hid the secondary pane), so the
+policy contributes pane order and ratio there and the system keeps the axis.
+Explore still has no iOS two-pane, so its stacked preference is policy-only.
+
 Also required:
 
 - Policy fixtures for every row above in both Kotlin and Swift.

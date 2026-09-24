@@ -17,9 +17,10 @@ import SwiftUI
 ///   inner (unfolded): 2007 x 2853 px -> 669 x 951 pt   the two-pane surface
 ///   cover (folded)  : 1398 x 2034 px -> 466 x 678 pt   a single phone column
 ///
-/// The inner display is wider than SyrmosArrangement's 640pt pair threshold in both
-/// orientations, so the unfolded Duo always pairs; the cover display is below it, so
-/// the folded phone stays single column.
+/// The inner display clears the policy's 640 pt pairing floor in both
+/// orientations, so the unfolded Duo always pairs (side by side, or stacked for a
+/// task that wants the map above); the cover display is below it, so the folded
+/// phone stays single column.
 ///
 /// The rendered PNGs are written under `iosAppTests/__DuoSnapshots__/` for visual
 /// inspection. The assertions are structural, not pixel-exact, so they survive
@@ -64,6 +65,86 @@ final class DuoSnapshotTests: XCTestCase {
         // or, on the native Duo ArrangementView, stack the two halves).
         XCTAssertTrue(grid.contains(where: isRed), "unfolded inner display should show the red task pane")
         XCTAssertTrue(grid.contains(where: isBlue), "unfolded inner display should show the blue companion")
+    }
+
+    /// A GO probe on the tall inner display stacks: the blue companion (map)
+    /// fills the upper band and the red task pane the lower part, so the hands
+    /// are on the controls (P5 Tall canvas, six-posture prompt section 5).
+    @MainActor
+    func test_duoInnerPortrait_goProbeStacksCompanionAbove() throws {
+        let probe = SyrmosArrangement(
+            task: .go,
+            primary: { Color.red },
+            companion: { Color.blue },
+            combined: { Color.green }
+        )
+        let image = render(probe, size: duoInnerPortrait)
+        try save(image, "arrangement-duo-inner-portrait-go.png")
+        #if SYRMOS_DUO_SDK
+        // The native split owns the axis on the Duo runtime: assert presence only.
+        let grid = sampleGrid(image)
+        XCTAssertTrue(grid.contains(where: isBlue), "companion present")
+        XCTAssertTrue(grid.contains(where: isRed), "task pane present")
+        #else
+        // 45 percent of 951 is 427: sample well inside each band.
+        XCTAssertTrue(patchColor(image, fx: 0.5, fy: 0.2).map(isBlue) ?? false, "map band should be on top")
+        XCTAssertTrue(patchColor(image, fx: 0.5, fy: 0.8).map(isRed) ?? false, "task pane should be below")
+        XCTAssertTrue(patchColor(image, fx: 0.15, fy: 0.8).map(isRed) ?? false, "task pane spans the full width")
+        #endif
+    }
+
+    /// A Plan probe on the same tall inner display pairs side by side at half
+    /// the width (334 | 335): the planner reads as two columns.
+    @MainActor
+    func test_duoInnerPortrait_planProbePairsSideBySide() throws {
+        let probe = SyrmosArrangement(
+            task: .plan,
+            primary: { Color.red },
+            companion: { Color.blue },
+            combined: { Color.green }
+        )
+        let image = render(probe, size: duoInnerPortrait)
+        try save(image, "arrangement-duo-inner-portrait-plan.png")
+        #if SYRMOS_DUO_SDK
+        let grid = sampleGrid(image)
+        XCTAssertTrue(grid.contains(where: isRed), "task pane present")
+        XCTAssertTrue(grid.contains(where: isBlue), "companion present")
+        #else
+        XCTAssertTrue(patchColor(image, fx: 0.2, fy: 0.5).map(isRed) ?? false, "task pane on the left")
+        XCTAssertTrue(patchColor(image, fx: 0.8, fy: 0.5).map(isBlue) ?? false, "companion on the right")
+        #endif
+    }
+
+    /// An injected occluding hinge across the wide inner display (laptop or
+    /// tent) stacks any task on the fold and leaves the hinge band empty.
+    @MainActor
+    func test_duoInnerLandscape_hingeStacksAndKeepsTheBandClear() throws {
+        let hinge = SyrmosReservedGeometry(regions: [
+            SyrmosReservedRegion(kind: .occlusion, orientation: .horizontal, start: 314, size: 40),
+        ])
+        let probe = SyrmosArrangement(
+            task: .plan,
+            primary: { Color.red },
+            companion: { Color.blue },
+            combined: { Color.green }
+        )
+        .environment(\.syrmosReservedGeometryOverride, hinge)
+        let image = render(probe, size: duoInnerLandscape)
+        try save(image, "arrangement-duo-inner-landscape-hinge.png")
+        #if SYRMOS_DUO_SDK
+        // The native split reserves the SYSTEM's regions, not an injected one, so
+        // only the pane order is asserted on the Duo runtime.
+        let grid = sampleGrid(image)
+        XCTAssertTrue(grid.contains(where: isBlue), "companion present")
+        XCTAssertTrue(grid.contains(where: isRed), "task pane present")
+        #else
+        XCTAssertTrue(patchColor(image, fx: 0.5, fy: 0.25).map(isBlue) ?? false, "overview above the hinge")
+        XCTAssertTrue(patchColor(image, fx: 0.5, fy: 0.75).map(isRed) ?? false, "task below the hinge")
+        // The hinge band itself (314..354 of 669) carries no pane colour.
+        let band = patchColor(image, fx: 0.5, fy: 334.0 / 669.0)
+        XCTAssertFalse(band.map(isRed) ?? true, "nothing red bridges the hinge")
+        XCTAssertFalse(band.map(isBlue) ?? true, "nothing blue bridges the hinge")
+        #endif
     }
 
     @MainActor
