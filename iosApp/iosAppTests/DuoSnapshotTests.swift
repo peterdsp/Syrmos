@@ -98,6 +98,24 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "GO unfolded portrait render should not be blank")
     }
 
+    /// The GO companion with an injected occluding hinge across the lower part of
+    /// its map (a laptop or tent posture where the fold crosses the companion):
+    /// the map pads its bottom so the route fit and the current stop stay above
+    /// the hinge. Rendered through the test seam because a 27.0 simulator
+    /// reports no regions; the image documents the padded fit.
+    @MainActor
+    func test_goScreen_duoInnerLandscape_hingeAcrossCompanion_render() throws {
+        let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
+        let hinge = SyrmosReservedGeometry(regions: [
+            SyrmosReservedRegion(kind: .occlusion, orientation: .horizontal, start: 220, size: 40),
+        ])
+        let view = GoJourneyView(journey: journey, language: .english, coords: demoCoords(journey))
+            .environment(\.syrmosReservedGeometryOverride, hinge)
+        let image = render(view, size: duoInnerLandscape)
+        try save(image, "go-duo-inner-landscape-hinge.png")
+        XCTAssertTrue(hasVisibleVariance(image), "GO hinge-padded render should not be blank")
+    }
+
     @MainActor
     func test_goScreen_duoCover_render() throws {
         let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
