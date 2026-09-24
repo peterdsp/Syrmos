@@ -189,6 +189,8 @@
 		916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */; };
 		E0924DBFD89E4529BE2607A6 /* DepartureGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */; };
 		2611916041EE42F7AEA6576E /* DepartureGroupingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */; };
+		31F49E9B396A4871AEBC73E0 /* AdaptiveWorkspacePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14149F5B92C541AFA2633714 /* AdaptiveWorkspacePolicy.swift */; };
+		D68BF2B2EAA74AB3956E701A /* DuoPostureFixturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B7007F0216429CA693D53F /* DuoPostureFixturesTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -432,6 +434,8 @@
 		34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusVehicles.swift; sourceTree = SOURCE_ROOT; };
 		0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureGrouping.swift; sourceTree = SOURCE_ROOT; };
 		794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DepartureGroupingTests.swift; sourceTree = "<group>"; };
+		14149F5B92C541AFA2633714 /* AdaptiveWorkspacePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/AdaptiveWorkspacePolicy.swift; sourceTree = SOURCE_ROOT; };
+		E2B7007F0216429CA693D53F /* DuoPostureFixturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DuoPostureFixturesTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -502,6 +506,7 @@
 				DA7A0019F00D0019F00D0019 /* AriadneParserTests.swift */,
 				DA7A0203F00D0203F00D0203 /* JourneyGuidanceTests.swift */,
 				DA7A0231F00D0231F00D0231 /* DuoSnapshotTests.swift */,
+				E2B7007F0216429CA693D53F /* DuoPostureFixturesTests.swift */,
 				DA7A0207F00D0207F00D0207 /* JourneyPlannerConnectTests.swift */,
 				DA7A020FF00D020FF00D020F /* GoJourneyViewModelTests.swift */,
 				DA7A0223F00D0223F00D0223 /* GoLocationAdvancerTests.swift */,
@@ -730,6 +735,7 @@
 				37E20527B3ED48E6806B8138 /* ThemeManager.swift */,
 				0A17A711F00D0711F00D0711 /* OfflinePill.swift */,
 				0A17A713F00D0713F00D0713 /* SyrmosAnimations.swift */,
+				14149F5B92C541AFA2633714 /* AdaptiveWorkspacePolicy.swift */,
 				836DE84E99C06ABA19E71806 /* CompactTabHeader.swift */,
 			);
 			name = DesignSystem;
@@ -1078,6 +1084,7 @@
 				03329116BFDB4F16A2A9B937 /* ThemeManager.swift in Sources */,
 				0A17A710F00D0710F00D0710 /* OfflinePill.swift in Sources */,
 				0A17A712F00D0712F00D0712 /* SyrmosAnimations.swift in Sources */,
+				31F49E9B396A4871AEBC73E0 /* AdaptiveWorkspacePolicy.swift in Sources */,
 				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
@@ -1204,6 +1211,7 @@
 				DA7A0018F00D0018F00D0018 /* AriadneParserTests.swift in Sources */,
 				DA7A0202F00D0202F00D0202 /* JourneyGuidanceTests.swift in Sources */,
 				DA7A0230F00D0230F00D0230 /* DuoSnapshotTests.swift in Sources */,
+				D68BF2B2EAA74AB3956E701A /* DuoPostureFixturesTests.swift in Sources */,
 				DA7A0206F00D0206F00D0206 /* JourneyPlannerConnectTests.swift in Sources */,
 				DA7A020EF00D020EF00D020E /* GoJourneyViewModelTests.swift in Sources */,
 				DA7A0222F00D0222F00D0222 /* GoLocationAdvancerTests.swift in Sources */,

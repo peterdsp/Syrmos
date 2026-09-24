@@ -59,6 +59,55 @@ Rechecked against current code, all confirmed:
 - **Tests** — `core/common/.../layout/AdaptiveWorkspaceTest.kt`, 20 cases; these
   are the cross-platform fixtures the SwiftUI mirror must also satisfy.
 
+## Landed: six-posture policy fixtures and the Swift policy mirror (six-posture prompt, delivery step 1)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 3, 5, 11 and 12.
+
+- **Tall-canvas axis rule (shared policy)**: `AdaptiveWorkspacePolicy` now pairs on
+  a medium-width plain window (600 to 839 wide, not short, not large text) on the
+  axis the task prefers (`WorkspaceTask.tallCanvasAxis`: GO and Explore stack the
+  map above the list and controls; Plan, Home, Departures, Fares and Ariadne pair
+  side by side), falling back to the other axis and then to the readable single
+  column. Floors: side by side needs each floored half to clear the task floor
+  (300) and the map floor (320), so the pairing floor is exactly 640 at default
+  text, the same threshold the shipped iOS `SyrmosArrangement` uses; stacking
+  needs 360 (map) plus 280 (task) of height and gives the map about 45 percent.
+  Region-driven paths (book, laptop, tent) are unchanged. Behaviour change on
+  Android: Plan on a 600 to 839 wide plain window (a tablet held upright, an
+  unfolded book foldable) now renders its two-pane instead of one column, which
+  the parent prompt's section 5 already allowed for that band.
+- **Kotlin fixtures**: `core/common/.../layout/DuoPostureFixturesTest.kt`, 20 cases
+  named after the postures and transitions (`p1_pocket_...` to `p6_laptop_...`,
+  `t1_unfold_...` to `t6_pinnedVideo_...`) at the measured Duo geometry (cover
+  466 x 678, inner 669 x 951 and 951 x 669). `AdaptiveWorkspaceTest.kt` grew to 25
+  (medium-window pairing, medium form column, too-narrow medium window).
+  Run: `:core:common:testDebugUnitTest --tests "com.syrmos.core.common.layout.*"`
+  (JDK 17): AdaptiveWorkspaceTest 25/25, ContentBreakpointTest 9/9,
+  DuoPostureFixturesTest 20/20.
+- **Swift mirror**: `iosApp/iosApp/DesignSystem/AdaptiveWorkspacePolicy.swift`
+  (`SyrmosAdaptiveWorkspacePolicy`, with `SyrmosContentBreakpoint` folded in) is
+  a line-for-line twin of the Kotlin policy: same types, same constants, same
+  rules, plus a `CGSize` entry point that floors to whole points. It is not yet
+  wired into `SyrmosArrangement` (delivery step 3); the shipped two-pane still
+  decides by width alone.
+- **Swift fixtures**: `iosApp/iosAppTests/DuoPostureFixturesTests.swift`, 42 cases:
+  the 20 posture and transition twins by the same names and numbers, the general
+  `AdaptiveWorkspaceTest` twins, the `CGSize` flooring, and a parity guard that the
+  shipped `SyrmosArrangement.minPairWidth` (640) equals the policy's side-by-side
+  floor (`2 x minMapPane`) with 640 pairing and 639 stacking. Registered through
+  `scripts/add-duo-posture-files.py`.
+- **Evidence tier**: synthetic policy fixtures on both platforms, plus the full
+  iOS unit suite (315 tests, 0 failures, iOS 27.0 simulator, default Xcode 27.0
+  SDK, which is the CI-equivalent compile of the new Swift) and the Android
+  running surface for the one behaviour change: on the `syrmos_tablet` emulator
+  (density 160) Plan at 669 x 951 with the nav rail keeps its single column
+  (content box about 589 wide, compact), and Plan at 768 x 1024 renders the
+  two-pane (query and saved task pane beside the results pane, content box about
+  688 wide, halves of 344). Screenshots `android-plan-669.png` and
+  `android-plan-768.png` in the session scratchpad. The Duo inner display on
+  Android therefore pairs only through its reported hinge region, as before;
+  the medium-width rule reaches Android windows whose content box clears 640.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -322,6 +371,9 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Android continuity through recreation (12.1 #11-13) | Partial | Plan draft/selection, the GO session, the map camera, the Explore filters, and detail-screen scroll all survive activity recreation; the GO session also survives process death (auto-restored on cold launch). Residual: singleton view-model browse state (Explore segment/filters) resets on a cold launch after process death, accepted as lower priority than a live journey; the iOS side is separate. |
 | iPhone/iPad running-surface scenarios (12.1 #20) | Pending | iOS mirror + scene wiring not yet implemented. |
 | Duo D01–D24 (12.2) | Pending | Gated on Duo SDK arrangement APIs and a Duo runtime. |
+| Six-posture policy P1 to P6 and transitions T1 to T6 (six-posture prompt, section 11) | Pass (synthetic) | `DuoPostureFixturesTest.kt` 20/20 and `DuoPostureFixturesTests.swift` twins, same names and numbers on both platforms. |
+| Swift policy mirror reproduces the Kotlin fixtures | Pass (XCTest) | `DuoPostureFixturesTests.swift` on the iOS 27.0 simulator; includes the 640 pairing-floor parity guard against the shipped `SyrmosArrangement`. |
+| Android Plan two-pane on a medium-width plain window (parent prompt section 5, 688 to 839 band) | Pass | Tablet emulator at 768 x 1024 dp: two-pane; at 669 x 951 dp with the rail: single column, unchanged. |
 
 ## Remaining phases (prompt section 11)
 

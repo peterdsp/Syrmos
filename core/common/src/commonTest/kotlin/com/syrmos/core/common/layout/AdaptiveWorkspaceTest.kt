@@ -37,11 +37,36 @@ class AdaptiveWorkspaceTest {
     }
 
     @Test
-    fun mediumWindowStaysSingleReadableColumn() {
+    fun mediumWindowPairsAPlannerSideBySide() {
+        // 768 wide is the parent prompt's 688 to 839 band: planner plus map may
+        // use two panes of at least 320. Two even columns, no outer inset.
         val ws = resolve(768, 900)
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, ws.arrangement)
+        assertFalse(ws.regionDriven)
+        val task = ws.pane(PaneRole.TASK)!!
+        val companion = ws.pane(PaneRole.COMPANION)!!
+        assertEquals(0, task.rect.left)
+        assertEquals(384, task.rect.width)
+        assertEquals(384, companion.rect.left)
+        assertEquals(384, companion.rect.width)
+        assertNull(ws.divider, "a medium canvas has no draggable divider")
+    }
+
+    @Test
+    fun aFormOnAMediumWindowStaysSingleReadableColumn() {
+        val ws = resolve(768, 900, task = WorkspaceTask.FORM)
         assertEquals(WorkspaceArrangement.SINGLE, ws.arrangement)
         val task = ws.pane(PaneRole.TASK)!!
         assertEquals(680, task.rect.width)
+    }
+
+    @Test
+    fun aMediumWindowTooNarrowForTheMapFloorStaysSingle() {
+        // 600 wide halves to 300: the task floor holds but the map floor (320)
+        // does not, and 500 tall cannot stack (360 + 280), so one column remains.
+        val ws = resolve(600, 500)
+        assertEquals(WorkspaceArrangement.SINGLE, ws.arrangement)
+        assertNull(ws.pane(PaneRole.COMPANION))
     }
 
     @Test
