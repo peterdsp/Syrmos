@@ -39,6 +39,7 @@ import com.syrmos.core.domain.go.JourneyGuidance
 import com.syrmos.core.domain.journey.ActiveJourneyStore
 import androidx.compose.runtime.collectAsState
 import kotlinx.datetime.Clock
+import kotlin.jvm.Transient
 import com.syrmos.core.domain.go.GuidanceLeg
 import com.syrmos.core.domain.go.GoTimelineState
 import com.syrmos.core.domain.go.GoTimelineRow
@@ -69,6 +70,7 @@ import com.syrmos.core.common.layout.PaneRole
 import com.syrmos.core.common.layout.WorkspaceArrangement
 import com.syrmos.core.common.layout.WorkspaceTask
 import com.syrmos.core.data.repository.LineRepositoryImpl
+import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.designsystem.component.toComposeColor
 import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
@@ -96,9 +98,17 @@ object PlanReplanRequest {
 }
 
 class GoJourneyScreenRoute(
-    private val journey: GuidanceJourney,
-    private val transferRisks: List<TransferRisk> = emptyList(),
+    // Both fields are transient: a Voyager screen is saved with the activity's
+    // instance state on a rotation or a fold, and the guidance journey is not
+    // serialisable. After restoration the screen rebuilds its journey from the
+    // persisted live session instead, so GO survives recreation (D05, D12)
+    // rather than falling back to the tab root; transfer risks are advisory and
+    // simply absent on a restored screen (already the documented behaviour).
+    @Transient private val journey: GuidanceJourney? = null,
+    @Transient private val transferRisks: List<TransferRisk> = emptyList(),
 ) : Screen {
+    override val key: String = "go-journey"
+
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -106,6 +116,22 @@ class GoJourneyScreenRoute(
         // Position is derived from the persisted live session so it survives a kill /
         // navigation; every step is written back through the shared lifecycle store.
         val active by ActiveJourneyRepository.active.collectAsState()
+        val stationRepo = koinInject<StationRepositoryImpl>()
+        // The journey: the one handed over at push time, or, after a restoration,
+        // the one rebuilt from the live session's frozen itinerary.
+        var rebuilt by remember { mutableStateOf<GuidanceJourney?>(null) }
+        val snapshot = active?.itinerarySnapshot
+        LaunchedEffect(snapshot, lang) {
+            if (this@GoJourneyScreenRoute.journey == null && rebuilt == null && snapshot != null) {
+                rebuilt = buildGuidanceJourney(snapshot, stationRepo, lang)
+            }
+        }
+        val journey = this.journey ?: rebuilt
+        if (journey == null || journey.legs.isEmpty()) {
+            // Restored with no live session left: nothing to guide, leave quietly.
+            LaunchedEffect(active) { if (active == null) navigator.pop() }
+            return
+        }
         val position = active?.let { ActiveJourneyStore.positionOf(it, journey) } ?: GuidancePosition(0, 0)
 
         fun t(en: String, el: String, sq: String, it: String) = when (lang) {

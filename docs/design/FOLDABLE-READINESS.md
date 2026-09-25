@@ -289,8 +289,25 @@ the iPhone Duo and Android fold devices only; GO stays.
   simulator at Omonia (M2 to Anthoupoli 3 and 18, M2 to Elliniko 8, M1 to
   Piraeus 10 and 25, M1 to Kifissia 12); on Android the board compiles and its
   rows are unit-tested, and the emulator run is recorded below.
+- **Third pass (owner: "polish it more")**: a segmented per-leg progress bar in
+  the line colours with "Stop X of Y" and the percentage replaces the grey bar
+  (`GoLegProgress` on iOS, `GoTimeline.legProgress` on Kotlin, twin tests); the
+  hero carries a state label (Ready to board, Riding, Alight soon, Transfer,
+  Arrived) on both platforms and the Android hero sits on a wash of the line
+  colour; the phone column shows the timeline cards under the controls instead
+  of empty space on both platforms.
+- **Two Android defects found while verifying**: (1) `LineColor.fromHexOrType`
+  matched the seed hex exactly or fell back by type, so M2 (#E61E2A) and M3
+  (#0083C9) rendered GREEN everywhere `Line.color` is used; it now snaps to the
+  nearest palette colour (`LineColorTest`, 3 cases), verified blue on the
+  emulator. (2) `GoJourneyScreenRoute` carried a non-serialisable journey, so a
+  rotation or fold (activity recreation) dropped GO back to the tab root; its
+  fields are now transient and the screen rebuilds the journey from the
+  persisted live session, verified by resizing the window mid-journey (D05,
+  D12 on Android).
 - **Evidence tier**: iOS simulator renders and a live simulator run plus the
-  Android emulator running surface; no fold hardware, no Duo hardware.
+  Android emulator running surface (`go-colour.png`, `go-recreated.png`,
+  `phone-go.png` in the session scratchpad); no fold hardware, no Duo hardware.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 

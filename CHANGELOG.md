@@ -12,12 +12,38 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
-## 3.0.0-beta.3 - 2026-09-15
+## 3.0.0-beta.3 - 2026-09-26
 
 3.0 "Journeys" grows from the GO engine into an end-to-end companion: an adaptive
 iPad shell, honest recovery when a journey degrades, native glance surfaces for an
 active journey, and leave-by reminders, on every client. Web changes below already
-shipped continuously to syrmos.peterdsp.dev.
+shipped continuously to syrmos.peterdsp.dev. This build also carries the foldable
+work for the iPhone Duo and Android fold devices and the GO and Home polish that
+followed the beta.2 feedback.
+
+- **Foldables and iPhone Duo.** One shared adaptive workspace policy decides the
+  pane layout from the measured window, the reported fold regions, Dynamic Type
+  and the task, with the six Duo postures pinned as fixtures on both platforms
+  (#194). iOS reads the system's reserved regions behind the 27.1 SDK gate and
+  keeps the GO map's route and current stop clear of a hinge without resetting
+  the camera; the shipped two-pane container is driven by the policy, so GO
+  stacks its map over the timeline on the tall inner display and Plan pairs
+  query and results (#198). Android GO gained the same paired and stacked
+  layouts. Plan's Routes pane has a title and a calm empty state on both.
+- **GO, redesigned after the beta.2 feedback.** A leg-card timeline with rails in
+  the real line colours, origin and alight rings, a haloed current stop, Now and
+  Next captions, transfer connectors and a journey summary; a segmented per-leg
+  progress bar with "stop X of Y"; a state label on the hero; the timeline on the
+  phone column instead of empty space; a route map card on wide layouts; honest
+  copy about live guidance. Row semantics and progress come from pure projections
+  with identical fixtures on iOS and Android.
+- **Home shows every direction.** The hero's next train is followed by one row per
+  line and direction from the nearest station with the next two times, instead
+  of a single direction with a "then" line.
+- **Android fixes.** Metro line colours now snap to the nearest palette colour
+  (M2 and M3 were rendering green because the seed carries the operator's own
+  shades); the GO screen survives a rotation or a fold instead of falling back
+  to the tab root.
 
 - **Journeys foundation and adaptive shell.** The Journeys planning core with
   cross-client golden fixtures (#152), and an iPad-adaptive shell with onboarding
