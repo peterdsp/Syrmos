@@ -78,4 +78,24 @@ class GoTimelineTest {
         assertEquals(4, GoTimeline.stopCount(journey))
         assertEquals(0, GoTimeline.stopCount(GuidanceJourney(emptyList())))
     }
+
+    @Test
+    fun legProgressFillsLegsBehindTheRiderAndPartOfTheCurrentOne() {
+        // Leg 0 has 3 hops; at stop 2 of it, two thirds are ridden; leg 1 untouched.
+        val segs = GoTimeline.legProgress(journey, GuidancePosition(0, 2))
+        assertEquals(listOf("M1", "M3"), segs.map { it.lineId })
+        assertEquals(2.0 / 3.0, segs[0].fraction, 1e-9)
+        assertEquals(0.0, segs[1].fraction, 1e-9)
+        val later = GoTimeline.legProgress(journey, GuidancePosition(1, 0))
+        assertEquals(1.0, later[0].fraction, 1e-9)
+        assertEquals(0.0, later[1].fraction, 1e-9)
+    }
+
+    @Test
+    fun stopsRiddenCountsHopsAcrossLegs() {
+        assertEquals(0, GoTimeline.stopsRidden(journey, GuidancePosition(0, 0)))
+        assertEquals(2, GoTimeline.stopsRidden(journey, GuidancePosition(0, 2)))
+        assertEquals(3, GoTimeline.stopsRidden(journey, GuidancePosition(1, 0)))
+        assertEquals(4, GoTimeline.stopsRidden(journey, GuidancePosition(1, 1)))
+    }
 }

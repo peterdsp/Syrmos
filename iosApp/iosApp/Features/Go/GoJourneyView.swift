@@ -93,12 +93,14 @@ struct GoJourneyView: View {
             },
             companion: { goCompanion },
             combined: {
-                VStack(spacing: 20) {
-                    goInstruction
-                    Spacer()
-                    footnote
+                ScrollView {
+                    VStack(spacing: 20) {
+                        goInstruction
+                        timelineContent
+                        footnote
+                    }
+                    .padding()
                 }
-                .padding()
             }
         )
         .background(Color.syrmosBackground.ignoresSafeArea())
@@ -155,9 +157,7 @@ struct GoJourneyView: View {
         header
         heroCard
         if let risk = activeTransferRisk { connectionRiskCard(risk) }
-        ProgressView(value: model.progress)
-            .tint(tint)
-            .padding(.horizontal)
+        legProgressBar
         controls
         if location.isDenied {
             locationDeniedNote
@@ -223,9 +223,18 @@ struct GoJourneyView: View {
     /// Companion pane: the journey's legs and stops with the current position
     /// highlighted, shown beside the instruction on a regular-width display.
     @ViewBuilder private var goTimeline: some View {
-        let rows = GoTimelineProjection.rows(journey: model.journey, position: model.position)
         ScrollView {
-            VStack(alignment: .leading, spacing: SyrmosTokens.Space.md) {
+            timelineContent
+                .padding(SyrmosTokens.Space.lg)
+        }
+    }
+
+    /// The timeline's cards without their scroll view, so the compact single
+    /// column can place them under the instruction and controls instead of
+    /// leaving the lower half of the phone empty.
+    @ViewBuilder private var timelineContent: some View {
+        let rows = GoTimelineProjection.rows(journey: model.journey, position: model.position)
+        VStack(alignment: .leading, spacing: SyrmosTokens.Space.md) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
                         .font(.title3.weight(.semibold))
@@ -242,10 +251,8 @@ struct GoJourneyView: View {
                     legCard(leg: leg, legIdx: legIdx, color: legColor,
                             rows: rows.filter { $0.legIndex == legIdx })
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(SyrmosTokens.Space.lg)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// "Piraeus to Syntagma, 2 lines, 9 stops": the whole journey in one line.
@@ -465,6 +472,10 @@ struct GoJourneyView: View {
 
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text(stateLabel.uppercased())
+                .font(.caption.weight(.semibold))
+                .tracking(0.6)
+                .foregroundStyle(model.shouldAlert ? Color.white.opacity(0.85) : tint)
             Label {
                 Text(headline).font(.title2.bold())
             } icon: {
@@ -576,6 +587,55 @@ struct GoJourneyView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(tint)
             }
+        }
+    }
+
+    /// One segment per leg in the leg's line colour, filled to the rider's
+    /// position, with a "stop X of Y" caption: the journey's shape at a glance,
+    /// instead of an anonymous grey bar.
+    private var legProgressBar: some View {
+        let segments = GoLegProgress.segments(journey: model.journey, position: model.position)
+        let total = GoTimelineProjection.stopCount(journey: model.journey)
+        let done = GoLegProgress.stopsRidden(journey: model.journey, position: model.position)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(Array(segments.enumerated()), id: \.offset) { _, seg in
+                    let color = SyrmosData.line(for: seg.lineId)?.color ?? Color.syrmosPrimary
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(color.opacity(0.18))
+                            Capsule().fill(color).frame(width: max(seg.fraction > 0 ? 6 : 0, geo.size.width * seg.fraction))
+                        }
+                    }
+                    .frame(height: 6)
+                }
+            }
+            HStack {
+                Text(model.isArrived
+                    ? t("Journey complete", "Το ταξίδι ολοκληρώθηκε", "Udhëtimi përfundoi", "Viaggio completato")
+                    : t("Stop \(done) of \(total)", "Στάση \(done) από \(total)", "Ndalesa \(done) nga \(total)", "Fermata \(done) di \(total)"))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                Spacer()
+                Text("\(Int((model.progress * 100).rounded()))%")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The moment the hero describes, as a short label above the headline
+    /// (matches the Android GO hero's state label).
+    private var stateLabel: String {
+        switch model.current {
+        case .board: return t("Ready to board", "Έτοιμος για επιβίβαση", "Gati për të hipur", "Pronto a salire")
+        case .ride: return t("Riding", "Σε κίνηση", "Duke udhëtuar", "In viaggio")
+        case .getOffNext: return t("Alight soon", "Αποβίβαση σύντομα", "Zbrit së shpejti", "Scendi a breve")
+        case .transfer: return t("Transfer", "Μετεπιβίβαση", "Ndërrim", "Cambio")
+        case .arrived: return t("Arrived", "Έφτασες", "Mbërritët", "Arrivato")
         }
     }
 
@@ -732,6 +792,41 @@ enum GoTimelineProjection {
     /// the start of the next.
     static func stopCount(journey: GuidanceJourney) -> Int {
         journey.legs.reduce(0) { $0 + max(0, $1.stops.count - 1) }
+    }
+}
+
+/// One leg of the segmented progress bar: the line and how much of the leg the
+/// rider has covered (0 before it, 1 after it, hops ridden over hops in the leg
+/// while on it).
+struct GoLegSegment: Equatable {
+    let lineId: String
+    let fraction: Double
+}
+
+enum GoLegProgress {
+    static func segments(journey: GuidanceJourney, position: GuidancePosition) -> [GoLegSegment] {
+        journey.legs.enumerated().map { idx, leg in
+            let hops = max(1, leg.stops.count - 1)
+            let fraction: Double
+            if idx < position.legIndex {
+                fraction = 1
+            } else if idx > position.legIndex {
+                fraction = 0
+            } else {
+                fraction = min(1, max(0, Double(position.stopIndex) / Double(hops)))
+            }
+            return GoLegSegment(lineId: leg.lineId, fraction: fraction)
+        }
+    }
+
+    /// Hops ridden so far across the journey (the "X" in "stop X of Y").
+    static func stopsRidden(journey: GuidanceJourney, position: GuidancePosition) -> Int {
+        var done = 0
+        for (idx, leg) in journey.legs.enumerated() {
+            let hops = max(0, leg.stops.count - 1)
+            if idx < position.legIndex { done += hops } else if idx == position.legIndex { done += min(hops, position.stopIndex) }
+        }
+        return done
     }
 }
 

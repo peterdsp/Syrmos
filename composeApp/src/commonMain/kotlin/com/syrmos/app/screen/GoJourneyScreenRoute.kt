@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -165,7 +164,8 @@ class GoJourneyScreenRoute(
                 // destination only on the final leg), named in the GO sub so its
                 // count can never be read as the S05 "intermediate stops" number.
                 val alightStation = journey.legs.getOrNull(position.legIndex)?.stops?.lastOrNull()?.name ?: ""
-                heroCard(guidance, alightStation, ::t)
+                val currentLineId = journey.legs.getOrNull(position.legIndex)?.lineId
+                heroCard(guidance, alightStation, ::t, lineColors[currentLineId] ?: MaterialTheme.colorScheme.primary)
 
                 // Phase R S07: inline connection-risk warning below the instruction.
                 val transferMoment = guidance is JourneyGuidance.Transfer ||
@@ -192,7 +192,7 @@ class GoJourneyScreenRoute(
                     )
                 }
 
-                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                LegProgressBar(journey, position, lineColors, progress, arrived, ::t)
 
                 if (arrived) {
                     Button(onClick = { endJourney() }, modifier = Modifier.fillMaxWidth()) {
@@ -261,10 +261,14 @@ class GoJourneyScreenRoute(
                         }
                     }
                     WorkspaceArrangement.SINGLE -> Column(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp),
-                        content = instruction,
-                    )
+                    ) {
+                        instruction()
+                        // The journey's cards under the controls, so the lower half
+                        // of a phone carries the route instead of empty space.
+                        JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
+                    }
                 }
             }
         }
@@ -284,6 +288,8 @@ class GoJourneyScreenRoute(
         lineColors: Map<String, Color>,
         t: (String, String, String, String) -> String,
         modifier: Modifier = Modifier,
+        scrollable: Boolean = true,
+        inset: androidx.compose.ui.unit.Dp = 16.dp,
     ) {
         val rows = GoTimeline.rows(journey, position)
         val origin = journey.legs.firstOrNull()?.stops?.firstOrNull()?.name ?: ""
@@ -294,7 +300,7 @@ class GoJourneyScreenRoute(
             else t("$lines lines", "$lines γραμμές", "$lines linja", "$lines linee")
         val stopsText = t("$stops stops", "$stops στάσεις", "$stops ndalesa", "$stops fermate")
         Column(
-            modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+            modifier = (if (scrollable) modifier.verticalScroll(rememberScrollState()) else modifier).padding(inset),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -455,25 +461,69 @@ class GoJourneyScreenRoute(
         }
     }
 
+    /**
+     * One segment per leg in the leg's line colour, filled to the rider's
+     * position, with a "stop X of Y" caption: the journey's shape at a glance.
+     */
     @Composable
-    private fun heroCard(g: JourneyGuidance, alightStation: String, t: (String, String, String, String) -> String) {
-        // The get-off cue is the one moment that matters most, so it is tinted.
+    private fun LegProgressBar(
+        journey: GuidanceJourney,
+        position: GuidancePosition,
+        lineColors: Map<String, Color>,
+        progress: Float,
+        arrived: Boolean,
+        t: (String, String, String, String) -> String,
+    ) {
+        val segments = GoTimeline.legProgress(journey, position)
+        val total = GoTimeline.stopCount(journey)
+        val done = GoTimeline.stopsRidden(journey, position)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                segments.forEach { seg ->
+                    val color = lineColors[seg.lineId] ?: MaterialTheme.colorScheme.primary
+                    Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(50)).background(color.copy(alpha = 0.18f))) {
+                        if (seg.fraction > 0.0) {
+                            Box(
+                                Modifier.fillMaxHeight()
+                                    .fillMaxWidth(seg.fraction.toFloat().coerceIn(0.02f, 1f))
+                                    .clip(RoundedCornerShape(50)).background(color),
+                            )
+                        }
+                    }
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    if (arrived) t("Journey complete", "Το ταξίδι ολοκληρώθηκε", "Udhëtimi përfundoi", "Viaggio completato")
+                    else t("Stop $done of $total", "Στάση $done από $total", "Ndalesa $done nga $total", "Fermata $done di $total"),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
+    @Composable
+    private fun heroCard(g: JourneyGuidance, alightStation: String, t: (String, String, String, String) -> String, accent: Color) {
+        // The get-off cue is the one moment that matters most, so it is filled with
+        // the line colour; every other moment sits on a light wash of that colour,
+        // matching the iOS hero.
         val emphasize = g is JourneyGuidance.GetOffNext
         val (stateLabel, headline, detail) = describe(g, alightStation, t)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    if (emphasize) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    if (emphasize) accent else accent.copy(alpha = 0.12f),
                     RoundedCornerShape(24.dp),
                 )
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            val onHero = if (emphasize) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-            val onHeroDim = if (emphasize) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
-            Text(stateLabel, style = MaterialTheme.typography.labelMedium, color = onHeroDim)
-            Text(headline, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = onHero)
+            val onHero = if (emphasize) Color.White else MaterialTheme.colorScheme.onSurface
+            val onHeroDim = if (emphasize) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
+            Text(stateLabel.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = if (emphasize) onHeroDim else accent)
+            Text(headline, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = if (emphasize) onHero else accent)
             if (detail.isNotEmpty()) {
                 Text(detail, style = MaterialTheme.typography.bodyLarge, color = onHeroDim)
             }

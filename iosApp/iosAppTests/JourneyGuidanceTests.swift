@@ -229,4 +229,21 @@ final class JourneyGuidanceTests: XCTestCase {
         XCTAssertEqual(GoTimelineProjection.stopCount(journey: timelineJourney), 4)
         XCTAssertEqual(GoTimelineProjection.stopCount(journey: GuidanceJourney(legs: [])), 0)
     }
+
+    func test_legProgress_fillsLegsBehindTheRiderAndPartOfTheCurrentOne() {
+        let segs = GoLegProgress.segments(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 2))
+        XCTAssertEqual(segs.map(\.lineId), ["M1", "M3"])
+        XCTAssertEqual(segs[0].fraction, 2.0 / 3.0, accuracy: 1e-9)
+        XCTAssertEqual(segs[1].fraction, 0, accuracy: 1e-9)
+        let later = GoLegProgress.segments(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 0))
+        XCTAssertEqual(later[0].fraction, 1, accuracy: 1e-9)
+        XCTAssertEqual(later[1].fraction, 0, accuracy: 1e-9)
+    }
+
+    func test_legProgress_stopsRiddenCountsHopsAcrossLegs() {
+        XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 0)), 0)
+        XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 2)), 2)
+        XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 0)), 3)
+        XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 1)), 4)
+    }
 }

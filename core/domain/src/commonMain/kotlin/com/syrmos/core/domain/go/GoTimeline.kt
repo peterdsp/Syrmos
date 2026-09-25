@@ -25,7 +25,35 @@ data class GoTimelineRow(
  * stop is the origin or alight of its leg, which is behind the rider, which is
  * current, which is next. Same numbers on iOS (`GoTimelineProjection`).
  */
+/**
+ * One leg of the segmented progress bar: the line and how much of the leg the
+ * rider has covered (0 before it, 1 after it, hops ridden over hops while on it).
+ */
+data class GoLegSegment(val lineId: String, val fraction: Double)
+
 object GoTimeline {
+    fun legProgress(journey: GuidanceJourney, position: GuidancePosition): List<GoLegSegment> =
+        journey.legs.mapIndexed { idx, leg ->
+            val hops = maxOf(1, leg.stops.size - 1)
+            val fraction = when {
+                idx < position.legIndex -> 1.0
+                idx > position.legIndex -> 0.0
+                else -> (position.stopIndex.toDouble() / hops).coerceIn(0.0, 1.0)
+            }
+            GoLegSegment(leg.lineId, fraction)
+        }
+
+    /** Hops ridden so far across the journey (the "X" in "stop X of Y"). */
+    fun stopsRidden(journey: GuidanceJourney, position: GuidancePosition): Int {
+        var done = 0
+        journey.legs.forEachIndexed { idx, leg ->
+            val hops = maxOf(0, leg.stops.size - 1)
+            if (idx < position.legIndex) done += hops
+            else if (idx == position.legIndex) done += minOf(hops, position.stopIndex)
+        }
+        return done
+    }
+
     fun rows(journey: GuidanceJourney, position: GuidancePosition): List<GoTimelineRow> {
         val out = ArrayList<GoTimelineRow>()
         journey.legs.forEachIndexed { legIdx, leg ->
