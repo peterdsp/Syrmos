@@ -11,6 +11,7 @@ import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
+import com.syrmos.core.domain.usecase.HomeDirectionBoard
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.location.NearestStationResult
 import com.syrmos.core.model.location.UserLocation
@@ -39,6 +40,8 @@ data class HomeUiState(
     val upcomingDepartures: List<UpcomingDeparture> = emptyList(),
     /** The single soonest departure from the nearest station: the answer-first hero. */
     val nextDeparture: UpcomingDeparture? = null,
+    /** The next train in every direction from the nearest station (Home direction board). */
+    val directionBoard: List<HomeDirectionBoard.Row> = emptyList(),
     /** Resolved line for [nextDeparture], for its colour and destination terminal. */
     val nextDepartureLine: Line? = null,
     /** Tonight's final train on the nearest station's primary line. */
@@ -257,6 +260,7 @@ class HomeViewModel(
         }
         val sorted = allDepartures.sortedBy { it.minutesAway }.take(6)
         val next = sorted.firstOrNull()
+        val board = HomeDirectionBoard.rows(allDepartures).map { it.copy(line = resolveLine(it.lineId)) }
         val nextLine = next?.let { resolveLine(it.lineId) }
 
         // Last-train teaser is anchored to whichever line the next departure
@@ -280,6 +284,7 @@ class HomeViewModel(
         _uiState.update {
             it.copy(
                 upcomingDepartures = sorted,
+                directionBoard = board,
                 nextDeparture = next,
                 nextDepartureLine = nextLine,
                 lastTrain = lastTrain,

@@ -86,6 +86,8 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosTypographyTokens
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
+import androidx.compose.material3.HorizontalDivider
+import com.syrmos.core.domain.usecase.HomeDirectionBoard
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.Direction
@@ -286,6 +288,7 @@ fun HomeScreen(
                     next = uiState.nextDeparture,
                     line = uiState.nextDepartureLine,
                     upcoming = uiState.upcomingDepartures,
+                    board = uiState.directionBoard,
                     lastTrain = uiState.lastTrain,
                     lastTrainLine = uiState.lastTrainLine,
                     weather = uiState.weather,
@@ -666,6 +669,7 @@ private fun AnswerHero(
     next: UpcomingDeparture?,
     line: Line?,
     upcoming: List<UpcomingDeparture> = emptyList(),
+    board: List<HomeDirectionBoard.Row> = emptyList(),
     lastTrain: GetLastTrainUseCase.LastTrain?,
     lastTrainLine: Line?,
     weather: WeatherSnapshot?,
@@ -763,15 +767,22 @@ private fun AnswerHero(
                     color = countdownColor,
                     modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
                 )
-                val thenTimes = upcoming.drop(1).take(2)
-                    .filter { it.minutesAway > next.minutesAway }
-                    .map { formatCountdown(it.minutesAway, lang) }
-                if (thenTimes.isNotEmpty()) {
-                    Text(
-                        text = "${L.THEN.text(lang)} ${thenTimes.joinToString(", ")}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                // Every direction, not just the soonest: one row per line and
+                // destination with the next two times. A single-direction station
+                // keeps the compact "then 13, 23 min" line instead.
+                if (board.size >= 2) {
+                    DirectionBoard(rows = board, featured = next, lang = lang)
+                } else {
+                    val thenTimes = upcoming.drop(1).take(2)
+                        .filter { it.minutesAway > next.minutesAway }
+                        .map { formatCountdown(it.minutesAway, lang) }
+                    if (thenTimes.isNotEmpty()) {
+                        Text(
+                            text = "${L.THEN.text(lang)} ${thenTimes.joinToString(", ")}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 sourceConfidenceLabel(next.sourceConfidence, lang)?.let { chipLabel ->
                     SourceConfidenceChip(confidence = next.sourceConfidence, label = chipLabel)
@@ -825,6 +836,57 @@ private fun AnswerHero(
                     color = SyrmosColorTokens.brand,
                     onClick = onPicker,
                 )
+            }
+        }
+    }
+}
+
+/**
+ * The Home direction board: the nearest station's next train in every direction.
+ * Each row is the line badge, the destination, and the next two countdowns; the
+ * featured (soonest) direction leads and is emphasised.
+ */
+@Composable
+private fun DirectionBoard(rows: List<HomeDirectionBoard.Row>, featured: UpcomingDeparture, lang: AppLanguage) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .padding(horizontal = 12.dp),
+    ) {
+        rows.forEachIndexed { idx, row ->
+            val accent = row.line?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
+            val isFeatured = row.lineId == featured.lineId && row.direction == featured.direction
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                LineBadge(line = row.line, fallbackId = row.lineId, accent = accent)
+                Text(
+                    text = "${L.TO.text(lang)} ${destinationName(row.line, row.direction, lang)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isFeatured) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                row.times.forEachIndexed { tIdx, minutes ->
+                    Text(
+                        text = formatCountdown(minutes, lang),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (tIdx == 0) FontWeight.Bold else FontWeight.Normal,
+                        color = when {
+                            tIdx > 0 -> MaterialTheme.colorScheme.onSurfaceVariant
+                            minutes <= 1 -> SyrmosColorTokens.arrivalImminent
+                            else -> accent
+                        },
+                    )
+                }
+            }
+            if (idx < rows.lastIndex) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
             }
         }
     }

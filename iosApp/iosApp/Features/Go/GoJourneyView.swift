@@ -223,31 +223,24 @@ struct GoJourneyView: View {
     /// Companion pane: the journey's legs and stops with the current position
     /// highlighted, shown beside the instruction on a regular-width display.
     @ViewBuilder private var goTimeline: some View {
+        let rows = GoTimelineProjection.rows(journey: model.journey, position: model.position)
         ScrollView {
-            VStack(alignment: .leading, spacing: SyrmosTokens.Space.lg) {
-                Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
-                    .font(.title3.weight(.semibold))
+            VStack(alignment: .leading, spacing: SyrmosTokens.Space.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
+                        .font(.title3.weight(.semibold))
+                    Text(journeySummary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, SyrmosTokens.Space.xs)
                 ForEach(Array(model.journey.legs.enumerated()), id: \.offset) { legIdx, leg in
                     let legColor = SyrmosData.line(for: leg.lineId)?.color ?? Color.syrmosPrimary
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: SyrmosTokens.Space.sm) {
-                            LinePill(lineId: leg.lineId, size: .regular)
-                            Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
-                                .font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        .padding(.bottom, SyrmosTokens.Space.sm)
-                        ForEach(Array(leg.stops.enumerated()), id: \.offset) { stopIdx, stop in
-                            let isCurrent = legIdx == model.position.legIndex && stopIdx == model.position.stopIndex
-                            let isPast = legIdx < model.position.legIndex
-                                || (legIdx == model.position.legIndex && stopIdx < model.position.stopIndex)
-                            let isAlight = stopIdx == leg.stops.count - 1
-                            timelineRow(
-                                stop: stop, color: legColor, isCurrent: isCurrent, isPast: isPast,
-                                isFirst: stopIdx == 0, isLast: isAlight,
-                                isDestination: isAlight && legIdx == model.journey.legs.count - 1
-                            )
-                        }
+                    if legIdx > 0 {
+                        transferConnector(to: leg, color: legColor)
                     }
+                    legCard(leg: leg, legIdx: legIdx, color: legColor,
+                            rows: rows.filter { $0.legIndex == legIdx })
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -255,46 +248,139 @@ struct GoJourneyView: View {
         }
     }
 
-    /// One stop on the timeline rail: a continuous line in the leg's colour with a
-    /// dot per stop, the current stop emphasised, past stops dimmed, the alight
-    /// point (an interchange, or the destination) labelled.
-    private func timelineRow(
-        stop: GuidanceStop, color: Color, isCurrent: Bool, isPast: Bool,
-        isFirst: Bool, isLast: Bool, isDestination: Bool
-    ) -> some View {
-        let railWidth: CGFloat = 3
-        let dotSize: CGFloat = isCurrent ? 14 : 9
+    /// "Piraeus to Syntagma, 2 lines, 9 stops": the whole journey in one line.
+    private var journeySummary: String {
+        let lines = model.journey.legs.count
+        let stops = GoTimelineProjection.stopCount(journey: model.journey)
+        let linesText = lines == 1
+            ? t("1 line", "1 γραμμή", "1 linjë", "1 linea")
+            : t("\(lines) lines", "\(lines) γραμμές", "\(lines) linja", "\(lines) linee")
+        let stopsText = t("\(stops) stops", "\(stops) στάσεις", "\(stops) ndalesa", "\(stops) fermate")
+        return "\(originName) → \(destinationName) · \(linesText) · \(stopsText)"
+    }
+
+    /// One leg as a card: line pill, direction and stop count in the header, then
+    /// the stops on a rail in the leg's colour.
+    private func legCard(leg: GuidanceLeg, legIdx: Int, color: Color, rows: [GoTimelineRow]) -> some View {
+        let count = max(0, leg.stops.count - 1)
+        let countText = count == 1
+            ? t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
+            : t("\(count) stops", "\(count) στάσεις", "\(count) ndalesa", "\(count) fermate")
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: SyrmosTokens.Space.sm) {
+                LinePill(lineId: leg.lineId, size: .large)
+                Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Spacer(minLength: SyrmosTokens.Space.sm)
+                Text(countText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, SyrmosTokens.Space.lg)
+            .padding(.vertical, SyrmosTokens.Space.md)
+            Divider().overlay(Color.syrmosSurfaceMuted)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(rows, id: \.stopIndex) { row in
+                    timelineRow(row, color: color)
+                }
+            }
+            .padding(.horizontal, SyrmosTokens.Space.lg)
+            .padding(.vertical, SyrmosTokens.Space.sm)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                .fill(Color.syrmosSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
+        )
+    }
+
+    /// The walk between two legs: a dotted connector and the change instruction.
+    private func transferConnector(to leg: GuidanceLeg, color: Color) -> some View {
+        HStack(spacing: SyrmosTokens.Space.md) {
+            VStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Circle().fill(Color.secondary.opacity(0.35)).frame(width: 4, height: 4)
+                }
+            }
+            .frame(width: 24)
+            Image(systemName: "figure.walk")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(t("Change to", "Αλλαγή σε", "Ndërro në", "Cambia in") + " " + SyrmosLineTokens.label(for: leg.lineId))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, SyrmosTokens.Space.lg)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// One stop on the rail: origin and alight stops are rings, intermediate stops
+    /// small dots, the current stop a filled marker with a halo; the rail dims
+    /// behind the rider. A caption names the moment: Now, Next, Change here,
+    /// Destination.
+    private func timelineRow(_ row: GoTimelineRow, color: Color) -> some View {
+        let isPast = row.state == .past
+        let isCurrent = row.state == .current
+        let terminus = row.role != .intermediate
+        let railWidth: CGFloat = 4
+        let rowHeight: CGFloat = terminus || isCurrent ? 44 : 30
+        let caption: String? = {
+            if row.isDestination { return t("Destination", "Προορισμός", "Destinacioni", "Destinazione") }
+            if row.role == .alight { return t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui") }
+            switch row.state {
+            case .current: return t("Now", "Τώρα", "Tani", "Ora")
+            case .next: return t("Next", "Επόμενη", "Tjetra", "Prossima")
+            default: return nil
+            }
+        }()
         return HStack(alignment: .center, spacing: SyrmosTokens.Space.md) {
             ZStack {
                 VStack(spacing: 0) {
                     Rectangle()
-                        .fill(isFirst ? Color.clear : color.opacity(isPast ? 0.35 : 0.9))
+                        .fill(row.role == .origin ? Color.clear : color.opacity(isPast || isCurrent ? 0.3 : 1))
                         .frame(width: railWidth)
                     Rectangle()
-                        .fill(isLast ? Color.clear : color.opacity((isPast || isCurrent) && !isCurrent ? 0.35 : 0.9))
+                        .fill(row.role == .alight ? Color.clear : color.opacity(isPast ? 0.3 : 1))
                         .frame(width: railWidth)
                 }
-                Circle()
-                    .fill(isCurrent ? color : Color.syrmosSurface)
-                    .overlay(Circle().stroke(color.opacity(isPast ? 0.4 : 1), lineWidth: 2))
-                    .frame(width: dotSize, height: dotSize)
-            }
-            .frame(width: 16)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(stop.name)
-                    .font(isCurrent ? .body.weight(.semibold) : .subheadline)
-                    .foregroundStyle(isPast ? .secondary : .primary)
-                if isLast {
-                    Text(isDestination
-                        ? t("Destination", "Προορισμός", "Destinacioni", "Destinazione")
-                        : t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui"))
-                        .font(.caption)
-                        .foregroundStyle(isDestination ? color : .secondary)
+                if isCurrent {
+                    Circle().fill(color.opacity(0.18)).frame(width: 28, height: 28)
+                    Circle().fill(color).frame(width: 16, height: 16)
+                    Circle().fill(Color.white).frame(width: 6, height: 6)
+                } else if terminus {
+                    Circle()
+                        .fill(Color.syrmosSurface)
+                        .overlay(Circle().stroke(color.opacity(isPast ? 0.4 : 1), lineWidth: 3))
+                        .frame(width: 14, height: 14)
+                } else {
+                    Circle()
+                        .fill(color.opacity(isPast ? 0.35 : 1))
+                        .frame(width: 8, height: 8)
                 }
             }
-            Spacer(minLength: 0)
+            .frame(width: 24)
+            Text(row.name)
+                .font(isCurrent ? .body.weight(.semibold) : terminus ? .subheadline.weight(.semibold) : .subheadline)
+                .foregroundStyle(isPast ? .secondary : .primary)
+                .lineLimit(1)
+            Spacer(minLength: SyrmosTokens.Space.sm)
+            if let caption {
+                Text(caption)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isPast && !row.isDestination ? Color.secondary : color)
+                    .padding(.horizontal, SyrmosTokens.Space.sm)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule().fill((isPast && !row.isDestination ? Color.secondary : color).opacity(0.12))
+                    )
+            }
         }
-        .frame(minHeight: isLast ? 44 : 32)
+        .frame(height: rowHeight)
         .accessibilityElement(children: .combine)
     }
 
@@ -595,6 +681,57 @@ struct GoJourneyView: View {
         case .italian: return it
         default: return en
         }
+    }
+}
+
+/// The role a stop plays on its leg and the rider's relation to it.
+enum GoTimelineRole: Equatable { case origin, intermediate, alight }
+enum GoTimelineState: Equatable { case past, current, next, future }
+
+/// One timeline row, pure data so the GO companion and its tests share the rule.
+struct GoTimelineRow: Equatable {
+    let legIndex: Int
+    let stopIndex: Int
+    let name: String
+    let role: GoTimelineRole
+    let state: GoTimelineState
+    /// The journey's final stop (the alight of the last leg).
+    let isDestination: Bool
+}
+
+/// Pure projection of a guidance journey and position into timeline rows: which
+/// stop is the origin or alight of its leg, which is behind the rider, which is
+/// current, which is next. Mirrors the Kotlin `GoTimeline` in core/domain.
+enum GoTimelineProjection {
+    static func rows(journey: GuidanceJourney, position: GuidancePosition) -> [GoTimelineRow] {
+        var out: [GoTimelineRow] = []
+        for (legIdx, leg) in journey.legs.enumerated() {
+            for (stopIdx, stop) in leg.stops.enumerated() {
+                let role: GoTimelineRole = stopIdx == 0 ? .origin
+                    : stopIdx == leg.stops.count - 1 ? .alight : .intermediate
+                let state: GoTimelineState
+                if legIdx < position.legIndex || (legIdx == position.legIndex && stopIdx < position.stopIndex) {
+                    state = .past
+                } else if legIdx == position.legIndex && stopIdx == position.stopIndex {
+                    state = .current
+                } else if legIdx == position.legIndex && stopIdx == position.stopIndex + 1 {
+                    state = .next
+                } else {
+                    state = .future
+                }
+                out.append(GoTimelineRow(
+                    legIndex: legIdx, stopIndex: stopIdx, name: stop.name, role: role, state: state,
+                    isDestination: role == .alight && legIdx == journey.legs.count - 1))
+            }
+        }
+        return out
+    }
+
+    /// Stops ridden across the journey: each leg's stops minus its boarding stop,
+    /// so an interchange counted at the end of one leg is not counted again at
+    /// the start of the next.
+    static func stopCount(journey: GuidanceJourney) -> Int {
+        journey.legs.reduce(0) { $0 + max(0, $1.stops.count - 1) }
     }
 }
 

@@ -238,13 +238,22 @@ struct HomeView: View {
                         .contentTransition(.numericText())
                         .modifier(HeroImminentPulse(active: seconds <= 60))
 
-                    let later = nearestUpcoming().dropFirst().prefix(2)
-                        .filter { $0.minutesAway > next.minutesAway }
-                        .map { $0.minutesAwayDisplay(language: loc.language) }
-                    if !later.isEmpty {
-                        Text("\(homeText("then", "μετά", "pastaj", "poi")) \(later.joined(separator: ", "))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    // Every direction, not just the soonest: one row per line and
+                    // destination with the next two times. A single-direction
+                    // station keeps the compact "then 13, 23 min" line instead.
+                    let upcoming = nearestUpcoming()
+                    let board = DepartureGrouping.directionBoard(upcoming)
+                    if board.count >= 2 {
+                        directionBoard(board, featured: next)
+                    } else {
+                        let later = upcoming.dropFirst().prefix(2)
+                            .filter { $0.minutesAway > next.minutesAway }
+                            .map { $0.minutesAwayDisplay(language: loc.language) }
+                        if !later.isEmpty {
+                            Text("\(homeText("then", "μετά", "pastaj", "poi")) \(later.joined(separator: ", "))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
@@ -835,6 +844,51 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(loc[.lastTrain]) \(last.lineId), \(loc[.leaveBy]) \(last.time)")
+    }
+
+    /// The Home direction board: the nearest station's next train in every
+    /// direction. Each row is a line pill, the destination, and the next two
+    /// countdowns; the featured (soonest) direction leads and is emphasised.
+    private func directionBoard(_ rows: [GroupedDeparture], featured: Departure) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { idx, row in
+                let accent = SyrmosData.lineColor(for: row.lineId)
+                let isFeatured = row.lineId == featured.lineId
+                    && DepartureGrouping.destinationKey(row.destination) == DepartureGrouping.destinationKey(featured.direction)
+                HStack(spacing: 10) {
+                    LinePill(lineId: row.lineId, size: .small, disruptionSeverity: stasyService.lineDisruptions[row.lineId])
+                    Text("\(loc[.to]) \(DirectionL10n.localized(lineId: row.lineId, direction: row.destination, language: loc.language))")
+                        .font(.subheadline.weight(isFeatured ? .semibold : .regular))
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    HStack(spacing: 6) {
+                        ForEach(Array(row.times.enumerated()), id: \.offset) { tIdx, time in
+                            Text(boardCountdown(time.minutesAway))
+                                .font(tIdx == 0 ? .subheadline.weight(.bold) : .subheadline)
+                                .monospacedDigit()
+                                .foregroundStyle(tIdx == 0 ? (time.minutesAway <= 1 ? SyrmosTokens.arrivalImminent : accent) : Color.secondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 9)
+                .accessibilityElement(children: .combine)
+                if idx < rows.count - 1 {
+                    Divider().overlay(Color.syrmosSurfaceMuted)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.md, style: .continuous)
+                .fill(Color.syrmosSurfaceMuted.opacity(0.6))
+        )
+    }
+
+    /// Short countdown for a board cell: Now, 4 min, 1h 5min (same words as the
+    /// departure rows, from the shared helper).
+    private func boardCountdown(_ minutes: Int) -> String {
+        Departure(time: "", lineId: "", direction: "", minutesAway: minutes, serviceType: "", trainNo: nil)
+            .minutesAwayDisplay(language: loc.language)
     }
 
     /// Soonest departure across the nearest station's lines. Each line resolves

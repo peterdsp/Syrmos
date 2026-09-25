@@ -264,8 +264,33 @@ the iPhone Duo and Android fold devices only; GO stays.
   `fold-go-tall.png` in the session scratchpad. Android pairs by content width,
   so an upright fold (673 wide with the nav rail) keeps a single column unless
   the device reports its fold region.
-- **Evidence tier**: iOS simulator renders plus the Android emulator running
-  surface; no fold hardware, no Duo hardware.
+- **Timeline, second pass (owner: "still looks basic")**: the timeline is now
+  leg cards. Each card's header carries the line pill (official colour), the
+  direction and the leg's stop count; the stops sit on a 4 pt rail with origin
+  and alight rings, small intermediate dots, a haloed current marker, and a
+  caption pill naming the moment (Now, Next, Change here, Destination); the rail
+  dims behind the rider; a dotted walking connector with "Change to M3" sits
+  between legs; a one-line summary ("Piraeus to Elliniko, 3 lines, 18 stops")
+  sits under the title. The row semantics live in a pure projection on both
+  platforms: `GoTimelineProjection` (iOS, 6 tests in JourneyGuidanceTests) and
+  `core/domain/.../go/GoTimeline.kt` (Kotlin, 7 tests), same journey and same
+  expected roles, states and counts on both. Android draws the same cards from
+  the shared projection. Renders: `go-duo-inner-landscape.png`,
+  `go-duo-inner-portrait.png`; emulator `fold-go-wide2.png`.
+- **Home direction board (owner request, both platforms)**: the Home hero used
+  to show only the soonest departure and a "then 13, 23 min" line that mixed
+  directions. It now shows, under the hero, one row per line and direction from
+  the nearest station with the next two times (soonest direction first, capped
+  to four rows); a single-direction station keeps the compact "then" line.
+  iOS: `DepartureGrouping.directionBoard` (2 tests) reuses the shared grouping;
+  Android: `HomeDirectionBoard.rows` in core/domain (2 tests) computed in
+  `HomeViewModel` from all lines and both directions before the hero's own
+  truncation, drawn by `DirectionBoard` in `HomeScreen.kt`. Verified on the iOS
+  simulator at Omonia (M2 to Anthoupoli 3 and 18, M2 to Elliniko 8, M1 to
+  Piraeus 10 and 25, M1 to Kifissia 12); on Android the board compiles and its
+  rows are unit-tested, and the emulator run is recorded below.
+- **Evidence tier**: iOS simulator renders and a live simulator run plus the
+  Android emulator running surface; no fold hardware, no Duo hardware.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
@@ -544,6 +569,8 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Paired panes read as their own surfaces: titles, empty states, no blank half (section 5) | Pass (render + emulator) | iOS `plan-duo-inner-*.png`; Android `fold-plan.png`. |
 | GO companion is a map card plus a line-coloured timeline rail (sections 5, 7) | Pass (render) | iOS `go-duo-inner-landscape.png`, `go-duo-inner-portrait.png`. |
 | Android GO pairs and stacks on a fold-sized window (parent prompt section 6, GO) | Pass (emulator) | `fold-go-wide.png` side by side, `fold-go-tall.png` stacked. |
+| Timeline rows (roles, states, counts) agree on iOS and Android | Pass (synthetic) | `GoTimelineTest.kt` 7/7 and the six `test_timeline_*` twins in `JourneyGuidanceTests.swift`. |
+| Home shows the next train in every direction of the nearest station | Pass (iOS simulator), Partial (Android: unit-tested, emulator location pending) | `DepartureGroupingTests` board cases, `HomeDirectionBoardTest.kt`; iOS run at Omonia. |
 
 ## Remaining phases (prompt section 11)
 

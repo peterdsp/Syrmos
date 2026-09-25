@@ -31,6 +31,16 @@ struct GroupedDeparture: Identifiable {
 }
 
 enum DepartureGrouping {
+    /// The Home direction board: one row per (line, destination) with the next
+    /// two times, soonest direction first, capped to `maxRows`. Fed with the
+    /// nearest station's upcoming departures across all its lines, so the rider
+    /// sees the next train in EVERY direction, not just the soonest one.
+    static func directionBoard(_ departures: [Departure], maxRows: Int = 4) -> [GroupedDeparture] {
+        let sorted = departures.sorted { $0.minutesAway < $1.minutesAway }
+        return Array(group(sorted, maxTimes: 2).prefix(max(0, maxRows)))
+    }
+
+
     /// Fold a destination for grouping: trim, lowercase, collapse whitespace so
     /// "Airport" and "airport " land in the same bucket. Display keeps the
     /// original spelling.

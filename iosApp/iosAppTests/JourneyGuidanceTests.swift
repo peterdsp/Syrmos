@@ -183,4 +183,50 @@ final class JourneyGuidanceTests: XCTestCase {
         XCTAssertNil(GoRouteProjection.currentCoordinate(
             journey: journey, position: GuidancePosition(legIndex: 0, stopIndex: 0)) { _ in nil })
     }
+
+    // MARK: Timeline projection (twin of core/domain GoTimelineTest.kt)
+
+    private var timelineJourney: GuidanceJourney {
+        GuidanceJourney(legs: [
+            GuidanceLeg(lineId: "M1", towards: "Monastiraki", stops: [
+                GuidanceStop(id: "PIR", name: "Piraeus"), GuidanceStop(id: "FAL", name: "Faliro"),
+                GuidanceStop(id: "MOS", name: "Moschato"), GuidanceStop(id: "MON", name: "Monastiraki"),
+            ]),
+            GuidanceLeg(lineId: "M3", towards: "Syntagma", stops: [
+                GuidanceStop(id: "MON", name: "Monastiraki"), GuidanceStop(id: "SYN", name: "Syntagma"),
+            ]),
+        ])
+    }
+
+    func test_timeline_rolesFollowTheLegShape() {
+        let rows = GoTimelineProjection.rows(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 0))
+        XCTAssertEqual(rows.map(\.role), [.origin, .intermediate, .intermediate, .alight, .origin, .alight])
+        XCTAssertEqual(rows.map(\.isDestination), [false, false, false, false, false, true])
+    }
+
+    func test_timeline_statesAtTheStartOfTheJourney() {
+        let rows = GoTimelineProjection.rows(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 0))
+        XCTAssertEqual(rows.map(\.state), [.current, .next, .future, .future, .future, .future])
+    }
+
+    func test_timeline_statesMidLegDimWhatIsBehindTheRider() {
+        let rows = GoTimelineProjection.rows(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 2))
+        XCTAssertEqual(rows.map(\.state), [.past, .past, .current, .next, .future, .future])
+    }
+
+    func test_timeline_nextNeverCrossesIntoTheFollowingLeg() {
+        let rows = GoTimelineProjection.rows(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 3))
+        XCTAssertEqual(rows[3].state, .current)
+        XCTAssertEqual(rows[4].state, .future)
+    }
+
+    func test_timeline_secondLegMarksTheWholeFirstLegPast() {
+        let rows = GoTimelineProjection.rows(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 0))
+        XCTAssertEqual(rows.map(\.state), [.past, .past, .past, .past, .current, .next])
+    }
+
+    func test_timeline_stopCountDoesNotDoubleCountTheInterchange() {
+        XCTAssertEqual(GoTimelineProjection.stopCount(journey: timelineJourney), 4)
+        XCTAssertEqual(GoTimelineProjection.stopCount(journey: GuidanceJourney(legs: [])), 0)
+    }
 }

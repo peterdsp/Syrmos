@@ -40,6 +40,12 @@ import com.syrmos.core.domain.go.JourneyGuidance
 import com.syrmos.core.domain.journey.ActiveJourneyStore
 import androidx.compose.runtime.collectAsState
 import kotlinx.datetime.Clock
+import com.syrmos.core.domain.go.GuidanceLeg
+import com.syrmos.core.domain.go.GoTimelineState
+import com.syrmos.core.domain.go.GoTimelineRow
+import com.syrmos.core.domain.go.GoTimelineRole
+import com.syrmos.core.domain.go.GoTimeline
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ColumnScope
@@ -265,10 +271,11 @@ class GoJourneyScreenRoute(
     }
 
     /**
-     * The journey as a timeline: one rail per leg in the line's colour, a dot per
-     * stop, the current stop emphasised, past stops dimmed, the alight point
-     * labelled (an interchange, or the destination). The companion pane on a
-     * paired layout, mirroring the iOS GO companion.
+     * The journey as a timeline of leg cards: line pill, direction and stop count
+     * in each card's header, then the stops on a rail in the leg's colour with
+     * origin and alight rings, a haloed current marker, Now / Next / Change here /
+     * Destination captions, and a walking connector between legs. Rows come from
+     * the shared [GoTimeline] projection so iOS and Android agree on every state.
      */
     @Composable
     private fun JourneyTimeline(
@@ -278,71 +285,135 @@ class GoJourneyScreenRoute(
         t: (String, String, String, String) -> String,
         modifier: Modifier = Modifier,
     ) {
+        val rows = GoTimeline.rows(journey, position)
+        val origin = journey.legs.firstOrNull()?.stops?.firstOrNull()?.name ?: ""
+        val destination = journey.legs.lastOrNull()?.stops?.lastOrNull()?.name ?: ""
+        val lines = journey.legs.size
+        val stops = GoTimeline.stopCount(journey)
+        val linesText = if (lines == 1) t("1 line", "1 γραμμή", "1 linjë", "1 linea")
+            else t("$lines lines", "$lines γραμμές", "$lines linja", "$lines linee")
+        val stopsText = t("$stops stops", "$stops στάσεις", "$stops ndalesa", "$stops fermate")
         Column(
             modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"),
-                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "$origin → $destination · $linesText · $stopsText",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             journey.legs.forEachIndexed { legIdx, leg ->
                 val color = lineColors[leg.lineId] ?: MaterialTheme.colorScheme.primary
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(
-                            modifier = Modifier.background(color, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
-                        ) {
-                            Text(leg.lineId, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color.White)
+                if (legIdx > 0) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(Modifier.width(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            repeat(3) { Box(Modifier.size(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))) }
                         }
                         Text(
-                            t("toward", "προς", "drejt", "verso") + " " + leg.towards,
-                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            "⇄ " + t("Change to", "Αλλαγή σε", "Ndërro në", "Cambia in") + " " + leg.lineId,
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    leg.stops.forEachIndexed { stopIdx, stop ->
-                        val isCurrent = legIdx == position.legIndex && stopIdx == position.stopIndex
-                        val isPast = legIdx < position.legIndex ||
-                            (legIdx == position.legIndex && stopIdx < position.stopIndex)
-                        val isLast = stopIdx == leg.stops.lastIndex
-                        val isDestination = isLast && legIdx == journey.legs.lastIndex
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Box(Modifier.width(16.dp).height(if (isLast) 44.dp else 32.dp), contentAlignment = Alignment.Center) {
-                                Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(Modifier.weight(1f).width(3.dp).background(if (stopIdx == 0) Color.Transparent else color.copy(alpha = if (isPast) 0.35f else 0.9f)))
-                                    Box(Modifier.weight(1f).width(3.dp).background(if (isLast) Color.Transparent else color.copy(alpha = if (isPast) 0.35f else 0.9f)))
-                                }
-                                Box(
-                                    Modifier.size(if (isCurrent) 14.dp else 9.dp).clip(CircleShape)
-                                        .background(if (isCurrent) color else MaterialTheme.colorScheme.surface)
-                                        .padding(2.dp),
-                                ) {
-                                    if (!isCurrent) {
-                                        Box(Modifier.fillMaxSize().clip(CircleShape).background(color.copy(alpha = if (isPast) 0.4f else 1f)).padding(2.dp)) {
-                                            Box(Modifier.fillMaxSize().clip(CircleShape).background(MaterialTheme.colorScheme.surface))
-                                        }
-                                    }
-                                }
-                            }
-                            Column {
-                                Text(
-                                    stop.name,
-                                    style = if (isCurrent) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                                )
-                                if (isLast) {
-                                    Text(
-                                        if (isDestination) t("Destination", "Προορισμός", "Destinacioni", "Destinazione")
-                                        else t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isDestination) color else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
+                }
+                LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t)
+            }
+        }
+    }
+
+    @Composable
+    private fun LegCard(
+        leg: GuidanceLeg,
+        color: Color,
+        rows: List<GoTimelineRow>,
+        t: (String, String, String, String) -> String,
+    ) {
+        val count = maxOf(0, leg.stops.size - 1)
+        val countText = if (count == 1) t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
+            else t("$count stops", "$count στάσεις", "$count ndalesa", "$count fermate")
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(Modifier.background(color, RoundedCornerShape(7.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                    Text(leg.lineId, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+                Text(
+                    t("toward", "προς", "drejt", "verso") + " " + leg.towards,
+                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(countText, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                rows.forEach { row -> TimelineRow(row, color, t) }
+            }
+        }
+    }
+
+    @Composable
+    private fun TimelineRow(row: GoTimelineRow, color: Color, t: (String, String, String, String) -> String) {
+        val isPast = row.state == GoTimelineState.PAST
+        val isCurrent = row.state == GoTimelineState.CURRENT
+        val terminus = row.role != GoTimelineRole.INTERMEDIATE
+        val rowHeight = if (terminus || isCurrent) 44.dp else 30.dp
+        val caption: String? = when {
+            row.isDestination -> t("Destination", "Προορισμός", "Destinacioni", "Destinazione")
+            row.role == GoTimelineRole.ALIGHT -> t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui")
+            isCurrent -> t("Now", "Τώρα", "Tani", "Ora")
+            row.state == GoTimelineState.NEXT -> t("Next", "Επόμενη", "Tjetra", "Prossima")
+            else -> null
+        }
+        val captionColor = if (isPast && !row.isDestination) MaterialTheme.colorScheme.onSurfaceVariant else color
+        Row(
+            modifier = Modifier.fillMaxWidth().height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(Modifier.width(24.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.weight(1f).width(4.dp).background(
+                        if (row.role == GoTimelineRole.ORIGIN) Color.Transparent else color.copy(alpha = if (isPast || isCurrent) 0.3f else 1f)))
+                    Box(Modifier.weight(1f).width(4.dp).background(
+                        if (row.role == GoTimelineRole.ALIGHT) Color.Transparent else color.copy(alpha = if (isPast) 0.3f else 1f)))
+                }
+                when {
+                    isCurrent -> Box(Modifier.size(28.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(16.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(Color.White))
                         }
                     }
+                    terminus -> Box(Modifier.size(14.dp).clip(CircleShape).background(color.copy(alpha = if (isPast) 0.4f else 1f)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface))
+                    }
+                    else -> Box(Modifier.size(8.dp).clip(CircleShape).background(color.copy(alpha = if (isPast) 0.35f else 1f)))
+                }
+            }
+            Text(
+                row.name,
+                style = if (isCurrent) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isCurrent || terminus) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            if (caption != null) {
+                Box(Modifier.background(captionColor.copy(alpha = 0.12f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                    Text(caption, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = captionColor)
                 }
             }
         }
