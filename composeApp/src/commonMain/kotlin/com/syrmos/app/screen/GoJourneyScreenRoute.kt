@@ -358,6 +358,8 @@ class GoJourneyScreenRoute(
                 }
                 LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t)
             }
+            // Clear the floating assistant launcher so the last card is readable.
+            Spacer(Modifier.height(88.dp))
         }
     }
 

@@ -708,6 +708,9 @@ class PlanScreenRoute : Screen {
                             )
                             if (planned) {
                                 ResultsBlock()
+                                // Clear the floating assistant launcher so Start
+                                // journey on the last card stays fully tappable.
+                                Spacer(Modifier.height(88.dp))
                             } else {
                                 Column(
                                     modifier = Modifier.fillMaxWidth()
