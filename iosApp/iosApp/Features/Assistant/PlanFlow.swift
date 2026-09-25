@@ -391,6 +391,41 @@ struct PlanView: View {
         .disabled(fromId == nil || toId == nil || opening != nil)
     }
 
+    /// Companion-pane title on a paired layout (foldables / Duo): the results
+    /// pane reads as its own surface, with the same name in every state.
+    private var planResultsPaneHeader: some View {
+        Text(t("Routes", "Διαδρομές", "Rrugët", "Percorsi"))
+            .font(.title3.weight(.semibold))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    /// Calm empty state for the companion pane before the first search, so the
+    /// unfolded display never shows a blank half (six-posture prompt, section 5).
+    private var planResultsPlaceholder: some View {
+        VStack(alignment: .leading, spacing: SyrmosTokens.Space.sm) {
+            Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                .font(.title2)
+                .foregroundStyle(Color.syrmosPrimary)
+            Text(t("Choose where you are going.", "Διάλεξε πού πηγαίνεις.", "Zgjidh ku po shkon.", "Scegli dove vai."))
+                .font(.headline)
+            Text(t(
+                "Routes and the selected journey's details appear here.",
+                "Οι διαδρομές και οι λεπτομέρειες του επιλεγμένου ταξιδιού εμφανίζονται εδώ.",
+                "Rrugët dhe detajet e udhëtimit të zgjedhur shfaqen këtu.",
+                "I percorsi e i dettagli del viaggio selezionato compaiono qui."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(SyrmosTokens.Space.xl)
+        .background(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                .fill(Color.syrmosSurfaceMuted)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
     @ViewBuilder private var planResults: some View {
         // Phase R: disclose when we routed around a suspended line.
         if planned, case .routed(_, let excluded)? = disruption, !excluded.isEmpty {
@@ -455,7 +490,12 @@ struct PlanView: View {
                 companion: {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
-                            planResults
+                            planResultsPaneHeader
+                            if planned {
+                                planResults
+                            } else {
+                                planResultsPlaceholder
+                            }
                         }
                         .padding(16)
                     }
@@ -472,6 +512,7 @@ struct PlanView: View {
                     }
                 }
             )
+            .background(Color.syrmosBackground.ignoresSafeArea())
             .navigationTitle(t("Plan a journey", "Σχεδίασε διαδρομή", "Planifiko udhëtim", "Pianifica un viaggio"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

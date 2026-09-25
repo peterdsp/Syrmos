@@ -101,6 +101,7 @@ struct GoJourneyView: View {
                 .padding()
             }
         )
+        .background(Color.syrmosBackground.ignoresSafeArea())
         .navigationTitle("GO")
         .navigationBarTitleDisplayMode(.inline)
         .animation(.easeInOut(duration: 0.2), value: model.position)
@@ -176,8 +177,12 @@ struct GoJourneyView: View {
             // pads the map so the route and the current stop stay clear of an
             // occluding hinge or a camera cutout instead of resetting the camera.
             let geometry = reservedGeometryOverride ?? geo.syrmosReservedGeometry()
+            // The map is a card inside the pane (Calm Signal: 16 pt gutters, large
+            // radius), so the rect the padding rule sees is the card's rect.
+            let gutter = SyrmosTokens.Space.lg
             let mapHeight = max(200, geo.size.height * 0.42)
-            let mapRect = CGRect(x: 0, y: 0, width: geo.size.width, height: mapHeight)
+            let mapRect = CGRect(x: gutter, y: SyrmosTokens.Space.md,
+                                 width: max(0, geo.size.width - gutter * 2), height: mapHeight)
             let mapInsets = SyrmosMapPadding.insets(mapRect: mapRect, geometry: geometry)
             VStack(spacing: 0) {
                 GoRouteMapView(
@@ -187,9 +192,15 @@ struct GoJourneyView: View {
                     edgeInsets: mapInsets
                 )
                 .frame(height: mapHeight)
+                .clipShape(RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                        .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
+                )
+                .padding(.horizontal, gutter)
+                .padding(.top, SyrmosTokens.Space.md)
                 .accessibilityLabel(t(
                     "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
-                Divider()
                 goTimeline
             }
         }
@@ -213,40 +224,78 @@ struct GoJourneyView: View {
     /// highlighted, shown beside the instruction on a regular-width display.
     @ViewBuilder private var goTimeline: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: SyrmosTokens.Space.lg) {
                 Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
-                    .font(.headline)
+                    .font(.title3.weight(.semibold))
                 ForEach(Array(model.journey.legs.enumerated()), id: \.offset) { legIdx, leg in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 6) {
-                            Text(leg.lineId)
-                                .font(.caption.weight(.bold))
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
-                                .foregroundStyle(Color.syrmosPrimary)
+                    let legColor = SyrmosData.line(for: leg.lineId)?.color ?? Color.syrmosPrimary
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: SyrmosTokens.Space.sm) {
+                            LinePill(lineId: leg.lineId, size: .regular)
                             Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
                                 .font(.subheadline).foregroundStyle(.secondary)
                         }
+                        .padding(.bottom, SyrmosTokens.Space.sm)
                         ForEach(Array(leg.stops.enumerated()), id: \.offset) { stopIdx, stop in
                             let isCurrent = legIdx == model.position.legIndex && stopIdx == model.position.stopIndex
                             let isPast = legIdx < model.position.legIndex
                                 || (legIdx == model.position.legIndex && stopIdx < model.position.stopIndex)
-                            HStack(spacing: 10) {
-                                Circle()
-                                    .fill(isCurrent ? tint : Color.secondary.opacity(isPast ? 0.35 : 0.22))
-                                    .frame(width: isCurrent ? 12 : 8, height: isCurrent ? 12 : 8)
-                                Text(stop.name)
-                                    .font(.subheadline)
-                                    .fontWeight(isCurrent ? .semibold : .regular)
-                                    .foregroundStyle(isPast ? .secondary : .primary)
-                            }
+                            let isAlight = stopIdx == leg.stops.count - 1
+                            timelineRow(
+                                stop: stop, color: legColor, isCurrent: isCurrent, isPast: isPast,
+                                isFirst: stopIdx == 0, isLast: isAlight,
+                                isDestination: isAlight && legIdx == model.journey.legs.count - 1
+                            )
                         }
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
+            .padding(SyrmosTokens.Space.lg)
         }
+    }
+
+    /// One stop on the timeline rail: a continuous line in the leg's colour with a
+    /// dot per stop, the current stop emphasised, past stops dimmed, the alight
+    /// point (an interchange, or the destination) labelled.
+    private func timelineRow(
+        stop: GuidanceStop, color: Color, isCurrent: Bool, isPast: Bool,
+        isFirst: Bool, isLast: Bool, isDestination: Bool
+    ) -> some View {
+        let railWidth: CGFloat = 3
+        let dotSize: CGFloat = isCurrent ? 14 : 9
+        return HStack(alignment: .center, spacing: SyrmosTokens.Space.md) {
+            ZStack {
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(isFirst ? Color.clear : color.opacity(isPast ? 0.35 : 0.9))
+                        .frame(width: railWidth)
+                    Rectangle()
+                        .fill(isLast ? Color.clear : color.opacity((isPast || isCurrent) && !isCurrent ? 0.35 : 0.9))
+                        .frame(width: railWidth)
+                }
+                Circle()
+                    .fill(isCurrent ? color : Color.syrmosSurface)
+                    .overlay(Circle().stroke(color.opacity(isPast ? 0.4 : 1), lineWidth: 2))
+                    .frame(width: dotSize, height: dotSize)
+            }
+            .frame(width: 16)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(stop.name)
+                    .font(isCurrent ? .body.weight(.semibold) : .subheadline)
+                    .foregroundStyle(isPast ? .secondary : .primary)
+                if isLast {
+                    Text(isDestination
+                        ? t("Destination", "Προορισμός", "Destinacioni", "Destinazione")
+                        : t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui"))
+                        .font(.caption)
+                        .foregroundStyle(isDestination ? color : .secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: isLast ? 44 : 32)
+        .accessibilityElement(children: .combine)
     }
 
     /// Phase R S10 permission-denied capability state: location off changes the
@@ -446,10 +495,10 @@ struct GoJourneyView: View {
 
     private var footnote: some View {
         Text(t(
-            "Step through your journey. Live get-off alerts as you ride are coming next.",
-            "Δες το ταξίδι σου βήμα-βήμα. Οι ζωντανές ειδοποιήσεις αποβίβασης έρχονται σύντομα.",
-            "Shiko udhëtimin hap pas hapi. Njoftimet e zbritjes në kohë reale vijnë së shpejti.",
-            "Percorri il tuo viaggio passo passo. Gli avvisi di discesa in tempo reale arrivano presto."
+            "Step through your journey, or turn on live guidance to follow your position and get the get-off alert.",
+            "Προχώρα βήμα-βήμα ή ενεργοποίησε τη ζωντανή καθοδήγηση για να ακολουθεί τη θέση σου και να σε ειδοποιεί για αποβίβαση.",
+            "Ec hap pas hapi, ose aktivizo udhëzimin e drejtpërdrejtë që të ndjekë pozicionin tënd dhe të njoftojë për zbritjen.",
+            "Procedi passo passo, oppure attiva la guida dal vivo per seguire la tua posizione e ricevere l'avviso di discesa."
         ))
         .font(.footnote)
         .foregroundStyle(.secondary)

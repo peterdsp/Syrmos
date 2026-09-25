@@ -479,6 +479,13 @@ the native split refused a requested axis (it hid the secondary pane), so the
 policy contributes pane order and ratio there and the system keeps the axis.
 Explore still has no iOS two-pane, so its stacked preference is policy-only.
 
+A first slice of step 4 is landed as the foldable UI polish: the GO companion is
+a map card with a line-coloured timeline rail, the Plan Routes pane has a title
+and a calm empty state, both on the Calm Signal surface; Android GO gained the
+same paired and stacked layouts with a timeline companion, and Android Plan the
+same Routes pane treatment. See the readiness record for the renders and the
+emulator evidence.
+
 Also required:
 
 - Policy fixtures for every row above in both Kotlin and Swift.

@@ -40,6 +40,33 @@ import com.syrmos.core.domain.go.JourneyGuidance
 import com.syrmos.core.domain.journey.ActiveJourneyStore
 import androidx.compose.runtime.collectAsState
 import kotlinx.datetime.Clock
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.syrmos.app.layout.rememberContentWorkspace
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
+import com.syrmos.core.data.repository.LineRepositoryImpl
+import com.syrmos.core.designsystem.component.toComposeColor
+import kotlinx.coroutines.flow.first
+import org.koin.compose.koinInject
 
 /**
  * GO live-guidance screen (Phase G / S06), the Android peer of the web
@@ -93,6 +120,13 @@ class GoJourneyScreenRoute(
         val origin = journey.legs.firstOrNull()?.stops?.firstOrNull()?.name ?: ""
         val destination = journey.legs.lastOrNull()?.stops?.lastOrNull()?.name ?: ""
 
+        // Line colours for the timeline pills and rail (seed data, not a guess).
+        val lineRepo = koinInject<LineRepositoryImpl>()
+        var lineColors by remember { mutableStateOf<Map<String, Color>>(emptyMap()) }
+        LaunchedEffect(Unit) {
+            lineColors = lineRepo.getAllLines().first().associate { it.id to it.color.toComposeColor() }
+        }
+
         Scaffold(
             topBar = {
                 Row(
@@ -115,10 +149,9 @@ class GoJourneyScreenRoute(
                 }
             },
         ) { padding ->
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
+            // The current instruction and its reachable controls: the task pane on
+            // a paired layout, the whole screen on a phone.
+            val instruction: @Composable ColumnScope.() -> Unit = {
                 Text("$origin → $destination", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -173,17 +206,148 @@ class GoJourneyScreenRoute(
                 }
 
                 Text(
-                    t("Step through your journey. Live get-off alerts as you ride are coming next.",
-                      "Προχώρα βήμα βήμα. Ζωντανές ειδοποιήσεις αποβίβασης έρχονται σύντομα.",
-                      "Ec hap pas hapi. Sinjalizimet e drejtpërdrejta për zbritjen vijnë së shpejti.",
-                      "Procedi passo passo. Gli avvisi di discesa dal vivo arrivano presto."),
+                    t("Step through your journey. The get-off alert fires as you approach your stop.",
+                      "Προχώρα βήμα βήμα. Η ειδοποίηση αποβίβασης έρχεται καθώς πλησιάζεις τη στάση σου.",
+                      "Ec hap pas hapi. Sinjalizimi për zbritjen vjen kur i afrohesh ndalesës tënde.",
+                      "Procedi passo passo. L'avviso di discesa arriva quando ti avvicini alla tua fermata."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            // Foldables and tablets (foldables / Duo prompt section 6, GO): beside
+            // the instruction on a wide window or a book fold, the journey timeline;
+            // on a tall window or a horizontal fold, the timeline above and the
+            // instruction with its controls below, where the hands are. Decided by
+            // the shared policy from the measured content box.
+            BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+                val ws = rememberContentWorkspace(
+                    task = WorkspaceTask.GO,
+                    width = maxWidth.value.toInt(),
+                    height = maxHeight.value.toInt(),
+                )
+                when (ws.arrangement) {
+                    WorkspaceArrangement.SIDE_BY_SIDE -> {
+                        val taskW = ws.pane(PaneRole.TASK)?.rect?.right ?: (maxWidth.value.toInt() / 2)
+                        Row(Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier.width(taskW.dp).fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                                content = instruction,
+                            )
+                            VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxHeight())
+                        }
+                    }
+                    WorkspaceArrangement.STACKED -> {
+                        val companionH = ws.pane(PaneRole.COMPANION)?.rect?.bottom ?: (maxHeight.value.toInt() * 45 / 100)
+                        Column(Modifier.fillMaxSize()) {
+                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth().height(companionH.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                            Column(
+                                modifier = Modifier.weight(1f).fillMaxWidth()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                                content = instruction,
+                            )
+                        }
+                    }
+                    WorkspaceArrangement.SINGLE -> Column(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        content = instruction,
+                    )
+                }
             }
         }
     }
 
-    /// Phase R S07: inline connection-risk warning with real values + Find alternatives.
+    /**
+     * The journey as a timeline: one rail per leg in the line's colour, a dot per
+     * stop, the current stop emphasised, past stops dimmed, the alight point
+     * labelled (an interchange, or the destination). The companion pane on a
+     * paired layout, mirroring the iOS GO companion.
+     */
+    @Composable
+    private fun JourneyTimeline(
+        journey: GuidanceJourney,
+        position: GuidancePosition,
+        lineColors: Map<String, Color>,
+        t: (String, String, String, String) -> String,
+        modifier: Modifier = Modifier,
+    ) {
+        Column(
+            modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"),
+                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+            )
+            journey.legs.forEachIndexed { legIdx, leg ->
+                val color = lineColors[leg.lineId] ?: MaterialTheme.colorScheme.primary
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            modifier = Modifier.background(color, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
+                        ) {
+                            Text(leg.lineId, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        }
+                        Text(
+                            t("toward", "προς", "drejt", "verso") + " " + leg.towards,
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    leg.stops.forEachIndexed { stopIdx, stop ->
+                        val isCurrent = legIdx == position.legIndex && stopIdx == position.stopIndex
+                        val isPast = legIdx < position.legIndex ||
+                            (legIdx == position.legIndex && stopIdx < position.stopIndex)
+                        val isLast = stopIdx == leg.stops.lastIndex
+                        val isDestination = isLast && legIdx == journey.legs.lastIndex
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Box(Modifier.width(16.dp).height(if (isLast) 44.dp else 32.dp), contentAlignment = Alignment.Center) {
+                                Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(Modifier.weight(1f).width(3.dp).background(if (stopIdx == 0) Color.Transparent else color.copy(alpha = if (isPast) 0.35f else 0.9f)))
+                                    Box(Modifier.weight(1f).width(3.dp).background(if (isLast) Color.Transparent else color.copy(alpha = if (isPast) 0.35f else 0.9f)))
+                                }
+                                Box(
+                                    Modifier.size(if (isCurrent) 14.dp else 9.dp).clip(CircleShape)
+                                        .background(if (isCurrent) color else MaterialTheme.colorScheme.surface)
+                                        .padding(2.dp),
+                                ) {
+                                    if (!isCurrent) {
+                                        Box(Modifier.fillMaxSize().clip(CircleShape).background(color.copy(alpha = if (isPast) 0.4f else 1f)).padding(2.dp)) {
+                                            Box(Modifier.fillMaxSize().clip(CircleShape).background(MaterialTheme.colorScheme.surface))
+                                        }
+                                    }
+                                }
+                            }
+                            Column {
+                                Text(
+                                    stop.name,
+                                    style = if (isCurrent) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                )
+                                if (isLast) {
+                                    Text(
+                                        if (isDestination) t("Destination", "Προορισμός", "Destinacioni", "Destinazione")
+                                        else t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui"),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isDestination) color else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Composable
     private fun ConnectionRiskCard(
         risk: TransferRisk,

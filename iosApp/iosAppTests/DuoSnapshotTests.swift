@@ -206,6 +206,31 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "GO folded cover render should not be blank")
     }
 
+    // MARK: Visual: the real Plan screen on the Duo (paired) and the cover (single)
+
+    /// Plan on the unfolded display pairs the query with the Routes pane, which
+    /// shows its calm empty state before the first search instead of a blank half.
+    @MainActor
+    func test_planScreen_duoInnerLandscape_render() throws {
+        let image = render(PlanView(language: .english), size: duoInnerLandscape)
+        try save(image, "plan-duo-inner-landscape.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Plan unfolded landscape render should not be blank")
+    }
+
+    @MainActor
+    func test_planScreen_duoInnerPortrait_render() throws {
+        let image = render(PlanView(language: .english), size: duoInnerPortrait)
+        try save(image, "plan-duo-inner-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Plan unfolded portrait render should not be blank")
+    }
+
+    @MainActor
+    func test_planScreen_duoCover_render() throws {
+        let image = render(PlanView(language: .english), size: duoCover)
+        try save(image, "plan-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Plan folded cover render should not be blank")
+    }
+
     // MARK: Journey fixture (mirrors GoDemoEntryView so the snapshot is a real route)
 
     private func demoJourney(_ language: AppLanguage = .english) -> GuidanceJourney? {

@@ -222,6 +222,51 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 i
   shipping fallback's images are the ones on disk). Explore two-pane and the
   Android side of the stacked axis remain open.
 
+## Landed: foldable UI polish on iPhone Duo and Android fold devices (six-posture prompt, delivery step 4, first slice)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 5 (P3 to P6) and 7.
+Owner direction (2026-09-26): a visual polish of the paired and stacked layouts on
+the iPhone Duo and Android fold devices only; GO stays.
+
+- **iOS GO companion**: the route map is a card inside the pane (16 pt gutters,
+  large radius, hairline outline) and the padding rule sees the card's rect; the
+  timeline is a continuous rail per leg in the leg's real line colour with a dot
+  per stop, the current stop emphasised, past stops dimmed, and the alight point
+  labelled Change here or Destination; the leg header uses `LinePill` (official
+  line colours) instead of a brand-tinted capsule. The stale footnote ("live
+  get-off alerts are coming next") now describes live guidance honestly. The
+  whole screen sits on the Calm Signal surface colour.
+- **iOS Plan**: the companion pane has a Routes title in every state and a calm
+  empty state before the first search (icon, one-line prompt, one-line
+  explanation on the muted surface), so the unfolded display never shows a blank
+  half; the screen sits on the Calm Signal surface colour.
+- **Android GO**: `GoJourneyScreenRoute` now resolves the shared policy for its
+  content box (`rememberContentWorkspace(WorkspaceTask.GO, ...)`): side by side
+  puts the instruction and its controls beside a new `JourneyTimeline` companion
+  (line-coloured pills from the seed's `Line.color`, a rail per leg, current stop
+  emphasised, Change here and Destination labels); stacked puts the timeline
+  above and the instruction below; a phone keeps the shipped single column. The
+  stale footnote was replaced.
+- **Android Plan**: the two-pane results column has a Routes title, the same
+  calm empty state before the first search, and a hairline between the panes.
+- **Tests and renders (iOS 27.0 simulator, default Xcode 27.0 SDK)**:
+  DuoSnapshotTests 12/12 (three new Plan renders `plan-duo-inner-landscape.png`,
+  `plan-duo-inner-portrait.png`, `plan-duo-cover.png`; GO references re-rendered
+  on purpose), DuoPostureFixturesTests 49/49, JourneyGuidanceTests 6/6,
+  GoJourneyViewModelTests 7/7, ReservedRegionAdapterTests 26/26 (100 total).
+- **Android running surface** (`syrmos_tablet` emulator, density 160, the app's
+  own seed data): at 841 x 673 dp (a fold's inner display, wide) Plan pairs the
+  query with the Routes pane (empty state, then a real Piraeus to Syntagma result
+  with its detail) and GO pairs the instruction with the timeline (M1 rail,
+  Change here at Monastiraki, M3 leg to Syntagma marked Destination); at
+  841 x 900 dp GO stacks the timeline above the instruction and controls.
+  Screenshots `fold-plan.png`, `fold-plan-results.png`, `fold-go-wide.png`,
+  `fold-go-tall.png` in the session scratchpad. Android pairs by content width,
+  so an upright fold (673 wide with the nav rail) keeps a single column unless
+  the device reports its fold region.
+- **Evidence tier**: iOS simulator renders plus the Android emulator running
+  surface; no fold hardware, no Duo hardware.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -496,6 +541,9 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | An occluding horizontal fold stacks on the fold and leaves the band empty (P6, parent 9.4) | Pass (render, injected region) | `arrangement-duo-inner-landscape-hinge.png`; the system's own regions on hardware remain Pending. |
 | Dynamic Type raises pane floors; accessibility sizes collapse to one column (D21) | Pass (synthetic) | `test_dynamicTypeScale_*` in `DuoPostureFixturesTests.swift`. |
 | Native `ArrangementView` honours a requested axis on the Duo runtime | Fail (recorded) | `.split.axes(_:)` hid the secondary pane on the Duo simulator; the unrestricted `.split` shows both panes and the system owns the axis. |
+| Paired panes read as their own surfaces: titles, empty states, no blank half (section 5) | Pass (render + emulator) | iOS `plan-duo-inner-*.png`; Android `fold-plan.png`. |
+| GO companion is a map card plus a line-coloured timeline rail (sections 5, 7) | Pass (render) | iOS `go-duo-inner-landscape.png`, `go-duo-inner-portrait.png`. |
+| Android GO pairs and stacks on a fold-sized window (parent prompt section 6, GO) | Pass (emulator) | `fold-go-wide.png` side by side, `fold-go-tall.png` stacked. |
 
 ## Remaining phases (prompt section 11)
 
