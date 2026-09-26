@@ -809,7 +809,7 @@
             DESTINATION_STATION: {
                 en: 'To which station?',
                 el: 'Προς ποιον σταθμό;',
-                sq: 'Për te cili stacion?',
+                sq: 'Për cilin stacion?',
                 it: 'Verso quale stazione?',
             },
         };

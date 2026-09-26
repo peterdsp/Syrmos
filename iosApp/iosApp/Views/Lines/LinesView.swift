@@ -114,7 +114,7 @@ struct LinesView: View {
                         loc.language,
                         "Greece, live and community powered",
                         "Ελλάδα, ζωντανά και με τη δύναμη της κοινότητας",
-                        "Greqia, live dhe me fuqine e komunitetit",
+                        "Greqia, live dhe me fuqinë e komunitetit",
                         "Grecia, live e alimentata dalla comunita"
                     )
                 )
@@ -610,7 +610,7 @@ struct LinesView: View {
     private var browseAllLabel: String {
         switch loc.language {
         case .greek: return "Περιήγηση σε όλους τους 389 σταθμούς"
-        case .albanian: return "Shfleto te gjitha 389 stacionet"
+        case .albanian: return "Shfleto të gjitha 389 stacionet"
         case .italian: return "Sfoglia tutte le 389 stazioni"
         case .english: return "Browse all 389 stations"
         }
@@ -619,7 +619,7 @@ struct LinesView: View {
     private var browseAllSubtitle: String {
         switch loc.language {
         case .greek: return "Μετρό, τραμ, προαστιακός και υπεραστικά"
-        case .albanian: return "Metro, tramvaj, periferike dhe nderqytetese"
+        case .albanian: return "Metro, tramvaj, periferike dhe ndërqytetëse"
         case .italian: return "Metro, tram, suburbano e intercity"
         case .english: return "Metro, tram, suburban and intercity"
         }
@@ -628,22 +628,22 @@ struct LinesView: View {
     private var regionOptions: [(TransitRegion?, String)] {
         let l = loc.language
         return [
-            (nil, l == .greek ? "Ολα" : l == .albanian ? "Te gjitha" : l == .italian ? "Tutti" : "All"),
-            (.athens, l == .greek ? "Αθήνα" : l == .albanian ? "Athine" : l == .italian ? "Atene" : "Athens"),
+            (nil, l == .greek ? "Όλα" : l == .albanian ? "Të gjitha" : l == .italian ? "Tutti" : "All"),
+            (.athens, l == .greek ? "Αθήνα" : l == .albanian ? "Athinë" : l == .italian ? "Atene" : "Athens"),
             (.thessaloniki, l == .greek ? "Θεσσαλονίκη" : l == .albanian ? "Selanik" : l == .italian ? "Salonicco" : "Thessaloniki"),
             (.patras, l == .greek ? "Πάτρα" : l == .albanian ? "Patra" : l == .italian ? "Patrasso" : "Patras"),
-            (.national, l == .greek ? "Υπεραστικά" : l == .albanian ? "Nderqytetese" : l == .italian ? "Intercity" : "Intercity"),
+            (.national, l == .greek ? "Υπεραστικά" : l == .albanian ? "Ndërqytetëse" : l == .italian ? "Intercity" : "Intercity"),
         ]
     }
 
     private var typeOptions: [(TransitType?, String)] {
         let l = loc.language
         return [
-            (nil, l == .greek ? "Ολα" : l == .albanian ? "Te gjitha" : l == .italian ? "Tutti" : "All"),
+            (nil, l == .greek ? "Όλα" : l == .albanian ? "Të gjitha" : l == .italian ? "Tutti" : "All"),
             (.metro, "Metro"),
             (.tram, l == .greek ? "Τραμ" : l == .albanian ? "Tramvaj" : l == .italian ? "Tram" : "Tram"),
             (.suburban, l == .greek ? "Προαστιακός" : l == .albanian ? "Periferike" : l == .italian ? "Suburbano" : "Suburban"),
-            (.bus, l == .greek ? "Λεωφορεία" : l == .albanian ? "Autobuse" : l == .italian ? "Bus" : "Bus"),
+            (.bus, l == .greek ? "Λεωφορεία" : l == .albanian ? "Autobusë" : l == .italian ? "Bus" : "Bus"),
             (.scenic, l == .greek ? "Οδοντωτός" : l == .albanian ? "Malore" : l == .italian ? "Panoramico" : "Scenic"),
         ]
     }
@@ -651,7 +651,7 @@ struct LinesView: View {
     private var recentLabel: String {
         switch loc.language {
         case .greek: return "Πρόσφατα"
-        case .albanian: return "Se fundmi"
+        case .albanian: return "Së fundmi"
         case .italian: return "Recenti"
         case .english: return "Recent"
         }
@@ -660,7 +660,7 @@ struct LinesView: View {
     private var searchPlaceholder: String {
         switch loc.language {
         case .greek: return "Αναζήτηση γραμμής ή σταθμού..."
-        case .albanian: return "Kerko linje ose stacion..."
+        case .albanian: return "Kërko linjë ose stacion..."
         case .italian: return "Cerca linea o stazione..."
         case .english: return "Search line or station..."
         }
@@ -669,7 +669,7 @@ struct LinesView: View {
     private var emptyMessage: String {
         switch loc.language {
         case .greek: return "Δεν βρέθηκαν γραμμές"
-        case .albanian: return "Nuk u gjeten linja"
+        case .albanian: return "Nuk u gjetën linja"
         case .italian: return "Nessuna linea trovata"
         case .english: return "No lines found"
         }
@@ -697,7 +697,7 @@ struct CuratedDestination: Identifiable, Sendable {
         CuratedDestination(
             id: "piraeus", emoji: "⛴️", stationId: "M1_PIR", lineId: "M1",
             name: { l in l == .greek ? "Πειραιάς" : l == .albanian ? "Pireu" : l == .italian ? "Porto del Pireo" : "Piraeus Port" },
-            hook: { l in l == .greek ? "Πλοία, κρουαζιέρες, παραλιακές συνδέσεις" : l == .albanian ? "Tragete, kroaziera, lidhje bregdetare" : l == .italian ? "Traghetti, crociere, collegamenti costieri" : "Ferries, cruises, coastal connections" },
+            hook: { l in l == .greek ? "Πλοία, κρουαζιέρες, παραλιακές συνδέσεις" : l == .albanian ? "Tragete, kroçiera, lidhje bregdetare" : l == .italian ? "Traghetti, crociere, collegamenti costieri" : "Ferries, cruises, coastal connections" },
             connections: ["M1", "M3", "A1"]
         ),
         CuratedDestination(
@@ -733,7 +733,7 @@ struct CuratedDestination: Identifiable, Sendable {
         CuratedDestination(
             id: "diakopto", emoji: "🚂", stationId: "KI_DIA", lineId: "DK1",
             name: { l in l == .greek ? "Οδοντωτός Διακοπτού" : l == .albanian ? "Hekurudha e dhembezuar Diakopto" : l == .italian ? "Ferrovia a cremagliera di Diakopto" : "Diakopto Rack Railway" },
-            hook: { l in l == .greek ? "Μια από τις πιο γραφικές διαδρομές της Ευρώπης" : l == .albanian ? "Nje nga udhetimet me piktoreske te Europes" : l == .italian ? "Uno dei percorsi piu panoramici d'Europa" : "One of Europe's most scenic rides" },
+            hook: { l in l == .greek ? "Μια από τις πιο γραφικές διαδρομές της Ευρώπης" : l == .albanian ? "Një nga udhëtimet më piktoreske të Europës" : l == .italian ? "Uno dei percorsi piu panoramici d'Europa" : "One of Europe's most scenic rides" },
             connections: ["DK1"]
         ),
     ]
@@ -861,7 +861,7 @@ extension TransitType {
         case (.suburban, .italian): return "Ferrovia suburbana"
         case (.suburban, .english): return "Suburban Railway"
         case (.bus, .greek): return "Λεωφορείο (αντικατάσταση)"
-        case (.bus, .albanian): return "Autobus (zevendesim)"
+        case (.bus, .albanian): return "Autobus (zëvendësim)"
         case (.bus, .italian): return "Autobus (sostitutivo)"
         case (.bus, .english): return "Bus (rail replacement)"
         case (.scenic, .greek): return "Οδοντωτός Σιδηρόδρομος"
@@ -1348,12 +1348,12 @@ struct BrowseAllStationsView: View {
         .searchable(
             text: $searchText,
             prompt: loc.language == .greek ? "Αναζήτηση σταθμού..." :
-                    loc.language == .albanian ? "Kerko stacion..." :
+                    loc.language == .albanian ? "Kërko stacion..." :
                     loc.language == .italian ? "Cerca stazione..." : "Search station..."
         )
         .navigationTitle(
             loc.language == .greek ? "Όλοι οι σταθμοί" :
-            loc.language == .albanian ? "Te gjitha stacionet" :
+            loc.language == .albanian ? "Të gjitha stacionet" :
             loc.language == .italian ? "Tutte le stazioni" : "All Stations"
         )
     }

@@ -212,14 +212,14 @@ struct StationDetailView: View {
         case .construction:
             switch loc.language {
             case .greek: return "Δεν λειτουργεί ακόμη. Η γραμμή έχει κατασκευαστεί αλλά δεν έχει τεθεί σε επιβατική λειτουργία."
-            case .albanian: return "Ende jo e hapur. Hekurudha eshte ndertuar por ende nuk eshte ne sherbim per pasagjere."
+            case .albanian: return "Ende jo e hapur. Hekurudha është ndërtuar por ende nuk është në shërbim për pasagjerë."
             case .italian: return "Non ancora in servizio. Il binario e costruito ma non ancora in servizio passeggeri."
             default: return "Not yet open. The track is built but not yet in passenger service."
             }
         case .seasonal:
             switch loc.language {
             case .greek: return "Εποχικό δρομολόγιο. Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή."
-            case .albanian: return "Sherbim sezonal. Funksionon ne dite dhe stine te zgjedhura. Asgje nuk eshte planifikuar nga ketu per momentin."
+            case .albanian: return "Shërbim sezonal. Funksionon në ditë dhe stinë të zgjedhura. Asgjë nuk është planifikuar nga këtu për momentin."
             case .italian: return "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non e prevista alcuna partenza da qui."
             default: return "Seasonal service. Runs on selected days and seasons. Nothing is scheduled from here right now."
             }

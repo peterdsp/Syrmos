@@ -110,7 +110,7 @@ fun StationDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = when (lang) {
-                                AppLanguage.GREEK -> "Πισω"
+                                AppLanguage.GREEK -> "Πίσω"
                                 AppLanguage.ALBANIAN -> "Prapa"
                                 AppLanguage.ITALIAN -> "Indietro"
                                 else -> "Back"
@@ -137,8 +137,8 @@ fun StationDetailScreen(
             if (uiState.connectingLines.isNotEmpty()) {
                 item {
                     SectionHeader(title = when (lang) {
-                        AppLanguage.GREEK -> "Γραμμες σε αυτον τον σταθμο"
-                        AppLanguage.ALBANIAN -> "Linjat ne kete stacion"
+                        AppLanguage.GREEK -> "Γραμμές σε αυτόν τον σταθμό"
+                        AppLanguage.ALBANIAN -> "Linjat në këtë stacion"
                         AppLanguage.ITALIAN -> "Linee in questa stazione"
                         else -> "Lines at this station"
                     })
@@ -173,8 +173,8 @@ fun StationDetailScreen(
                                 Icon(
                                     imageVector = Icons.Filled.Map,
                                     contentDescription = when (lang) {
-                                        AppLanguage.GREEK -> "Εμφανιση στον χαρτη"
-                                        AppLanguage.ALBANIAN -> "Shfaq ne harte"
+                                        AppLanguage.GREEK -> "Εμφάνιση στον χάρτη"
+                                        AppLanguage.ALBANIAN -> "Shfaq në hartë"
                                         AppLanguage.ITALIAN -> "Mostra sulla mappa"
                                         else -> "Show on map"
                                     },
@@ -207,8 +207,8 @@ fun StationDetailScreen(
             if (uiState.interchangeTargets.size >= minInterchangeTargets) {
                 item {
                     SectionHeader(title = when (lang) {
-                        AppLanguage.GREEK -> "Αλλαγη γραμμης εδω"
-                        AppLanguage.ALBANIAN -> "Ndrysho linjen ketu"
+                        AppLanguage.GREEK -> "Αλλαγή γραμμής εδώ"
+                        AppLanguage.ALBANIAN -> "Ndrysho linjën këtu"
                         AppLanguage.ITALIAN -> "Cambia linea qui"
                         else -> "Change line here"
                     })
@@ -265,8 +265,8 @@ fun StationDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text(when (lang) {
-                                    AppLanguage.GREEK -> "Αγορα εισιτηριου στην Hellenic Train"
-                                    AppLanguage.ALBANIAN -> "Bli bilete ne Hellenic Train"
+                                    AppLanguage.GREEK -> "Αγορά εισιτηρίου στην Hellenic Train"
+                                    AppLanguage.ALBANIAN -> "Bli biletë në Hellenic Train"
                                     AppLanguage.ITALIAN -> "Acquista biglietto su Hellenic Train"
                                     else -> "Buy ticket on Hellenic Train"
                                 })
@@ -274,8 +274,8 @@ fun StationDetailScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = when (lang) {
-                                    AppLanguage.GREEK -> "Η πληρωμη και η εκδοση εισιτηριου γινονται 100% στον ιστοτοπο της Hellenic Train. Το Syrmos απλως παρεχει τον συνδεσμο, δεν συλλεγει στοιχεια πληρωμης και δεν εχει καμια ευθυνη για την κρατηση."
-                                    AppLanguage.ALBANIAN -> "Pagesa dhe leshimi i biletes behen 100% ne faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh te dhena pagesash dhe nuk ka asnje pergjegesi per rezervimin."
+                                    AppLanguage.GREEK -> "Η πληρωμή και η έκδοση εισιτηρίου γίνονται 100% στον ιστότοπο της Hellenic Train. Το Syrmos απλώς παρέχει τον σύνδεσμο, δεν συλλέγει στοιχεία πληρωμής και δεν έχει καμία ευθύνη για την κράτηση."
+                                    AppLanguage.ALBANIAN -> "Pagesa dhe lëshimi i biletës bëhen 100% në faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh të dhëna pagesash dhe nuk ka asnjë përgjegjësi për rezervimin."
                                     AppLanguage.ITALIAN -> "Il pagamento e l'emissione del biglietto avvengono al 100% sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha responsabilita per la prenotazione."
                                     else -> "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking."
                                 },
@@ -289,7 +289,7 @@ fun StationDetailScreen(
 
             item {
                 val base = when (lang) {
-                    AppLanguage.GREEK -> "Επομενες αναχωρησεις"
+                    AppLanguage.GREEK -> "Επόμενες αναχωρήσεις"
                     AppLanguage.ALBANIAN -> "Nisjet e ardhshme"
                     AppLanguage.ITALIAN -> "Prossime partenze"
                     else -> "Next departures"
@@ -317,13 +317,13 @@ fun StationDetailScreen(
                                 ?.let { serviceStateMessage(it, lang) }
                                 ?: when (lang) {
                                 AppLanguage.GREEK -> "Δεν υπάρχουν διαθέσιμα δρομολόγια αυτή τη στιγμή. Η γραμμή είναι κλειστή ή έχει τελειώσει η σημερινή υπηρεσία."
-                                AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme tani. Linja eshte mbyllur ose ka perfunduar sherbimi i sotem."
+                                AppLanguage.ALBANIAN -> "Nuk ka nisje të disponueshme tani. Linja është mbyllur ose ka përfunduar shërbimi i sotëm."
                                 AppLanguage.ITALIAN -> "Nessuna partenza disponibile al momento. La linea e chiusa o il servizio odierno e terminato."
                                 else -> "No departures right now. The line is closed or today's service has ended."
                             }
                         } else {
                             when (lang) {
-                                AppLanguage.GREEK -> "Φορτωση δρομολογιων..."
+                                AppLanguage.GREEK -> "Φόρτωση δρομολογίων..."
                                 AppLanguage.ALBANIAN -> "Duke ngarkuar oraret..."
                                 AppLanguage.ITALIAN -> "Caricamento partenze..."
                                 else -> "Loading departures..."
@@ -373,7 +373,7 @@ fun StationDetailScreen(
                         isAirport = isAirport,
                         airportLabel = if (isAirport) {
                             when (lang) {
-                                AppLanguage.GREEK -> "Αεροδρομιο"
+                                AppLanguage.GREEK -> "Αεροδρόμιο"
                                 AppLanguage.ALBANIAN -> "Aeroporti"
                                 AppLanguage.ITALIAN -> "Aeroporto"
                                 else -> "Airport"
@@ -429,8 +429,8 @@ fun StationDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(when (lang) {
-                            AppLanguage.GREEK -> "Οδηγιες"
-                            AppLanguage.ALBANIAN -> "Merr udhezime"
+                            AppLanguage.GREEK -> "Οδηγίες"
+                            AppLanguage.ALBANIAN -> "Merr udhëzime"
                             AppLanguage.ITALIAN -> "Indicazioni"
                             else -> "Get directions"
                         })
@@ -563,19 +563,19 @@ private fun stationServiceState(lines: List<Line>): StationServiceState? {
 private fun serviceStateMessage(state: StationServiceState, lang: AppLanguage): String = when (state) {
     StationServiceState.SUSPENDED -> when (lang) {
         AppLanguage.GREEK -> "Προσωρινή αναστολή δρομολογίων. Αυτή η γραμμή δεν λειτουργεί αυτή τη στιγμή."
-        AppLanguage.ALBANIAN -> "Sherbimi perkohesisht i pezulluar. Kjo linje nuk eshte ne pune per momentin."
+        AppLanguage.ALBANIAN -> "Shërbimi përkohësisht i pezulluar. Kjo linjë nuk është në punë për momentin."
         AppLanguage.ITALIAN -> "Servizio temporaneamente sospeso. Questa linea non e in servizio in questo momento."
         else -> "Service temporarily suspended. This line is not running right now."
     }
     StationServiceState.CONSTRUCTION -> when (lang) {
         AppLanguage.GREEK -> "Δεν λειτουργεί ακόμη. Η γραμμή έχει κατασκευαστεί αλλά δεν έχει τεθεί σε επιβατική λειτουργία."
-        AppLanguage.ALBANIAN -> "Ende jo e hapur. Hekurudha eshte ndertuar por ende nuk eshte ne sherbim per pasagjere."
+        AppLanguage.ALBANIAN -> "Ende jo e hapur. Hekurudha është ndërtuar por ende nuk është në shërbim për pasagjerë."
         AppLanguage.ITALIAN -> "Non ancora in servizio. Il binario e costruito ma non ancora in servizio passeggeri."
         else -> "Not yet open. The track is built but not yet in passenger service."
     }
     StationServiceState.SEASONAL -> when (lang) {
         AppLanguage.GREEK -> "Εποχικό δρομολόγιο. Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή."
-        AppLanguage.ALBANIAN -> "Sherbim sezonal. Funksionon ne dite dhe stine te zgjedhura. Asgje nuk eshte planifikuar nga ketu per momentin."
+        AppLanguage.ALBANIAN -> "Shërbim sezonal. Funksionon në ditë dhe stinë të zgjedhura. Asgjë nuk është planifikuar nga këtu për momentin."
         AppLanguage.ITALIAN -> "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non e prevista alcuna partenza da qui."
         else -> "Seasonal service. Runs on selected days and seasons. Nothing is scheduled from here right now."
     }

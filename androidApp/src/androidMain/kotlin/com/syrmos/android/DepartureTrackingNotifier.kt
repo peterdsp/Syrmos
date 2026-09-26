@@ -117,8 +117,8 @@ class DepartureTrackingNotifier(private val context: Context) {
     }
 
     private fun confirmLabel(lang: AppLanguage) = when (lang) {
-        AppLanguage.GREEK -> "Ολα καλα"
-        AppLanguage.ALBANIAN -> "Gjithcka ne rregull"
+        AppLanguage.GREEK -> "Όλα καλά"
+        AppLanguage.ALBANIAN -> "Gjithçka në rregull"
         AppLanguage.ITALIAN -> "Tutto bene"
         else -> "Everything OK"
     }

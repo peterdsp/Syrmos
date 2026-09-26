@@ -506,7 +506,7 @@ private struct AirportCalendarHub: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(calendarEvent == nil
                         ? airportText(language, "PLANNED DEPARTURE", "ΠΡΟΓΡΑΜΜΑΤΙΣΜΕΝΗ ΑΝΑΧΩΡΗΣΗ", "NISJE E PLANIFIKUAR", "PARTENZA PIANIFICATA")
-                        : airportText(language, "SAVED AIRPORT TRIP", "ΑΠΟΘΗΚΕΥΜΕΝΟ ΤΑΞΙΔΙ", "UDHETIM I RUAJTUR", "VIAGGIO SALVATO"))
+                        : airportText(language, "SAVED AIRPORT TRIP", "ΑΠΟΘΗΚΕΥΜΕΝΟ ΤΑΞΙΔΙ", "UDHËTIM I RUAJTUR", "VIAGGIO SALVATO"))
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.secondary)
                     Text(calendarEvent?.title ?? airportText(language, "No saved airport trip", "Δεν υπάρχει αποθηκευμένο ταξίδι", "Nuk ka udhëtim të ruajtur", "Nessun viaggio salvato"))
@@ -1551,7 +1551,7 @@ private struct DirectionSection: View {
         guard count > 0 else { return nil }
         switch loc.language {
         case .greek: return "\(count) επόμενα δρομολόγια"
-        case .albanian: return "\(count) nisje te radhes"
+        case .albanian: return "\(count) nisje të radhës"
         case .italian: return "\(count) partenze imminenti"
         case .english: return "\(count) upcoming departures"
         }
@@ -1569,7 +1569,7 @@ private struct DirectionSection: View {
     private var allUpcomingLabel: String {
         switch loc.language {
         case .greek: return "Όλα τα επόμενα"
-        case .albanian: return "Te gjitha"
+        case .albanian: return "Të gjitha"
         case .italian: return "Tutte le prossime"
         case .english: return "All upcoming"
         }
@@ -1724,7 +1724,7 @@ private struct EmptyRow: View {
     @ObservedObject private var loc = LocalizationManager.shared
     var body: some View {
         Text(loc.language == .greek ? "Δεν υπάρχουν διαθέσιμα δρομολόγια." :
-             loc.language == .albanian ? "Nuk ka nisje te disponueshme." :
+             loc.language == .albanian ? "Nuk ka nisje të disponueshme." :
              loc.language == .italian ? "Nessuna partenza disponibile." :
              "No departures available.")
             .font(.caption)

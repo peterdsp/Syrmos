@@ -207,7 +207,7 @@ fun LinesScreen(
                         }
                         item {
                             Text(
-                                text = pulseText(lang, "Explore farther", "Εξερευνησε πιο μακρια", "Eksploro me larg", "Esplora piu lontano"),
+                                text = pulseText(lang, "Explore farther", "Εξερεύνησε πιο μακριά", "Eksploro më larg", "Esplora piu lontano"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = 8.dp),
@@ -216,7 +216,7 @@ fun LinesScreen(
                     } else {
                         item {
                             Text(
-                                text = pulseText(lang, "Search results", "Αποτελεσματα αναζητησης", "Rezultatet e kerkimit", "Risultati di ricerca"),
+                                text = pulseText(lang, "Search results", "Αποτελέσματα αναζήτησης", "Rezultatet e kërkimit", "Risultati di ricerca"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = 8.dp),
@@ -227,7 +227,7 @@ fun LinesScreen(
                     if (filteredDestinations.isEmpty()) {
                         item {
                             Text(
-                                text = pulseText(lang, "No destinations found", "Δεν βρεθηκαν προορισμοι", "Nuk u gjeten destinacione", "Nessuna destinazione trovata"),
+                                text = pulseText(lang, "No destinations found", "Δεν βρέθηκαν προορισμοί", "Nuk u gjetën destinacione", "Nessuna destinazione trovata"),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 24.dp, horizontal = 8.dp),
@@ -301,8 +301,8 @@ fun LinesScreen(
                         item {
                             Text(
                                 text = when (lang) {
-                                    AppLanguage.GREEK -> "Δεν βρεθηκαν γραμμες"
-                                    AppLanguage.ALBANIAN -> "Nuk u gjeten linja"
+                                    AppLanguage.GREEK -> "Δεν βρέθηκαν γραμμές"
+                                    AppLanguage.ALBANIAN -> "Nuk u gjetën linja"
                                     AppLanguage.ITALIAN -> "Nessuna linea trovata"
                                     else -> "No lines found"
                                 },
@@ -427,8 +427,8 @@ private fun ExploreHeader(
                     text = pulseText(
                         lang,
                         "Greece, live and community powered",
-                        "Ελλαδα, ζωντανα και με τη δυναμη της κοινοτητας",
-                        "Greqia, live dhe me fuqine e komunitetit",
+                        "Ελλάδα, ζωντανά και με τη δύναμη της κοινότητας",
+                        "Greqia, live dhe me fuqinë e komunitetit",
                         "Grecia, live e alimentata dalla comunita",
                     ),
                     style = MaterialTheme.typography.bodySmall,
@@ -447,7 +447,7 @@ private fun ExploreHeader(
                         contentDescription = pulseText(
                             lang,
                             "Local contribution",
-                            "Τοπικη συνεισφορα",
+                            "Τοπική συνεισφορά",
                             "Kontributi lokal",
                             "Contributo locale",
                         ),
@@ -477,8 +477,8 @@ private fun SegmentedControl(
             ExploreSegment.entries.forEach { segment ->
                 val isSelected = segment == selected
                 val label = when (segment) {
-                    ExploreSegment.DESTINATIONS -> pulseText(lang, "Discover", "Ανακαλυψε", "Zbulo", "Scopri")
-                    ExploreSegment.YOUR_NETWORK -> pulseText(lang, "Network", "Δικτυο", "Rrjeti", "Rete")
+                    ExploreSegment.DESTINATIONS -> pulseText(lang, "Discover", "Ανακάλυψε", "Zbulo", "Scopri")
+                    ExploreSegment.YOUR_NETWORK -> pulseText(lang, "Network", "Δίκτυο", "Rrjeti", "Rete")
                 }
                 Surface(
                     modifier = Modifier
@@ -669,8 +669,8 @@ private fun BrowseAllStationsRow(
                     text = pulseText(
                         lang,
                         "Metro, tram, suburban and intercity",
-                        "Μετρο, τραμ, προαστιακος και υπεραστικα",
-                        "Metro, tramvaj, periferike dhe nderqytetese",
+                        "Μετρό, τραμ, προαστιακός και υπεραστικά",
+                        "Metro, tramvaj, periferike dhe ndërqytetëse",
                         "Metro, tram, suburbano e intercity",
                     ),
                     style = MaterialTheme.typography.bodySmall,
@@ -723,8 +723,8 @@ private fun SearchBar(
                 if (query.isEmpty()) {
                     Text(
                         text = when (lang) {
-                            AppLanguage.GREEK -> "Προορισμος, σταθμος, γραμμη η τρενο..."
-                            AppLanguage.ALBANIAN -> "Destinacion, stacion, linje ose tren..."
+                            AppLanguage.GREEK -> "Προορισμός, σταθμός, γραμμή ή τρένο..."
+                            AppLanguage.ALBANIAN -> "Destinacion, stacion, linjë ose tren..."
                             AppLanguage.ITALIAN -> "Destinazione, stazione, linea o treno..."
                             else -> "Destination, station, line or train..."
                         },
@@ -773,32 +773,32 @@ private fun RegionFilterRow(
 ) {
     val regions = listOf(
         null to when (lang) {
-            AppLanguage.GREEK -> "Ολα"
-            AppLanguage.ALBANIAN -> "Te gjitha"
+            AppLanguage.GREEK -> "Όλα"
+            AppLanguage.ALBANIAN -> "Të gjitha"
             AppLanguage.ITALIAN -> "Tutte"
             else -> "All"
         },
         Region.ATHENS to when (lang) {
-            AppLanguage.GREEK -> "Αθηνα"
-            AppLanguage.ALBANIAN -> "Athine"
+            AppLanguage.GREEK -> "Αθήνα"
+            AppLanguage.ALBANIAN -> "Athinë"
             AppLanguage.ITALIAN -> "Atene"
             else -> "Athens"
         },
         Region.THESSALONIKI to when (lang) {
-            AppLanguage.GREEK -> "Θεσσαλονικη"
+            AppLanguage.GREEK -> "Θεσσαλονίκη"
             AppLanguage.ALBANIAN -> "Selanik"
             AppLanguage.ITALIAN -> "Salonicco"
             else -> "Thessaloniki"
         },
         Region.PATRAS to when (lang) {
-            AppLanguage.GREEK -> "Πατρα"
+            AppLanguage.GREEK -> "Πάτρα"
             AppLanguage.ALBANIAN -> "Patra"
             AppLanguage.ITALIAN -> "Patrasso"
             else -> "Patras"
         },
         Region.NATIONAL to when (lang) {
-            AppLanguage.GREEK -> "Υπεραστικα"
-            AppLanguage.ALBANIAN -> "Nderqytetese"
+            AppLanguage.GREEK -> "Υπεραστικά"
+            AppLanguage.ALBANIAN -> "Ndërqytetëse"
             AppLanguage.ITALIAN -> "Intercity"
             else -> "Intercity"
         },
@@ -832,8 +832,8 @@ private fun TypeFilterRow(
 ) {
     val types = listOf(
         null to when (lang) {
-            AppLanguage.GREEK -> "Ολα"
-            AppLanguage.ALBANIAN -> "Te gjitha"
+            AppLanguage.GREEK -> "Όλα"
+            AppLanguage.ALBANIAN -> "Të gjitha"
             AppLanguage.ITALIAN -> "Tutti"
             else -> "All"
         },
@@ -845,19 +845,19 @@ private fun TypeFilterRow(
             else -> "Tram"
         },
         LineType.SUBURBAN to when (lang) {
-            AppLanguage.GREEK -> "Προαστιακος"
+            AppLanguage.GREEK -> "Προαστιακός"
             AppLanguage.ALBANIAN -> "Periferike"
             AppLanguage.ITALIAN -> "Suburbano"
             else -> "Suburban"
         },
         LineType.BUS to when (lang) {
-            AppLanguage.GREEK -> "Λεωφορεια"
-            AppLanguage.ALBANIAN -> "Autobuse"
+            AppLanguage.GREEK -> "Λεωφορεία"
+            AppLanguage.ALBANIAN -> "Autobusë"
             AppLanguage.ITALIAN -> "Autobus"
             else -> "Bus"
         },
         LineType.SCENIC to when (lang) {
-            AppLanguage.GREEK -> "Οδοντωτος"
+            AppLanguage.GREEK -> "Οδοντωτός"
             AppLanguage.ALBANIAN -> "Malore"
             AppLanguage.ITALIAN -> "Panoramico"
             else -> "Scenic"
@@ -920,7 +920,7 @@ private fun LineRow(
 
         Text(
             text = when (lang) {
-                AppLanguage.GREEK -> "${line.stationCount} σταθμοι"
+                AppLanguage.GREEK -> "${line.stationCount} σταθμοί"
                 AppLanguage.ALBANIAN -> "${line.stationCount} stacione"
                 AppLanguage.ITALIAN -> "${line.stationCount} stazioni"
                 else -> "${line.stationCount} stations"
@@ -957,19 +957,19 @@ private fun LineType.localizedName(lang: AppLanguage): String {
             else -> "Tram"
         }
         LineType.SUBURBAN -> when (lang) {
-            AppLanguage.GREEK -> "Προαστιακος Σιδηροδρομος"
+            AppLanguage.GREEK -> "Προαστιακός Σιδηρόδρομος"
             AppLanguage.ALBANIAN -> "Hekurudha periferike"
             AppLanguage.ITALIAN -> "Ferrovia suburbana"
             else -> "Suburban Railway"
         }
         LineType.BUS -> when (lang) {
-            AppLanguage.GREEK -> "Λεωφορειο (αντικατασταση)"
-            AppLanguage.ALBANIAN -> "Autobus (zevendesim)"
+            AppLanguage.GREEK -> "Λεωφορείο (αντικατάσταση)"
+            AppLanguage.ALBANIAN -> "Autobus (zëvendësim)"
             AppLanguage.ITALIAN -> "Autobus (sostituzione ferroviaria)"
             else -> "Bus (rail replacement)"
         }
         LineType.SCENIC -> when (lang) {
-            AppLanguage.GREEK -> "Οδοντωτος Σιδηροδρομος"
+            AppLanguage.GREEK -> "Οδοντωτός Σιδηρόδρομος"
             AppLanguage.ALBANIAN -> "Hekurudha malore"
             AppLanguage.ITALIAN -> "Ferrovia panoramica"
             else -> "Scenic Railway"

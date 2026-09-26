@@ -68,16 +68,16 @@ private enum class IchnosHistoryPeriod(val wireName: String, val limit: Int) {
 private fun railContributorLevel(confirmed: Int): Int = (confirmed / 100 + 1).coerceAtLeast(1)
 
 private fun railContributorCallsign(level: Int, lang: AppLanguage): String = when (level.coerceIn(1, 10)) {
-    1 -> pulseText(lang, "Platform Pal", "Φιλος Αποβαθρας", "Miku i Platformes", "Amico di Banchina")
-    2 -> pulseText(lang, "Signal Spotter", "Ανιχνευτης Σηματων", "Vezhgues Sinjalesh", "Osservatore Segnali")
-    3 -> pulseText(lang, "Delay Detective", "Ντετεκτιβ Καθυστερησεων", "Detektivi i Vonesave", "Detective dei Ritardi")
-    4 -> pulseText(lang, "Crowd Scout", "Ανιχνευτης Κοσμου", "Vezhgues Turme", "Esploratore Folla")
+    1 -> pulseText(lang, "Platform Pal", "Φίλος Αποβάθρας", "Miku i Platformës", "Amico di Banchina")
+    2 -> pulseText(lang, "Signal Spotter", "Ανιχνευτής Σημάτων", "Vezhgues Sinjalesh", "Osservatore Segnali")
+    3 -> pulseText(lang, "Delay Detective", "Ντετέκτιβ Καθυστερήσεων", "Detektivi i Vonesave", "Detective dei Ritardi")
+    4 -> pulseText(lang, "Crowd Scout", "Ανιχνευτής Κόσμου", "Vezhgues Turme", "Esploratore Folla")
     5 -> "Rail Reporter"
-    6 -> pulseText(lang, "Station Guardian", "Φυλακας Σταθμου", "Mbrojtes Stacioni", "Custode di Stazione")
-    7 -> pulseText(lang, "Track Whisperer", "Ψιθυριστης Γραμμων", "Peshperitesi i Shinave", "Sussurratore dei Binari")
-    8 -> pulseText(lang, "Timetable Tamer", "Δαμαστης Δρομολογιων", "Zbutesi i Orareve", "Domatore di Orari")
-    9 -> pulseText(lang, "Platform Legend", "Θρυλος Αποβαθρας", "Legjenda e Platformes", "Leggenda di Banchina")
-    else -> pulseText(lang, "Rail Oracle", "Σιδηροδρομικο Μαντειο", "Orakulli Hekurudhor", "Oracolo Ferroviario")
+    6 -> pulseText(lang, "Station Guardian", "Φύλακας Σταθμού", "Mbrojtës Stacioni", "Custode di Stazione")
+    7 -> pulseText(lang, "Track Whisperer", "Ψιθυριστής Γραμμών", "Pëshpëritësi i Shinave", "Sussurratore dei Binari")
+    8 -> pulseText(lang, "Timetable Tamer", "Δαμαστής Δρομολογίων", "Zbutësi i Orareve", "Domatore di Orari")
+    9 -> pulseText(lang, "Platform Legend", "Θρύλος Αποβάθρας", "Legjenda e Platformës", "Leggenda di Banchina")
+    else -> pulseText(lang, "Rail Oracle", "Σιδηροδρομικό Μαντείο", "Orakulli Hekurudhor", "Oracolo Ferroviario")
 }
 
 private data class PulseCondition(
@@ -97,16 +97,16 @@ internal fun RailPulseStationScreen(
     val communityService = koinInject<CommunityReportService>()
     val context = RailPulseReportContext(
         scopeId = "A1_AIR",
-        title = pulseText(lang, "Airport", "Αεροδρομιο", "Aeroporti", "Aeroporto"),
-        subtitle = pulseText(lang, "Athens International Airport · M3", "Διεθνες Αεροδρομιο Αθηνων · M3", "Aeroporti Nderkombetar i Athines · M3", "Aeroporto Internazionale di Atene · M3"),
+        title = pulseText(lang, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto"),
+        subtitle = pulseText(lang, "Athens International Airport · M3", "Διεθνές Αεροδρόμιο Αθηνών · M3", "Aeroporti Ndërkombëtar i Athinës · M3", "Aeroporto Internazionale di Atene · M3"),
     )
     var summary by remember { mutableStateOf<CommunitySummary?>(null) }
     LaunchedEffect(context.scopeId) {
         summary = communityService.fetchSummary(context.scopeId)
     }
     RailPulseDetailLayout(
-        title = pulseText(lang, "Airport", "Αεροδρομιο", "Aeroporti", "Aeroporto"),
-        subtitle = pulseText(lang, "Athens International Airport", "Διεθνες Αεροδρομιο Αθηνων", "Aeroporti Nderkombetar i Athines", "Aeroporto Internazionale di Atene"),
+        title = pulseText(lang, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto"),
+        subtitle = pulseText(lang, "Athens International Airport", "Διεθνές Αεροδρόμιο Αθηνών", "Aeroporti Ndërkombëtar i Athinës", "Aeroporto Internazionale di Atene"),
         onBack = onBack,
     ) {
         item {
@@ -132,8 +132,8 @@ internal fun RailPulseTrainScreen(
     val communityService = koinInject<CommunityReportService>()
     val context = RailPulseReportContext(
         scopeId = "train_1635",
-        title = pulseText(lang, "Train 1635", "Τρενο 1635", "Treni 1635", "Treno 1635"),
-        subtitle = pulseText(lang, "Athens to Kalambaka", "Αθηνα προς Καλαμπακα", "Athine per Kalambaka", "Atene verso Kalambaka"),
+        title = pulseText(lang, "Train 1635", "Τρένο 1635", "Treni 1635", "Treno 1635"),
+        subtitle = pulseText(lang, "Athens to Kalambaka", "Αθήνα προς Καλαμπάκα", "Athinë për Kalambaka", "Atene verso Kalambaka"),
     )
     var summary by remember { mutableStateOf<CommunitySummary?>(null) }
     LaunchedEffect(context.scopeId) {
@@ -175,16 +175,16 @@ internal fun RailPulseFeedScreen(lang: AppLanguage, onBack: () -> Unit) {
         didLoadHistory = true
     }
     RailPulseDetailLayout(
-        title = pulseText(lang, "Ichnos activity", "Δραστηριοτητα Ichnos", "Aktiviteti Ichnos", "Attivita Ichnos"),
-        subtitle = pulseText(lang, "Across Greece", "Σε ολη την Ελλαδα", "Ne gjithe Greqine", "In tutta la Grecia"),
+        title = pulseText(lang, "Ichnos activity", "Δραστηριότητα Ichnos", "Aktiviteti Ichnos", "Attivita Ichnos"),
+        subtitle = pulseText(lang, "Across Greece", "Σε όλη την Ελλάδα", "Në gjithë Greqinë", "In tutta la Grecia"),
         onBack = onBack,
     ) {
         item { CommunityNotice(lang) }
         communityIssueRows(lang, summary)
-        item { PulseSectionTitle(pulseText(lang, "Greek railway history", "Ιστορικο ελληνικων σιδηροδρομων", "Historia e hekurudhave greke", "Storico ferroviario greco")) }
+        item { PulseSectionTitle(pulseText(lang, "Greek railway history", "Ιστορικό ελληνικών σιδηροδρόμων", "Historia e hekurudhave greke", "Storico ferroviario greco")) }
         item {
             Text(
-                pulseText(lang, "Actual anonymous user reports are kept as daily totals, then grouped by month or year. Estimated journeys are never added to this history.", "Οι πραγματικες ανωνυμες αναφορες χρηστων κρατουνται ως ημερησια συνολα και ομαδοποιουνται ανα μηνα η ετος. Οι εκτιμωμενες διαδρομες δεν προστιθενται ποτε σε αυτο το ιστορικο.", "Raportet reale anonime te perdoruesve ruhen si totale ditore dhe grupohen sipas muajit ose vitit. Udhetimet e vleresuara nuk shtohen kurre ne kete histori.", "Le segnalazioni anonime reali degli utenti vengono conservate come totali giornalieri e raggruppate per mese o anno. I viaggi stimati non vengono mai aggiunti allo storico."),
+                pulseText(lang, "Actual anonymous user reports are kept as daily totals, then grouped by month or year. Estimated journeys are never added to this history.", "Οι πραγματικές ανώνυμες αναφορές χρηστών κρατούνται ως ημερήσια σύνολα και ομαδοποιούνται ανά μήνα ή έτος. Οι εκτιμώμενες διαδρομές δεν προστίθενται ποτέ σε αυτό το ιστορικό.", "Raportet reale anonime të përdoruesve ruhen si totale ditore dhe grupohen sipas muajit ose vitit. Udhëtimet e vlerësuara nuk shtohen kurrë në këtë histori.", "Le segnalazioni anonime reali degli utenti vengono conservate come totali giornalieri e raggruppate per mese o anno. I viaggi stimati non vengono mai aggiunti allo storico."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -213,8 +213,8 @@ private fun IchnosHistoryPeriodSelector(
             ) {
                 Text(
                     text = when (period) {
-                        IchnosHistoryPeriod.DAY -> pulseText(lang, "Days", "Ημερες", "Dite", "Giorni")
-                        IchnosHistoryPeriod.MONTH -> pulseText(lang, "Months", "Μηνες", "Muaj", "Mesi")
+                        IchnosHistoryPeriod.DAY -> pulseText(lang, "Days", "Ημέρες", "Ditë", "Giorni")
+                        IchnosHistoryPeriod.MONTH -> pulseText(lang, "Months", "Μήνες", "Muaj", "Mesi")
                         IchnosHistoryPeriod.YEAR -> pulseText(lang, "Years", "Ετη", "Vite", "Anni")
                     },
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -251,7 +251,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityHistoryRows(
         }
         item {
             Text(
-                pulseText(lang, "Only anonymous aggregate counts are permanent. Individual reports are deleted within seven days.", "Μονο τα ανωνυμα συγκεντρωτικα συνολα παραμενουν μονιμα. Οι μεμονωμενες αναφορες διαγραφονται εντος επτα ημερων.", "Vetem totalet anonime te grumbulluara ruhen pergjithmone. Raportet individuale fshihen brenda shtate ditesh.", "Solo i conteggi aggregati anonimi restano permanenti. Le singole segnalazioni vengono eliminate entro sette giorni."),
+                pulseText(lang, "Only anonymous aggregate counts are permanent. Individual reports are deleted within seven days.", "Μόνο τα ανώνυμα συγκεντρωτικά σύνολα παραμένουν μόνιμα. Οι μεμονωμένες αναφορές διαγράφονται εντός επτά ημερών.", "Vetëm totalet anonime të grumbulluara ruhen përgjithmonë. Raportet individuale fshihen brenda shtatë ditësh.", "Solo i conteggi aggregati anonimi restano permanenti. Le singole segnalazioni vengono eliminate entro sette giorni."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp),
@@ -266,14 +266,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityHistoryRows(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        if (history == null) pulseText(lang, "History is temporarily unavailable", "Το ιστορικο δεν ειναι προσωρινα διαθεσιμο", "Historia nuk eshte perkohesisht e disponueshme", "Lo storico non e temporaneamente disponibile")
-                        else pulseText(lang, "No reports recorded for this period yet", "Δεν εχουν καταγραφει αναφορες για αυτη την περιοδο", "Ende nuk ka raporte per kete periudhe", "Nessuna segnalazione registrata per questo periodo"),
+                        if (history == null) pulseText(lang, "History is temporarily unavailable", "Το ιστορικό δεν είναι προσωρινά διαθέσιμο", "Historia nuk është përkohësisht e disponueshme", "Lo storico non e temporaneamente disponibile")
+                        else pulseText(lang, "No reports recorded for this period yet", "Δεν έχουν καταγραφεί αναφορές για αυτή την περίοδο", "Ende nuk ka raporte për këtë periudhë", "Nessuna segnalazione registrata per questo periodo"),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        pulseText(lang, "History starts with accepted Ichnos reports. It never invents past numbers.", "Το ιστορικο ξεκινα με αποδεκτες αναφορες Ichnos. Δεν επινοει ποτε παλιους αριθμους.", "Historia fillon me raportet e pranuara Ichnos. Nuk shpik kurre numra te kaluar.", "Lo storico inizia con le segnalazioni Ichnos accettate. Non inventa mai numeri passati."),
+                        pulseText(lang, "History starts with accepted Ichnos reports. It never invents past numbers.", "Το ιστορικό ξεκινά με αποδεκτές αναφορές Ichnos. Δεν επινοεί ποτέ παλιούς αριθμούς.", "Historia fillon me raportet e pranuara Ichnos. Nuk shpik kurrë numra të kaluar.", "Lo storico inizia con le segnalazioni Ichnos accettate. Non inventa mai numeri passati."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -307,7 +307,7 @@ private fun IchnosHistoryBucketCard(lang: AppLanguage, bucket: CommunityHistoryB
                 Box(Modifier.weight((1f - positiveRatio).coerceAtLeast(0.001f)).fillMaxSize().background(SyrmosColorTokens.disruption))
             }
             Row {
-                Text("✓ ${bucket.positiveReports} ${pulseText(lang, "good", "καλα", "mire", "bene")}", style = MaterialTheme.typography.labelMedium, color = SyrmosColorTokens.live, fontWeight = FontWeight.Bold)
+                Text("✓ ${bucket.positiveReports} ${pulseText(lang, "good", "καλα", "mirë", "bene")}", style = MaterialTheme.typography.labelMedium, color = SyrmosColorTokens.live, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Text("! ${bucket.issueReports} ${pulseText(lang, "issues", "προβληματα", "probleme", "problemi")}", style = MaterialTheme.typography.labelMedium, color = if (bucket.issueReports > 0) SyrmosColorTokens.disruption else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
@@ -327,16 +327,16 @@ private fun ichnosHistoryPeriodLabel(value: String): String = when (value.length
 
 private fun ichnosHistoryBreakdown(counts: Map<String, Int>, lang: AppLanguage): String {
     val labels = mapOf(
-        "normal" to pulseText(lang, "OK", "Καλα", "Ne rregull", "OK"),
-        "clean" to pulseText(lang, "clean", "καθαρα", "paster", "pulito"),
-        "delayed" to pulseText(lang, "delayed", "καθυστερηση", "vonese", "ritardo"),
-        "crowded" to pulseText(lang, "crowded", "κοσμος", "plot", "affollato"),
-        "stopped" to pulseText(lang, "stopped", "διακοπη", "ndaluar", "fermo"),
-        "too_hot" to pulseText(lang, "too hot", "πολυ ζεστη", "shume nxehte", "troppo caldo"),
-        "access" to pulseText(lang, "access", "προσβαση", "akses", "accesso"),
-        "facilities" to pulseText(lang, "facilities", "παροχες", "sherbime", "servizi"),
-        "safety" to pulseText(lang, "safety", "ασφαλεια", "siguri", "sicurezza"),
-        "other" to pulseText(lang, "other", "αλλο", "tjeter", "altro"),
+        "normal" to pulseText(lang, "OK", "Καλά", "Në rregull", "OK"),
+        "clean" to pulseText(lang, "clean", "καθαρά", "pastër", "pulito"),
+        "delayed" to pulseText(lang, "delayed", "καθυστέρηση", "vonesë", "ritardo"),
+        "crowded" to pulseText(lang, "crowded", "κόσμος", "plot", "affollato"),
+        "stopped" to pulseText(lang, "stopped", "διακοπή", "ndaluar", "fermo"),
+        "too_hot" to pulseText(lang, "too hot", "πολύ ζέστη", "shumë nxehtë", "troppo caldo"),
+        "access" to pulseText(lang, "access", "πρόσβαση", "akses", "accesso"),
+        "facilities" to pulseText(lang, "facilities", "παροχές", "shërbime", "servizi"),
+        "safety" to pulseText(lang, "safety", "ασφάλεια", "siguri", "sicurezza"),
+        "other" to pulseText(lang, "other", "άλλο", "tjetër", "altro"),
     )
     return listOf("normal", "clean", "delayed", "crowded", "stopped", "too_hot", "access", "facilities", "safety", "other")
         .mapNotNull { signal -> counts[signal]?.takeIf { it > 0 }?.let { "${labels[signal]} $it" } }
@@ -356,7 +356,7 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
     val callsign = railContributorCallsign(level, lang)
     val nextCallsign = railContributorCallsign(level + 1, lang)
     RailPulseDetailLayout(
-        title = pulseText(lang, "Local contribution", "Τοπικη συνεισφορα", "Kontributi lokal", "Contributo locale"),
+        title = pulseText(lang, "Local contribution", "Τοπική συνεισφορά", "Kontributi lokal", "Contributo locale"),
         subtitle = "",
         onBack = onBack,
         headerColors = listOf(Color(0xFF5D2EA8), Color(0xFF343F91)),
@@ -374,15 +374,15 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
                     Column {
                         Text(callsign, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
                         Text("${pulseText(lang, "Local rail contributor", "Τοπικος συνεισφορεας rail", "Kontribues lokal rail", "Collaboratore rail locale")} · ${pulseText(lang, "Level", "Επιπεδο", "Niveli", "Livello")} $level", style = MaterialTheme.typography.labelMedium, color = Color.White)
-                        Text(pulseText(lang, "Progress stored only on this device", "Η προοδος αποθηκευεται μονο στη συσκευη", "Progresi ruhet vetem ne kete pajisje", "Progressi salvati solo su questo dispositivo"), style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.padding(top = 6.dp).background(Color.White.copy(alpha = 0.17f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp))
+                        Text(pulseText(lang, "Progress stored only on this device", "Η πρόοδος αποθηκεύεται μόνο στη συσκευή", "Progresi ruhet vetëm në këtë pajisje", "Progressi salvati solo su questo dispositivo"), style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.padding(top = 6.dp).background(Color.White.copy(alpha = 0.17f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp))
                     }
                 }
-                Text(pulseText(lang, "NEXT LEVEL", "ΕΠΟΜΕΝΟ ΕΠΙΠΕΔΟ", "NIVELI TJETER", "PROSSIMO LIVELLO"), style = MaterialTheme.typography.labelSmall, color = Color.White)
+                Text(pulseText(lang, "NEXT LEVEL", "ΕΠΟΜΕΝΟ ΕΠΙΠΕΔΟ", "NIVELI TJETËR", "PROSSIMO LIVELLO"), style = MaterialTheme.typography.labelSmall, color = Color.White)
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = Color(0xFF63E6A6), trackColor = Color.White.copy(alpha = 0.2f))
                 Row {
                     Text("${snapshot.confirmed} confirmed contributions", style = MaterialTheme.typography.labelSmall, color = Color.White)
                     Spacer(Modifier.weight(1f))
-                    Text("${100 - (snapshot.confirmed % 100)} ${pulseText(lang, "to", "για", "deri ne", "a")} $nextCallsign", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                    Text("${100 - (snapshot.confirmed % 100)} ${pulseText(lang, "to", "για", "deri në", "a")} $nextCallsign", style = MaterialTheme.typography.labelSmall, color = Color.White)
                 }
             }
         },
@@ -391,38 +391,38 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 MetricCard(pulseText(lang, "CONFIRMED", "ΕΠΙΒΕΒΑΙΩΜΕΝΑ", "KONFIRMUAR", "CONFERMATI"), snapshot.confirmed.toString(), Color.Black, Modifier.weight(1f))
                 MetricCard(pulseText(lang, "QUALITY", "ΠΟΙΟΤΗΤΑ", "CILESIA", "QUALITA"), if (snapshot.confirmed == 0) "-" else "${snapshot.qualityPercent}%", SyrmosColorTokens.live, Modifier.weight(1f))
-                MetricCard(pulseText(lang, "THIS WEEK", "ΑΥΤΗ ΤΗΝ ΕΒΔΟΜΑΔΑ", "KETE JAVE", "QUESTA SETTIMANA"), snapshot.thisWeek.toString(), Color(0xFF7C2EB8), Modifier.weight(1f))
+                MetricCard(pulseText(lang, "THIS WEEK", "ΑΥΤΗ ΤΗΝ ΕΒΔΟΜΑΔΑ", "KËTË JAVË", "QUESTA SETTIMANA"), snapshot.thisWeek.toString(), Color(0xFF7C2EB8), Modifier.weight(1f))
             }
         }
-        item { PulseSectionTitle(pulseText(lang, "Contributor milestones", "Οροσημα συνεισφορεα", "Arritjet e kontribuesit", "Traguardi del collaboratore")) }
+        item { PulseSectionTitle(pulseText(lang, "Contributor milestones", "Ορόσημα συνεισφορέα", "Arritjet e kontribuesit", "Traguardi del collaboratore")) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BadgeCard("✓", pulseText(lang, "First\nReport", "Πρωτη\nΑναφορα", "Raporti\ni pare", "Prima\nsegnalazione"), snapshot.confirmed >= 1, Modifier.weight(1f))
-                BadgeCard("◉", pulseText(lang, "Live\nReporter", "Ζωντανος\nReporter", "Raportues\nLive", "Reporter\nLive"), snapshot.confirmed >= 10, Modifier.weight(1f))
-                BadgeCard("★", pulseText(lang, "Station\nGuardian", "Φυλακας\nΣταθμου", "Mbrojtes\nStacioni", "Custode\nStazione"), snapshot.confirmed >= 50, Modifier.weight(1f))
-                BadgeCard("100", pulseText(lang, "100\nReports", "100\nΑναφορες", "100\nRaporte", "100\nReport"), snapshot.confirmed >= 100, Modifier.weight(1f))
+                BadgeCard("✓", pulseText(lang, "First\nReport", "Πρώτη\nΑναφορά", "Raporti\ni parë", "Prima\nsegnalazione"), snapshot.confirmed >= 1, Modifier.weight(1f))
+                BadgeCard("◉", pulseText(lang, "Live\nReporter", "Ζωντανός\nReporter", "Raportues\nLive", "Reporter\nLive"), snapshot.confirmed >= 10, Modifier.weight(1f))
+                BadgeCard("★", pulseText(lang, "Station\nGuardian", "Φύλακας\nΣταθμού", "Mbrojtës\nStacioni", "Custode\nStazione"), snapshot.confirmed >= 50, Modifier.weight(1f))
+                BadgeCard("100", pulseText(lang, "100\nReports", "100\nΑναφορές", "100\nRaporte", "100\nReport"), snapshot.confirmed >= 100, Modifier.weight(1f))
             }
         }
-        item { PulseSectionTitle(pulseText(lang, "Weekly community activity", "Εβδομαδιαια δραστηριοτητα κοινοτητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunita")) }
+        item { PulseSectionTitle(pulseText(lang, "Weekly community activity", "Εβδομαδιαία δραστηριότητα κοινότητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunita")) }
         item {
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 5.dp) {
                 Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row {
-                        Text(pulseText(lang, "Anonymous reports across Greece", "Ανωνυμες αναφορες σε ολη την Ελλαδα", "Raporte anonime ne Greqi", "Segnalazioni anonime in tutta la Grecia"), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                        Text(pulseText(lang, "Last 7 days", "Τελευταιες 7 ημερες", "7 ditet e fundit", "Ultimi 7 giorni"), style = MaterialTheme.typography.labelSmall, color = SyrmosColorTokens.live)
+                        Text(pulseText(lang, "Anonymous reports across Greece", "Ανώνυμες αναφορές σε όλη την Ελλάδα", "Raporte anonime në Greqi", "Segnalazioni anonime in tutta la Grecia"), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(pulseText(lang, "Last 7 days", "Τελευταίες 7 ημέρες", "7 ditët e fundit", "Ultimi 7 giorni"), style = MaterialTheme.typography.labelSmall, color = SyrmosColorTokens.live)
                     }
                     val weeklyTotal = networkSummary?.totalReportsThisWeek
                     Text(weeklyTotal?.toString() ?: "-", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(pulseText(lang, "Your local contribution: ${snapshot.thisWeek}", "Η τοπικη συνεισφορα σου: ${snapshot.thisWeek}", "Kontributi yt lokal: ${snapshot.thisWeek}", "Il tuo contributo locale: ${snapshot.thisWeek}"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    Text(pulseText(lang, "This total comes from accepted anonymous reports, not estimated journeys.", "Αυτο το συνολο προερχεται απο αποδεκτες ανωνυμες αναφορες, οχι εκτιμησεις διαδρομων.", "Ky total vjen nga raporte anonime te pranuara, jo nga udhetime te vleresuara.", "Questo totale proviene da segnalazioni anonime accettate, non da viaggi stimati."), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(pulseText(lang, "Your local contribution: ${snapshot.thisWeek}", "Η τοπική συνεισφορά σου: ${snapshot.thisWeek}", "Kontributi yt lokal: ${snapshot.thisWeek}", "Il tuo contributo locale: ${snapshot.thisWeek}"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    Text(pulseText(lang, "This total comes from accepted anonymous reports, not estimated journeys.", "Αυτό το σύνολο προέρχεται από αποδεκτές ανώνυμες αναφορές, όχι εκτιμήσεις διαδρομών.", "Ky total vjen nga raporte anonime të pranuara, jo nga udhëtime të vlerësuara.", "Questo totale proviene da segnalazioni anonime accettate, non da viaggi stimati."), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
         item {
             Surface(shape = RoundedCornerShape(18.dp), color = Color(0xFFF0E8FA)) {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text(pulseText(lang, "Private by construction", "Ιδιωτικο απο τον σχεδιασμο", "Privat nga ndertimi", "Privato per costruzione"), fontWeight = FontWeight.SemiBold)
-                    Text(pulseText(lang, "Progress stays local. Individual anonymous reports contain no account, device id, or precise location and are deleted after seven days. Only daily aggregate counts remain for railway history.", "Η προοδος μενει τοπικα. Οι μεμονωμενες ανωνυμες αναφορες δεν περιεχουν λογαριασμο, αναγνωριστικο συσκευης η ακριβη τοποθεσια και διαγραφονται μετα απο επτα ημερες. Μονο τα ημερησια συγκεντρωτικα συνολα παραμενουν για το σιδηροδρομικο ιστορικο.", "Progresi mbetet lokal. Raportet individuale anonime nuk permbajne llogari, identifikues pajisjeje ose vendndodhje te sakte dhe fshihen pas shtate ditesh. Vetem totalet ditore te grumbulluara mbeten per historine hekurudhore.", "I progressi restano locali. Le singole segnalazioni anonime non includono account, identificatori del dispositivo o posizione precisa e vengono eliminate dopo sette giorni. Solo i totali giornalieri aggregati restano per lo storico ferroviario."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(pulseText(lang, "Private by construction", "Ιδιωτικό από τον σχεδιασμό", "Privat nga ndërtimi", "Privato per costruzione"), fontWeight = FontWeight.SemiBold)
+                    Text(pulseText(lang, "Progress stays local. Individual anonymous reports contain no account, device id, or precise location and are deleted after seven days. Only daily aggregate counts remain for railway history.", "Η πρόοδος μένει τοπικά. Οι μεμονωμένες ανώνυμες αναφορές δεν περιέχουν λογαριασμό, αναγνωριστικό συσκευής ή ακριβή τοποθεσία και διαγράφονται μετά από επτά ημέρες. Μόνο τα ημερήσια συγκεντρωτικά σύνολα παραμένουν για το σιδηροδρομικό ιστορικό.", "Progresi mbetet lokal. Raportet individuale anonime nuk përmbajnë llogari, identifikues pajisjeje ose vendndodhje të saktë dhe fshihen pas shtatë ditësh. Vetëm totalet ditore të grumbulluara mbeten për historinë hekurudhore.", "I progressi restano locali. Le singole segnalazioni anonime non includono account, identificatori del dispositivo o posizione precisa e vengono eliminate dopo sette giorni. Solo i totali giornalieri aggregati restano per lo storico ferroviario."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -498,28 +498,28 @@ private fun CommunitySummaryCard(lang: AppLanguage, title: String, detail: Strin
                 Text(status, style = MaterialTheme.typography.labelSmall, color = SyrmosColorTokens.live, fontWeight = FontWeight.Bold)
             }
             Button(onClick = onReport, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.surface)) {
-                Text(pulseText(lang, "Report", "Αναφορα", "Raporto", "Segnala"))
+                Text(pulseText(lang, "Report", "Αναφορά", "Raporto", "Segnala"))
             }
         }
     }
 }
 
 private fun summaryTitle(lang: AppLanguage, summary: CommunitySummary?): String = when {
-    summary == null -> pulseText(lang, "Community status unavailable", "Η κοινοτικη κατασταση δεν ειναι διαθεσιμη", "Gjendja e komunitetit nuk eshte e disponueshme", "Stato della comunita non disponibile")
-    summary.hasIssues -> pulseText(lang, "Community issue reported", "Αναφερθηκε κοινοτικο προβλημα", "U raportua problem nga komuniteti", "Problema segnalato dalla comunita")
-    else -> pulseText(lang, "No issues reported", "Δεν αναφερθηκαν προβληματα", "Nuk ka probleme te raportuara", "Nessun problema segnalato")
+    summary == null -> pulseText(lang, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunita non disponibile")
+    summary.hasIssues -> pulseText(lang, "Community issue reported", "Αναφέρθηκε κοινοτικό πρόβλημα", "U raportua problem nga komuniteti", "Problema segnalato dalla comunita")
+    else -> pulseText(lang, "No issues reported", "Δεν αναφέρθηκαν προβλήματα", "Nuk ka probleme të raportuara", "Nessun problema segnalato")
 }
 
 private fun summaryDetail(lang: AppLanguage, summary: CommunitySummary?): String = when {
-    summary == null -> pulseText(lang, "Connect to refresh anonymous reports.", "Συνδεσου για ανανεωση ανωνυμων αναφορων.", "Lidhu per te rifreskuar raportet anonime.", "Connettiti per aggiornare le segnalazioni anonime.")
-    summary.hasIssues -> pulseText(lang, "${summary.activeIssueCount} active report${if (summary.activeIssueCount == 1) "" else "s"}", "${summary.activeIssueCount} ενεργες αναφορες", "${summary.activeIssueCount} raporte aktive", "${summary.activeIssueCount} segnalazioni attive")
-    else -> pulseText(lang, "${summary.estimatedJourneysToday ?: 0} estimated journeys today", "${summary.estimatedJourneysToday ?: 0} εκτιμωμενες διαδρομες σημερα", "${summary.estimatedJourneysToday ?: 0} udhetime te vleresuara sot", "${summary.estimatedJourneysToday ?: 0} viaggi stimati oggi")
+    summary == null -> pulseText(lang, "Connect to refresh anonymous reports.", "Συνδέσου για ανανέωση ανώνυμων αναφορών.", "Lidhu për të rifreskuar raportet anonime.", "Connettiti per aggiornare le segnalazioni anonime.")
+    summary.hasIssues -> pulseText(lang, "${summary.activeIssueCount} active report${if (summary.activeIssueCount == 1) "" else "s"}", "${summary.activeIssueCount} ενεργές αναφορές", "${summary.activeIssueCount} raporte aktive", "${summary.activeIssueCount} segnalazioni attive")
+    else -> pulseText(lang, "${summary.estimatedJourneysToday ?: 0} estimated journeys today", "${summary.estimatedJourneysToday ?: 0} εκτιμώμενες διαδρομές σήμερα", "${summary.estimatedJourneysToday ?: 0} udhëtime të vlerësuara sot", "${summary.estimatedJourneysToday ?: 0} viaggi stimati oggi")
 }
 
 private fun summaryStatus(lang: AppLanguage, summary: CommunitySummary?): String = when {
-    summary == null -> pulseText(lang, "Offline", "Εκτος συνδεσης", "Offline", "Offline")
-    summary.hasIssues -> pulseText(lang, "Check details", "Δες λεπτομερειες", "Shiko hollesite", "Vedi dettagli")
-    else -> pulseText(lang, "Estimate", "Εκτιμηση", "Vleresim", "Stima")
+    summary == null -> pulseText(lang, "Offline", "Εκτός σύνδεσης", "Offline", "Offline")
+    summary.hasIssues -> pulseText(lang, "Check details", "Δες λεπτομέρειες", "Shiko hollësitë", "Vedi dettagli")
+    else -> pulseText(lang, "Estimate", "Εκτίμηση", "Vlerësim", "Stima")
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
@@ -530,9 +530,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
         item {
             PulseActivityRow(
                 "?",
-                pulseText(lang, "Reports unavailable", "Οι αναφορες δεν ειναι διαθεσιμες", "Raportet nuk jane te disponueshme", "Segnalazioni non disponibili"),
-                pulseText(lang, "Official schedules and alerts remain available.", "Τα επισημα δρομολογια και οι ειδοποιησεις παραμενουν διαθεσιμα.", "Oraret dhe njoftimet zyrtare mbeten te disponueshme.", "Gli orari e gli avvisi ufficiali restano disponibili."),
-                pulseText(lang, "Offline", "Εκτος συνδεσης", "Offline", "Offline"),
+                pulseText(lang, "Reports unavailable", "Οι αναφορές δεν είναι διαθέσιμες", "Raportet nuk janë të disponueshme", "Segnalazioni non disponibili"),
+                pulseText(lang, "Official schedules and alerts remain available.", "Τα επίσημα δρομολόγια και οι ειδοποιήσεις παραμένουν διαθέσιμα.", "Oraret dhe njoftimet zyrtare mbeten të disponueshme.", "Gli orari e gli avvisi ufficiali restano disponibili."),
+                pulseText(lang, "Offline", "Εκτός σύνδεσης", "Offline", "Offline"),
                 Color(0xFF6B7280),
             )
         }
@@ -543,8 +543,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
             PulseActivityRow(
                 "✓",
                 pulseText(lang, "No active issue reports", "Δεν υπάρχουν ενεργές αναφορές προβλημάτων", "Nuk ka raporte aktive problemesh", "Nessuna segnalazione attiva"),
-                pulseText(lang, "The journey count is an estimate, not a user confirmation count.", "Ο αριθμος διαδρομων ειναι εκτιμηση, οχι αριθμος επιβεβαιωσεων χρηστων.", "Numri i udhetimeve eshte vleresim, jo numer konfirmimesh nga perdoruesit.", "Il numero di viaggi e una stima, non un conteggio di conferme utenti."),
-                pulseText(lang, "Clear", "Καθαρο", "Ne rregull", "Regolare"),
+                pulseText(lang, "The journey count is an estimate, not a user confirmation count.", "Ο αριθμός διαδρομών είναι εκτίμηση, όχι αριθμός επιβεβαιώσεων χρηστών.", "Numri i udhëtimeve është vlerësim, jo numër konfirmimesh nga përdoruesit.", "Il numero di viaggi e una stima, non un conteggio di conferme utenti."),
+                pulseText(lang, "Clear", "Καθαρισμός", "Në rregull", "Regolare"),
                 SyrmosColorTokens.live,
             )
         }
@@ -553,20 +553,20 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
     summary.issues.forEach { issue ->
         item(key = "${issue.scopeId}:${issue.signal}:${issue.detail}") {
             val signal = when (issue.signal) {
-                "delayed" -> pulseText(lang, "Delay", "Καθυστερηση", "Vonese", "Ritardo")
-                "crowded" -> pulseText(lang, "Crowded", "Κοσμος", "Plot", "Affollato")
-                "stopped" -> pulseText(lang, "Service stopped", "Διακοπη υπηρεσιας", "Sherbimi i ndalur", "Servizio fermo")
-                "too_hot" -> pulseText(lang, "Too hot", "Πολυ ζεστη", "Shume nxehte", "Troppo caldo")
-                "access" -> pulseText(lang, "Accessibility", "Προσβαση", "Akses", "Accessibilita")
-                "facilities" -> pulseText(lang, "Facilities", "Παροχες", "Sherbime", "Servizi")
-                "safety" -> pulseText(lang, "Safety", "Ασφαλεια", "Siguri", "Sicurezza")
-                else -> pulseText(lang, "Other issue", "Αλλο προβλημα", "Problem tjeter", "Altro problema")
+                "delayed" -> pulseText(lang, "Delay", "Καθυστέρηση", "Vonesë", "Ritardo")
+                "crowded" -> pulseText(lang, "Crowded", "Κόσμος", "Plot", "Affollato")
+                "stopped" -> pulseText(lang, "Service stopped", "Η κίνηση σταμάτησε", "Shërbimi i ndalur", "Servizio fermo")
+                "too_hot" -> pulseText(lang, "Too hot", "Πολύ ζέστη", "Shumë nxehtë", "Troppo caldo")
+                "access" -> pulseText(lang, "Accessibility", "Πρόσβαση", "Akses", "Accessibilita")
+                "facilities" -> pulseText(lang, "Facilities", "Παροχές", "Shërbime", "Servizi")
+                "safety" -> pulseText(lang, "Safety", "Ασφάλεια", "Siguri", "Sicurezza")
+                else -> pulseText(lang, "Other issue", "Άλλο πρόβλημα", "Problem tjetër", "Altro problema")
             }
             PulseActivityRow(
                 "!",
                 issue.scopeLabel,
                 listOf(signal, issue.detail.takeIf { it.isNotBlank() }, "${issue.count}").filterNotNull().joinToString(" · "),
-                pulseText(lang, "Active", "Ενεργο", "Aktiv", "Attivo"),
+                pulseText(lang, "Active", "Ενεργό", "Aktiv", "Attivo"),
                 if (issue.signal in setOf("delayed", "stopped", "safety")) SyrmosColorTokens.disruption else SyrmosColorTokens.warning,
             )
         }
@@ -622,7 +622,7 @@ private fun BadgeCard(symbol: String, label: String, unlocked: Boolean, modifier
 @Composable
 private fun CommunityNotice(lang: AppLanguage) {
     Text(
-        pulseText(lang, "Community reports are not official operator notices.", "Οι αναφορες κοινοτητας δεν ειναι επισημες ανακοινωσεις φορεα.", "Raportet e komunitetit nuk jane njoftime zyrtare te operatorit.", "Le segnalazioni della comunita non sono avvisi ufficiali."),
+        pulseText(lang, "Community reports are not official operator notices.", "Οι αναφορές κοινότητας δεν είναι επίσημες ανακοινώσεις φορέα.", "Raportet e komunitetit nuk janë njoftime zyrtare të operatorit.", "Le segnalazioni della comunita non sono avvisi ufficiali."),
         style = MaterialTheme.typography.labelSmall,
         color = SyrmosColorTokens.warning,
         modifier = Modifier.fillMaxWidth().background(SyrmosColorTokens.warningContainer, RoundedCornerShape(14.dp)).padding(12.dp),

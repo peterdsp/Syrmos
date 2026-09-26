@@ -94,7 +94,7 @@ extension TransitLine {
     }
 }
 
-enum LocalizedKey {
+enum LocalizedKey: CaseIterable {
     case appSubtitle
     case metro
     case tram
@@ -159,7 +159,7 @@ enum LocalizedKey {
         switch (self, lang) {
         case (.appSubtitle, .english): return "Live Greece rail times"
         case (.appSubtitle, .greek): return "Ζωντανοί χρόνοι σιδηροδρόμων Ελλάδας"
-        case (.appSubtitle, .albanian): return "Oraret e drejtpërdrejta te hekurudhave te Greqise"
+        case (.appSubtitle, .albanian): return "Oraret e drejtpërdrejta të hekurudhave të Greqisë"
         case (.appSubtitle, .italian): return "Orari ferroviari della Grecia in tempo reale"
         case (.metro, .english): return "Metro"
         case (.metro, .greek): return "Μετρό"
@@ -179,7 +179,7 @@ enum LocalizedKey {
         case (.serviceAlerts, .italian): return "Avvisi di servizio"
         case (.latestFromSTASY, .english): return "Rail network updates"
         case (.latestFromSTASY, .greek): return "Ενημερώσεις σιδηροδρομικού δικτύου"
-        case (.latestFromSTASY, .albanian): return "Perditesime te rrjetit hekurudhor"
+        case (.latestFromSTASY, .albanian): return "Përditësime të rrjetit hekurudhor"
         case (.latestFromSTASY, .italian): return "Aggiornamenti rete ferroviaria"
         case (.readMore, .english): return "Read more"
         case (.readMore, .greek): return "Διαβάστε περισσότερα"
@@ -271,7 +271,7 @@ enum LocalizedKey {
         case (.onboardWelcomeTitle, .italian): return "Benvenuto su Syrmos"
         case (.onboardWelcomeBody, .english): return "Live arrivals, GPS tracking, train telemetry and onboard livestream for the entire Greek rail network."
         case (.onboardWelcomeBody, .greek): return "Ζωντανές αφίξεις, GPS, τηλεμετρία τρένων και ζωντανή μετάδοση από όλο το ελληνικό σιδηροδρομικό δίκτυο."
-        case (.onboardWelcomeBody, .albanian): return "Mberritje live, GPS, telemetri trenash dhe transmetim live nga i gjithe rrjeti hekurudhor grek."
+        case (.onboardWelcomeBody, .albanian): return "Mbërritje live, GPS, telemetri trenash dhe transmetim live nga i gjithë rrjeti hekurudhor grek."
         case (.onboardWelcomeBody, .italian): return "Arrivi in tempo reale, GPS, telemetria treni e streaming live dall'intera rete ferroviaria greca."
         case (.onboardLiveTitle, .english): return "Trains in real time"
         case (.onboardLiveTitle, .greek): return "Συρμοί σε πραγματικό χρόνο"
@@ -279,7 +279,7 @@ enum LocalizedKey {
         case (.onboardLiveTitle, .italian): return "Treni in tempo reale"
         case (.onboardLiveBody, .english): return "See departures, track trains on the map with speed and signal data, and watch onboard cameras live."
         case (.onboardLiveBody, .greek): return "Δες αναχωρήσεις, παρακολούθησε τρένα στο χάρτη με ταχύτητα και σήμα, και δες ζωντανή εικόνα από κάμερες."
-        case (.onboardLiveBody, .albanian): return "Shih nisjet, ndiq trenat ne harte me shpejtesi dhe sinjal, dhe shiko kamerat live ne bord."
+        case (.onboardLiveBody, .albanian): return "Shih nisjet, ndiq trenat në hartë me shpejtësi dhe sinjal, dhe shiko kamerat live në bord."
         case (.onboardLiveBody, .italian): return "Vedi le partenze, traccia i treni sulla mappa con velocità e segnale, e guarda le telecamere a bordo in diretta."
         case (.onboardLocationTitle, .english): return "Closest to you"
         case (.onboardLocationTitle, .greek): return "Πιο κοντά σε σένα"
@@ -295,11 +295,11 @@ enum LocalizedKey {
         case (.onboardLocationCta, .italian): return "Consenti posizione"
         case (.onboardNotifTitle, .english): return "Stay informed"
         case (.onboardNotifTitle, .greek): return "Μείνε ενήμερος"
-        case (.onboardNotifTitle, .albanian): return "Qendro i informuar"
+        case (.onboardNotifTitle, .albanian): return "Qëndro i informuar"
         case (.onboardNotifTitle, .italian): return "Resta informato"
         case (.onboardNotifBody, .english): return "Get alerts for service disruptions near you, weather warnings that may affect your commute, and a morning briefing with the latest updates."
         case (.onboardNotifBody, .greek): return "Λάβε ειδοποιήσεις για διακοπές υπηρεσιών κοντά σου, καιρικές προειδοποιήσεις που μπορεί να επηρεάσουν τη μετακίνησή σου, και πρωινή ενημέρωση με τα τελευταία νέα."
-        case (.onboardNotifBody, .albanian): return "Merr njoftime per nderprerje sherbimesh prane teje, paralajmerime moti qe mund te ndikojne udhetimin tend, dhe informim mengjesit me perditesimet me te fundit."
+        case (.onboardNotifBody, .albanian): return "Merr njoftime për ndërprerje shërbimesh pranë teje, paralajmërime moti që mund të ndikojnë udhëtimin tënd, dhe informim në mëngjes me përditësimet më të fundit."
         case (.onboardNotifBody, .italian): return "Ricevi avvisi per interruzioni di servizio vicino a te, avvisi meteo che possono influire sul tuo tragitto e un briefing mattutino."
         case (.onboardNotifCta, .english): return "Allow notifications"
         case (.onboardNotifCta, .greek): return "Επίτρεψε τις ειδοποιήσεις"
@@ -307,11 +307,11 @@ enum LocalizedKey {
         case (.onboardNotifCta, .italian): return "Consenti notifiche"
         case (.onboardMapToolsTitle, .english): return "Your Map Tools"
         case (.onboardMapToolsTitle, .greek): return "Τα εργαλεία του χάρτη"
-        case (.onboardMapToolsTitle, .albanian): return "Mjetet e hartes"
+        case (.onboardMapToolsTitle, .albanian): return "Mjetet e hartës"
         case (.onboardMapToolsTitle, .italian): return "I tuoi strumenti mappa"
         case (.onboardMapToolsBody, .english): return "Tap the purple owl to ask Ariadne, the train icon to browse live trains, and the blue arrow to find yourself on the map."
         case (.onboardMapToolsBody, .greek): return "Πάτησε την μωβ κουκουβάγια για την Αριάδνη, το τρένο για ζωντανά δρομολόγια, και το μπλε βέλος για την τοποθεσία σου."
-        case (.onboardMapToolsBody, .albanian): return "Shtyp bufen vjollce per Ariadnen, ikonen e trenit per trenat live, dhe shigjeten blu per vendndodhjen tende."
+        case (.onboardMapToolsBody, .albanian): return "Shtyp bufin vjollcë për Ariadnën, ikonën e trenit për trenat live, dhe shigjetën blu për vendndodhjen tënde."
         case (.onboardMapToolsBody, .italian): return "Tocca il gufo viola per chiedere ad Ariadne, l'icona del treno per i treni in tempo reale e la freccia blu per trovarti sulla mappa."
         case (.onboardPrivacyTitle, .english): return "No accounts. No tracking."
         case (.onboardPrivacyTitle, .greek): return "Χωρίς λογαριασμό. Χωρίς παρακολούθηση."
@@ -395,7 +395,7 @@ enum LocalizedKey {
         case (.enableLocationForNext, .italian): return "Attiva la posizione per vedere il prossimo treno"
         case (.serviceAlertAffectsLine, .english): return "Active alerts may affect departures"
         case (.serviceAlertAffectsLine, .greek): return "Ενεργές ειδοποιήσεις μπορεί να επηρεάζουν τα δρομολόγια"
-        case (.serviceAlertAffectsLine, .albanian): return "Njoftimet aktive mund te ndikojne nisjet"
+        case (.serviceAlertAffectsLine, .albanian): return "Njoftimet aktive mund të ndikojnë nisjet"
         case (.serviceAlertAffectsLine, .italian): return "Avvisi attivi possono influire sulle partenze"
         default: return text(for: .english)
         }

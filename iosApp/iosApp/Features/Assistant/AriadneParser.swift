@@ -661,7 +661,7 @@ struct AthensTransitParser {
     private static let stopsBetweenWords = ["how many stops", "how many stations", "number of stops",
         "number of stations", "how many stops away", "stops away", "stops between", "stations between",
         "how far apart",
-        "ποσες στασεις", "ποσοι σταθμοι", "ποσους σταθμους", "ποσες σταθμοι", "ποσα στοπ",
+        "ποσες στασεις", "ποσοι σταθμοί", "ποσους σταθμους", "ποσες σταθμοί", "ποσα στοπ",
         "sa stacione", "sa ndalesa", "sa stacione ka", "sa ndalesa ka",
         "quante fermate", "quante stazioni", "fermate tra", "stazioni tra"]
     // "and back" / "return" / "the other way" — reverse the last route.

@@ -281,7 +281,7 @@ private fun MessageBubble(
 
 private fun subtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Ο έξυπνος οδηγός συγκοινωνιών σου"
-    AppLanguage.ALBANIAN -> "Udhezuesi yt i mencur i transportit"
+    AppLanguage.ALBANIAN -> "Udhëzuesi yt i mençur i transportit"
     AppLanguage.ITALIAN -> "La tua guida intelligente ai trasporti"
     else -> "Your smart transit guide"
 }

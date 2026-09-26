@@ -643,7 +643,7 @@ private fun trackHeader(lang: AppLanguage) = when (lang) {
 }
 private fun pickLineHeader(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Επίλεξε γραμμή"
-    AppLanguage.ALBANIAN -> "Zgjidh linjen"
+    AppLanguage.ALBANIAN -> "Zgjidh linjën"
     AppLanguage.ITALIAN -> "Scegli una linea"
     else -> "Pick a line"
 }
@@ -661,7 +661,7 @@ private fun pickStationHeader(lang: AppLanguage) = when (lang) {
 }
 private fun noDeparturesLabel(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Δεν υπάρχουν επόμενες αναχωρήσεις."
-    AppLanguage.ALBANIAN -> "S'ka nisje te radhes."
+    AppLanguage.ALBANIAN -> "S'ka nisje të radhës."
     AppLanguage.ITALIAN -> "Nessuna partenza in programma."
     else -> "No upcoming departures."
 }
@@ -688,25 +688,25 @@ private fun airportLabel(lang: AppLanguage) = when (lang) {
 }
 private fun specificTrainTitle(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Συγκεκριμένο δρομολόγιο"
-    AppLanguage.ALBANIAN -> "Nje tren specifik"
+    AppLanguage.ALBANIAN -> "Një tren specifik"
     AppLanguage.ITALIAN -> "Un treno specifico"
     else -> "A specific train"
 }
 private fun specificTrainSubtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Επιλέξτε γραμμή, σταθμό και δρομολόγιο"
-    AppLanguage.ALBANIAN -> "Zgjidhni linjen, stacionin dhe nisjen"
+    AppLanguage.ALBANIAN -> "Zgjidhni linjën, stacionin dhe nisjen"
     AppLanguage.ITALIAN -> "Scegli linea, stazione e partenza"
     else -> "Pick a line, station and departure"
 }
 private fun stationAllTitle(lang: AppLanguage) = when (lang) {
-    AppLanguage.GREEK -> "Ολα τα δρομολόγια σε σταθμό"
-    AppLanguage.ALBANIAN -> "Te gjitha trenet ne stacion"
+    AppLanguage.GREEK -> "Όλα τα δρομολόγια σε σταθμό"
+    AppLanguage.ALBANIAN -> "Të gjitha trenat në stacion"
     AppLanguage.ITALIAN -> "Tutti i treni in una stazione"
     else -> "All trains at a station"
 }
 private fun stationAllSubtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Παρακολουθήστε συνεχώς τα δρομολόγια"
-    AppLanguage.ALBANIAN -> "Ndiqni vazhdimisht trenet"
+    AppLanguage.ALBANIAN -> "Ndiqni vazhdimisht trenat"
     AppLanguage.ITALIAN -> "Monitora le partenze in continuo"
     else -> "Continuously track departures"
 }
@@ -723,7 +723,7 @@ private fun Line.localizedName(lang: AppLanguage): String {
 
 private fun metroFrequentNote(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
-    AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevoje per ndjekje"
+    AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevojë për ndjekje"
     AppLanguage.ITALIAN -> "La metro passa spesso, non serve monitorarla"
     else -> "Metro runs frequently, no need to track"
 }

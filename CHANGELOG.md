@@ -16,6 +16,18 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   from live guidance) scrolls the paired timeline to the new current stop;
   a view you scrolled by hand between advances is still left alone, with
   "Back to now" to return. Same on iOS and Android.
+- **Albanian and Greek read as the languages, not transliterations.** A sweep
+  of every reader-facing string on all three platforms restored the stripped
+  diacritics: Albanian ë and ç across onboarding, notifications, Home,
+  Explore, the whole Ichnos community feature, station detail, fares and
+  Settings (roughly 330 strings, iOS and Android alike); Greek tonos on the
+  Android side of Ichnos, Settings, station detail, notifications and Rail
+  Pulse (roughly 230 strings, now identical to iOS), plus the web What's New
+  copy and region labels. The two region chips
+  read Athinë, the iOS subtitle matches Android, and the get-off message
+  uses a colon instead of a dash. Guardrail tests on both platforms fail the
+  build if a shared-table string loses its tonos or its ë again.
+
 ## 3.0.0-beta.4 - 2026-09-26
 
 Polish rounds 4 to 20 for the iPhone Duo, Android foldables and tablets: the

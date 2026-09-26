@@ -979,6 +979,56 @@ alighting, the transfer and arrival on the Android fold.
   (Thiseio) sits mid-pane with "Change here" below and no "Back to now"
   pill; iOS guidance and snapshot suites 52/52.
 
+## Landed: polish round 22 (Albanian and Greek diacritics sweep)
+
+Source: the language sweep the master plan asks for after the layout work,
+started from the Albanian tab and widened once the first scan showed the
+pattern. The iOS subtitle read "te hekurudhave te Greqise" where Android had
+"të ... Greqisë", and the Android weather notifications carried Greek without
+a single tonos.
+
+- **Finding**: whole features had been written without diacritics rather than
+  the odd typo. Albanian was stripped on both platforms (onboarding,
+  notifications, Home customize, track picker, Explore, the entire Ichnos
+  community feature and its detail screens, station detail states, fares,
+  Settings). Greek was stripped only on Android, and only where the Android
+  screen was written separately from the shared table (Ichnos, Rail Pulse
+  detail, Settings, station detail, the notification workers). iOS Greek was
+  correct throughout, so it served as the source: 95 Rail Pulse strings were
+  copied across by their English key and the rest were accented by hand.
+- **Method**: three scans, each narrowing the last. Language-switch branches
+  (`ALBANIAN ->` / `.albanian`) first, then every Albanian string with no ë
+  or ç at all, then every string literal containing Greek with a long word
+  and no tonos, with parser vocabulary excluded (it is intentionally
+  accentless because it matches normalised input). Exact-string maps applied
+  to both platforms at once so the twins stay identical; zero-hit entries in
+  a map are reported so a stale key cannot pass silently.
+- **Rules**: Albanian prepositions `te` (at) and `në` differ; `për te X`
+  and `Prek Kujto te një nisje` are correct bare forms and were left. Greek
+  words of five letters or more always carry a tonos in lower or mixed
+  case; all-caps chips legitimately drop it. Parser and vocabulary files
+  stay accentless on purpose.
+- **Guardrail**: `LocalizationDiacriticsTest` (core/common) and the twin
+  cases in `GreekTypographyTests` (iOS, `LocalizedKey` is now
+  `CaseIterable`) walk the whole shared table in each language and fail on a
+  stripped entry. The screen-level strings outside the table are covered by
+  the scan recipe recorded in memory, not by a test.
+- **Also**: the iOS get-off notification used an em dash between station and
+  "your destination" in all four languages; it is a colon now. The web
+  Ariadne prompt "Për te cili stacion?" became "Për cilin stacion?".
+- **Follow-up (data, not copy)**: an Ichnos issue row can still read
+  "Ichnos at Florina" in an Albanian or Greek UI. That title is the
+  reporter's `scopeLabel`, built in the reporter's language when the report
+  is submitted and served back verbatim. Localising it needs the station id
+  stored with the report and the label built on display, on the server and
+  all three clients; out of scope for a copy sweep.
+- **Verified**: web tests 254/254; KMP suite 646/646 including the new
+  guardrail; Compose and Android app compiles; iOS build +
+  GreekTypographyTests 8/8; on device, More and Explore in Albanian on the
+  Syrmos 27 simulator and the Pixel fold match word for word (Athinë,
+  Operatorët, "trekëndësha lëvizës në hartë", "ICHNOS PRANË TEJE",
+  "Gjendja rail pranë nisjes tënde").
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

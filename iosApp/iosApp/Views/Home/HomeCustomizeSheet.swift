@@ -58,7 +58,7 @@ struct HomeCustomizeSheet: View {
     private var titleLabel: String {
         switch loc.language {
         case .greek: return "Προσαρμογή Αρχικής"
-        case .albanian: return "Personalizo Ballinen"
+        case .albanian: return "Personalizo ballinën"
         case .italian: return "Personalizza Home"
         case .english: return "Customize Home"
         }
@@ -94,7 +94,7 @@ struct HomeCustomizeSheet: View {
     private var sectionFooter: String {
         switch loc.language {
         case .greek: return "Σύρετε για αλλαγή σειράς. Πατήστε το εικονίδιο ματιού για εμφάνιση ή απόκρυψη."
-        case .albanian: return "Terheq per te ndryshuar rradhen. Shtyp ikonon e syrit per te shfaqur ose fshehur."
+        case .albanian: return "Tërhiq për të ndryshuar radhën. Shtyp ikonën e syrit për të shfaqur ose fshehur."
         case .italian: return "Trascina per riordinare. Tocca l'icona dell'occhio per mostrare o nascondere."
         case .english: return "Drag to reorder. Tap the eye icon to show or hide."
         }
