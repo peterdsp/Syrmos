@@ -134,28 +134,28 @@ private fun localizedSummary(alert: STASYAnnouncement, language: AppLanguage): S
     alert.localizedSummary(language)
 
 private fun alertTitle(language: AppLanguage) = when (language) {
-    AppLanguage.GREEK -> "Ειδοποιηση"
+    AppLanguage.GREEK -> "Ειδοποίηση"
     AppLanguage.ALBANIAN -> "Njoftim"
     AppLanguage.ITALIAN -> "Avviso"
     else -> "Alert"
 }
 
 private fun backLabel(language: AppLanguage) = when (language) {
-    AppLanguage.GREEK -> "Πισω"
+    AppLanguage.GREEK -> "Πίσω"
     AppLanguage.ALBANIAN -> "Prapa"
     AppLanguage.ITALIAN -> "Indietro"
     else -> "Back"
 }
 
 private fun unavailableLabel(language: AppLanguage) = when (language) {
-    AppLanguage.GREEK -> "Η ειδοποιηση δεν ειναι πλεον διαθεσιμη."
-    AppLanguage.ALBANIAN -> "Njoftimi nuk eshte me i disponueshem."
-    AppLanguage.ITALIAN -> "L'avviso non e piu disponibile."
+    AppLanguage.GREEK -> "Η ειδοποίηση δεν είναι πλέον διαθέσιμη."
+    AppLanguage.ALBANIAN -> "Njoftimi nuk është më i disponueshëm."
+    AppLanguage.ITALIAN -> "L'avviso non è più disponibile."
     else -> "This alert is no longer available."
 }
 
 private fun sourceLabel(language: AppLanguage) = when (language) {
-    AppLanguage.GREEK -> "Προβολη πηγης"
+    AppLanguage.GREEK -> "Προβολή πηγής"
     AppLanguage.ALBANIAN -> "Shiko burimin"
     AppLanguage.ITALIAN -> "Visualizza fonte"
     else -> "View source"
@@ -163,13 +163,13 @@ private fun sourceLabel(language: AppLanguage) = when (language) {
 
 private fun severityLabel(severity: String, language: AppLanguage): String = when (severity) {
     "closure" -> when (language) {
-        AppLanguage.GREEK -> "Κλεισιμο"
+        AppLanguage.GREEK -> "Κλείσιμο"
         AppLanguage.ALBANIAN -> "Mbyllje"
         AppLanguage.ITALIAN -> "Chiusura"
         else -> "Closure"
     }
     "warning" -> when (language) {
-        AppLanguage.GREEK -> "Προσοχη"
+        AppLanguage.GREEK -> "Προσοχή"
         AppLanguage.ALBANIAN -> "Kujdes"
         AppLanguage.ITALIAN -> "Avviso"
         else -> "Warning"

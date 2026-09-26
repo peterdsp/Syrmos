@@ -495,7 +495,7 @@ private fun DepartureSection(
                 Text(
                     text = when (lang) {
                         AppLanguage.GREEK -> "Δεν υπάρχουν διαθέσιμα δρομολόγια."
-                        AppLanguage.ALBANIAN -> "Nuk ka nisje te disponueshme."
+                        AppLanguage.ALBANIAN -> "Nuk ka nisje të disponueshme."
                         AppLanguage.ITALIAN -> "Nessuna partenza disponibile."
                         else -> "No departures available."
                     },
@@ -546,8 +546,8 @@ private fun DepartureSection(
                 if (upcoming.size > 1) {
                     GlassPill(
                         label = when (lang) {
-                            AppLanguage.GREEK -> "Ολα τα επόμενα"
-                            AppLanguage.ALBANIAN -> "Te gjitha"
+                            AppLanguage.GREEK -> "Όλα τα επόμενα"
+                            AppLanguage.ALBANIAN -> "Të gjitha"
                             AppLanguage.ITALIAN -> "Tutte le prossime"
                             else -> "All upcoming"
                         },
@@ -782,7 +782,7 @@ private fun directionTitle(kind: DirectionKind, dest: String, lang: AppLanguage)
 
 private fun upcomingSubtitle(n: Int, lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "$n επόμενα δρομολόγια"
-    AppLanguage.ALBANIAN -> "$n nisje te radhes"
+    AppLanguage.ALBANIAN -> "$n nisje të radhës"
     AppLanguage.ITALIAN -> "$n partenze in arrivo"
     else -> "$n upcoming departures"
 }
@@ -795,7 +795,7 @@ private fun directionLine(dest: String, lang: AppLanguage): String = when (lang)
 }
 
 private fun nowLabel(lang: AppLanguage): String = when (lang) {
-    AppLanguage.GREEK -> "Τωρα"
+    AppLanguage.GREEK -> "Τώρα"
     AppLanguage.ALBANIAN -> "Tani"
     AppLanguage.ITALIAN -> "Adesso"
     else -> "Now"

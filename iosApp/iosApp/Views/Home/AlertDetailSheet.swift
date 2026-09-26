@@ -153,7 +153,7 @@ struct AlertDetailSheet: View {
     private var sourceLabel: String {
         switch language {
         case .greek: "Δείτε στο stasy.gr"
-        case .albanian: "Shiko ne stasy.gr"
+        case .albanian: "Shiko në stasy.gr"
         case .italian: "Vedi su stasy.gr"
         default: "View on stasy.gr"
         }
@@ -162,7 +162,7 @@ struct AlertDetailSheet: View {
     private var noDetailLabel: String {
         switch language {
         case .greek: "Δεν υπάρχουν περισσότερες πληροφορίες."
-        case .albanian: "Nuk ka informacion te metejshem."
+        case .albanian: "Nuk ka informacion të mëtejshëm."
         case .italian: "Nessun dettaglio ulteriore disponibile."
         default: "No further details available."
         }

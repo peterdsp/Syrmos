@@ -107,7 +107,7 @@ internal fun pulseContextLabel(
         when (hour) {
             in 5..10 -> localized(lang, "Morning commute", "Πρωινή μετακίνηση", "Udhëtimi i mëngjesit", "Viaggio mattutino")
             in 17..20 -> localized(lang, "Evening return", "Βραδινή επιστροφή", "Kthimi i mbrëmjes", "Rientro serale")
-            else -> localized(lang, "Your Ichnos status", "Η κατασταση Ichnos", "Gjendja jote Ichnos", "Il tuo stato Ichnos")
+            else -> localized(lang, "Your Ichnos status", "Η κατάσταση Ichnos", "Gjendja jote Ichnos", "Il tuo stato Ichnos")
         }
     }
 }

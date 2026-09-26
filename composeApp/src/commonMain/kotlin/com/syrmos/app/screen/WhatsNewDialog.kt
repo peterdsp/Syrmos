@@ -96,7 +96,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
                 Text(
                     text = t(
                         "What's new in Syrmos",
-                        "Τι νεο υπαρχει στο Syrmos",
+                        "Τι νέο υπάρχει στο Syrmos",
                         "Çfare ka te re ne Syrmos",
                         "Novita in Syrmos",
                     ),

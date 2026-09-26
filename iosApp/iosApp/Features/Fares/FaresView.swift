@@ -263,7 +263,7 @@ struct FaresView: View {
         case ("airport", .italian):  return "Biglietti aeroporto"
         case ("passes",  .english):  return "Day passes"
         case ("passes",  .greek):    return "Ημερήσια εισιτήρια"
-        case ("passes",  .albanian): return "Abone ditore"
+        case ("passes",  .albanian): return "Bileta ditore"
         case ("passes",  .italian):  return "Abbonamenti giornalieri"
         default:                     return key.capitalized
         }

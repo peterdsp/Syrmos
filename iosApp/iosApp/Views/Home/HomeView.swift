@@ -1103,7 +1103,7 @@ struct HomeView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "tram.fill")
                         .foregroundStyle(Color.suburbanPurple)
-                    Text(loc.language == .greek ? "Ζωντανά τρένα" : loc.language == .albanian ? "Trenat aktiv" : loc.language == .italian ? "Treni in tempo reale" : "Live trains")
+                    Text(loc.language == .greek ? "Ζωντανά τρένα" : loc.language == .albanian ? "Trenat aktivë" : loc.language == .italian ? "Treni in tempo reale" : "Live trains")
                         .font(.title3)
                         .fontWeight(.semibold)
                 }
@@ -1208,7 +1208,7 @@ struct HomeView: View {
                 HStack {
                     Image(systemName: "newspaper.fill")
                         .foregroundStyle(.blue)
-                    Text(loc.language == .greek ? "Σιδηροδρομικά Νέα" : loc.language == .albanian ? "Lajme Hekurudhore" : loc.language == .italian ? "Notizie ferroviarie" : "Rail News")
+                    Text(loc.language == .greek ? "Σιδηροδρομικά Νέα" : loc.language == .albanian ? "Lajme hekurudhore" : loc.language == .italian ? "Notizie ferroviarie" : "Rail News")
                         .font(.title3)
                         .fontWeight(.semibold)
                     Spacer()

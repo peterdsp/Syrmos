@@ -244,7 +244,7 @@ enum class L {
         }
         ACTIVE_TRAINS -> when (lang) {
             AppLanguage.GREEK -> "ενεργά τρένα"
-            AppLanguage.ALBANIAN -> "trena aktiv"
+            AppLanguage.ALBANIAN -> "trena aktivë"
             AppLanguage.ITALIAN -> "treni attivi"
             else -> "active trains"
         }
@@ -339,19 +339,19 @@ enum class L {
             else -> "Tap any vehicle for its current position, next station, and trip progress."
         }
         ONBOARD_NOTIF_TITLE -> when (lang) {
-            AppLanguage.GREEK -> "Μεινε ενημερος"
-            AppLanguage.ALBANIAN -> "Qendro i informuar"
+            AppLanguage.GREEK -> "Μείνε ενήμερος"
+            AppLanguage.ALBANIAN -> "Qëndro i informuar"
             AppLanguage.ITALIAN -> "Resta informato"
             else -> "Stay informed"
         }
         ONBOARD_NOTIF_BODY -> when (lang) {
-            AppLanguage.GREEK -> "Λαβε ειδοποιησεις για διακοπες υπηρεσιων κοντα σου, καιρικες προειδοποιησεις που μπορει να επηρεασουν τη μετακινηση σου, και πρωινη ενημερωση με τα τελευταια νεα."
-            AppLanguage.ALBANIAN -> "Merr njoftime per nderprerje sherbimesh prane teje, paralajmerime moti qe mund te ndikojne udhetimin tend, dhe informim mengjesit me perditesimet me te fundit."
+            AppLanguage.GREEK -> "Λάβε ειδοποιήσεις για διακοπές υπηρεσιών κοντά σου, καιρικές προειδοποιήσεις που μπορεί να επηρεάσουν τη μετακίνησή σου, και πρωινή ενημέρωση με τα τελευταία νέα."
+            AppLanguage.ALBANIAN -> "Merr njoftime për ndërprerje shërbimesh pranë teje, paralajmërime moti që mund të ndikojnë udhëtimin tënd, dhe informim në mëngjes me përditësimet më të fundit."
             AppLanguage.ITALIAN -> "Ricevi avvisi per interruzioni di servizio vicino a te, avvisi meteo che possono influire sul tuo tragitto e un briefing mattutino con gli ultimi aggiornamenti."
             else -> "Get alerts for service disruptions near you, weather warnings that may affect your commute, and a morning briefing with the latest updates."
         }
         ONBOARD_NOTIF_CTA -> when (lang) {
-            AppLanguage.GREEK -> "Επιτρεψε τις ειδοποιησεις"
+            AppLanguage.GREEK -> "Επίτρεψε τις ειδοποιήσεις"
             AppLanguage.ALBANIAN -> "Lejo njoftimet"
             AppLanguage.ITALIAN -> "Consenti notifiche"
             else -> "Allow notifications"
@@ -700,7 +700,7 @@ enum class L {
         }
         BROWSE_ALL_STATIONS -> when (lang) {
             AppLanguage.GREEK -> "Περιήγηση σε όλους τους 389 σταθμούς"
-            AppLanguage.ALBANIAN -> "Shfleto te gjitha 389 stacionet"
+            AppLanguage.ALBANIAN -> "Shfleto të gjitha 389 stacionet"
             AppLanguage.ITALIAN -> "Esplora tutte le 389 stazioni"
             else -> "Browse all 389 stations"
         }
@@ -724,7 +724,7 @@ enum class L {
         }
         DEST_PIRAEUS_HOOK -> when (lang) {
             AppLanguage.GREEK -> "Πλοία, κρουαζιέρες, παραλιακές συνδέσεις"
-            AppLanguage.ALBANIAN -> "Tragete, kroaziera, lidhje bregdetare"
+            AppLanguage.ALBANIAN -> "Tragete, kroçiera, lidhje bregdetare"
             AppLanguage.ITALIAN -> "Traghetti, crociere, collegamenti costieri"
             else -> "Ferries, cruises, coastal connections"
         }
@@ -796,7 +796,7 @@ enum class L {
         }
         DEST_DIAKOPTO_HOOK -> when (lang) {
             AppLanguage.GREEK -> "Μία από τις πιο γραφικές διαδρομές της Ευρώπης"
-            AppLanguage.ALBANIAN -> "Një nga udhetimet me piktoreske te Europes"
+            AppLanguage.ALBANIAN -> "Një nga udhëtimet më piktoreske të Europës"
             AppLanguage.ITALIAN -> "Uno dei viaggi più panoramici d'Europa"
             else -> "One of Europe's most scenic rides"
         }

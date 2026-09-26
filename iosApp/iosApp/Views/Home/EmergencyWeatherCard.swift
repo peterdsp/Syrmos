@@ -154,7 +154,7 @@ struct EmergencyWeatherCard: View {
         switch language {
         case .greek: return "Οι υπόγειες γραμμές μετρό είναι η πιο ασφαλής επιλογή. Το τραμ και ο προαστιακός μπορεί να έχουν καθυστερήσεις. Αν χρειαστείς άμεση βοήθεια, κάλεσε:"
         case .albanian: return "Metroja nëntokësore është zgjidhja më e sigurt. Tramvaji dhe treni periferik mund të kenë vonesa. Nëse ke nevojë për ndihmë të menjëhershme, telefono:"
-        case .italian: return "Le linee della metro sotterranea sono l'opzione piu sicura. Tram e servizio suburbano possono avere ritardi. Se hai bisogno di aiuto immediato, chiama:"
+        case .italian: return "Le linee della metro sotterranea sono l'opzione più sicura. Tram e servizio suburbano possono avere ritardi. Se hai bisogno di aiuto immediato, chiama:"
         case .english: return "Underground metro lines are the safest option. Tram and Suburban services may run late. If you need immediate help, call:"
         }
     }

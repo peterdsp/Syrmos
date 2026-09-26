@@ -50,4 +50,42 @@ final class GreekTypographyTests: XCTestCase {
         XCTAssertEqual("άμεσο".prefix(1).uppercased() + "άμεσο".dropFirst(), "Άμεσο")
         XCTAssertEqual(String("άμεσο".prefix(1)).uppercasedForDisplay(.greek), "Α")
     }
+
+
+    // MARK: Diacritics in the shared table
+
+    // Greek words of five letters or more always carry a tonos in lower or
+    // mixed case; all-caps text legitimately drops it. Albanian without ë and ç
+    // reads as a transliteration. Both are checked over the whole table so a
+    // stripped entry fails here instead of shipping. Twin of
+    // LocalizationDiacriticsTest in core/common.
+    private let tonos = "[άέήίόύώΆΈΉΊΌΎΏϊϋΐΰ]"
+    private let longGreekWord = "[Α-Ωα-ω]{5,}"
+    private let strippedAlbanian = "\\b(eshte|nje|kete|ketu|gjithe|gjithcka|prane|sherbim\\w*|perdit\\w*|udhet\\w*|perdor\\w*|kerko\\w*|cmim\\w*|vleresim\\w*|nderr\\w*|shpejtesi|nevoje|radhes|afert|disponueshem|plotesisht|jashte|te gjitha|per te|ne stacion|ne harte)\\b"
+
+    private func matches(_ text: String, _ pattern: String) -> Bool {
+        text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+
+    func testGreekReaderTextCarriesItsTonos() {
+        let offenders = LocalizedKey.allCases
+            .map { ($0, $0.text(for: .greek)) }
+            .filter { _, text in text != text.uppercased() && matches(text, longGreekWord) && !matches(text, tonos) }
+            .map { "\($0.0): \($0.1)" }
+        XCTAssertTrue(offenders.isEmpty, "Greek strings without a tonos: \(offenders)")
+    }
+
+    func testAlbanianReaderTextKeepsItsDiacritics() {
+        let offenders = LocalizedKey.allCases
+            .map { ($0, $0.text(for: .albanian)) }
+            .filter { _, text in matches(text, strippedAlbanian) }
+            .map { "\($0.0): \($0.1)" }
+        XCTAssertTrue(offenders.isEmpty, "Albanian strings with stripped diacritics: \(offenders)")
+    }
+
+    func testTheDiacriticsChecksCatchAStrippedString() {
+        XCTAssertTrue(matches("Μεινε ενημερος", longGreekWord) && !matches("Μεινε ενημερος", tonos))
+        XCTAssertTrue(matches("Merr njoftime per nderprerje sherbimesh prane teje.", strippedAlbanian))
+        XCTAssertFalse(matches("Merr njoftime për ndërprerje shërbimesh pranë teje.", strippedAlbanian))
+    }
 }

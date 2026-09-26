@@ -93,8 +93,8 @@ fun BrowseAllStationsScreen(
             }
             Text(
                 text = when (lang) {
-                    AppLanguage.GREEK -> "Ολοι οι σταθμοι"
-                    AppLanguage.ALBANIAN -> "Te gjitha stacionet"
+                    AppLanguage.GREEK -> "Όλοι οι σταθμοί"
+                    AppLanguage.ALBANIAN -> "Të gjitha stacionet"
                     AppLanguage.ITALIAN -> "Tutte le stazioni"
                     else -> "All Stations"
                 },
@@ -124,8 +124,8 @@ fun BrowseAllStationsScreen(
                     if (searchQuery.isEmpty()) {
                         Text(
                             text = when (lang) {
-                                AppLanguage.GREEK -> "Αναζητηση σταθμου..."
-                                AppLanguage.ALBANIAN -> "Kerko stacion..."
+                                AppLanguage.GREEK -> "Αναζήτηση σταθμού..."
+                                AppLanguage.ALBANIAN -> "Kërko stacion..."
                                 AppLanguage.ITALIAN -> "Cerca stazione..."
                                 else -> "Search station..."
                             },
@@ -165,7 +165,7 @@ fun BrowseAllStationsScreen(
 
         Text(
             text = "${filtered.size} " + when (lang) {
-                AppLanguage.GREEK -> "σταθμοι"
+                AppLanguage.GREEK -> "σταθμοί"
                 AppLanguage.ALBANIAN -> "stacione"
                 AppLanguage.ITALIAN -> "stazioni"
                 else -> "stations"

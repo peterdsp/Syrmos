@@ -560,7 +560,7 @@ private fun CalendarHub(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        if (selectedTrip != null) airportText(lang, "SAVED AIRPORT TRIP", "ΑΠΟΘΗΚΕΥΜΕΝΟ ΤΑΞΙΔΙ", "UDHETIM I RUAJTUR", "VIAGGIO SALVATO")
+                        if (selectedTrip != null) airportText(lang, "SAVED AIRPORT TRIP", "ΑΠΟΘΗΚΕΥΜΕΝΟ ΤΑΞΙΔΙ", "UDHËTIM I RUAJTUR", "VIAGGIO SALVATO")
                         else airportText(lang, "PLANNED DEPARTURE", "ΠΡΟΓΡΑΜΜΑΤΙΣΜΕΝΗ ΑΝΑΧΩΡΗΣΗ", "NISJE E PLANIFIKUAR", "PARTENZA PIANIFICATA"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -587,9 +587,9 @@ private fun CalendarHub(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            if (selectedTrip != null) airportText(lang, "From device calendar", "Απο το ημερολογιο συσκευης", "Nga kalendari i pajisjes", "Dal calendario del dispositivo")
-                            else if (calendarConnected) airportText(lang, "Calendar connected", "Το ημερολογιο συνδεθηκε", "Kalendari u lidh", "Calendario collegato")
-                            else airportText(lang, "Connect device calendar", "Συνδεση ημερολογιου συσκευης", "Lidh kalendarin e pajisjes", "Collega il calendario"),
+                            if (selectedTrip != null) airportText(lang, "From device calendar", "Από το ημερολόγιο συσκευής", "Nga kalendari i pajisjes", "Dal calendario del dispositivo")
+                            else if (calendarConnected) airportText(lang, "Calendar connected", "Το ημερολόγιο συνδέθηκε", "Kalendari u lidh", "Calendario collegato")
+                            else airportText(lang, "Connect device calendar", "Σύνδεση ημερολογίου συσκευής", "Lidh kalendarin e pajisjes", "Collega il calendario"),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (calendarConnected) SyrmosColorTokens.live else SyrmosColorTokens.metroBlue,
                         )
@@ -739,7 +739,7 @@ private fun PredictiveItinerary(lang: AppLanguage, flightMinutes: Int, departure
             Spacer(Modifier.weight(1f))
             Text(
                 tripTitle?.let { airportText(lang, "For $it", "Για $it", "Per $it", "Per $it") }
-                    ?: airportText(lang, "Manual plan", "Χειροκινητο πλανο", "Plan manual", "Piano manuale"),
+                    ?: airportText(lang, "Manual plan", "Χειροκίνητο πλάνο", "Plan manual", "Piano manuale"),
                 style = MaterialTheme.typography.labelSmall,
                 color = SyrmosColorTokens.suburban,
                 maxLines = 1,

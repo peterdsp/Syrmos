@@ -207,10 +207,10 @@ final class NotificationService: ObservableObject {
     private func getOffBody(station: String, isDestination: Bool, transferTo: String?, language lang: AppLanguage) -> String {
         if isDestination {
             switch lang {
-            case .greek: return "\(station) — ο προορισμός σου."
-            case .albanian: return "\(station) — destinacioni yt."
-            case .italian: return "\(station) — la tua destinazione."
-            default: return "\(station) — your destination."
+            case .greek: return "\(station): ο προορισμός σου."
+            case .albanian: return "\(station): destinacioni yt."
+            case .italian: return "\(station): la tua destinazione."
+            default: return "\(station): your destination."
             }
         }
         if let transferTo {
@@ -241,28 +241,28 @@ final class NotificationService: ObservableObject {
         case "morningDigest":
             switch lang {
             case .greek: return "Ενημέρωση Πρωινού"
-            case .albanian: return "Perditesimi i Mengjesit"
+            case .albanian: return "Përditësimi i mëngjesit"
             case .italian: return "Aggiornamento mattutino"
             default: return "Morning Update"
             }
         case "serviceAlert":
             switch lang {
             case .greek: return "Ειδοποίηση Υπηρεσίας"
-            case .albanian: return "Njoftim Sherbimi"
+            case .albanian: return "Njoftim shërbimi"
             case .italian: return "Avviso di servizio"
             default: return "Service Alert"
             }
         case "weatherAlert":
             switch lang {
             case .greek: return "Καιρική Ειδοποίηση"
-            case .albanian: return "Njoftim Moti"
+            case .albanian: return "Njoftim moti"
             case .italian: return "Avviso meteo"
             default: return "Weather Alert"
             }
         case "nearbyAlert":
             switch lang {
             case .greek: return "Ειδοποίηση κοντά στο"
-            case .albanian: return "Njoftim prane"
+            case .albanian: return "Njoftim pranë"
             case .italian: return "Avviso vicino a"
             default: return "Alert near"
             }
@@ -277,7 +277,7 @@ final class NotificationService: ObservableObject {
         case "morningDigestBody":
             switch lang {
             case .greek: return "Δείτε τις ειδοποιήσεις υπηρεσίας και τον καιρό για σήμερα."
-            case .albanian: return "Shikoni njoftimet e sherbimit dhe motin per sot."
+            case .albanian: return "Shikoni njoftimet e shërbimit dhe motin për sot."
             case .italian: return "Controlla gli avvisi di servizio e le condizioni meteo di oggi."
             default: return "Check today's service alerts and weather conditions."
             }
@@ -293,21 +293,21 @@ final class NotificationService: ObservableObject {
         case .thunderstorm:
             switch lang {
             case .greek: return "Καταιγίδα στην περιοχή. \(tempStr) C. Προσέξτε στις μετακινήσεις."
-            case .albanian: return "Stuhi ne zone. \(tempStr) C. Kujdes ne udhetim."
+            case .albanian: return "Stuhi në zonë. \(tempStr) C. Kujdes në udhëtim."
             case .italian: return "Temporale nella zona. \(tempStr) C. Attenzione negli spostamenti."
             default: return "Thunderstorm in the area. \(tempStr) C. Take care while traveling."
             }
         case .snow:
             switch lang {
             case .greek: return "Χιονόπτωση στην περιοχή. \(tempStr) C. Πιθανές καθυστερήσεις."
-            case .albanian: return "Debore ne zone. \(tempStr) C. Vonesa te mundshme."
+            case .albanian: return "Dëborë në zonë. \(tempStr) C. Vonesa të mundshme."
             case .italian: return "Nevicata nella zona. \(tempStr) C. Possibili ritardi."
             default: return "Snowfall in the area. \(tempStr) C. Possible delays."
             }
         case .showers:
             switch lang {
             case .greek: return "Έντονες βροχοπτώσεις. \(tempStr) C. Πιθανές καθυστερήσεις."
-            case .albanian: return "Reshje te forta shiu. \(tempStr) C. Vonesa te mundshme."
+            case .albanian: return "Reshje të forta shiu. \(tempStr) C. Vonesa të mundshme."
             case .italian: return "Forti piogge nella zona. \(tempStr) C. Possibili ritardi."
             default: return "Heavy rain in the area. \(tempStr) C. Possible delays."
             }

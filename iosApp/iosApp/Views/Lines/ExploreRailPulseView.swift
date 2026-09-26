@@ -180,16 +180,16 @@ private enum QuickReportSignal: String, CaseIterable, Identifiable {
 
     func localized(_ language: AppLanguage) -> String {
         switch self {
-        case .normal: return pulseText(language, "Everything OK", "Όλα καλά", "Gjithcka ne rregull", "Tutto bene")
-        case .delayed: return pulseText(language, "Delayed", "Καθυστέρηση", "Vonese", "Ritardo")
+        case .normal: return pulseText(language, "Everything OK", "Όλα καλά", "Gjithçka në rregull", "Tutto bene")
+        case .delayed: return pulseText(language, "Delayed", "Καθυστέρηση", "Vonesë", "Ritardo")
         case .crowded: return pulseText(language, "Crowded", "Κόσμος", "Plot", "Affollato")
         case .stopped: return pulseText(language, "Stopped", "Σταματημένο", "Ndaluar", "Fermo")
-        case .tooHot: return pulseText(language, "Too hot", "Πολύ ζέστη", "Shume nxehte", "Troppo caldo")
-        case .clean: return pulseText(language, "Clean", "Καθαρό", "Paster", "Pulito")
+        case .tooHot: return pulseText(language, "Too hot", "Πολύ ζέστη", "Shumë nxehtë", "Troppo caldo")
+        case .clean: return pulseText(language, "Clean", "Καθαρό", "Pastër", "Pulito")
         case .access: return pulseText(language, "Access", "Πρόσβαση", "Akses", "Accesso")
-        case .facilities: return pulseText(language, "Facilities", "Παροχές", "Sherbime", "Servizi")
+        case .facilities: return pulseText(language, "Facilities", "Παροχές", "Shërbime", "Servizi")
         case .safety: return pulseText(language, "Safety", "Ασφάλεια", "Siguri", "Sicurezza")
-        case .other: return pulseText(language, "Other", "Άλλο", "Tjeter", "Altro")
+        case .other: return pulseText(language, "Other", "Άλλο", "Tjetër", "Altro")
         }
     }
 
@@ -211,7 +211,7 @@ struct ExploreUniversalSearchField: View {
                     language,
                     "Destination, station, line or train...",
                     "Προορισμός, σταθμός, γραμμή ή τρένο...",
-                    "Destinacion, stacion, linje ose tren...",
+                    "Destinacion, stacion, linjë ose tren...",
                     "Destinazione, stazione, linea o treno..."
                 ),
                 text: $text
@@ -264,14 +264,14 @@ struct ExploreRailPulseContent: View {
         guard let selectedOriginName else {
             return RailPulseReportContext(
                 scopeId: "network",
-                title: pulseText(language, "Ichnos nearby", "Ichnos κοντά σου", "Ichnos prane teje", "Ichnos vicino a te"),
-                subtitle: pulseText(language, "Choose an origin to see nearby rail reports", "Επίλεξε αφετηρία για κοντινές αναφορές", "Zgjidh nisjen per raportet prane", "Scegli una partenza per i report vicini")
+                title: pulseText(language, "Ichnos nearby", "Ichnos κοντά σου", "Ichnos pranë teje", "Ichnos vicino a te"),
+                subtitle: pulseText(language, "Choose an origin to see nearby rail reports", "Επίλεξε αφετηρία για κοντινές αναφορές", "Zgjidh nisjen për raportet pranë", "Scegli una partenza per i report vicini")
             )
         }
         return RailPulseReportContext(
             scopeId: originId ?? stableIchnosScopeId(selectedOriginName),
-            title: pulseText(language, "Ichnos at \(selectedOriginName)", "Ichnos στο \(selectedOriginName)", "Ichnos ne \(selectedOriginName)", "Ichnos a \(selectedOriginName)"),
-            subtitle: pulseText(language, "Community rail status near your origin", "Κατάσταση rail κοντά στην αφετηρία σου", "Gjendja rail prane nisjes tende", "Stato ferroviario vicino alla partenza")
+            title: pulseText(language, "Ichnos at \(selectedOriginName)", "Ichnos στο \(selectedOriginName)", "Ichnos në \(selectedOriginName)", "Ichnos a \(selectedOriginName)"),
+            subtitle: pulseText(language, "Community rail status near your origin", "Κατάσταση rail κοντά στην αφετηρία σου", "Gjendja rail pranë nisjes tënde", "Stato ferroviario vicino alla partenza")
         )
     }
 
@@ -283,7 +283,7 @@ struct ExploreRailPulseContent: View {
         VStack(spacing: 12) {
             routePulseHero
             sectionTitle(
-                pulseText(language, "Ichnos across Greece", "Ichnos σε όλη την Ελλάδα", "Ichnos ne gjithe Greqine", "Ichnos in tutta la Grecia"),
+                pulseText(language, "Ichnos across Greece", "Ichnos σε όλη την Ελλάδα", "Ichnos në gjithë Greqinë", "Ichnos in tutta la Grecia"),
                 action: pulseText(language, "History", "Ιστορικό", "Historia", "Storico"),
                 onAction: onSeeAll
             )
@@ -298,7 +298,7 @@ struct ExploreRailPulseContent: View {
                 .accessibilityLabel("\(item.title). \(item.detail)")
             }
             sectionTitle(
-                pulseText(language, "Explore by time", "Εξερεύνηση με χρόνο", "Eksploro sipas kohes", "Esplora per tempo"),
+                pulseText(language, "Explore by time", "Εξερεύνηση με χρόνο", "Eksploro sipas kohës", "Esplora per tempo"),
                 action: originActionLabel,
                 systemImage: originUsesGPS ? "location.fill" : "mappin.circle.fill",
                 trailingInset: 64,
@@ -322,7 +322,7 @@ struct ExploreRailPulseContent: View {
     private var routePulseHero: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(pulseText(language, "ICHNOS NEAR YOU", "ICHNOS ΚΟΝΤΑ ΣΟΥ", "ICHNOS PRANE TEJE", "ICHNOS VICINO A TE"))
+                Text(pulseText(language, "ICHNOS NEAR YOU", "ICHNOS ΚΟΝΤΑ ΣΟΥ", "ICHNOS PRANË TEJE", "ICHNOS VICINO A TE"))
                     .font(.caption2.weight(.bold))
                 Spacer()
                 Image(systemName: selectedOriginName == nil ? "mappin.circle" : "location.fill")
@@ -339,7 +339,7 @@ struct ExploreRailPulseContent: View {
             Button(action: onChooseOrigin) {
                 HStack(spacing: 7) {
                     Image(systemName: selectedOriginName == nil ? "mappin.and.ellipse" : "location.fill")
-                    Text(selectedOriginName ?? pulseText(language, "Use GPS or choose a station", "Χρήση GPS ή επιλογή σταθμού", "Perdor GPS ose zgjidh stacion", "Usa il GPS o scegli una stazione"))
+                    Text(selectedOriginName ?? pulseText(language, "Use GPS or choose a station", "Χρήση GPS ή επιλογή σταθμού", "Përdor GPS ose zgjidh stacion", "Usa il GPS o scegli una stazione"))
                     Spacer()
                     Image(systemName: "chevron.right")
                 }
@@ -350,7 +350,7 @@ struct ExploreRailPulseContent: View {
             }
             .buttonStyle(.plain)
             HStack(spacing: 10) {
-                Text(pulseText(language, "Official data + community reports", "Επίσημα δεδομένα + αναφορές", "Te dhena zyrtare + raporte", "Dati ufficiali + segnalazioni"))
+                Text(pulseText(language, "Official data + community reports", "Επίσημα δεδομένα + αναφορές", "Të dhëna zyrtare + raporte", "Dati ufficiali + segnalazioni"))
                     .font(.caption2)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -371,7 +371,7 @@ struct ExploreRailPulseContent: View {
                 .tint(.white)
                 .foregroundStyle(.black)
                 .controlSize(.small)
-                .accessibilityHint(pulseText(language, "Opens the Ichnos quick report", "Ανοίγει τη γρήγορη αναφορά Ichnos", "Hap raportin e shpejte Ichnos", "Apre la segnalazione rapida Ichnos"))
+                .accessibilityHint(pulseText(language, "Opens the Ichnos quick report", "Ανοίγει τη γρήγορη αναφορά Ichnos", "Hap raportin e shpejtë Ichnos", "Apre la segnalazione rapida Ichnos"))
             }
         }
         .foregroundStyle(.white)
@@ -390,7 +390,7 @@ struct ExploreRailPulseContent: View {
         guard let originName, !originName.isEmpty else {
             return pulseText(language, "Choose origin", "Επιλογή αφετηρίας", "Zgjidh nisjen", "Scegli partenza")
         }
-        return pulseText(language, "From \(originName)", "Απο \(originName)", "Nga \(originName)", "Da \(originName)")
+        return pulseText(language, "From \(originName)", "Από \(originName)", "Nga \(originName)", "Da \(originName)")
     }
 
     private func sectionTitle(
@@ -502,7 +502,7 @@ struct ExploreOriginPickerSheet: View {
                     .buttonStyle(.plain)
                 }
 
-                Section(pulseText(language, "Choose a station", "Επίλεξε σταθμό", "Zgjidh nje stacion", "Scegli una stazione")) {
+                Section(pulseText(language, "Choose a station", "Επίλεξε σταθμό", "Zgjidh një stacion", "Scegli una stazione")) {
                     ForEach(filteredStations) { station in
                         Button {
                             onSelect(station)
@@ -531,7 +531,7 @@ struct ExploreOriginPickerSheet: View {
             }
             .searchable(
                 text: $searchText,
-                prompt: pulseText(language, "Station or line", "Σταθμός ή γραμμή", "Stacion ose linje", "Stazione o linea")
+                prompt: pulseText(language, "Station or line", "Σταθμός ή γραμμή", "Stacion ose linjë", "Stazione o linea")
             )
             .navigationTitle(pulseText(language, "Explore from", "Εξερεύνηση από", "Eksploro nga", "Esplora da"))
             .navigationBarTitleDisplayMode(.inline)
@@ -550,9 +550,9 @@ struct ExploreOriginPickerSheet: View {
             return pulseText(language, "Enable location", "Ενεργοποίηση τοποθεσίας", "Aktivizo vendndodhjen", "Attiva posizione")
         }
         if let nearest = locationService.nearbyStations.first {
-            return pulseText(language, "Use \(stationName(nearest.station))", "Χρήση \(stationName(nearest.station))", "Perdor \(stationName(nearest.station))", "Usa \(stationName(nearest.station))")
+            return pulseText(language, "Use \(stationName(nearest.station))", "Χρήση \(stationName(nearest.station))", "Përdor \(stationName(nearest.station))", "Usa \(stationName(nearest.station))")
         }
-        return pulseText(language, "Use my location", "Χρήση τοποθεσίας μου", "Perdor vendndodhjen time", "Usa la mia posizione")
+        return pulseText(language, "Use my location", "Χρήση τοποθεσίας μου", "Përdor vendndodhjen time", "Usa la mia posizione")
     }
 
     private var currentLocationSubtitle: String {
@@ -560,9 +560,9 @@ struct ExploreOriginPickerSheet: View {
             return pulseText(language, "Open Settings to allow GPS", "Άνοιξε τις Ρυθμίσεις για GPS", "Hap Cilësimet per GPS", "Apri Impostazioni per il GPS")
         }
         if let nearest = locationService.nearbyStations.first {
-            return pulseText(language, "Nearest station, \(Int(nearest.distanceMeters)) m away", "Πλησιέστερος σταθμός, \(Int(nearest.distanceMeters)) μ", "Stacioni me i afert, \(Int(nearest.distanceMeters)) m", "Stazione piu vicina, \(Int(nearest.distanceMeters)) m")
+            return pulseText(language, "Nearest station, \(Int(nearest.distanceMeters)) m away", "Πλησιέστερος σταθμός, \(Int(nearest.distanceMeters)) μ", "Stacioni më i afërt, \(Int(nearest.distanceMeters)) m", "Stazione piu vicina, \(Int(nearest.distanceMeters)) m")
         }
-        return pulseText(language, "Find the nearest station on this device", "Βρες τον πλησιέστερο σταθμό στη συσκευή", "Gjej stacionin me te afert ne pajisje", "Trova la stazione piu vicina sul dispositivo")
+        return pulseText(language, "Find the nearest station on this device", "Βρες τον πλησιέστερο σταθμό στη συσκευή", "Gjej stacionin më të afërt në pajisje", "Trova la stazione piu vicina sul dispositivo")
     }
 
     private func useCurrentLocation() {
@@ -601,7 +601,7 @@ struct RailPulseQuickReportSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text(pulseText(language, "Quick report", "Γρήγορη αναφορά", "Raport i shpejte", "Segnalazione rapida"))
+                    Text(pulseText(language, "Quick report", "Γρήγορη αναφορά", "Raport i shpejtë", "Segnalazione rapida"))
                         .font(.title2.weight(.bold))
                     Spacer()
                     Button {
@@ -622,13 +622,13 @@ struct RailPulseQuickReportSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
                 .background(Color.syrmosSurface, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                Text(pulseText(language, "Tap once. Report only what you can see right now.", "Πάτησε μια φορά. Ανάφερε μόνο ό,τι βλέπεις τώρα.", "Prek nje here. Raporto vetem ate qe sheh tani.", "Un tocco. Segnala solo cio che vedi ora."))
+                Text(pulseText(language, "Tap once. Report only what you can see right now.", "Πάτησε μια φορά. Ανάφερε μόνο ό,τι βλέπεις τώρα.", "Prek një herë. Raporto vetëm atë që sheh tani.", "Un tocco. Segnala solo cio che vedi ora."))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(SyrmosTokens.live)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
                     .background(SyrmosTokens.live.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                Text(pulseText(language, "What is happening?", "Τι συμβαίνει;", "Cfare po ndodh?", "Cosa sta succedendo?"))
+                Text(pulseText(language, "What is happening?", "Τι συμβαίνει;", "Çfarë po ndodh?", "Cosa sta succedendo?"))
                     .font(.headline)
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(QuickReportSignal.allCases) { signal in
@@ -655,7 +655,7 @@ struct RailPulseQuickReportSheet: View {
                     }
                 }
                 if selected == .crowded {
-                    Text(pulseText(language, "Crowd level", "Επίπεδο πληρότητας", "Niveli i turmes", "Livello affollamento"))
+                    Text(pulseText(language, "Crowd level", "Επίπεδο πληρότητας", "Niveli i turmës", "Livello affollamento"))
                         .font(.subheadline.weight(.bold))
                     HStack(spacing: 6) {
                         ForEach(["Empty", "Seats", "Half", "Standing", "Packed"], id: \.self) { level in
@@ -681,14 +681,14 @@ struct RailPulseQuickReportSheet: View {
                 if isSending {
                     HStack(spacing: 9) {
                         ProgressView()
-                        Text(pulseText(language, "Sending anonymous report...", "Αποστολή ανώνυμης αναφοράς...", "Po dergohet raporti anonim...", "Invio della segnalazione anonima..."))
+                        Text(pulseText(language, "Sending anonymous report...", "Αποστολή ανώνυμης αναφοράς...", "Po dërgohet raporti anonim...", "Invio della segnalazione anonima..."))
                             .font(.caption.weight(.semibold))
                     }
                     .frame(maxWidth: .infinity)
                     .padding(12)
                 }
                 if sendFailed {
-                    Text(pulseText(language, "Report was not sent. Check your connection and try again.", "Η αναφορά δεν στάλθηκε. Έλεγξε τη σύνδεση και προσπάθησε ξανά.", "Raporti nuk u dergua. Kontrollo lidhjen dhe provo perseri.", "Segnalazione non inviata. Controlla la connessione e riprova."))
+                    Text(pulseText(language, "Report was not sent. Check your connection and try again.", "Η αναφορά δεν στάλθηκε. Έλεγξε τη σύνδεση και προσπάθησε ξανά.", "Raporti nuk u dërgua. Kontrollo lidhjen dhe provo përsëri.", "Segnalazione non inviata. Controlla la connessione e riprova."))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(SyrmosTokens.disruption)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -697,7 +697,7 @@ struct RailPulseQuickReportSheet: View {
                 }
                 if let selected, wasSent {
                     HStack(spacing: 8) {
-                        Text("✓ \(pulseText(language, "Report sent", "Η αναφορα σταλθηκε", "Raporti u dergua", "Segnalazione inviata")) · \(selected.localized(language))")
+                        Text("✓ \(pulseText(language, "Report sent", "Η αναφορά στάλθηκε", "Raporti u dërgua", "Segnalazione inviata")) · \(selected.localized(language))")
                             .font(.subheadline.weight(.bold))
                             .frame(maxWidth: .infinity)
                         if canUndo {
@@ -712,13 +712,13 @@ struct RailPulseQuickReportSheet: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 14)
                     .background(SyrmosTokens.live, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                    Text(pulseText(language, "No account, device ID, or location is included. Active reports expire after two hours and are deleted within seven days. An anonymous daily count remains in railway history.", "Δεν περιλαμβάνεται λογαριασμός, αναγνωριστικό συσκευής ή τοποθεσία. Οι ενεργές αναφορές λήγουν σε δυο ώρες και διαγράφονται εντός επτά ημερών. Ένα ανώνυμο ημερήσιο σύνολο παραμένει στο σιδηροδρομικό ιστορικό.", "Nuk perfshihet llogari, ID pajisjeje ose vendndodhje. Raportet aktive skadojne pas dy oresh dhe fshihen brenda shtate ditesh. Nje numer anonim ditor mbetet ne historine hekurudhore.", "Non vengono inclusi account, ID del dispositivo o posizione. Le segnalazioni attive scadono dopo due ore e vengono eliminate entro sette giorni. Un conteggio giornaliero anonimo resta nello storico ferroviario."))
+                    Text(pulseText(language, "No account, device ID, or location is included. Active reports expire after two hours and are deleted within seven days. An anonymous daily count remains in railway history.", "Δεν περιλαμβάνεται λογαριασμός, αναγνωριστικό συσκευής ή τοποθεσία. Οι ενεργές αναφορές λήγουν σε δυο ώρες και διαγράφονται εντός επτά ημερών. Ένα ανώνυμο ημερήσιο σύνολο παραμένει στο σιδηροδρομικό ιστορικό.", "Nuk përfshihet llogari, ID pajisjeje ose vendndodhje. Raportet aktive skadojnë pas dy orësh dhe fshihen brenda shtatë ditësh. Një numër anonim ditor mbetet në historinë hekurudhore.", "Non vengono inclusi account, ID del dispositivo o posizione. Le segnalazioni attive scadono dopo due ore e vengono eliminate entro sette giorni. Un conteggio giornaliero anonimo resta nello storico ferroviario."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
-                Text(pulseText(language, "For immediate danger, contact emergency services. Ichnos is not an emergency channel.", "Για άμεσο κίνδυνο, επικοινώνησε με τις υπηρεσίες έκτακτης ανάγκης. Το Ichnos δεν είναι κανάλι έκτακτης ανάγκης.", "Per rrezik te menjehershem, kontakto sherbimet e emergjences. Ichnos nuk eshte kanal emergjence.", "Per un pericolo immediato, contatta i servizi di emergenza. Ichnos non e un canale di emergenza."))
+                Text(pulseText(language, "For immediate danger, contact emergency services. Ichnos is not an emergency channel.", "Για άμεσο κίνδυνο, επικοινώνησε με τις υπηρεσίες έκτακτης ανάγκης. Το Ichnos δεν είναι κανάλι έκτακτης ανάγκης.", "Për rrezik të menjëhershëm, kontakto shërbimet e emergjencës. Ichnos nuk është kanal emergjence.", "Per un pericolo immediato, contatta i servizi di emergenza. Ichnos non e un canale di emergenza."))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(SyrmosTokens.warning)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -785,9 +785,9 @@ struct RailPulseQuickReportSheet: View {
         switch level {
         case "Empty": return pulseText(language, "Empty", "Άδειο", "Bosh", "Vuoto")
         case "Seats": return pulseText(language, "Seats", "Θέσεις", "Vende", "Posti")
-        case "Half": return pulseText(language, "Half", "Μέτριο", "Gjysme", "Meta")
+        case "Half": return pulseText(language, "Half", "Μέτριο", "Gjysmë", "Meta")
         case "Packed": return pulseText(language, "Packed", "Γεμάτο", "Plot", "Pieno")
-        default: return pulseText(language, "Standing", "Όρθιοι", "Ne kembe", "In piedi")
+        default: return pulseText(language, "Standing", "Όρθιοι", "Në këmbë", "In piedi")
         }
     }
 }
@@ -806,12 +806,12 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
         return [PulseFeedItem(
             id: "network-state",
             title: didLoad
-                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk eshte e disponueshme", "Stato della comunita non disponibile")
+                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunita non disponibile")
                 : pulseText(language, "Loading community status", "Φόρτωση κατάστασης κοινότητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunita"),
             detail: didLoad
-                ? pulseText(language, "Check your connection and try again", "Έλεγξε τη σύνδεση και προσπάθησε ξανά", "Kontrollo lidhjen dhe provo perseri", "Controlla la connessione e riprova")
-                : pulseText(language, "Anonymous reports from the last two hours", "Ανώνυμες αναφορές των τελευταίων δυο ωρών", "Raporte anonime nga dy oret e fundit", "Segnalazioni anonime delle ultime due ore"),
-            status: didLoad ? pulseText(language, "Offline", "Εκτός σύνδεσης", "Jashte linje", "Offline") : pulseText(language, "Loading", "Φόρτωση", "Ngarkim", "Caricamento"),
+                ? pulseText(language, "Check your connection and try again", "Έλεγξε τη σύνδεση και προσπάθησε ξανά", "Kontrollo lidhjen dhe provo përsëri", "Controlla la connessione e riprova")
+                : pulseText(language, "Anonymous reports from the last two hours", "Ανώνυμες αναφορές των τελευταίων δυο ωρών", "Raporte anonime nga dy orët e fundit", "Segnalazioni anonime delle ultime due ore"),
+            status: didLoad ? pulseText(language, "Offline", "Εκτός σύνδεσης", "Jashtë linje", "Offline") : pulseText(language, "Loading", "Φόρτωση", "Ngarkim", "Caricamento"),
             color: didLoad ? SyrmosTokens.warning : SyrmosTokens.metroBlue
         )]
     }
@@ -831,15 +831,15 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
     let estimate = summary.estimatedJourneysToday ?? 0
     var items = [PulseFeedItem(
         id: "network-clear",
-        title: pulseText(language, "No active issues reported", "Δεν αναφέρθηκαν ενεργά προβλήματα", "Nuk ka probleme aktive te raportuara", "Nessun problema attivo segnalato"),
-        detail: pulseText(language, "Estimated \(estimate) rail journeys so far today. This is an estimate, not a report count.", "Εκτιμώμενες \(estimate) σιδηροδρομικές διαδρομές σήμερα. Είναι εκτίμηση, όχι αριθμός αναφορών.", "Rreth \(estimate) udhetime hekurudhore sot. Eshte vleresim, jo numer raportesh.", "Circa \(estimate) viaggi ferroviari oggi. E una stima, non un conteggio di segnalazioni."),
-        status: pulseText(language, "Clear", "Καθαρά", "Ne rregull", "Regolare"),
+        title: pulseText(language, "No active issues reported", "Δεν αναφέρθηκαν ενεργά προβλήματα", "Nuk ka probleme aktive të raportuara", "Nessun problema attivo segnalato"),
+        detail: pulseText(language, "Estimated \(estimate) rail journeys so far today. This is an estimate, not a report count.", "Εκτιμώμενες \(estimate) σιδηροδρομικές διαδρομές σήμερα. Είναι εκτίμηση, όχι αριθμός αναφορών.", "Rreth \(estimate) udhëtime hekurudhore sot. Është vlerësim, jo numër raportesh.", "Circa \(estimate) viaggi ferroviari oggi. E una stima, non un conteggio di segnalazioni."),
+        status: pulseText(language, "Clear", "Καθαρά", "Në rregull", "Regolare"),
         color: SyrmosTokens.live
     )]
     if summary.normalReportCount > 0 {
         items.append(PulseFeedItem(
             id: "network-confirmed-normal",
-            title: pulseText(language, "Everything OK", "Όλα καλά", "Gjithcka ne rregull", "Tutto bene"),
+            title: pulseText(language, "Everything OK", "Όλα καλά", "Gjithçka në rregull", "Tutto bene"),
             detail: pulseText(language, "Confirmed by anonymous Ichnos reports", "Επιβεβαιώθηκε από ανώνυμες αναφορές Ichnos", "Konfirmuar nga raporte anonime Ichnos", "Confermato da segnalazioni anonime Ichnos"),
             status: "\(summary.normalReportCount)",
             color: SyrmosTokens.live
@@ -851,11 +851,11 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
 private func ichnosAriadneText(language: AppLanguage, summary: IchnosCommunitySummary?, didLoad: Bool) -> String {
     guard let summary else {
         return didLoad
-            ? pulseText(language, "Ichnos community status is temporarily unavailable.", "Η κατάσταση κοινότητας Ichnos δεν είναι προσωρινά διαθέσιμη.", "Gjendja e komunitetit Ichnos nuk eshte perkohesisht e disponueshme.", "Lo stato della comunita Ichnos non e temporaneamente disponibile.")
+            ? pulseText(language, "Ichnos community status is temporarily unavailable.", "Η κατάσταση κοινότητας Ichnos δεν είναι προσωρινά διαθέσιμη.", "Gjendja e komunitetit Ichnos nuk është përkohësisht e disponueshme.", "Lo stato della comunita Ichnos non e temporaneamente disponibile.")
             : pulseText(language, "Loading Ichnos community status...", "Φόρτωση κατάστασης κοινότητας Ichnos...", "Po ngarkohet gjendja e komunitetit Ichnos...", "Caricamento dello stato della comunita Ichnos...")
     }
     if summary.hasIssues {
-        return pulseText(language, "Ichnos: active community issues are shown above. Estimated normal-journey counts are hidden while any issue is active.", "Ichnos: τα ενεργά προβλήματα κοινότητας εμφανίζονται παραπάνω. Οι εκτιμήσεις κανονικών διαδρομών κρύβονται όσο υπάρχει ενεργό πρόβλημα.", "Ichnos: problemet aktive te komunitetit shfaqen me siper. Vleresimet e udhetimeve normale fshihen kur ka problem aktiv.", "Ichnos: i problemi attivi della comunita sono mostrati sopra. Le stime dei viaggi regolari sono nascoste mentre un problema e attivo.")
+        return pulseText(language, "Ichnos: active community issues are shown above. Estimated normal-journey counts are hidden while any issue is active.", "Ichnos: τα ενεργά προβλήματα κοινότητας εμφανίζονται παραπάνω. Οι εκτιμήσεις κανονικών διαδρομών κρύβονται όσο υπάρχει ενεργό πρόβλημα.", "Ichnos: problemet aktive të komunitetit shfaqen më sipër. Vlerësimet e udhëtimeve normale fshihen kur ka problem aktiv.", "Ichnos: i problemi attivi della comunita sono mostrati sopra. Le stime dei viaggi regolari sono nascoste mentre un problema e attivo.")
     }
     return pulseText(language, "Ichnos: no active issue reports right now.", "Ichnos: δεν υπάρχουν ενεργές αναφορές προβλημάτων τώρα.", "Ichnos: nuk ka raporte aktive problemesh tani.", "Ichnos: nessuna segnalazione attiva di problemi al momento.")
 }
@@ -863,14 +863,14 @@ private func ichnosAriadneText(language: AppLanguage, summary: IchnosCommunitySu
 func ichnosIssueLabel(_ issue: IchnosCommunityIssue, language: AppLanguage) -> String {
     let label: String
     switch issue.signal {
-    case "delayed": label = pulseText(language, "Delay", "Καθυστέρηση", "Vonese", "Ritardo")
+    case "delayed": label = pulseText(language, "Delay", "Καθυστέρηση", "Vonesë", "Ritardo")
     case "crowded": label = pulseText(language, "Crowded", "Πολύς κόσμος", "Plot", "Affollato")
-    case "stopped": label = pulseText(language, "Service stopped", "Η κίνηση σταμάτησε", "Sherbimi u ndal", "Servizio fermo")
-    case "too_hot": label = pulseText(language, "Too hot", "Πολύ ζέστη", "Shume nxehte", "Troppo caldo")
-    case "access": label = pulseText(language, "Accessibility issue", "Πρόβλημα πρόσβασης", "Problem aksesueshmerie", "Problema di accessibilita")
-    case "facilities": label = pulseText(language, "Facility issue", "Πρόβλημα παροχών", "Problem sherbimesh", "Problema ai servizi")
-    case "safety": label = pulseText(language, "Safety concern", "Θέμα ασφάλειας", "Shqetesim sigurie", "Problema di sicurezza")
-    default: label = pulseText(language, "Other issue", "Άλλο πρόβλημα", "Problem tjeter", "Altro problema")
+    case "stopped": label = pulseText(language, "Service stopped", "Η κίνηση σταμάτησε", "Shërbimi u ndal", "Servizio fermo")
+    case "too_hot": label = pulseText(language, "Too hot", "Πολύ ζέστη", "Shumë nxehtë", "Troppo caldo")
+    case "access": label = pulseText(language, "Accessibility issue", "Πρόβλημα πρόσβασης", "Problem aksesueshmërie", "Problema di accessibilita")
+    case "facilities": label = pulseText(language, "Facility issue", "Πρόβλημα παροχών", "Problem shërbimesh", "Problema ai servizi")
+    case "safety": label = pulseText(language, "Safety concern", "Θέμα ασφάλειας", "Shqetësim sigurie", "Problema di sicurezza")
+    default: label = pulseText(language, "Other issue", "Άλλο πρόβλημα", "Problem tjetër", "Altro problema")
     }
     return issue.detail.isEmpty ? label : "\(label): \(issue.detail)"
 }

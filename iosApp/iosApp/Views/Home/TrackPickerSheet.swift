@@ -468,7 +468,7 @@ struct TrackPickerSheet: View {
     private var specificTrainTitle: String {
         switch loc.language {
         case .greek: return "Συγκεκριμένο δρομολόγιο"
-        case .albanian: return "Nje tren specifik"
+        case .albanian: return "Një tren specifik"
         case .italian: return "Un treno specifico"
         case .english: return "A specific train"
         }
@@ -476,15 +476,15 @@ struct TrackPickerSheet: View {
     private var specificTrainSubtitle: String {
         switch loc.language {
         case .greek: return "Επιλέξτε γραμμή, σταθμό και δρομολόγιο"
-        case .albanian: return "Zgjidhni linjen, stacionin dhe nisjen"
+        case .albanian: return "Zgjidhni linjën, stacionin dhe nisjen"
         case .italian: return "Scegli linea, stazione e partenza"
         case .english: return "Pick a line, station and departure"
         }
     }
     private var stationAllTitle: String {
         switch loc.language {
-        case .greek: return "Ολα τα δρομολόγια σε σταθμό"
-        case .albanian: return "Te gjitha trenet ne stacion"
+        case .greek: return "Όλα τα δρομολόγια σε σταθμό"
+        case .albanian: return "Të gjitha trenat në stacion"
         case .italian: return "Tutti i treni in stazione"
         case .english: return "All trains at a station"
         }
@@ -492,7 +492,7 @@ struct TrackPickerSheet: View {
     private var stationAllSubtitle: String {
         switch loc.language {
         case .greek: return "Παρακολουθήστε συνεχώς τα δρομολόγια"
-        case .albanian: return "Ndiqni vazhdimisht trenet"
+        case .albanian: return "Ndiqni vazhdimisht trenat"
         case .italian: return "Segui le partenze in tempo reale"
         case .english: return "Continuously track departures"
         }
@@ -500,7 +500,7 @@ struct TrackPickerSheet: View {
     private var metroFrequentNote: String {
         switch loc.language {
         case .greek: return "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
-        case .albanian: return "Metroja vjen shpesh, nuk ka nevoje per ndjekje"
+        case .albanian: return "Metroja vjen shpesh, nuk ka nevojë për ndjekje"
         case .italian: return "La metro passa spesso, non serve tracciarla"
         case .english: return "Metro runs frequently, no need to track"
         }
@@ -508,7 +508,7 @@ struct TrackPickerSheet: View {
     private var pickLineHeader: String {
         switch loc.language {
         case .greek: return "Επίλεξε γραμμή"
-        case .albanian: return "Zgjidh linjen"
+        case .albanian: return "Zgjidh linjën"
         case .italian: return "Scegli una linea"
         case .english: return "Pick a line"
         }
@@ -532,7 +532,7 @@ struct TrackPickerSheet: View {
     private var noDeparturesLabel: String {
         switch loc.language {
         case .greek: return "Δεν υπάρχουν επόμενες αναχωρήσεις."
-        case .albanian: return "S'ka nisje te radhes."
+        case .albanian: return "S'ka nisje të radhës."
         case .italian: return "Nessuna partenza in programma."
         case .english: return "No upcoming departures."
         }

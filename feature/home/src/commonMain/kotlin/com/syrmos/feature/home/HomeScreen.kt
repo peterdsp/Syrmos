@@ -1653,7 +1653,7 @@ private fun RailNewsSection(
             Text(text = "📰", style = MaterialTheme.typography.titleSmall)
             SectionTitle(text = when (lang) {
                 AppLanguage.GREEK -> "Σιδηροδρομικά Νέα"
-                AppLanguage.ALBANIAN -> "Lajme Hekurudhore"
+                AppLanguage.ALBANIAN -> "Lajme hekurudhore"
                 AppLanguage.ITALIAN -> "Notizie ferroviarie"
                 else -> "Rail News"
             })
@@ -1951,7 +1951,7 @@ private fun LiveTrainsSection(
             Text(text = "🚆", style = MaterialTheme.typography.titleSmall)
             SectionTitle(text = when (lang) {
                 AppLanguage.GREEK -> "Ζωντανά τρένα"
-                AppLanguage.ALBANIAN -> "Trenat aktiv"
+                AppLanguage.ALBANIAN -> "Trenat aktivë"
                 AppLanguage.ITALIAN -> "Treni in tempo reale"
                 else -> "Live trains"
             })

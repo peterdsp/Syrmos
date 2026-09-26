@@ -15,21 +15,21 @@ enum HomeSection: String, CaseIterable, Codable, Identifiable {
         case .nextTrain:
             switch language {
             case .greek: return "Επόμενο τρένο"
-            case .albanian: return "Treni i radhes"
+            case .albanian: return "Treni i radhës"
             case .italian: return "Prossimo treno"
             case .english: return "Next train"
             }
         case .serviceAlerts:
             switch language {
             case .greek: return "Ειδοποιήσεις υπηρεσίας"
-            case .albanian: return "Njoftimet e sherbimit"
+            case .albanian: return "Njoftimet e shërbimit"
             case .italian: return "Avvisi di servizio"
             case .english: return "Service alerts"
             }
         case .railNews:
             switch language {
             case .greek: return "Σιδηροδρομικά Νέα"
-            case .albanian: return "Lajme Hekurudhore"
+            case .albanian: return "Lajme hekurudhore"
             case .italian: return "Notizie ferroviarie"
             case .english: return "Rail News"
             }
@@ -43,14 +43,14 @@ enum HomeSection: String, CaseIterable, Codable, Identifiable {
         case .nearMe:
             switch language {
             case .greek: return "Κοντά μου"
-            case .albanian: return "Prane meje"
+            case .albanian: return "Pranë meje"
             case .italian: return "Vicino a me"
             case .english: return "Near me"
             }
         case .liveTrains:
             switch language {
             case .greek: return "Ζωντανά τρένα"
-            case .albanian: return "Trenat aktiv"
+            case .albanian: return "Trenat aktivë"
             case .italian: return "Treni in tempo reale"
             case .english: return "Live trains"
             }
