@@ -29,19 +29,55 @@ struct HomeView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: 20) {
-                    answerSection.syrmosEntrance(index: 0).id(HomeAnchor.weather)
-                    livingMapStrip.syrmosEntrance(index: 1)
-                    weatherContextSection.syrmosEntrance(index: 2)
-                    insightsStream.syrmosEntrance(index: 3)
-                    radialNearbySection.syrmosEntrance(index: 4).id(HomeAnchor.nearby)
-                    liveTrainsSection.syrmosEntrance(index: 5)
+            // Foldables and tablets (master plan, Home contract): the direction
+            // board is the task, the network context reads alongside. One
+            // policy decides (SyrmosArrangement); a phone keeps the single column.
+            SyrmosArrangement(
+                task: .home,
+                primary: {
+                    // Task pane: the answer (next train for every direction, or
+                    // the tracked train), the map strip and the weather context.
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            answerSection.syrmosEntrance(index: 0).id(HomeAnchor.weather)
+                            livingMapStrip.syrmosEntrance(index: 1)
+                            weatherContextSection.syrmosEntrance(index: 2)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 20)
+                    }
+                },
+                companion: {
+                    // Companion pane: alerts, news and status, the stations
+                    // around you and the live trains. Same data, no second poll.
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            insightsStream.syrmosEntrance(index: 1)
+                            radialNearbySection.syrmosEntrance(index: 2).id(HomeAnchor.nearby)
+                            liveTrainsSection.syrmosEntrance(index: 3)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 20)
+                    }
+                },
+                combined: {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            answerSection.syrmosEntrance(index: 0).id(HomeAnchor.weather)
+                            livingMapStrip.syrmosEntrance(index: 1)
+                            weatherContextSection.syrmosEntrance(index: 2)
+                            insightsStream.syrmosEntrance(index: 3)
+                            radialNearbySection.syrmosEntrance(index: 4).id(HomeAnchor.nearby)
+                            liveTrainsSection.syrmosEntrance(index: 5)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 20)
+                    }
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
-            }
+            )
             .background(Color.syrmosBackground)
             .sheet(isPresented: $showTrackPicker) {
                 TrackPickerSheet(onDismiss: { showTrackPicker = false })

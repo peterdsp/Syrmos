@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -84,7 +85,9 @@ import com.syrmos.core.domain.journey.ActiveJourneyStore
 import com.syrmos.core.domain.journey.DisruptionExclusion
 import com.syrmos.core.domain.journey.DisruptionOutcome
 import com.syrmos.core.domain.journey.ConnectionRisk
+import com.syrmos.core.domain.journey.JourneyComparison
 import com.syrmos.core.domain.journey.JourneyDetail
+import com.syrmos.core.domain.journey.JourneySelection
 import com.syrmos.core.domain.journey.JourneyPlanAdapter
 import com.syrmos.core.domain.journey.SchedulePlanner
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
@@ -146,7 +149,9 @@ class PlanScreenRoute : Screen {
         var open by rememberSaveable { mutableStateOf<String?>(null) } // "from" | "to" | null
         var query by rememberSaveable { mutableStateOf("") }
         var options by remember { mutableStateOf<List<JourneyOption>>(emptyList()) }
-        var selectedIdx by rememberSaveable { mutableStateOf(0) }
+        // Selected itinerary by id (legs + schedule identity), never a list index,
+        // so a re-plan or a fold that refreshes results keeps the traveller's choice.
+        var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
         var planned by remember { mutableStateOf(false) }
         var mode by rememberSaveable { mutableStateOf("now") } // "now" | "arriveBy" | "lastConnection"
         var arriveByText by rememberSaveable { mutableStateOf("") } // "HH:MM"
@@ -194,6 +199,29 @@ class PlanScreenRoute : Screen {
 
         // Projects the live announcement feed into the disruption engine's notice
         // shape (severity + affected line ids). Pure mapping over the current feed.
+        // Chips on an alternative: the shared ranker's "recommended" plus the
+        // differences that are really there (JourneyComparison, shared with iOS).
+        fun badgeLabels(opt: JourneyOption, f: JourneyComparison.Facts): List<String> = buildList {
+            if (opt.rankingBadge == "recommended") add(t("Recommended", "Προτεινόμενη", "E rekomanduar", "Consigliato"))
+            if (f.fastest) add(t("Fastest", "Ταχύτερη", "Më e shpejta", "Più veloce"))
+            if (f.fewestChanges) add(t("Fewest changes", "Λιγότερες αλλαγές", "Më pak ndërrime", "Meno cambi"))
+        }
+        // One line under the selected journey's summary saying how it compares.
+        fun comparisonLine(f: JourneyComparison.Facts): String? {
+            val parts = buildList {
+                if (f.fastest) add(t("Fastest route", "Ταχύτερη διαδρομή", "Rruga më e shpejtë", "Percorso più veloce"))
+                f.minutesSlowerThanFastest?.let { m ->
+                    add("+$m " + t("min vs fastest", "λεπ από την ταχύτερη", "min nga më e shpejta", "min rispetto al più veloce"))
+                }
+                if (f.fewestChanges) add(t("Fewest changes", "Λιγότερες αλλαγές", "Më pak ndërrime", "Meno cambi"))
+                when {
+                    f.extraChanges == 1 -> add(t("1 more change", "1 αλλαγή παραπάνω", "1 ndërrim më shumë", "1 cambio in più"))
+                    f.extraChanges > 1 -> add("${f.extraChanges} " + t("more changes", "αλλαγές παραπάνω", "ndërrime më shumë", "cambi in più"))
+                }
+            }
+            return if (parts.isEmpty()) null else parts.joinToString(" · ")
+        }
+
         suspend fun disruptionNotices(repo: AnnouncementsRepository): List<ServiceNotice> =
             repo.feed.first().announcements
                 .filter { it.isServiceAlert || it.severity != "info" }
@@ -251,11 +279,10 @@ class PlanScreenRoute : Screen {
                 val outcome = DisruptionExclusion.classify(avoiding, naive, notices)
                 disruption = outcome
                 options = if (outcome is DisruptionOutcome.Suspended) emptyList() else avoiding
-                selectedIdx = if (resetSelection) {
-                    0
-                } else {
-                    selectedIdx.coerceIn(0, (options.size - 1).coerceAtLeast(0))
-                }
+                selectedId = JourneySelection.retain(
+                    previous = if (resetSelection) null else selectedId,
+                    ids = options.map { it.id },
+                )
                 planned = true
             }
         }
@@ -346,7 +373,8 @@ class PlanScreenRoute : Screen {
         Scaffold(
             topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    // Below the status bar (custom bar, not a TopAppBar).
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = { navigator.pop() }) {
@@ -555,15 +583,22 @@ class PlanScreenRoute : Screen {
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
             }
 
+            // In a backward mode only options that actually scheduled are usable.
+            val usable = if (mode == "now") options else options.filter { it.departureInstant != null }
+            val facts = JourneyComparison.facts(usable.map { it.durationSeconds }, usable.map { it.transferCount })
+            val selectedIndex = JourneySelection.index(selectedId, usable.map { it.id }) ?: 0
+            val selectedOption = usable.getOrNull(selectedIndex)
+
+            // The alternatives: disruption chip, suspended and no-route states, the
+            // count/save row and one card per usable option. On a paired layout this
+            // is the task pane under the query; the selected journey reads alongside.
             @Composable
-            fun ResultsBlock() {
+            fun AlternativesBlock() {
                 // Phase R: disclose when we routed around a suspended line.
                 (disruption as? DisruptionOutcome.Routed)?.let { r ->
                     if (planned && r.excludedLineIds.isNotEmpty()) RoutingAroundChip(r.excludedLineIds, ::t)
                 }
 
-                // In a backward mode only options that actually scheduled are usable.
-                val usable = if (mode == "now") options else options.filter { it.departureInstant != null }
                 when {
                     planned && disruption is DisruptionOutcome.Suspended -> {
                         val s = disruption as DisruptionOutcome.Suspended
@@ -599,7 +634,8 @@ class PlanScreenRoute : Screen {
                         }
                         usable.forEachIndexed { i, opt ->
                             OptionCard(
-                                opt = opt, selected = i == selectedIdx, lang = lang, t = ::t,
+                                opt = opt, selected = opt.id == selectedOption?.id, lang = lang, t = ::t,
+                                badges = badgeLabels(opt, facts[i]),
                                 leaveByLabel = if (mode == "now") null else {
                                     val dep = opt.departureInstant
                                     if (dep == null) null else {
@@ -609,15 +645,23 @@ class PlanScreenRoute : Screen {
                                         "$lbl ${athensHm(dep)}"
                                     }
                                 },
-                                onClick = { selectedIdx = i },
+                                onClick = { selectedId = opt.id },
                             )
                         }
-                        // S05 selected-journey detail: summary + leg-by-leg timeline
-                        // for the chosen option, from the shared JourneyDetail transform.
-                        usable.getOrNull(selectedIdx)?.let { sel ->
-                            SelectedJourneyDetail(option = sel, stepFree = stepFree, lang = lang, nm = ::name, t = ::t, onStart = { startGo(sel) })
-                        }
                     }
+                }
+            }
+
+            // S05 selected-journey detail: summary + comparison line + leg-by-leg
+            // timeline for the chosen option, from the shared JourneyDetail transform.
+            @Composable
+            fun SelectedBlock() {
+                selectedOption?.let { sel ->
+                    SelectedJourneyDetail(
+                        option = sel, stepFree = stepFree, lang = lang, nm = ::name, t = ::t,
+                        comparison = comparisonLine(facts[selectedIndex]),
+                        onStart = { startGo(sel) },
+                    )
                 }
             }
 
@@ -692,6 +736,9 @@ class PlanScreenRoute : Screen {
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             QueryBlock()
+                            // Task pane: the editable query and the route alternatives
+                            // (Plan contract: compare here, read the choice alongside).
+                            if (planned) AlternativesBlock()
                             SavedBlock()
                             // Clear the floating assistant launcher under the saved list.
                             Spacer(Modifier.height(88.dp))
@@ -706,15 +753,18 @@ class PlanScreenRoute : Screen {
                             // every state, and a calm empty state before the first
                             // search so the unfolded display never shows a blank half.
                             Text(
-                                t("Routes", "Διαδρομές", "Rrugët", "Percorsi"),
+                                t("Selected journey", "Επιλεγμένη διαδρομή", "Udhëtimi i zgjedhur", "Viaggio selezionato"),
                                 style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
                             )
-                            if (planned) {
-                                ResultsBlock()
+                            if (planned && selectedOption != null) {
+                                SelectedBlock()
                                 // Clear the floating assistant launcher so Start
-                                // journey on the last card stays fully tappable.
+                                // journey stays fully tappable.
                                 Spacer(Modifier.height(88.dp))
                             } else {
+                                // Calm state before a search, and the honest state after
+                                // one that left nothing selectable (no invented route).
+                                val afterSearch = planned
                                 Column(
                                     modifier = Modifier.fillMaxWidth()
                                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
@@ -722,14 +772,19 @@ class PlanScreenRoute : Screen {
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     Text(
-                                        t("Choose where you are going.", "Διάλεξε πού πηγαίνεις.", "Zgjidh ku po shkon.", "Scegli dove vai."),
+                                        if (afterSearch) t("No journey to show yet.", "Καμία διαδρομή για προβολή ακόμη.", "Ende asnjë udhëtim për t'u shfaqur.", "Nessun viaggio da mostrare ancora.")
+                                        else t("Choose where you are going.", "Διάλεξε πού πηγαίνεις.", "Zgjidh ku po shkon.", "Scegli dove vai."),
                                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                                     )
                                     Text(
-                                        t("Routes and the selected journey's details appear here.",
-                                          "Οι διαδρομές και οι λεπτομέρειες του επιλεγμένου ταξιδιού εμφανίζονται εδώ.",
-                                          "Rrugët dhe detajet e udhëtimit të zgjedhur shfaqen këtu.",
-                                          "I percorsi e i dettagli del viaggio selezionato compaiono qui."),
+                                        if (afterSearch) t("Pick one of the routes to read it here.",
+                                            "Διάλεξε μία από τις διαδρομές για να τη δεις εδώ.",
+                                            "Zgjidh një nga rrugët për ta lexuar këtu.",
+                                            "Scegli uno dei percorsi per leggerlo qui.")
+                                        else t("The selected journey's stops, times and changes appear here.",
+                                            "Οι στάσεις, οι ώρες και οι αλλαγές της επιλεγμένης διαδρομής εμφανίζονται εδώ.",
+                                            "Ndalesat, oraret dhe ndërrimet e udhëtimit të zgjedhur shfaqen këtu.",
+                                            "Fermate, orari e cambi del viaggio selezionato compaiono qui."),
                                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
@@ -745,7 +800,8 @@ class PlanScreenRoute : Screen {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         QueryBlock()
-                        ResultsBlock()
+                        AlternativesBlock()
+                        SelectedBlock()
                         SavedBlock()
                     }
                 }
@@ -930,6 +986,7 @@ class PlanScreenRoute : Screen {
         lang: AppLanguage,
         t: (String, String, String, String) -> String,
         leaveByLabel: String?,
+        badges: List<String> = emptyList(),
         onClick: () -> Unit,
     ) {
         val minutes = ((opt.durationSeconds ?: 0) / 60).coerceAtLeast(1)
@@ -953,6 +1010,21 @@ class PlanScreenRoute : Screen {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            if (badges.isNotEmpty()) {
+                // Atomic chips: a label never wraps or compresses mid-word.
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    badges.forEach { b ->
+                        Text(
+                            b, maxLines = 1, softWrap = false,
+                            style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f), RoundedCornerShape(999.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+            }
             Text("~$minutes " + t("min", "λεπ", "min", "min") + " · $changes · $chain", color = MaterialTheme.colorScheme.onSurface)
             Text(feas, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             if (leaveByLabel != null) {
@@ -1026,6 +1098,7 @@ class PlanScreenRoute : Screen {
         lang: AppLanguage,
         nm: (String?) -> String,
         t: (String, String, String, String) -> String,
+        comparison: String? = null,
         onStart: () -> Unit,
     ) {
         val rows = remember(option.id) { JourneyDetail.timeline(option) }
@@ -1049,6 +1122,10 @@ class PlanScreenRoute : Screen {
                     Text("${athensHm(dep)} – ${athensHm(arr)}",
                         style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+            if (comparison != null) {
+                Text(comparison, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary)
             }
 
             // Timeline.

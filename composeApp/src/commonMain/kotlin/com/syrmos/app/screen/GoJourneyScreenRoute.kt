@@ -9,9 +9,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.movableContentOf
+import com.syrmos.core.domain.go.GoTimelineFocus
+import kotlin.math.roundToInt
+import androidx.compose.material3.FilledTonalButton
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -74,6 +86,15 @@ import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.designsystem.component.toComposeColor
 import kotlinx.coroutines.flow.first
+import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.domain.go.GoRoutePoint
+import com.syrmos.core.domain.go.GoRouteRuns
+import com.syrmos.core.domain.go.GoCamera
+import com.syrmos.core.domain.go.GoCameraAction
+import com.syrmos.core.domain.go.GoCameraEvent
+import com.syrmos.core.domain.go.GoCameraIntent
+import com.syrmos.feature.map.GoRouteMapLeg
+import com.syrmos.feature.map.GoRouteMapView
 import org.koin.compose.koinInject
 
 /**
@@ -128,6 +149,11 @@ class GoJourneyScreenRoute(
             }
         }
         val journey = this.journey ?: rebuilt
+        // Tell the shell GO is on screen (hides the floating launcher, as iOS).
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            com.syrmos.app.journey.GoScreenPresence.onScreen = true
+            onDispose { com.syrmos.app.journey.GoScreenPresence.onScreen = false }
+        }
         if (journey == null || journey.legs.isEmpty()) {
             // Restored with no live session left: nothing to guide, leave quietly.
             LaunchedEffect(active) { if (active == null) navigator.pop() }
@@ -139,6 +165,9 @@ class GoJourneyScreenRoute(
             AppLanguage.GREEK -> el; AppLanguage.ALBANIAN -> sq; AppLanguage.ITALIAN -> it; else -> en
         }
         fun endJourney() { ActiveJourneyRepository.clear(); navigator.pop() }
+        // Mid-journey End asks first, so a stray tap on a moving train does not
+        // drop the guidance; Finish after arrival is final and safe.
+        var confirmEnd by remember { mutableStateOf(false) }
         fun advance() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.advance(it, journey, Clock.System.now())) } }
         fun stepBack() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.back(it, journey, Clock.System.now())) } }
 
@@ -155,6 +184,80 @@ class GoJourneyScreenRoute(
         // Line colours for the timeline pills and rail (seed data, not a guess).
         val lineRepo = koinInject<LineRepositoryImpl>()
         var lineColors by remember { mutableStateOf<Map<String, Color>>(emptyMap()) }
+        // Route map inputs: the stops' coordinates (one fetch) and the shared
+        // per-leg projection, so each leg draws in its real line colour.
+        var stationCoords by remember { mutableStateOf<Map<String, GoRoutePoint>>(emptyMap()) }
+        LaunchedEffect(Unit) {
+            stationCoords = stationRepo.getAllStations().first()
+                .associate { it.id to GoRoutePoint(it.latitude, it.longitude) }
+        }
+        val primaryColor = MaterialTheme.colorScheme.primary
+        val routeLegs = remember(journey, stationCoords, lineColors, primaryColor) {
+            GoRouteRuns.legRuns(journey) { stationCoords[it] }.map { run ->
+                GoRouteMapLeg(run.lineId, lineColors[run.lineId] ?: primaryColor, run.points.map { LatLng(it.lat, it.lon) })
+            }
+        }
+        val currentPoint = GoRouteRuns.currentPoint(journey, position) { stationCoords[it] }?.let { LatLng(it.lat, it.lon) }
+        // Camera with explicit intent (shared GoCamera reducer): follow the
+        // current stop by default, keep the whole route on Fit route, and leave
+        // the rider's manual view alone until they ask again.
+        var showCompactMap by rememberSaveable { mutableStateOf(false) }
+        // The intent survives recreation too (a fold must not turn a manual view
+        // back into follow); stored by name, enums are not always bundle-safe.
+        var cameraIntentName by rememberSaveable { mutableStateOf(GoCameraIntent.FOLLOW.name) }
+        val cameraIntent = GoCameraIntent.valueOf(cameraIntentName)
+        var cameraCommand by remember { mutableStateOf(GoCameraAction.NONE) }
+        var cameraTick by remember { mutableStateOf(0) }
+        fun camera(event: GoCameraEvent) {
+            val step = GoCamera.reduce(GoCameraIntent.valueOf(cameraIntentName), event)
+            cameraIntentName = step.intent.name
+            if (step.action != GoCameraAction.NONE) { cameraCommand = step.action; cameraTick++ }
+        }
+        val routeAccent = lineColors[journey.legs.getOrNull(position.legIndex)?.lineId] ?: primaryColor
+        // The route map card: rounded, with the camera controls.
+        // Movable content: when the arrangement changes without a recreation (for
+        // example Ariadne docking beside GO) the same map instance moves between
+        // pane slots instead of being rebuilt. Per-composition values are passed
+        // as parameters so the remembered content never reads a stale capture.
+        val routeMap = remember {
+            movableContentOf { m: Modifier, legs: List<GoRouteMapLeg>, current: LatLng?, accent: Color ->
+            // Read the intent through its state here, never a captured value.
+            val intentNow = GoCameraIntent.valueOf(cameraIntentName)
+            Box(m.clip(RoundedCornerShape(16.dp))) {
+                GoRouteMapView(
+                    legs = legs, current = current, accent = accent,
+                    intent = intentNow, command = cameraCommand, commandTick = cameraTick,
+                    onUserPan = { if (GoCameraIntent.valueOf(cameraIntentName) != GoCameraIntent.MANUAL) camera(GoCameraEvent.USER_PANNED) },
+                    modifier = Modifier.fillMaxSize(),
+                )
+                // Trust: what the dot means. Android GO is manual, so the dot is
+                // the stop the rider confirmed, never implied to be a GPS fix.
+                Text(
+                    t("Confirmed stop", "Επιβεβαιωμένη στάση", "Ndalesë e konfirmuar", "Fermata confermata"),
+                    maxLines = 1, softWrap = false,
+                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val pill = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp))
+                    if (intentNow != GoCameraIntent.FOLLOW) {
+                        TextButton(onClick = { camera(GoCameraEvent.FOLLOW_TAPPED) }, modifier = pill) {
+                            Text(t("Follow", "Ακολούθησε", "Ndiq", "Segui"), maxLines = 1)
+                        }
+                    }
+                    TextButton(onClick = { camera(GoCameraEvent.FIT_TAPPED) }, modifier = pill) {
+                        Text(t("Fit route", "Όλη η διαδρομή", "Gjithë rruga", "Tutto il percorso"), maxLines = 1)
+                    }
+                }
+            }
+        }
+        }
         LaunchedEffect(Unit) {
             lineColors = lineRepo.getAllLines().first().associate { it.id to it.color.toComposeColor() }
         }
@@ -162,7 +265,10 @@ class GoJourneyScreenRoute(
         Scaffold(
             topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    // Below the status bar: the custom bar is not a TopAppBar, so it
+                    // must take the inset itself or its title and End button sit
+                    // under the clock (seen on the fold emulator).
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -170,7 +276,7 @@ class GoJourneyScreenRoute(
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back", "Πίσω", "Prapa", "Indietro"))
                         }
-                        Column {
+                        Column(Modifier.padding(start = 4.dp)) {
                             Text("GO", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             Text(
                                 t("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso"),
@@ -178,8 +284,8 @@ class GoJourneyScreenRoute(
                             )
                         }
                     }
-                    OutlinedButton(onClick = { endJourney() }) {
-                        Text(t("End", "Τέλος", "Përfundo", "Termina"))
+                    OutlinedButton(onClick = { if (arrived) endJourney() else confirmEnd = true }) {
+                        Text(if (arrived) t("Finish", "Τέλος", "Përfundo", "Concludi") else t("End", "Τέλος", "Përfundo", "Termina"))
                     }
                 }
             },
@@ -255,6 +361,30 @@ class GoJourneyScreenRoute(
             // on a tall window or a horizontal fold, the timeline above and the
             // instruction with its controls below, where the hands are. Decided by
             // the shared policy from the measured content box.
+            if (confirmEnd) {
+                AlertDialog(
+                    onDismissRequest = { confirmEnd = false },
+                    title = { Text(t("End this journey?", "Τέλος διαδρομής;", "Të përfundojë udhëtimi?", "Terminare il viaggio?")) },
+                    text = {
+                        Text(t(
+                            "Guidance and the get-off alert stop. Your route stays in Plan.",
+                            "Η καθοδήγηση και η ειδοποίηση αποβίβασης σταματούν. Η διαδρομή σου μένει στο Σχεδίασε.",
+                            "Udhëzimi dhe njoftimi i zbritjes ndalojnë. Rruga jote mbetet te Planifiko.",
+                            "La guida e l'avviso di discesa si fermano. Il percorso resta in Pianifica.",
+                        ))
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { confirmEnd = false; endJourney() }) {
+                            Text(t("End journey", "Τέλος διαδρομής", "Përfundo udhëtimin", "Termina il viaggio"))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmEnd = false }) {
+                            Text(t("Keep going", "Συνέχισε", "Vazhdo", "Continua"))
+                        }
+                    },
+                )
+            }
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
                 val ws = rememberContentWorkspace(
                     task = WorkspaceTask.GO,
@@ -273,21 +403,29 @@ class GoJourneyScreenRoute(
                                 content = instruction,
                             )
                             VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxHeight())
+                            // Companion: the route map above the journey timeline (as iOS).
+                            Column(Modifier.weight(1f).fillMaxHeight()) {
+                                routeMap(Modifier.fillMaxWidth().height(240.dp).padding(start = 16.dp, end = 16.dp, top = 12.dp), routeLegs, currentPoint, routeAccent)
+                                JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxWidth())
+                            }
                         }
                     }
                     WorkspaceArrangement.STACKED -> {
                         val companionH = ws.pane(PaneRole.COMPANION)?.rect?.bottom ?: (maxHeight.value.toInt() * 45 / 100)
                         Column(Modifier.fillMaxSize()) {
-                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth().height(companionH.dp))
+                            // Upright: the map keeps the upper region to itself; the
+                            // instruction and the timeline read below, where the hands are.
+                            routeMap(Modifier.fillMaxWidth().height(companionH.dp).padding(horizontal = 16.dp, vertical = 12.dp), routeLegs, currentPoint, routeAccent)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                             Column(
                                 modifier = Modifier.weight(1f).fillMaxWidth()
                                     .verticalScroll(rememberScrollState())
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(20.dp),
-                                content = instruction,
-                            )
+                            ) {
+                                instruction()
+                                JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
+                            }
                         }
                     }
                     WorkspaceArrangement.SINGLE -> Column(
@@ -295,6 +433,18 @@ class GoJourneyScreenRoute(
                         verticalArrangement = Arrangement.spacedBy(20.dp),
                     ) {
                         instruction()
+                        // Single column (phone): the route map on request, kept
+                        // reachable without pushing the instruction down (as iOS).
+                        OutlinedButton(
+                            onClick = { showCompactMap = !showCompactMap },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                if (showCompactMap) t("Hide route map", "Απόκρυψη χάρτη διαδρομής", "Fshih hartën e rrugës", "Nascondi la mappa del percorso")
+                                else t("Show route map", "Εμφάνιση χάρτη διαδρομής", "Shfaq hartën e rrugës", "Mostra la mappa del percorso"),
+                            )
+                        }
+                        if (showCompactMap) routeMap(Modifier.fillMaxWidth().height(260.dp), routeLegs, currentPoint, routeAccent)
                         // The journey's cards under the controls, so the lower half
                         // of a phone carries the route instead of empty space.
                         JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
@@ -329,8 +479,24 @@ class GoJourneyScreenRoute(
         val linesText = if (lines == 1) t("1 line", "1 γραμμή", "1 linjë", "1 linea")
             else t("$lines lines", "$lines γραμμές", "$lines linja", "$lines linee")
         val stopsText = t("$stops stops", "$stops στάσεις", "$stops ndalesa", "$stops fermate")
+        // Manual browsing stays stable: the list never snaps back by itself, but
+        // while the current stop is out of view a "Back to now" action is offered
+        // (shared GoTimelineFocus rule). Only the scrolling timeline tracks this.
+        val scrollState = rememberScrollState()
+        val scope = rememberCoroutineScope()
+        var viewportTop by remember { mutableStateOf(0f) }
+        var viewportHeight by remember { mutableStateOf(0f) }
+        var currentTop by remember { mutableStateOf<Float?>(null) }
+        var currentHeight by remember { mutableStateOf(0f) }
+        val currentVisible = !scrollable || viewportHeight <= 0f || currentTop?.let {
+            GoTimelineFocus.isVisible(it, it + currentHeight, viewportTop, viewportTop + viewportHeight)
+        } ?: true
+        val onCurrentRow: ((Float, Float) -> Unit)? = if (scrollable) { top, h -> currentTop = top; currentHeight = h } else null
+        Box(if (scrollable) modifier else Modifier) {
         Column(
-            modifier = (if (scrollable) modifier.verticalScroll(rememberScrollState()) else modifier).padding(inset),
+            modifier = (if (scrollable) Modifier.fillMaxSize()
+                .onGloballyPositioned { viewportTop = it.positionInRoot().y; viewportHeight = it.size.height.toFloat() }
+                .verticalScroll(scrollState) else modifier).padding(inset),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -360,10 +526,22 @@ class GoJourneyScreenRoute(
                         )
                     }
                 }
-                LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t)
+                LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t, onCurrentRow)
             }
             // Clear the floating assistant launcher so the last card is readable.
             Spacer(Modifier.height(88.dp))
+        }
+        if (scrollable && !currentVisible) {
+            FilledTonalButton(
+                onClick = {
+                    val top = currentTop ?: return@FilledTonalButton
+                    val inContent = (top - viewportTop) + scrollState.value
+                    val target = GoTimelineFocus.targetOffset(inContent, viewportHeight, scrollState.maxValue.toFloat())
+                    scope.launch { scrollState.animateScrollTo(target.roundToInt()) }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+            ) { Text(t("Back to now", "Πίσω στο τώρα", "Kthehu te tani", "Torna a ora"), maxLines = 1) }
+        }
         }
     }
 
@@ -373,6 +551,7 @@ class GoJourneyScreenRoute(
         color: Color,
         rows: List<GoTimelineRow>,
         t: (String, String, String, String) -> String,
+        onCurrentRow: ((Float, Float) -> Unit)? = null,
     ) {
         val count = maxOf(0, leg.stops.size - 1)
         val countText = if (count == 1) t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
@@ -399,7 +578,15 @@ class GoJourneyScreenRoute(
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
             Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                rows.forEach { row -> TimelineRow(row, color, t) }
+                rows.forEach { row ->
+                    if (onCurrentRow != null && row.state == GoTimelineState.CURRENT) {
+                        Box(Modifier.onGloballyPositioned { onCurrentRow(it.positionInRoot().y, it.size.height.toFloat()) }) {
+                            TimelineRow(row, color, t)
+                        }
+                    } else {
+                        TimelineRow(row, color, t)
+                    }
+                }
             }
         }
     }

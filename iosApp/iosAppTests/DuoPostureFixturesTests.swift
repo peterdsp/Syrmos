@@ -125,6 +125,69 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(ws.pane(.companion)?.rect.top, 0)
     }
 
+    func test_p5_tallCanvas_mapStacksCanvasAboveInspector() {
+        // The network map on the upright inner display: the canvas (companion)
+        // keeps the upper region, the station or train inspector (task) reads
+        // below it, where the hands are.
+        let ws = resolve(innerW, innerH, .map)
+        XCTAssertEqual(ws.arrangement, .stacked)
+        XCTAssertEqual(ws.pane(.companion)?.rect.top, 0)
+        XCTAssertGreaterThanOrEqual(ws.pane(.companion)!.rect.height, Policy.tallMinCompanion)
+    }
+
+    func test_p3_flatLandscape_mapPairsInspectorBesideCanvas() {
+        let ws = resolve(innerH, innerW, .map)
+        XCTAssertEqual(ws.arrangement, .sideBySide)
+        let task = ws.pane(.task)!.rect
+        let canvas = ws.pane(.companion)!.rect
+        XCTAssertGreaterThan(canvas.left, task.left, "inspector reads on the left, canvas on the right")
+        XCTAssertGreaterThanOrEqual(task.width, Policy.minTaskPane)
+        XCTAssertGreaterThanOrEqual(canvas.width, Policy.minMapPane)
+    }
+
+    func test_p1_cover_mapStaysSingleColumn() {
+        let ws = resolve(coverW, coverH, .map)
+        XCTAssertEqual(ws.arrangement, .single)
+    }
+
+    // T7 Tall narrow canvas: an upright fold (673 x 841) whose window hosts an
+    // 80 pt navigation rail leaves a 593 x 761 canvas, under the medium floor.
+
+    func test_t7_tallNarrowCanvas_goStacksBesideANavigationRail() {
+        let ws = resolve(593, 761, .go)
+        XCTAssertEqual(ws.arrangement, .stacked)
+        XCTAssertEqual(ws.pane(.companion)?.rect.top, 0)
+        XCTAssertGreaterThanOrEqual(ws.pane(.companion)!.rect.height, Policy.tallMinCompanion)
+        XCTAssertEqual(resolve(593, 761, .explore).arrangement, .stacked)
+        XCTAssertEqual(resolve(593, 761, .map).arrangement, .stacked)
+    }
+
+    func test_t7_tallNarrowCanvas_columnTasksStaySingle() {
+        XCTAssertEqual(resolve(593, 761, .plan).arrangement, .single)
+        XCTAssertEqual(resolve(593, 761, .departures).arrangement, .single)
+        XCTAssertEqual(resolve(593, 761, .home).arrangement, .single)
+    }
+
+    func test_t8_narrowRemainder_homeKeepsTheAnswerFirst() {
+        XCTAssertEqual(resolve(633, 1376, .home).arrangement, .single)
+        XCTAssertEqual(resolve(633, 1376, .plan).arrangement, .stacked)
+    }
+
+    func test_p3_flatLandscape_ariadneDocksBesideTheContent() {
+        XCTAssertEqual(resolve(innerH, innerW, .ariadne).arrangement, .sideBySide)
+        XCTAssertEqual(resolve(761, 649, .ariadne).arrangement, .sideBySide)
+    }
+
+    func test_p1_cover_ariadneStaysASheet() {
+        XCTAssertEqual(resolve(coverW, coverH, .ariadne).arrangement, .single)
+    }
+
+    func test_t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack() {
+        XCTAssertEqual(resolve(440, 900, .go).arrangement, .single)
+        XCTAssertEqual(resolve(coverW, coverH, .go).arrangement, .single)
+        XCTAssertEqual(resolve(593, 761, .go, fontScale: 1.6).arrangement, .single)
+    }
+
     func test_p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked() {
         let ws = resolve(innerW, innerH, .plan, fontScale: 1.2)
         XCTAssertEqual(ws.arrangement, .stacked)

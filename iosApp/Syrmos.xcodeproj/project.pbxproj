@@ -193,6 +193,8 @@
 		D68BF2B2EAA74AB3956E701A /* DuoPostureFixturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B7007F0216429CA693D53F /* DuoPostureFixturesTests.swift */; };
 		3F907BCA63CC41F594996F4C /* ReservedRegionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7678D40F23E4A4B87523FFF /* ReservedRegionAdapter.swift */; };
 		A1141AFFF1A74289ADC389BE /* ReservedRegionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B59007E5804EBE9B85E9A9 /* ReservedRegionAdapterTests.swift */; };
+		BF299CD94ED942F39A3BEA5B /* JourneyComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = D653A13BC207463A84B55EAF /* JourneyComparison.swift */; };
+		E44798F9A99B46A286584C27 /* JourneyComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27FD7C8361A48229FC5FA03 /* JourneyComparisonTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -440,6 +442,8 @@
 		E2B7007F0216429CA693D53F /* DuoPostureFixturesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DuoPostureFixturesTests.swift; sourceTree = "<group>"; };
 		F7678D40F23E4A4B87523FFF /* ReservedRegionAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/DesignSystem/ReservedRegionAdapter.swift; sourceTree = SOURCE_ROOT; };
 		69B59007E5804EBE9B85E9A9 /* ReservedRegionAdapterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReservedRegionAdapterTests.swift; sourceTree = "<group>"; };
+		D653A13BC207463A84B55EAF /* JourneyComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Journey/JourneyComparison.swift; sourceTree = SOURCE_ROOT; };
+		C27FD7C8361A48229FC5FA03 /* JourneyComparisonTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyComparisonTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -493,6 +497,7 @@
 				794982CB01834E6CB5D26AC6 /* DepartureGroupingTests.swift */,
 				FE0000000000000000000B04 /* SavedJourneyStoreTests.swift */,
 				FE0000000000000000000C04 /* JourneyDetailTests.swift */,
+				C27FD7C8361A48229FC5FA03 /* JourneyComparisonTests.swift */,
 				FE0000000000000000000C34 /* JourneyRankingOrderTests.swift */,
 				FE0000000000000000000C36 /* StationGroupingTests.swift */,
 				FE0000000000000000000C38 /* PlaceNameLocalizationTests.swift */,
@@ -803,6 +808,7 @@
 				FE0000000000000000000C30 /* StationGrouping.swift */,
 				FE0000000000000000000B02 /* SavedJourneyStore.swift */,
 				FE0000000000000000000C02 /* JourneyDetail.swift */,
+				D653A13BC207463A84B55EAF /* JourneyComparison.swift */,
 				FE0000000000000000000C0F /* GoJourneyActivityAttributes.swift */,
 				FE0000000000000000000C12 /* GoJourneyActivityController.swift */,
 				FE0000000000000000000C06 /* DisruptionExclusion.swift */,
@@ -1113,6 +1119,7 @@
 				FE0000000000000000000C33 /* DirectionL10n.swift in Sources */,
 				FE0000000000000000000B01 /* SavedJourneyStore.swift in Sources */,
 				FE0000000000000000000C01 /* JourneyDetail.swift in Sources */,
+				BF299CD94ED942F39A3BEA5B /* JourneyComparison.swift in Sources */,
 				FE0000000000000000000C05 /* DisruptionExclusion.swift in Sources */,
 				FE0000000000000000000C07 /* AccessibilityDisclosure.swift in Sources */,
 				DA7A0200F00D0200F00D0200 /* JourneyGuidance.swift in Sources */,
@@ -1201,6 +1208,7 @@
 				2611916041EE42F7AEA6576E /* DepartureGroupingTests.swift in Sources */,
 				FE0000000000000000000B03 /* SavedJourneyStoreTests.swift in Sources */,
 				FE0000000000000000000C03 /* JourneyDetailTests.swift in Sources */,
+				E44798F9A99B46A286584C27 /* JourneyComparisonTests.swift in Sources */,
 				FE0000000000000000000C35 /* JourneyRankingOrderTests.swift in Sources */,
 				FE0000000000000000000C37 /* StationGroupingTests.swift in Sources */,
 				FE0000000000000000000C39 /* PlaceNameLocalizationTests.swift in Sources */,

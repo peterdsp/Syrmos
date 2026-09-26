@@ -31,6 +31,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.VerticalDivider
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
+import com.syrmos.core.designsystem.layout.rememberContentWorkspace
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -136,6 +144,7 @@ fun HomeScreen(
     val gpsLineIds = setOf("A1", "A2", "A3", "A4")
     val getNextDeparturesForTrack = koinInject<GetNextDeparturesUseCase>()
     val listState = rememberLazyListState()
+    val contextListState = rememberLazyListState()
     LaunchedEffect(
         scrollToWeatherRequest,
         uiState.weather,
@@ -245,15 +254,10 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding(),
     ) {
-    LazyColumn(
-        // Readable width on tablets and unfolded devices (matches the iOS
-        // ReadableTabContent maximum): the answer hero and the cards never
-        // stretch across a 800 dp window; the background still fills it.
-        modifier = Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp),
-        state = listState,
-        contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 140.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
+    // Item groups shared by the single column and the paired layout (foldables
+    // and tablets, master plan Home contract): the answer is the task, the
+    // network context reads alongside. Same state, no second poll.
+    val answerItems: LazyListScope.() -> Unit = {
         val activeTrack = tracked
         item {
             Box(Modifier.staggeredEntrance(0)) {
@@ -360,6 +364,8 @@ fun HomeScreen(
             }
         }
 
+    }
+    val contextItems: LazyListScope.() -> Unit = {
         val alerts = uiState.announcements.filter { it.isServiceAlert }
         val status = uiState.serviceStatus
         if (alerts.isNotEmpty() || uiState.announcements.isNotEmpty() || uiState.railNews.isNotEmpty() || status != null) {
@@ -413,6 +419,52 @@ fun HomeScreen(
             }
         }
 
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val ws = rememberContentWorkspace(
+            task = WorkspaceTask.HOME,
+            width = maxWidth.value.toInt(),
+            height = maxHeight.value.toInt(),
+        )
+        if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) {
+            val taskW = ws.pane(PaneRole.TASK)?.rect?.width ?: 360
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                // Task pane: the answer (next train for every direction, or the
+                // tracked train), the map strip and the weather context.
+                LazyColumn(
+                    modifier = Modifier.width(taskW.dp).fillMaxHeight(),
+                    state = listState,
+                    contentPadding = PaddingValues(top = 90.dp, bottom = 140.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) { answerItems() }
+                VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                // Companion pane: alerts, news and status, the stations around
+                // you and the live trains.
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    state = contextListState,
+                    contentPadding = PaddingValues(top = 90.dp, bottom = 140.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) { contextItems() }
+            }
+        } else {
+            LazyColumn(
+                // Readable width on tablets and unfolded devices (matches the iOS
+                // ReadableTabContent maximum): the answer hero and the cards never
+                // stretch across a 800 dp window; the background still fills it.
+                modifier = Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp),
+                state = listState,
+                contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 140.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                answerItems()
+                contextItems()
+            }
+        }
     }
 
     com.syrmos.core.designsystem.component.CompactTabHeader(

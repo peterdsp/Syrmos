@@ -157,6 +157,82 @@ class DuoPostureFixturesTest {
     }
 
     @Test
+    fun p5_tallCanvas_mapStacksCanvasAboveInspector() {
+        // The network map on the upright inner display: the canvas (companion)
+        // keeps the upper region, the station or train inspector (task) reads
+        // below it, where the hands are.
+        val ws = resolve(INNER_W, INNER_H, WorkspaceTask.MAP)
+        assertEquals(WorkspaceArrangement.STACKED, ws.arrangement)
+        assertEquals(0, ws.pane(PaneRole.COMPANION)!!.rect.top)
+        assertTrue(ws.pane(PaneRole.COMPANION)!!.rect.height >= AdaptiveWorkspacePolicy.TALL_MIN_COMPANION)
+    }
+
+    @Test
+    fun p3_flatLandscape_mapPairsInspectorBesideCanvas() {
+        val ws = resolve(INNER_H, INNER_W, WorkspaceTask.MAP)
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, ws.arrangement)
+        val task = ws.pane(PaneRole.TASK)!!.rect
+        val canvas = ws.pane(PaneRole.COMPANION)!!.rect
+        assertTrue(canvas.left > task.left, "inspector reads on the left, canvas on the right")
+        assertTrue(task.width >= AdaptiveWorkspacePolicy.MIN_TASK_PANE)
+        assertTrue(canvas.width >= AdaptiveWorkspacePolicy.MIN_MAP_PANE)
+    }
+
+    @Test
+    fun p1_cover_mapStaysSingleColumn() {
+        val ws = resolve(COVER_W, COVER_H, WorkspaceTask.MAP)
+        assertEquals(WorkspaceArrangement.SINGLE, ws.arrangement)
+    }
+
+    // T7 Tall narrow canvas: an upright fold (673 x 841) whose window hosts an
+    // 80 dp navigation rail leaves a 593 x 761 canvas, under the medium floor.
+
+    @Test
+    fun t7_tallNarrowCanvas_goStacksBesideANavigationRail() {
+        val ws = resolve(593, 761, WorkspaceTask.GO)
+        assertEquals(WorkspaceArrangement.STACKED, ws.arrangement)
+        assertEquals(0, ws.pane(PaneRole.COMPANION)!!.rect.top)
+        assertTrue(ws.pane(PaneRole.COMPANION)!!.rect.height >= AdaptiveWorkspacePolicy.TALL_MIN_COMPANION)
+        assertEquals(WorkspaceArrangement.STACKED, resolve(593, 761, WorkspaceTask.EXPLORE).arrangement)
+        assertEquals(WorkspaceArrangement.STACKED, resolve(593, 761, WorkspaceTask.MAP).arrangement)
+    }
+
+    @Test
+    fun t7_tallNarrowCanvas_columnTasksStaySingle() {
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.PLAN).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.DEPARTURES).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.HOME).arrangement)
+    }
+
+    @Test
+    fun t8_narrowRemainder_homeKeepsTheAnswerFirst() {
+        // Beside a docked 400 dp inspector an iPad leaves ~633 x 1376: two Home
+        // columns do not fit and Home never stacks (the answer must lead), so it
+        // keeps the single column; a planner still stacks its results above the form.
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(633, 1376, WorkspaceTask.HOME).arrangement)
+        assertEquals(WorkspaceArrangement.STACKED, resolve(633, 1376, WorkspaceTask.PLAN).arrangement)
+    }
+
+    @Test
+    fun p3_flatLandscape_ariadneDocksBesideTheContent() {
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(INNER_H, INNER_W, WorkspaceTask.ARIADNE).arrangement)
+        // An Android fold beside its 80 dp rail (841 - 80 = 761 wide) still docks.
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(761, 649, WorkspaceTask.ARIADNE).arrangement)
+    }
+
+    @Test
+    fun p1_cover_ariadneStaysASheet() {
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.ARIADNE).arrangement)
+    }
+
+    @Test
+    fun t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack() {
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(440, 900, WorkspaceTask.GO).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.GO).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.GO, fontScale = 1.6f).arrangement)
+    }
+
+    @Test
     fun p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked() {
         // At 1.2x the side-by-side floors (360 task, 384 map) no longer fit in
         // 334, but stacking (432 map + 336 task) still fits in 951.

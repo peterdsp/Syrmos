@@ -12,6 +12,86 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The GO map keeps your view through a fold.** Centre, zoom and the camera
+  mode (follow, fit, manual) survive a fold or rotation on both platforms, and
+  on Android an in-place change of the pane arrangement (for example docking
+  Ariadne) moves the same map instead of rebuilding it. The Network Map canvas
+  moves the same way.
+- **Home always leads with the next train.** When two Home columns do not fit
+  (for example beside a docked Ariadne panel) Home keeps its single column
+  instead of stacking the network context above the answer. Shared rule on iOS
+  and Android.
+- **Ariadne docks beside what you were doing on foldables and tablets.** With
+  room for two panes the assistant opens as a side panel next to Home, Plan or
+  the map instead of covering the screen; phones keep the full-screen
+  conversation. On Android the conversation now also survives closing and
+  reopening the assistant. Same idea on iOS through a trailing inspector that
+  becomes a sheet on a compact width.
+- **The GO map says what its dot means.** A small pill on the route map reads
+  "Confirmed stop" while you step through the journey and, on iOS with live
+  guidance on, "Live position", so a confirmed station is never mistaken for a
+  GPS fix.
+- **The GO timeline never snaps back while you browse.** Scroll the paired
+  journey timeline away from your current stop and a "Back to now" pill
+  appears; tap it to return, otherwise the list stays where you left it. Same
+  on iOS and Android.
+- **GO on a phone can show the route map.** The single column keeps the
+  instruction first and adds a "Show route map" control that reveals the same
+  route map card (line colours, current stop, Fit route and Follow) under it;
+  the choice is remembered. Same on iOS and Android, and on the folded cover of
+  a foldable. The floating Ariadne launcher on Android now hides while GO is on
+  screen, so it no longer covers the timeline's Now and Next captions.
+- **The GO map camera has explicit intent.** It follows your current stop as
+  the journey advances, keeps the whole route in view after Fit route, and
+  leaves a view you panned or zoomed alone until you tap Follow; a fold, a
+  rotation or a refresh never yanks the camera back on its own. One shared rule
+  on iOS and Android, with Fit route and Follow controls on the map card. On
+  iOS the map previously recentred on every redraw, which threw away a manual
+  pan within seconds.
+- **Upright folds stack even with a navigation rail.** An unfolded device held
+  upright hosts an 80 dp rail that narrows the content to just under the medium
+  breakpoint, and until now that kept GO, Explore and the Map in one column.
+  The shared layout policy now stacks the map or overview above the task on any
+  tall canvas at least 480 dp wide; planner, departures and Home keep their
+  single column there, and phones and large text are unchanged. Same rule on
+  iOS and Android.
+- **GO on Android draws the route map.** The paired GO screen now shows the
+  journey on a real map beside (or, upright, above) the instruction: every leg
+  in its line colour, a haloed dot on your current stop, attribution kept, and a
+  Fit route control; manual pan and zoom are respected until you ask to refit.
+  This closes the last GO parity gap with iOS, whose route map shipped in
+  round 4. Where map tiles are unavailable the same route draws on a plain
+  canvas instead of a blank surface.
+- **The network map pairs with an inspector on foldables and tablets.** A
+  tapped station or train now reads in its own pane beside the map (landscape)
+  or under it (upright), instead of a sheet or a slide-up card that covers the
+  canvas; the map keeps its camera and its full canvas, and a calm invitation
+  fills the pane until something is selected. Phones keep the sheets. Same on
+  iOS and Android.
+- **Home pairs on foldables and tablets.** On a paired layout the answer (the
+  next train for every direction, or the train you are tracking), the living
+  map strip and the weather context are the task pane, and the network context
+  (what matters now, the stations around you, live trains) reads alongside in
+  the companion pane. Same data, no second poll or location request; a phone
+  keeps the single column. Same on iOS and Android.
+- **Plan compares with confidence on foldables and tablets.** On a paired
+  layout the route alternatives now sit under the query in the task pane and
+  the companion pane reads the selected journey (stops, times, changes, Start),
+  with a calm state before a search and an honest one after a search that found
+  nothing. Each alternative carries the differences that are really there:
+  the shared ranker's "Recommended", plus "Fastest" and "Fewest changes" only
+  when another option is slower or has more changes; the selected journey says
+  how it compares ("+10 min vs fastest", "1 more change"). The selection is kept
+  by itinerary identity, so a re-plan or a fold that refreshes results never
+  silently switches routes. Same on iOS and Android.
+- **GO refinements from the foldables review.** The route map draws each leg in
+  its real line colour, so an interchange reads as a colour change on the map
+  as it does on the timeline. On a tall or folded window the map keeps the
+  upper region to itself and the timeline reads under the instruction, instead
+  of squeezing map and timeline into the upper band. Ending an unfinished
+  journey now asks first on both platforms ("End this journey?" with "Keep
+  going"); Finish after arrival stays one tap. On Android the GO and Plan top
+  bars sit below the status bar, so Back and End are fully tappable.
 - **Explore pairs on foldables and tablets.** On both platforms the line list is
   the task pane and the selected line's detail (stations, live trains, alerts)
   opens in the companion pane, with a calm invitation before a line is chosen

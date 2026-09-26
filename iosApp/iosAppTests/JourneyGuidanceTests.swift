@@ -246,4 +246,65 @@ final class JourneyGuidanceTests: XCTestCase {
         XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 0)), 3)
         XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 1)), 4)
     }
+
+    // MARK: Per-leg map runs
+
+    func test_legRuns_oneRunPerLegInRideOrder_skippingUnplaceableLegs() {
+        let coords: [String: (lat: Double, lon: Double)] = [
+            "PIR": (37.948, 23.643), "FAL": (37.945, 23.665), "MOS": (37.955, 23.680), "MON": (37.976, 23.726),
+            "SYN": (37.975, 23.735),
+        ]
+        let runs = GoRouteProjection.legRuns(journey: timelineJourney) { coords[$0] }
+        XCTAssertEqual(runs.map(\.lineId), ["M1", "M3"])
+        XCTAssertEqual(runs[0].coordinates.count, 4)
+        XCTAssertEqual(runs[1].coordinates.count, 2)
+        // A leg whose stops cannot be placed draws nothing rather than a stray point.
+        let partial = GoRouteProjection.legRuns(journey: timelineJourney) { $0 == "SYN" ? nil : coords[$0] }
+        XCTAssertEqual(partial.map(\.lineId), ["M1"])
+    }
+
+    // MARK: GO camera intent (twin of Kotlin GoCameraTest)
+
+    func test_camera_followCentersOnStopChangeAndManualPanHoldsTheView() {
+        XCTAssertEqual(GoCamera.reduce(.follow, .currentStopChanged).action, .centerCurrent)
+        let panned = GoCamera.reduce(.follow, .userPanned)
+        XCTAssertEqual(panned.intent, .manual)
+        XCTAssertEqual(panned.action, .none)
+        XCTAssertEqual(GoCamera.reduce(.manual, .currentStopChanged).action, .none)
+    }
+
+    func test_camera_fitKeepsTheWholeRouteUntilFollowIsTapped() {
+        let fit = GoCamera.reduce(.manual, .fitTapped)
+        XCTAssertEqual(fit.intent, .fit)
+        XCTAssertEqual(fit.action, .fitRoute)
+        XCTAssertEqual(GoCamera.reduce(.fit, .currentStopChanged).action, .none)
+        let follow = GoCamera.reduce(.fit, .followTapped)
+        XCTAssertEqual(follow.intent, .follow)
+        XCTAssertEqual(follow.action, .centerCurrent)
+    }
+
+    func test_camera_geometryChangeReframesOnlyWhenTheIntentAsksForIt() {
+        XCTAssertEqual(GoCamera.reduce(.follow, .geometryChanged).action, .centerCurrent)
+        XCTAssertEqual(GoCamera.reduce(.fit, .geometryChanged).action, .fitRoute)
+        XCTAssertEqual(GoCamera.reduce(.manual, .geometryChanged).action, .none)
+    }
+
+    // MARK: GO timeline focus (twin of Kotlin GoTimelineFocusTest)
+
+    func test_timelineFocus_visibleOnlyWhenTheWholeRowIsInsideTheViewport() {
+        XCTAssertTrue(GoTimelineFocus.isVisible(rowTop: 100, rowBottom: 144, viewportTop: 0, viewportBottom: 600))
+        XCTAssertFalse(GoTimelineFocus.isVisible(rowTop: -10, rowBottom: 34, viewportTop: 0, viewportBottom: 600))
+        XCTAssertFalse(GoTimelineFocus.isVisible(rowTop: 580, rowBottom: 624, viewportTop: 0, viewportBottom: 600))
+        XCTAssertTrue(GoTimelineFocus.isVisible(rowTop: 0, rowBottom: 44, viewportTop: 0, viewportBottom: 600))
+    }
+
+    func test_timelineFocus_targetPlacesTheRowAThirdDown() {
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 900, viewportHeight: 600, maxOffset: 2000), 700)
+    }
+
+    func test_timelineFocus_targetIsClampedToTheScrollableRange() {
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 100, viewportHeight: 600, maxOffset: 2000), 0)
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 2500, viewportHeight: 600, maxOffset: 2000), 2000)
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 300, viewportHeight: 600, maxOffset: -5), 0)
+    }
 }

@@ -83,7 +83,8 @@ enum SyrmosPairAxis { case sideBySide, stacked }
 
 /// The task currently driving the workspace, so the policy is task aware.
 enum SyrmosWorkspaceTask {
-    case home, plan, go, explore, departures, fares, ariadne
+    /// `map`: the network map, whose inspector (station or train) is the task pane and whose canvas is the companion.
+    case home, plan, go, explore, map, departures, fares, ariadne
     /// Settings, onboarding and other bounded single-focus forms.
     case form
 
@@ -96,9 +97,14 @@ enum SyrmosWorkspaceTask {
     /// fares form, a departures board or the assistant read well as two columns;
     /// a journey in progress and a browse list want the map above and the list
     /// plus controls below, where the hands are.
+    /// Whether the task may pair on the stacked axis at all. Home never does:
+    /// the answer must lead, so when two columns do not fit it keeps its single
+    /// column instead of putting the network context above the next train.
+    var stacks: Bool { self != .home }
+
     var tallCanvasAxis: SyrmosPairAxis {
         switch self {
-        case .go, .explore: return .stacked
+        case .go, .explore, .map: return .stacked
         default: return .sideBySide
         }
     }
@@ -255,6 +261,10 @@ enum SyrmosAdaptiveWorkspacePolicy {
     static let tallCompanionRatio: Float = 0.45
 
     static let mediumMinWidth = 600
+    /// The narrowest tall canvas that still stacks a map or overview above the
+    /// task (T7 Tall narrow canvas): an upright fold whose window hosts a
+    /// navigation rail; a phone column (440, the Duo cover at 466) never stacks.
+    static let tallNarrowMinWidth = 480
 
     private static let gap = 24
 
@@ -433,6 +443,19 @@ enum SyrmosAdaptiveWorkspacePolicy {
             if mediumCanvas, let ws = resolveMediumCanvas(width: width, height: height, task: task, scale: scale) {
                 return ws
             }
+            // T7 Tall narrow canvas: under the medium floor because a navigation
+            // rail took its share, yet tall; the tasks that read as map above and
+            // task below (GO, Explore, Map) still stack.
+            let tallNarrow = task.pairsWithSecondary
+                && task.tallCanvasAxis == .stacked
+                && !forceSingleColumn
+                && !largeText
+                && height > width
+                && width >= tallNarrowMinWidth
+                && width < mediumMinWidth
+            if tallNarrow, let ws = mediumStacked(width: width, height: height, scale: scale) {
+                return ws
+            }
             let single = base.secondaryPaneWidth != nil
                 ? SyrmosContentBreakpoint.resolve(width: width, height: height, forceSingleColumn: true)
                 : base
@@ -522,6 +545,7 @@ enum SyrmosAdaptiveWorkspacePolicy {
             ? [.sideBySide, .stacked]
             : [.stacked, .sideBySide]
         for axis in order {
+            if axis == .stacked && !task.stacks { continue }
             let ws: SyrmosAdaptiveWorkspace?
             switch axis {
             case .sideBySide: ws = mediumSideBySide(width: width, height: height, scale: scale)

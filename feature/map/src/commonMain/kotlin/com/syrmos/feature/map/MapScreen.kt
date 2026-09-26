@@ -51,6 +51,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.VerticalDivider
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
+import com.syrmos.core.designsystem.layout.rememberContentWorkspace
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
@@ -104,11 +114,29 @@ fun MapScreen(
     val announcementsRepository = koinInject<AnnouncementsRepository>()
     val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
+        // Foldables and tablets (master plan, Network Map contract): the shared
+        // policy pairs the canvas with a station or train inspector; a phone
+        // keeps the single column with the slide-up cards.
+        val ws = rememberContentWorkspace(
+            task = WorkspaceTask.MAP,
+            width = maxWidth.value.toInt(),
+            height = maxHeight.value.toInt(),
+        )
+        val paired = ws.arrangement != WorkspaceArrangement.SINGLE
+
+        // The map canvas with its header, pills, controls and (single column
+        // only) the selection overlays. One map instance in every arrangement.
+        // Movable content: an arrangement change without a recreation (Ariadne
+        // docking, a window resize) moves the same map instance between slots.
+        val canvas = remember {
+            movableContentOf { canvasModifier: Modifier, paired: Boolean ->
+        // Clip: the platform map view must never paint over the inspector pane.
+        Box(canvasModifier.clipToBounds()) {
         if (uiState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
@@ -224,7 +252,9 @@ fun MapScreen(
             }
         }
 
-        AnimatedVisibility(
+        // Single column only: on a paired layout the selection reads in the
+        // inspector pane and the map keeps its full canvas.
+        if (!paired) AnimatedVisibility(
             visible = uiState.selectedStation != null,
             enter = slideInVertically(
                 animationSpec = tween(350),
@@ -271,7 +301,7 @@ fun MapScreen(
             )
         }
 
-        AnimatedVisibility(
+        if (!paired) AnimatedVisibility(
             visible = (uiState.selectedTrain != null || uiState.selectedSimulatedTrain != null) &&
                 uiState.selectedStation == null,
             enter = slideInVertically(
@@ -341,6 +371,122 @@ fun MapScreen(
                 onDismiss = viewModel::toggleLiveTrainsSheet,
             )
         }
+        }
+        }
+        }
+
+        when (ws.arrangement) {
+            WorkspaceArrangement.SIDE_BY_SIDE -> {
+                // Inspector (task) beside the canvas (companion), as GO and Explore.
+                val taskW = ws.pane(PaneRole.TASK)?.rect?.width ?: 360
+                Row(Modifier.fillMaxSize()) {
+                    MapInspectorPane(
+                        uiState = uiState,
+                        lineDisruptions = lineDisruptions,
+                        onCloseStation = viewModel::clearSelection,
+                        onCloseTrain = viewModel::clearTrainSelection,
+                        modifier = Modifier.width(taskW.dp).fillMaxHeight(),
+                    )
+                    VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    canvas(Modifier.weight(1f).fillMaxHeight(), paired)
+                }
+            }
+            WorkspaceArrangement.STACKED -> {
+                // Canvas above, inspector below where the hands are.
+                val mapH = ws.pane(PaneRole.COMPANION)?.rect?.height ?: (maxHeight.value.toInt() * 45 / 100)
+                Column(Modifier.fillMaxSize()) {
+                    canvas(Modifier.fillMaxWidth().height(mapH.dp), paired)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    MapInspectorPane(
+                        uiState = uiState,
+                        lineDisruptions = lineDisruptions,
+                        onCloseStation = viewModel::clearSelection,
+                        onCloseTrain = viewModel::clearTrainSelection,
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    )
+                }
+            }
+            WorkspaceArrangement.SINGLE -> canvas(Modifier.fillMaxSize(), paired)
+        }
+    }
+}
+
+/**
+ * The paired inspector: the selected station's card, or the selected train's,
+ * with a calm invitation when nothing is selected. Same cards as the phone's
+ * slide-up presentation, so nothing is duplicated; the map keeps its canvas.
+ */
+@Composable
+private fun MapInspectorPane(
+    uiState: MapUiState,
+    lineDisruptions: Map<String, AlertSeverity>,
+    onCloseStation: () -> Unit,
+    onCloseTrain: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val lang by LocalizationManager.language.collectAsState()
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            vehicleText(lang, "On the map", "Στον χάρτη", "Në hartë", "Sulla mappa"),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        val simulatedTrain = uiState.selectedSimulatedTrain
+        when {
+            uiState.selectedStation != null -> StationSheetCard(
+                uiState = uiState,
+                lineDisruptions = lineDisruptions,
+                onClose = onCloseStation,
+                modifier = Modifier.fillMaxWidth(),
+                dragHandle = false,
+            )
+            simulatedTrain != null -> SimulatedTrainDetailCard(
+                train = simulatedTrain,
+                line = uiState.lines.find { it.id == simulatedTrain.lineId },
+                onClose = onCloseTrain,
+                modifier = Modifier.fillMaxWidth(),
+                dragHandle = false,
+            )
+            uiState.selectedTrain != null -> TrainDetailCard(
+                train = uiState.selectedTrain,
+                line = uiState.lines.find { it.id == uiState.selectedTrain?.lineId },
+                onClose = onCloseTrain,
+                modifier = Modifier.fillMaxWidth(),
+                dragHandle = false,
+            )
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    vehicleText(lang, "Tap a station or a train.", "Πάτησε έναν σταθμό ή ένα τρένο.", "Prek një stacion ose një tren.", "Tocca una stazione o un treno."),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    vehicleText(
+                        lang,
+                        "Its departures, lines and live details read here while the map stays in view.",
+                        "Οι αναχωρήσεις, οι γραμμές και τα ζωντανά στοιχεία του εμφανίζονται εδώ, με τον χάρτη πάντα ορατό.",
+                        "Nisjet, linjat dhe detajet e drejtpërdrejta shfaqen këtu, ndërsa harta mbetet e dukshme.",
+                        "Partenze, linee e dettagli in tempo reale compaiono qui mentre la mappa resta visibile.",
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        // Clear the floating assistant launcher.
+        Spacer(Modifier.height(88.dp))
     }
 }
 
@@ -350,6 +496,7 @@ private fun StationSheetCard(
     lineDisruptions: Map<String, AlertSeverity>,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    dragHandle: Boolean = true,
 ) {
     val lang by LocalizationManager.language.collectAsState()
     val station = uiState.selectedStation ?: return
@@ -365,7 +512,9 @@ private fun StationSheetCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            // The sheet grabber: only when the card is the slide-up presentation,
+            // not when it is hosted in the paired inspector pane.
+            if (dragHandle) Box(
                 modifier = Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)
@@ -618,6 +767,7 @@ private fun SimulatedTrainDetailCard(
     line: Line?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    dragHandle: Boolean = true,
 ) {
     val lang by LocalizationManager.language.collectAsState()
     val lineColor = line?.color?.toComposeColor() ?: train.lineColor.toComposeColor()
@@ -632,7 +782,9 @@ private fun SimulatedTrainDetailCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            // The sheet grabber: only when the card is the slide-up presentation,
+            // not when it is hosted in the paired inspector pane.
+            if (dragHandle) Box(
                 modifier = Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)
@@ -821,6 +973,7 @@ private fun TrainDetailCard(
     line: Line?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    dragHandle: Boolean = true,
 ) {
     train ?: return
     val uriHandler = LocalUriHandler.current
@@ -837,7 +990,9 @@ private fun TrainDetailCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            // The sheet grabber: only when the card is the slide-up presentation,
+            // not when it is hosted in the paired inspector pane.
+            if (dragHandle) Box(
                 modifier = Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)

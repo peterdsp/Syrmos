@@ -244,8 +244,13 @@ struct ContentView: View {
             .tint(.syrmosPrimary)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
-        .sheet(isPresented: $showAriadne) {
+        // Foldables and iPad (master plan, Ariadne): with room for two panes the
+        // conversation docks as a trailing inspector beside the content; on a
+        // compact width the system presents the same view as a sheet. One view,
+        // one conversation, whichever way it is shown.
+        .inspector(isPresented: $showAriadne) {
             AriadneView()
+                .inspectorColumnWidth(min: 320, ideal: 400, max: 480)
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
         .task {
@@ -295,7 +300,10 @@ struct ContentView: View {
     private func assistantLauncher(occluding: Bool = true) -> some View {
         AriadneLauncherPill(
             label: askAriadneLabel,
-            onTap: { showAriadne = true }
+            // Toggle, not set: on a regular width the pill stays visible beside the
+            // docked inspector (so it also closes it), and a presentation that did
+            // not take (a tap during launch) is recoverable with the next tap.
+            onTap: { showAriadne.toggle() }
         )
         .frame(maxWidth: .infinity, alignment: .trailing)
         .padding(.horizontal, 16)

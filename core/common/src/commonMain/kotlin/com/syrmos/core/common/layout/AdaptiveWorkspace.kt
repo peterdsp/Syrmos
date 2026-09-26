@@ -62,6 +62,8 @@ enum class WorkspaceTask {
     PLAN,
     GO,
     EXPLORE,
+    /** The network map: the inspector (station or train) is the task pane, the canvas the companion. */
+    MAP,
     DEPARTURES,
     FARES,
     ARIADNE,
@@ -83,9 +85,18 @@ enum class WorkspaceTask {
      * two columns; a journey in progress and a browse list want the map above
      * and the list plus controls below, where the hands are.
      */
+    /**
+     * Whether the task may pair on the STACKED axis at all. Home never does:
+     * the answer (the next train) must lead the screen, so when two columns do
+     * not fit it keeps its single column instead of putting the network context
+     * above the answer.
+     */
+    val stacks: Boolean
+        get() = this != HOME
+
     val tallCanvasAxis: PairAxis
         get() = when (this) {
-            GO, EXPLORE -> PairAxis.STACKED
+            GO, EXPLORE, MAP -> PairAxis.STACKED
             else -> PairAxis.SIDE_BY_SIDE
         }
 }
@@ -199,6 +210,15 @@ object AdaptiveWorkspacePolicy {
     // A tall stacked canvas keeps the map/overview at least this tall, at about
     // this share of the height, and the task below at the tabletop task floor.
     const val TALL_MIN_COMPANION = 360
+
+    /**
+     * The narrowest tall canvas that still stacks a map or overview above the
+     * task (T7 Tall narrow canvas). An upright fold at 673 dp whose window hosts
+     * an 80 dp navigation rail leaves a 593 dp canvas, under the medium floor
+     * but still a full reading width; a phone column (440 dp, the Duo cover at
+     * 466 dp) stays under it and never stacks.
+     */
+    const val TALL_NARROW_MIN_WIDTH = 480
     const val TALL_COMPANION_RATIO = 0.45f
 
     // The medium band starts where ContentBreakpoint stops calling a window compact.
@@ -412,6 +432,21 @@ object AdaptiveWorkspacePolicy {
                 resolveMediumCanvas(width, height, task, scale)?.let { return it }
             }
 
+            // T7 Tall narrow canvas: under the medium floor because a navigation
+            // rail took its share, yet tall; the tasks that read as map above
+            // and task below (GO, Explore, Map) still stack. Column tasks and
+            // large text keep the single column.
+            val tallNarrow = task.pairsWithSecondary &&
+                task.tallCanvasAxis == PairAxis.STACKED &&
+                !forceSingleColumn &&
+                !largeText &&
+                height > width &&
+                width >= TALL_NARROW_MIN_WIDTH &&
+                width < MEDIUM_MIN_WIDTH
+            if (tallNarrow) {
+                mediumStacked(width, height, scale)?.let { return it }
+            }
+
             // When the window is wide but the task does not pair (a form), keep a
             // readable bounded column instead of a two-pane primary width.
             val single = if (base.secondaryPaneWidth != null) {
@@ -525,6 +560,7 @@ object AdaptiveWorkspacePolicy {
             listOf(PairAxis.STACKED, PairAxis.SIDE_BY_SIDE)
         }
         for (axis in order) {
+            if (axis == PairAxis.STACKED && !task.stacks) continue
             val ws = when (axis) {
                 PairAxis.SIDE_BY_SIDE -> mediumSideBySide(width, height, scale)
                 PairAxis.STACKED -> mediumStacked(width, height, scale)

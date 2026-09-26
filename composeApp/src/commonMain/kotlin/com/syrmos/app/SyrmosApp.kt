@@ -7,6 +7,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.VerticalDivider
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
+import com.syrmos.core.designsystem.layout.rememberContentWorkspace
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -214,9 +220,12 @@ fun SyrmosApp() {
                             writeSelectedTabId(tabId(currentTab))
                         }
                         // Hide the launcher on More (would sit on the
-                        // scrolling controls) and on Map (the Locate +
-                        // Vehicles buttons already own bottom-right).
-                        val showLauncher = currentTab != MoreTab && currentTab != MapTab
+                        // scrolling controls), on Map (the Locate + Vehicles
+                        // buttons already own bottom-right) and while GO is on
+                        // screen (its controls and timeline own the bottom; iOS
+                        // GO shows no launcher either).
+                        val showLauncher = currentTab != MoreTab && currentTab != MapTab &&
+                            !com.syrmos.app.journey.GoScreenPresence.onScreen
 
                         // Adaptive navigation (prompt section 5, Android). A
                         // native large window (tablet / unfolded foldable) uses a
@@ -234,8 +243,61 @@ fun SyrmosApp() {
                         // CurrentTab + the Ariadne launcher pill + the full-screen
                         // assistant overlay. Shared by both nav layouts so the
                         // per-tab screens and their state are identical either way.
+                        // One assistant view model for the shell's lifetime, so the
+                        // conversation survives closing, reopening and a move between
+                        // the docked pane and the full-screen presentation (master
+                        // plan, Ariadne: moving between sheet and pane never resends).
+                        val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
+                        LaunchedEffect(showAriadne) {
+                            if (showAriadne) {
+                                com.syrmos.app.platform.requestUserLocation()?.let {
+                                    assistantViewModel.onLocationUpdate(it.latitude, it.longitude)
+                                }
+                                if (pendingQuery != null) {
+                                    assistantViewModel.ask(pendingQuery)
+                                }
+                            }
+                        }
+                        @Composable
+                        fun AssistantHost() {
+                            com.syrmos.feature.home.assistant.AssistantScreen(
+                                viewModel = assistantViewModel,
+                                        onClose = { showAriadne = false },
+                                        onOpenStation = { stationId ->
+                                            showAriadne = false
+                                            tabNavigator.current = HomeTab
+                                            AriadneNavBus.navigate(AriadneNavEvent.Station(stationId))
+                                        },
+                                        onOpenLine = { lineId ->
+                                            showAriadne = false
+                                            tabNavigator.current = HomeTab
+                                            AriadneNavBus.navigate(AriadneNavEvent.Line(lineId))
+                                        },
+                            )
+                        }
+
+                        // Foldables and tablets: with room for two panes the
+                        // conversation docks beside the content instead of covering
+                        // it. The shared policy decides (ARIADNE task) on the canvas
+                        // after the rail; a phone keeps the full-screen presentation.
+                        val assistantCanvasWidth = maxWidth.value.toInt() - (if (useRail) 80 else 0)
+                        val assistantWs = rememberContentWorkspace(
+                            task = WorkspaceTask.ARIADNE,
+                            width = assistantCanvasWidth,
+                            height = maxHeight.value.toInt(),
+                        )
+                        val dockAssistant = useRail && assistantWs.arrangement == WorkspaceArrangement.SIDE_BY_SIDE
+                        val dockWidth = minOf(assistantWs.pane(PaneRole.COMPANION)?.rect?.width ?: 400, 480).dp
+
                         @Composable
                         fun BoxScope.TabContentWithOverlays(pillBottomInset: Dp) {
+                            if (dockAssistant && showAriadne) {
+                                Row(Modifier.fillMaxSize()) {
+                                    Box(Modifier.weight(1f).fillMaxHeight()) { CurrentTab() }
+                                    VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                                    Box(Modifier.width(dockWidth).fillMaxHeight()) { AssistantHost() }
+                                }
+                            } else {
                             CurrentTab()
                             AnimatedVisibility(
                                 visible = showLauncher && !showAriadne,
@@ -259,32 +321,10 @@ fun SyrmosApp() {
                                 )
                             }
 
+
                             if (showAriadne) {
-                                val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
-                                androidx.compose.runtime.LaunchedEffect(Unit) {
-                                    com.syrmos.app.platform.requestUserLocation()?.let {
-                                        assistantViewModel.onLocationUpdate(it.latitude, it.longitude)
-                                    }
-                                    if (pendingQuery != null) {
-                                        assistantViewModel.ask(pendingQuery)
-                                    }
-                                }
-                                Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
-                                    com.syrmos.feature.home.assistant.AssistantScreen(
-                                        viewModel = assistantViewModel,
-                                        onClose = { showAriadne = false },
-                                        onOpenStation = { stationId ->
-                                            showAriadne = false
-                                            tabNavigator.current = HomeTab
-                                            AriadneNavBus.navigate(AriadneNavEvent.Station(stationId))
-                                        },
-                                        onOpenLine = { lineId ->
-                                            showAriadne = false
-                                            tabNavigator.current = HomeTab
-                                            AriadneNavBus.navigate(AriadneNavEvent.Line(lineId))
-                                        },
-                                    )
-                                }
+                                Box(modifier = Modifier.fillMaxSize().zIndex(3f)) { AssistantHost() }
+                            }
                             }
                         }
 

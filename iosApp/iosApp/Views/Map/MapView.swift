@@ -304,7 +304,15 @@ struct TransitMapView: View {
 
     var body: some View {
         NavigationStack {
-            mapContent
+            // Foldables and tablets (master plan, Network Map contract): the
+            // shared policy pairs the canvas with a station or train inspector;
+            // a phone keeps the single column with the sheets. One map instance.
+            SyrmosArrangement(
+                task: .map,
+                primary: { mapInspector },
+                companion: { mapContent },
+                combined: { mapWithSelectionSheets }
+            )
                 .safeAreaInset(edge: .top, spacing: 8) {
                     CompactTabHeader(loc[.map])
                 }
@@ -330,25 +338,6 @@ struct TransitMapView: View {
                     }
                 }
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(item: $tappedStation) { station in
-                StationSheetView(station: station)
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-                    .presentationContentInteraction(.scrolls)
-            }
-            .sheet(item: $tappedVehicle) { vehicle in
-                switch vehicle {
-                case .simulated(let train):
-                    SimulatedVehicleDetailSheet(train: train)
-                        .presentationDetents([.fraction(0.45), .medium])
-                        .presentationDragIndicator(.visible)
-                case .live(let train):
-                    TrainDetailSheet(train: train)
-                        .presentationDetents([.fraction(0.7), .large])
-                        .presentationDragIndicator(.visible)
-                        .presentationContentInteraction(.scrolls)
-                }
-            }
             .sheet(isPresented: $showLiveTrainsSheet) {
                 LiveTrainsListSheet(
                     // Stale-aware, EXPIRED-dropped list the map plots, so the
@@ -379,6 +368,105 @@ struct TransitMapView: View {
                     ? "Non hai concesso a Syrmos l'accesso alla posizione. Vuoi aprire le Impostazioni per attivarlo?"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
+        }
+    }
+
+    /// Single column: the shipped sheets for a tapped station or vehicle.
+    private var mapWithSelectionSheets: some View {
+        mapContent
+            .sheet(item: $tappedStation) { station in
+                StationSheetView(station: station)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationContentInteraction(.scrolls)
+            }
+            .sheet(item: $tappedVehicle) { vehicle in
+                switch vehicle {
+                case .simulated(let train):
+                    SimulatedVehicleDetailSheet(train: train)
+                        .presentationDetents([.fraction(0.45), .medium])
+                        .presentationDragIndicator(.visible)
+                case .live(let train):
+                    TrainDetailSheet(train: train)
+                        .presentationDetents([.fraction(0.7), .large])
+                        .presentationDragIndicator(.visible)
+                        .presentationContentInteraction(.scrolls)
+                }
+            }
+    }
+
+    /// The paired inspector: the tapped station's detail, or the tapped
+    /// vehicle's, with a calm invitation when nothing is selected. The same
+    /// views as the phone's sheets, so nothing is duplicated; the map keeps
+    /// its canvas and its camera.
+    @ViewBuilder private var mapInspector: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(mapText("On the map", "Στον χάρτη", "Në hartë", "Sulla mappa"))
+                    .font(.title3.weight(.semibold))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                if tappedStation != nil || tappedVehicle != nil {
+                    Button(mapText("Close", "Κλείσιμο", "Mbyll", "Chiudi")) {
+                        tappedStation = nil
+                        tappedVehicle = nil
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            if let station = tappedStation {
+                StationSheetView(station: station)
+                    .id(station.id)
+            } else if let vehicle = tappedVehicle {
+                switch vehicle {
+                case .simulated(let train):
+                    ScrollView { SimulatedVehicleDetailSheet(train: train) }
+                case .live(let train):
+                    TrainDetailSheet(train: train)
+                }
+            } else {
+                mapInspectorPlaceholder
+                    .padding(.horizontal, 16)
+                Spacer(minLength: 0)
+            }
+        }
+        .background(Color.syrmosBackground)
+    }
+
+    private var mapInspectorPlaceholder: some View {
+        VStack(alignment: .leading, spacing: SyrmosTokens.Space.sm) {
+            Image(systemName: "map")
+                .font(.title2)
+                .foregroundStyle(Color.syrmosPrimary)
+            Text(mapText("Tap a station or a train.", "Πάτησε έναν σταθμό ή ένα τρένο.", "Prek një stacion ose një tren.", "Tocca una stazione o un treno."))
+                .font(.headline)
+            Text(mapText(
+                "Its departures, lines and live details read here while the map stays in view.",
+                "Οι αναχωρήσεις, οι γραμμές και τα ζωντανά στοιχεία του εμφανίζονται εδώ, με τον χάρτη πάντα ορατό.",
+                "Nisjet, linjat dhe detajet e drejtpërdrejta shfaqen këtu, ndërsa harta mbetet e dukshme.",
+                "Partenze, linee e dettagli in tempo reale compaiono qui mentre la mappa resta visibile."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(SyrmosTokens.Space.xl)
+        .background(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                .fill(Color.syrmosSurfaceMuted)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private func mapText(_ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+        switch loc.language {
+        case .greek: return el
+        case .albanian: return sq
+        case .italian: return it
+        default: return en
         }
     }
 

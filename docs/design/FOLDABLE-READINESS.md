@@ -358,6 +358,360 @@ the iPhone Duo and Android fold devices only; GO stays.
   columns for every task. Fixture `wideMediumWindow_pairsSideBySideEvenForStackingTasks`
   on both platforms (Kotlin suite 22, Swift suite 51).
 
+## Landed: polish round 4 (GO refinements from the master plan's screenshot review)
+
+Source: `docs/plans/FOLDABLES-IPHONE-DUO-MASTER-PLAN.md`, section 2 (screenshot findings) and the GO contract in section 4.
+
+- **Per-leg map colours**: `GoRouteProjection.legRuns` yields one coordinate run
+  per leg with its line id (legs with fewer than two placeable stops draw
+  nothing); `GoRouteMapView` draws one `GoLegPolyline` per run in the leg's real
+  line colour, so the interchange reads as a colour change on the map as it does
+  on the timeline. Test `test_legRuns_oneRunPerLegInRideOrder_skippingUnplaceableLegs`.
+- **Portrait and folded composition**: `SyrmosArrangement` now publishes
+  `\.syrmosArrangementAxis`; on the vertical axis GO keeps the map alone in the
+  upper region and reads the timeline under the instruction, so the timeline is
+  no longer squeezed into the upper band. Side by side is unchanged.
+- **End confirmation** on both platforms: ending an unfinished journey asks
+  ("End this journey?" with "End journey" / "Keep going", four languages);
+  Finish after arrival stays one tap. One end path on iOS (`endJourney()`), the
+  existing `endJourney()` on Android behind an `AlertDialog`.
+- **Android custom top bars below the status bar**: the GO and Plan screens draw
+  their own top bar (not a `TopAppBar`), and it sat under the status bar, so
+  the End and Back controls were only partly tappable on the emulator. Both bars
+  now take `statusBarsPadding()`. Verified on the Pixel emulator at the fold
+  geometry: the End button reports bounds below the status bar and the tap
+  opens the confirmation dialog.
+
+## Landed: polish round 5 (Plan: compare with confidence)
+
+Source: master plan section 4 (Plan contract) and Phase 3 item 1 (populated
+route comparison and selected-route context with stable identity).
+
+- **Pane roles**: on a paired layout the task pane is the editable query plus
+  the route alternatives (count/save row, one card per usable option, the
+  disruption chip and the no-route/suspended states); the companion pane is
+  "Selected journey": the S05 detail (summary, comparison line, timeline,
+  source line, Start). Before a search the companion shows the calm invitation;
+  after a search that left nothing selectable it says so ("No journey to show
+  yet.") instead of inventing a route. Single column keeps the shipped order
+  (query, alternatives, selected detail, saved).
+- **Shared comparison facts**: `JourneyComparison.facts(durations, changes)`
+  (Kotlin core/domain, Swift twin in `Core/Journey/JourneyComparison.swift`)
+  marks `fastest` and `fewestChanges` only when a real difference exists (a
+  lone route is never decorated), and gives `minutesSlowerThanFastest` (rounded,
+  zero dropped, unknown durations never compared) and `extraChanges`. Cards show
+  chips ("Recommended" from the shared ranker, "Fastest", "Fewest changes"),
+  the selected journey a line such as "+10 min vs fastest · 1 more change".
+  Fixture parity: `JourneyComparisonTest` (10) and `JourneyComparisonTests` (10).
+- **Stable itinerary identity**: `JourneySelection.retain(previous, ids)` keeps
+  the selected option id across a results refresh when it is still offered and
+  falls back to the first otherwise; both clients replaced the array index with
+  the option id (`selectedId`), so a fold or a time-driven re-plan never changes
+  the traveller's choice by position.
+- **Verified**: iOS 32/32 (comparison, snapshot, journey detail) on the
+  Syrmos 27 simulator, `plan-duo-inner-*.png` re-rendered; Android Pixel
+  emulator at 841x673, Piraeus to Syntagma: left pane "2 routes" with
+  "Recommended, ~28 min, 1 change, M1 to M2, Comfortable" and
+  "Fastest, ~18 min, 1 change, M1 to M3, Tight", right pane the selected
+  journey with "+10 min vs fastest" and the timeline (uiautomator dump and
+  screenshot).
+
+## Landed: polish round 6 (Home: the board is the task, the network reads alongside)
+
+Source: master plan section 4 (Home contract) and Phase 4 item 1.
+
+- **Pane roles**: `SyrmosArrangement(task: .home)` on iOS and
+  `rememberContentWorkspace(HOME)` on Android. Task pane: the answer section
+  (hero with the direction board for every direction, or the tracking card),
+  the living map strip and the weather context. Companion pane: the insights
+  stream (alerts, news, status), the radial nearby section and the live trains.
+  The combined (single column) order is unchanged. The deep-link anchors keep
+  working: the weather anchor lives in the task pane, the nearby anchor in the
+  companion; on Android each column has its own list state and the
+  scroll-to-weather request targets the answer column.
+- **No duplicate work**: the two panes render the same view state; there is no
+  second poll, location request or announcement fetch for the companion.
+- **Verified (Android)**: Pixel emulator at 841x673, Home: left pane "MORNING
+  COMMUTE", next train M2 to Elliniko with the four-direction board, Track and
+  Track a train; right pane "What matters now" (network status and the STASY
+  M3 works notice) and "Around you". At 411x891 the same build renders the
+  single column (hero, board, then the rest).
+- **Verified (iOS)**: `DuoSnapshotTests` now render `HomeView()` at the Duo
+  inner landscape, inner portrait and cover sizes (`home-duo-*.png`); the inner
+  renders show the two panes, the cover the single column.
+
+## Landed: polish round 7 (Network Map: canvas plus inspector)
+
+Source: master plan section 4 (Network Map contract) and Phase 3 item 3.
+
+- **Shared policy**: a `MAP` task on both twins (`WorkspaceTask.MAP`,
+  `SyrmosWorkspaceTask.map`). Its inspector (station or train) is the TASK pane
+  and the canvas the COMPANION, the same roles GO and Explore use, so a tall
+  window stacks the canvas above the inspector (`tallCanvasAxis = STACKED`) and
+  a wide one puts the inspector beside it. Fixtures on both platforms:
+  `p5_tallCanvas_mapStacksCanvasAboveInspector`,
+  `p3_flatLandscape_mapPairsInspectorBesideCanvas`, `p1_cover_mapStaysSingleColumn`
+  (Kotlin layout suite 59, Swift fixtures 54).
+- **iOS**: `TransitMapView` wraps the canvas in `SyrmosArrangement(task: .map)`;
+  the station and vehicle sheets are attached only to the single-column
+  `combined` content, and the paired `mapInspector` shows the same
+  `StationSheetView`, `SimulatedVehicleDetailSheet` or `TrainDetailSheet` with a
+  Close control and a calm placeholder. One map instance; no padding is
+  subtracted for the companion because the map's bounds already exclude it.
+- **Android**: `MapScreen` resolves `rememberContentWorkspace(MAP)`; the canvas
+  lambda (map, header, pills, controls) is laid out beside or above a
+  `MapInspectorPane` that hosts the same `StationSheetCard`, `SimulatedTrainDetailCard`
+  or `TrainDetailCard`; the slide-up overlays render only in the single column.
+  The osmdroid view paints outside its bounds, so the canvas box is
+  `clipToBounds()`; without it the map painted over the inspector.
+- **Verified**: iOS `DuoSnapshotTests` 22/22 with `map-duo-inner-landscape.png`
+  (inspector left, canvas right, header across), `map-duo-inner-portrait.png`
+  (canvas above), `map-duo-cover.png` (single column). Android Pixel emulator at
+  841x673: "On the map" inspector at x 96 with the placeholder, canvas from
+  x 460 with the FABs at the right edge; tapping a projected train fills the
+  inspector with the train card (Line 2 towards Anthoupoli, next station,
+  trip progress, the honest "approximate estimate" note) while the map keeps
+  its canvas.
+- **Observed, not caused here**: after a forced restart the emulator once
+  reported "Syrmos isn't responding" with reason "No response to onStopJob"
+  (a scheduled background job); the UI recovered on Wait. Analysed in round
+  15: the two WorkManager workers (`AlertCheckWorker`, `SnapshotWorker`) are
+  `CoroutineWorker`s whose network calls run under `Dispatchers.IO` with 10 s
+  timeouts, so `onStopJob` itself has nothing to wait for; that ANR is raised
+  when the main thread cannot service the JobScheduler callback in time, which
+  matches the moment it happened: a cold start right after `am force-stop`
+  while Gradle and Xcode saturated the host CPU. Not reproduced since across
+  a dozen restarts. No code change; keep an eye on cold-start main-thread work
+  if it recurs on hardware.
+
+## Landed: polish round 8 (Android GO route map: the flagship parity gap)
+
+Source: master plan section 4 (GO contract, Map row and camera intent) and
+Phase 5 (Android parity). Until this round Android GO paired the instruction
+with the timeline only; iOS had the per-leg coloured route map since round 4.
+
+- **Shared projection**: `GoRouteRuns.legRuns(journey, coordinate)` in
+  core/domain/go is the Kotlin twin of iOS `GoRouteProjection.legRuns`: one
+  coordinate run per leg in ride order, a leg with fewer than two placeable
+  stops draws nothing; `currentPoint` places the rider's stop. Fixtures mirror
+  the iOS test (`GoRouteRunsTest`, 3).
+- **Map composable**: `GoRouteMapView` (feature/map, expect/actual). Android
+  draws on osmdroid: one `Polyline` per leg in the line colour, a haloed
+  `Marker` on the current stop, `CopyrightOverlay` for attribution, and a
+  camera with explicit intent: the route is fitted when `fitTick` changes
+  (first layout and the Fit route control) and manual exploration is respected
+  otherwise. iOS and wasm targets draw the same legs on a canvas
+  (`GoRouteFallbackMap`), so a missing tile layer never leaves a blank surface.
+- **GO composition** (`GoJourneyScreenRoute`): side by side keeps the
+  instruction in the task pane and puts the map card above the timeline in the
+  companion; upright (stacked) gives the map the upper region alone and reads
+  the instruction plus the timeline below, matching the iOS composition from
+  round 4. One map instance; folding does not rebuild the journey.
+- **Verified**: Pixel emulator, Piraeus to Syntagma, at 841x673 (side by
+  side): the map draws the M1 leg in green and the M3 leg in blue with the
+  current-stop dot, attribution and the Fit route control above the timeline;
+  the instruction and controls stay reachable. Kotlin `GoRouteRunsTest` 3/3,
+  wasm target of feature/map compiles (fallback canvas actual).
+- **Finding (policy)**: at 673x841 the emulator showed the single column, not
+  the stacked pair. The navigation rail takes 80 dp, so the content canvas is
+  593 dp wide, under the 600 dp medium floor, and the shared policy resolves
+  SINGLE. An upright Android fold therefore never stacks GO, Explore or Map.
+  Fixed in round 9 (tall narrow canvas rule).
+
+## Landed: polish round 9 (T7 Tall narrow canvas: stacking beside a navigation rail)
+
+Source: the round 8 finding (an upright Android fold never stacked) and the
+master plan's GO portrait contract (map overview above, instruction below).
+
+- **Rule** (both twins, `TALL_NARROW_MIN_WIDTH` / `tallNarrowMinWidth` = 480):
+  a plain window under the medium floor (600) but at least 480 wide, taller
+  than wide, not at large text, stacks through `mediumStacked` for the tasks
+  whose `tallCanvasAxis` is STACKED (GO, Explore, Map). Column tasks (Plan,
+  Departures, Home) keep the single column there, and a phone column (440, the
+  Duo cover at 466) never stacks. The medium and large rules are untouched.
+- **Fixtures**: `t7_tallNarrowCanvas_goStacksBesideANavigationRail`,
+  `t7_tallNarrowCanvas_columnTasksStaySingle`,
+  `t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack` on both twins
+  (Kotlin layout suite 62, Swift fixtures 57).
+- **Verified**: Pixel emulator at 673x841 (593 x 761 canvas beside the rail),
+  GO: the route map holds the upper region with Fit route and attribution, the
+  instruction, progress and controls read below. Restored to 841x673 after.
+
+## Landed: polish round 10 (GO map camera intent: follow, fit, manual)
+
+Source: master plan GO contract ("Map camera has explicit intent: fit route,
+follow, or manual exploration. Respect manual pan ... do not recenter on every
+SwiftUI update or identical coordinate delivery").
+
+- **Finding (iOS)**: `GoRouteMapView.updateUIView` recentred on the current
+  stop on every SwiftUI update (any tick), so a manual pan was thrown away
+  within seconds and there was no Fit route control.
+- **Shared reducer**: `GoCamera.reduce(intent, event)` with intents FOLLOW /
+  FIT / MANUAL, events user panned, Fit tapped, Follow tapped, current stop
+  changed, geometry changed, and actions none / fit route / centre current.
+  Kotlin `core/domain/go/GoCamera.kt` (`GoCameraTest`, 3) and the Swift twin in
+  GoJourneyView.swift (three `test_camera_*` cases in `JourneyGuidanceTests`).
+- **iOS**: the representable receives the intent plus a one-shot command with
+  a tick and reports manual pans (an active pan or pinch gesture when the
+  region starts changing); `updateUIView` acts only on a command, a real
+  current-stop change or a fold-geometry change, never on an identical update.
+  Card controls: Fit route always, Follow while not following.
+- **Android**: `GoRouteMapView` fits the route once on first layout, then
+  applies the same reducer; a finger move on the osmdroid view reports the
+  manual pan; Follow animates to the current stop keeping the zoom. Same
+  controls. `feature/map` now depends on `core:domain` for the reducer.
+- **Verified (Android)**: Pixel emulator at 841x673: Next stop moved the camera
+  to Faliro (follow); a swipe on the map revealed Follow (manual) and the view
+  stayed where it was panned; Fit route reframed the whole route with Follow
+  still offered.
+
+## Landed: polish round 11 (single-column GO: the map stays reachable; launcher clearance)
+
+Source: master plan GO contract, Cover row ("Map remains accessible even if it
+is not permanently embedded").
+
+- **Finding**: neither client showed a map in the single-column GO (phones,
+  the Duo cover): iOS `combined` was instruction, timeline, footnote; Android
+  SINGLE was the same.
+- **Both clients**: a "Show route map" / "Hide route map" disclosure under the
+  instruction reveals the shared route map card (260 pt, with the camera
+  controls from round 10); iOS remembers it in `@AppStorage`
+  (`syrmos.go.showCompactMap`), Android in `rememberSaveable`. Instruction
+  first, map on request, then the timeline.
+- **Android launcher**: `GoScreenPresence.onScreen` (set for the GO screen's
+  composition) hides the floating Ariadne launcher while GO is on top, next to
+  the existing More and Map exclusions; the pill had covered the Now / Next
+  caption pills of the paired timeline.
+- **Verified (Android)**: Pixel emulator at 411x891: "Show route map" under the
+  instruction; tapping it shows the map card with Fit route and turns the
+  control into "Hide route map". At 841x673: no launcher node on GO, launcher
+  back on Home.
+- **Verified (iOS)**: `DuoSnapshotTests` re-rendered `go-duo-cover.png` with
+  the disclosure under the instruction.
+
+## Landed: polish round 12 (GO timeline: stable browsing with Back to now)
+
+Source: master plan GO contract, Timeline row ("Keep manual browsing stable
+rather than repeatedly snapping the user back. Offer an explicit
+return-to-current action").
+
+- **Shared rule**: `GoTimelineFocus.isVisible(rowTop, rowBottom, viewportTop,
+  viewportBottom)` and `targetOffset(rowTopInContent, viewportHeight,
+  maxOffset)` (a third of the way down, clamped). Kotlin core/domain/go with
+  `GoTimelineFocusTest` (3), Swift twin in GoJourneyView.swift with three
+  `test_timelineFocus_*` cases in `JourneyGuidanceTests`.
+- **Android** (`JourneyTimeline`, scrolling variant only): the viewport is read
+  with `onGloballyPositioned` before the `verticalScroll` modifier, the current
+  row reports its root position from `LegCard`, and a `FilledTonalButton`
+  "Back to now" floats at the bottom while the row is out of view; tapping it
+  animates the scroll to the shared target offset.
+- **iOS** (`goTimeline`): `ScrollViewReader` plus a named coordinate space; the
+  current row carries the anchor id and reports its frame through a preference
+  (`GoCurrentRowTracker`, active only in the paired timeline so the single
+  column stays untouched); the pill scrolls to the anchor at a third of the
+  height. The list never auto-scrolls.
+- **Verified (Android)**: Pixel emulator at 841x673: no pill at rest, the pill
+  after a swipe up on the timeline, gone again after the tap with the "Now"
+  row back in view.
+- **Verified (iOS)**: unit twins green; the render suite still green (the pill
+  needs a scrolled state, so it is not in a snapshot).
+
+## Landed: polish round 13 (GO trust: the dot's meaning)
+
+Source: master plan GO contract, Trust row ("A confirmed station is not
+automatically a live GPS fix").
+
+- Both clients show a source pill at the top-leading corner of the route map
+  card. iOS: "Live position" while `model.isLive` (live guidance), else
+  "Confirmed stop". Android GO is manual, so it always reads "Confirmed stop".
+  Four languages; atomic (single line, no wrap).
+- Verified: Android emulator at 841x673 (pill present in the hierarchy and the
+  capture); iOS `DuoSnapshotTests` re-rendered with the pill on the map card.
+  UI-only change with no new pure logic, so no new unit tests beyond the
+  renders.
+
+## Landed: polish round 14 (Ariadne docks beside the content)
+
+Source: master plan section 4 (Ariadne: "Expanded may dock the same
+conversation beside the relevant Plan/map context when there is sufficient
+room. Moving between sheet and pane must not resend a prompt or initialize
+another model").
+
+- **Android** (`SyrmosApp.kt`): the shared policy resolves the ARIADNE task on
+  the canvas after the rail; when it pairs (SIDE_BY_SIDE) and the rail layout
+  is active, `TabContentWithOverlays` lays the current tab beside a docked
+  `AssistantScreen` (companion width from the policy, capped at 480 dp);
+  otherwise the full-screen presentation stays. The `AssistantViewModel` is
+  now injected once at the shell and the open-time effect (location, pending
+  query) is keyed on `showAriadne`, so closing, reopening or moving between
+  the docked pane and the overlay never recreates the conversation or resends
+  the pending prompt.
+- **iOS** (`SyrmosApp.swift`): the root `.sheet` became `.inspector` with
+  `inspectorColumnWidth(min: 320, ideal: 400, max: 480)`; on a regular width
+  the same `AriadneView` docks as a trailing column, on a compact width the
+  system presents it as a sheet. Settings keeps its own sheet.
+- **Fixtures** (both twins): `p3_flatLandscape_ariadneDocksBesideTheContent`
+  (951x669 and the 761x649 Android canvas beside the rail pair) and
+  `p1_cover_ariadneStaysASheet` (466x678 single). Kotlin layout suite 64,
+  Swift fixtures 59.
+- **Verified (Android)**: Pixel emulator at 841x673: tapping Ask Ariadne keeps
+  Home (hero and direction board) on the left and opens the conversation with
+  its composer on the right; the hierarchy holds both.
+- **Verified (iOS)**: build for the iPad simulator and a capture of the docked
+  inspector (see below); the Duo portrait behaviour (regular or compact width
+  class) is the system's call and was not runtime-checked.
+- **Regression pass this round**: full KMP suite 630/630, full iOS unit target
+  400/400.
+
+## Landed: polish round 15 (Home never stacks)
+
+Source: the round 14 iPad capture: beside a docked inspector Home had ~633 pt,
+two columns did not fit, and the medium-canvas rule fell back to STACKED, which
+put the network context above the next-train answer.
+
+- **Rule** (both twins): `WorkspaceTask.stacks` / `SyrmosWorkspaceTask.stacks`
+  is false for HOME; `resolveMediumCanvas` skips the STACKED axis for such a
+  task, so Home is either two columns or its single column with the answer
+  first. Plan, Departures and the others keep stacking as before.
+- **Fixture** `t8_narrowRemainder_homeKeepsTheAnswerFirst` on both twins
+  (633x1376: HOME single, PLAN stacked). Kotlin layout suite 65, Swift
+  fixtures 60.
+- **Verified (iOS)**: iPad simulator rebuilt with the rule; with Ariadne
+  docked, Home renders its single column with the answer (hero, living map)
+  first and the network context below. Finding on the way: a launcher tap
+  during app launch set the inspector state without a presentation, and since
+  the pill only ever set the flag to true, later taps were dead until a
+  relaunch; the launcher now toggles the flag (also closing the docked
+  inspector from the content side).
+
+## Landed: polish round 16 (Android GO map continuity across a fold)
+
+Source: master plan GO contract ("Respect manual pan/zoom/bearing/pitch across
+reflow"; "Folding, rotating ... must not ... create a second location
+subscription") and D05/D12 continuity. `MainActivity` has no `configChanges`,
+so a fold or rotation recreates the activity and every osmdroid view with it.
+
+- **Camera persistence** (`GoRouteMapView.android.kt`): centre and zoom are
+  saved in `rememberSaveable` from a `MapListener` as the rider moves, restored
+  in the `AndroidView` factory, and a restored camera skips the first fit. The
+  camera intent is saved by name in `GoJourneyScreenRoute`
+  (`cameraIntentName`), so a manual view stays manual after the fold.
+- **Movable content**: the GO route map (`movableContentOf` with the legs,
+  current stop and accent passed as parameters, the intent read through its
+  state) and the Network Map canvas (`movableContentOf` with the modifier and
+  the paired flag) move between pane slots when the arrangement changes
+  without a recreation, instead of being rebuilt.
+- **Verified**: Pixel emulator: GO at 841x673, pan the map (Follow appears),
+  switch to 673x841 (activity recreation, stacked layout): Follow is still
+  offered and the map shows the panned view rather than a refit. Restored to
+  841x673.
+- **iOS parity**: `GoRouteMapView` is a `UIViewRepresentable` whose
+  `MKMapView` is recreated when `SyrmosArrangement` changes its structure (a
+  fold flips side by side and stacked). The owning `GoJourneyView` now keeps
+  the last settled region (`GoSavedCamera`, from `regionDidChangeAnimated`)
+  and hands it to the new map as `initialCamera`, which skips the first fit,
+  so a manual view survives the flip. Guidance and snapshot suites 44/44.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

@@ -22,6 +22,22 @@ struct GoJourneyView: View {
     @StateObject private var location = LocationService()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.syrmosReservedGeometryOverride) private var reservedGeometryOverride
+    @State private var confirmEnd = false
+    // Camera with explicit intent (shared GoCamera reducer): follow the current
+    // stop by default, keep the whole route on Fit route, and leave the rider's
+    // manual view alone until they ask again.
+    @AppStorage("syrmos.go.showCompactMap") private var showCompactMap = false
+    @State private var cameraIntent: GoCameraIntent = .follow
+    /// The current row's frame in the paired timeline's scroll space, and that
+    /// scroll view's height, for the Back to now control (GoTimelineFocus).
+    @State private var currentRowFrame: CGRect? = nil
+    @State private var timelineViewportHeight: CGFloat = 0
+    @State private var cameraCommand: GoCameraAction = .none
+    @State private var cameraTick = 0
+    /// The last map region the rider saw. The representable is recreated when
+    /// the arrangement flips (a fold), so the owner keeps the camera and hands
+    /// it back instead of letting the new map refit over a manual view.
+    @State private var savedCamera: GoSavedCamera? = nil
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
@@ -83,19 +99,33 @@ struct GoJourneyView: View {
         SyrmosArrangement(
             task: .go,
             primary: {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        goInstruction
-                        footnote
+                SyrmosAxisReader { axis in
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            goInstruction
+                            // Stacked (a tall window, a horizontal fold): the map keeps
+                            // the upper region to itself and the timeline reads here,
+                            // under the instruction, where the rider's hands are.
+                            if axis == .vertical { timelineContent }
+                            footnote
+                        }
+                        .padding()
                     }
-                    .padding()
                 }
             },
-            companion: { goCompanion },
+            companion: { SyrmosAxisReader { axis in goCompanion(mapOnly: axis == .vertical) } },
             combined: {
+                // Single column (phone, folded cover): instruction first, then the
+                // route map on request (kept reachable, not permanently embedded),
+                // then the timeline. The disclosure is remembered for the session.
                 ScrollView {
                     VStack(spacing: 20) {
                         goInstruction
+                        compactMapDisclosure
+                        if showCompactMap {
+                            goCompanion(mapOnly: true)
+                                .frame(height: 260)
+                        }
                         timelineContent
                         footnote
                     }
@@ -113,14 +143,28 @@ struct GoJourneyView: View {
                     Button(model.isArrived
                         ? t("Finish", "Τέλος", "Përfundo", "Concludi")
                         : t("End", "Τέλος", "Përfundo", "Termina")) {
-                        // model.end() clears the active-journey store, which ends the
-                        // Live Activity (see GoActiveJourneyStore.clear) on every
-                        // end path, so no separate controller.end() is needed here.
-                        model.end()
-                        if let onEnd { onEnd() } else { dismiss() }
+                        // Arrived: finishing is final and safe. Mid-journey: confirm,
+                        // so a stray tap on a moving train does not drop the guidance.
+                        if model.isArrived { endJourney() } else { confirmEnd = true }
                     }
                 }
             }
+        }
+        .confirmationDialog(
+            t("End this journey?", "Τέλος διαδρομής;", "Të përfundojë udhëtimi?", "Terminare il viaggio?"),
+            isPresented: $confirmEnd,
+            titleVisibility: .visible
+        ) {
+            Button(t("End journey", "Τέλος διαδρομής", "Përfundo udhëtimin", "Termina il viaggio"), role: .destructive) {
+                endJourney()
+            }
+            Button(t("Keep going", "Συνέχισε", "Vazhdo", "Continua"), role: .cancel) {}
+        } message: {
+            Text(t(
+                "Guidance and the get-off alert stop. Your route stays in Plan.",
+                "Η καθοδήγηση και η ειδοποίηση αποβίβασης σταματούν. Η διαδρομή σου μένει στο Σχεδίασε.",
+                "Udhëzimi dhe njoftimi i zbritjes ndalojnë. Rruga jote mbetet te Planifiko.",
+                "La guida e l'avviso di discesa si fermano. Il percorso resta in Pianifica."))
         }
         .onAppear {
             model.onGetOffAlert = { guidance in fireGetOff(guidance) }
@@ -169,7 +213,7 @@ struct GoJourneyView: View {
     /// Companion pane on a regular-width display (foldables / Duo prompt 9.2):
     /// the live route map above, the leg/stop timeline below, so the rider sees
     /// where they are on the map and what is coming up in one glance.
-    @ViewBuilder private var goCompanion: some View {
+    @ViewBuilder private func goCompanion(mapOnly: Bool) -> some View {
         GeometryReader { geo in
             // Hinge-aware map padding (six-posture prompt, section 9, item 2): the
             // companion reads the regions the system reports for its own box
@@ -180,19 +224,32 @@ struct GoJourneyView: View {
             // The map is a card inside the pane (Calm Signal: 16 pt gutters, large
             // radius), so the rect the padding rule sees is the card's rect.
             let gutter = SyrmosTokens.Space.lg
-            let mapHeight = max(200, geo.size.height * 0.42)
+            // Side by side: the map takes 42 percent above the timeline. Stacked:
+            // the map is the whole companion region (the timeline moved below).
+            let mapHeight = mapOnly
+                ? max(200, geo.size.height - SyrmosTokens.Space.md * 2)
+                : max(200, geo.size.height * 0.42)
             let mapRect = CGRect(x: gutter, y: SyrmosTokens.Space.md,
                                  width: max(0, geo.size.width - gutter * 2), height: mapHeight)
             let mapInsets = SyrmosMapPadding.insets(mapRect: mapRect, geometry: geometry)
             VStack(spacing: 0) {
                 GoRouteMapView(
                     route: routeCoords,
+                    legRuns: legRuns,
                     current: currentCoord,
                     tint: UIColor(tint),
-                    edgeInsets: mapInsets
+                    edgeInsets: mapInsets,
+                    intent: cameraIntent,
+                    command: cameraCommand,
+                    commandTick: cameraTick,
+                    onUserPan: { if cameraIntent != .manual { camera(.userPanned) } },
+                    initialCamera: savedCamera,
+                    onCameraChanged: { savedCamera = $0 }
                 )
                 .frame(height: mapHeight)
                 .clipShape(RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous))
+                .overlay(alignment: .topTrailing) { mapCameraControls }
+                .overlay(alignment: .topLeading) { positionSourcePill }
                 .overlay(
                     RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
                         .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
@@ -201,8 +258,75 @@ struct GoJourneyView: View {
                 .padding(.top, SyrmosTokens.Space.md)
                 .accessibilityLabel(t(
                     "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
-                goTimeline
+                if !mapOnly { goTimeline }
             }
+        }
+    }
+
+    /// Single column only: reveal or hide the route map card.
+    private var compactMapDisclosure: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { showCompactMap.toggle() }
+        } label: {
+            Label(showCompactMap
+                    ? t("Hide route map", "Απόκρυψη χάρτη διαδρομής", "Fshih hartën e rrugës", "Nascondi la mappa del percorso")
+                    : t("Show route map", "Εμφάνιση χάρτη διαδρομής", "Shfaq hartën e rrugës", "Mostra la mappa del percorso"),
+                  systemImage: showCompactMap ? "map.fill" : "map")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(Color.syrmosPrimary)
+        .accessibilityHint(t("The journey's route on a map.", "Η διαδρομή του ταξιδιού στον χάρτη.", "Rruga e udhëtimit në hartë.", "Il percorso del viaggio sulla mappa."))
+    }
+
+    /// Trust: what the dot on the map means. A stop the rider confirmed by
+    /// stepping is not a GPS fix; only live guidance follows the real position.
+    private var positionSourcePill: some View {
+        let live = model.isLive
+        let text = live
+            ? t("Live position", "Ζωντανή θέση", "Pozicion i drejtpërdrejtë", "Posizione dal vivo")
+            : t("Confirmed stop", "Επιβεβαιωμένη στάση", "Ndalesë e konfirmuar", "Fermata confermata")
+        return Label(text, systemImage: live ? "location.fill" : "checkmark.circle.fill")
+            .font(.caption.weight(.semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(.thinMaterial))
+            .foregroundStyle(live ? Color.syrmosPrimary : Color.secondary)
+            .padding(8)
+            .accessibilityLabel(text)
+    }
+
+    /// Fit route always; Follow only while the camera is not following.
+    private var mapCameraControls: some View {
+        HStack(spacing: 8) {
+            if cameraIntent != .follow {
+                Button { camera(.followTapped) } label: {
+                    Label(t("Follow", "Ακολούθησε", "Ndiq", "Segui"), systemImage: "location.fill")
+                }
+            }
+            Button { camera(.fitTapped) } label: {
+                Label(t("Fit route", "Όλη η διαδρομή", "Gjithë rruga", "Tutto il percorso"),
+                      systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+        }
+        .font(.caption.weight(.semibold))
+        .lineLimit(1)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.small)
+        .tint(Color.syrmosPrimary)
+        .padding(8)
+    }
+
+    private func camera(_ event: GoCameraEvent) {
+        let step = GoCamera.reduce(cameraIntent, event)
+        cameraIntent = step.intent
+        if step.action != .none {
+            cameraCommand = step.action
+            cameraTick += 1
         }
     }
 
@@ -210,6 +334,16 @@ struct GoJourneyView: View {
     private var routeCoords: [CLLocationCoordinate2D] {
         GoRouteProjection.routeCoordinates(journey: model.journey) {
             StationCoordinateLookup.shared.coordinate(for: $0)
+        }
+    }
+
+    /// Each leg's coordinate run in its real line colour (the interchange reads
+    /// as a colour change on the map, as it does on the timeline).
+    private var legRuns: [(coordinates: [CLLocationCoordinate2D], color: UIColor)] {
+        GoRouteProjection.legRuns(journey: model.journey) {
+            StationCoordinateLookup.shared.coordinate(for: $0)
+        }.map { run in
+            (run.coordinates, UIColor(SyrmosData.line(for: run.lineId)?.color ?? Color.syrmosPrimary))
         }
     }
 
@@ -223,16 +357,51 @@ struct GoJourneyView: View {
     /// Companion pane: the journey's legs and stops with the current position
     /// highlighted, shown beside the instruction on a regular-width display.
     @ViewBuilder private var goTimeline: some View {
-        ScrollView {
-            timelineContent
-                .padding(SyrmosTokens.Space.lg)
+        // Manual browsing stays stable: the list never snaps back by itself, but
+        // while the current stop is out of view a Back to now action is offered
+        // (shared GoTimelineFocus rule with Android).
+        ScrollViewReader { proxy in
+            ScrollView {
+                timelineBody(trackCurrent: true)
+                    .padding(SyrmosTokens.Space.lg)
+            }
+            .coordinateSpace(name: GoTimelineAnchor.space)
+            .background(GeometryReader { geo in
+                Color.clear
+                    .onAppear { timelineViewportHeight = geo.size.height }
+                    .onChange(of: geo.size.height) { _, h in timelineViewportHeight = h }
+            })
+            .onPreferenceChange(GoCurrentRowFrameKey.self) { currentRowFrame = $0 }
+            .overlay(alignment: .bottom) {
+                if let frame = currentRowFrame, timelineViewportHeight > 0,
+                   !GoTimelineFocus.isVisible(rowTop: frame.minY, rowBottom: frame.maxY,
+                                              viewportTop: 0, viewportBottom: timelineViewportHeight) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo(GoTimelineAnchor.current, anchor: UnitPoint(x: 0.5, y: 0.33))
+                        }
+                    } label: {
+                        Label(t("Back to now", "Πίσω στο τώρα", "Kthehu te tani", "Torna a ora"),
+                              systemImage: "arrow.uturn.backward")
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
+                    .tint(Color.syrmosPrimary)
+                    .padding(.bottom, SyrmosTokens.Space.lg)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
     }
 
     /// The timeline's cards without their scroll view, so the compact single
     /// column can place them under the instruction and controls instead of
     /// leaving the lower half of the phone empty.
-    @ViewBuilder private var timelineContent: some View {
+    @ViewBuilder private var timelineContent: some View { timelineBody(trackCurrent: false) }
+
+    @ViewBuilder private func timelineBody(trackCurrent: Bool) -> some View {
         let rows = GoTimelineProjection.rows(journey: model.journey, position: model.position)
         VStack(alignment: .leading, spacing: SyrmosTokens.Space.md) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -249,7 +418,7 @@ struct GoJourneyView: View {
                         transferConnector(to: leg, color: legColor)
                     }
                     legCard(leg: leg, legIdx: legIdx, color: legColor,
-                            rows: rows.filter { $0.legIndex == legIdx })
+                            rows: rows.filter { $0.legIndex == legIdx }, trackCurrent: trackCurrent)
                 }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -268,7 +437,7 @@ struct GoJourneyView: View {
 
     /// One leg as a card: line pill, direction and stop count in the header, then
     /// the stops on a rail in the leg's colour.
-    private func legCard(leg: GuidanceLeg, legIdx: Int, color: Color, rows: [GoTimelineRow]) -> some View {
+    private func legCard(leg: GuidanceLeg, legIdx: Int, color: Color, rows: [GoTimelineRow], trackCurrent: Bool = false) -> some View {
         let count = max(0, leg.stops.count - 1)
         let countText = count == 1
             ? t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
@@ -290,6 +459,7 @@ struct GoJourneyView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(rows, id: \.stopIndex) { row in
                     timelineRow(row, color: color)
+                    .modifier(GoCurrentRowTracker(active: trackCurrent && row.state == .current))
                 }
             }
             .padding(.horizontal, SyrmosTokens.Space.lg)
@@ -440,6 +610,13 @@ struct GoJourneyView: View {
         }
         .buttonStyle(.bordered)
         .tint(model.isLive ? .green : .accentColor)
+    }
+
+    /// One end path: model.end() clears the active-journey store, which ends the
+    /// Live Activity (see GoActiveJourneyStore.clear), so nothing else is needed.
+    private func endJourney() {
+        model.end()
+        if let onEnd { onEnd() } else { dismiss() }
     }
 
     private func fireGetOff(_ guidance: JourneyGuidance) {
@@ -851,6 +1028,31 @@ enum GoRouteProjection {
         return out
     }
 
+    /// One coordinate run per leg with its line id, so the map draws each leg in
+    /// its own line colour and the interchange reads as a colour change. Legs
+    /// with fewer than two placeable stops draw nothing.
+    struct LegRun: Equatable {
+        let lineId: String
+        let coordinates: [CLLocationCoordinate2D]
+        static func == (a: LegRun, b: LegRun) -> Bool {
+            a.lineId == b.lineId && a.coordinates.count == b.coordinates.count
+                && zip(a.coordinates, b.coordinates).allSatisfy { $0.latitude == $1.latitude && $0.longitude == $1.longitude }
+        }
+    }
+
+    static func legRuns(
+        journey: GuidanceJourney,
+        resolve: (String) -> (lat: Double, lon: Double)?
+    ) -> [LegRun] {
+        journey.legs.compactMap { leg in
+            let coords = leg.stops.compactMap { stop -> CLLocationCoordinate2D? in
+                guard let c = resolve(stop.id) else { return nil }
+                return CLLocationCoordinate2D(latitude: c.lat, longitude: c.lon)
+            }
+            return coords.count >= 2 ? LegRun(lineId: leg.lineId, coordinates: coords) : nil
+        }
+    }
+
     static func currentCoordinate(
         journey: GuidanceJourney,
         position: GuidancePosition,
@@ -869,21 +1071,140 @@ enum GoRouteProjection {
 /// on the current stop as the rider advances. Wraps MKMapView directly because
 /// the app avoids SwiftUI `Map` (CAMetalLayer lifecycle bug), matching the main
 /// map screen (see SyrmosMKMapView).
+/// A leg's polyline carrying its line colour for the renderer.
+private final class GoLegPolyline: MKPolyline {
+    var color: UIColor = .systemBlue
+}
+
+/// Keeps manual browsing of the timeline stable (twin of Kotlin
+/// `GoTimelineFocus`): never snap back on its own, offer Back to now while the
+/// current stop is out of view. One coordinate space and unit throughout.
+enum GoTimelineFocus {
+    static func isVisible(rowTop: CGFloat, rowBottom: CGFloat, viewportTop: CGFloat, viewportBottom: CGFloat) -> Bool {
+        rowTop >= viewportTop && rowBottom <= viewportBottom
+    }
+
+    /// The offset that places the row a third of the way down the viewport,
+    /// clamped to the scrollable range.
+    static func targetOffset(rowTopInContent: CGFloat, viewportHeight: CGFloat, maxOffset: CGFloat) -> CGFloat {
+        min(max(rowTopInContent - viewportHeight / 3, 0), max(maxOffset, 0))
+    }
+}
+
+private enum GoTimelineAnchor: Hashable {
+    case current
+    static let space = "goTimelineScroll"
+}
+
+private struct GoCurrentRowFrameKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        if let next = nextValue() { value = next }
+    }
+}
+
+/// Marks the current row: the scroll anchor plus its frame in the timeline's
+/// scroll space, reported through a preference. Inactive rows are untouched.
+private struct GoCurrentRowTracker: ViewModifier {
+    let active: Bool
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .id(GoTimelineAnchor.current)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: GoCurrentRowFrameKey.self,
+                                           value: geo.frame(in: .named(GoTimelineAnchor.space)))
+                })
+        } else {
+            content
+        }
+    }
+}
+
+/// The last settled map region, kept by the owning view across a reflow
+/// (Android keeps the same in rememberSaveable).
+struct GoSavedCamera: Equatable {
+    var latitude: Double
+    var longitude: Double
+    var latitudeDelta: Double
+    var longitudeDelta: Double
+
+    init(region: MKCoordinateRegion) {
+        latitude = region.center.latitude
+        longitude = region.center.longitude
+        latitudeDelta = region.span.latitudeDelta
+        longitudeDelta = region.span.longitudeDelta
+    }
+
+    var region: MKCoordinateRegion {
+        MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                           span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta))
+    }
+}
+
+/// What the GO route map's camera is doing for the rider (twin of Kotlin
+/// `GoCameraIntent`): follow the current stop, keep the whole route fitted, or
+/// leave the rider's manual view alone.
+enum GoCameraIntent { case follow, fit, manual }
+enum GoCameraEvent { case userPanned, fitTapped, followTapped, currentStopChanged, geometryChanged }
+enum GoCameraAction { case none, fitRoute, centerCurrent }
+
+/// The camera reducer shared with Android (`GoCamera` in core/domain/go): only
+/// a real event moves the camera, and only when the intent calls for it. An
+/// identical SwiftUI update is not an event, so a manual pan survives ticks,
+/// folds and re-renders.
+enum GoCamera {
+    static func reduce(_ intent: GoCameraIntent, _ event: GoCameraEvent) -> (intent: GoCameraIntent, action: GoCameraAction) {
+        switch event {
+        case .userPanned: return (.manual, .none)
+        case .fitTapped: return (.fit, .fitRoute)
+        case .followTapped: return (.follow, .centerCurrent)
+        case .currentStopChanged: return intent == .follow ? (.follow, .centerCurrent) : (intent, .none)
+        case .geometryChanged:
+            switch intent {
+            case .follow: return (.follow, .centerCurrent)
+            case .fit: return (.fit, .fitRoute)
+            case .manual: return (.manual, .none)
+            }
+        }
+    }
+
+    static func same(_ a: CLLocationCoordinate2D?, _ b: CLLocationCoordinate2D?) -> Bool {
+        switch (a, b) {
+        case (nil, nil): return true
+        case let (x?, y?): return x.latitude == y.latitude && x.longitude == y.longitude
+        default: return false
+        }
+    }
+}
+
 private struct GoRouteMapView: UIViewRepresentable {
     let route: [CLLocationCoordinate2D]
+    /// Per-leg runs with their line colours; drawn one polyline per leg.
+    var legRuns: [(coordinates: [CLLocationCoordinate2D], color: UIColor)] = []
     let current: CLLocationCoordinate2D?
     let tint: UIColor
     /// Padding that keeps the route fit and the current stop inside the map's
     /// visible area (base breathing room plus any hinge or cutout the companion
     /// reported). See `SyrmosMapPadding`.
     var edgeInsets: SyrmosEdgeInsets = .all(SyrmosMapPadding.base)
+    /// Camera intent, the one-shot command (Fit route / Follow) with its tick,
+    /// and the rider's manual pan reported back to the owner.
+    var intent: GoCameraIntent = .follow
+    var command: GoCameraAction = .none
+    var commandTick: Int = 0
+    var onUserPan: () -> Void = {}
+    /// A camera to restore on creation (skips the first fit) and where to report
+    /// every settled region so the owner can restore it after a reflow.
+    var initialCamera: GoSavedCamera? = nil
+    var onCameraChanged: (GoSavedCamera) -> Void = { _ in }
 
     private var uiEdgeInsets: UIEdgeInsets {
         UIEdgeInsets(top: edgeInsets.top, left: edgeInsets.left,
                      bottom: edgeInsets.bottom, right: edgeInsets.right)
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(tint: tint) }
+    func makeCoordinator() -> Coordinator { Coordinator(tint: tint, onUserPan: onUserPan) }
 
     func makeUIView(context: Context) -> MKMapView {
         let map = MKMapView()
@@ -895,27 +1216,64 @@ private struct GoRouteMapView: UIViewRepresentable {
         map.showsUserLocation = false
         let dark = map.traitCollection.userInterfaceStyle == .dark
         map.addOverlay(SyrmosMKMapView.makeEsriGrayOverlay(dark: dark), level: .aboveRoads)
-        if route.count >= 2 {
+        if !legRuns.isEmpty {
+            for run in legRuns where run.coordinates.count >= 2 {
+                let line = GoLegPolyline(coordinates: run.coordinates, count: run.coordinates.count)
+                line.color = run.color
+                map.addOverlay(line, level: .aboveLabels)
+            }
+        } else if route.count >= 2 {
             map.addOverlay(MKPolyline(coordinates: route, count: route.count), level: .aboveLabels)
         }
-        if let rect = boundingRect() {
+        if let initialCamera {
+            map.setRegion(initialCamera.region, animated: false)
+        } else if let rect = boundingRect() {
             map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: false)
         }
+        context.coordinator.onCameraChanged = onCameraChanged
         context.coordinator.lastInsets = edgeInsets
+        context.coordinator.lastCurrent = current
+        context.coordinator.lastCommandTick = commandTick
         context.coordinator.syncCurrent(on: map, to: current)
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        context.coordinator.syncCurrent(on: map, to: current)
-        let insetsChanged = context.coordinator.lastInsets != edgeInsets
-        context.coordinator.lastInsets = edgeInsets
-        if let current {
-            recenter(map, on: current, animated: true)
-        } else if insetsChanged, let rect = boundingRect() {
-            // No current stop to follow (e.g. a stop without coordinates): keep
-            // the whole route visible inside the new padded area.
-            map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
+        let coordinator = context.coordinator
+        coordinator.onUserPan = onUserPan
+        coordinator.onCameraChanged = onCameraChanged
+        coordinator.syncCurrent(on: map, to: current)
+        let insetsChanged = coordinator.lastInsets != edgeInsets
+        coordinator.lastInsets = edgeInsets
+        let currentChanged = !GoCamera.same(coordinator.lastCurrent, current)
+        coordinator.lastCurrent = current
+
+        // Camera with explicit intent: a one-shot command first; otherwise only a
+        // real change (the current stop moved, the fold geometry changed) may move
+        // the camera, and only when the intent says so. An identical SwiftUI
+        // update never recenters, so a manual pan holds.
+        var action: GoCameraAction = .none
+        if coordinator.lastCommandTick != commandTick {
+            coordinator.lastCommandTick = commandTick
+            action = command
+        } else if currentChanged {
+            action = GoCamera.reduce(intent, .currentStopChanged).action
+        } else if insetsChanged {
+            action = GoCamera.reduce(intent, .geometryChanged).action
+        }
+        switch action {
+        case .none:
+            break
+        case .fitRoute:
+            if let rect = boundingRect() {
+                map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
+            }
+        case .centerCurrent:
+            if let current {
+                recenter(map, on: current, animated: true)
+            } else if let rect = boundingRect() {
+                map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
+            }
         }
     }
 
@@ -957,8 +1315,30 @@ private struct GoRouteMapView: UIViewRepresentable {
         private var currentAnnotation: MKPointAnnotation?
         /// The insets the map was last laid out with, to notice a fold change.
         var lastInsets: SyrmosEdgeInsets?
+        /// The current stop the camera last acted on, to notice a real advance.
+        var lastCurrent: CLLocationCoordinate2D?
+        /// The last one-shot command tick that ran.
+        var lastCommandTick = 0
+        var onUserPan: () -> Void
+        var onCameraChanged: (GoSavedCamera) -> Void = { _ in }
 
-        init(tint: UIColor) { self.tint = tint }
+        init(tint: UIColor, onUserPan: @escaping () -> Void) {
+            self.tint = tint
+            self.onUserPan = onUserPan
+        }
+
+        /// A pan or pinch in progress when the region starts changing is the
+        /// rider exploring; programmatic moves carry no active gesture.
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            onCameraChanged(GoSavedCamera(region: mapView.region))
+        }
+
+        func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
+            let gestures = mapView.subviews.first?.gestureRecognizers ?? []
+            if gestures.contains(where: { $0.state == .began || $0.state == .changed }) {
+                onUserPan()
+            }
+        }
 
         /// Keep exactly one "you are here" annotation at the current stop.
         func syncCurrent(on map: MKMapView, to coord: CLLocationCoordinate2D?) {
@@ -979,7 +1359,7 @@ private struct GoRouteMapView: UIViewRepresentable {
             }
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = tint
+                renderer.strokeColor = (polyline as? GoLegPolyline)?.color ?? tint
                 renderer.lineWidth = 4
                 renderer.lineCap = .round
                 renderer.lineJoin = .round
