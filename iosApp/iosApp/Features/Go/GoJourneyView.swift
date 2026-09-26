@@ -243,6 +243,7 @@ struct GoJourneyView: View {
                 .frame(height: mapHeight)
                 .clipShape(RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous))
                 .overlay(alignment: .topTrailing) { mapCameraControls }
+                .overlay(alignment: .topLeading) { positionSourcePill }
                 .overlay(
                     RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
                         .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
@@ -271,6 +272,25 @@ struct GoJourneyView: View {
         .buttonBorderShape(.capsule)
         .tint(Color.syrmosPrimary)
         .accessibilityHint(t("The journey's route on a map.", "Η διαδρομή του ταξιδιού στον χάρτη.", "Rruga e udhëtimit në hartë.", "Il percorso del viaggio sulla mappa."))
+    }
+
+    /// Trust: what the dot on the map means. A stop the rider confirmed by
+    /// stepping is not a GPS fix; only live guidance follows the real position.
+    private var positionSourcePill: some View {
+        let live = model.isLive
+        let text = live
+            ? t("Live position", "Ζωντανή θέση", "Pozicion i drejtpërdrejtë", "Posizione dal vivo")
+            : t("Confirmed stop", "Επιβεβαιωμένη στάση", "Ndalesë e konfirmuar", "Fermata confermata")
+        return Label(text, systemImage: live ? "location.fill" : "checkmark.circle.fill")
+            .font(.caption.weight(.semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(.thinMaterial))
+            .foregroundStyle(live ? Color.syrmosPrimary : Color.secondary)
+            .padding(8)
+            .accessibilityLabel(text)
     }
 
     /// Fit route always; Follow only while the camera is not following.

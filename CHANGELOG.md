@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The GO map says what its dot means.** A small pill on the route map reads
+  "Confirmed stop" while you step through the journey and, on iOS with live
+  guidance on, "Live position", so a confirmed station is never mistaken for a
+  GPS fix.
 - **The GO timeline never snaps back while you browse.** Scroll the paired
   journey timeline away from your current stop and a "Back to now" pill
   appears; tap it to return, otherwise the list stays where you left it. Same

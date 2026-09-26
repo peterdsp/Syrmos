@@ -219,6 +219,17 @@ class GoJourneyScreenRoute(
                     onUserPan = { if (cameraIntent != GoCameraIntent.MANUAL) camera(GoCameraEvent.USER_PANNED) },
                     modifier = Modifier.fillMaxSize(),
                 )
+                // Trust: what the dot means. Android GO is manual, so the dot is
+                // the stop the rider confirmed, never implied to be a GPS fix.
+                Text(
+                    t("Confirmed stop", "Επιβεβαιωμένη στάση", "Ndalesë e konfirmuar", "Fermata confermata"),
+                    maxLines = 1, softWrap = false,
+                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                )
                 Row(
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

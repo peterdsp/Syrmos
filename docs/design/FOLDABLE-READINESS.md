@@ -609,6 +609,20 @@ return-to-current action").
 - **Verified (iOS)**: unit twins green; the render suite still green (the pill
   needs a scrolled state, so it is not in a snapshot).
 
+## Landed: polish round 13 (GO trust: the dot's meaning)
+
+Source: master plan GO contract, Trust row ("A confirmed station is not
+automatically a live GPS fix").
+
+- Both clients show a source pill at the top-leading corner of the route map
+  card. iOS: "Live position" while `model.isLive` (live guidance), else
+  "Confirmed stop". Android GO is manual, so it always reads "Confirmed stop".
+  Four languages; atomic (single line, no wrap).
+- Verified: Android emulator at 841x673 (pill present in the hierarchy and the
+  capture); iOS `DuoSnapshotTests` re-rendered with the pill on the map card.
+  UI-only change with no new pure logic, so no new unit tests beyond the
+  renders.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
