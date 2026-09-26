@@ -955,6 +955,30 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   the map card, both atomic, and the timeline captions "Ora" / "Prossima".
   No wrapping in the longest of the four languages; no change.
 
+## Landed: polish round 21 (GO through every state on the fold)
+
+Source: the master plan's GO timeline row ("Current and next leg/transfer get
+priority ... keep manual browsing stable rather than repeatedly snapping the
+user back"), checked by driving a Piraeus to Syntagma journey through riding,
+alighting, the transfer and arrival on the Android fold.
+
+- **Every state pairs correctly**: alight soon (with the tight-connection
+  warning and Find alternatives), transfer, ready to board the second leg,
+  and arrival ("You've arrived", Finish in the toolbar and as the primary
+  button, the progress bar complete).
+- **Finding**: the timeline never moved as the journey advanced; at stop 6
+  it still showed the origin with "Back to now". Round 12 made browsing
+  stable but treated an advance the same way. An advance is not browsing:
+  both clients now scroll the paired timeline to the new current row (a third
+  of the way down) when the position changes, and still leave a manual
+  scroll alone between advances. Android: `LaunchedEffect(position)` waits
+  for the current row's next position report, then animates to the shared
+  `GoTimelineFocus` target; iOS: `.onChange(of: model.position)` scrolls the
+  reader to the current anchor.
+- **Verified**: Android emulator, six advances from Piraeus: the "Now" row
+  (Thiseio) sits mid-pane with "Change here" below and no "Back to now"
+  pill; iOS guidance and snapshot suites 52/52.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

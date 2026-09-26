@@ -74,6 +74,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.flow.filterNotNull
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -497,6 +499,19 @@ class GoJourneyScreenRoute(
             GoTimelineFocus.isVisible(it, it + currentHeight, viewportTop, viewportTop + viewportHeight)
         } ?: true
         val onCurrentRow: ((Float, Float) -> Unit)? = if (scrollable) { top, h -> currentTop = top; currentHeight = h } else null
+        // An advance is not browsing: when the position moves (Next stop, Back,
+        // live guidance) the timeline follows the new current row to a third of
+        // the viewport; a manual scroll in between is never snapped back (that is
+        // what Back to now is for). The row reports its position after the
+        // recomposition, so wait for that report before scrolling.
+        if (scrollable) {
+            LaunchedEffect(position) {
+                val top = snapshotFlow { currentTop }.filterNotNull().first()
+                if (viewportHeight <= 0f) return@LaunchedEffect
+                val inContent = (top - viewportTop) + scrollState.value
+                scrollState.animateScrollTo(GoTimelineFocus.targetOffset(inContent, viewportHeight, scrollState.maxValue.toFloat()).roundToInt())
+            }
+        }
         Box(if (scrollable) modifier else Modifier) {
         Column(
             modifier = (if (scrollable) Modifier.fillMaxSize()
