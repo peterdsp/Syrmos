@@ -627,7 +627,7 @@ struct GoJourneyView: View {
 
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(stateLabel.uppercased())
+            Text(stateLabel.displayUppercased())
                 .font(.caption.weight(.semibold))
                 .tracking(0.6)
                 .foregroundStyle(model.shouldAlert ? Color.white.opacity(0.85) : tint)
@@ -1391,5 +1391,20 @@ private struct GoRouteMapView: UIViewRepresentable {
             view.centerOffset = .zero
             return view
         }
+    }
+}
+
+/// Uppercase for display labels (twin of Kotlin `displayUppercase`): Greek
+/// typography drops the tonos on capitals, and `uppercased()` keeps it.
+extension String {
+    private static let greekPlain: [Character: Character] = [
+        "Ά": "Α", "Έ": "Ε", "Ή": "Η", "Ί": "Ι", "Ό": "Ο", "Ύ": "Υ", "Ώ": "Ω",
+        "Ϊ": "Ι", "Ϋ": "Υ", "ΐ": "Ι", "ΰ": "Υ",
+    ]
+
+    func displayUppercased() -> String {
+        let upper = uppercased()
+        guard upper.contains(where: { String.greekPlain[$0] != nil }) else { return upper }
+        return String(upper.map { String.greekPlain[$0] ?? $0 })
     }
 }

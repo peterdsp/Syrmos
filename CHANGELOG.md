@@ -13,7 +13,9 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 ## Unreleased
 
 - **Round 20 checks.** Dark mode reviewed on every paired screen on both
-  platforms (no defects); three more dark reference renders added on iOS.
+  platforms (no defects); three more dark reference renders added on iOS. In
+  Greek, all-caps labels (the GO state, the Home status tag, LIVE) now drop
+  the tonos as Greek typography does, on both platforms.
 - **Round 19 small fixes.** Ariadne's "Heads up" no longer repeats the same
   operator notice twice, on either platform. On an iPad or unfolded iPhone,
   choosing a line in Explore now fills the companion pane instead of pushing

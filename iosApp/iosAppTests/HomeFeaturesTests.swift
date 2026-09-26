@@ -188,4 +188,17 @@ final class HomeFeaturesTests: XCTestCase {
         XCTAssertNil(AthensClockLabel.label(nil))
         XCTAssertNil(AthensClockLabel.label("  "))
     }
+
+    // MARK: Display uppercase (twin of Kotlin DisplayCaseTest)
+
+    func test_displayUppercased_greekCapitalsDropTheTonos() {
+        XCTAssertEqual("Έτοιμος για επιβίβαση".displayUppercased(), "ΕΤΟΙΜΟΣ ΓΙΑ ΕΠΙΒΙΒΑΣΗ")
+        XCTAssertEqual("Σε κίνηση".displayUppercased(), "ΣΕ ΚΙΝΗΣΗ")
+        XCTAssertEqual("Αποβίβαση σύντομα".displayUppercased(), "ΑΠΟΒΙΒΑΣΗ ΣΥΝΤΟΜΑ")
+    }
+
+    func test_displayUppercased_otherScriptsUppercaseAsUsual() {
+        XCTAssertEqual("Ready to board".displayUppercased(), "READY TO BOARD")
+        XCTAssertEqual("Gati për të hipur".displayUppercased(), "GATI PËR TË HIPUR")
+    }
 }

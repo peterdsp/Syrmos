@@ -934,6 +934,19 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   `map-duo-inner-landscape-dark.png`, `plan-duo-inner-landscape-dark.png`
   added to `DuoSnapshotTests` (the map canvas is tile-less in the offline
   test host, as in the light render). No defects.
+- **Greek on the fold** (Android, language switched in More after planning in
+  English so the results survive): Plan pairs with "Επιλεγμένη διαδρομή",
+  the chips "Προτεινόμενη" and "Ταχύτερη" stay atomic, GO pairs with the map
+  card ("Επιβεβαιωμένη στάση", "Όλη η διαδρομή") and the timeline. One nit
+  on both platforms: all-caps labels kept the tonos ("ΈΤΟΙΜΟΣ ΓΙΑ
+  ΕΠΙΒΊΒΑΣΗ"), which Greek typography drops on capitals. Shared rule
+  `displayUppercase()` (Kotlin core/common extensions, Swift
+  `displayUppercased()` in GoJourneyView.swift; 2 tests each) maps the accented
+  capitals to plain ones after uppercasing; used at the GO state label, the
+  Home status tag and the LIVE pill. Verified on the emulator ("ΕΤΟΙΜΟΣ ΓΙΑ
+  ΕΠΙΒΙΒΑΣΗ"); iOS HomeFeaturesTests 20/20. Emulator note: adb cannot type
+  Greek, and the Greek search matches Greek names only, so plan in English and
+  switch the language afterwards.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
