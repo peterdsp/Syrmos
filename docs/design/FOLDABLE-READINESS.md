@@ -840,6 +840,17 @@ geometry (466x678) after round 17 merged (#203).
   inspector stayed empty (there is no bus detail card yet). The marker now
   disables the info window and consumes the tap; the vehicle's line is already
   on its glyph. Verified at 1280x800 (no bubble after the tap).
+- **Live train card times** (both clients): the suburban train card printed
+  the feed's raw ISO timestamps ("2026-09-26T10:14:00.000Z") for departure and
+  arrival. Shared rule `athensClockLabel` (Kotlin core/common extensions,
+  Swift twin `AthensClockLabel` in MapView.swift): an ISO instant becomes an
+  Athens HH:MM, a bare HH:MM[:SS] is normalised, anything else passes through.
+  Tests on both sides (3 each). Verified on the emulator at the cover: "13:14"
+  and "14:58" in the card.
+- **Android slide-up cards clear the bottom bar**: at the cover the train
+  card's Watch live row sat behind the tab bar; the station and vehicle
+  overlays now take the navigation-bar inset plus 88 dp. Verified: Watch live
+  bounds above the bar.
 - **Large text on the fold (Android, font scale 1.3)**: Home and Plan fall
   back to the readable single column on the 841x673 emulator (canvas 761 dp
   beside the rail). This is the policy's scaled floors at work

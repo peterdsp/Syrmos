@@ -17,7 +17,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   folded cover on Android and hid under the launcher on iPhone). On a tall
   window with large text, Plan on iOS no longer stacks an empty invitation
   card above the form. Airport-bus markers on the Android map no longer show
-  a stock callout when tapped.
+  a stock callout when tapped. A live train's scheduled departure and
+  arrival read as Athens clock times instead of raw feed timestamps, on both
+  platforms, and the Android map's slide-up cards clear the bottom bar so
+  their last row (Watch live, Get directions) stays tappable.
 - **Round 17 small fixes.** An upright iPad or wide tablet now pairs Explore,
   GO and the map side by side instead of stacking a short overview above the
   list (stacking stays for the narrower open foldable). The same operator

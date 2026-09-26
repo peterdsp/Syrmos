@@ -51,6 +51,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import com.syrmos.core.common.extensions.athensClockLabel
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -300,7 +301,11 @@ fun MapScreen(
                             },
                         )
                     }
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                    // Above the compact bottom bar (about 80 dp) and the system bar,
+                    // so the card's last row (Watch live, Get directions) stays tappable.
+                    .navigationBarsPadding()
+                    .padding(bottom = 88.dp),
             )
         }
 
@@ -345,6 +350,8 @@ fun MapScreen(
                         )
                     }
                     .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 88.dp)
 
             val simulatedTrain = uiState.selectedSimulatedTrain
             if (simulatedTrain != null) {
@@ -1081,7 +1088,7 @@ private fun TrainDetailCard(
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                 )
-                                val dep = train.scheduledDeparture
+                                val dep = athensClockLabel(train.scheduledDeparture)
                                 if (dep != null) {
                                     Text(
                                         text = dep,
@@ -1117,7 +1124,7 @@ private fun TrainDetailCard(
                                         fontWeight = FontWeight.Medium,
                                     )
                                 }
-                                val arr = train.scheduledArrival
+                                val arr = athensClockLabel(train.scheduledArrival)
                                 if (arr != null) {
                                     Text(
                                         text = arr,

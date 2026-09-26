@@ -169,4 +169,23 @@ final class HomeFeaturesTests: XCTestCase {
         let items = [("a", ""), ("b", "  "), ("c", "Real notice")]
         XCTAssertEqual(InsightDedupe.distinctByText(items) { $0.1 }.map { $0.0 }, ["a", "b", "c"])
     }
+
+    // MARK: Athens clock label (twin of Kotlin AthensClockLabelTest)
+
+    func test_athensClockLabel_isoInstantBecomesAnAthensClock() {
+        XCTAssertEqual(AthensClockLabel.label("2026-09-26T10:14:00.000Z"), "13:14")
+        XCTAssertEqual(AthensClockLabel.label("2026-09-26T13:14:00+03:00"), "13:14")
+        XCTAssertEqual(AthensClockLabel.label("2026-01-15T10:14:00Z"), "12:14")
+    }
+
+    func test_athensClockLabel_bareClocksAreNormalisedAndOtherTextPassesThrough() {
+        XCTAssertEqual(AthensClockLabel.label("9:05"), "09:05")
+        XCTAssertEqual(AthensClockLabel.label("09:05:30"), "09:05")
+        XCTAssertEqual(AthensClockLabel.label(" n/a "), "n/a")
+    }
+
+    func test_athensClockLabel_blankIsNil() {
+        XCTAssertNil(AthensClockLabel.label(nil))
+        XCTAssertNil(AthensClockLabel.label("  "))
+    }
 }
