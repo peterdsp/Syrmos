@@ -63,6 +63,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -448,6 +449,9 @@ class GoJourneyScreenRoute(
                         // The journey's cards under the controls, so the lower half
                         // of a phone carries the route instead of empty space.
                         JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
+                        // Clear the floating compact bottom bar and the system bar, so
+                        // the last stop (Destination) is never left behind the bar.
+                        Spacer(Modifier.height(96.dp).navigationBarsPadding())
                     }
                 }
             }

@@ -4,6 +4,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -73,4 +74,22 @@ fun LocalTime.toDisplayString(): String {
     val h = hour.toString().padStart(2, '0')
     val m = minute.toString().padStart(2, '0')
     return "$h:$m"
+}
+
+/**
+ * A feed timestamp as an Athens HH:MM clock for display. Accepts an ISO-8601
+ * instant ("2026-09-26T10:14:00.000Z", with or without an offset) and a bare
+ * "HH:MM" or "HH:MM:SS"; anything else is returned trimmed and unchanged, so
+ * a card never shows an empty slot for a value the operator did send.
+ */
+fun athensClockLabel(raw: String?): String? {
+    val text = raw?.trim().orEmpty()
+    if (text.isEmpty()) return null
+    runCatching { Instant.parse(text) }.getOrNull()?.let { instant ->
+        val t = instant.toLocalDateTime(TimeZone.of("Europe/Athens")).time
+        return t.hour.toString().padStart(2, '0') + ":" + t.minute.toString().padStart(2, '0')
+    }
+    val hm = Regex("^(\\d{1,2}):(\\d{2})(?::\\d{2})?$").find(text)
+    if (hm != null) return hm.groupValues[1].padStart(2, '0') + ":" + hm.groupValues[2]
+    return text
 }

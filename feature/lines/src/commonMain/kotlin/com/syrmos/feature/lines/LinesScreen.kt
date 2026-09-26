@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -162,7 +165,13 @@ fun LinesScreen(
         LazyColumn(
             // Readable width on tablets and unfolded devices (iOS ReadableTabContent parity).
             modifier = Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp),
-            contentPadding = PaddingValues(start = 16.dp, top = 86.dp, end = 16.dp, bottom = 140.dp),
+            // Bottom: past the floating bottom bar and the launcher row that the
+            // Plan button shares (the row ends 152 dp above the bar), so the last
+            // line in the list is never left under the pill on a folded cover.
+            contentPadding = PaddingValues(
+                start = 16.dp, top = 86.dp, end = 16.dp,
+                bottom = 168.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {

@@ -242,7 +242,10 @@ struct LinesView: View {
                 // bottom edge where the Ariadne launcher floats, so the pill clears
                 // the launcher instead of sitting under it. Side by side, the
                 // launcher is over the companion pane and the corner is free.
-                .padding(.trailing, arrangementAxis == .vertical ? 104 : 16)
+                // The Ariadne launcher owns the bottom-right corner in the single
+                // column (phone, folded cover) and in a stacked pair; only side by
+                // side is the corner free (the launcher floats over the companion).
+                .padding(.trailing, arrangementAxis == .horizontal ? 16 : 104)
                 .padding(.top, 10)
                 .padding(.bottom, 8)
                 .frame(maxWidth: .infinity)

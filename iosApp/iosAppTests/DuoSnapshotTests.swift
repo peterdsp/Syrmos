@@ -394,6 +394,25 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Explore upright render should not be blank")
     }
 
+    /// Explore on the folded cover: the single column with the Plan pill band
+    /// reserving its own height at the bottom.
+    @MainActor
+    func test_exploreScreen_duoCover_render() throws {
+        let image = render(LinesView(), size: duoCover)
+        try save(image, "explore-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore cover render should not be blank")
+    }
+
+    /// Plan on the upright inner display at a large Dynamic Type size: the
+    /// scaled pane floors no longer fit two columns, so the policy stacks the
+    /// selected journey above the form instead of squeezing the pair.
+    @MainActor
+    func test_planScreen_duoInnerPortrait_largeText_render() throws {
+        let image = render(PlanView(language: .english).environment(\.dynamicTypeSize, .xxLarge), size: duoInnerPortrait)
+        try save(image, "plan-duo-inner-portrait-xxl.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Plan large-text render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor

@@ -2582,7 +2582,7 @@ struct TrainDetailSheet: View {
                         Text(mapLocalized(loc.language, "Departure", "Αναχώρηση", "Nisja", "Partenza"))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
-                        Text(dep)
+                        Text(AthensClockLabel.label(dep) ?? dep)
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
@@ -2597,7 +2597,7 @@ struct TrainDetailSheet: View {
                         Text(mapLocalized(loc.language, "Arrival", "Άφιξη", "Mbërritja", "Arrivo"))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
-                        Text(arr)
+                        Text(AthensClockLabel.label(arr) ?? arr)
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
@@ -2830,5 +2830,33 @@ enum MapRouteGeometry {
         guard isLoop, points.count >= 2, let first = points.first, let last = points.last else { return points }
         if first.latitude == last.latitude && first.longitude == last.longitude { return points }
         return points + [first]
+    }
+}
+
+/// A feed timestamp as an Athens HH:MM clock for display (twin of Kotlin
+/// `athensClockLabel`): an ISO-8601 instant, with or without fractional seconds
+/// or an offset, or a bare "HH:MM[:SS]"; anything else passes through trimmed.
+enum AthensClockLabel {
+    private static let athens = TimeZone(identifier: "Europe/Athens")!
+
+    static func label(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty { return nil }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        if let date = fractional.date(from: text) ?? plain.date(from: text) {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = athens
+            let c = calendar.dateComponents([.hour, .minute], from: date)
+            return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
+        }
+        let parts = text.split(separator: ":")
+        if (2...3).contains(parts.count), let h = Int(parts[0]), let m = Int(parts[1]), parts[1].count == 2, (0...23).contains(h), (0...59).contains(m) {
+            return String(format: "%02d:%02d", h, m)
+        }
+        return text
     }
 }

@@ -804,6 +804,77 @@ merged (#201, #202).
   launcher. New render `explore-ipad-portrait.png` in `DuoSnapshotTests`
   (23/23). Unit twins green on both sides.
 
+## Landed: polish round 18 (folded cover audit)
+
+Source: a capture pass over the four Android tabs at the folded cover
+geometry (466x678) after round 17 merged (#203).
+
+- **Home, Airport, Map** read correctly at the cover: the hero with the
+  four-direction board, the airport hero and calendar hub, the map with its
+  controls clear of the bottom bar.
+- **Explore Plan button (Android)**: it floated 168 dp above the bottom bar,
+  which on a 678 dp cover put it over the Ichnos card's Report button. It now
+  sits BESIDE the launcher on the same row (84 dp end clearance, 96 dp bottom
+  in the compact layout, 16 dp when stacked beside the rail) and keeps the
+  free corner side by side. Verified at 466x678 and 673x841 (button and
+  launcher bounds on one row).
+- **iOS**: `explore-duo-cover.png` render added to `DuoSnapshotTests`; the
+  Plan pill there is a bottom safe-area band that reserves its own height, so
+  nothing is covered.
+
+- **iPhone compact walk** (Syrmos 27 simulator, 402x874): Home with the
+  four-direction board, Plan with the chips and the selected journey under
+  the alternatives, GO with "Show route map" revealing the route card with
+  its Confirmed stop pill and Fit route control. One defect: the Ariadne
+  launcher covered the Explore "Plan a journey" pill; the pill band now keeps
+  104 pt trailing clearance in the single column and when stacked, and only
+  side by side (launcher over the companion) uses 16 pt.
+- **Plan empty companion (iOS)**: the large-text render showed Plan stacking
+  the invitation card over the upper region, the defect fixed for Explore in
+  round 17; `PlanView` now passes `companionHasContent: planned &&
+  selectedResult != nil`, so a stacked Plan is a pair only with a selected
+  journey. Render `plan-duo-inner-portrait-xxl.png` (Dynamic Type xxLarge on
+  the Duo inner portrait) pins it.
+- **Android bus markers**: a tap on an airport-bus vehicle showed osmdroid's
+  stock info bubble (a plain "X93" callout) over the designed canvas while the
+  inspector stayed empty (there is no bus detail card yet). The marker now
+  disables the info window and consumes the tap; the vehicle's line is already
+  on its glyph. Verified at 1280x800 (no bubble after the tap).
+- **Live train card times** (both clients): the suburban train card printed
+  the feed's raw ISO timestamps ("2026-09-26T10:14:00.000Z") for departure and
+  arrival. Shared rule `athensClockLabel` (Kotlin core/common extensions,
+  Swift twin `AthensClockLabel` in MapView.swift): an ISO instant becomes an
+  Athens HH:MM, a bare HH:MM[:SS] is normalised, anything else passes through.
+  Tests on both sides (3 each). Verified on the emulator at the cover: "13:14"
+  and "14:58" in the card.
+- **Android slide-up cards clear the bottom bar**: at the cover the train
+  card's Watch live row sat behind the tab bar; the station and vehicle
+  overlays now take the navigation-bar inset plus 88 dp. Verified: Watch live
+  bounds above the bar.
+- **Android compact GO clears the bottom bar**: the single-column GO
+  (phones, the folded cover) ended flush with the floating tab bar, so the
+  timeline's last stop could sit behind it; a 96 dp plus navigation-bar spacer
+  closes the column. Verified at the cover: the Destination row ends well
+  above the bar after scrolling to the end. Cover GO otherwise reads as
+  designed (instruction, controls, Show route map, timeline).
+- **Explore list end clearance (Android)**: with the Plan button now on the
+  launcher row (96 dp above the navigation bar), the list's 140 dp bottom
+  padding left its last line under the pill on the cover; the padding is now
+  168 dp plus the navigation-bar inset. Verified fully scrolled at the cover
+  (last row above the pill). The Airport hub's single column ended under the
+  launcher (its service-alerts card text sat behind the owl); it now takes
+  168 dp plus the navigation-bar inset too. Verified fully scrolled at the
+  cover: the card ends above the launcher.
+- **Large text on the fold (Android, font scale 1.3)**: Home and Plan fall
+  back to the readable single column on the 841x673 emulator (canvas 761 dp
+  beside the rail). This is the policy's scaled floors at work
+  (`MIN_TASK_PANE` 300 x 1.3 = 390 > the 380 dp half; stacking needs
+  468 + 364 dp of height), pinned by the `largerText` fixtures on both twins.
+  Nothing overlapped or truncated: the hero, the four-direction board, the
+  Plan form and the route cards read correctly at 1.3. Recorded as by design;
+  at 1.2 the tall canvas still stacks Plan (fixture
+  `p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked`).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
