@@ -851,6 +851,12 @@ geometry (466x678) after round 17 merged (#203).
   card's Watch live row sat behind the tab bar; the station and vehicle
   overlays now take the navigation-bar inset plus 88 dp. Verified: Watch live
   bounds above the bar.
+- **Android compact GO clears the bottom bar**: the single-column GO
+  (phones, the folded cover) ended flush with the floating tab bar, so the
+  timeline's last stop could sit behind it; a 96 dp plus navigation-bar spacer
+  closes the column. Verified at the cover: the Destination row ends well
+  above the bar after scrolling to the end. Cover GO otherwise reads as
+  designed (instruction, controls, Show route map, timeline).
 - **Large text on the fold (Android, font scale 1.3)**: Home and Plan fall
   back to the readable single column on the 841x673 emulator (canvas 761 dp
   beside the rail). This is the policy's scaled floors at work
