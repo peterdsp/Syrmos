@@ -11,6 +11,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import androidx.compose.foundation.layout.fillMaxSize
 import com.syrmos.core.designsystem.layout.rememberContentWorkspace
 import com.syrmos.core.designsystem.layout.LocalFloatingBarInset
+import com.syrmos.core.designsystem.layout.LocalLauncherEndInset
 import com.syrmos.core.common.layout.WorkspaceTask
 import com.syrmos.core.common.layout.WorkspaceArrangement
 import com.syrmos.core.common.layout.PaneRole
@@ -141,7 +142,7 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                             // launcher on the same row (launcher 16 dp + 56 dp pill +
                             // 12 dp gap), not above it: on a short folded cover the
                             // stacked placement covered the middle of the content.
-                            end = if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) 16.dp else 84.dp,
+                            end = if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) 16.dp else LocalLauncherEndInset.current,
                             bottom = when (ws.arrangement) {
                                 WorkspaceArrangement.SIDE_BY_SIDE, WorkspaceArrangement.STACKED -> 16.dp
                                 // Single column: the shell's real clearance (96 dp above the

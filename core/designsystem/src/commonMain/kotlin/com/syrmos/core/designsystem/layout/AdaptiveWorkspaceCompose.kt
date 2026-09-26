@@ -29,6 +29,14 @@ val LocalReservedRegions = staticCompositionLocalOf { emptyList<ReservedRegion>(
 val LocalFloatingBarInset = staticCompositionLocalOf { 96.dp }
 
 /**
+ * How far a floating control at a tab's bottom-right must keep from the
+ * window's end edge to sit beside the shell's assistant launcher: 84 dp while
+ * the launcher is shown (16 dp + its 56 dp pill + a 12 dp gap), 16 dp when
+ * the shell hides it (a docked assistant, More, Map).
+ */
+val LocalLauncherEndInset = staticCompositionLocalOf { 84.dp }
+
+/**
  * Resolve the [AdaptiveWorkspace] for a measured content box.
  *
  * @param task the current task (drives whether a companion pane is offered).
