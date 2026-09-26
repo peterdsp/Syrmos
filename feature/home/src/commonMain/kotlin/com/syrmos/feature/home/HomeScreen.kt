@@ -864,7 +864,8 @@ private fun DirectionBoard(rows: List<HomeDirectionBoard.Row>, featured: Upcomin
             val accent = row.line?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
             val isFeatured = row.lineId == featured.lineId && row.direction == featured.direction
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+                // One TalkBack element per direction (iOS combines the row the same way).
+                modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp).semantics(mergeDescendants = true) {},
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {

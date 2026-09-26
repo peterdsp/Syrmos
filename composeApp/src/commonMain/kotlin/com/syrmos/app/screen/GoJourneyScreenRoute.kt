@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -169,10 +170,13 @@ class GoJourneyScreenRoute(
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back", "Πίσω", "Prapa", "Indietro"))
                         }
-                        Text(
-                            t("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso"),
-                            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
-                        )
+                        Column {
+                            Text("GO", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                t("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso"),
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     OutlinedButton(onClick = { endJourney() }) {
                         Text(t("End", "Τέλος", "Përfundo", "Termina"))
@@ -415,7 +419,8 @@ class GoJourneyScreenRoute(
         }
         val captionColor = if (isPast && !row.isDestination) MaterialTheme.colorScheme.onSurfaceVariant else color
         Row(
-            modifier = Modifier.fillMaxWidth().height(rowHeight),
+            // One TalkBack element per stop: name plus its caption (Now, Next, ...).
+            modifier = Modifier.fillMaxWidth().height(rowHeight).semantics(mergeDescendants = true) {},
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -505,7 +510,7 @@ class GoJourneyScreenRoute(
         val segments = GoTimeline.legProgress(journey, position)
         val total = GoTimeline.stopCount(journey)
         val done = GoTimeline.stopsRidden(journey, position)
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 segments.forEach { seg ->
                     val color = lineColors[seg.lineId] ?: MaterialTheme.colorScheme.primary
