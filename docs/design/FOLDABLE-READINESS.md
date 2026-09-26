@@ -477,6 +477,40 @@ Source: master plan section 4 (Network Map contract) and Phase 3 item 3.
   (a scheduled background job); the UI recovered on Wait. Worth a look in the
   job scheduling code in a later round.
 
+## Landed: polish round 8 (Android GO route map: the flagship parity gap)
+
+Source: master plan section 4 (GO contract, Map row and camera intent) and
+Phase 5 (Android parity). Until this round Android GO paired the instruction
+with the timeline only; iOS had the per-leg coloured route map since round 4.
+
+- **Shared projection**: `GoRouteRuns.legRuns(journey, coordinate)` in
+  core/domain/go is the Kotlin twin of iOS `GoRouteProjection.legRuns`: one
+  coordinate run per leg in ride order, a leg with fewer than two placeable
+  stops draws nothing; `currentPoint` places the rider's stop. Fixtures mirror
+  the iOS test (`GoRouteRunsTest`, 3).
+- **Map composable**: `GoRouteMapView` (feature/map, expect/actual). Android
+  draws on osmdroid: one `Polyline` per leg in the line colour, a haloed
+  `Marker` on the current stop, `CopyrightOverlay` for attribution, and a
+  camera with explicit intent: the route is fitted when `fitTick` changes
+  (first layout and the Fit route control) and manual exploration is respected
+  otherwise. iOS and wasm targets draw the same legs on a canvas
+  (`GoRouteFallbackMap`), so a missing tile layer never leaves a blank surface.
+- **GO composition** (`GoJourneyScreenRoute`): side by side keeps the
+  instruction in the task pane and puts the map card above the timeline in the
+  companion; upright (stacked) gives the map the upper region alone and reads
+  the instruction plus the timeline below, matching the iOS composition from
+  round 4. One map instance; folding does not rebuild the journey.
+- **Verified**: Pixel emulator, Piraeus to Syntagma, at 841x673 (side by
+  side): the map draws the M1 leg in green and the M3 leg in blue with the
+  current-stop dot, attribution and the Fit route control above the timeline;
+  the instruction and controls stay reachable. Kotlin `GoRouteRunsTest` 3/3,
+  wasm target of feature/map compiles (fallback canvas actual).
+- **Finding (policy)**: at 673x841 the emulator showed the single column, not
+  the stacked pair. The navigation rail takes 80 dp, so the content canvas is
+  593 dp wide, under the 600 dp medium floor, and the shared policy resolves
+  SINGLE. An upright Android fold therefore never stacks GO, Explore or Map.
+  Fixed in round 9 (tall narrow canvas rule).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

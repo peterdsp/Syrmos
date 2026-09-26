@@ -59,7 +59,7 @@ private fun esriGrayNoLabels(name: String, service: String): ITileSource = objec
 private val ESRI_LIGHT: ITileSource = esriGrayNoLabels("EsriGrayLight", "World_Light_Gray_Base")
 private val ESRI_DARK: ITileSource = esriGrayNoLabels("EsriGrayDark", "World_Dark_Gray_Base")
 
-private fun tileSourceFor(dark: Boolean): ITileSource = if (dark) ESRI_DARK else ESRI_LIGHT
+internal fun tileSourceFor(dark: Boolean): ITileSource = if (dark) ESRI_DARK else ESRI_LIGHT
 
 // Vehicle markers snap to the shared effectiveGeometry (the same polyline the
 // route is drawn as), so a marker never floats off its own line. OSM shapes are

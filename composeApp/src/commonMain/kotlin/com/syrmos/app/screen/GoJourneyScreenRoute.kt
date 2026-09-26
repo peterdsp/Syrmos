@@ -77,6 +77,11 @@ import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.designsystem.component.toComposeColor
 import kotlinx.coroutines.flow.first
+import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.domain.go.GoRoutePoint
+import com.syrmos.core.domain.go.GoRouteRuns
+import com.syrmos.feature.map.GoRouteMapLeg
+import com.syrmos.feature.map.GoRouteMapView
 import org.koin.compose.koinInject
 
 /**
@@ -161,6 +166,36 @@ class GoJourneyScreenRoute(
         // Line colours for the timeline pills and rail (seed data, not a guess).
         val lineRepo = koinInject<LineRepositoryImpl>()
         var lineColors by remember { mutableStateOf<Map<String, Color>>(emptyMap()) }
+        // Route map inputs: the stops' coordinates (one fetch) and the shared
+        // per-leg projection, so each leg draws in its real line colour.
+        var stationCoords by remember { mutableStateOf<Map<String, GoRoutePoint>>(emptyMap()) }
+        LaunchedEffect(Unit) {
+            stationCoords = stationRepo.getAllStations().first()
+                .associate { it.id to GoRoutePoint(it.latitude, it.longitude) }
+        }
+        val primaryColor = MaterialTheme.colorScheme.primary
+        val routeLegs = remember(journey, stationCoords, lineColors, primaryColor) {
+            GoRouteRuns.legRuns(journey) { stationCoords[it] }.map { run ->
+                GoRouteMapLeg(run.lineId, lineColors[run.lineId] ?: primaryColor, run.points.map { LatLng(it.lat, it.lon) })
+            }
+        }
+        val currentPoint = GoRouteRuns.currentPoint(journey, position) { stationCoords[it] }?.let { LatLng(it.lat, it.lon) }
+        var fitTick by remember { mutableStateOf(0) }
+        val routeAccent = lineColors[journey.legs.getOrNull(position.legIndex)?.lineId] ?: primaryColor
+        // The route map card: rounded, with the Fit route control (camera intent).
+        val routeMap: @Composable (Modifier) -> Unit = { m ->
+            Box(m.clip(RoundedCornerShape(16.dp))) {
+                GoRouteMapView(
+                    legs = routeLegs, current = currentPoint, accent = routeAccent, fitTick = fitTick,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                TextButton(
+                    onClick = { fitTick++ },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp)),
+                ) { Text(t("Fit route", "Όλη η διαδρομή", "Gjithë rruga", "Tutto il percorso")) }
+            }
+        }
         LaunchedEffect(Unit) {
             lineColors = lineRepo.getAllLines().first().associate { it.id to it.color.toComposeColor() }
         }
@@ -306,21 +341,29 @@ class GoJourneyScreenRoute(
                                 content = instruction,
                             )
                             VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxHeight())
+                            // Companion: the route map above the journey timeline (as iOS).
+                            Column(Modifier.weight(1f).fillMaxHeight()) {
+                                routeMap(Modifier.fillMaxWidth().height(240.dp).padding(start = 16.dp, end = 16.dp, top = 12.dp))
+                                JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxWidth())
+                            }
                         }
                     }
                     WorkspaceArrangement.STACKED -> {
                         val companionH = ws.pane(PaneRole.COMPANION)?.rect?.bottom ?: (maxHeight.value.toInt() * 45 / 100)
                         Column(Modifier.fillMaxSize()) {
-                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth().height(companionH.dp))
+                            // Upright: the map keeps the upper region to itself; the
+                            // instruction and the timeline read below, where the hands are.
+                            routeMap(Modifier.fillMaxWidth().height(companionH.dp).padding(horizontal = 16.dp, vertical = 12.dp))
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                             Column(
                                 modifier = Modifier.weight(1f).fillMaxWidth()
                                     .verticalScroll(rememberScrollState())
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(20.dp),
-                                content = instruction,
-                            )
+                            ) {
+                                instruction()
+                                JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
+                            }
                         }
                     }
                     WorkspaceArrangement.SINGLE -> Column(

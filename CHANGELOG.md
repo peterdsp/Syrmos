@@ -12,6 +12,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **GO on Android draws the route map.** The paired GO screen now shows the
+  journey on a real map beside (or, upright, above) the instruction: every leg
+  in its line colour, a haloed dot on your current stop, attribution kept, and a
+  Fit route control; manual pan and zoom are respected until you ask to refit.
+  This closes the last GO parity gap with iOS, whose route map shipped in
+  round 4. Where map tiles are unavailable the same route draws on a plain
+  canvas instead of a blank surface.
 - **The network map pairs with an inspector on foldables and tablets.** A
   tapped station or train now reads in its own pane beside the map (landscape)
   or under it (upright), instead of a sheet or a slide-up card that covers the
