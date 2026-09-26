@@ -558,6 +558,30 @@ SwiftUI update or identical coordinate delivery").
   stayed where it was panned; Fit route reframed the whole route with Follow
   still offered.
 
+## Landed: polish round 11 (single-column GO: the map stays reachable; launcher clearance)
+
+Source: master plan GO contract, Cover row ("Map remains accessible even if it
+is not permanently embedded").
+
+- **Finding**: neither client showed a map in the single-column GO (phones,
+  the Duo cover): iOS `combined` was instruction, timeline, footnote; Android
+  SINGLE was the same.
+- **Both clients**: a "Show route map" / "Hide route map" disclosure under the
+  instruction reveals the shared route map card (260 pt, with the camera
+  controls from round 10); iOS remembers it in `@AppStorage`
+  (`syrmos.go.showCompactMap`), Android in `rememberSaveable`. Instruction
+  first, map on request, then the timeline.
+- **Android launcher**: `GoScreenPresence.onScreen` (set for the GO screen's
+  composition) hides the floating Ariadne launcher while GO is on top, next to
+  the existing More and Map exclusions; the pill had covered the Now / Next
+  caption pills of the paired timeline.
+- **Verified (Android)**: Pixel emulator at 411x891: "Show route map" under the
+  instruction; tapping it shows the map card with Fit route and turns the
+  control into "Hide route map". At 841x673: no launcher node on GO, launcher
+  back on Home.
+- **Verified (iOS)**: `DuoSnapshotTests` re-rendered `go-duo-cover.png` with
+  the disclosure under the instruction.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

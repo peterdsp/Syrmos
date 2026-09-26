@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **GO on a phone can show the route map.** The single column keeps the
+  instruction first and adds a "Show route map" control that reveals the same
+  route map card (line colours, current stop, Fit route and Follow) under it;
+  the choice is remembered. Same on iOS and Android, and on the folded cover of
+  a foldable. The floating Ariadne launcher on Android now hides while GO is on
+  screen, so it no longer covers the timeline's Now and Next captions.
 - **The GO map camera has explicit intent.** It follows your current stop as
   the journey advances, keeps the whole route in view after Fit route, and
   leaves a view you panned or zoomed alone until you tap Follow; a fold, a

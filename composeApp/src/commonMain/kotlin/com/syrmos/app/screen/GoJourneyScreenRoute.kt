@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -192,6 +193,7 @@ class GoJourneyScreenRoute(
         // Camera with explicit intent (shared GoCamera reducer): follow the
         // current stop by default, keep the whole route on Fit route, and leave
         // the rider's manual view alone until they ask again.
+        var showCompactMap by rememberSaveable { mutableStateOf(false) }
         var cameraIntent by remember { mutableStateOf(GoCameraIntent.FOLLOW) }
         var cameraCommand by remember { mutableStateOf(GoCameraAction.NONE) }
         var cameraTick by remember { mutableStateOf(0) }
@@ -401,6 +403,18 @@ class GoJourneyScreenRoute(
                         verticalArrangement = Arrangement.spacedBy(20.dp),
                     ) {
                         instruction()
+                        // Single column (phone): the route map on request, kept
+                        // reachable without pushing the instruction down (as iOS).
+                        OutlinedButton(
+                            onClick = { showCompactMap = !showCompactMap },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                if (showCompactMap) t("Hide route map", "Απόκρυψη χάρτη διαδρομής", "Fshih hartën e rrugës", "Nascondi la mappa del percorso")
+                                else t("Show route map", "Εμφάνιση χάρτη διαδρομής", "Shfaq hartën e rrugës", "Mostra la mappa del percorso"),
+                            )
+                        }
+                        if (showCompactMap) routeMap(Modifier.fillMaxWidth().height(260.dp))
                         // The journey's cards under the controls, so the lower half
                         // of a phone carries the route instead of empty space.
                         JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)

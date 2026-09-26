@@ -26,6 +26,7 @@ struct GoJourneyView: View {
     // Camera with explicit intent (shared GoCamera reducer): follow the current
     // stop by default, keep the whole route on Fit route, and leave the rider's
     // manual view alone until they ask again.
+    @AppStorage("syrmos.go.showCompactMap") private var showCompactMap = false
     @State private var cameraIntent: GoCameraIntent = .follow
     @State private var cameraCommand: GoCameraAction = .none
     @State private var cameraTick = 0
@@ -106,9 +107,17 @@ struct GoJourneyView: View {
             },
             companion: { SyrmosAxisReader { axis in goCompanion(mapOnly: axis == .vertical) } },
             combined: {
+                // Single column (phone, folded cover): instruction first, then the
+                // route map on request (kept reachable, not permanently embedded),
+                // then the timeline. The disclosure is remembered for the session.
                 ScrollView {
                     VStack(spacing: 20) {
                         goInstruction
+                        compactMapDisclosure
+                        if showCompactMap {
+                            goCompanion(mapOnly: true)
+                                .frame(height: 260)
+                        }
                         timelineContent
                         footnote
                     }
@@ -241,6 +250,23 @@ struct GoJourneyView: View {
                 if !mapOnly { goTimeline }
             }
         }
+    }
+
+    /// Single column only: reveal or hide the route map card.
+    private var compactMapDisclosure: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { showCompactMap.toggle() }
+        } label: {
+            Label(showCompactMap
+                    ? t("Hide route map", "Απόκρυψη χάρτη διαδρομής", "Fshih hartën e rrugës", "Nascondi la mappa del percorso")
+                    : t("Show route map", "Εμφάνιση χάρτη διαδρομής", "Shfaq hartën e rrugës", "Mostra la mappa del percorso"),
+                  systemImage: showCompactMap ? "map.fill" : "map")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(Color.syrmosPrimary)
+        .accessibilityHint(t("The journey's route on a map.", "Η διαδρομή του ταξιδιού στον χάρτη.", "Rruga e udhëtimit në hartë.", "Il percorso del viaggio sulla mappa."))
     }
 
     /// Fit route always; Follow only while the camera is not following.
