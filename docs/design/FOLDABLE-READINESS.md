@@ -727,7 +727,11 @@ merged (#201, #202).
 - **Insight dedupe** (both clients): `InsightDedupe.distinctByText` (Kotlin
   core/domain/usecase, Swift twin in HomeView.swift; 3 tests each) drops a
   notice whose normalised text already appeared; the iPad Home showed the same
-  STASY notice twice under two ids.
+  STASY notice twice under two ids. Android also drops its "Network status"
+  card when the status feed repeats the top notice verbatim (the notice card
+  carries the link, so it is the one to keep); iOS shows the status as a pill
+  and had no duplicate. Verified on the emulator: no status card, two distinct
+  notices. The Android card also hides a body that merely repeats its title.
 - **Explore Plan button**: Android rests it at the list pane's bottom corner
   when paired (it hovered mid-list at 168 dp clearance meant for the compact
   bottom bar) and takes the navigation-bar inset (at 1280x800 it sat half

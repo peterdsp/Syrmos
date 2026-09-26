@@ -294,9 +294,14 @@ internal fun InsightsStream(
                     Box(Modifier.size(8.dp).clip(CircleShape).background(item.color))
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(item.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        if (item.summary.isNotBlank()) {
+                        // A body that merely repeats the title (the operator feed
+                        // often sends the same text as title and body) adds nothing.
+                        val body = item.summary.takeIf { summary ->
+                            summary.isNotBlank() && !InsightDedupe.normalise(summary).startsWith(InsightDedupe.normalise(item.title))
+                        }
+                        if (body != null) {
                             Text(
-                                item.summary,
+                                body,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,
