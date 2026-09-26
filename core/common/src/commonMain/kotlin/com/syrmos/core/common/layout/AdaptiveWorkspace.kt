@@ -515,7 +515,10 @@ object AdaptiveWorkspacePolicy {
         task: WorkspaceTask,
         scale: Float,
     ): AdaptiveWorkspace? {
-        val preferred = task.tallCanvasAxis
+        // The task's axis preference is about the TALL canvas (P5): a window that
+        // is wider than tall reads as two columns whatever the task, so the
+        // preference only applies when height exceeds width.
+        val preferred = if (height > width) task.tallCanvasAxis else PairAxis.SIDE_BY_SIDE
         val order = if (preferred == PairAxis.SIDE_BY_SIDE) {
             listOf(PairAxis.SIDE_BY_SIDE, PairAxis.STACKED)
         } else {

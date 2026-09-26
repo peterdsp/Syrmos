@@ -515,7 +515,10 @@ enum SyrmosAdaptiveWorkspacePolicy {
     private static func resolveMediumCanvas(
         width: Int, height: Int, task: SyrmosWorkspaceTask, scale: Float
     ) -> SyrmosAdaptiveWorkspace? {
-        let order: [SyrmosPairAxis] = task.tallCanvasAxis == .sideBySide
+        // The task's axis preference is about the TALL canvas (P5): a window that
+        // is wider than tall reads as two columns whatever the task.
+        let preferred: SyrmosPairAxis = height > width ? task.tallCanvasAxis : .sideBySide
+        let order: [SyrmosPairAxis] = preferred == .sideBySide
             ? [.sideBySide, .stacked]
             : [.stacked, .sideBySide]
         for axis in order {

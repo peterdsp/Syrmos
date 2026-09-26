@@ -278,6 +278,21 @@ class DuoPostureFixturesTest {
         assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.DEPARTURES).arrangement)
     }
 
+    // --- Wide medium window: a fold's inner display in landscape beside a rail. ---
+
+    @Test
+    fun wideMediumWindow_pairsSideBySideEvenForStackingTasks() {
+        // 761 x 649 (841 x 673 minus an 80 dp rail and the status bar): wider than
+        // tall, so Explore and GO pair as two columns, not a band over a list.
+        for (task in listOf(WorkspaceTask.EXPLORE, WorkspaceTask.GO, WorkspaceTask.PLAN)) {
+            val ws = resolve(761, 649, task)
+            assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, ws.arrangement, task.name)
+            assertEquals(380, ws.pane(PaneRole.TASK)!!.rect.width, task.name)
+        }
+        // The tall canvas keeps the task's preference.
+        assertEquals(WorkspaceArrangement.STACKED, resolve(INNER_W, INNER_H, WorkspaceTask.EXPLORE).arrangement)
+    }
+
     private fun assertFalse(value: Boolean, message: String? = null) =
         assertTrue(!value, message ?: "expected false")
 }

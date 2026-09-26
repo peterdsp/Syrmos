@@ -1239,11 +1239,11 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     @ViewBuilder private func content(for ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
         switch ws.arrangement {
         case .single:
-            combined()
+            combined().environment(\.syrmosIsPaired, false)
         case .sideBySide:
-            paired(ws, size: size, axis: .horizontal)
+            paired(ws, size: size, axis: .horizontal).environment(\.syrmosIsPaired, true)
         case .stacked:
-            paired(ws, size: size, axis: .vertical)
+            paired(ws, size: size, axis: .vertical).environment(\.syrmosIsPaired, true)
         }
     }
 
@@ -1318,6 +1318,19 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
                 primary().frame(maxHeight: .infinity)
             }
         }
+    }
+}
+
+/// True inside a paired arrangement (side by side or stacked), so list content
+/// can select into the companion pane instead of pushing a new screen.
+private struct SyrmosIsPairedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var syrmosIsPaired: Bool {
+        get { self[SyrmosIsPairedKey.self] }
+        set { self[SyrmosIsPairedKey.self] = newValue }
     }
 }
 
