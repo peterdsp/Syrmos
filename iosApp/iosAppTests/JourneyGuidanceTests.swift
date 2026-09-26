@@ -288,4 +288,23 @@ final class JourneyGuidanceTests: XCTestCase {
         XCTAssertEqual(GoCamera.reduce(.fit, .geometryChanged).action, .fitRoute)
         XCTAssertEqual(GoCamera.reduce(.manual, .geometryChanged).action, .none)
     }
+
+    // MARK: GO timeline focus (twin of Kotlin GoTimelineFocusTest)
+
+    func test_timelineFocus_visibleOnlyWhenTheWholeRowIsInsideTheViewport() {
+        XCTAssertTrue(GoTimelineFocus.isVisible(rowTop: 100, rowBottom: 144, viewportTop: 0, viewportBottom: 600))
+        XCTAssertFalse(GoTimelineFocus.isVisible(rowTop: -10, rowBottom: 34, viewportTop: 0, viewportBottom: 600))
+        XCTAssertFalse(GoTimelineFocus.isVisible(rowTop: 580, rowBottom: 624, viewportTop: 0, viewportBottom: 600))
+        XCTAssertTrue(GoTimelineFocus.isVisible(rowTop: 0, rowBottom: 44, viewportTop: 0, viewportBottom: 600))
+    }
+
+    func test_timelineFocus_targetPlacesTheRowAThirdDown() {
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 900, viewportHeight: 600, maxOffset: 2000), 700)
+    }
+
+    func test_timelineFocus_targetIsClampedToTheScrollableRange() {
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 100, viewportHeight: 600, maxOffset: 2000), 0)
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 2500, viewportHeight: 600, maxOffset: 2000), 2000)
+        XCTAssertEqual(GoTimelineFocus.targetOffset(rowTopInContent: 300, viewportHeight: 600, maxOffset: -5), 0)
+    }
 }

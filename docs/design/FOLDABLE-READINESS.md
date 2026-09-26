@@ -582,6 +582,33 @@ is not permanently embedded").
 - **Verified (iOS)**: `DuoSnapshotTests` re-rendered `go-duo-cover.png` with
   the disclosure under the instruction.
 
+## Landed: polish round 12 (GO timeline: stable browsing with Back to now)
+
+Source: master plan GO contract, Timeline row ("Keep manual browsing stable
+rather than repeatedly snapping the user back. Offer an explicit
+return-to-current action").
+
+- **Shared rule**: `GoTimelineFocus.isVisible(rowTop, rowBottom, viewportTop,
+  viewportBottom)` and `targetOffset(rowTopInContent, viewportHeight,
+  maxOffset)` (a third of the way down, clamped). Kotlin core/domain/go with
+  `GoTimelineFocusTest` (3), Swift twin in GoJourneyView.swift with three
+  `test_timelineFocus_*` cases in `JourneyGuidanceTests`.
+- **Android** (`JourneyTimeline`, scrolling variant only): the viewport is read
+  with `onGloballyPositioned` before the `verticalScroll` modifier, the current
+  row reports its root position from `LegCard`, and a `FilledTonalButton`
+  "Back to now" floats at the bottom while the row is out of view; tapping it
+  animates the scroll to the shared target offset.
+- **iOS** (`goTimeline`): `ScrollViewReader` plus a named coordinate space; the
+  current row carries the anchor id and reports its frame through a preference
+  (`GoCurrentRowTracker`, active only in the paired timeline so the single
+  column stays untouched); the pill scrolls to the anchor at a third of the
+  height. The list never auto-scrolls.
+- **Verified (Android)**: Pixel emulator at 841x673: no pill at rest, the pill
+  after a swipe up on the timeline, gone again after the tap with the "Now"
+  row back in view.
+- **Verified (iOS)**: unit twins green; the render suite still green (the pill
+  needs a scrolled state, so it is not in a snapshot).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

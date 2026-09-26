@@ -28,6 +28,10 @@ struct GoJourneyView: View {
     // manual view alone until they ask again.
     @AppStorage("syrmos.go.showCompactMap") private var showCompactMap = false
     @State private var cameraIntent: GoCameraIntent = .follow
+    /// The current row's frame in the paired timeline's scroll space, and that
+    /// scroll view's height, for the Back to now control (GoTimelineFocus).
+    @State private var currentRowFrame: CGRect? = nil
+    @State private var timelineViewportHeight: CGFloat = 0
     @State private var cameraCommand: GoCameraAction = .none
     @State private var cameraTick = 0
     let language: AppLanguage
@@ -327,16 +331,51 @@ struct GoJourneyView: View {
     /// Companion pane: the journey's legs and stops with the current position
     /// highlighted, shown beside the instruction on a regular-width display.
     @ViewBuilder private var goTimeline: some View {
-        ScrollView {
-            timelineContent
-                .padding(SyrmosTokens.Space.lg)
+        // Manual browsing stays stable: the list never snaps back by itself, but
+        // while the current stop is out of view a Back to now action is offered
+        // (shared GoTimelineFocus rule with Android).
+        ScrollViewReader { proxy in
+            ScrollView {
+                timelineBody(trackCurrent: true)
+                    .padding(SyrmosTokens.Space.lg)
+            }
+            .coordinateSpace(name: GoTimelineAnchor.space)
+            .background(GeometryReader { geo in
+                Color.clear
+                    .onAppear { timelineViewportHeight = geo.size.height }
+                    .onChange(of: geo.size.height) { _, h in timelineViewportHeight = h }
+            })
+            .onPreferenceChange(GoCurrentRowFrameKey.self) { currentRowFrame = $0 }
+            .overlay(alignment: .bottom) {
+                if let frame = currentRowFrame, timelineViewportHeight > 0,
+                   !GoTimelineFocus.isVisible(rowTop: frame.minY, rowBottom: frame.maxY,
+                                              viewportTop: 0, viewportBottom: timelineViewportHeight) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo(GoTimelineAnchor.current, anchor: UnitPoint(x: 0.5, y: 0.33))
+                        }
+                    } label: {
+                        Label(t("Back to now", "Πίσω στο τώρα", "Kthehu te tani", "Torna a ora"),
+                              systemImage: "arrow.uturn.backward")
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
+                    .tint(Color.syrmosPrimary)
+                    .padding(.bottom, SyrmosTokens.Space.lg)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
     }
 
     /// The timeline's cards without their scroll view, so the compact single
     /// column can place them under the instruction and controls instead of
     /// leaving the lower half of the phone empty.
-    @ViewBuilder private var timelineContent: some View {
+    @ViewBuilder private var timelineContent: some View { timelineBody(trackCurrent: false) }
+
+    @ViewBuilder private func timelineBody(trackCurrent: Bool) -> some View {
         let rows = GoTimelineProjection.rows(journey: model.journey, position: model.position)
         VStack(alignment: .leading, spacing: SyrmosTokens.Space.md) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -353,7 +392,7 @@ struct GoJourneyView: View {
                         transferConnector(to: leg, color: legColor)
                     }
                     legCard(leg: leg, legIdx: legIdx, color: legColor,
-                            rows: rows.filter { $0.legIndex == legIdx })
+                            rows: rows.filter { $0.legIndex == legIdx }, trackCurrent: trackCurrent)
                 }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -372,7 +411,7 @@ struct GoJourneyView: View {
 
     /// One leg as a card: line pill, direction and stop count in the header, then
     /// the stops on a rail in the leg's colour.
-    private func legCard(leg: GuidanceLeg, legIdx: Int, color: Color, rows: [GoTimelineRow]) -> some View {
+    private func legCard(leg: GuidanceLeg, legIdx: Int, color: Color, rows: [GoTimelineRow], trackCurrent: Bool = false) -> some View {
         let count = max(0, leg.stops.count - 1)
         let countText = count == 1
             ? t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
@@ -394,6 +433,7 @@ struct GoJourneyView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(rows, id: \.stopIndex) { row in
                     timelineRow(row, color: color)
+                    .modifier(GoCurrentRowTracker(active: trackCurrent && row.state == .current))
                 }
             }
             .padding(.horizontal, SyrmosTokens.Space.lg)
@@ -1008,6 +1048,51 @@ enum GoRouteProjection {
 /// A leg's polyline carrying its line colour for the renderer.
 private final class GoLegPolyline: MKPolyline {
     var color: UIColor = .systemBlue
+}
+
+/// Keeps manual browsing of the timeline stable (twin of Kotlin
+/// `GoTimelineFocus`): never snap back on its own, offer Back to now while the
+/// current stop is out of view. One coordinate space and unit throughout.
+enum GoTimelineFocus {
+    static func isVisible(rowTop: CGFloat, rowBottom: CGFloat, viewportTop: CGFloat, viewportBottom: CGFloat) -> Bool {
+        rowTop >= viewportTop && rowBottom <= viewportBottom
+    }
+
+    /// The offset that places the row a third of the way down the viewport,
+    /// clamped to the scrollable range.
+    static func targetOffset(rowTopInContent: CGFloat, viewportHeight: CGFloat, maxOffset: CGFloat) -> CGFloat {
+        min(max(rowTopInContent - viewportHeight / 3, 0), max(maxOffset, 0))
+    }
+}
+
+private enum GoTimelineAnchor: Hashable {
+    case current
+    static let space = "goTimelineScroll"
+}
+
+private struct GoCurrentRowFrameKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        if let next = nextValue() { value = next }
+    }
+}
+
+/// Marks the current row: the scroll anchor plus its frame in the timeline's
+/// scroll space, reported through a preference. Inactive rows are untouched.
+private struct GoCurrentRowTracker: ViewModifier {
+    let active: Bool
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .id(GoTimelineAnchor.current)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: GoCurrentRowFrameKey.self,
+                                           value: geo.frame(in: .named(GoTimelineAnchor.space)))
+                })
+        } else {
+            content
+        }
+    }
 }
 
 /// What the GO route map's camera is doing for the rider (twin of Kotlin

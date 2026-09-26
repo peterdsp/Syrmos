@@ -14,6 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
+import com.syrmos.core.domain.go.GoTimelineFocus
+import kotlin.math.roundToInt
+import androidx.compose.material3.FilledTonalButton
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -449,8 +456,24 @@ class GoJourneyScreenRoute(
         val linesText = if (lines == 1) t("1 line", "1 γραμμή", "1 linjë", "1 linea")
             else t("$lines lines", "$lines γραμμές", "$lines linja", "$lines linee")
         val stopsText = t("$stops stops", "$stops στάσεις", "$stops ndalesa", "$stops fermate")
+        // Manual browsing stays stable: the list never snaps back by itself, but
+        // while the current stop is out of view a "Back to now" action is offered
+        // (shared GoTimelineFocus rule). Only the scrolling timeline tracks this.
+        val scrollState = rememberScrollState()
+        val scope = rememberCoroutineScope()
+        var viewportTop by remember { mutableStateOf(0f) }
+        var viewportHeight by remember { mutableStateOf(0f) }
+        var currentTop by remember { mutableStateOf<Float?>(null) }
+        var currentHeight by remember { mutableStateOf(0f) }
+        val currentVisible = !scrollable || viewportHeight <= 0f || currentTop?.let {
+            GoTimelineFocus.isVisible(it, it + currentHeight, viewportTop, viewportTop + viewportHeight)
+        } ?: true
+        val onCurrentRow: ((Float, Float) -> Unit)? = if (scrollable) { top, h -> currentTop = top; currentHeight = h } else null
+        Box(if (scrollable) modifier else Modifier) {
         Column(
-            modifier = (if (scrollable) modifier.verticalScroll(rememberScrollState()) else modifier).padding(inset),
+            modifier = (if (scrollable) Modifier.fillMaxSize()
+                .onGloballyPositioned { viewportTop = it.positionInRoot().y; viewportHeight = it.size.height.toFloat() }
+                .verticalScroll(scrollState) else modifier).padding(inset),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -480,10 +503,22 @@ class GoJourneyScreenRoute(
                         )
                     }
                 }
-                LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t)
+                LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t, onCurrentRow)
             }
             // Clear the floating assistant launcher so the last card is readable.
             Spacer(Modifier.height(88.dp))
+        }
+        if (scrollable && !currentVisible) {
+            FilledTonalButton(
+                onClick = {
+                    val top = currentTop ?: return@FilledTonalButton
+                    val inContent = (top - viewportTop) + scrollState.value
+                    val target = GoTimelineFocus.targetOffset(inContent, viewportHeight, scrollState.maxValue.toFloat())
+                    scope.launch { scrollState.animateScrollTo(target.roundToInt()) }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+            ) { Text(t("Back to now", "Πίσω στο τώρα", "Kthehu te tani", "Torna a ora"), maxLines = 1) }
+        }
         }
     }
 
@@ -493,6 +528,7 @@ class GoJourneyScreenRoute(
         color: Color,
         rows: List<GoTimelineRow>,
         t: (String, String, String, String) -> String,
+        onCurrentRow: ((Float, Float) -> Unit)? = null,
     ) {
         val count = maxOf(0, leg.stops.size - 1)
         val countText = if (count == 1) t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
@@ -519,7 +555,15 @@ class GoJourneyScreenRoute(
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
             Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                rows.forEach { row -> TimelineRow(row, color, t) }
+                rows.forEach { row ->
+                    if (onCurrentRow != null && row.state == GoTimelineState.CURRENT) {
+                        Box(Modifier.onGloballyPositioned { onCurrentRow(it.positionInRoot().y, it.size.height.toFloat()) }) {
+                            TimelineRow(row, color, t)
+                        }
+                    } else {
+                        TimelineRow(row, color, t)
+                    }
+                }
             }
         }
     }

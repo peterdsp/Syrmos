@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The GO timeline never snaps back while you browse.** Scroll the paired
+  journey timeline away from your current stop and a "Back to now" pill
+  appears; tap it to return, otherwise the list stays where you left it. Same
+  on iOS and Android.
 - **GO on a phone can show the route map.** The single column keeps the
   instruction first and adds a "Show route map" control that reveals the same
   route map card (line colours, current stop, Fit route and Follow) under it;
