@@ -140,6 +140,11 @@ class GoJourneyScreenRoute(
             }
         }
         val journey = this.journey ?: rebuilt
+        // Tell the shell GO is on screen (hides the floating launcher, as iOS).
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            com.syrmos.app.journey.GoScreenPresence.onScreen = true
+            onDispose { com.syrmos.app.journey.GoScreenPresence.onScreen = false }
+        }
         if (journey == null || journey.legs.isEmpty()) {
             // Restored with no live session left: nothing to guide, leave quietly.
             LaunchedEffect(active) { if (active == null) navigator.pop() }

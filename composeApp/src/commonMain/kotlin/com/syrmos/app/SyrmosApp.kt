@@ -214,9 +214,12 @@ fun SyrmosApp() {
                             writeSelectedTabId(tabId(currentTab))
                         }
                         // Hide the launcher on More (would sit on the
-                        // scrolling controls) and on Map (the Locate +
-                        // Vehicles buttons already own bottom-right).
-                        val showLauncher = currentTab != MoreTab && currentTab != MapTab
+                        // scrolling controls), on Map (the Locate + Vehicles
+                        // buttons already own bottom-right) and while GO is on
+                        // screen (its controls and timeline own the bottom; iOS
+                        // GO shows no launcher either).
+                        val showLauncher = currentTab != MoreTab && currentTab != MapTab &&
+                            !com.syrmos.app.journey.GoScreenPresence.onScreen
 
                         // Adaptive navigation (prompt section 5, Android). A
                         // native large window (tablet / unfolded foldable) uses a
