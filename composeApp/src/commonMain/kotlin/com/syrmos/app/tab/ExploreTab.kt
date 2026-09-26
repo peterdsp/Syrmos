@@ -134,7 +134,17 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                         .align(androidx.compose.ui.Alignment.BottomEnd)
                         // Above the system navigation bar in every layout.
                         .navigationBarsPadding()
-                        .padding(end = 16.dp, bottom = if (paired) 16.dp else 168.dp),
+                        .padding(
+                            end = 16.dp,
+                            bottom = when (ws.arrangement) {
+                                // Side by side: the launcher floats over the companion.
+                                WorkspaceArrangement.SIDE_BY_SIDE -> 16.dp
+                                // Stacked: the list shares the window's bottom-right
+                                // corner with the launcher (16 dp + its 56 dp pill).
+                                WorkspaceArrangement.STACKED -> 96.dp
+                                WorkspaceArrangement.SINGLE -> 168.dp
+                            },
+                        ),
                 ) {
                     Text(
                         when (lang) {
@@ -167,7 +177,12 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                         Box(Modifier.weight(1f).fillMaxHeight()) { companion() }
                     }
                 }
-                WorkspaceArrangement.STACKED -> {
+                WorkspaceArrangement.STACKED -> if (selectedLineId == null) {
+                    // An empty companion never takes the upper region: the list keeps
+                    // the whole height until a line is chosen, then the detail stacks
+                    // above it (an invitation card is worth a column, not a region).
+                    Box(Modifier.fillMaxSize()) { list(); planFab() }
+                } else {
                     val companionH = ws.pane(PaneRole.COMPANION)?.rect?.bottom ?: (maxHeight.value.toInt() * 45 / 100)
                     Column(Modifier.fillMaxSize()) {
                         Box(Modifier.fillMaxWidth().height(companionH.dp)) { companion() }

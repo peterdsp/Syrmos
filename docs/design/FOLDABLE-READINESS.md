@@ -757,6 +757,20 @@ merged (#201, #202).
   Verified: dark Home and Explore on the emulator read correctly, light mode
   unchanged. iOS Home dark render added (`home-duo-inner-landscape-dark.png`),
   contrast fine there.
+- **Empty companion never takes the upper region** (both clients): on the
+  upright fold Explore stacked an invitation card above the list and gave it
+  45 percent of the height. Android renders the single list until a line is
+  chosen (then the detail stacks above); iOS gets
+  `SyrmosArrangement(companionHasContent:)`, which renders the single column
+  for a stacked result while the companion is empty. Side by side keeps the
+  invitation card (a column is the right size for it). New render
+  `explore-duo-inner-portrait.png`.
+- **Launcher and control clearance on the upright fold** (Android): the
+  Explore Plan button takes 96 dp bottom clearance when stacked (it shares the
+  window's bottom-right corner with the launcher) and 16 dp side by side; the
+  Map canvas controls drop the 96 dp bottom-bar clearance when the canvas is a
+  pane, so on a short stacked canvas they no longer climb into the header.
+  Verified on the emulator at 673x841.
 - **Plan companion readable column** (both clients): the selected journey
   column is capped at 680 (iOS `frame(maxWidth:)`, Android `widthIn(max)`),
   so a wide companion pane on an iPad or tablet does not stretch the timeline

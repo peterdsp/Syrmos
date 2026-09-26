@@ -79,6 +79,7 @@ struct LinesView: View {
             // is the task pane and the selected line's detail the companion; a
             // phone keeps the shipped list with push navigation.
             SyrmosArrangement(
+                companionHasContent: selectedLine != nil,
                 task: .explore,
                 primary: { exploreList },
                 companion: { exploreCompanion },

@@ -385,6 +385,15 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Home dark render should not be blank")
     }
 
+    /// Explore on the upright inner display with nothing selected: the list keeps
+    /// the whole height (an empty companion never takes the upper region).
+    @MainActor
+    func test_exploreScreen_duoInnerPortrait_render() throws {
+        let image = render(LinesView(), size: duoInnerPortrait)
+        try save(image, "explore-duo-inner-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore upright render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor
