@@ -693,6 +693,8 @@ class PlanScreenRoute : Screen {
                         ) {
                             QueryBlock()
                             SavedBlock()
+                            // Clear the floating assistant launcher under the saved list.
+                            Spacer(Modifier.height(88.dp))
                         }
                         VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                         Column(
