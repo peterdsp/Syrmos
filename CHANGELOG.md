@@ -12,6 +12,14 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **GO refinements from the foldables review.** The route map draws each leg in
+  its real line colour, so an interchange reads as a colour change on the map
+  as it does on the timeline. On a tall or folded window the map keeps the
+  upper region to itself and the timeline reads under the instruction, instead
+  of squeezing map and timeline into the upper band. Ending an unfinished
+  journey now asks first on both platforms ("End this journey?" with "Keep
+  going"); Finish after arrival stays one tap. On Android the GO and Plan top
+  bars sit below the status bar, so Back and End are fully tappable.
 - **Explore pairs on foldables and tablets.** On both platforms the line list is
   the task pane and the selected line's detail (stations, live trains, alerts)
   opens in the companion pane, with a calm invitation before a line is chosen

@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -139,6 +142,9 @@ class GoJourneyScreenRoute(
             AppLanguage.GREEK -> el; AppLanguage.ALBANIAN -> sq; AppLanguage.ITALIAN -> it; else -> en
         }
         fun endJourney() { ActiveJourneyRepository.clear(); navigator.pop() }
+        // Mid-journey End asks first, so a stray tap on a moving train does not
+        // drop the guidance; Finish after arrival is final and safe.
+        var confirmEnd by remember { mutableStateOf(false) }
         fun advance() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.advance(it, journey, Clock.System.now())) } }
         fun stepBack() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.back(it, journey, Clock.System.now())) } }
 
@@ -162,7 +168,10 @@ class GoJourneyScreenRoute(
         Scaffold(
             topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    // Below the status bar: the custom bar is not a TopAppBar, so it
+                    // must take the inset itself or its title and End button sit
+                    // under the clock (seen on the fold emulator).
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -170,7 +179,7 @@ class GoJourneyScreenRoute(
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back", "Πίσω", "Prapa", "Indietro"))
                         }
-                        Column {
+                        Column(Modifier.padding(start = 4.dp)) {
                             Text("GO", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             Text(
                                 t("Journey in progress", "Διαδρομή σε εξέλιξη", "Udhëtim në vazhdim", "Viaggio in corso"),
@@ -178,8 +187,8 @@ class GoJourneyScreenRoute(
                             )
                         }
                     }
-                    OutlinedButton(onClick = { endJourney() }) {
-                        Text(t("End", "Τέλος", "Përfundo", "Termina"))
+                    OutlinedButton(onClick = { if (arrived) endJourney() else confirmEnd = true }) {
+                        Text(if (arrived) t("Finish", "Τέλος", "Përfundo", "Concludi") else t("End", "Τέλος", "Përfundo", "Termina"))
                     }
                 }
             },
@@ -255,6 +264,30 @@ class GoJourneyScreenRoute(
             // on a tall window or a horizontal fold, the timeline above and the
             // instruction with its controls below, where the hands are. Decided by
             // the shared policy from the measured content box.
+            if (confirmEnd) {
+                AlertDialog(
+                    onDismissRequest = { confirmEnd = false },
+                    title = { Text(t("End this journey?", "Τέλος διαδρομής;", "Të përfundojë udhëtimi?", "Terminare il viaggio?")) },
+                    text = {
+                        Text(t(
+                            "Guidance and the get-off alert stop. Your route stays in Plan.",
+                            "Η καθοδήγηση και η ειδοποίηση αποβίβασης σταματούν. Η διαδρομή σου μένει στο Σχεδίασε.",
+                            "Udhëzimi dhe njoftimi i zbritjes ndalojnë. Rruga jote mbetet te Planifiko.",
+                            "La guida e l'avviso di discesa si fermano. Il percorso resta in Pianifica.",
+                        ))
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { confirmEnd = false; endJourney() }) {
+                            Text(t("End journey", "Τέλος διαδρομής", "Përfundo udhëtimin", "Termina il viaggio"))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmEnd = false }) {
+                            Text(t("Keep going", "Συνέχισε", "Vazhdo", "Continua"))
+                        }
+                    },
+                )
+            }
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
                 val ws = rememberContentWorkspace(
                     task = WorkspaceTask.GO,

@@ -22,6 +22,7 @@ struct GoJourneyView: View {
     @StateObject private var location = LocationService()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.syrmosReservedGeometryOverride) private var reservedGeometryOverride
+    @State private var confirmEnd = false
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
@@ -83,15 +84,21 @@ struct GoJourneyView: View {
         SyrmosArrangement(
             task: .go,
             primary: {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        goInstruction
-                        footnote
+                SyrmosAxisReader { axis in
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            goInstruction
+                            // Stacked (a tall window, a horizontal fold): the map keeps
+                            // the upper region to itself and the timeline reads here,
+                            // under the instruction, where the rider's hands are.
+                            if axis == .vertical { timelineContent }
+                            footnote
+                        }
+                        .padding()
                     }
-                    .padding()
                 }
             },
-            companion: { goCompanion },
+            companion: { SyrmosAxisReader { axis in goCompanion(mapOnly: axis == .vertical) } },
             combined: {
                 ScrollView {
                     VStack(spacing: 20) {
@@ -113,14 +120,28 @@ struct GoJourneyView: View {
                     Button(model.isArrived
                         ? t("Finish", "Τέλος", "Përfundo", "Concludi")
                         : t("End", "Τέλος", "Përfundo", "Termina")) {
-                        // model.end() clears the active-journey store, which ends the
-                        // Live Activity (see GoActiveJourneyStore.clear) on every
-                        // end path, so no separate controller.end() is needed here.
-                        model.end()
-                        if let onEnd { onEnd() } else { dismiss() }
+                        // Arrived: finishing is final and safe. Mid-journey: confirm,
+                        // so a stray tap on a moving train does not drop the guidance.
+                        if model.isArrived { endJourney() } else { confirmEnd = true }
                     }
                 }
             }
+        }
+        .confirmationDialog(
+            t("End this journey?", "Τέλος διαδρομής;", "Të përfundojë udhëtimi?", "Terminare il viaggio?"),
+            isPresented: $confirmEnd,
+            titleVisibility: .visible
+        ) {
+            Button(t("End journey", "Τέλος διαδρομής", "Përfundo udhëtimin", "Termina il viaggio"), role: .destructive) {
+                endJourney()
+            }
+            Button(t("Keep going", "Συνέχισε", "Vazhdo", "Continua"), role: .cancel) {}
+        } message: {
+            Text(t(
+                "Guidance and the get-off alert stop. Your route stays in Plan.",
+                "Η καθοδήγηση και η ειδοποίηση αποβίβασης σταματούν. Η διαδρομή σου μένει στο Σχεδίασε.",
+                "Udhëzimi dhe njoftimi i zbritjes ndalojnë. Rruga jote mbetet te Planifiko.",
+                "La guida e l'avviso di discesa si fermano. Il percorso resta in Pianifica."))
         }
         .onAppear {
             model.onGetOffAlert = { guidance in fireGetOff(guidance) }
@@ -169,7 +190,7 @@ struct GoJourneyView: View {
     /// Companion pane on a regular-width display (foldables / Duo prompt 9.2):
     /// the live route map above, the leg/stop timeline below, so the rider sees
     /// where they are on the map and what is coming up in one glance.
-    @ViewBuilder private var goCompanion: some View {
+    @ViewBuilder private func goCompanion(mapOnly: Bool) -> some View {
         GeometryReader { geo in
             // Hinge-aware map padding (six-posture prompt, section 9, item 2): the
             // companion reads the regions the system reports for its own box
@@ -180,13 +201,18 @@ struct GoJourneyView: View {
             // The map is a card inside the pane (Calm Signal: 16 pt gutters, large
             // radius), so the rect the padding rule sees is the card's rect.
             let gutter = SyrmosTokens.Space.lg
-            let mapHeight = max(200, geo.size.height * 0.42)
+            // Side by side: the map takes 42 percent above the timeline. Stacked:
+            // the map is the whole companion region (the timeline moved below).
+            let mapHeight = mapOnly
+                ? max(200, geo.size.height - SyrmosTokens.Space.md * 2)
+                : max(200, geo.size.height * 0.42)
             let mapRect = CGRect(x: gutter, y: SyrmosTokens.Space.md,
                                  width: max(0, geo.size.width - gutter * 2), height: mapHeight)
             let mapInsets = SyrmosMapPadding.insets(mapRect: mapRect, geometry: geometry)
             VStack(spacing: 0) {
                 GoRouteMapView(
                     route: routeCoords,
+                    legRuns: legRuns,
                     current: currentCoord,
                     tint: UIColor(tint),
                     edgeInsets: mapInsets
@@ -201,7 +227,7 @@ struct GoJourneyView: View {
                 .padding(.top, SyrmosTokens.Space.md)
                 .accessibilityLabel(t(
                     "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
-                goTimeline
+                if !mapOnly { goTimeline }
             }
         }
     }
@@ -210,6 +236,16 @@ struct GoJourneyView: View {
     private var routeCoords: [CLLocationCoordinate2D] {
         GoRouteProjection.routeCoordinates(journey: model.journey) {
             StationCoordinateLookup.shared.coordinate(for: $0)
+        }
+    }
+
+    /// Each leg's coordinate run in its real line colour (the interchange reads
+    /// as a colour change on the map, as it does on the timeline).
+    private var legRuns: [(coordinates: [CLLocationCoordinate2D], color: UIColor)] {
+        GoRouteProjection.legRuns(journey: model.journey) {
+            StationCoordinateLookup.shared.coordinate(for: $0)
+        }.map { run in
+            (run.coordinates, UIColor(SyrmosData.line(for: run.lineId)?.color ?? Color.syrmosPrimary))
         }
     }
 
@@ -440,6 +476,13 @@ struct GoJourneyView: View {
         }
         .buttonStyle(.bordered)
         .tint(model.isLive ? .green : .accentColor)
+    }
+
+    /// One end path: model.end() clears the active-journey store, which ends the
+    /// Live Activity (see GoActiveJourneyStore.clear), so nothing else is needed.
+    private func endJourney() {
+        model.end()
+        if let onEnd { onEnd() } else { dismiss() }
     }
 
     private func fireGetOff(_ guidance: JourneyGuidance) {
@@ -851,6 +894,31 @@ enum GoRouteProjection {
         return out
     }
 
+    /// One coordinate run per leg with its line id, so the map draws each leg in
+    /// its own line colour and the interchange reads as a colour change. Legs
+    /// with fewer than two placeable stops draw nothing.
+    struct LegRun: Equatable {
+        let lineId: String
+        let coordinates: [CLLocationCoordinate2D]
+        static func == (a: LegRun, b: LegRun) -> Bool {
+            a.lineId == b.lineId && a.coordinates.count == b.coordinates.count
+                && zip(a.coordinates, b.coordinates).allSatisfy { $0.latitude == $1.latitude && $0.longitude == $1.longitude }
+        }
+    }
+
+    static func legRuns(
+        journey: GuidanceJourney,
+        resolve: (String) -> (lat: Double, lon: Double)?
+    ) -> [LegRun] {
+        journey.legs.compactMap { leg in
+            let coords = leg.stops.compactMap { stop -> CLLocationCoordinate2D? in
+                guard let c = resolve(stop.id) else { return nil }
+                return CLLocationCoordinate2D(latitude: c.lat, longitude: c.lon)
+            }
+            return coords.count >= 2 ? LegRun(lineId: leg.lineId, coordinates: coords) : nil
+        }
+    }
+
     static func currentCoordinate(
         journey: GuidanceJourney,
         position: GuidancePosition,
@@ -869,8 +937,15 @@ enum GoRouteProjection {
 /// on the current stop as the rider advances. Wraps MKMapView directly because
 /// the app avoids SwiftUI `Map` (CAMetalLayer lifecycle bug), matching the main
 /// map screen (see SyrmosMKMapView).
+/// A leg's polyline carrying its line colour for the renderer.
+private final class GoLegPolyline: MKPolyline {
+    var color: UIColor = .systemBlue
+}
+
 private struct GoRouteMapView: UIViewRepresentable {
     let route: [CLLocationCoordinate2D]
+    /// Per-leg runs with their line colours; drawn one polyline per leg.
+    var legRuns: [(coordinates: [CLLocationCoordinate2D], color: UIColor)] = []
     let current: CLLocationCoordinate2D?
     let tint: UIColor
     /// Padding that keeps the route fit and the current stop inside the map's
@@ -895,7 +970,13 @@ private struct GoRouteMapView: UIViewRepresentable {
         map.showsUserLocation = false
         let dark = map.traitCollection.userInterfaceStyle == .dark
         map.addOverlay(SyrmosMKMapView.makeEsriGrayOverlay(dark: dark), level: .aboveRoads)
-        if route.count >= 2 {
+        if !legRuns.isEmpty {
+            for run in legRuns where run.coordinates.count >= 2 {
+                let line = GoLegPolyline(coordinates: run.coordinates, count: run.coordinates.count)
+                line.color = run.color
+                map.addOverlay(line, level: .aboveLabels)
+            }
+        } else if route.count >= 2 {
             map.addOverlay(MKPolyline(coordinates: route, count: route.count), level: .aboveLabels)
         }
         if let rect = boundingRect() {
@@ -979,7 +1060,7 @@ private struct GoRouteMapView: UIViewRepresentable {
             }
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = tint
+                renderer.strokeColor = (polyline as? GoLegPolyline)?.color ?? tint
                 renderer.lineWidth = 4
                 renderer.lineCap = .round
                 renderer.lineJoin = .round

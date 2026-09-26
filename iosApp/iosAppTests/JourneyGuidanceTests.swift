@@ -246,4 +246,20 @@ final class JourneyGuidanceTests: XCTestCase {
         XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 0)), 3)
         XCTAssertEqual(GoLegProgress.stopsRidden(journey: timelineJourney, position: GuidancePosition(legIndex: 1, stopIndex: 1)), 4)
     }
+
+    // MARK: Per-leg map runs
+
+    func test_legRuns_oneRunPerLegInRideOrder_skippingUnplaceableLegs() {
+        let coords: [String: (lat: Double, lon: Double)] = [
+            "PIR": (37.948, 23.643), "FAL": (37.945, 23.665), "MOS": (37.955, 23.680), "MON": (37.976, 23.726),
+            "SYN": (37.975, 23.735),
+        ]
+        let runs = GoRouteProjection.legRuns(journey: timelineJourney) { coords[$0] }
+        XCTAssertEqual(runs.map(\.lineId), ["M1", "M3"])
+        XCTAssertEqual(runs[0].coordinates.count, 4)
+        XCTAssertEqual(runs[1].coordinates.count, 2)
+        // A leg whose stops cannot be placed draws nothing rather than a stray point.
+        let partial = GoRouteProjection.legRuns(journey: timelineJourney) { $0 == "SYN" ? nil : coords[$0] }
+        XCTAssertEqual(partial.map(\.lineId), ["M1"])
+    }
 }

@@ -1239,11 +1239,13 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     @ViewBuilder private func content(for ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
         switch ws.arrangement {
         case .single:
-            combined().environment(\.syrmosIsPaired, false)
+            combined().environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .sideBySide:
-            paired(ws, size: size, axis: .horizontal).environment(\.syrmosIsPaired, true)
+            paired(ws, size: size, axis: .horizontal)
+                .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .horizontal)
         case .stacked:
-            paired(ws, size: size, axis: .vertical).environment(\.syrmosIsPaired, true)
+            paired(ws, size: size, axis: .vertical)
+                .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .vertical)
         }
     }
 
@@ -1327,11 +1329,31 @@ private struct SyrmosIsPairedKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+/// The axis of the current paired arrangement (nil when single), so a screen can
+/// compose its panes per posture: a stacked GO keeps the map alone above and the
+/// timeline with the instruction below.
+private struct SyrmosArrangementAxisKey: EnvironmentKey {
+    static let defaultValue: Axis? = nil
+}
+
 extension EnvironmentValues {
     var syrmosIsPaired: Bool {
         get { self[SyrmosIsPairedKey.self] }
         set { self[SyrmosIsPairedKey.self] = newValue }
     }
+    var syrmosArrangementAxis: Axis? {
+        get { self[SyrmosArrangementAxisKey.self] }
+        set { self[SyrmosArrangementAxisKey.self] = newValue }
+    }
+}
+
+/// Reads the arrangement axis INSIDE a pane. The screen that owns the
+/// arrangement cannot read it from its own environment (the value is set on the
+/// panes' content), so pane builders wrap their content in this reader.
+struct SyrmosAxisReader<Content: View>: View {
+    @Environment(\.syrmosArrangementAxis) private var axis
+    @ViewBuilder let content: (Axis?) -> Content
+    var body: some View { content(axis) }
 }
 
 /// The pure numbers `SyrmosArrangement` derives from a resolved workspace, kept

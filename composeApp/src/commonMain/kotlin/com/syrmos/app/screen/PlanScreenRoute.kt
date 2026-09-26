@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -346,7 +347,8 @@ class PlanScreenRoute : Screen {
         Scaffold(
             topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    // Below the status bar (custom bar, not a TopAppBar).
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = { navigator.pop() }) {

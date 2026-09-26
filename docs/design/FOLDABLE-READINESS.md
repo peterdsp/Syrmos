@@ -358,6 +358,30 @@ the iPhone Duo and Android fold devices only; GO stays.
   columns for every task. Fixture `wideMediumWindow_pairsSideBySideEvenForStackingTasks`
   on both platforms (Kotlin suite 22, Swift suite 51).
 
+## Landed: polish round 4 (GO refinements from the master plan's screenshot review)
+
+Source: `docs/plans/FOLDABLES-IPHONE-DUO-MASTER-PLAN.md`, section 2 (screenshot findings) and the GO contract in section 4.
+
+- **Per-leg map colours**: `GoRouteProjection.legRuns` yields one coordinate run
+  per leg with its line id (legs with fewer than two placeable stops draw
+  nothing); `GoRouteMapView` draws one `GoLegPolyline` per run in the leg's real
+  line colour, so the interchange reads as a colour change on the map as it does
+  on the timeline. Test `test_legRuns_oneRunPerLegInRideOrder_skippingUnplaceableLegs`.
+- **Portrait and folded composition**: `SyrmosArrangement` now publishes
+  `\.syrmosArrangementAxis`; on the vertical axis GO keeps the map alone in the
+  upper region and reads the timeline under the instruction, so the timeline is
+  no longer squeezed into the upper band. Side by side is unchanged.
+- **End confirmation** on both platforms: ending an unfinished journey asks
+  ("End this journey?" with "End journey" / "Keep going", four languages);
+  Finish after arrival stays one tap. One end path on iOS (`endJourney()`), the
+  existing `endJourney()` on Android behind an `AlertDialog`.
+- **Android custom top bars below the status bar**: the GO and Plan screens draw
+  their own top bar (not a `TopAppBar`), and it sat under the status bar, so
+  the End and Back controls were only partly tappable on the emulator. Both bars
+  now take `statusBarsPadding()`. Verified on the Pixel emulator at the fold
+  geometry: the End button reports bounds below the status bar and the tap
+  opens the confirmation dialog.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
