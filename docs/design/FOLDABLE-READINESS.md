@@ -730,7 +730,8 @@ merged (#201, #202).
   STASY notice twice under two ids.
 - **Explore Plan button**: Android rests it at the list pane's bottom corner
   when paired (it hovered mid-list at 168 dp clearance meant for the compact
-  bottom bar); iOS gives the pill band 104 pt trailing padding when the
+  bottom bar) and takes the navigation-bar inset (at 1280x800 it sat half
+  behind the system bar); iOS gives the pill band 104 pt trailing padding when the
   arrangement axis is vertical, because the stacked list pane shares the
   window's bottom-right corner with the Ariadne launcher.
 - **Airport route chips** (iOS): `lineLimit(1)` + `fixedSize` so "X93" no
