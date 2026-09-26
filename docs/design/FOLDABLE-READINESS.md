@@ -736,6 +736,13 @@ merged (#201, #202).
   window's bottom-right corner with the Ariadne launcher.
 - **Airport route chips** (iOS): `lineLimit(1)` + `fixedSize` so "X93" no
   longer breaks into two lines in the route overview.
+- **Plan companion readable column** (both clients): the selected journey
+  column is capped at 680 (iOS `frame(maxWidth:)`, Android `widthIn(max)`),
+  so a wide companion pane on an iPad or tablet does not stretch the timeline
+  and its prose across the full pane. Verified: iPad Plan Piraeus to Syntagma
+  (three routes with Recommended / Fastest / Fewest changes chips, selected
+  journey with its comparison line) and the Android tablet at 1280x800
+  (Start journey centred in the capped column).
 - **Readable stage (iOS)**: the T9 rule alone did not change the iPad, because
   every tab was wrapped in `ReadableTabContent` (760 pt), so the arrangement
   measured 760 and still stacked. Tabs that pair (Home, Explore, Departures)

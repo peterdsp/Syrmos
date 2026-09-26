@@ -575,6 +575,10 @@ struct PlanView: View {
                                 planCompanionPlaceholder(afterSearch: planned)
                             }
                         }
+                        // Readable column: a wide companion pane (an iPad) does
+                        // not stretch the timeline and its prose to full width.
+                        .frame(maxWidth: 680, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
                     }
                 },
