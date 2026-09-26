@@ -474,8 +474,15 @@ Source: master plan section 4 (Network Map contract) and Phase 3 item 3.
   its canvas.
 - **Observed, not caused here**: after a forced restart the emulator once
   reported "Syrmos isn't responding" with reason "No response to onStopJob"
-  (a scheduled background job); the UI recovered on Wait. Worth a look in the
-  job scheduling code in a later round.
+  (a scheduled background job); the UI recovered on Wait. Analysed in round
+  15: the two WorkManager workers (`AlertCheckWorker`, `SnapshotWorker`) are
+  `CoroutineWorker`s whose network calls run under `Dispatchers.IO` with 10 s
+  timeouts, so `onStopJob` itself has nothing to wait for; that ANR is raised
+  when the main thread cannot service the JobScheduler callback in time, which
+  matches the moment it happened: a cold start right after `am force-stop`
+  while Gradle and Xcode saturated the host CPU. Not reproduced since across
+  a dozen restarts. No code change; keep an eye on cold-start main-thread work
+  if it recurs on hardware.
 
 ## Landed: polish round 8 (Android GO route map: the flagship parity gap)
 
@@ -669,11 +676,13 @@ put the network context above the next-train answer.
 - **Fixture** `t8_narrowRemainder_homeKeepsTheAnswerFirst` on both twins
   (633x1376: HOME single, PLAN stacked). Kotlin layout suite 65, Swift
   fixtures 60.
-- **Verified**: by the fixtures on both twins only. The iPad simulator was
-  rebuilt with the rule, but the launcher tap did not open the inspector on
-  the relaunched app before this session ended, so the paired capture of Home
-  beside the inspector was not re-taken. Next session: open Ariadne on the
-  iPad build and confirm the answer leads at ~633 pt.
+- **Verified (iOS)**: iPad simulator rebuilt with the rule; with Ariadne
+  docked, Home renders its single column with the answer (hero, living map)
+  first and the network context below. Finding on the way: a launcher tap
+  during app launch set the inspector state without a presentation, and since
+  the pill only ever set the flag to true, later taps were dead until a
+  relaunch; the launcher now toggles the flag (also closing the docked
+  inspector from the content side).
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 

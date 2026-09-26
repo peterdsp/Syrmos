@@ -300,7 +300,10 @@ struct ContentView: View {
     private func assistantLauncher(occluding: Bool = true) -> some View {
         AriadneLauncherPill(
             label: askAriadneLabel,
-            onTap: { showAriadne = true }
+            // Toggle, not set: on a regular width the pill stays visible beside the
+            // docked inspector (so it also closes it), and a presentation that did
+            // not take (a tap during launch) is recoverable with the next tap.
+            onTap: { showAriadne.toggle() }
         )
         .frame(maxWidth: .infinity, alignment: .trailing)
         .padding(.horizontal, 16)
