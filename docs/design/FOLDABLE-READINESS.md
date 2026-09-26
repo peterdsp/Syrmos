@@ -416,6 +416,30 @@ route comparison and selected-route context with stable identity).
   journey with "+10 min vs fastest" and the timeline (uiautomator dump and
   screenshot).
 
+## Landed: polish round 6 (Home: the board is the task, the network reads alongside)
+
+Source: master plan section 4 (Home contract) and Phase 4 item 1.
+
+- **Pane roles**: `SyrmosArrangement(task: .home)` on iOS and
+  `rememberContentWorkspace(HOME)` on Android. Task pane: the answer section
+  (hero with the direction board for every direction, or the tracking card),
+  the living map strip and the weather context. Companion pane: the insights
+  stream (alerts, news, status), the radial nearby section and the live trains.
+  The combined (single column) order is unchanged. The deep-link anchors keep
+  working: the weather anchor lives in the task pane, the nearby anchor in the
+  companion; on Android each column has its own list state and the
+  scroll-to-weather request targets the answer column.
+- **No duplicate work**: the two panes render the same view state; there is no
+  second poll, location request or announcement fetch for the companion.
+- **Verified (Android)**: Pixel emulator at 841x673, Home: left pane "MORNING
+  COMMUTE", next train M2 to Elliniko with the four-direction board, Track and
+  Track a train; right pane "What matters now" (network status and the STASY
+  M3 works notice) and "Around you". At 411x891 the same build renders the
+  single column (hero, board, then the rest).
+- **Verified (iOS)**: `DuoSnapshotTests` now render `HomeView()` at the Duo
+  inner landscape, inner portrait and cover sizes (`home-duo-*.png`); the inner
+  renders show the two panes, the cover the single column.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Home pairs on foldables and tablets.** On a paired layout the answer (the
+  next train for every direction, or the train you are tracking), the living
+  map strip and the weather context are the task pane, and the network context
+  (what matters now, the stations around you, live trains) reads alongside in
+  the companion pane. Same data, no second poll or location request; a phone
+  keeps the single column. Same on iOS and Android.
 - **Plan compares with confidence on foldables and tablets.** On a paired
   layout the route alternatives now sit under the query in the task pane and
   the companion pane reads the selected journey (stops, times, changes, Start),

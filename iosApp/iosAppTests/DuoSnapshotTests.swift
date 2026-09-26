@@ -312,6 +312,32 @@ final class DuoSnapshotTests: XCTestCase {
         return out
     }
 
+    // MARK: Visual: Home pairs the answer with the network context on the Duo
+
+    /// Home on the unfolded display: the answer (next train for every direction)
+    /// is the task pane and the network context (alerts, nearby, live trains)
+    /// reads alongside. The folded cover keeps the single column.
+    @MainActor
+    func test_homeScreen_duoInnerLandscape_render() throws {
+        let image = render(HomeView(), size: duoInnerLandscape)
+        try save(image, "home-duo-inner-landscape.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home unfolded landscape render should not be blank")
+    }
+
+    @MainActor
+    func test_homeScreen_duoInnerPortrait_render() throws {
+        let image = render(HomeView(), size: duoInnerPortrait)
+        try save(image, "home-duo-inner-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home unfolded portrait render should not be blank")
+    }
+
+    @MainActor
+    func test_homeScreen_duoCover_render() throws {
+        let image = render(HomeView(), size: duoCover)
+        try save(image, "home-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home folded cover render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor
