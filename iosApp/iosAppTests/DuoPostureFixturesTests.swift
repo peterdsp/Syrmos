@@ -125,6 +125,31 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(ws.pane(.companion)?.rect.top, 0)
     }
 
+    func test_p5_tallCanvas_mapStacksCanvasAboveInspector() {
+        // The network map on the upright inner display: the canvas (companion)
+        // keeps the upper region, the station or train inspector (task) reads
+        // below it, where the hands are.
+        let ws = resolve(innerW, innerH, .map)
+        XCTAssertEqual(ws.arrangement, .stacked)
+        XCTAssertEqual(ws.pane(.companion)?.rect.top, 0)
+        XCTAssertGreaterThanOrEqual(ws.pane(.companion)!.rect.height, Policy.tallMinCompanion)
+    }
+
+    func test_p3_flatLandscape_mapPairsInspectorBesideCanvas() {
+        let ws = resolve(innerH, innerW, .map)
+        XCTAssertEqual(ws.arrangement, .sideBySide)
+        let task = ws.pane(.task)!.rect
+        let canvas = ws.pane(.companion)!.rect
+        XCTAssertGreaterThan(canvas.left, task.left, "inspector reads on the left, canvas on the right")
+        XCTAssertGreaterThanOrEqual(task.width, Policy.minTaskPane)
+        XCTAssertGreaterThanOrEqual(canvas.width, Policy.minMapPane)
+    }
+
+    func test_p1_cover_mapStaysSingleColumn() {
+        let ws = resolve(coverW, coverH, .map)
+        XCTAssertEqual(ws.arrangement, .single)
+    }
+
     func test_p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked() {
         let ws = resolve(innerW, innerH, .plan, fontScale: 1.2)
         XCTAssertEqual(ws.arrangement, .stacked)

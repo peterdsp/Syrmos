@@ -157,6 +157,34 @@ class DuoPostureFixturesTest {
     }
 
     @Test
+    fun p5_tallCanvas_mapStacksCanvasAboveInspector() {
+        // The network map on the upright inner display: the canvas (companion)
+        // keeps the upper region, the station or train inspector (task) reads
+        // below it, where the hands are.
+        val ws = resolve(INNER_W, INNER_H, WorkspaceTask.MAP)
+        assertEquals(WorkspaceArrangement.STACKED, ws.arrangement)
+        assertEquals(0, ws.pane(PaneRole.COMPANION)!!.rect.top)
+        assertTrue(ws.pane(PaneRole.COMPANION)!!.rect.height >= AdaptiveWorkspacePolicy.TALL_MIN_COMPANION)
+    }
+
+    @Test
+    fun p3_flatLandscape_mapPairsInspectorBesideCanvas() {
+        val ws = resolve(INNER_H, INNER_W, WorkspaceTask.MAP)
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, ws.arrangement)
+        val task = ws.pane(PaneRole.TASK)!!.rect
+        val canvas = ws.pane(PaneRole.COMPANION)!!.rect
+        assertTrue(canvas.left > task.left, "inspector reads on the left, canvas on the right")
+        assertTrue(task.width >= AdaptiveWorkspacePolicy.MIN_TASK_PANE)
+        assertTrue(canvas.width >= AdaptiveWorkspacePolicy.MIN_MAP_PANE)
+    }
+
+    @Test
+    fun p1_cover_mapStaysSingleColumn() {
+        val ws = resolve(COVER_W, COVER_H, WorkspaceTask.MAP)
+        assertEquals(WorkspaceArrangement.SINGLE, ws.arrangement)
+    }
+
+    @Test
     fun p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked() {
         // At 1.2x the side-by-side floors (360 task, 384 map) no longer fit in
         // 334, but stacking (432 map + 336 task) still fits in 951.

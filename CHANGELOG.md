@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The network map pairs with an inspector on foldables and tablets.** A
+  tapped station or train now reads in its own pane beside the map (landscape)
+  or under it (upright), instead of a sheet or a slide-up card that covers the
+  canvas; the map keeps its camera and its full canvas, and a calm invitation
+  fills the pane until something is selected. Phones keep the sheets. Same on
+  iOS and Android.
 - **Home pairs on foldables and tablets.** On a paired layout the answer (the
   next train for every direction, or the train you are tracking), the living
   map strip and the weather context are the task pane, and the network context

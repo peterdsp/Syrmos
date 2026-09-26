@@ -338,6 +338,32 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Home folded cover render should not be blank")
     }
 
+    // MARK: Visual: the network map pairs the canvas with the inspector on the Duo
+
+    /// Map on the unfolded display: landscape pairs the inspector beside the
+    /// canvas, portrait stacks the canvas above it; the cover keeps the single
+    /// column (map only, sheets for a selection).
+    @MainActor
+    func test_mapScreen_duoInnerLandscape_render() throws {
+        let image = render(TransitMapView(), size: duoInnerLandscape)
+        try save(image, "map-duo-inner-landscape.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Map unfolded landscape render should not be blank")
+    }
+
+    @MainActor
+    func test_mapScreen_duoInnerPortrait_render() throws {
+        let image = render(TransitMapView(), size: duoInnerPortrait)
+        try save(image, "map-duo-inner-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Map unfolded portrait render should not be blank")
+    }
+
+    @MainActor
+    func test_mapScreen_duoCover_render() throws {
+        let image = render(TransitMapView(), size: duoCover)
+        try save(image, "map-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Map folded cover render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor

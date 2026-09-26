@@ -62,6 +62,8 @@ enum class WorkspaceTask {
     PLAN,
     GO,
     EXPLORE,
+    /** The network map: the inspector (station or train) is the task pane, the canvas the companion. */
+    MAP,
     DEPARTURES,
     FARES,
     ARIADNE,
@@ -85,7 +87,7 @@ enum class WorkspaceTask {
      */
     val tallCanvasAxis: PairAxis
         get() = when (this) {
-            GO, EXPLORE -> PairAxis.STACKED
+            GO, EXPLORE, MAP -> PairAxis.STACKED
             else -> PairAxis.SIDE_BY_SIDE
         }
 }

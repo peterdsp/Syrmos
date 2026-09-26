@@ -440,6 +440,43 @@ Source: master plan section 4 (Home contract) and Phase 4 item 1.
   inner landscape, inner portrait and cover sizes (`home-duo-*.png`); the inner
   renders show the two panes, the cover the single column.
 
+## Landed: polish round 7 (Network Map: canvas plus inspector)
+
+Source: master plan section 4 (Network Map contract) and Phase 3 item 3.
+
+- **Shared policy**: a `MAP` task on both twins (`WorkspaceTask.MAP`,
+  `SyrmosWorkspaceTask.map`). Its inspector (station or train) is the TASK pane
+  and the canvas the COMPANION, the same roles GO and Explore use, so a tall
+  window stacks the canvas above the inspector (`tallCanvasAxis = STACKED`) and
+  a wide one puts the inspector beside it. Fixtures on both platforms:
+  `p5_tallCanvas_mapStacksCanvasAboveInspector`,
+  `p3_flatLandscape_mapPairsInspectorBesideCanvas`, `p1_cover_mapStaysSingleColumn`
+  (Kotlin layout suite 59, Swift fixtures 54).
+- **iOS**: `TransitMapView` wraps the canvas in `SyrmosArrangement(task: .map)`;
+  the station and vehicle sheets are attached only to the single-column
+  `combined` content, and the paired `mapInspector` shows the same
+  `StationSheetView`, `SimulatedVehicleDetailSheet` or `TrainDetailSheet` with a
+  Close control and a calm placeholder. One map instance; no padding is
+  subtracted for the companion because the map's bounds already exclude it.
+- **Android**: `MapScreen` resolves `rememberContentWorkspace(MAP)`; the canvas
+  lambda (map, header, pills, controls) is laid out beside or above a
+  `MapInspectorPane` that hosts the same `StationSheetCard`, `SimulatedTrainDetailCard`
+  or `TrainDetailCard`; the slide-up overlays render only in the single column.
+  The osmdroid view paints outside its bounds, so the canvas box is
+  `clipToBounds()`; without it the map painted over the inspector.
+- **Verified**: iOS `DuoSnapshotTests` 22/22 with `map-duo-inner-landscape.png`
+  (inspector left, canvas right, header across), `map-duo-inner-portrait.png`
+  (canvas above), `map-duo-cover.png` (single column). Android Pixel emulator at
+  841x673: "On the map" inspector at x 96 with the placeholder, canvas from
+  x 460 with the FABs at the right edge; tapping a projected train fills the
+  inspector with the train card (Line 2 towards Anthoupoli, next station,
+  trip progress, the honest "approximate estimate" note) while the map keeps
+  its canvas.
+- **Observed, not caused here**: after a forced restart the emulator once
+  reported "Syrmos isn't responding" with reason "No response to onStopJob"
+  (a scheduled background job); the UI recovered on Wait. Worth a look in the
+  job scheduling code in a later round.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

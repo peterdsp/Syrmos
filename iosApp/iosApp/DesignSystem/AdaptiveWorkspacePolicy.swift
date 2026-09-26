@@ -83,7 +83,8 @@ enum SyrmosPairAxis { case sideBySide, stacked }
 
 /// The task currently driving the workspace, so the policy is task aware.
 enum SyrmosWorkspaceTask {
-    case home, plan, go, explore, departures, fares, ariadne
+    /// `map`: the network map, whose inspector (station or train) is the task pane and whose canvas is the companion.
+    case home, plan, go, explore, map, departures, fares, ariadne
     /// Settings, onboarding and other bounded single-focus forms.
     case form
 
@@ -98,7 +99,7 @@ enum SyrmosWorkspaceTask {
     /// plus controls below, where the hands are.
     var tallCanvasAxis: SyrmosPairAxis {
         switch self {
-        case .go, .explore: return .stacked
+        case .go, .explore, .map: return .stacked
         default: return .sideBySide
         }
     }
