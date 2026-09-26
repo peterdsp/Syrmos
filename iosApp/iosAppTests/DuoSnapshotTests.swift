@@ -413,6 +413,29 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Plan large-text render should not be blank")
     }
 
+    // MARK: Visual: dark appearance of the paired Explore, Map and Plan
+
+    @MainActor
+    func test_exploreScreen_duoInnerLandscape_dark_render() throws {
+        let image = render(LinesView(), size: duoInnerLandscape, dark: true)
+        try save(image, "explore-duo-inner-landscape-dark.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore dark render should not be blank")
+    }
+
+    @MainActor
+    func test_mapScreen_duoInnerLandscape_dark_render() throws {
+        let image = render(TransitMapView(), size: duoInnerLandscape, dark: true)
+        try save(image, "map-duo-inner-landscape-dark.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Map dark render should not be blank")
+    }
+
+    @MainActor
+    func test_planScreen_duoInnerLandscape_dark_render() throws {
+        let image = render(PlanView(language: .english), size: duoInnerLandscape, dark: true)
+        try save(image, "plan-duo-inner-landscape-dark.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Plan dark render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor

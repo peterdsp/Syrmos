@@ -926,6 +926,15 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
 - **Explore beside a docked assistant on iOS** does not arise: the inspector
   is a system column and the pill band is a safe-area inset.
 
+## Landed: polish round 20 (dark mode and language sweep)
+
+- **Dark mode**: Android Explore (paired with Line 2), Map (inspector plus
+  canvas), Airport and More at 841x673 read correctly after the round 17 root
+  content-colour fix. iOS: `explore-duo-inner-landscape-dark.png`,
+  `map-duo-inner-landscape-dark.png`, `plan-duo-inner-landscape-dark.png`
+  added to `DuoSnapshotTests` (the map canvas is tile-less in the offline
+  test host, as in the light render). No defects.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
