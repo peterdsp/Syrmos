@@ -53,7 +53,9 @@ final class AriadneModel: ObservableObject {
 
     private func loadAlertNote() async {
         await alertsService.fetchAnnouncements()
-        let alerts = alertsService.announcements.filter { $0.category == .serviceAlert }
+        // One Heads up per distinct notice: the feed repeats a notice under two
+        // ids (shared InsightDedupe rule, as on Home).
+        let alerts = InsightDedupe.distinctByText(alertsService.announcements.filter { $0.category == .serviceAlert }) { $0.title }
         guard !alerts.isEmpty else { return }
         let titles = alerts.prefix(3).map { $0.displayTitle(language: loc.language) }.joined(separator: ". ")
         messages.append(bot(t(
@@ -490,8 +492,8 @@ final class AriadneModel: ObservableObject {
     /// matches the KMP path: a line-wide advisory reaches any station on that
     /// line, and a real closure reads as a closure.
     private func currentNotices() -> [ServiceNotice] {
-        alertsService.announcements
-            .filter { $0.category == .serviceAlert || AdvisorySeverity.fromRaw($0.severity) != .info }
+        InsightDedupe.distinctByText(alertsService.announcements
+            .filter { $0.category == .serviceAlert || AdvisorySeverity.fromRaw($0.severity) != .info }) { $0.title }
             .map { a in
                 ServiceNotice(
                     id: a.id,

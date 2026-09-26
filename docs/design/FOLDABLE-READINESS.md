@@ -888,7 +888,9 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
 - **Ariadne heads-up (Android)**: the assistant's opening "Heads up" joined
   the same operator notice twice (the feed repeats it under two ids);
   `currentNotices` now goes through `InsightDedupe.distinctByText`, the rule
-  Home uses. Verified in the docked assistant: one occurrence.
+  Home uses. Verified in the docked assistant: one occurrence. iOS had the
+  same two paths (`loadAlertNote`, `currentNotices` in AriadneModel.swift) and
+  takes the same rule; HomeFeaturesTests 18/18.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
