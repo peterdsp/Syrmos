@@ -198,6 +198,11 @@ final class JourneyGuidanceTests: XCTestCase {
         ])
     }
 
+    func test_timelineFocus_reduceMotionTurnsTheGlideIntoAJump() {
+        XCTAssertNotNil(GoTimelineFocus.animation(reduceMotion: false))
+        XCTAssertNil(GoTimelineFocus.animation(reduceMotion: true))
+    }
+
     func test_timeline_rolesFollowTheLegShape() {
         let rows = GoTimelineProjection.rows(journey: timelineJourney, position: GuidancePosition(legIndex: 0, stopIndex: 0))
         XCTAssertEqual(rows.map(\.role), [.origin, .intermediate, .intermediate, .alight, .origin, .alight])

@@ -26,4 +26,10 @@ class GoTimelineFocusTest {
         assertEquals(2000f, GoTimelineFocus.targetOffset(2500f, 600f, 2000f))
         assertEquals(0f, GoTimelineFocus.targetOffset(300f, 600f, -5f))
     }
+
+    @Test
+    fun reduce_motion_turns_the_glide_into_a_jump() {
+        assertEquals(GoTimelineFocus.Motion.GLIDE, GoTimelineFocus.motion(reduceMotion = false))
+        assertEquals(GoTimelineFocus.Motion.JUMP, GoTimelineFocus.motion(reduceMotion = true))
+    }
 }
