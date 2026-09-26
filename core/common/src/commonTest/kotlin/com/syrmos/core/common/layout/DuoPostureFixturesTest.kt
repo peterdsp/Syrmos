@@ -205,6 +205,15 @@ class DuoPostureFixturesTest {
     }
 
     @Test
+    fun t8_narrowRemainder_homeKeepsTheAnswerFirst() {
+        // Beside a docked 400 dp inspector an iPad leaves ~633 x 1376: two Home
+        // columns do not fit and Home never stacks (the answer must lead), so it
+        // keeps the single column; a planner still stacks its results above the form.
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(633, 1376, WorkspaceTask.HOME).arrangement)
+        assertEquals(WorkspaceArrangement.STACKED, resolve(633, 1376, WorkspaceTask.PLAN).arrangement)
+    }
+
+    @Test
     fun p3_flatLandscape_ariadneDocksBesideTheContent() {
         assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(INNER_H, INNER_W, WorkspaceTask.ARIADNE).arrangement)
         // An Android fold beside its 80 dp rail (841 - 80 = 761 wide) still docks.

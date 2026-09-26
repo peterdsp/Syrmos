@@ -97,6 +97,11 @@ enum SyrmosWorkspaceTask {
     /// fares form, a departures board or the assistant read well as two columns;
     /// a journey in progress and a browse list want the map above and the list
     /// plus controls below, where the hands are.
+    /// Whether the task may pair on the stacked axis at all. Home never does:
+    /// the answer must lead, so when two columns do not fit it keeps its single
+    /// column instead of putting the network context above the next train.
+    var stacks: Bool { self != .home }
+
     var tallCanvasAxis: SyrmosPairAxis {
         switch self {
         case .go, .explore, .map: return .stacked
@@ -540,6 +545,7 @@ enum SyrmosAdaptiveWorkspacePolicy {
             ? [.sideBySide, .stacked]
             : [.stacked, .sideBySide]
         for axis in order {
+            if axis == .stacked && !task.stacks { continue }
             let ws: SyrmosAdaptiveWorkspace?
             switch axis {
             case .sideBySide: ws = mediumSideBySide(width: width, height: height, scale: scale)

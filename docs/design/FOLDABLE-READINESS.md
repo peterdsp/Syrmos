@@ -656,6 +656,25 @@ another model").
 - **Regression pass this round**: full KMP suite 630/630, full iOS unit target
   400/400.
 
+## Landed: polish round 15 (Home never stacks)
+
+Source: the round 14 iPad capture: beside a docked inspector Home had ~633 pt,
+two columns did not fit, and the medium-canvas rule fell back to STACKED, which
+put the network context above the next-train answer.
+
+- **Rule** (both twins): `WorkspaceTask.stacks` / `SyrmosWorkspaceTask.stacks`
+  is false for HOME; `resolveMediumCanvas` skips the STACKED axis for such a
+  task, so Home is either two columns or its single column with the answer
+  first. Plan, Departures and the others keep stacking as before.
+- **Fixture** `t8_narrowRemainder_homeKeepsTheAnswerFirst` on both twins
+  (633x1376: HOME single, PLAN stacked). Kotlin layout suite 65, Swift
+  fixtures 60.
+- **Verified**: by the fixtures on both twins only. The iPad simulator was
+  rebuilt with the rule, but the launcher tap did not open the inspector on
+  the relaunched app before this session ended, so the paired capture of Home
+  beside the inspector was not re-taken. Next session: open Ariadne on the
+  iPad build and confirm the answer leads at ~633 pt.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Home always leads with the next train.** When two Home columns do not fit
+  (for example beside a docked Ariadne panel) Home keeps its single column
+  instead of stacking the network context above the answer. Shared rule on iOS
+  and Android.
 - **Ariadne docks beside what you were doing on foldables and tablets.** With
   room for two panes the assistant opens as a side panel next to Home, Plan or
   the map instead of covering the screen; phones keep the full-screen

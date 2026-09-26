@@ -85,6 +85,15 @@ enum class WorkspaceTask {
      * two columns; a journey in progress and a browse list want the map above
      * and the list plus controls below, where the hands are.
      */
+    /**
+     * Whether the task may pair on the STACKED axis at all. Home never does:
+     * the answer (the next train) must lead the screen, so when two columns do
+     * not fit it keeps its single column instead of putting the network context
+     * above the answer.
+     */
+    val stacks: Boolean
+        get() = this != HOME
+
     val tallCanvasAxis: PairAxis
         get() = when (this) {
             GO, EXPLORE, MAP -> PairAxis.STACKED
@@ -551,6 +560,7 @@ object AdaptiveWorkspacePolicy {
             listOf(PairAxis.STACKED, PairAxis.SIDE_BY_SIDE)
         }
         for (axis in order) {
+            if (axis == PairAxis.STACKED && !task.stacks) continue
             val ws = when (axis) {
                 PairAxis.SIDE_BY_SIDE -> mediumSideBySide(width, height, scale)
                 PairAxis.STACKED -> mediumStacked(width, height, scale)
