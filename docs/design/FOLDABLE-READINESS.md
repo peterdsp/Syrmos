@@ -743,6 +743,16 @@ merged (#201, #202).
   unchanged (an action sheet either way). Verified on the iPad simulator:
   the popover now hangs from the End button at the top-right; GO paired with
   the route map and the timeline, and Plan keeps its results after End.
+- **Android dark mode: root content colour**: a dark-mode pass over the fold
+  emulator showed the Home headings ("What matters now", "Around you") and
+  the hero title near-black on the dark canvas. Nothing under `SyrmosTheme`
+  provided a content colour, so Material's `LocalContentColor` default
+  (black) applied to every text that names no colour; only dark mode shows
+  it. The shell now wraps the themed root in a `Surface` with the background
+  colour and `onBackground` content colour, which fixes every tab at once.
+  Verified: dark Home and Explore on the emulator read correctly, light mode
+  unchanged. iOS Home dark render added (`home-duo-inner-landscape-dark.png`),
+  contrast fine there.
 - **Plan companion readable column** (both clients): the selected journey
   column is capped at 680 (iOS `frame(maxWidth:)`, Android `widthIn(max)`),
   so a wide companion pane on an iPad or tablet does not stretch the timeline

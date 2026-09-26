@@ -158,199 +158,210 @@ fun SyrmosApp() {
     }
 
     SyrmosTheme(darkTheme = darkTheme) {
-        if (!isSeeded) {
-            BootSplash()
-        } else if (!hasCompletedOnboarding) {
-            OnboardingScreen(onComplete = {
-                markOnboardingCompleted()
-                hasCompletedOnboarding = true
-            })
-        } else {
-            // One-time highlights after an install/update. The web build shows
-            // its own card (web-map.js), so this is effectively the native path.
-            val whatsNewVersion = "3.0.0"
-            var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
-            if (showWhatsNew) {
-                WhatsNewDialog(onDismiss = {
-                    markWhatsNewSeen(whatsNewVersion)
-                    showWhatsNew = false
+        // A root Surface provides the theme's content colour (LocalContentColor).
+        // Without it Material falls back to black for any text that names no
+        // colour, which only shows in dark mode: the Home headings and the hero
+        // title read as near-black on the dark canvas.
+        androidx.compose.material3.Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+        ) {
+            if (!isSeeded) {
+                BootSplash()
+            } else if (!hasCompletedOnboarding) {
+                OnboardingScreen(onComplete = {
+                    markOnboardingCompleted()
+                    hasCompletedOnboarding = true
                 })
-            }
-            androidx.compose.runtime.CompositionLocalProvider(
-                LocalReservedRegions provides rememberReservedRegions(),
-            ) {
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                if (isWebPlatform && maxWidth >= 900.dp) {
-                    DesktopWebApp()
-                } else {
-                    val initialTab = remember { tabFromId(readSelectedTabId()) }
-                    TabNavigator(initialTab) {
-                        val pendingQuery = remember { consumePendingAssistantQuery() }
-                        var showAriadne by remember { mutableStateOf(pendingQuery != null) }
-                        androidx.compose.runtime.CompositionLocalProvider(
-                            LocalAriadneOpener provides { showAriadne = true }
-                        ) {
-                        val lang by LocalizationManager.language.collectAsState()
-                        val tabNavigator = LocalTabNavigator.current
-                        val currentTab = tabNavigator.current
-                        LaunchedEffect(Unit) {
-                            NotificationNavBus.events.collect { event ->
-                                tabNavigator.current = HomeTab
-                                NotificationNavBus.dispatchToHome(event)
-                            }
-                        }
-                        // Continuity: after a cold launch / process death with a
-                        // persisted live GO session, return the rider to their
-                        // journey instead of the last tab (prompt section 7: do not
-                        // jump to Home during GO). The gate is a per-process field, so
-                        // this fires once on a genuine cold start and NOT on an
-                        // activity recreation (rotation / fold), which would otherwise
-                        // yank the user to Home and stack a duplicate GO. The Home
-                        // navigator rebuilds guidance from the snapshot and pushes GO.
-                        LaunchedEffect(Unit) {
-                            if (!GoResumeGate.consumed) {
-                                GoResumeGate.consumed = true
-                                if (com.syrmos.app.journey.ActiveJourneyRepository.active.value != null) {
+            } else {
+                // One-time highlights after an install/update. The web build shows
+                // its own card (web-map.js), so this is effectively the native path.
+                val whatsNewVersion = "3.0.0"
+                var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
+                if (showWhatsNew) {
+                    WhatsNewDialog(onDismiss = {
+                        markWhatsNewSeen(whatsNewVersion)
+                        showWhatsNew = false
+                    })
+                }
+                androidx.compose.runtime.CompositionLocalProvider(
+                    LocalReservedRegions provides rememberReservedRegions(),
+                ) {
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    if (isWebPlatform && maxWidth >= 900.dp) {
+                        DesktopWebApp()
+                    } else {
+                        val initialTab = remember { tabFromId(readSelectedTabId()) }
+                        TabNavigator(initialTab) {
+                            val pendingQuery = remember { consumePendingAssistantQuery() }
+                            var showAriadne by remember { mutableStateOf(pendingQuery != null) }
+                            androidx.compose.runtime.CompositionLocalProvider(
+                                LocalAriadneOpener provides { showAriadne = true }
+                            ) {
+                            val lang by LocalizationManager.language.collectAsState()
+                            val tabNavigator = LocalTabNavigator.current
+                            val currentTab = tabNavigator.current
+                            LaunchedEffect(Unit) {
+                                NotificationNavBus.events.collect { event ->
                                     tabNavigator.current = HomeTab
-                                    NotificationNavBus.dispatchToHome(NotificationNavEvent.ResumeGo)
+                                    NotificationNavBus.dispatchToHome(event)
                                 }
                             }
-                        }
-                        LaunchedEffect(currentTab) {
-                            writeSelectedTabId(tabId(currentTab))
-                        }
-                        // Hide the launcher on More (would sit on the
-                        // scrolling controls), on Map (the Locate + Vehicles
-                        // buttons already own bottom-right) and while GO is on
-                        // screen (its controls and timeline own the bottom; iOS
-                        // GO shows no launcher either).
-                        val showLauncher = currentTab != MoreTab && currentTab != MapTab &&
-                            !com.syrmos.app.journey.GoScreenPresence.onScreen
-
-                        // Adaptive navigation (prompt section 5, Android). A
-                        // native large window (tablet / unfolded foldable) uses a
-                        // navigation rail; the compact phone window keeps the
-                        // floating liquid-glass bottom bar. The web desktop shell
-                        // above still owns >=900dp on web. Driven by the shared
-                        // ContentBreakpoint rule so iOS/web resolve identically.
-                        // Content width rules apply to the region AFTER the rail.
-                        val layout = ContentBreakpoint.resolve(
-                            width = maxWidth.value.toInt(),
-                            height = maxHeight.value.toInt(),
-                        )
-                        val useRail = !isWebPlatform && layout.mode != ContentMode.COMPACT
-
-                        // CurrentTab + the Ariadne launcher pill + the full-screen
-                        // assistant overlay. Shared by both nav layouts so the
-                        // per-tab screens and their state are identical either way.
-                        // One assistant view model for the shell's lifetime, so the
-                        // conversation survives closing, reopening and a move between
-                        // the docked pane and the full-screen presentation (master
-                        // plan, Ariadne: moving between sheet and pane never resends).
-                        val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
-                        LaunchedEffect(showAriadne) {
-                            if (showAriadne) {
-                                com.syrmos.app.platform.requestUserLocation()?.let {
-                                    assistantViewModel.onLocationUpdate(it.latitude, it.longitude)
-                                }
-                                if (pendingQuery != null) {
-                                    assistantViewModel.ask(pendingQuery)
+                            // Continuity: after a cold launch / process death with a
+                            // persisted live GO session, return the rider to their
+                            // journey instead of the last tab (prompt section 7: do not
+                            // jump to Home during GO). The gate is a per-process field, so
+                            // this fires once on a genuine cold start and NOT on an
+                            // activity recreation (rotation / fold), which would otherwise
+                            // yank the user to Home and stack a duplicate GO. The Home
+                            // navigator rebuilds guidance from the snapshot and pushes GO.
+                            LaunchedEffect(Unit) {
+                                if (!GoResumeGate.consumed) {
+                                    GoResumeGate.consumed = true
+                                    if (com.syrmos.app.journey.ActiveJourneyRepository.active.value != null) {
+                                        tabNavigator.current = HomeTab
+                                        NotificationNavBus.dispatchToHome(NotificationNavEvent.ResumeGo)
+                                    }
                                 }
                             }
-                        }
-                        @Composable
-                        fun AssistantHost() {
-                            com.syrmos.feature.home.assistant.AssistantScreen(
-                                viewModel = assistantViewModel,
-                                        onClose = { showAriadne = false },
-                                        onOpenStation = { stationId ->
-                                            showAriadne = false
-                                            tabNavigator.current = HomeTab
-                                            AriadneNavBus.navigate(AriadneNavEvent.Station(stationId))
-                                        },
-                                        onOpenLine = { lineId ->
-                                            showAriadne = false
-                                            tabNavigator.current = HomeTab
-                                            AriadneNavBus.navigate(AriadneNavEvent.Line(lineId))
-                                        },
+                            LaunchedEffect(currentTab) {
+                                writeSelectedTabId(tabId(currentTab))
+                            }
+                            // Hide the launcher on More (would sit on the
+                            // scrolling controls), on Map (the Locate + Vehicles
+                            // buttons already own bottom-right) and while GO is on
+                            // screen (its controls and timeline own the bottom; iOS
+                            // GO shows no launcher either).
+                            val showLauncher = currentTab != MoreTab && currentTab != MapTab &&
+                                !com.syrmos.app.journey.GoScreenPresence.onScreen
+
+                            // Adaptive navigation (prompt section 5, Android). A
+                            // native large window (tablet / unfolded foldable) uses a
+                            // navigation rail; the compact phone window keeps the
+                            // floating liquid-glass bottom bar. The web desktop shell
+                            // above still owns >=900dp on web. Driven by the shared
+                            // ContentBreakpoint rule so iOS/web resolve identically.
+                            // Content width rules apply to the region AFTER the rail.
+                            val layout = ContentBreakpoint.resolve(
+                                width = maxWidth.value.toInt(),
+                                height = maxHeight.value.toInt(),
                             )
-                        }
+                            val useRail = !isWebPlatform && layout.mode != ContentMode.COMPACT
 
-                        // Foldables and tablets: with room for two panes the
-                        // conversation docks beside the content instead of covering
-                        // it. The shared policy decides (ARIADNE task) on the canvas
-                        // after the rail; a phone keeps the full-screen presentation.
-                        val assistantCanvasWidth = maxWidth.value.toInt() - (if (useRail) 80 else 0)
-                        val assistantWs = rememberContentWorkspace(
-                            task = WorkspaceTask.ARIADNE,
-                            width = assistantCanvasWidth,
-                            height = maxHeight.value.toInt(),
-                        )
-                        val dockAssistant = useRail && assistantWs.arrangement == WorkspaceArrangement.SIDE_BY_SIDE
-                        val dockWidth = minOf(assistantWs.pane(PaneRole.COMPANION)?.rect?.width ?: 400, 480).dp
+                            // CurrentTab + the Ariadne launcher pill + the full-screen
+                            // assistant overlay. Shared by both nav layouts so the
+                            // per-tab screens and their state are identical either way.
+                            // One assistant view model for the shell's lifetime, so the
+                            // conversation survives closing, reopening and a move between
+                            // the docked pane and the full-screen presentation (master
+                            // plan, Ariadne: moving between sheet and pane never resends).
+                            val assistantViewModel = koinInject<com.syrmos.feature.home.assistant.AssistantViewModel>()
+                            LaunchedEffect(showAriadne) {
+                                if (showAriadne) {
+                                    com.syrmos.app.platform.requestUserLocation()?.let {
+                                        assistantViewModel.onLocationUpdate(it.latitude, it.longitude)
+                                    }
+                                    if (pendingQuery != null) {
+                                        assistantViewModel.ask(pendingQuery)
+                                    }
+                                }
+                            }
+                            @Composable
+                            fun AssistantHost() {
+                                com.syrmos.feature.home.assistant.AssistantScreen(
+                                    viewModel = assistantViewModel,
+                                            onClose = { showAriadne = false },
+                                            onOpenStation = { stationId ->
+                                                showAriadne = false
+                                                tabNavigator.current = HomeTab
+                                                AriadneNavBus.navigate(AriadneNavEvent.Station(stationId))
+                                            },
+                                            onOpenLine = { lineId ->
+                                                showAriadne = false
+                                                tabNavigator.current = HomeTab
+                                                AriadneNavBus.navigate(AriadneNavEvent.Line(lineId))
+                                            },
+                                )
+                            }
 
-                        @Composable
-                        fun BoxScope.TabContentWithOverlays(pillBottomInset: Dp) {
-                            if (dockAssistant && showAriadne) {
-                                Row(Modifier.fillMaxSize()) {
-                                    Box(Modifier.weight(1f).fillMaxHeight()) { CurrentTab() }
-                                    VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                                    Box(Modifier.width(dockWidth).fillMaxHeight()) { AssistantHost() }
+                            // Foldables and tablets: with room for two panes the
+                            // conversation docks beside the content instead of covering
+                            // it. The shared policy decides (ARIADNE task) on the canvas
+                            // after the rail; a phone keeps the full-screen presentation.
+                            val assistantCanvasWidth = maxWidth.value.toInt() - (if (useRail) 80 else 0)
+                            val assistantWs = rememberContentWorkspace(
+                                task = WorkspaceTask.ARIADNE,
+                                width = assistantCanvasWidth,
+                                height = maxHeight.value.toInt(),
+                            )
+                            val dockAssistant = useRail && assistantWs.arrangement == WorkspaceArrangement.SIDE_BY_SIDE
+                            val dockWidth = minOf(assistantWs.pane(PaneRole.COMPANION)?.rect?.width ?: 400, 480).dp
+
+                            @Composable
+                            fun BoxScope.TabContentWithOverlays(pillBottomInset: Dp) {
+                                if (dockAssistant && showAriadne) {
+                                    Row(Modifier.fillMaxSize()) {
+                                        Box(Modifier.weight(1f).fillMaxHeight()) { CurrentTab() }
+                                        VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                                        Box(Modifier.width(dockWidth).fillMaxHeight()) { AssistantHost() }
+                                    }
+                                } else {
+                                CurrentTab()
+                                AnimatedVisibility(
+                                    visible = showLauncher && !showAriadne,
+                                    enter = fadeIn() + slideInVertically(
+                                        initialOffsetY = { it / 2 },
+                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                    ),
+                                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+                                    // Lift the pill above the system navigation bar and,
+                                    // in compact, above the LiquidGlassTabBar (~96dp);
+                                    // in rail mode there is no bottom bar so 16dp is enough.
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .windowInsetsPadding(WindowInsets.navigationBars)
+                                        .padding(end = 16.dp, bottom = pillBottomInset)
+                                        .zIndex(2f),
+                                ) {
+                                    AriadneLauncherPill(
+                                        label = askAriadneLabel(lang),
+                                        onClick = { showAriadne = true },
+                                    )
+                                }
+
+
+                                if (showAriadne) {
+                                    Box(modifier = Modifier.fillMaxSize().zIndex(3f)) { AssistantHost() }
+                                }
+                                }
+                            }
+
+                            if (useRail) {
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    SyrmosNavigationRail()
+                                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                        TabContentWithOverlays(pillBottomInset = 16.dp)
+                                    }
                                 }
                             } else {
-                            CurrentTab()
-                            AnimatedVisibility(
-                                visible = showLauncher && !showAriadne,
-                                enter = fadeIn() + slideInVertically(
-                                    initialOffsetY = { it / 2 },
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                                ),
-                                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                                // Lift the pill above the system navigation bar and,
-                                // in compact, above the LiquidGlassTabBar (~96dp);
-                                // in rail mode there is no bottom bar so 16dp is enough.
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .windowInsetsPadding(WindowInsets.navigationBars)
-                                    .padding(end = 16.dp, bottom = pillBottomInset)
-                                    .zIndex(2f),
-                            ) {
-                                AriadneLauncherPill(
-                                    label = askAriadneLabel(lang),
-                                    onClick = { showAriadne = true },
-                                )
-                            }
-
-
-                            if (showAriadne) {
-                                Box(modifier = Modifier.fillMaxSize().zIndex(3f)) { AssistantHost() }
-                            }
-                            }
-                        }
-
-                        if (useRail) {
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                SyrmosNavigationRail()
-                                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                    TabContentWithOverlays(pillBottomInset = 16.dp)
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    TabContentWithOverlays(pillBottomInset = 96.dp)
+                                    LiquidGlassTabBar(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                                            .windowInsetsPadding(WindowInsets.navigationBars),
+                                    )
                                 }
                             }
-                        } else {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                TabContentWithOverlays(pillBottomInset = 96.dp)
-                                LiquidGlassTabBar(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                                        .windowInsetsPadding(WindowInsets.navigationBars),
-                                )
-                            }
+                        }
                         }
                     }
-                    }
+                }
                 }
             }
-            }
+    
         }
     }
 }

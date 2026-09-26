@@ -376,6 +376,15 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Explore upright iPad render should not be blank")
     }
 
+    /// Dark appearance of the paired Home: section headings, board rows and the
+    /// context cards must keep their contrast on the dark canvas.
+    @MainActor
+    func test_homeScreen_duoInnerLandscape_dark_render() throws {
+        let image = render(HomeView(), size: duoInnerLandscape, dark: true)
+        try save(image, "home-duo-inner-landscape-dark.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home dark render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor
