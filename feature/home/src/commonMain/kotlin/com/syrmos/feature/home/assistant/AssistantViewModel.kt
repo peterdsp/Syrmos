@@ -518,7 +518,7 @@ class AssistantViewModel(
                 AdvisorySeverity.CLOSURE -> t("Heads up, there's an active closure affecting $name.",
                     "Προσοχή, υπάρχει ενεργό κλείσιμο που αφορά τον $name.",
                     "Kujdes, ka një mbyllje aktive që prek $name.",
-                    it = "Attenzione, c'e' una chiusura attiva che riguarda $name.")
+                    it = "Attenzione, c'è una chiusura attiva che riguarda $name.")
                 AdvisorySeverity.WARNING -> t("There's an active advisory affecting $name.",
                     "Υπάρχει ενεργή ειδοποίηση που αφορά τον $name.",
                     "Ka një njoftim aktiv që prek $name.",
@@ -1179,7 +1179,7 @@ class AssistantViewModel(
                 "The faster route (${routeLineText(fastest)}, ${fastest.totalMinutes} min) is more exposed; in this weather I'd take this one.",
                 "Η πιο γρήγορη διαδρομή (${routeLineText(fastest)}, ${fastest.totalMinutes} λεπτά) είναι πιο εκτεθειμένη· με αυτόν τον καιρό θα προτιμούσα αυτή.",
                 "Rruga më e shpejtë (${routeLineText(fastest)}, ${fastest.totalMinutes} min) është më e ekspozuar; me këtë mot do të zgjidhja këtë.",
-                it = "Il percorso piu' veloce (${routeLineText(fastest)}, ${fastest.totalMinutes} min) e' piu' esposto; con questo tempo prenderei questo.",
+                it = "Il percorso più veloce (${routeLineText(fastest)}, ${fastest.totalMinutes} min) è più esposto; con questo tempo prenderei questo.",
             )
         } else {
             ""
@@ -1234,7 +1234,7 @@ class AssistantViewModel(
 
     private fun shelterClause(exposure: Exposure): String = when (exposure) {
         Exposure.SHELTERED -> t("mostly underground and sheltered", "κυρίως υπόγεια και υπό στέγη",
-            "kryesisht nëntokë dhe e mbrojtur", it = "per lo piu' sotterraneo e al coperto")
+            "kryesisht nëntokë dhe e mbrojtur", it = "per lo più sotterraneo e al coperto")
         Exposure.MIXED -> t("partly at surface level", "εν μέρει σε επιφάνεια", "pjesërisht në sipërfaqe",
             it = "in parte a livello della superficie")
         Exposure.EXPOSED -> t("open-air (tram/surface stops)", "σε ανοιχτό χώρο (τραμ/επιφάνεια)",
@@ -1289,7 +1289,7 @@ class AssistantViewModel(
                 t("hot and dry", "ζεστά και ξηρά", "e nxehtë dhe e thatë", it = "caldo e secco")
             month in listOf(11, 12, 1, 2) ->
                 t("cooler, with rain possible", "πιο δροσερά, με πιθανή βροχή", "më e freskët, me mundësi shiu",
-                    it = "piu' fresco, con possibilita' di pioggia")
+                    it = "più fresco, con possibilità di pioggia")
             else -> t("mild", "ήπια", "e butë", it = "mite")
         }
     }
@@ -1302,7 +1302,7 @@ class AssistantViewModel(
                 t("A more underground option would keep you drier.",
                     "Μια πιο υπόγεια επιλογή θα σε κρατούσε πιο στεγνό.",
                     "Një opsion më nëntokësor do të të mbante më të thatë.",
-                    it = "Un'opzione piu' sotterranea ti terrebbe piu' asciutto.")
+                    it = "Un'opzione più sotterranea ti terrebbe più asciutto.")
             com.syrmos.core.model.weather.WeatherState.HOT ->
                 t("Prefer an underground route to avoid long sun-exposed waits.",
                     "Προτίμησε υπόγεια διαδρομή για να αποφύγεις αναμονές στον ήλιο.",
@@ -1312,7 +1312,7 @@ class AssistantViewModel(
                 t("Exposed tram/surface stretches can be gusty; metro is steadier.",
                     "Τα ανοιχτά τμήματα τραμ/επιφάνειας έχουν ριπές· το μετρό είναι πιο σταθερό.",
                     "Pjesët e hapura tram/sipërfaqe mund të kenë erë; metroja është më e qëndrueshme.",
-                    it = "I tratti esposti del tram/superficie possono essere ventosi; la metro e' piu' stabile.")
+                    it = "I tratti esposti del tram/superficie possono essere ventosi; la metro è più stabile.")
             com.syrmos.core.model.weather.WeatherState.NORMAL -> ""
         }
     }
@@ -1330,7 +1330,7 @@ class AssistantViewModel(
             return botMessage(t("You're already at ${stationNameById(toId)}.",
                 "Είσαι ήδη στον ${stationNameById(toId)}.",
                 "Je tashmë te ${stationNameById(toId)}.",
-                it = "Sei gia' a ${stationNameById(toId)}."))
+                it = "Sei già a ${stationNameById(toId)}."))
         }
         val result = planJourney.invoke(fromId, toId).first()
             ?: return botMessage(t("I couldn't find a rail route between those.",

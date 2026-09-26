@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.extensions.countLabel
 import com.syrmos.core.common.RailPulseLocalStore
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Station
@@ -739,7 +740,7 @@ private fun communityFeed(lang: AppLanguage, summary: CommunitySummary?): List<P
     if (summary == null) {
         return listOf(
             PulseFeedItem(
-                title = pulseText(lang, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunita non disponibile"),
+                title = pulseText(lang, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunità non disponibile"),
                 detail = pulseText(lang, "Official schedules remain available offline.", "Τα επίσημα δρομολόγια παραμένουν διαθέσιμα εκτός σύνδεσης.", "Oraret zyrtare mbeten të disponueshme offline.", "Gli orari ufficiali restano disponibili offline."),
                 status = pulseText(lang, "Offline", "Εκτός σύνδεσης", "Offline", "Offline"),
                 color = Color(0xFF6B7280),
@@ -762,7 +763,7 @@ private fun communityFeed(lang: AppLanguage, summary: CommunitySummary?): List<P
 
 private fun CommunityIssue.toFeedItem(lang: AppLanguage): PulseFeedItem {
     val signalLabel = communitySignalLabel(signal, lang)
-    val countLabel = pulseText(lang, "$count report${if (count == 1) "" else "s"}", "$count αναφορές", "$count raporte", "$count segnalazioni")
+    val countLabel = countLabel(count, lang, "report" to "reports", "αναφορά" to "αναφορές", "raport" to "raporte", "segnalazione" to "segnalazioni")
     return PulseFeedItem(
         title = scopeLabel,
         detail = listOf(signalLabel, detail.takeIf { it.isNotBlank() }, countLabel).filterNotNull().joinToString(" · "),
@@ -779,7 +780,7 @@ private fun communitySignalLabel(signal: String, lang: AppLanguage): String = wh
     "crowded" -> pulseText(lang, "Crowded", "Κόσμος", "Plot", "Affollato")
     "stopped" -> pulseText(lang, "Service stopped", "Η κίνηση σταμάτησε", "Shërbimi i ndalur", "Servizio fermo")
     "too_hot" -> pulseText(lang, "Too hot", "Πολύ ζέστη", "Shumë nxehtë", "Troppo caldo")
-    "access" -> pulseText(lang, "Accessibility issue", "Πρόβλημα πρόσβασης", "Problem aksesueshmërie", "Problema accessibilita")
+    "access" -> pulseText(lang, "Accessibility issue", "Πρόβλημα πρόσβασης", "Problem aksesueshmërie", "Problema accessibilità")
     "facilities" -> pulseText(lang, "Facility issue", "Πρόβλημα παροχών", "Problem shërbimesh", "Problema ai servizi")
     "safety" -> pulseText(lang, "Safety issue", "Θέμα ασφάλειας", "Problem sigurie", "Problema di sicurezza")
     else -> pulseText(lang, "Other issue", "Άλλο πρόβλημα", "Problem tjetër", "Altro problema")
@@ -787,13 +788,13 @@ private fun communitySignalLabel(signal: String, lang: AppLanguage): String = wh
 
 private fun communityAriadneText(lang: AppLanguage, summary: CommunitySummary?): String {
     if (summary == null) {
-        return pulseText(lang, "Ariadne: Community status is offline. Official schedules still work.", "Ariadne: Η κοινοτική κατάσταση είναι εκτός σύνδεσης. Τα επίσημα δρομολόγια λειτουργούν.", "Ariadne: Gjendja e komunitetit është offline. Oraret zyrtare funksionojnë.", "Ariadne: Lo stato della comunita e offline. Gli orari ufficiali funzionano.")
+        return pulseText(lang, "Ariadne: Community status is offline. Official schedules still work.", "Ariadne: Η κοινοτική κατάσταση είναι εκτός σύνδεσης. Τα επίσημα δρομολόγια λειτουργούν.", "Ariadne: Gjendja e komunitetit është offline. Oraret zyrtare funksionojnë.", "Ariadne: Lo stato della comunità e offline. Gli orari ufficiali funzionano.")
     }
     val issue = summary.issues.firstOrNull()
     if (issue != null) {
         return pulseText(lang, "Ariadne: ${issue.scopeLabel} has an active ${communitySignalLabel(issue.signal, lang).lowercase()} report.", "Ariadne: Υπάρχει ενεργή αναφορά ${communitySignalLabel(issue.signal, lang).lowercase()} στο ${issue.scopeLabel}.", "Ariadne: ${issue.scopeLabel} ka raport aktiv për ${communitySignalLabel(issue.signal, lang).lowercase()}.", "Ariadne: ${issue.scopeLabel} ha una segnalazione attiva: ${communitySignalLabel(issue.signal, lang).lowercase()}.")
     }
-    return pulseText(lang, "Ariadne: No active community issues. Official alerts still take priority.", "Ariadne: Δεν υπάρχουν ενεργά κοινοτικά προβλήματα. Οι επίσημες ειδοποιήσεις έχουν προτεραιότητα.", "Ariadne: Nuk ka probleme aktive të komunitetit. Njoftimet zyrtare kanë përparësi.", "Ariadne: Nessun problema attivo della comunita. Gli avvisi ufficiali hanno priorita.")
+    return pulseText(lang, "Ariadne: No active community issues. Official alerts still take priority.", "Ariadne: Δεν υπάρχουν ενεργά κοινοτικά προβλήματα. Οι επίσημες ειδοποιήσεις έχουν προτεραιότητα.", "Ariadne: Nuk ka probleme aktive të komunitetit. Njoftimet zyrtare kanë përparësi.", "Ariadne: Nessun problema attivo della comunità. Gli avvisi ufficiali hanno priorità.")
 }
 
 internal fun pulseText(

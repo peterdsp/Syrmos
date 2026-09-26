@@ -28,6 +28,15 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   read Athinë, the iOS subtitle matches Android, and the get-off message
   uses a colon instead of a dash. Guardrail tests on both platforms fail the
   build if a shared-table string loses its tonos or its ë again.
+- **Counts read correctly and the last stripped copy is gone.** Ichnos
+  counters say "1 report" and "3 reports" (and the same in Greek, Albanian
+  and Italian) instead of "1 reports", through one shared count label on
+  both platforms; the Android contributor card no longer shows English in
+  every language. Greek inside nested count strings, the Italian Ichnos and
+  assistant copy ("comunità", "più", "è") and the iOS Explore-farther card
+  hooks in Albanian got their accents. The Explore hero subtitle and the
+  Browse-all subtitle wrap to a second line in narrow panes instead of
+  truncating.
 
 ## 3.0.0-beta.4 - 2026-09-26
 

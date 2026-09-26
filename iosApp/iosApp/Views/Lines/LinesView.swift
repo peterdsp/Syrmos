@@ -115,7 +115,7 @@ struct LinesView: View {
                         "Greece, live and community powered",
                         "Ελλάδα, ζωντανά και με τη δύναμη της κοινότητας",
                         "Greqia, live dhe me fuqinë e komunitetit",
-                        "Grecia, live e alimentata dalla comunita"
+                        "Grecia, live e alimentata dalla comunità"
                     )
                 )
                 .font(.caption)
@@ -482,7 +482,7 @@ struct LinesView: View {
                 Text(browseAllSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(3)
             }
 
             Spacer()
@@ -690,8 +690,8 @@ struct CuratedDestination: Identifiable, Sendable {
     nonisolated static let all: [CuratedDestination] = [
         CuratedDestination(
             id: "airport", emoji: "✈️", stationId: "A1_AIR", lineId: "A1",
-            name: { l in l == .greek ? "Αεροδρόμιο Αθηνών" : l == .albanian ? "Aeroporti i Athines" : l == .italian ? "Aeroporto di Atene" : "Athens Airport" },
-            hook: { l in l == .greek ? "Η πιο γρήγορη διαδρομή στο τερματικό" : l == .albanian ? "Rruga jote me e shpejte drejt terminalit" : l == .italian ? "La via piu veloce per il terminal" : "Your fastest route to the terminal" },
+            name: { l in l == .greek ? "Αεροδρόμιο Αθηνών" : l == .albanian ? "Aeroporti i Athinës" : l == .italian ? "Aeroporto di Atene" : "Athens Airport" },
+            hook: { l in l == .greek ? "Η πιο γρήγορη διαδρομή στο τερματικό" : l == .albanian ? "Rruga jote më e shpejtë drejt terminalit" : l == .italian ? "La via più veloce per il terminal" : "Your fastest route to the terminal" },
             connections: ["M3", "A1", "A2"]
         ),
         CuratedDestination(
@@ -709,19 +709,19 @@ struct CuratedDestination: Identifiable, Sendable {
         CuratedDestination(
             id: "kifisia", emoji: "🌳", stationId: "M1_KIF", lineId: "M1",
             name: { l in l == .greek ? "Κηφισιά" : l == .albanian ? "Kifisia" : l == .italian ? "Kifisia" : "Kifisia" },
-            hook: { l in l == .greek ? "Βόρεια προάστια, τέρμα πράσινης γραμμής" : l == .albanian ? "Periferia veriore, terminali i linjes se gjelber" : l == .italian ? "Periferia nord, capolinea linea verde" : "Northern suburbs, green line terminus" },
+            hook: { l in l == .greek ? "Βόρεια προάστια, τέρμα πράσινης γραμμής" : l == .albanian ? "Periferia veriore, terminali i linjës së gjelbër" : l == .italian ? "Periferia nord, capolinea linea verde" : "Northern suburbs, green line terminus" },
             connections: ["M1"]
         ),
         CuratedDestination(
             id: "thessaloniki", emoji: "🌆", stationId: "GR_THE", lineId: "IC1",
             name: { l in l == .greek ? "Θεσσαλονίκη" : l == .albanian ? "Selanik" : l == .italian ? "Salonicco Centrale" : "Thessaloniki Central" },
-            hook: { l in l == .greek ? "Η δεύτερη πόλη της Ελλάδας με τρένο" : l == .albanian ? "Qyteti i dyte i Greqise me tren" : l == .italian ? "La seconda citta della Grecia in treno" : "Greece's second city by rail" },
+            hook: { l in l == .greek ? "Η δεύτερη πόλη της Ελλάδας με τρένο" : l == .albanian ? "Qyteti i dytë i Greqisë me tren" : l == .italian ? "La seconda città della Grecia in treno" : "Greece's second city by rail" },
             connections: ["IC", "TM1"]
         ),
         CuratedDestination(
             id: "meteora", emoji: "⛰️", stationId: "KB_KAL", lineId: "KB1",
             name: { l in l == .greek ? "Μετέωρα / Καλαμπάκα" : l == .albanian ? "Meteora / Kalambaka" : l == .italian ? "Meteora / Kalampaka" : "Meteora / Kalampaka" },
-            hook: { l in l == .greek ? "Μοναστήρια στον ουρανό" : l == .albanian ? "Manastire ne qiell" : l == .italian ? "Monasteri nel cielo" : "Monasteries in the sky" },
+            hook: { l in l == .greek ? "Μοναστήρια στον ουρανό" : l == .albanian ? "Manastire në qiell" : l == .italian ? "Monasteri nel cielo" : "Monasteries in the sky" },
             connections: ["IC"]
         ),
         CuratedDestination(
@@ -732,8 +732,8 @@ struct CuratedDestination: Identifiable, Sendable {
         ),
         CuratedDestination(
             id: "diakopto", emoji: "🚂", stationId: "KI_DIA", lineId: "DK1",
-            name: { l in l == .greek ? "Οδοντωτός Διακοπτού" : l == .albanian ? "Hekurudha e dhembezuar Diakopto" : l == .italian ? "Ferrovia a cremagliera di Diakopto" : "Diakopto Rack Railway" },
-            hook: { l in l == .greek ? "Μια από τις πιο γραφικές διαδρομές της Ευρώπης" : l == .albanian ? "Një nga udhëtimet më piktoreske të Europës" : l == .italian ? "Uno dei percorsi piu panoramici d'Europa" : "One of Europe's most scenic rides" },
+            name: { l in l == .greek ? "Οδοντωτός Διακοπτού" : l == .albanian ? "Hekurudha e dhëmbëzuar Diakopto" : l == .italian ? "Ferrovia a cremagliera di Diakopto" : "Diakopto Rack Railway" },
+            hook: { l in l == .greek ? "Μια από τις πιο γραφικές διαδρομές της Ευρώπης" : l == .albanian ? "Një nga udhëtimet më piktoreske të Europës" : l == .italian ? "Uno dei percorsi più panoramici d'Europa" : "One of Europe's most scenic rides" },
             connections: ["DK1"]
         ),
     ]

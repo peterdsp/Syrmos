@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.extensions.countLabel
 import com.syrmos.core.common.RailPulseLocalStore
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.network.CommunityReportService
@@ -300,16 +301,16 @@ private fun IchnosHistoryBucketCard(lang: AppLanguage, bucket: CommunityHistoryB
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(ichnosHistoryPeriodLabel(bucket.period), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                Text("${bucket.totalReports} ${pulseText(lang, "reports", "αναφορες", "raporte", "segnalazioni")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Text(countLabel(bucket.totalReports, lang, "report" to "reports", "αναφορά" to "αναφορές", "raport" to "raporte", "segnalazione" to "segnalazioni"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
             Row(modifier = Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)) {
                 Box(Modifier.weight(positiveRatio.coerceAtLeast(0.001f)).fillMaxSize().background(SyrmosColorTokens.live))
                 Box(Modifier.weight((1f - positiveRatio).coerceAtLeast(0.001f)).fillMaxSize().background(SyrmosColorTokens.disruption))
             }
             Row {
-                Text("✓ ${bucket.positiveReports} ${pulseText(lang, "good", "καλα", "mirë", "bene")}", style = MaterialTheme.typography.labelMedium, color = SyrmosColorTokens.live, fontWeight = FontWeight.Bold)
+                Text("✓ ${bucket.positiveReports} ${pulseText(lang, "good", "καλά", "mirë", "bene")}", style = MaterialTheme.typography.labelMedium, color = SyrmosColorTokens.live, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                Text("! ${bucket.issueReports} ${pulseText(lang, "issues", "προβληματα", "probleme", "problemi")}", style = MaterialTheme.typography.labelMedium, color = if (bucket.issueReports > 0) SyrmosColorTokens.disruption else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Text("! " + countLabel(bucket.issueReports, lang, "issue" to "issues", "πρόβλημα" to "προβλήματα", "problem" to "probleme", "problema" to "problemi"), style = MaterialTheme.typography.labelMedium, color = if (bucket.issueReports > 0) SyrmosColorTokens.disruption else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
             val breakdown = ichnosHistoryBreakdown(bucket.counts, lang)
             if (breakdown.isNotBlank()) {
@@ -373,14 +374,14 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
                     }
                     Column {
                         Text(callsign, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("${pulseText(lang, "Local rail contributor", "Τοπικος συνεισφορεας rail", "Kontribues lokal rail", "Collaboratore rail locale")} · ${pulseText(lang, "Level", "Επιπεδο", "Niveli", "Livello")} $level", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                        Text("${pulseText(lang, "Local rail contributor", "Τοπικός συνεισφορέας rail", "Kontribues lokal rail", "Collaboratore rail locale")} · ${pulseText(lang, "Level", "Επίπεδο", "Niveli", "Livello")} $level", style = MaterialTheme.typography.labelMedium, color = Color.White)
                         Text(pulseText(lang, "Progress stored only on this device", "Η πρόοδος αποθηκεύεται μόνο στη συσκευή", "Progresi ruhet vetëm në këtë pajisje", "Progressi salvati solo su questo dispositivo"), style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.padding(top = 6.dp).background(Color.White.copy(alpha = 0.17f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp))
                     }
                 }
                 Text(pulseText(lang, "NEXT LEVEL", "ΕΠΟΜΕΝΟ ΕΠΙΠΕΔΟ", "NIVELI TJETËR", "PROSSIMO LIVELLO"), style = MaterialTheme.typography.labelSmall, color = Color.White)
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = Color(0xFF63E6A6), trackColor = Color.White.copy(alpha = 0.2f))
                 Row {
-                    Text("${snapshot.confirmed} confirmed contributions", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                    Text(countLabel(snapshot.confirmed, lang, "confirmed contribution" to "confirmed contributions", "επιβεβαιωμένη συνεισφορά" to "επιβεβαιωμένες συνεισφορές", "kontribut i konfirmuar" to "kontribute të konfirmuara", "contributo confermato" to "contributi confermati"), style = MaterialTheme.typography.labelSmall, color = Color.White)
                     Spacer(Modifier.weight(1f))
                     Text("${100 - (snapshot.confirmed % 100)} ${pulseText(lang, "to", "για", "deri në", "a")} $nextCallsign", style = MaterialTheme.typography.labelSmall, color = Color.White)
                 }
@@ -403,7 +404,7 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
                 BadgeCard("100", pulseText(lang, "100\nReports", "100\nΑναφορές", "100\nRaporte", "100\nReport"), snapshot.confirmed >= 100, Modifier.weight(1f))
             }
         }
-        item { PulseSectionTitle(pulseText(lang, "Weekly community activity", "Εβδομαδιαία δραστηριότητα κοινότητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunita")) }
+        item { PulseSectionTitle(pulseText(lang, "Weekly community activity", "Εβδομαδιαία δραστηριότητα κοινότητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunità")) }
         item {
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 5.dp) {
                 Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -505,14 +506,14 @@ private fun CommunitySummaryCard(lang: AppLanguage, title: String, detail: Strin
 }
 
 private fun summaryTitle(lang: AppLanguage, summary: CommunitySummary?): String = when {
-    summary == null -> pulseText(lang, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunita non disponibile")
-    summary.hasIssues -> pulseText(lang, "Community issue reported", "Αναφέρθηκε κοινοτικό πρόβλημα", "U raportua problem nga komuniteti", "Problema segnalato dalla comunita")
+    summary == null -> pulseText(lang, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunità non disponibile")
+    summary.hasIssues -> pulseText(lang, "Community issue reported", "Αναφέρθηκε κοινοτικό πρόβλημα", "U raportua problem nga komuniteti", "Problema segnalato dalla comunità")
     else -> pulseText(lang, "No issues reported", "Δεν αναφέρθηκαν προβλήματα", "Nuk ka probleme të raportuara", "Nessun problema segnalato")
 }
 
 private fun summaryDetail(lang: AppLanguage, summary: CommunitySummary?): String = when {
     summary == null -> pulseText(lang, "Connect to refresh anonymous reports.", "Συνδέσου για ανανέωση ανώνυμων αναφορών.", "Lidhu për të rifreskuar raportet anonime.", "Connettiti per aggiornare le segnalazioni anonime.")
-    summary.hasIssues -> pulseText(lang, "${summary.activeIssueCount} active report${if (summary.activeIssueCount == 1) "" else "s"}", "${summary.activeIssueCount} ενεργές αναφορές", "${summary.activeIssueCount} raporte aktive", "${summary.activeIssueCount} segnalazioni attive")
+    summary.hasIssues -> countLabel(summary.activeIssueCount, lang, "active report" to "active reports", "ενεργή αναφορά" to "ενεργές αναφορές", "raport aktiv" to "raporte aktive", "segnalazione attiva" to "segnalazioni attive")
     else -> pulseText(lang, "${summary.estimatedJourneysToday ?: 0} estimated journeys today", "${summary.estimatedJourneysToday ?: 0} εκτιμώμενες διαδρομές σήμερα", "${summary.estimatedJourneysToday ?: 0} udhëtime të vlerësuara sot", "${summary.estimatedJourneysToday ?: 0} viaggi stimati oggi")
 }
 
@@ -622,7 +623,7 @@ private fun BadgeCard(symbol: String, label: String, unlocked: Boolean, modifier
 @Composable
 private fun CommunityNotice(lang: AppLanguage) {
     Text(
-        pulseText(lang, "Community reports are not official operator notices.", "Οι αναφορές κοινότητας δεν είναι επίσημες ανακοινώσεις φορέα.", "Raportet e komunitetit nuk janë njoftime zyrtare të operatorit.", "Le segnalazioni della comunita non sono avvisi ufficiali."),
+        pulseText(lang, "Community reports are not official operator notices.", "Οι αναφορές κοινότητας δεν είναι επίσημες ανακοινώσεις φορέα.", "Raportet e komunitetit nuk janë njoftime zyrtare të operatorit.", "Le segnalazioni della comunità non sono avvisi ufficiali."),
         style = MaterialTheme.typography.labelSmall,
         color = SyrmosColorTokens.warning,
         modifier = Modifier.fillMaxWidth().background(SyrmosColorTokens.warningContainer, RoundedCornerShape(14.dp)).padding(12.dp),

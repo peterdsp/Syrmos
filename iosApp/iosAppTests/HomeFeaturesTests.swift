@@ -189,3 +189,30 @@ final class HomeFeaturesTests: XCTestCase {
         XCTAssertNil(AthensClockLabel.label("  "))
     }
 }
+
+// MARK: - Count labels (twin of CountLabelTest in core/common)
+
+final class CountLabelTests: XCTestCase {
+    private func reports(_ count: Int, _ language: AppLanguage) -> String {
+        countLabel(count, language,
+                   en: ("report", "reports"),
+                   el: ("αναφορά", "αναφορές"),
+                   sq: ("raport", "raporte"),
+                   it: ("segnalazione", "segnalazioni"))
+    }
+
+    func testOneTakesTheSingularInEveryLanguage() {
+        XCTAssertEqual(reports(1, .english), "1 report")
+        XCTAssertEqual(reports(1, .greek), "1 αναφορά")
+        XCTAssertEqual(reports(1, .albanian), "1 raport")
+        XCTAssertEqual(reports(1, .italian), "1 segnalazione")
+    }
+
+    func testManyAndZeroTakeThePlural() {
+        XCTAssertEqual(reports(3, .english), "3 reports")
+        XCTAssertEqual(reports(0, .greek), "0 αναφορές")
+        XCTAssertEqual(reports(12, .albanian), "12 raporte")
+        XCTAssertEqual(reports(2, .italian), "2 segnalazioni")
+    }
+}
+

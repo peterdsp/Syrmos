@@ -36,6 +36,30 @@ extension String {
     }
 }
 
+/// "1 report" / "3 reports" in the reader's language.
+///
+/// Every language we ship inflects the noun for one versus many, and a
+/// counter that always uses the plural ("1 reports", "1 αναφορές") reads as
+/// a bug. Each pair is (one, many). Zero takes the plural in all four
+/// languages. Twin of `countLabel` in core/common.
+func countLabel(
+    _ count: Int,
+    _ language: AppLanguage,
+    en: (String, String),
+    el: (String, String),
+    sq: (String, String),
+    it: (String, String)
+) -> String {
+    let forms: (String, String)
+    switch language {
+    case .english: forms = en
+    case .greek: forms = el
+    case .albanian: forms = sq
+    case .italian: forms = it
+    }
+    return "\(count) \(count == 1 ? forms.0 : forms.1)"
+}
+
 @MainActor
 final class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()

@@ -98,7 +98,7 @@ struct StationDetailView: View {
                          : loc.language == .albanian
                          ? "Pagesa dhe lëshimi i biletës bëhen 100% në faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh të dhëna pagesash dhe nuk ka asnjë përgjegjësi për rezervimin."
                          : loc.language == .italian
-                         ? "Il pagamento e l'emissione del biglietto avvengono interamente sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha alcuna responsabilita per la prenotazione."
+                         ? "Il pagamento e l'emissione del biglietto avvengono interamente sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha alcuna responsabilità per la prenotazione."
                          : "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking.")
                         .font(.caption2)
                 }

@@ -207,7 +207,7 @@ fun LinesScreen(
                         }
                         item {
                             Text(
-                                text = pulseText(lang, "Explore farther", "Εξερεύνησε πιο μακριά", "Eksploro më larg", "Esplora piu lontano"),
+                                text = pulseText(lang, "Explore farther", "Εξερεύνησε πιο μακριά", "Eksploro më larg", "Esplora più lontano"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = 8.dp),
@@ -429,7 +429,7 @@ private fun ExploreHeader(
                         "Greece, live and community powered",
                         "Ελλάδα, ζωντανά και με τη δύναμη της κοινότητας",
                         "Greqia, live dhe me fuqinë e komunitetit",
-                        "Grecia, live e alimentata dalla comunita",
+                        "Grecia, live e alimentata dalla comunità",
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -675,7 +675,7 @@ private fun BrowseAllStationsRow(
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 3,
                 )
             }
             Surface(
@@ -945,7 +945,7 @@ private fun Line.localizedName(lang: AppLanguage): String {
 private fun LineType.localizedName(lang: AppLanguage): String {
     return when (this) {
         LineType.METRO -> when (lang) {
-            AppLanguage.GREEK -> "Μετρο"
+            AppLanguage.GREEK -> "Μετρό"
             AppLanguage.ALBANIAN -> "Metro"
             AppLanguage.ITALIAN -> "Metro"
             else -> "Metro"
