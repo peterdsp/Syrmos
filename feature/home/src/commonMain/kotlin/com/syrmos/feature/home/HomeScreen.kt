@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -244,7 +246,10 @@ fun HomeScreen(
             .statusBarsPadding(),
     ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        // Readable width on tablets and unfolded devices (matches the iOS
+        // ReadableTabContent maximum): the answer hero and the cards never
+        // stretch across a 800 dp window; the background still fills it.
+        modifier = Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp),
         state = listState,
         contentPadding = PaddingValues(start = 16.dp, top = 90.dp, end = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
