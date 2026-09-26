@@ -736,6 +736,11 @@ merged (#201, #202).
   window's bottom-right corner with the Ariadne launcher.
 - **Airport route chips** (iOS): `lineLimit(1)` + `fixedSize` so "X93" no
   longer breaks into two lines in the route overview.
+- **GO End confirmation anchor** (iOS): the `confirmationDialog` sat on the
+  whole GO view, so on an iPad the popover hovered over the content with its
+  arrow pointing at the map card; it now sits on the End / Finish toolbar
+  button (`endButton`), so the popover points at the button. Phones are
+  unchanged (an action sheet either way).
 - **Plan companion readable column** (both clients): the selected journey
   column is capped at 680 (iOS `frame(maxWidth:)`, Android `widthIn(max)`),
   so a wide companion pane on an iPad or tablet does not stretch the timeline
