@@ -201,6 +201,15 @@ object AdaptiveWorkspacePolicy {
     // A tall stacked canvas keeps the map/overview at least this tall, at about
     // this share of the height, and the task below at the tabletop task floor.
     const val TALL_MIN_COMPANION = 360
+
+    /**
+     * The narrowest tall canvas that still stacks a map or overview above the
+     * task (T7 Tall narrow canvas). An upright fold at 673 dp whose window hosts
+     * an 80 dp navigation rail leaves a 593 dp canvas, under the medium floor
+     * but still a full reading width; a phone column (440 dp, the Duo cover at
+     * 466 dp) stays under it and never stacks.
+     */
+    const val TALL_NARROW_MIN_WIDTH = 480
     const val TALL_COMPANION_RATIO = 0.45f
 
     // The medium band starts where ContentBreakpoint stops calling a window compact.
@@ -412,6 +421,21 @@ object AdaptiveWorkspacePolicy {
                 width >= MEDIUM_MIN_WIDTH
             if (mediumCanvas) {
                 resolveMediumCanvas(width, height, task, scale)?.let { return it }
+            }
+
+            // T7 Tall narrow canvas: under the medium floor because a navigation
+            // rail took its share, yet tall; the tasks that read as map above
+            // and task below (GO, Explore, Map) still stack. Column tasks and
+            // large text keep the single column.
+            val tallNarrow = task.pairsWithSecondary &&
+                task.tallCanvasAxis == PairAxis.STACKED &&
+                !forceSingleColumn &&
+                !largeText &&
+                height > width &&
+                width >= TALL_NARROW_MIN_WIDTH &&
+                width < MEDIUM_MIN_WIDTH
+            if (tallNarrow) {
+                mediumStacked(width, height, scale)?.let { return it }
             }
 
             // When the window is wide but the task does not pair (a form), keep a

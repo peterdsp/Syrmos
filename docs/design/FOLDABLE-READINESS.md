@@ -511,6 +511,25 @@ with the timeline only; iOS had the per-leg coloured route map since round 4.
   SINGLE. An upright Android fold therefore never stacks GO, Explore or Map.
   Fixed in round 9 (tall narrow canvas rule).
 
+## Landed: polish round 9 (T7 Tall narrow canvas: stacking beside a navigation rail)
+
+Source: the round 8 finding (an upright Android fold never stacked) and the
+master plan's GO portrait contract (map overview above, instruction below).
+
+- **Rule** (both twins, `TALL_NARROW_MIN_WIDTH` / `tallNarrowMinWidth` = 480):
+  a plain window under the medium floor (600) but at least 480 wide, taller
+  than wide, not at large text, stacks through `mediumStacked` for the tasks
+  whose `tallCanvasAxis` is STACKED (GO, Explore, Map). Column tasks (Plan,
+  Departures, Home) keep the single column there, and a phone column (440, the
+  Duo cover at 466) never stacks. The medium and large rules are untouched.
+- **Fixtures**: `t7_tallNarrowCanvas_goStacksBesideANavigationRail`,
+  `t7_tallNarrowCanvas_columnTasksStaySingle`,
+  `t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack` on both twins
+  (Kotlin layout suite 62, Swift fixtures 57).
+- **Verified**: Pixel emulator at 673x841 (593 x 761 canvas beside the rail),
+  GO: the route map holds the upper region with Fit route and attribution, the
+  instruction, progress and controls read below. Restored to 841x673 after.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

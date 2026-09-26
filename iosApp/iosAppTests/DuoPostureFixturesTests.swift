@@ -150,6 +150,30 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(ws.arrangement, .single)
     }
 
+    // T7 Tall narrow canvas: an upright fold (673 x 841) whose window hosts an
+    // 80 pt navigation rail leaves a 593 x 761 canvas, under the medium floor.
+
+    func test_t7_tallNarrowCanvas_goStacksBesideANavigationRail() {
+        let ws = resolve(593, 761, .go)
+        XCTAssertEqual(ws.arrangement, .stacked)
+        XCTAssertEqual(ws.pane(.companion)?.rect.top, 0)
+        XCTAssertGreaterThanOrEqual(ws.pane(.companion)!.rect.height, Policy.tallMinCompanion)
+        XCTAssertEqual(resolve(593, 761, .explore).arrangement, .stacked)
+        XCTAssertEqual(resolve(593, 761, .map).arrangement, .stacked)
+    }
+
+    func test_t7_tallNarrowCanvas_columnTasksStaySingle() {
+        XCTAssertEqual(resolve(593, 761, .plan).arrangement, .single)
+        XCTAssertEqual(resolve(593, 761, .departures).arrangement, .single)
+        XCTAssertEqual(resolve(593, 761, .home).arrangement, .single)
+    }
+
+    func test_t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack() {
+        XCTAssertEqual(resolve(440, 900, .go).arrangement, .single)
+        XCTAssertEqual(resolve(coverW, coverH, .go).arrangement, .single)
+        XCTAssertEqual(resolve(593, 761, .go, fontScale: 1.6).arrangement, .single)
+    }
+
     func test_p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked() {
         let ws = resolve(innerW, innerH, .plan, fontScale: 1.2)
         XCTAssertEqual(ws.arrangement, .stacked)

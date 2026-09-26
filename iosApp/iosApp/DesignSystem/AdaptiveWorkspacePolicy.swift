@@ -256,6 +256,10 @@ enum SyrmosAdaptiveWorkspacePolicy {
     static let tallCompanionRatio: Float = 0.45
 
     static let mediumMinWidth = 600
+    /// The narrowest tall canvas that still stacks a map or overview above the
+    /// task (T7 Tall narrow canvas): an upright fold whose window hosts a
+    /// navigation rail; a phone column (440, the Duo cover at 466) never stacks.
+    static let tallNarrowMinWidth = 480
 
     private static let gap = 24
 
@@ -432,6 +436,19 @@ enum SyrmosAdaptiveWorkspacePolicy {
                 && base.secondaryPaneWidth == nil
                 && width >= mediumMinWidth
             if mediumCanvas, let ws = resolveMediumCanvas(width: width, height: height, task: task, scale: scale) {
+                return ws
+            }
+            // T7 Tall narrow canvas: under the medium floor because a navigation
+            // rail took its share, yet tall; the tasks that read as map above and
+            // task below (GO, Explore, Map) still stack.
+            let tallNarrow = task.pairsWithSecondary
+                && task.tallCanvasAxis == .stacked
+                && !forceSingleColumn
+                && !largeText
+                && height > width
+                && width >= tallNarrowMinWidth
+                && width < mediumMinWidth
+            if tallNarrow, let ws = mediumStacked(width: width, height: height, scale: scale) {
                 return ws
             }
             let single = base.secondaryPaneWidth != nil

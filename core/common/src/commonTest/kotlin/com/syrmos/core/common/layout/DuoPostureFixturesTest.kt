@@ -184,6 +184,33 @@ class DuoPostureFixturesTest {
         assertEquals(WorkspaceArrangement.SINGLE, ws.arrangement)
     }
 
+    // T7 Tall narrow canvas: an upright fold (673 x 841) whose window hosts an
+    // 80 dp navigation rail leaves a 593 x 761 canvas, under the medium floor.
+
+    @Test
+    fun t7_tallNarrowCanvas_goStacksBesideANavigationRail() {
+        val ws = resolve(593, 761, WorkspaceTask.GO)
+        assertEquals(WorkspaceArrangement.STACKED, ws.arrangement)
+        assertEquals(0, ws.pane(PaneRole.COMPANION)!!.rect.top)
+        assertTrue(ws.pane(PaneRole.COMPANION)!!.rect.height >= AdaptiveWorkspacePolicy.TALL_MIN_COMPANION)
+        assertEquals(WorkspaceArrangement.STACKED, resolve(593, 761, WorkspaceTask.EXPLORE).arrangement)
+        assertEquals(WorkspaceArrangement.STACKED, resolve(593, 761, WorkspaceTask.MAP).arrangement)
+    }
+
+    @Test
+    fun t7_tallNarrowCanvas_columnTasksStaySingle() {
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.PLAN).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.DEPARTURES).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.HOME).arrangement)
+    }
+
+    @Test
+    fun t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack() {
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(440, 900, WorkspaceTask.GO).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.GO).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(593, 761, WorkspaceTask.GO, fontScale = 1.6f).arrangement)
+    }
+
     @Test
     fun p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked() {
         // At 1.2x the side-by-side floors (360 task, 384 map) no longer fit in

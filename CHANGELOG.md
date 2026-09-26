@@ -12,6 +12,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Upright folds stack even with a navigation rail.** An unfolded device held
+  upright hosts an 80 dp rail that narrows the content to just under the medium
+  breakpoint, and until now that kept GO, Explore and the Map in one column.
+  The shared layout policy now stacks the map or overview above the task on any
+  tall canvas at least 480 dp wide; planner, departures and Home keep their
+  single column there, and phones and large text are unchanged. Same rule on
+  iOS and Android.
 - **GO on Android draws the route map.** The paired GO screen now shows the
   journey on a real map beside (or, upright, above) the instruction: every leg
   in its line colour, a haloed dot on your current stop, attribution kept, and a
