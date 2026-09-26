@@ -33,6 +33,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
@@ -288,7 +289,11 @@ fun AirportHubScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 8.dp, bottom = 126.dp),
+                    // Past the floating bottom bar AND the launcher pill (96 dp + 56 dp
+                    // + a gap), so the last card's text is never under the owl on a
+                    // folded cover.
+                    .padding(top = 8.dp, bottom = 168.dp)
+                    .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 planning()

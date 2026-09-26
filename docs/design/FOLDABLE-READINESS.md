@@ -861,8 +861,10 @@ geometry (466x678) after round 17 merged (#203).
   launcher row (96 dp above the navigation bar), the list's 140 dp bottom
   padding left its last line under the pill on the cover; the padding is now
   168 dp plus the navigation-bar inset. Verified fully scrolled at the cover
-  (last row above the pill). The Airport hub's single column already ends
-  above the bar (verified fully scrolled).
+  (last row above the pill). The Airport hub's single column ended under the
+  launcher (its service-alerts card text sat behind the owl); it now takes
+  168 dp plus the navigation-bar inset too. Verified fully scrolled at the
+  cover: the card ends above the launcher.
 - **Large text on the fold (Android, font scale 1.3)**: Home and Plan fall
   back to the readable single column on the 841x673 emulator (canvas 761 dp
   beside the rail). This is the policy's scaled floors at work
