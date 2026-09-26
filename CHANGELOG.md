@@ -12,6 +12,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+## 3.0.0-beta.5 - 2026-09-26
+
+Polish rounds 21 to 25: the GO timeline follows each advance, Albanian, Greek
+and Italian read as the languages on every surface, counts inflect for one
+versus many, the Android widgets follow the app's language, and the folded
+cover is captured in the two longest languages. Android versionCode 228.
+
 - **The GO timeline follows each advance.** Tapping Next stop (or an advance
   from live guidance) scrolls the paired timeline to the new current stop;
   a view you scrolled by hand between advances is still left alone, with
