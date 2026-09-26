@@ -611,6 +611,11 @@ internal actual fun PlatformMapView(
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildLiveTrainBitmap(res, color = busColor, lineId = bus.lineId)
                     title = bus.lineId
+                    // No bus detail card yet: consume the tap so osmdroid's stock
+                    // info bubble (a plain "X93" callout) never appears over the
+                    // designed map; the vehicle's line is already on its glyph.
+                    setInfoWindow(null)
+                    setOnMarkerClickListener { _, _ -> true }
                 }
                 busMarkers[bus.id] = marker
                 mapView.overlays.add(marker)

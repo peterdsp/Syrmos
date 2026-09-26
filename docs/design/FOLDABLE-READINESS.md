@@ -822,6 +822,34 @@ geometry (466x678) after round 17 merged (#203).
   Plan pill there is a bottom safe-area band that reserves its own height, so
   nothing is covered.
 
+- **iPhone compact walk** (Syrmos 27 simulator, 402x874): Home with the
+  four-direction board, Plan with the chips and the selected journey under
+  the alternatives, GO with "Show route map" revealing the route card with
+  its Confirmed stop pill and Fit route control. One defect: the Ariadne
+  launcher covered the Explore "Plan a journey" pill; the pill band now keeps
+  104 pt trailing clearance in the single column and when stacked, and only
+  side by side (launcher over the companion) uses 16 pt.
+- **Plan empty companion (iOS)**: the large-text render showed Plan stacking
+  the invitation card over the upper region, the defect fixed for Explore in
+  round 17; `PlanView` now passes `companionHasContent: planned &&
+  selectedResult != nil`, so a stacked Plan is a pair only with a selected
+  journey. Render `plan-duo-inner-portrait-xxl.png` (Dynamic Type xxLarge on
+  the Duo inner portrait) pins it.
+- **Android bus markers**: a tap on an airport-bus vehicle showed osmdroid's
+  stock info bubble (a plain "X93" callout) over the designed canvas while the
+  inspector stayed empty (there is no bus detail card yet). The marker now
+  disables the info window and consumes the tap; the vehicle's line is already
+  on its glyph. Verified at 1280x800 (no bubble after the tap).
+- **Large text on the fold (Android, font scale 1.3)**: Home and Plan fall
+  back to the readable single column on the 841x673 emulator (canvas 761 dp
+  beside the rail). This is the policy's scaled floors at work
+  (`MIN_TASK_PANE` 300 x 1.3 = 390 > the 380 dp half; stacking needs
+  468 + 364 dp of height), pinned by the `largerText` fixtures on both twins.
+  Nothing overlapped or truncated: the hero, the four-direction board, the
+  Plan form and the route cards read correctly at 1.3. Recorded as by design;
+  at 1.2 the tall canvas still stacks Plan (fixture
+  `p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked`).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
