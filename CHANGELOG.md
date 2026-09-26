@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+## 3.0.0-beta.4 - 2026-09-26
+
+Polish rounds 4 to 20 for the iPhone Duo, Android foldables and tablets: the
+same journey reads as two panes wherever the window allows, and one column
+where it does not. Android versionCode 227.
+
 - **Round 20 checks.** Dark mode reviewed on every paired screen on both
   platforms (no defects); three more dark reference renders added on iOS. In
   Greek, all-caps labels (the GO state, the Home status tag, LIVE) now drop
