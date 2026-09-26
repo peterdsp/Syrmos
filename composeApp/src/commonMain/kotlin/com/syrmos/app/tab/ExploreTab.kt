@@ -125,10 +125,13 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                 androidx.compose.material3.ExtendedFloatingActionButton(
                     onClick = { navigator.push(PlanScreenRoute()) },
                     modifier = Modifier
-                        // Sits ABOVE the Ariadne launcher pill (which owns bottom=96dp,
-                        // end=16dp) so the two never overlap in the bottom-right corner.
+                        // Single column: sits ABOVE the Ariadne launcher pill (which
+                        // owns bottom=96dp, end=16dp over the bottom bar) so the two
+                        // never overlap. Paired: the pill floats over the companion
+                        // pane, so the button rests at the list pane's own bottom
+                        // corner instead of hovering over the middle of the list.
                         .align(androidx.compose.ui.Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 168.dp),
+                        .padding(end = 16.dp, bottom = if (paired) 16.dp else 168.dp),
                 ) {
                     Text(
                         when (lang) {
