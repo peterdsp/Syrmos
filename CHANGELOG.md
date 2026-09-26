@@ -12,6 +12,16 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Plan compares with confidence on foldables and tablets.** On a paired
+  layout the route alternatives now sit under the query in the task pane and
+  the companion pane reads the selected journey (stops, times, changes, Start),
+  with a calm state before a search and an honest one after a search that found
+  nothing. Each alternative carries the differences that are really there:
+  the shared ranker's "Recommended", plus "Fastest" and "Fewest changes" only
+  when another option is slower or has more changes; the selected journey says
+  how it compares ("+10 min vs fastest", "1 more change"). The selection is kept
+  by itinerary identity, so a re-plan or a fold that refreshes results never
+  silently switches routes. Same on iOS and Android.
 - **GO refinements from the foldables review.** The route map draws each leg in
   its real line colour, so an interchange reads as a colour change on the map
   as it does on the timeline. On a tall or folded window the map keeps the

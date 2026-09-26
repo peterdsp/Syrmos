@@ -284,7 +284,9 @@ struct PlanView: View {
     @State private var opening: String?   // "from" | "to" | nil
     @State private var query = ""
     @State private var results: [JourneyPlanAdapter.PlannedJourney] = []
-    @State private var selectedIdx = 0
+    /// Selected itinerary by id (legs + schedule identity), never a list index,
+    /// so a re-plan or a fold that refreshes results keeps the traveller's choice.
+    @State private var selectedId: String? = nil
     @State private var planned = false
     @State private var mode: JourneyPlanAdapter.Mode = .now
     @State private var arriveByTime = SyrmosClock.now
@@ -393,8 +395,8 @@ struct PlanView: View {
 
     /// Companion-pane title on a paired layout (foldables / Duo): the results
     /// pane reads as its own surface, with the same name in every state.
-    private var planResultsPaneHeader: some View {
-        Text(t("Routes", "Διαδρομές", "Rrugët", "Percorsi"))
+    private var planCompanionHeader: some View {
+        Text(t("Selected journey", "Επιλεγμένη διαδρομή", "Udhëtimi i zgjedhur", "Viaggio selezionato"))
             .font(.title3.weight(.semibold))
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityAddTraits(.isHeader)
@@ -402,18 +404,26 @@ struct PlanView: View {
 
     /// Calm empty state for the companion pane before the first search, so the
     /// unfolded display never shows a blank half (six-posture prompt, section 5).
-    private var planResultsPlaceholder: some View {
+    /// `afterSearch` is the honest state once a search ran but nothing is
+    /// selectable (no route, suspended line): no invented route fills the pane.
+    private func planCompanionPlaceholder(afterSearch: Bool) -> some View {
         VStack(alignment: .leading, spacing: SyrmosTokens.Space.sm) {
             Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
                 .font(.title2)
                 .foregroundStyle(Color.syrmosPrimary)
-            Text(t("Choose where you are going.", "Διάλεξε πού πηγαίνεις.", "Zgjidh ku po shkon.", "Scegli dove vai."))
+            Text(afterSearch
+                ? t("No journey to show yet.", "Καμία διαδρομή για προβολή ακόμη.", "Ende asnjë udhëtim për t'u shfaqur.", "Nessun viaggio da mostrare ancora.")
+                : t("Choose where you are going.", "Διάλεξε πού πηγαίνεις.", "Zgjidh ku po shkon.", "Scegli dove vai."))
                 .font(.headline)
-            Text(t(
-                "Routes and the selected journey's details appear here.",
-                "Οι διαδρομές και οι λεπτομέρειες του επιλεγμένου ταξιδιού εμφανίζονται εδώ.",
-                "Rrugët dhe detajet e udhëtimit të zgjedhur shfaqen këtu.",
-                "I percorsi e i dettagli del viaggio selezionato compaiono qui."))
+            Text(afterSearch
+                ? t("Pick one of the routes to read it here.",
+                    "Διάλεξε μία από τις διαδρομές για να τη δεις εδώ.",
+                    "Zgjidh një nga rrugët për ta lexuar këtu.",
+                    "Scegli uno dei percorsi per leggerlo qui.")
+                : t("The selected journey's stops, times and changes appear here.",
+                    "Οι στάσεις, οι ώρες και οι αλλαγές της επιλεγμένης διαδρομής εμφανίζονται εδώ.",
+                    "Ndalesat, oraret dhe ndërrimet e udhëtimit të zgjedhur shfaqen këtu.",
+                    "Fermate, orari e cambi del viaggio selezionato compaiono qui."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -426,14 +436,64 @@ struct PlanView: View {
         .accessibilityElement(children: .combine)
     }
 
-    @ViewBuilder private var planResults: some View {
+    /// Usable alternatives: in a backward mode only options that actually scheduled.
+    private var usableResults: [JourneyPlanAdapter.PlannedJourney] {
+        mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
+    }
+
+    /// Shared comparison facts, index-aligned with `usableResults`.
+    private var resultFacts: [JourneyComparison.Facts] {
+        let u = usableResults
+        return JourneyComparison.facts(
+            durations: u.map { Optional($0.durationSeconds) },
+            changes: u.map { $0.transferCount })
+    }
+
+    /// The selected option by id, falling back to the first offered one.
+    private var selectedResult: JourneyPlanAdapter.PlannedJourney? {
+        let u = usableResults
+        guard let i = JourneySelection.index(of: selectedId, in: u.map(\.id)) else { return u.first }
+        return u[i]
+    }
+
+    /// Chips on an alternative: the shared ranker's "recommended" (top option
+    /// unless missed, as on Kotlin/web) plus the differences that are really there.
+    private func badgeLabels(index: Int, _ r: JourneyPlanAdapter.PlannedJourney, _ f: JourneyComparison.Facts) -> [String] {
+        var out: [String] = []
+        if index == 0 && r.feasibility != .missed {
+            out.append(t("Recommended", "Προτεινόμενη", "E rekomanduar", "Consigliato"))
+        }
+        if f.fastest { out.append(t("Fastest", "Ταχύτερη", "Më e shpejta", "Più veloce")) }
+        if f.fewestChanges { out.append(t("Fewest changes", "Λιγότερες αλλαγές", "Më pak ndërrime", "Meno cambi")) }
+        return out
+    }
+
+    /// One line under the selected journey's summary saying how it compares.
+    private func comparisonLine(_ f: JourneyComparison.Facts) -> String? {
+        var parts: [String] = []
+        if f.fastest { parts.append(t("Fastest route", "Ταχύτερη διαδρομή", "Rruga më e shpejtë", "Percorso più veloce")) }
+        if let m = f.minutesSlowerThanFastest {
+            parts.append("+\(m) " + t("min vs fastest", "λεπ από την ταχύτερη", "min nga më e shpejta", "min rispetto al più veloce"))
+        }
+        if f.fewestChanges { parts.append(t("Fewest changes", "Λιγότερες αλλαγές", "Më pak ndërrime", "Meno cambi")) }
+        if f.extraChanges == 1 {
+            parts.append(t("1 more change", "1 αλλαγή παραπάνω", "1 ndërrim më shumë", "1 cambio in più"))
+        } else if f.extraChanges > 1 {
+            parts.append("\(f.extraChanges) " + t("more changes", "αλλαγές παραπάνω", "ndërrime më shumë", "cambi in più"))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// The alternatives: disruption chip, suspended and no-route states, the
+    /// count/save row and one card per usable option. On a paired layout this is
+    /// the task pane under the query; the selected journey reads in the companion.
+    @ViewBuilder private var planAlternatives: some View {
         // Phase R: disclose when we routed around a suspended line.
         if planned, case .routed(_, let excluded)? = disruption, !excluded.isEmpty {
             routingAroundChip(excluded)
         }
 
-        // In a backward mode only options that actually scheduled are usable.
-        let usable = mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
+        let usable = usableResults
         if planned, case .suspended(let suspLines, let suspNotices)? = disruption {
             suspendedState(lines: suspLines, notices: suspNotices)
         } else if planned && usable.isEmpty {
@@ -456,20 +516,33 @@ struct PlanView: View {
                     .buttonStyle(.bordered)
                     .disabled(alreadySaved)
             }
-            ForEach(Array(usable.enumerated()), id: \.offset) { i, r in
+            let facts = resultFacts
+            let selectedID = selectedResult?.id
+            ForEach(Array(usable.enumerated()), id: \.element.id) { i, r in
                 let leaveByLabel: String? = (mode == .now) ? nil : r.leaveBy.map { lb in
                     let label = mode == .lastConnection
                         ? t("Last train home leaves", "Το τελευταίο τρένο φεύγει", "Treni i fundit niset", "L'ultimo treno parte")
                         : t("Leave by", "Αναχώρηση έως", "Nisu deri", "Parti entro")
                     return "\(label) \(athensClock(lb))"
                 }
-                optionCard(r, selected: i == selectedIdx, leaveByLabel: leaveByLabel) { selectedIdx = i }
-            }
-            // S05 selected-journey detail for the chosen option.
-            if let sel = usable.indices.contains(selectedIdx) ? usable[selectedIdx] : nil {
-                journeyDetail(sel)
+                optionCard(r, selected: r.id == selectedID, badges: badgeLabels(index: i, r, facts[i]),
+                           leaveByLabel: leaveByLabel) { selectedId = r.id }
             }
         }
+    }
+
+    /// S05 selected-journey detail for the chosen option (with its comparison line).
+    @ViewBuilder private var planSelectedDetail: some View {
+        let usable = usableResults
+        if let sel = selectedResult, let i = usable.firstIndex(where: { $0.id == sel.id }) {
+            journeyDetail(sel, facts: resultFacts[i])
+        }
+    }
+
+    /// Single-column order: alternatives, then the selected journey under them.
+    @ViewBuilder private var planResults: some View {
+        planAlternatives
+        planSelectedDetail
     }
 
     var body: some View {
@@ -478,23 +551,28 @@ struct PlanView: View {
                 pairs: true,
                 task: .plan,
                 primary: {
+                    // Task pane: the editable query and the route alternatives
+                    // (Plan contract: compare here, read the choice alongside).
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             planPreamble
                             planQuery
+                            if planned { planAlternatives }
                             savedSection
                         }
                         .padding(16)
                     }
                 },
                 companion: {
+                    // Companion pane: the selected journey's stops, times and
+                    // changes, with a calm state before and after an empty search.
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
-                            planResultsPaneHeader
-                            if planned {
-                                planResults
+                            planCompanionHeader
+                            if planned && selectedResult != nil {
+                                planSelectedDetail
                             } else {
-                                planResultsPlaceholder
+                                planCompanionPlaceholder(afterSearch: planned)
                             }
                         }
                         .padding(16)
@@ -934,7 +1012,8 @@ struct PlanView: View {
     /// The S05 detail for the chosen option: summary + leg-by-leg timeline (from
     /// the shared JourneyDetail.timeline) + honest source line + Start journey.
     @ViewBuilder
-    private func journeyDetail(_ p: JourneyPlanAdapter.PlannedJourney) -> some View {
+    private func journeyDetail(_ p: JourneyPlanAdapter.PlannedJourney,
+                               facts: JourneyComparison.Facts = JourneyComparison.Facts()) -> some View {
         let rows = JourneyDetail.timeline(p.detailLegs)
         let dep = rows.first(where: { $0.kind == "board" })?.clock
         let arr = rows.last(where: { $0.kind == "alight" })?.clock
@@ -947,6 +1026,9 @@ struct PlanView: View {
                     Text("\(athensClock(dep)) – \(athensClock(arr))")
                         .font(.headline).foregroundStyle(.secondary)
                 }
+            }
+            if let line = comparisonLine(facts) {
+                Text(line).font(.subheadline.weight(.semibold)).foregroundStyle(Color.syrmosPrimary)
             }
             ForEach(Array(rows.enumerated()), id: \.offset) { _, r in
                 timelineRow(r, legs: p.detailLegs)
@@ -1053,7 +1135,7 @@ struct PlanView: View {
         } else {
             results = avoiding
         }
-        selectedIdx = 0
+        selectedId = JourneySelection.retain(previous: selectedId, ids: results.map(\.id))
         planned = true
     }
 
@@ -1123,6 +1205,7 @@ struct PlanView: View {
     private func optionCard(
         _ r: JourneyPlanAdapter.PlannedJourney,
         selected: Bool,
+        badges: [String] = [],
         leaveByLabel: String?,
         onTap: @escaping () -> Void
     ) -> some View {
@@ -1131,6 +1214,21 @@ struct PlanView: View {
             ? t("1 change", "1 αλλαγή", "1 ndërrim", "1 cambio")
             : "\(r.transferCount) " + t("changes", "αλλαγές", "ndërrime", "cambi")
         VStack(alignment: .leading, spacing: 4) {
+            if !badges.isEmpty {
+                // Atomic chips: a label never wraps or compresses mid-word.
+                HStack(spacing: 6) {
+                    ForEach(badges, id: \.self) { b in
+                        Text(b)
+                            .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Capsule().fill(Color.syrmosPrimary.opacity(0.14)))
+                            .foregroundStyle(Color.syrmosPrimary)
+                    }
+                }
+                .padding(.bottom, 2)
+            }
             Text("~\(minutes) " + t("min", "λεπ", "min", "min") + " · \(changes) · " + r.lineChain.joined(separator: " → "))
                 .foregroundStyle(.primary)
             Text(feasLabel(r.feasibility)).font(.subheadline).foregroundStyle(Color.syrmosPrimary)

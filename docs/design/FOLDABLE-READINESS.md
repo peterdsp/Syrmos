@@ -382,6 +382,40 @@ Source: `docs/plans/FOLDABLES-IPHONE-DUO-MASTER-PLAN.md`, section 2 (screenshot 
   geometry: the End button reports bounds below the status bar and the tap
   opens the confirmation dialog.
 
+## Landed: polish round 5 (Plan: compare with confidence)
+
+Source: master plan section 4 (Plan contract) and Phase 3 item 1 (populated
+route comparison and selected-route context with stable identity).
+
+- **Pane roles**: on a paired layout the task pane is the editable query plus
+  the route alternatives (count/save row, one card per usable option, the
+  disruption chip and the no-route/suspended states); the companion pane is
+  "Selected journey": the S05 detail (summary, comparison line, timeline,
+  source line, Start). Before a search the companion shows the calm invitation;
+  after a search that left nothing selectable it says so ("No journey to show
+  yet.") instead of inventing a route. Single column keeps the shipped order
+  (query, alternatives, selected detail, saved).
+- **Shared comparison facts**: `JourneyComparison.facts(durations, changes)`
+  (Kotlin core/domain, Swift twin in `Core/Journey/JourneyComparison.swift`)
+  marks `fastest` and `fewestChanges` only when a real difference exists (a
+  lone route is never decorated), and gives `minutesSlowerThanFastest` (rounded,
+  zero dropped, unknown durations never compared) and `extraChanges`. Cards show
+  chips ("Recommended" from the shared ranker, "Fastest", "Fewest changes"),
+  the selected journey a line such as "+10 min vs fastest · 1 more change".
+  Fixture parity: `JourneyComparisonTest` (10) and `JourneyComparisonTests` (10).
+- **Stable itinerary identity**: `JourneySelection.retain(previous, ids)` keeps
+  the selected option id across a results refresh when it is still offered and
+  falls back to the first otherwise; both clients replaced the array index with
+  the option id (`selectedId`), so a fold or a time-driven re-plan never changes
+  the traveller's choice by position.
+- **Verified**: iOS 32/32 (comparison, snapshot, journey detail) on the
+  Syrmos 27 simulator, `plan-duo-inner-*.png` re-rendered; Android Pixel
+  emulator at 841x673, Piraeus to Syntagma: left pane "2 routes" with
+  "Recommended, ~28 min, 1 change, M1 to M2, Comfortable" and
+  "Fastest, ~18 min, 1 change, M1 to M3, Tight", right pane the selected
+  journey with "+10 min vs fastest" and the timeline (uiautomator dump and
+  screenshot).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
