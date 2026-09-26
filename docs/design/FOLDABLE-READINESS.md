@@ -892,6 +892,19 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   same two paths (`loadAlertNote`, `currentNotices` in AriadneModel.swift) and
   takes the same rule; HomeFeaturesTests 18/18.
 
+- **Explore row action on iOS (defect)**: on the iPad, tapping a line in the
+  paired Explore pushed the full-screen `LineDetailView` instead of filling
+  the companion. `LinesView` read `\.syrmosIsPaired` on itself, and the
+  owning view cannot read the environment `SyrmosArrangement` sets on its own
+  panes (the round 4 gotcha), so `isPaired` was always false. `lineLink` now
+  reads the axis inside the row through `SyrmosAxisReader`. The round 3
+  Duo render only showed the pane structure, not the tap, which is why it
+  passed.
+- **Android detail lists at tablet width**: the station and line detail
+  `LazyColumn`s had no readable-width cap; at 1280x800 the departure cards
+  stretched across the canvas. Both take the 760 dp cap Home and Explore use.
+  Verified at 1280x800 (Dafni: capped column centred beside the rail).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

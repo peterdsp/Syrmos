@@ -347,23 +347,28 @@ struct LinesView: View {
     /// A line row: selects into the companion on a paired layout, pushes the
     /// detail on a phone.
     @ViewBuilder private func lineLink(_ line: TransitLine) -> some View {
-        if isPaired {
-            Button { selectedLine = line } label: {
-                LineRow(line: line, disruptionSeverity: stasyService.lineDisruptions[line.id])
-            }
-            .buttonStyle(.plain)
-            .listRowBackground(selectedLine?.id == line.id ? Color.syrmosPrimary.opacity(0.10) : nil)
-        } else {
-            NavigationLink {
-                LineDetailView(
-                    line: line,
-                    stations: SyrmosData.stations(for: line.id)
-                )
-            } label: {
-                LineRow(
-                    line: line,
-                    disruptionSeverity: stasyService.lineDisruptions[line.id]
-                )
+        // Read the paired state INSIDE the row: the owning view cannot read the
+        // environment SyrmosArrangement sets on its own panes (round 4 gotcha),
+        // so `isPaired` on LinesView was always false and every tap pushed.
+        SyrmosAxisReader { axis in
+        if axis != nil {
+                Button { selectedLine = line } label: {
+                    LineRow(line: line, disruptionSeverity: stasyService.lineDisruptions[line.id])
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(selectedLine?.id == line.id ? Color.syrmosPrimary.opacity(0.10) : nil)
+            } else {
+                NavigationLink {
+                    LineDetailView(
+                        line: line,
+                        stations: SyrmosData.stations(for: line.id)
+                    )
+                } label: {
+                    LineRow(
+                        line: line,
+                        disruptionSeverity: stasyService.lineDisruptions[line.id]
+                    )
+                }
             }
         }
     }
