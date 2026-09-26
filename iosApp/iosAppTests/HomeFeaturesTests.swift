@@ -216,3 +216,23 @@ final class CountLabelTests: XCTestCase {
     }
 }
 
+// MARK: - Ichnos scope labels (twin of IchnosScopeLabelTest in core/common)
+
+final class IchnosScopeLabelTests: XCTestCase {
+    func testAStationLabelFromAnotherLanguageIsReadInTheReadersLanguage() {
+        XCTAssertEqual(localizedScopeLabel("Ichnos at Florina", .albanian), "Ichnos në Florina")
+        XCTAssertEqual(localizedScopeLabel("Ichnos në Florina", .greek), "Ichnos στο Florina")
+        XCTAssertEqual(localizedScopeLabel("Ichnos στο Florina", .italian), "Ichnos a Florina")
+        XCTAssertEqual(localizedScopeLabel("Ichnos a Florina", .english), "Ichnos at Florina")
+    }
+
+    func testALabelAlreadyInTheReadersLanguageIsUnchanged() {
+        XCTAssertEqual(localizedScopeLabel("Ichnos at 1st Ag. Kosma", .english), "Ichnos at 1st Ag. Kosma")
+    }
+
+    func testLineAndTrainContextsAreLeftAlone() {
+        XCTAssertEqual(localizedScopeLabel("Kallithea to Monastiraki", .greek), "Kallithea to Monastiraki")
+        XCTAssertEqual(localizedScopeLabel("Train 1635", .albanian), "Train 1635")
+    }
+}
+
