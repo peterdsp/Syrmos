@@ -265,6 +265,9 @@ enum SyrmosAdaptiveWorkspacePolicy {
     /// task (T7 Tall narrow canvas): an upright fold whose window hosts a
     /// navigation rail; a phone column (440, the Duo cover at 466) never stacks.
     static let tallNarrowMinWidth = 480
+    /// The widest canvas on which a tall window still prefers the task's stacked
+    /// axis; from here (an upright iPad at 1032) two comfortable columns win.
+    static let tallStackMaxWidth = 840
 
     private static let gap = 24
 
@@ -540,7 +543,7 @@ enum SyrmosAdaptiveWorkspacePolicy {
     ) -> SyrmosAdaptiveWorkspace? {
         // The task's axis preference is about the TALL canvas (P5): a window that
         // is wider than tall reads as two columns whatever the task.
-        let preferred: SyrmosPairAxis = height > width ? task.tallCanvasAxis : .sideBySide
+        let preferred: SyrmosPairAxis = (height > width && width < tallStackMaxWidth) ? task.tallCanvasAxis : .sideBySide
         let order: [SyrmosPairAxis] = preferred == .sideBySide
             ? [.sideBySide, .stacked]
             : [.stacked, .sideBySide]

@@ -12,6 +12,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Round 17 small fixes.** An upright iPad or wide tablet now pairs Explore,
+  GO and the map side by side instead of stacking a short overview above the
+  list (stacking stays for the narrower open foldable). The same operator
+  notice no longer appears twice in "What matters now". The Explore
+  "Plan a journey" button rests at the list pane's own corner when paired
+  (Android) and clears the assistant launcher when stacked (iOS). Airport
+  route chips such as X93 never wrap on iOS.
 - **The GO map keeps your view through a fold.** Centre, zoom and the camera
   mode (follow, fit, manual) survive a fold or rotation on both platforms, and
   on Android an in-place change of the pane arrangement (for example docking

@@ -712,6 +712,34 @@ so a fold or rotation recreates the activity and every osmdroid view with it.
   and hands it to the new map as `initialCamera`, which skips the first fit,
   so a manual view survives the flip. Guidance and snapshot suites 44/44.
 
+## Landed: polish round 17 (visual audit of the remaining tabs)
+
+Source: a capture pass over Airport, Explore, More and Home on the Pixel fold
+emulator (841x673) and the iPad simulator (1032x1376) after rounds 4 to 16
+merged (#201, #202).
+
+- **Policy, T9**: the tall-canvas stacking preference now applies only under
+  `TALL_STACK_MAX_WIDTH` / `tallStackMaxWidth` (840). An upright iPad at
+  1032 stacked Explore, leaving 45 percent of the height to a placeholder
+  card; two comfortable columns beat that. The Duo inner display (669) keeps
+  stacking. Fixture `t9_wideUprightTablet_pairsSideBySideEvenForStackingTasks`
+  on both twins (Kotlin layout suite 66, Swift fixtures 61).
+- **Insight dedupe** (both clients): `InsightDedupe.distinctByText` (Kotlin
+  core/domain/usecase, Swift twin in HomeView.swift; 3 tests each) drops a
+  notice whose normalised text already appeared; the iPad Home showed the same
+  STASY notice twice under two ids.
+- **Explore Plan button**: Android rests it at the list pane's bottom corner
+  when paired (it hovered mid-list at 168 dp clearance meant for the compact
+  bottom bar); iOS gives the pill band 104 pt trailing padding when the
+  arrangement axis is vertical, because the stacked list pane shares the
+  window's bottom-right corner with the Ariadne launcher.
+- **Airport route chips** (iOS): `lineLimit(1)` + `fixedSize` so "X93" no
+  longer breaks into two lines in the route overview.
+- **Verified**: Android emulator at 841x673 (Explore paired: button at the
+  pane's bottom edge, Line 2 detail in the companion; Airport and More read
+  correctly); iPad simulator rebuilt for Explore side by side (capture note
+  below). Unit twins green on both sides.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

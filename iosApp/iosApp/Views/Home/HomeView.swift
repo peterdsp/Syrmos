@@ -476,8 +476,10 @@ struct HomeView: View {
 
     @ViewBuilder
     private var insightsStream: some View {
-        let alerts = stasyService.announcements.filter { $0.category == .serviceAlert }
-        let otherAnnouncements = stasyService.announcements.filter { $0.category != .serviceAlert }
+        // The same notice under two ids reads as a glitch: keep the first (shared rule).
+        let announcements = InsightDedupe.distinctByText(stasyService.announcements) { $0.title }
+        let alerts = announcements.filter { $0.category == .serviceAlert }
+        let otherAnnouncements = announcements.filter { $0.category != .serviceAlert }
         let visibleAlertCount = showAllInsights ? alerts.count : min(alerts.count, 2)
         let remainingSlots = showAllInsights ? Int.max : max(2 - visibleAlertCount, 0)
 
@@ -1621,6 +1623,26 @@ struct WebViewRepresentable: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.isLoading = false
+        }
+    }
+}
+
+/// Home "What matters now" hygiene (twin of Kotlin `InsightDedupe`): items whose
+/// normalised text repeats are dropped, keeping the first.
+enum InsightDedupe {
+    /// Lowercase, trimmed, whitespace collapsed, trailing punctuation dropped, first 160 chars.
+    static func normalise(_ text: String) -> String {
+        var t = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        t = t.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        while let last = t.last, ".!;:, ".contains(last) { t.removeLast() }
+        return String(t.prefix(160))
+    }
+
+    static func distinctByText<T>(_ items: [T], text: (T) -> String) -> [T] {
+        var seen = Set<String>()
+        return items.filter { item in
+            let key = normalise(text(item))
+            return key.isEmpty || seen.insert(key).inserted
         }
     }
 }

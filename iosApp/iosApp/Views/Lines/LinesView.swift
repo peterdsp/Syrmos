@@ -6,6 +6,7 @@ enum ExploreSegment: String, CaseIterable {
 }
 
 struct LinesView: View {
+    @Environment(\.syrmosArrangementAxis) private var arrangementAxis
     let lines = SyrmosData.lines
     @ObservedObject private var loc = LocalizationManager.shared
     // Present Plan full-window on a regular-width container (iPad, iPhone Duo inner
@@ -236,7 +237,11 @@ struct LinesView: View {
                             .shadow(radius: 6, y: 2)
                     }
                 }
-                .padding(.trailing, 16)
+                // Stacked pairing (an upright fold): the list pane spans the window's
+                // bottom edge where the Ariadne launcher floats, so the pill clears
+                // the launcher instead of sitting under it. Side by side, the
+                // launcher is over the companion pane and the corner is free.
+                .padding(.trailing, arrangementAxis == .vertical ? 104 : 16)
                 .padding(.top, 10)
                 .padding(.bottom, 8)
                 .frame(maxWidth: .infinity)

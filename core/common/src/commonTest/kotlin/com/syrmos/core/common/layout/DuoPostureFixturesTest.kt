@@ -205,6 +205,17 @@ class DuoPostureFixturesTest {
     }
 
     @Test
+    fun t9_wideUprightTablet_pairsSideBySideEvenForStackingTasks() {
+        // An upright iPad (1032 x 1376) is tall but wide enough for two comfortable
+        // columns: Explore, GO and Map pair side by side there; the Duo inner
+        // display at 669 keeps stacking.
+        for (task in listOf(WorkspaceTask.EXPLORE, WorkspaceTask.GO, WorkspaceTask.MAP)) {
+            assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(1032, 1376, task).arrangement, task.name)
+            assertEquals(WorkspaceArrangement.STACKED, resolve(INNER_W, INNER_H, task).arrangement, task.name)
+        }
+    }
+
+    @Test
     fun t8_narrowRemainder_homeKeepsTheAnswerFirst() {
         // Beside a docked 400 dp inspector an iPad leaves ~633 x 1376: two Home
         // columns do not fit and Home never stacks (the answer must lead), so it

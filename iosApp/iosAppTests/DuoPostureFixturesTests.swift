@@ -168,6 +168,13 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(resolve(593, 761, .home).arrangement, .single)
     }
 
+    func test_t9_wideUprightTablet_pairsSideBySideEvenForStackingTasks() {
+        for task in [SyrmosWorkspaceTask.explore, .go, .map] {
+            XCTAssertEqual(resolve(1032, 1376, task).arrangement, .sideBySide, "\(task)")
+            XCTAssertEqual(resolve(innerW, innerH, task).arrangement, .stacked, "\(task)")
+        }
+    }
+
     func test_t8_narrowRemainder_homeKeepsTheAnswerFirst() {
         XCTAssertEqual(resolve(633, 1376, .home).arrangement, .single)
         XCTAssertEqual(resolve(633, 1376, .plan).arrangement, .stacked)

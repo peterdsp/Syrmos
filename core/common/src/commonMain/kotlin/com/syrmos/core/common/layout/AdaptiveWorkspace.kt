@@ -219,6 +219,14 @@ object AdaptiveWorkspacePolicy {
      * 466 dp) stays under it and never stacks.
      */
     const val TALL_NARROW_MIN_WIDTH = 480
+
+    /**
+     * The widest canvas on which a tall window still prefers the task's stacked
+     * axis. Up to here two columns would be narrow (the Duo inner display at 669
+     * gives 334 each); from here on (an upright iPad at 1032, a wide tablet)
+     * two comfortable columns beat a map or overview stacked above a short list.
+     */
+    const val TALL_STACK_MAX_WIDTH = 840
     const val TALL_COMPANION_RATIO = 0.45f
 
     // The medium band starts where ContentBreakpoint stops calling a window compact.
@@ -550,10 +558,11 @@ object AdaptiveWorkspacePolicy {
         task: WorkspaceTask,
         scale: Float,
     ): AdaptiveWorkspace? {
-        // The task's axis preference is about the TALL canvas (P5): a window that
-        // is wider than tall reads as two columns whatever the task, so the
-        // preference only applies when height exceeds width.
-        val preferred = if (height > width) task.tallCanvasAxis else PairAxis.SIDE_BY_SIDE
+        // The task's axis preference is about the TALL, MEDIUM canvas (P5): a
+        // window that is wider than tall reads as two columns whatever the task,
+        // and so does a tall window wide enough for two comfortable columns
+        // (TALL_STACK_MAX_WIDTH), so the preference applies only under both.
+        val preferred = if (height > width && width < TALL_STACK_MAX_WIDTH) task.tallCanvasAxis else PairAxis.SIDE_BY_SIDE
         val order = if (preferred == PairAxis.SIDE_BY_SIDE) {
             listOf(PairAxis.SIDE_BY_SIDE, PairAxis.STACKED)
         } else {

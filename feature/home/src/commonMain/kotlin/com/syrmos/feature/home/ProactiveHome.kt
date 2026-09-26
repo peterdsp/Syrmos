@@ -50,6 +50,7 @@ import com.syrmos.core.network.RailNewsItem
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import kotlin.math.roundToInt
+import com.syrmos.core.domain.usecase.InsightDedupe
 
 @Composable
 internal fun PulseContextTag(text: String, color: Color) {
@@ -225,7 +226,8 @@ internal fun InsightsStream(
                 ),
             )
         }
-        announcements.sortedByDescending { it.isServiceAlert }.forEach { item ->
+        // The same notice under two ids reads as a glitch: keep the first (shared rule).
+        InsightDedupe.distinctByText(announcements.sortedByDescending { it.isServiceAlert }) { it.title }.forEach { item ->
             add(
                 HomeInsight(
                     title = item.localizedTitle(lang),
