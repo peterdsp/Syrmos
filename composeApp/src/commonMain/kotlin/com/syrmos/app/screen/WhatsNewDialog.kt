@@ -45,50 +45,42 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
     val items = buildList {
         add(
             t(
-                "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers",
-                "Hellenic Rail Atlas: νεος σχεδιασμος με απαντησεις στη μια ματια",
-                "Hellenic Rail Atlas: dizajn i ri me pergjigje ne nje shikim",
-                "Hellenic Rail Atlas: un nuovo design chiaro pensato per risposte a colpo d'occhio",
+                "Plan any journey A to B: ranked routes, arrive-by, and the last train home",
+                "Σχεδίασε κάθε διαδρομή από Α σε Β: ταξινομημένες επιλογές, άφιξη έως, και το τελευταίο τρένο για το σπίτι",
+                "Planifiko çdo udhëtim nga A në B: rrugë të renditura, mbërritje deri, dhe treni i fundit për në shtëpi",
+                "Pianifica qualsiasi viaggio da A a B: percorsi ordinati, arrivo entro, e l'ultimo treno per casa",
             )
         )
         add(
             t(
-                "Ariadne now links to stations and lines: tap any answer to jump straight there",
-                "Η Αριαδνη τωρα συνδεεται με σταθμους και γραμμες: πατα μια απαντηση και πηγαινε κατευθειαν",
-                "Ariadne tani lidhet me stacione dhe linja: prek nje pergjigje dhe shko direkt",
-                "Ariadne ora collega stazioni e linee: tocca una risposta per andare direttamente",
+                "GO guides you stop by stop, with a get-off alert and an ongoing journey notification",
+                "Το GO σε καθοδηγεί στάση-στάση, με ειδοποίηση αποβίβασης και μόνιμη ειδοποίηση διαδρομής",
+                "GO të udhëzon ndalesë pas ndalese, me njoftim zbritjeje dhe njoftim të vazhdueshëm udhëtimi",
+                "GO ti guida fermata per fermata, con avviso di discesa e una notifica di viaggio in corso",
             )
         )
         add(
             t(
-                "Browse All Stations with interactive maps, line pills and interchange badges",
-                "Περιηγηση σε ολους τους σταθμους με χαρτη, ετικετες γραμμων και κομβους ανταποκρισης",
-                "Shfleto te gjitha stacionet me harta, etiketa linjash dhe nyje nderkembimi",
-                "Esplora tutte le stazioni con mappe interattive, etichette linea e badge di interscambio",
+                "Home shows the next train in every direction at your nearest station",
+                "Η Αρχική δείχνει τον επόμενο συρμό προς κάθε κατεύθυνση στον κοντινότερο σταθμό σου",
+                "Kreu tregon trenin tjetër për çdo drejtim në stacionin tënd më të afërt",
+                "La Home mostra il prossimo treno in ogni direzione dalla tua stazione più vicina",
             )
         )
         add(
             t(
-                "Redesigned Explore tab with actionable destination cards and recent stations",
-                "Ανανεωμενη καρτελα Εξερευνηση με καρτες προορισμων και προσφατους σταθμους",
-                "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit",
-                "Scheda Esplora ridisegnata con schede destinazione e stazioni recenti",
+                "Leave-by reminders for your saved departures, and connection-risk warnings that offer alternatives",
+                "Υπενθυμίσεις αναχώρησης για τις αποθηκευμένες σου αναχωρήσεις, και προειδοποιήσεις κινδύνου ανταπόκρισης με εναλλακτικές",
+                "Kujtesa për nisjen për nisjet e ruajtura, dhe paralajmërime rreziku lidhjeje me alternativa",
+                "Promemoria di partenza per le partenze salvate, e avvisi di coincidenza a rischio con alternative",
             )
         )
         add(
             t(
-                "Operators directory and map preferences in the new More tab",
-                "Καταλογος φορεων και ρυθμισεις χαρτη στη νεα καρτελα Περισσοτερα",
-                "Drejtori operatoresh dhe preferenca harte ne kartelen e re Me shume",
-                "Elenco operatori e preferenze mappa nella nuova scheda Altro",
-            )
-        )
-        add(
-            t(
-                "Map tools: ask Ariadne (purple owl), browse live trains (train icon), find yourself (blue arrow)",
-                "Εργαλεια χαρτη: ρωτα την Αριαδνη (μωβ κουκουβαγια), δες ζωντανα τρενα (τρενο), βρες τη θεση σου (μπλε βελος)",
-                "Mjete harte: pyet Ariadnen (bufa vjollce), shiko trenat live (ikona e trenit), gjej veten (shigjeta blu)",
-                "Strumenti mappa: chiedi ad Ariadne (gufo viola), sfoglia i treni in tempo reale (icona treno), trova la tua posizione (freccia blu)",
+                "Made for tablets and foldables: planning and guidance side by side on the open display",
+                "Φτιαγμένο για tablet και αναδιπλούμενα: σχεδιασμός και καθοδήγηση δίπλα-δίπλα στην ανοιχτή οθόνη",
+                "Bërë për tableta dhe të palosshëm: planifikim dhe udhëzim krah për krah në ekranin e hapur",
+                "Pensato per tablet e pieghevoli: pianificazione e guida fianco a fianco sullo schermo aperto",
             )
         )
     }

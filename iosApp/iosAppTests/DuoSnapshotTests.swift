@@ -231,6 +231,29 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Plan folded cover render should not be blank")
     }
 
+    // MARK: Visual: dark appearance of the redesigned GO (contrast of the new parts)
+
+    /// The leg cards, rail, caption pills, segmented progress and tinted hero in
+    /// dark mode, so an invisible label or a washed-out marker is caught here
+    /// rather than on a rider's phone at night.
+    @MainActor
+    func test_goScreen_duoInnerPortrait_dark_render() throws {
+        let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
+        let view = GoJourneyView(journey: journey, language: .english, coords: demoCoords(journey))
+        let image = render(view, size: duoInnerPortrait, dark: true)
+        try save(image, "go-duo-inner-portrait-dark.png")
+        XCTAssertTrue(hasVisibleVarianceDark(image), "GO dark render should not be blank")
+    }
+
+    /// Dark-mode twin of `hasVisibleVariance`: enough sampled patches are not
+    /// near-black.
+    private func hasVisibleVarianceDark(_ image: UIImage) -> Bool {
+        let grid = sampleGrid(image)
+        guard !grid.isEmpty else { return false }
+        let nonBlack = grid.filter { !($0.r < 40 && $0.g < 40 && $0.b < 40) }.count
+        return nonBlack >= 8
+    }
+
     // MARK: Journey fixture (mirrors GoDemoEntryView so the snapshot is a real route)
 
     private func demoJourney(_ language: AppLanguage = .english) -> GuidanceJourney? {
@@ -267,7 +290,7 @@ final class DuoSnapshotTests: XCTestCase {
     // MARK: Rendering + sampling
 
     @MainActor
-    private func render(_ view: some View, size: CGSize) -> UIImage {
+    private func render(_ view: some View, size: CGSize, dark: Bool = false) -> UIImage {
         // Let the SwiftUI root fill the host view (no explicit .frame, which would
         // center and clip content-bearing views) and ignore the safe area so the
         // content reaches the top edge instead of leaving a status-bar strip; host
@@ -278,9 +301,9 @@ final class DuoSnapshotTests: XCTestCase {
         let host = UIHostingController(rootView: view.ignoresSafeArea())
         host.view.frame = CGRect(origin: .zero, size: size)
         host.view.backgroundColor = UIColor.systemBackground
-        host.overrideUserInterfaceStyle = .light
+        host.overrideUserInterfaceStyle = dark ? .dark : .light
         let window = UIWindow(frame: CGRect(origin: .zero, size: size))
-        window.overrideUserInterfaceStyle = .light
+        window.overrideUserInterfaceStyle = dark ? .dark : .light
         window.rootViewController = host
         window.isHidden = false
         window.makeKeyAndVisible()

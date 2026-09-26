@@ -12,6 +12,16 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Home sees the whole interchange on Android.** The nearest stop is now the
+  cluster of per-line station ids within the 150 m interchange radius, so the
+  hero and the direction board load every line at the stop (Omonia shows M1 and
+  M2 in both directions, as on iOS) and the last-train teaser reads the right
+  platform. `NearestStationCluster` in core/domain, tested.
+- **What's new for 3.0.** The first-run highlights on iOS and Android now
+  describe 3.0 (Plan, GO, the direction board, leave-by reminders, foldables)
+  instead of the 2.0 Atlas notes, and show once more for 3.0.0.
+- **Dark-mode GO render** added to the Duo snapshot suite.
+
 ## 3.0.0-beta.3 - 2026-09-26
 
 3.0 "Journeys" grows from the GO engine into an end-to-end companion: an adaptive
