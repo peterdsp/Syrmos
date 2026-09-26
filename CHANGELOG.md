@@ -45,6 +45,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   event that matched as an airport trip but has no title gets a localized
   fallback title on both platforms. The back button on the Ichnos detail
   screens is described to screen readers in the app's language.
+- **Folded-cover renders in the longest languages.** The iOS Duo render
+  suite now captures GO and Explore on the folded cover in Albanian and
+  Greek, the two languages that run longest, so an overflowing chip or
+  heading on the narrowest surface shows up in review. The first captures
+  are clean.
 
 ## 3.0.0-beta.4 - 2026-09-26
 

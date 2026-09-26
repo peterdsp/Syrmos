@@ -1086,6 +1086,24 @@ rounds so the remaining English-only copy stood out.
 - **Verified**: Android app compile, iOS build; widget copy checked by code
   (Glance widgets cannot be driven from the emulator scripts).
 
+## Landed: polish round 25 (cover renders in Albanian and Greek)
+
+Source: every Duo render so far was English. After three copy rounds the
+question was whether the longest languages still fit the narrowest surface.
+
+- **Added**: `go-duo-cover-albanian`, `go-duo-cover-greek`,
+  `explore-duo-cover-albanian`, `explore-duo-cover-greek` in
+  `DuoSnapshotTests`. GO takes the language as a parameter; Explore reads
+  the shared `LocalizationManager`, so the helper switches it for the render
+  and restores it in a `defer`.
+- **Result**: clean. "GATI PËR TË HIPUR" / "ΕΤΟΙΜΟΣ ΓΙΑ ΕΠΙΒΙΒΑΣΗ", "Nis
+  udhëzimin e drejtpërdrejtë" / "Έναρξη ζωντανής καθοδήγησης", the map
+  pills "Ndalesë e konfirmuar · Gjithë rruga" and the Explore hero all fit
+  466 pt with no wrap or clipping; counts read "1 raport" / "1 αναφορά".
+  The all-caps chips drop the tonos, which is correct Greek.
+- **Rule**: when a round changes copy in a language, re-run these four
+  renders and look at them; the suite only asserts that they are not blank.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
