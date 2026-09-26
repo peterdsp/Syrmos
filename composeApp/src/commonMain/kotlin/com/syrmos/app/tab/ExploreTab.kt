@@ -50,6 +50,7 @@ import com.syrmos.feature.lines.LinesScreen
 import com.syrmos.feature.lines.LinesViewModel
 import org.koin.compose.koinInject
 import kotlinx.coroutines.flow.first
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 object ExploreTab : Tab {
     override val options: TabOptions
@@ -125,10 +126,25 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                 androidx.compose.material3.ExtendedFloatingActionButton(
                     onClick = { navigator.push(PlanScreenRoute()) },
                     modifier = Modifier
-                        // Sits ABOVE the Ariadne launcher pill (which owns bottom=96dp,
-                        // end=16dp) so the two never overlap in the bottom-right corner.
+                        // Single column: sits ABOVE the Ariadne launcher pill (which
+                        // owns bottom=96dp, end=16dp over the bottom bar) so the two
+                        // never overlap. Paired: the pill floats over the companion
+                        // pane, so the button rests at the list pane's own bottom
+                        // corner instead of hovering over the middle of the list.
                         .align(androidx.compose.ui.Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 168.dp),
+                        // Above the system navigation bar in every layout.
+                        .navigationBarsPadding()
+                        .padding(
+                            end = 16.dp,
+                            bottom = when (ws.arrangement) {
+                                // Side by side: the launcher floats over the companion.
+                                WorkspaceArrangement.SIDE_BY_SIDE -> 16.dp
+                                // Stacked: the list shares the window's bottom-right
+                                // corner with the launcher (16 dp + its 56 dp pill).
+                                WorkspaceArrangement.STACKED -> 96.dp
+                                WorkspaceArrangement.SINGLE -> 168.dp
+                            },
+                        ),
                 ) {
                     Text(
                         when (lang) {
@@ -161,7 +177,12 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                         Box(Modifier.weight(1f).fillMaxHeight()) { companion() }
                     }
                 }
-                WorkspaceArrangement.STACKED -> {
+                WorkspaceArrangement.STACKED -> if (selectedLineId == null) {
+                    // An empty companion never takes the upper region: the list keeps
+                    // the whole height until a line is chosen, then the detail stacks
+                    // above it (an invitation card is worth a column, not a region).
+                    Box(Modifier.fillMaxSize()) { list(); planFab() }
+                } else {
                     val companionH = ws.pane(PaneRole.COMPANION)?.rect?.bottom ?: (maxHeight.value.toInt() * 45 / 100)
                     Column(Modifier.fillMaxSize()) {
                         Box(Modifier.fillMaxWidth().height(companionH.dp)) { companion() }

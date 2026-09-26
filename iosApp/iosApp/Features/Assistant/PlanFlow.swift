@@ -575,6 +575,10 @@ struct PlanView: View {
                                 planCompanionPlaceholder(afterSearch: planned)
                             }
                         }
+                        // Readable column: a wide companion pane (an iPad) does
+                        // not stretch the timeline and its prose to full width.
+                        .frame(maxWidth: 680, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
                     }
                 },
@@ -1311,6 +1315,11 @@ private struct StopsDisclosure: View {
 /// the same pane rectangles. `pairs` is false for single-focus tasks (forms).
 struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     var pairs: Bool = true
+    /// Whether the companion currently carries content. An empty companion (an
+    /// invitation card) is worth a column beside the task, never the upper
+    /// region of a stacked pair; when false a stacked result renders the single
+    /// column instead.
+    var companionHasContent: Bool = true
     /// The task driving the workspace; selects the preferred axis on a tall,
     /// medium-width window and whether a companion is offered at all.
     var task: SyrmosWorkspaceTask = .plan
@@ -1337,10 +1346,25 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     @ViewBuilder private func content(for ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
         switch ws.arrangement {
         case .single:
-            combined().environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
+            // The policy's single column is a READABLE column (outer insets and a
+            // content width from the shared breakpoint), so a wide window that
+            // cannot pair still reads as a centred column, not a full-width one.
+            // Compact widths keep the full width (the views own their 16 pt
+            // gutters); only a wider window is centred to the readable column.
+            combined()
+                .frame(maxWidth: Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
+                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity)
+                .frame(maxWidth: .infinity)
+                .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .sideBySide:
             paired(ws, size: size, axis: .horizontal)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .horizontal)
+        case .stacked where !companionHasContent:
+            combined()
+                .frame(maxWidth: Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
+                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity)
+                .frame(maxWidth: .infinity)
+                .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .stacked:
             paired(ws, size: size, axis: .vertical)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .vertical)

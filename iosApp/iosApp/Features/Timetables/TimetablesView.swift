@@ -593,6 +593,9 @@ private struct AirportRouteMapCard: View {
                         withAnimation(.easeInOut(duration: 0.2)) { selectedRoute = route }
                     } label: {
                         Text(route)
+                            // Atomic chip: a code such as X93 never wraps mid-code.
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                             .font(.caption.weight(.bold))
                             .foregroundStyle(selectedRoute == route ? .white : routeColor(route))
                             .padding(.horizontal, 12)

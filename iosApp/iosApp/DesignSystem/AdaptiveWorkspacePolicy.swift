@@ -101,6 +101,9 @@ enum SyrmosWorkspaceTask {
     /// the answer must lead, so when two columns do not fit it keeps its single
     /// column instead of putting the network context above the next train.
     var stacks: Bool { self != .home }
+    /// Whether the task pane is the main event (Home): on a large canvas it
+    /// splits the width evenly with its companion instead of the fixed column.
+    var leadsWithTask: Bool { self == .home }
 
     var tallCanvasAxis: SyrmosPairAxis {
         switch self {
@@ -265,6 +268,9 @@ enum SyrmosAdaptiveWorkspacePolicy {
     /// task (T7 Tall narrow canvas): an upright fold whose window hosts a
     /// navigation rail; a phone column (440, the Duo cover at 466) never stacks.
     static let tallNarrowMinWidth = 480
+    /// The widest canvas on which a tall window still prefers the task's stacked
+    /// axis; from here (an upright iPad at 1032) two comfortable columns win.
+    static let tallStackMaxWidth = 840
 
     private static let gap = 24
 
@@ -470,8 +476,11 @@ enum SyrmosAdaptiveWorkspacePolicy {
             )
         }
 
-        let primaryW = base.primaryPaneWidth!
-        let secondaryW = base.secondaryPaneWidth!
+        let basePrimary = base.primaryPaneWidth!
+        let baseSecondary = base.secondaryPaneWidth!
+        // A task that leads with its task pane splits the canvas evenly.
+        let primaryW = task.leadsWithTask ? (basePrimary + baseSecondary) / 2 : basePrimary
+        let secondaryW = basePrimary + baseSecondary - primaryW
         let minCompanionScaled = scaled(minCompanion, scale)
 
         if secondaryW < minCompanionScaled {
@@ -540,7 +549,7 @@ enum SyrmosAdaptiveWorkspacePolicy {
     ) -> SyrmosAdaptiveWorkspace? {
         // The task's axis preference is about the TALL canvas (P5): a window that
         // is wider than tall reads as two columns whatever the task.
-        let preferred: SyrmosPairAxis = height > width ? task.tallCanvasAxis : .sideBySide
+        let preferred: SyrmosPairAxis = (height > width && width < tallStackMaxWidth) ? task.tallCanvasAxis : .sideBySide
         let order: [SyrmosPairAxis] = preferred == .sideBySide
             ? [.sideBySide, .stacked]
             : [.stacked, .sideBySide]

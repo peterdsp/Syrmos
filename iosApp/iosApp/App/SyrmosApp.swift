@@ -204,7 +204,7 @@ struct ContentView: View {
                 // Insets follow the tab bar when iPadOS moves it to the top
                 // and follow the keyboard when a field becomes active.
                 HomeView()
-                    .modifier(ReadableTabContent())
+                    .modifier(ReadableTabContent(maximum: ReadableTabContent.pairedMaximumWidth))
                     .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.home], systemImage: "house")
@@ -212,7 +212,7 @@ struct ContentView: View {
                     .tag(SyrmosTab.home)
 
                 LinesView()
-                    .modifier(ReadableTabContent())
+                    .modifier(ReadableTabContent(maximum: ReadableTabContent.pairedMaximumWidth))
                     // Explore hosts its own opaque Plan-pill band (finding 4a).
                     .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher(occluding: false) }
                     .tabItem {
@@ -227,7 +227,7 @@ struct ContentView: View {
                     .tag(SyrmosTab.map)
 
                 TimetablesView()
-                    .modifier(ReadableTabContent())
+                    .modifier(ReadableTabContent(maximum: ReadableTabContent.pairedMaximumWidth))
                     .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.departures], systemImage: "airplane")
@@ -354,10 +354,16 @@ enum SyrmosTab: String {
 /// The same view tree remains mounted as its proposed width changes.
 private struct ReadableTabContent: ViewModifier {
     static let maximumWidth: CGFloat = 760
+    /// Tabs whose content pairs through SyrmosArrangement get a wider stage: the
+    /// arrangement makes two readable columns (or one centred column when it
+    /// cannot pair), so the old 760 cap only squeezed the pair and made a tall
+    /// iPad stack Explore. Single-column tabs (More) keep the reading column.
+    static let pairedMaximumWidth: CGFloat = 1200
+    var maximum: CGFloat = ReadableTabContent.maximumWidth
 
     func body(content: Content) -> some View {
         content
-            .frame(maxWidth: Self.maximumWidth)
+            .frame(maxWidth: maximum)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.syrmosBackground)
     }

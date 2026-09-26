@@ -364,6 +364,36 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Map folded cover render should not be blank")
     }
 
+    // MARK: Visual: an upright iPad pairs Explore side by side (T9)
+
+    /// 1032 x 1376 is tall but wide enough for two comfortable columns, so the
+    /// list and the line detail read beside each other instead of stacking a
+    /// short overview above the list.
+    @MainActor
+    func test_exploreScreen_ipadPortrait_render() throws {
+        let image = render(LinesView(), size: CGSize(width: 1032, height: 1376))
+        try save(image, "explore-ipad-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore upright iPad render should not be blank")
+    }
+
+    /// Dark appearance of the paired Home: section headings, board rows and the
+    /// context cards must keep their contrast on the dark canvas.
+    @MainActor
+    func test_homeScreen_duoInnerLandscape_dark_render() throws {
+        let image = render(HomeView(), size: duoInnerLandscape, dark: true)
+        try save(image, "home-duo-inner-landscape-dark.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home dark render should not be blank")
+    }
+
+    /// Explore on the upright inner display with nothing selected: the list keeps
+    /// the whole height (an empty companion never takes the upper region).
+    @MainActor
+    func test_exploreScreen_duoInnerPortrait_render() throws {
+        let image = render(LinesView(), size: duoInnerPortrait)
+        try save(image, "explore-duo-inner-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore upright render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor

@@ -188,7 +188,10 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 96.dp),
+                // Compact: clear the bottom bar and the launcher. Paired: the
+                // canvas is its own pane (often short when stacked), so the
+                // controls sit at its corner instead of climbing into the header.
+                .padding(end = 16.dp, bottom = if (paired) 16.dp else 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.End,
         ) {

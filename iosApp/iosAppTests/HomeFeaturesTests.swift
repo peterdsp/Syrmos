@@ -152,4 +152,21 @@ final class HomeFeaturesTests: XCTestCase {
         XCTAssertEqual(history.buckets.first?.positiveReports, 2)
         XCTAssertEqual(history.buckets.first?.counts["delayed"], 1)
     }
+
+    // MARK: Insight dedupe (twin of Kotlin InsightDedupeTest)
+
+    func test_insightDedupe_dropsARepeatedNoticeAndKeepsTheFirst() {
+        let items = [("a", "Line 3 works 27/09"), ("b", "Line 3 works 27/09"), ("c", "Line 1 closure")]
+        XCTAssertEqual(InsightDedupe.distinctByText(items) { $0.1 }.map { $0.0 }, ["a", "c"])
+    }
+
+    func test_insightDedupe_normalisationIgnoresCaseWhitespaceAndTrailingPunctuation() {
+        let items = [("a", "  Line 3   works. "), ("b", "line 3 works"), ("c", "Line 3 works!")]
+        XCTAssertEqual(InsightDedupe.distinctByText(items) { $0.1 }.map { $0.0 }, ["a"])
+    }
+
+    func test_insightDedupe_emptyTextsAreNeverDuplicatesOfEachOther() {
+        let items = [("a", ""), ("b", "  "), ("c", "Real notice")]
+        XCTAssertEqual(InsightDedupe.distinctByText(items) { $0.1 }.map { $0.0 }, ["a", "b", "c"])
+    }
 }

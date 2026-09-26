@@ -712,6 +712,98 @@ so a fold or rotation recreates the activity and every osmdroid view with it.
   and hands it to the new map as `initialCamera`, which skips the first fit,
   so a manual view survives the flip. Guidance and snapshot suites 44/44.
 
+## Landed: polish round 17 (visual audit of the remaining tabs)
+
+Source: a capture pass over Airport, Explore, More and Home on the Pixel fold
+emulator (841x673) and the iPad simulator (1032x1376) after rounds 4 to 16
+merged (#201, #202).
+
+- **Policy, T9**: the tall-canvas stacking preference now applies only under
+  `TALL_STACK_MAX_WIDTH` / `tallStackMaxWidth` (840). An upright iPad at
+  1032 stacked Explore, leaving 45 percent of the height to a placeholder
+  card; two comfortable columns beat that. The Duo inner display (669) keeps
+  stacking. Fixture `t9_wideUprightTablet_pairsSideBySideEvenForStackingTasks`
+  on both twins (Kotlin layout suite 66, Swift fixtures 61).
+- **Insight dedupe** (both clients): `InsightDedupe.distinctByText` (Kotlin
+  core/domain/usecase, Swift twin in HomeView.swift; 3 tests each) drops a
+  notice whose normalised text already appeared; the iPad Home showed the same
+  STASY notice twice under two ids. Android also drops its "Network status"
+  card when the status feed repeats the top notice verbatim (the notice card
+  carries the link, so it is the one to keep); iOS shows the status as a pill
+  and had no duplicate. Verified on the emulator: no status card, two distinct
+  notices. The Android card also hides a body that merely repeats its title.
+- **Explore Plan button**: Android rests it at the list pane's bottom corner
+  when paired (it hovered mid-list at 168 dp clearance meant for the compact
+  bottom bar) and takes the navigation-bar inset (at 1280x800 it sat half
+  behind the system bar); iOS gives the pill band 104 pt trailing padding when the
+  arrangement axis is vertical, because the stacked list pane shares the
+  window's bottom-right corner with the Ariadne launcher.
+- **Airport route chips** (iOS): `lineLimit(1)` + `fixedSize` so "X93" no
+  longer breaks into two lines in the route overview.
+- **GO End confirmation anchor** (iOS): the `confirmationDialog` sat on the
+  whole GO view, so on an iPad the popover hovered over the content with its
+  arrow pointing at the map card; it now sits on the End / Finish toolbar
+  button (`endButton`), so the popover points at the button. Phones are
+  unchanged (an action sheet either way). Verified on the iPad simulator:
+  the popover now hangs from the End button at the top-right; GO paired with
+  the route map and the timeline, and Plan keeps its results after End.
+- **Android dark mode: root content colour**: a dark-mode pass over the fold
+  emulator showed the Home headings ("What matters now", "Around you") and
+  the hero title near-black on the dark canvas. Nothing under `SyrmosTheme`
+  provided a content colour, so Material's `LocalContentColor` default
+  (black) applied to every text that names no colour; only dark mode shows
+  it. The shell now wraps the themed root in a `Surface` with the background
+  colour and `onBackground` content colour, which fixes every tab at once.
+  Verified: dark Home and Explore on the emulator read correctly, light mode
+  unchanged. iOS Home dark render added (`home-duo-inner-landscape-dark.png`),
+  contrast fine there.
+- **Empty companion never takes the upper region** (both clients): on the
+  upright fold Explore stacked an invitation card above the list and gave it
+  45 percent of the height. Android renders the single list until a line is
+  chosen (then the detail stacks above); iOS gets
+  `SyrmosArrangement(companionHasContent:)`, which renders the single column
+  for a stacked result while the companion is empty. Side by side keeps the
+  invitation card (a column is the right size for it). New render
+  `explore-duo-inner-portrait.png`.
+- **Launcher and control clearance on the upright fold** (Android): the
+  Explore Plan button takes 96 dp bottom clearance when stacked (it shares the
+  window's bottom-right corner with the launcher) and 16 dp side by side; the
+  Map canvas controls drop the 96 dp bottom-bar clearance when the canvas is a
+  pane, so on a short stacked canvas they no longer climb into the header.
+  Verified on the emulator at 673x841.
+- **Plan companion readable column** (both clients): the selected journey
+  column is capped at 680 (iOS `frame(maxWidth:)`, Android `widthIn(max)`),
+  so a wide companion pane on an iPad or tablet does not stretch the timeline
+  and its prose across the full pane. Verified: iPad Plan Piraeus to Syntagma
+  (three routes with Recommended / Fastest / Fewest changes chips, selected
+  journey with its comparison line) and the Android tablet at 1280x800
+  (Start journey centred in the capped column).
+- **Readable stage (iOS)**: the T9 rule alone did not change the iPad, because
+  every tab was wrapped in `ReadableTabContent` (760 pt), so the arrangement
+  measured 760 and still stacked. Tabs that pair (Home, Explore, Departures)
+  now get a 1200 pt stage (`pairedMaximumWidth`); More keeps 760. To keep a
+  wide window that cannot pair readable, `SyrmosArrangement` now renders its
+  single column at the policy's readable task width, centred, instead of full
+  width. Android already let pairs span the full width (its 760 dp cap is on
+  the single LazyColumn only), so this is parity.
+- **T10, Home splits evenly on a large canvas** (both twins): the large
+  two-pane rule gives every task a fixed 360/400 task column; on the iPad Home
+  that put the answer in the narrow column beside a wide context pane.
+  `WorkspaceTask.leadsWithTask` (HOME) splits the two panes evenly; Plan and
+  the others keep the task column. Fixture
+  `t10_largeCanvas_homeSplitsEvenlyOtherTasksKeepTheTaskColumn` (Kotlin layout
+  suite 67, Swift fixtures 62).
+- **Compact guard**: the arrangement's readable single column applies from
+  600 wide; the compact breakpoint already subtracts 32 and the views own their
+  16 pt gutters, so the first cut doubled the margins on the Duo cover
+  (`departures-duo-cover.png` moved); the guard restores the phone rendering.
+- **Verified**: Android emulator at 841x673 (Explore paired: button at the
+  pane's bottom edge, Line 2 detail in the companion; Airport and More read
+  correctly). iPad simulator (1032x1376) rebuilt: Explore pairs the list with
+  the "Choose a line" companion side by side, the Plan pill sits clear of the
+  launcher. New render `explore-ipad-portrait.png` in `DuoSnapshotTests`
+  (23/23). Unit twins green on both sides.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

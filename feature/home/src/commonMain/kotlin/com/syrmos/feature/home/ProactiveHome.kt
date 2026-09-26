@@ -50,6 +50,7 @@ import com.syrmos.core.network.RailNewsItem
 import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import kotlin.math.roundToInt
+import com.syrmos.core.domain.usecase.InsightDedupe
 
 @Composable
 internal fun PulseContextTag(text: String, color: Color) {
@@ -212,8 +213,15 @@ internal fun InsightsStream(
     onOpenUrl: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // The same notice under two ids reads as a glitch: keep the first (shared rule).
+    val distinctAnnouncements = InsightDedupe.distinctByText(announcements.sortedByDescending { it.isServiceAlert }) { it.title }
+    val announcementKeys = distinctAnnouncements.map { InsightDedupe.normalise(it.title) }.toSet()
     val items = buildList {
-        status?.takeIf { it.rawMessage.isNotBlank() || it.rawMessageEn.isNotBlank() }?.let {
+        status?.takeIf { it.rawMessage.isNotBlank() || it.rawMessageEn.isNotBlank() }
+            // The status feed often repeats the top notice verbatim; the notice
+            // card (with its link) is the one to keep, so the status card yields.
+            ?.takeIf { InsightDedupe.normalise(it.rawMessage) !in announcementKeys && InsightDedupe.normalise(it.rawMessageEn) !in announcementKeys }
+            ?.let {
             add(
                 HomeInsight(
                     title = localized(lang, "Network status", "Κατάσταση δικτύου", "Gjendja e rrjetit", "Stato della rete"),
@@ -225,7 +233,7 @@ internal fun InsightsStream(
                 ),
             )
         }
-        announcements.sortedByDescending { it.isServiceAlert }.forEach { item ->
+        distinctAnnouncements.forEach { item ->
             add(
                 HomeInsight(
                     title = item.localizedTitle(lang),
@@ -286,9 +294,14 @@ internal fun InsightsStream(
                     Box(Modifier.size(8.dp).clip(CircleShape).background(item.color))
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(item.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        if (item.summary.isNotBlank()) {
+                        // A body that merely repeats the title (the operator feed
+                        // often sends the same text as title and body) adds nothing.
+                        val body = item.summary.takeIf { summary ->
+                            summary.isNotBlank() && !InsightDedupe.normalise(summary).startsWith(InsightDedupe.normalise(item.title))
+                        }
+                        if (body != null) {
                             Text(
-                                item.summary,
+                                body,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,

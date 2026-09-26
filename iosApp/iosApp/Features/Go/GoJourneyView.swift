@@ -140,31 +140,9 @@ struct GoJourneyView: View {
         .toolbar {
             if store != nil {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(model.isArrived
-                        ? t("Finish", "Τέλος", "Përfundo", "Concludi")
-                        : t("End", "Τέλος", "Përfundo", "Termina")) {
-                        // Arrived: finishing is final and safe. Mid-journey: confirm,
-                        // so a stray tap on a moving train does not drop the guidance.
-                        if model.isArrived { endJourney() } else { confirmEnd = true }
-                    }
+                    endButton
                 }
             }
-        }
-        .confirmationDialog(
-            t("End this journey?", "Τέλος διαδρομής;", "Të përfundojë udhëtimi?", "Terminare il viaggio?"),
-            isPresented: $confirmEnd,
-            titleVisibility: .visible
-        ) {
-            Button(t("End journey", "Τέλος διαδρομής", "Përfundo udhëtimin", "Termina il viaggio"), role: .destructive) {
-                endJourney()
-            }
-            Button(t("Keep going", "Συνέχισε", "Vazhdo", "Continua"), role: .cancel) {}
-        } message: {
-            Text(t(
-                "Guidance and the get-off alert stop. Your route stays in Plan.",
-                "Η καθοδήγηση και η ειδοποίηση αποβίβασης σταματούν. Η διαδρομή σου μένει στο Σχεδίασε.",
-                "Udhëzimi dhe njoftimi i zbritjes ndalojnë. Rruga jote mbetet te Planifiko.",
-                "La guida e l'avviso di discesa si fermano. Il percorso resta in Pianifica."))
         }
         .onAppear {
             model.onGetOffAlert = { guidance in fireGetOff(guidance) }
@@ -806,6 +784,35 @@ struct GoJourneyView: View {
 
     /// The moment the hero describes, as a short label above the headline
     /// (matches the Android GO hero's state label).
+    /// The End / Finish toolbar button with its confirmation attached to the
+    /// button itself, so on an iPad the popover points at the button instead of
+    /// hovering over the content (as it did when the dialog sat on the view).
+    private var endButton: some View {
+                Button(model.isArrived
+                    ? t("Finish", "Τέλος", "Përfundo", "Concludi")
+                    : t("End", "Τέλος", "Përfundo", "Termina")) {
+                    // Arrived: finishing is final and safe. Mid-journey: confirm,
+                    // so a stray tap on a moving train does not drop the guidance.
+                    if model.isArrived { endJourney() } else { confirmEnd = true }
+                }
+            .confirmationDialog(
+                t("End this journey?", "Τέλος διαδρομής;", "Të përfundojë udhëtimi?", "Terminare il viaggio?"),
+                isPresented: $confirmEnd,
+                titleVisibility: .visible
+            ) {
+                Button(t("End journey", "Τέλος διαδρομής", "Përfundo udhëtimin", "Termina il viaggio"), role: .destructive) {
+                    endJourney()
+                }
+                Button(t("Keep going", "Συνέχισε", "Vazhdo", "Continua"), role: .cancel) {}
+            } message: {
+                Text(t(
+                    "Guidance and the get-off alert stop. Your route stays in Plan.",
+                    "Η καθοδήγηση και η ειδοποίηση αποβίβασης σταματούν. Η διαδρομή σου μένει στο Σχεδίασε.",
+                    "Udhëzimi dhe njoftimi i zbritjes ndalojnë. Rruga jote mbetet te Planifiko.",
+                    "La guida e l'avviso di discesa si fermano. Il percorso resta in Pianifica."))
+            }
+    }
+
     private var stateLabel: String {
         switch model.current {
         case .board: return t("Ready to board", "Έτοιμος για επιβίβαση", "Gati për të hipur", "Pronto a salire")

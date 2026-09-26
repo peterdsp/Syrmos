@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -745,8 +746,11 @@ class PlanScreenRoute : Screen {
                         }
                         VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                         Column(
+                            // Readable column: a wide companion pane (a tablet) does
+                            // not stretch the timeline and its prose to full width.
                             modifier = Modifier.weight(1f).fillMaxHeight()
-                                .verticalScroll(rememberScrollState()),
+                                .verticalScroll(rememberScrollState())
+                                .widthIn(max = 680.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             // The companion pane reads as its own surface: a title in
