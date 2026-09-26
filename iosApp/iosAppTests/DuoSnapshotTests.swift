@@ -403,6 +403,54 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Explore cover render should not be blank")
     }
 
+    // MARK: Visual: the folded cover in the longest languages
+
+    // Albanian and Greek run longest, and the cover is the narrowest surface
+    // we ship, so these renders are where a chip or a heading overflows first.
+    // The Explore screen reads the shared language manager, so it is switched
+    // for the render and restored afterwards.
+
+    @MainActor
+    func test_goScreen_duoCover_albanian_render() throws {
+        let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
+        let view = GoJourneyView(journey: journey, language: .albanian, coords: demoCoords(journey))
+        let image = render(view, size: duoCover)
+        try save(image, "go-duo-cover-albanian.png")
+        XCTAssertTrue(hasVisibleVariance(image), "GO folded cover render (Albanian) should not be blank")
+    }
+
+    @MainActor
+    func test_goScreen_duoCover_greek_render() throws {
+        let journey = try XCTUnwrap(demoJourney(), "bundled data should yield a demo journey")
+        let view = GoJourneyView(journey: journey, language: .greek, coords: demoCoords(journey))
+        let image = render(view, size: duoCover)
+        try save(image, "go-duo-cover-greek.png")
+        XCTAssertTrue(hasVisibleVariance(image), "GO folded cover render (Greek) should not be blank")
+    }
+
+    @MainActor
+    func test_exploreScreen_duoCover_albanian_render() throws {
+        let image = try renderExploreCover(in: .albanian)
+        try save(image, "explore-duo-cover-albanian.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore cover render (Albanian) should not be blank")
+    }
+
+    @MainActor
+    func test_exploreScreen_duoCover_greek_render() throws {
+        let image = try renderExploreCover(in: .greek)
+        try save(image, "explore-duo-cover-greek.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore cover render (Greek) should not be blank")
+    }
+
+    @MainActor
+    private func renderExploreCover(in language: AppLanguage) throws -> UIImage {
+        let manager = LocalizationManager.shared
+        let previous = manager.language
+        manager.language = language
+        defer { manager.language = previous }
+        return render(LinesView(), size: duoCover)
+    }
+
     /// Plan on the upright inner display at a large Dynamic Type size: the
     /// scaled pane floors no longer fit two columns, so the policy stacks the
     /// selected journey above the form instead of squeezing the pair.
