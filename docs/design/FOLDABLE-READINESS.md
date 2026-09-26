@@ -1032,6 +1032,38 @@ a single tonos.
   Operatorët, "trekëndësha lëvizës në hartë", "ICHNOS PRANË TEJE",
   "Gjendja rail pranë nisjes tënde").
 
+## Landed: polish round 23 (counts, nested strings, narrow-pane wrapping)
+
+Source: the Albanian walk on the fold and the iPad after round 22, which
+showed "1 reports" on an Ichnos row, an ellipsis on the Explore hero
+subtitle and on "Browse all 389 stations" in a 560 pt pane, and the
+scan's blind spots.
+
+- **Blind spots closed**: strings inside nested interpolations
+  (`"\(n) \(pulseText(...))"`) confuse a quote-parity literal scanner,
+  and Swift ternaries (`l == .albanian ? "..."`) were never matched by the
+  branch pattern. A word-level pass (any Greek word of five letters without
+  a tonos, any Albanian tell-word, any bare Italian `-ità`/`più`/`e'`) found
+  the rest: Greek count nouns on both platforms, the whole Italian Ichnos
+  vocabulary ("comunita", "accessibilita", "priorita"), the assistant's
+  typewriter accents ("piu'", "e'", "gia'"), and the iOS Explore-farther
+  card hooks in Albanian, whose Kotlin twins were already correct.
+- **Counts**: `countLabel(count, lang, one to many ...)` in core/common and
+  its Swift twin in Localization.swift pick singular or plural per language
+  (zero is plural in all four). Used for reports, issues, active reports,
+  confirmed contributions and everything-OK reports. The Android contributor
+  card had a hard-coded English "confirmed contributions"; it is localized
+  now.
+- **Wrapping**: the Explore hero subtitle on iOS takes
+  `fixedSize(horizontal: false, vertical: true)`; the Browse-all subtitle
+  allows three lines on both platforms (`maxLines = 3` / `lineLimit(3)`).
+- **Verified**: CountLabelTest 2/2 and LocalizationDiacriticsTest 3/3
+  (Kotlin), CountLabelTests + GreekTypographyTests (iOS), Compose app
+  compile, web tests 254/254. On device: the iPad Explore pane wraps
+  "Choose an origin to see nearby rail reports" onto two lines, the issue
+  rows read "1 report" with their full title; the Android fold in Albanian
+  reads "Problem sigurie · 1 raport".
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

@@ -449,7 +449,7 @@ struct SyrmosSettingsView: View {
             Toggle(isOn: $forceEmergencyPreview) {
                 Label(
                     loc.language == .greek ? "Προεπισκόπηση κακοκαιρίας"
-                        : loc.language == .albanian ? "Paraafisho paralajmerim moti"
+                        : loc.language == .albanian ? "Shfaq paraprakisht paralajmërim moti"
                         : loc.language == .italian ? "Anteprima allerta maltempo"
                         : "Preview severe-weather card",
                     systemImage: "cloud.bolt.rain.fill"
@@ -606,7 +606,7 @@ struct DiagnosticsView: View {
                     }
                 } label: {
                     Label(
-                        loc.language == .greek ? "Εξαγωγή διαγνωστικών" : loc.language == .albanian ? "Eksporto diagnostiken" : loc.language == .italian ? "Esporta diagnostica" : "Export diagnostics",
+                        loc.language == .greek ? "Εξαγωγή διαγνωστικών" : loc.language == .albanian ? "Eksporto diagnostikën" : loc.language == .italian ? "Esporta diagnostica" : "Export diagnostics",
                         systemImage: "square.and.arrow.up"
                     )
                 }

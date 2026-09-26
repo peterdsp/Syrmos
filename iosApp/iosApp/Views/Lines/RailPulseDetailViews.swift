@@ -86,7 +86,7 @@ struct RailPulseStationDetailView: View {
             LazyVStack(alignment: .leading, spacing: 12) {
                 pulseBackHeader(title: context.title, subtitle: context.subtitle, onBack: { dismiss() })
                 IchnosSummaryPanel(language: language, summary: summary, didLoad: didLoad, onReport: { onReport(context) })
-                pulseSectionTitle(pulseText(language, "Current community reports", "Τρέχουσες αναφορές κοινότητας", "Raportet aktuale të komunitetit", "Segnalazioni attuali della comunita"))
+                pulseSectionTitle(pulseText(language, "Current community reports", "Τρέχουσες αναφορές κοινότητας", "Raportet aktuale të komunitetit", "Segnalazioni attuali della comunità"))
                 communityIssueList(language: language, summary: summary, didLoad: didLoad)
                 communityNotice(language)
             }
@@ -123,7 +123,7 @@ struct RailPulseTrainDetailView: View {
             LazyVStack(alignment: .leading, spacing: 12) {
                 pulseBackHeader(title: context.title, subtitle: context.subtitle, onBack: { dismiss() })
                 IchnosSummaryPanel(language: language, summary: summary, didLoad: didLoad, onReport: { onReport(context) })
-                pulseSectionTitle(pulseText(language, "Current community reports", "Τρέχουσες αναφορές κοινότητας", "Raportet aktuale të komunitetit", "Segnalazioni attuali della comunita"))
+                pulseSectionTitle(pulseText(language, "Current community reports", "Τρέχουσες αναφορές κοινότητας", "Raportet aktuale të komunitetit", "Segnalazioni attuali della comunità"))
                 communityIssueList(language: language, summary: summary, didLoad: didLoad)
                 communityNotice(language)
             }
@@ -290,7 +290,7 @@ private struct IchnosHistoryBucketCard: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(ichnosHistoryPeriodLabel(bucket.period, language: language)).font(.headline)
                 Spacer()
-                Text("\(bucket.totalReports.formatted()) \(pulseText(language, "reports", "αναφορες", "raporte", "segnalazioni"))")
+                Text(countLabel(bucket.totalReports, language, en: ("report", "reports"), el: ("αναφορά", "αναφορές"), sq: ("raport", "raporte"), it: ("segnalazione", "segnalazioni")))
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
             }
@@ -306,10 +306,10 @@ private struct IchnosHistoryBucketCard: View {
             .frame(height: 8)
             .clipShape(Capsule())
             HStack {
-                Label("\(bucket.positiveReports) \(pulseText(language, "good", "καλα", "mirë", "bene"))", systemImage: "checkmark.circle.fill")
+                Label("\(bucket.positiveReports) \(pulseText(language, "good", "καλά", "mirë", "bene"))", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(SyrmosTokens.live)
                 Spacer()
-                Label("\(bucket.issueReports) \(pulseText(language, "issues", "προβληματα", "probleme", "problemi"))", systemImage: "exclamationmark.triangle.fill")
+                Label(countLabel(bucket.issueReports, language, en: ("issue", "issues"), el: ("πρόβλημα", "προβλήματα"), sq: ("problem", "probleme"), it: ("problema", "problemi")), systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(bucket.issueReports > 0 ? SyrmosTokens.disruption : .secondary)
             }
             .font(.caption.bold())
@@ -388,7 +388,7 @@ struct RailPulseContributionView: View {
                     pulseBadge("★", pulseText(language, "Station\nGuardian", "Φύλακας\nΣταθμού", "Mbrojtës\nStacioni", "Custode\nStazione"), unlocked: store.confirmed >= 50)
                     pulseBadge("100", pulseText(language, "100\nReports", "100\nΑναφορές", "100\nRaporte", "100\nReport"), unlocked: store.confirmed >= 100)
                 }
-                pulseSectionTitle(pulseText(language, "Weekly community activity", "Εβδομαδιαία δραστηριότητα κοινότητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunita"))
+                pulseSectionTitle(pulseText(language, "Weekly community activity", "Εβδομαδιαία δραστηριότητα κοινότητας", "Aktiviteti javor i komunitetit", "Attivita settimanale della comunità"))
                 weeklyActivity
                 VStack(alignment: .leading, spacing: 4) {
                     Text(pulseText(language, "Private by construction", "Ιδιωτικό από τον σχεδιασμό", "Privat nga ndërtimi", "Privato per costruzione")).font(.subheadline.weight(.semibold))
@@ -419,14 +419,14 @@ struct RailPulseContributionView: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(currentCallsign).font(.title2.bold())
-                    Text("\(pulseText(language, "Local rail contributor", "Τοπικος συνεισφορεας rail", "Kontribues lokal rail", "Collaboratore rail locale")), \(pulseText(language, "Level", "Επιπεδο", "Niveli", "Livello")) \(level)").font(.caption.bold())
+                    Text("\(pulseText(language, "Local rail contributor", "Τοπικός συνεισφορέας rail", "Kontribues lokal rail", "Collaboratore rail locale")), \(pulseText(language, "Level", "Επίπεδο", "Niveli", "Livello")) \(level)").font(.caption.bold())
                     Text(pulseText(language, "Progress stored only on this device", "Η πρόοδος αποθηκεύεται μόνο στη συσκευή", "Progresi ruhet vetëm në këtë pajisje", "Progressi salvati solo su questo dispositivo")).font(.caption2.bold()).padding(.horizontal, 12).padding(.vertical, 6).background(.white.opacity(0.17), in: Capsule())
                 }
             }
             Text(pulseText(language, "NEXT LEVEL", "ΕΠΟΜΕΝΟ ΕΠΙΠΕΔΟ", "NIVELI TJETËR", "PROSSIMO LIVELLO")).font(.caption2.bold())
             ProgressView(value: Double(store.confirmed % 100), total: 100).tint(Color(hex: 0x63E6A6))
             HStack {
-                Text("\(store.confirmed) \(pulseText(language, "confirmed contributions", "επιβεβαιωμενες συνεισφορες", "kontribute të konfirmuara", "contributi confermati"))")
+                Text(countLabel(store.confirmed, language, en: ("confirmed contribution", "confirmed contributions"), el: ("επιβεβαιωμένη συνεισφορά", "επιβεβαιωμένες συνεισφορές"), sq: ("kontribut i konfirmuar", "kontribute të konfirmuara"), it: ("contributo confermato", "contributi confermati")))
                 Spacer()
                 Text("\(100 - store.confirmed % 100) \(pulseText(language, "to", "για", "deri në", "a")) \(nextCallsign)")
             }.font(.caption2.bold())
@@ -467,7 +467,7 @@ private struct IchnosSummaryPanel: View {
                 Text(title).font(.subheadline.weight(.semibold))
                 Text(detail).font(.caption).foregroundStyle(.secondary)
                 if let normalCount = summary?.normalReportCount, normalCount > 0 {
-                    Text("\(normalCount) \(pulseText(language, "anonymous everything-OK reports", "ανωνυμες αναφορες οτι ολα ειναι καλα", "raporte anonime se gjithçka është në rregull", "segnalazioni anonime di tutto regolare"))")
+                    Text(countLabel(normalCount, language, en: ("anonymous everything-OK report", "anonymous everything-OK reports"), el: ("ανώνυμη αναφορά ότι όλα είναι καλά", "ανώνυμες αναφορές ότι όλα είναι καλά"), sq: ("raport anonim se gjithçka është në rregull", "raporte anonime se gjithçka është në rregull"), it: ("segnalazione anonima di tutto regolare", "segnalazioni anonime di tutto regolare")))
                         .font(.caption2.bold()).foregroundStyle(SyrmosTokens.live)
                 }
             }
@@ -487,11 +487,11 @@ private struct IchnosSummaryPanel: View {
     private var title: String {
         guard let summary else {
             return didLoad
-                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunita non disponibile")
-                : pulseText(language, "Loading community status", "Φόρτωση κατάστασης κοινότητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunita")
+                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunità non disponibile")
+                : pulseText(language, "Loading community status", "Φόρτωση κατάστασης κοινότητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunità")
         }
         return summary.hasIssues
-            ? pulseText(language, "Active community issues", "Ενεργά προβλήματα κοινότητας", "Probleme aktive të komunitetit", "Problemi attivi della comunita")
+            ? pulseText(language, "Active community issues", "Ενεργά προβλήματα κοινότητας", "Probleme aktive të komunitetit", "Problemi attivi della comunità")
             : pulseText(language, "No active issues reported", "Δεν αναφέρθηκαν ενεργά προβλήματα", "Nuk ka probleme aktive të raportuara", "Nessun problema attivo segnalato")
     }
     private var detail: String {
@@ -516,7 +516,7 @@ private func communityIssueList(language: AppLanguage, summary: IchnosCommunityS
                 symbol: "!",
                 title: issue.scopeLabel,
                 detail: ichnosIssueLabel(issue, language: language),
-                status: "\(issue.count) \(pulseText(language, "reports", "αναφορες", "raporte", "segnalazioni"))",
+                status: countLabel(issue.count, language, en: ("report", "reports"), el: ("αναφορά", "αναφορές"), sq: ("raport", "raporte"), it: ("segnalazione", "segnalazioni")),
                 color: ichnosIssueColor(issue.signal)
             )
         }
@@ -590,7 +590,7 @@ private func pulseSectionTitle(_ title: String) -> some View {
 }
 
 private func communityNotice(_ language: AppLanguage) -> some View {
-    Text(pulseText(language, "Community reports are not official operator notices.", "Οι αναφορές κοινότητας δεν είναι επίσημες ανακοινώσεις φορέα.", "Raportet e komunitetit nuk janë njoftime zyrtare të operatorit.", "Le segnalazioni della comunita non sono avvisi ufficiali."))
+    Text(pulseText(language, "Community reports are not official operator notices.", "Οι αναφορές κοινότητας δεν είναι επίσημες ανακοινώσεις φορέα.", "Raportet e komunitetit nuk janë njoftime zyrtare të operatorit.", "Le segnalazioni della comunità non sono avvisi ufficiali."))
         .font(.caption2.weight(.semibold)).foregroundStyle(SyrmosTokens.warning)
         .frame(maxWidth: .infinity).padding(12)
         .background(SyrmosTokens.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))

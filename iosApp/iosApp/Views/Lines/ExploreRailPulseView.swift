@@ -336,6 +336,7 @@ struct ExploreRailPulseContent: View {
                 .font(.title3.weight(.bold))
             Text(reportContext.subtitle)
                 .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
             Button(action: onChooseOrigin) {
                 HStack(spacing: 7) {
                     Image(systemName: selectedOriginName == nil ? "mappin.and.ellipse" : "location.fill")
@@ -560,9 +561,9 @@ struct ExploreOriginPickerSheet: View {
             return pulseText(language, "Open Settings to allow GPS", "Άνοιξε τις Ρυθμίσεις για GPS", "Hap Cilësimet per GPS", "Apri Impostazioni per il GPS")
         }
         if let nearest = locationService.nearbyStations.first {
-            return pulseText(language, "Nearest station, \(Int(nearest.distanceMeters)) m away", "Πλησιέστερος σταθμός, \(Int(nearest.distanceMeters)) μ", "Stacioni më i afërt, \(Int(nearest.distanceMeters)) m", "Stazione piu vicina, \(Int(nearest.distanceMeters)) m")
+            return pulseText(language, "Nearest station, \(Int(nearest.distanceMeters)) m away", "Πλησιέστερος σταθμός, \(Int(nearest.distanceMeters)) μ", "Stacioni më i afërt, \(Int(nearest.distanceMeters)) m", "Stazione più vicina, \(Int(nearest.distanceMeters)) m")
         }
-        return pulseText(language, "Find the nearest station on this device", "Βρες τον πλησιέστερο σταθμό στη συσκευή", "Gjej stacionin më të afërt në pajisje", "Trova la stazione piu vicina sul dispositivo")
+        return pulseText(language, "Find the nearest station on this device", "Βρες τον πλησιέστερο σταθμό στη συσκευή", "Gjej stacionin më të afërt në pajisje", "Trova la stazione più vicina sul dispositivo")
     }
 
     private func useCurrentLocation() {
@@ -806,8 +807,8 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
         return [PulseFeedItem(
             id: "network-state",
             title: didLoad
-                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunita non disponibile")
-                : pulseText(language, "Loading community status", "Φόρτωση κατάστασης κοινότητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunita"),
+                ? pulseText(language, "Community status unavailable", "Η κατάσταση κοινότητας δεν είναι διαθέσιμη", "Gjendja e komunitetit nuk është e disponueshme", "Stato della comunità non disponibile")
+                : pulseText(language, "Loading community status", "Φόρτωση κατάστασης κοινότητας", "Po ngarkohet gjendja e komunitetit", "Caricamento stato della comunità"),
             detail: didLoad
                 ? pulseText(language, "Check your connection and try again", "Έλεγξε τη σύνδεση και προσπάθησε ξανά", "Kontrollo lidhjen dhe provo përsëri", "Controlla la connessione e riprova")
                 : pulseText(language, "Anonymous reports from the last two hours", "Ανώνυμες αναφορές των τελευταίων δυο ωρών", "Raporte anonime nga dy orët e fundit", "Segnalazioni anonime delle ultime due ore"),
@@ -822,7 +823,7 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
                 id: issue.id,
                 title: issue.scopeLabel,
                 detail: ichnosIssueLabel(issue, language: language),
-                status: "\(issue.count) \(pulseText(language, "reports", "αναφορες", "raporte", "segnalazioni"))",
+                status: countLabel(issue.count, language, en: ("report", "reports"), el: ("αναφορά", "αναφορές"), sq: ("raport", "raporte"), it: ("segnalazione", "segnalazioni")),
                 color: ichnosIssueColor(issue.signal)
             )
         }
@@ -851,11 +852,11 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
 private func ichnosAriadneText(language: AppLanguage, summary: IchnosCommunitySummary?, didLoad: Bool) -> String {
     guard let summary else {
         return didLoad
-            ? pulseText(language, "Ichnos community status is temporarily unavailable.", "Η κατάσταση κοινότητας Ichnos δεν είναι προσωρινά διαθέσιμη.", "Gjendja e komunitetit Ichnos nuk është përkohësisht e disponueshme.", "Lo stato della comunita Ichnos non e temporaneamente disponibile.")
-            : pulseText(language, "Loading Ichnos community status...", "Φόρτωση κατάστασης κοινότητας Ichnos...", "Po ngarkohet gjendja e komunitetit Ichnos...", "Caricamento dello stato della comunita Ichnos...")
+            ? pulseText(language, "Ichnos community status is temporarily unavailable.", "Η κατάσταση κοινότητας Ichnos δεν είναι προσωρινά διαθέσιμη.", "Gjendja e komunitetit Ichnos nuk është përkohësisht e disponueshme.", "Lo stato della comunità Ichnos non e temporaneamente disponibile.")
+            : pulseText(language, "Loading Ichnos community status...", "Φόρτωση κατάστασης κοινότητας Ichnos...", "Po ngarkohet gjendja e komunitetit Ichnos...", "Caricamento dello stato della comunità Ichnos...")
     }
     if summary.hasIssues {
-        return pulseText(language, "Ichnos: active community issues are shown above. Estimated normal-journey counts are hidden while any issue is active.", "Ichnos: τα ενεργά προβλήματα κοινότητας εμφανίζονται παραπάνω. Οι εκτιμήσεις κανονικών διαδρομών κρύβονται όσο υπάρχει ενεργό πρόβλημα.", "Ichnos: problemet aktive të komunitetit shfaqen më sipër. Vlerësimet e udhëtimeve normale fshihen kur ka problem aktiv.", "Ichnos: i problemi attivi della comunita sono mostrati sopra. Le stime dei viaggi regolari sono nascoste mentre un problema e attivo.")
+        return pulseText(language, "Ichnos: active community issues are shown above. Estimated normal-journey counts are hidden while any issue is active.", "Ichnos: τα ενεργά προβλήματα κοινότητας εμφανίζονται παραπάνω. Οι εκτιμήσεις κανονικών διαδρομών κρύβονται όσο υπάρχει ενεργό πρόβλημα.", "Ichnos: problemet aktive të komunitetit shfaqen më sipër. Vlerësimet e udhëtimeve normale fshihen kur ka problem aktiv.", "Ichnos: i problemi attivi della comunità sono mostrati sopra. Le stime dei viaggi regolari sono nascoste mentre un problema e attivo.")
     }
     return pulseText(language, "Ichnos: no active issue reports right now.", "Ichnos: δεν υπάρχουν ενεργές αναφορές προβλημάτων τώρα.", "Ichnos: nuk ka raporte aktive problemesh tani.", "Ichnos: nessuna segnalazione attiva di problemi al momento.")
 }
@@ -867,7 +868,7 @@ func ichnosIssueLabel(_ issue: IchnosCommunityIssue, language: AppLanguage) -> S
     case "crowded": label = pulseText(language, "Crowded", "Πολύς κόσμος", "Plot", "Affollato")
     case "stopped": label = pulseText(language, "Service stopped", "Η κίνηση σταμάτησε", "Shërbimi u ndal", "Servizio fermo")
     case "too_hot": label = pulseText(language, "Too hot", "Πολύ ζέστη", "Shumë nxehtë", "Troppo caldo")
-    case "access": label = pulseText(language, "Accessibility issue", "Πρόβλημα πρόσβασης", "Problem aksesueshmërie", "Problema di accessibilita")
+    case "access": label = pulseText(language, "Accessibility issue", "Πρόβλημα πρόσβασης", "Problem aksesueshmërie", "Problema di accessibilità")
     case "facilities": label = pulseText(language, "Facility issue", "Πρόβλημα παροχών", "Problem shërbimesh", "Problema ai servizi")
     case "safety": label = pulseText(language, "Safety concern", "Θέμα ασφάλειας", "Shqetësim sigurie", "Problema di sicurezza")
     default: label = pulseText(language, "Other issue", "Άλλο πρόβλημα", "Problem tjetër", "Altro problema")
