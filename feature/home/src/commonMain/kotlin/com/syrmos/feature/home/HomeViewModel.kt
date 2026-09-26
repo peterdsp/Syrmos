@@ -12,6 +12,7 @@ import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.HomeDirectionBoard
+import com.syrmos.core.domain.usecase.NearestStationCluster
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.location.NearestStationResult
 import com.syrmos.core.model.location.UserLocation
@@ -233,7 +234,10 @@ class HomeViewModel(
             launch { runCatching { weatherRepository.refresh(latitude, longitude, placeName = "Here") } }
 
             if (nearest.isNotEmpty()) {
-                loadDeparturesForStation(nearest.first().stationId, nearest.first().lineIds)
+                // Every platform of the physical stop (an interchange is separate
+                // per-line station ids), so the hero and the direction board see
+                // every line at the rider's stop, not just the nearest platform's.
+                loadDeparturesForStops(nearest.first().stationId, NearestStationCluster.stops(nearest))
             }
         }
     }
@@ -245,12 +249,15 @@ class HomeViewModel(
         }
     }
 
-    private suspend fun loadDeparturesForStation(stationId: String, lineIds: List<String>) {
+    private suspend fun loadDeparturesForStation(stationId: String, lineIds: List<String>) =
+        loadDeparturesForStops(stationId, lineIds.map { stationId to it })
+
+    private suspend fun loadDeparturesForStops(stationId: String, stops: List<Pair<String, String>>) {
         val allDepartures = mutableListOf<UpcomingDeparture>()
-        lineIds.forEach { lineId ->
+        stops.forEach { (stopId, lineId) ->
             Direction.entries.forEach { direction ->
                 val departures = getNextDepartures.invoke(
-                    stationId = stationId,
+                    stationId = stopId,
                     lineId = lineId,
                     direction = direction,
                     limit = 2,
@@ -276,9 +283,11 @@ class HomeViewModel(
         // dress it up as "tonight", which reads as broken to the user.
         val nextIsSoon = (next?.minutesAway ?: Int.MAX_VALUE) <= 60
         val teaserLineId = if (nextIsSoon) {
-            next?.lineId?.let { normalizeLineId(it) } ?: lineIds.firstOrNull()
+            next?.lineId?.let { normalizeLineId(it) } ?: stops.firstOrNull()?.second
         } else null
-        val lastTrain = teaserLineId?.let { getLastTrain.latestEitherDirection(stationId, it) }
+        // The teaser's line may live on another platform of the same stop.
+        val teaserStationId = stops.firstOrNull { it.second == teaserLineId }?.first ?: stationId
+        val lastTrain = teaserLineId?.let { getLastTrain.latestEitherDirection(teaserStationId, it) }
         val lastTrainLine = lastTrain?.let { resolveLine(it.lineId) }
 
         _uiState.update {

@@ -5,6 +5,7 @@ import com.syrmos.core.common.extensions.parseTime
 import com.syrmos.core.common.extensions.toDisplayString
 import kotlinx.datetime.LocalTime
 import kotlin.test.Test
+import com.syrmos.core.common.extensions.secondsUntil
 import kotlin.test.assertEquals
 
 class DateTimeExtensionsTest {
@@ -71,5 +72,20 @@ class DateTimeExtensionsTest {
     fun toDisplayString_double_digits() {
         val time = LocalTime(14, 30)
         assertEquals("14:30", time.toDisplayString())
+    }
+
+    @Test
+    fun secondsUntil_trainAtThePlatformReadsZeroNotTomorrow() {
+        val now = LocalTime(7, 5, 20)
+        assertEquals(0, now.secondsUntil(LocalTime(7, 5, 0)), "20 s ago is the train at the platform")
+        assertEquals(0, now.secondsUntil(LocalTime(7, 5, 20)))
+        assertEquals(40, now.secondsUntil(LocalTime(7, 6, 0)))
+    }
+
+    @Test
+    fun secondsUntil_wrapsOnlyPastTheGrace() {
+        val now = LocalTime(7, 5, 20)
+        assertEquals(24 * 3600 - 61, now.secondsUntil(LocalTime(7, 4, 19)), "61 s ago is tomorrow's service")
+        assertEquals(3600, LocalTime(23, 30, 0).secondsUntil(LocalTime(0, 30, 0)), "across midnight")
     }
 }

@@ -12,7 +12,7 @@ import SwiftUI
 // the earlier 1.1.1 sheet.
 
 private let kWhatsNewVersionKey = "syrmos.whatsnew.version"
-private let kWhatsNewCurrentVersion = "2.0.0"
+private let kWhatsNewCurrentVersion = "3.0.0"
 
 struct WhatsNewView: View {
     let onDismiss: () -> Void
@@ -38,34 +38,34 @@ struct WhatsNewView: View {
     }
 
     private var subtitle: String {
-        t("Hellenic Rail Atlas: a whole new look.",
-          "Hellenic Rail Atlas: ολοκαίνουριος σχεδιασμός.",
-          "Hellenic Rail Atlas: dizajn krejtesisht i ri.",
-          "Hellenic Rail Atlas: un look completamente nuovo.")
+        t("3.0 Journeys: plan it, ride it, arrive.",
+          "3.0 Διαδρομές: σχεδίασε, ταξίδεψε, φτάσε.",
+          "3.0 Udhëtime: planifiko, udhëto, mbërri.",
+          "3.0 Viaggi: pianifica, viaggia, arriva.")
     }
 
     private var items: [String] {
         [
-            t("A fresh light-first design built around one-glance answers",
-              "Νέος σχεδιασμός με απαντήσεις στη μια ματιά",
-              "Dizajn i ri me pergjigje ne nje shikim",
-              "Un nuovo design chiaro, pensato per risposte a colpo d'occhio"),
-            t("Ariadne now links to stations and lines: tap any answer to jump straight there",
-              "Η Αριάδνη τώρα συνδέεται με σταθμούς και γραμμές: πάτα μια απάντηση και πήγαινε κατευθείαν",
-              "Ariadne tani lidhet me stacione dhe linja: prek nje pergjigje dhe shko direkt",
-              "Ariadne ora collega stazioni e linee: tocca una risposta per aprirle subito"),
-            t("Browse All Stations with interactive maps, line pills and interchange badges",
-              "Περιήγηση σε όλους τους σταθμούς με χάρτη, ετικέτες γραμμών και κόμβους ανταπόκρισης",
-              "Shfleto te gjitha stacionet me harta, etiketa linjash dhe nyje nderkembimi",
-              "Esplora tutte le stazioni con mappe interattive, linee e interscambi"),
-            t("Redesigned Explore tab with actionable destination cards and recent stations",
-              "Ανανεωμένη καρτέλα Εξερεύνηση με κάρτες προορισμών και πρόσφατους σταθμούς",
-              "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione te fundit",
-              "Scheda Esplora rinnovata con destinazioni utili e stazioni recenti"),
-            t("Operators directory and map preferences in the new More tab",
-              "Κατάλογος φορέων και ρυθμίσεις χάρτη στη νέα καρτέλα Περισσότερα",
-              "Drejtori operatoresh dhe preferenca harte ne kartelen e re Me shume",
-              "Elenco operatori e preferenze della mappa nella nuova scheda Altro"),
+            t("Plan any journey A to B: ranked routes, arrive-by, and the last train home",
+              "Σχεδίασε κάθε διαδρομή από Α σε Β: ταξινομημένες επιλογές, άφιξη έως, και το τελευταίο τρένο για το σπίτι",
+              "Planifiko çdo udhëtim nga A në B: rrugë të renditura, mbërritje deri, dhe treni i fundit për në shtëpi",
+              "Pianifica qualsiasi viaggio da A a B: percorsi ordinati, arrivo entro, e l'ultimo treno per casa"),
+            t("GO guides you stop by stop, with a get-off alert, a live route map and a Lock Screen Live Activity",
+              "Το GO σε καθοδηγεί στάση-στάση, με ειδοποίηση αποβίβασης, ζωντανό χάρτη διαδρομής και Live Activity στην οθόνη κλειδώματος",
+              "GO të udhëzon ndalesë pas ndalese, me njoftim zbritjeje, hartë rruge live dhe Live Activity në ekranin e kyçjes",
+              "GO ti guida fermata per fermata, con avviso di discesa, mappa del percorso dal vivo e Live Activity sulla schermata di blocco"),
+            t("Home shows the next train in every direction at your nearest station",
+              "Η Αρχική δείχνει τον επόμενο συρμό προς κάθε κατεύθυνση στον κοντινότερο σταθμό σου",
+              "Kreu tregon trenin tjetër për çdo drejtim në stacionin tënd më të afërt",
+              "La Home mostra il prossimo treno in ogni direzione dalla tua stazione più vicina"),
+            t("Leave-by reminders for your saved departures, and connection-risk warnings that offer alternatives",
+              "Υπενθυμίσεις αναχώρησης για τις αποθηκευμένες σου αναχωρήσεις, και προειδοποιήσεις κινδύνου ανταπόκρισης με εναλλακτικές",
+              "Kujtesa për nisjen për nisjet e ruajtura, dhe paralajmërime rreziku lidhjeje me alternativa",
+              "Promemoria di partenza per le partenze salvate, e avvisi di coincidenza a rischio con alternative"),
+            t("Made for iPad and iPhone Duo: planning and guidance side by side on the open display",
+              "Φτιαγμένο για iPad και iPhone Duo: σχεδιασμός και καθοδήγηση δίπλα-δίπλα στην ανοιχτή οθόνη",
+              "Bërë për iPad dhe iPhone Duo: planifikim dhe udhëzim krah për krah në ekranin e hapur",
+              "Pensato per iPad e iPhone Duo: pianificazione e guida fianco a fianco sullo schermo aperto"),
         ]
     }
 

@@ -12,6 +12,29 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Home sees the whole interchange on Android.** The nearest stop is now the
+  cluster of per-line station ids within the 150 m interchange radius, so the
+  hero and the direction board load every line at the stop (Omonia shows M1 and
+  M2 in both directions, as on iOS) and the last-train teaser reads the right
+  platform. `NearestStationCluster` in core/domain, tested.
+- **What's new for 3.0.** The first-run highlights on iOS and Android now
+  describe 3.0 (Plan, GO, the direction board, leave-by reminders, foldables)
+  instead of the 2.0 Atlas notes, and show once more for 3.0.0.
+- **Dark-mode GO render** added to the Duo snapshot suite.
+- **Departures pairs on foldables and tablets.** On both platforms the Airport
+  hub's planning cards (hub, city, calendar, route overview, predictive
+  itinerary) sit beside the live board (next services, departures, alerts) when
+  the window pairs, decided by the shared policy; phones keep the single column.
+  The Compose workspace helper moved from the app module into the design-system
+  module so every feature module can use it.
+- **Plan endpoints read as an invitation** ("Choose a station" with a chevron)
+  instead of a bare dash before a station is chosen, on both platforms.
+- **Readable width on Android tablets and unfolded devices.** Home, Explore and
+  Settings centre their content in a 760 dp column, the same maximum iOS uses.
+- **Android hero countdown fix.** A train at the platform read as "23h 59min"
+  because a departure a few seconds in the past wrapped to the next day; the
+  countdown now keeps a one-minute grace and clamps to zero, as on iOS.
+
 ## 3.0.0-beta.3 - 2026-09-26
 
 3.0 "Journeys" grows from the GO engine into an end-to-end companion: an adaptive

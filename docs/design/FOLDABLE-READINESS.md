@@ -309,6 +309,37 @@ the iPhone Duo and Android fold devices only; GO stays.
   Android emulator running surface (`go-colour.png`, `go-recreated.png`,
   `phone-go.png` in the session scratchpad); no fold hardware, no Duo hardware.
 
+## Landed: polish round 2 after 3.0.0-beta.3 (Departures pairing, Home interchange cluster, small fixes)
+
+- **Departures pairs** (six-posture prompt section 6, parent prompt section 6):
+  iOS `TimetablesView` hands `planningCards` and `boardCards` to
+  `SyrmosArrangement(task: .departures)`; Android `AirportHubScreen` resolves
+  `rememberContentWorkspace(WorkspaceTask.DEPARTURES, ...)` and lays the same
+  two groups side by side with a hairline. `rememberContentWorkspace` and
+  `LocalReservedRegions` moved to `core/designsystem/.../layout/` so feature
+  modules can pair without depending on the app module. Fixtures:
+  `departures_pairsSideBySideOnBothInnerOrientations` (Kotlin) and its Swift
+  twin. Renders `departures-duo-inner-landscape.png`, `departures-duo-cover.png`.
+- **Home sees the whole interchange on Android**: `NearestStationCluster`
+  (150 m radius over the per-line station ids, never enriching line ids), so the
+  hero and the direction board load M1 and M2 at Omonia like iOS; verified on
+  the Google-APIs Pixel emulator (four directions, two times each).
+- **What's new for 3.0** on both platforms; **Plan endpoint placeholder** on both
+  platforms; **dark GO render**; launcher clearance under the Android Plan query
+  column.
+- **Readable width on Android** (Home, Explore, Settings lists centre in a 760 dp
+  column, the iOS `ReadableTabContent` maximum), verified at 1280 x 800 dp on the
+  emulator; the 1280 capture also exposed the **hero countdown wrap** (a train at
+  the platform read "23h 59min"), fixed in `LocalTime.secondsUntil` with a
+  one-minute grace and a zero clamp mirroring iOS (`DateTimeExtensionsTest`
+  11/11). **TalkBack parity**: direction-board rows, timeline stops and the
+  segmented progress bar are single merged elements on Android, as their iOS
+  twins are for VoiceOver; the Android GO top bar reads GO with the
+  journey-in-progress line beneath, as on iOS.
+- **Open, queued as their own rounds**: Explore list-detail pairing (push
+  navigation today on both platforms, needs a split-view shape), Home paired
+  with a map on wide windows, Duo hardware confirmation of the reported regions.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

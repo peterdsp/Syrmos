@@ -124,85 +124,37 @@ struct TimetablesView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
-                    AirportHeroCard(hub: hub, language: loc.language)
-
-                    AirportCityPicker(selectedCity: $selectedCity, language: loc.language)
-
-                    AirportCalendarHub(
-                        language: loc.language,
-                        dayOffset: $dayOffset,
-                        flightTime: $flightTime,
-                        calendarEvent: selectedCalendarEvent,
-                        accessState: calendarStore.accessState,
-                        onConnectCalendar: { Task { await calendarStore.connect() } }
-                    )
-
-                    if hub.hasDirectRail {
-                        AirportRouteMapCard(
-                            language: loc.language,
-                            selectedRoute: $selectedRoute,
-                            dayOffset: dayOffset
-                        )
-
-                        AirportPredictiveCard(
-                            language: loc.language,
-                            dayOffset: dayOffset,
-                            flightTime: flightTime,
-                            airportBoundDepartures: cityAirportDepartures,
-                            tripTitle: selectedCalendarEvent?.title
-                        )
-
-                        AirportNextServicesCard(
-                            language: loc.language,
-                            dayOffset: dayOffset,
-                            metroDepartures: airportDepartures,
-                            liveBuses: liveBuses
-                        )
-
-                        airportSectionTitle(
-                            airportText(
-                                loc.language,
-                                "Airport services",
-                                "Υπηρεσίες αεροδρομίου",
-                                "Shërbimet e aeroportit",
-                                "Servizi aeroportuali"
-                            )
-                        )
-
-                        AirportDepartureList(
-                            language: loc.language,
-                            dayOffset: dayOffset,
-                            metroDepartures: airportDepartures,
-                            liveBuses: liveBuses
-                        )
-                    } else {
-                        AirportConnectionsCard(hub: hub, language: loc.language)
-
-                        airportSectionTitle(
-                            airportText(
-                                loc.language,
-                                "Metro departures to the airport shuttle",
-                                "Αναχωρήσεις μετρό προς το λεωφορείο αεροδρομίου",
-                                "Nisjet e metros drejt autobusit të aeroportit",
-                                "Partenze metro verso la navetta aeroporto"
-                            )
-                        )
-
-                        AirportMetroLegsCard(
-                            hub: hub,
-                            language: loc.language,
-                            dayOffset: dayOffset,
-                            departuresByStation: metroLegDepartures
-                        )
+            // Foldables and iPad (six-posture prompt, section 6, Departures): the
+            // planning cards (hub, city, calendar, route, predictive itinerary)
+            // beside the live board (next services, departures, alerts) when the
+            // window pairs; the shipped single column otherwise.
+            SyrmosArrangement(
+                task: .departures,
+                primary: {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 14) { planningCards }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 110)
                     }
-
-                    AirportServiceAlertCard(language: loc.language)
+                },
+                companion: {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 14) { boardCards }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 110)
+                    }
+                },
+                combined: {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 14) {
+                            planningCards
+                            boardCards
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 110)
+                    }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 110)
-            }
+            )
             .background(Color.syrmosBackground)
             .safeAreaInset(edge: .top, spacing: 0) {
                 Color.clear.frame(height: 8)
@@ -228,6 +180,90 @@ struct TimetablesView: View {
                 if let event { flightTime = event.startDate }
             }
         }
+    }
+
+    /// What the rider decides with: the hub, the city, the calendar and flight
+    /// time, and for a direct-rail hub the route map and predictive itinerary.
+    @ViewBuilder private var planningCards: some View {
+        AirportHeroCard(hub: hub, language: loc.language)
+
+        AirportCityPicker(selectedCity: $selectedCity, language: loc.language)
+
+        AirportCalendarHub(
+            language: loc.language,
+            dayOffset: $dayOffset,
+            flightTime: $flightTime,
+            calendarEvent: selectedCalendarEvent,
+            accessState: calendarStore.accessState,
+            onConnectCalendar: { Task { await calendarStore.connect() } }
+        )
+
+        if hub.hasDirectRail {
+            AirportRouteMapCard(
+                language: loc.language,
+                selectedRoute: $selectedRoute,
+                dayOffset: dayOffset
+            )
+
+            AirportPredictiveCard(
+                language: loc.language,
+                dayOffset: dayOffset,
+                flightTime: flightTime,
+                airportBoundDepartures: cityAirportDepartures,
+                tripTitle: selectedCalendarEvent?.title
+            )
+        } else {
+            AirportConnectionsCard(hub: hub, language: loc.language)
+        }
+    }
+
+    /// The live board: next services and the departure list (or the metro legs
+    /// feeding an airport shuttle), then the service alert.
+    @ViewBuilder private var boardCards: some View {
+        if hub.hasDirectRail {
+            AirportNextServicesCard(
+                language: loc.language,
+                dayOffset: dayOffset,
+                metroDepartures: airportDepartures,
+                liveBuses: liveBuses
+            )
+
+            airportSectionTitle(
+                airportText(
+                    loc.language,
+                    "Airport services",
+                    "Υπηρεσίες αεροδρομίου",
+                    "Shërbimet e aeroportit",
+                    "Servizi aeroportuali"
+                )
+            )
+
+            AirportDepartureList(
+                language: loc.language,
+                dayOffset: dayOffset,
+                metroDepartures: airportDepartures,
+                liveBuses: liveBuses
+            )
+        } else {
+            airportSectionTitle(
+                airportText(
+                    loc.language,
+                    "Metro departures to the airport shuttle",
+                    "Αναχωρήσεις μετρό προς το λεωφορείο αεροδρομίου",
+                    "Nisjet e metros drejt autobusit të aeroportit",
+                    "Partenze metro verso la navetta aeroporto"
+                )
+            )
+
+            AirportMetroLegsCard(
+                hub: hub,
+                language: loc.language,
+                dayOffset: dayOffset,
+                departuresByStation: metroLegDepartures
+            )
+        }
+
+        AirportServiceAlertCard(language: loc.language)
     }
 
     private func reload() {

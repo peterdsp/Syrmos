@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -158,7 +160,8 @@ fun LinesScreen(
             .statusBarsPadding(),
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            // Readable width on tablets and unfolded devices (iOS ReadableTabContent parity).
+            modifier = Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp),
             contentPadding = PaddingValues(start = 16.dp, top = 86.dp, end = 16.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

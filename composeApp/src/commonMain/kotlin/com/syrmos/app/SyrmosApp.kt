@@ -55,7 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.Dp
 import com.syrmos.core.common.layout.ContentBreakpoint
 import com.syrmos.core.common.layout.ContentMode
-import com.syrmos.app.layout.LocalReservedRegions
+import com.syrmos.core.designsystem.layout.LocalReservedRegions
 import com.syrmos.app.platform.rememberReservedRegions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -162,7 +162,7 @@ fun SyrmosApp() {
         } else {
             // One-time highlights after an install/update. The web build shows
             // its own card (web-map.js), so this is effectively the native path.
-            val whatsNewVersion = "2.0.0"
+            val whatsNewVersion = "3.0.0"
             var showWhatsNew by remember { mutableStateOf(readLastWhatsNewVersion() != whatsNewVersion) }
             if (showWhatsNew) {
                 WhatsNewDialog(onDismiss = {

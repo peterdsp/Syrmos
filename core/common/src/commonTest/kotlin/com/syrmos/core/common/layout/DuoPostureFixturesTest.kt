@@ -269,6 +269,15 @@ class DuoPostureFixturesTest {
         assertFalse(ws.regionDriven)
     }
 
+    // --- Departures task: planning cards beside the live board. ---
+
+    @Test
+    fun departures_pairsSideBySideOnBothInnerOrientations() {
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(INNER_H, INNER_W, WorkspaceTask.DEPARTURES).arrangement)
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(INNER_W, INNER_H, WorkspaceTask.DEPARTURES).arrangement)
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.DEPARTURES).arrangement)
+    }
+
     private fun assertFalse(value: Boolean, message: String? = null) =
         assertTrue(!value, message ?: "expected false")
 }

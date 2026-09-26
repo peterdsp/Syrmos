@@ -329,8 +329,8 @@ struct PlanView: View {
     }
 
     @ViewBuilder private var planQuery: some View {
-        endpointRow(label: t("From", "Από", "Nga", "Da"), value: name(fromId)) { toggle("from") }
-        endpointRow(label: t("To", "Προς", "Për", "A"), value: name(toId)) { toggle("to") }
+        endpointRow(label: t("From", "Από", "Nga", "Da"), value: fromId == nil ? nil : name(fromId)) { toggle("from") }
+        endpointRow(label: t("To", "Προς", "Për", "A"), value: toId == nil ? nil : name(toId)) { toggle("to") }
 
         if opening != nil {
             TextField(t("Search station", "Αναζήτηση σταθμού", "Kërko stacion", "Cerca stazione"), text: $query)
@@ -1095,17 +1095,28 @@ struct PlanView: View {
     }
 
     @ViewBuilder
-    private func endpointRow(label: String, value: String, action: @escaping () -> Void) -> some View {
+    /// An endpoint field. Before a station is chosen it reads as an invitation
+    /// ("Choose a station", secondary, with a chevron) instead of a bare dash.
+    private func endpointRow(label: String, value: String?, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(label).font(.caption).foregroundStyle(.secondary)
-                Text(value).font(.headline).foregroundStyle(.primary)
+            HStack(alignment: .center, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(label).font(.caption).foregroundStyle(.secondary)
+                    Text(value ?? t("Choose a station", "Διάλεξε σταθμό", "Zgjidh stacion", "Scegli una stazione"))
+                        .font(.headline)
+                        .foregroundStyle(value == nil ? Color.secondary : Color.primary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: value == nil ? "chevron.right" : "pencil")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
             .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.12)))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label + ", " + (value ?? t("not chosen", "δεν έχει επιλεγεί", "pa zgjedhur", "non scelta")))
     }
 
     @ViewBuilder
