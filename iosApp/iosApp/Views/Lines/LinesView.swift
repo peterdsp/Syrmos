@@ -791,7 +791,7 @@ private struct DestinationCard: View {
             }
         }
         .padding(15)
-        .frame(width: 242, height: 184, alignment: .topLeading)
+        .frame(width: 242, height: 200, alignment: .topLeading)
         .background {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color.syrmosSurface)

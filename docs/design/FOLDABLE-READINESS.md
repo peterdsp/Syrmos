@@ -1142,8 +1142,14 @@ submission and served back verbatim.
 - **Still open on the server**: storing the station id with the report
   would let every client build the label natively; the localizer becomes a
   no-op once that lands.
+- **Also**: the iOS Explore-farther card is fixed at 242 by 184 pt, one
+  caption line short of a two-line hook, so in a 560 pt pane "Rruga jote
+  më e shpejtë drejt terminalit" truncated where the Android card (no
+  fixed height) wrapped. The card is 200 pt tall now; the iPad shows the
+  hook on two lines, the iPhone is unchanged because its hook fits one.
 - **Verified**: IchnosScopeLabelTest 3/3 (Kotlin), IchnosScopeLabelTests
-  3/3 (iOS), Compose app compile.
+  3/3 (iOS), Compose app compile; the two Explore cover renders rebuilt
+  and unchanged apart from live data (not committed).
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
