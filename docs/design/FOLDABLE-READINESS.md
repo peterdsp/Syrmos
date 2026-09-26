@@ -949,6 +949,11 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   emulator ("ΕΤΟΙΜΟΣ ΓΙΑ ΕΠΙΒΙΒΑΣΗ"); iOS GreekTypography + HomeFeatures 23/23. Emulator note: adb cannot type
   Greek, and the Greek search matches Greek names only, so plan in English and
   switch the language afterwards.
+- **Italian on the fold** (same recipe): Plan pairs with "Viaggio
+  selezionato", the "Consigliato" chip and the "2 percorsi" row read
+  cleanly; GO pairs with "Fermata confermata" and "Tutto il percorso" on
+  the map card, both atomic, and the timeline captions "Ora" / "Prossima".
+  No wrapping in the longest of the four languages; no change.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
