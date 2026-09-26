@@ -135,14 +135,16 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                         // Above the system navigation bar in every layout.
                         .navigationBarsPadding()
                         .padding(
-                            end = 16.dp,
+                            // Side by side: the launcher floats over the companion, the
+                            // corner is free. Otherwise the button sits BESIDE the
+                            // launcher on the same row (launcher 16 dp + 56 dp pill +
+                            // 12 dp gap), not above it: on a short folded cover the
+                            // stacked placement covered the middle of the content.
+                            end = if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) 16.dp else 84.dp,
                             bottom = when (ws.arrangement) {
-                                // Side by side: the launcher floats over the companion.
-                                WorkspaceArrangement.SIDE_BY_SIDE -> 16.dp
-                                // Stacked: the list shares the window's bottom-right
-                                // corner with the launcher (16 dp + its 56 dp pill).
-                                WorkspaceArrangement.STACKED -> 96.dp
-                                WorkspaceArrangement.SINGLE -> 168.dp
+                                WorkspaceArrangement.SIDE_BY_SIDE, WorkspaceArrangement.STACKED -> 16.dp
+                                // Compact: the launcher sits 96 dp above the bottom bar.
+                                WorkspaceArrangement.SINGLE -> 96.dp
                             },
                         ),
                 ) {

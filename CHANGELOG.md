@@ -12,6 +12,9 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Round 18 small fixes.** On Android the Explore "Plan a journey" button
+  sits beside the assistant launcher instead of floating above it, so on a
+  folded cover it no longer covers the middle of the content.
 - **Round 17 small fixes.** An upright iPad or wide tablet now pairs Explore,
   GO and the map side by side instead of stacking a short overview above the
   list (stacking stays for the narrower open foldable). The same operator

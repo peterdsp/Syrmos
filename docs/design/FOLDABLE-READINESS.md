@@ -804,6 +804,24 @@ merged (#201, #202).
   launcher. New render `explore-ipad-portrait.png` in `DuoSnapshotTests`
   (23/23). Unit twins green on both sides.
 
+## Landed: polish round 18 (folded cover audit)
+
+Source: a capture pass over the four Android tabs at the folded cover
+geometry (466x678) after round 17 merged (#203).
+
+- **Home, Airport, Map** read correctly at the cover: the hero with the
+  four-direction board, the airport hero and calendar hub, the map with its
+  controls clear of the bottom bar.
+- **Explore Plan button (Android)**: it floated 168 dp above the bottom bar,
+  which on a 678 dp cover put it over the Ichnos card's Report button. It now
+  sits BESIDE the launcher on the same row (84 dp end clearance, 96 dp bottom
+  in the compact layout, 16 dp when stacked beside the rail) and keeps the
+  free corner side by side. Verified at 466x678 and 673x841 (button and
+  launcher bounds on one row).
+- **iOS**: `explore-duo-cover.png` render added to `DuoSnapshotTests`; the
+  Plan pill there is a bottom safe-area band that reserves its own height, so
+  nothing is covered.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

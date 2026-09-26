@@ -394,6 +394,15 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Explore upright render should not be blank")
     }
 
+    /// Explore on the folded cover: the single column with the Plan pill band
+    /// reserving its own height at the bottom.
+    @MainActor
+    func test_exploreScreen_duoCover_render() throws {
+        let image = render(LinesView(), size: duoCover)
+        try save(image, "explore-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore cover render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor
