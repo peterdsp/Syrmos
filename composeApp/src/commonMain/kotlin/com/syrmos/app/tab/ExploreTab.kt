@@ -50,6 +50,7 @@ import com.syrmos.feature.lines.LinesScreen
 import com.syrmos.feature.lines.LinesViewModel
 import org.koin.compose.koinInject
 import kotlinx.coroutines.flow.first
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 object ExploreTab : Tab {
     override val options: TabOptions
@@ -131,6 +132,8 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                         // pane, so the button rests at the list pane's own bottom
                         // corner instead of hovering over the middle of the list.
                         .align(androidx.compose.ui.Alignment.BottomEnd)
+                        // Above the system navigation bar in every layout.
+                        .navigationBarsPadding()
                         .padding(end = 16.dp, bottom = if (paired) 16.dp else 168.dp),
                 ) {
                     Text(
