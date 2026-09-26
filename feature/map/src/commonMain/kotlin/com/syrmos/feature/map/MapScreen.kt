@@ -62,6 +62,7 @@ import com.syrmos.core.common.layout.PaneRole
 import com.syrmos.core.common.layout.WorkspaceArrangement
 import com.syrmos.core.common.layout.WorkspaceTask
 import com.syrmos.core.designsystem.layout.rememberContentWorkspace
+import com.syrmos.core.designsystem.layout.LocalFloatingBarInset
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
@@ -189,10 +190,10 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                // Compact: clear the bottom bar and the launcher. Paired: the
-                // canvas is its own pane (often short when stacked), so the
-                // controls sit at its corner instead of climbing into the header.
-                .padding(end = 16.dp, bottom = if (paired) 16.dp else 96.dp),
+                // Single column: the shell's real bottom clearance (96 dp above the
+                // compact bottom bar, 16 dp beside a rail). Paired: the canvas is
+                // its own pane, so the controls sit at its corner.
+                .padding(end = 16.dp, bottom = if (paired) 16.dp else LocalFloatingBarInset.current),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.End,
         ) {

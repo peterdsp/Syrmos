@@ -920,6 +920,9 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   16 dp from the pane's end; compact, it keeps 96 dp beside the launcher. Lesson from the first cut: a brace inserted by counting landed
   after the rail/compact branches and the shell painted nothing; the
   structure is now checked by reading the tail of the function.
+- **Map controls (Android)** read the same `LocalFloatingBarInset` for the
+  single column, so beside a docked assistant they sit 16 dp above the
+  bottom instead of 96 dp up the canvas. Verified docked and compact.
 - **Explore beside a docked assistant on iOS** does not arise: the inspector
   is a system column and the pill band is a safe-area inset.
 
