@@ -740,7 +740,9 @@ merged (#201, #202).
   whole GO view, so on an iPad the popover hovered over the content with its
   arrow pointing at the map card; it now sits on the End / Finish toolbar
   button (`endButton`), so the popover points at the button. Phones are
-  unchanged (an action sheet either way).
+  unchanged (an action sheet either way). Verified on the iPad simulator:
+  the popover now hangs from the End button at the top-right; GO paired with
+  the route map and the timeline, and Plan keeps its results after End.
 - **Plan companion readable column** (both clients): the selected journey
   column is capped at 680 (iOS `frame(maxWidth:)`, Android `widthIn(max)`),
   so a wide companion pane on an iPad or tablet does not stretch the timeline
